@@ -8,8 +8,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
+import { useTranslation } from '@/localization';
 
 export default function TabTwoScreen() {
+  const { t } = useTranslation();
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -27,69 +30,78 @@ export default function TabTwoScreen() {
           style={{
             fontFamily: Fonts.rounded,
           }}>
-          Explore
+          {t('shell.explore.title')}
         </ThemedText>
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
+      <ThemedText>{t('shell.explore.description')}</ThemedText>
+      <Collapsible title={t('shell.explore.section.routing.title')}>
         <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
+          {t('shell.explore.section.routing.line1.part1')}{' '}
+          <ThemedText type="defaultSemiBold">{t('shell.token.path.tabs_index')}</ThemedText>{' '}
+          {t('shell.explore.section.routing.line1.part2')}{' '}
+          <ThemedText type="defaultSemiBold">{t('shell.token.path.tabs_explore')}</ThemedText>
+          {t('shell.explore.section.routing.line1.part3')}
         </ThemedText>
         <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
+          {t('shell.explore.section.routing.line2.part1')}{' '}
+          <ThemedText type="defaultSemiBold">{t('shell.token.path.tabs_layout')}</ThemedText>{' '}
+          {t('shell.explore.section.routing.line2.part2')}
         </ThemedText>
         <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
+          <ThemedText type="link">{t('shell.explore.section.routing.learn_more')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
+      <Collapsible title={t('shell.explore.section.platform.title')}>
         <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
+          {t('shell.explore.section.platform.body.part1')}{' '}
+          <ThemedText type="defaultSemiBold">{t('shell.token.shortcut.open_web')}</ThemedText>{' '}
+          {t('shell.explore.section.platform.body.part2')}
         </ThemedText>
       </Collapsible>
-      <Collapsible title="Images">
+      <Collapsible title={t('shell.explore.section.images.title')}>
         <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
+          {t('shell.explore.section.images.body.part1')}{' '}
+          <ThemedText type="defaultSemiBold">{t('shell.token.image_suffix.2x')}</ThemedText>{' '}
+          {t('shell.explore.section.images.body.part2')}{' '}
+          <ThemedText type="defaultSemiBold">{t('shell.token.image_suffix.3x')}</ThemedText>{' '}
+          {t('shell.explore.section.images.body.part3')}
         </ThemedText>
         <Image
           source={require('@/assets/images/react-logo.png')}
           style={{ width: 100, height: 100, alignSelf: 'center' }}
         />
         <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
+          <ThemedText type="link">{t('shell.explore.section.images.learn_more')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title="Light and dark mode components">
+      <Collapsible title={t('shell.explore.section.theme.title')}>
         <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
+          {t('shell.explore.section.theme.body.part1')}{' '}
+          <ThemedText type="defaultSemiBold">{t('shell.token.hook.use_color_scheme')}</ThemedText>{' '}
+          {t('shell.explore.section.theme.body.part2')}
         </ThemedText>
         <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
+          <ThemedText type="link">{t('shell.explore.section.theme.learn_more')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title="Animations">
+      <Collapsible title={t('shell.explore.section.animations.title')}>
         <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
+          {t('shell.explore.section.animations.body.part1')}{' '}
+          <ThemedText type="defaultSemiBold">{t('shell.token.path.components_hello_wave')}</ThemedText>{' '}
+          {t('shell.explore.section.animations.body.part2')}{' '}
           <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
+            {t('shell.token.library.react_native_reanimated')}
           </ThemedText>{' '}
-          library to create a waving hand animation.
+          {t('shell.explore.section.animations.body.part3')}
         </ThemedText>
         {Platform.select({
           ios: (
             <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
+              {t('shell.explore.section.animations.ios_extra.part1')}{' '}
+              <ThemedText type="defaultSemiBold">
+                {t('shell.token.path.components_parallax_scroll_view')}
+              </ThemedText>{' '}
+              {t('shell.explore.section.animations.ios_extra.part2')}
             </ThemedText>
           ),
         })}

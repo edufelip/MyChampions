@@ -1,0 +1,94 @@
+# Decisions Log V1
+
+## Confirmed Decisions
+- `D-001`: Role is fixed per account; switching role requires creating a new account with a different email.
+- `D-002`: Professional credential capture is optional; no credential-verification workflow is included in MVP.
+- `D-003`: Professional-student connection uses invite code.
+- `D-004`: Assignment activation requires professional confirmation after student submits invite code.
+- `D-005`: Relationship and plan history are retained after termination.
+- `D-006`: Student cannot edit professionally assigned plans (read-only).
+- `D-007`: Student self-managed plan is archived when professional assignment for that specialty becomes active.
+- `D-008`: Professional can review archived student self-managed plan when student wants/allows it.
+- `D-009`: Students never pay subscription fees.
+- `D-010`: Professional accounts include free management of up to 10 active students.
+- `D-011`: More than 10 active students requires paid subscription entitlement (RevenueCat-managed).
+- `D-012`: Student or professional can unbind relationship at any moment.
+- `D-013`: Training schema is fully customizable by professional.
+- `D-014`: MVP compliance baseline is defined by Apple App Store + Google Play policy requirements for payments, privacy, account deletion, and data disclosures.
+- `D-015`: MVP nutrition API provider is fatsecret Platform API.
+- `D-016`: UX copy must clearly communicate self-guided usage without professional connection and use plain-language role labels.
+- `D-017`: Users can create reusable custom meals with weight, calories/macros, optional ingredient cost, and log consumed grams with proportional nutrient calculation.
+- `D-018`: Shared recipe links create recipient-owned copies on confirmation; recipient copies remain available even if source creator deletes original recipe.
+- `D-019`: Shared recipe links do not expire automatically.
+- `D-020`: Shared recipe links are not revocable by creators.
+- `D-021`: Import from the same shared link by the same recipient is idempotent.
+- `D-022`: Logged-out shared-link opens force login and resume exact link flow after authentication.
+- `D-023`: Shared-link import payload includes nutrition fields only and excludes ingredient cost.
+- `D-024`: Professional active-student cap counts unique student accounts regardless of specialty count.
+- `D-025`: Account deletion retains only minimum anonymized/pseudonymized historical records required for legal, billing, security, and continuity constraints.
+- `D-026`: Professional credential/verification status is not exposed as student-facing label/filter.
+- `D-027`: Custom meal/recipe records use UUID as primary identifiers (including recipient-owned imported copies).
+- `D-028`: Public recipe-sharing abuse baseline includes endpoint rate limiting and telemetry redaction of full link/token values.
+- `D-029`: Recipe UUID version is UUIDv7.
+- `D-030`: MVP auth methods are email/password, Google, and Apple.
+- `D-031`: Create-account requires name, email, password, password confirmation, reveal-password controls, and password policy (8+ chars, uppercase, number, special char, no emoji).
+- `D-032`: Email is globally unique per account, and social login with same email links to existing account.
+- `D-033`: Role-selection route auto-redirects when role is already locked.
+- `D-034`: Professionals can add specialties after onboarding; specialty removal is blocked when active or pending students exist in that specialty or when it would leave zero specialties.
+- `D-035`: Credential records are separate per specialty, type `professional_registry`, max one per specialty in MVP, and skippable in no-regulator contexts.
+- `D-036`: Students can view credential info only for currently assigned professionals, limited to `registry_id`, `authority`, and `country`.
+- `D-037`: Professional invite code is persistent by default, revocable/regenerable on demand, and only one active code exists per professional; regeneration invalidates old code and auto-cancels pending requests created from it.
+- `D-038`: Professional pending connection requests are capped at 10.
+- `D-039`: Professional dashboard shows active and pending counts separately.
+- `D-040`: Wrong-role route access is hard-blocked with redirect to role home.
+- `D-041`: MVP offline mode is read-only cached content; writes are blocked.
+- `D-042`: MVP error handling uses mixed strategy (inline + full-screen + toast).
+- `D-043`: If entitlement lapses while above cap, professional new activations and student-plan updates are locked until entitlement is restored.
+- `D-044`: Student home prioritizes nutrition above training and highlights pending connection status.
+- `D-045`: Bottom navigation model:
+  - Professional: dashboard, students, nutrition, training, account.
+  - Student: home, nutrition, training, recipes, account.
+- `D-046`: Password special-character policy uses ASCII punctuation symbols only; emoji and non-ASCII symbols do not satisfy the special-character requirement.
+- `D-047`: Offline cached content stale policy uses 24-hour TTL with stale indicator + last-sync timestamp while preserving read-only access.
+- `D-048`: Mobile client stack is React Native with Expo.
+- `D-049`: Build/release pipeline must not depend on EAS services; Android/iOS native packages and CI/CD are managed independently.
+- `D-050`: Backend platform baseline is Supabase (Postgres, Auth, Storage).
+- `D-051`: Social authentication is implemented through Supabase Auth providers.
+- `D-052`: Firebase Crashlytics is mandatory for production crash monitoring.
+- `D-053`: User-uploaded media (including recipe images) is stored in Supabase Storage.
+- `D-054`: UI stack for MVP uses NativeWind (Tailwind-style React Native styling).
+- `D-055`: Native projects (`ios/`, `android/`) are committed from day 1 after a single `expo prebuild`, and are then maintained directly without recurring prebuild regeneration.
+- `D-056`: QA distribution strategy:
+  - Release branches distribute iOS builds via TestFlight.
+  - Pull requests into `develop` distribute builds via Firebase App Distribution.
+- `D-057`: Client-side media compression is mandatory before upload to Supabase Storage.
+- `D-058`: Non-crash monitoring tooling (for example Sentry) is out of MVP; Crashlytics is used for crashes/ANRs only.
+- `D-059`: MVP update delivery strategy is store-only (no OTA channel).
+- `D-060`: CI signing strategy uses platform-native secret management.
+- `D-061`: Post-compression media upload limits are fixed at `<= 1.5 MB` and `<= 1600 px` on longest side.
+- `D-062`: Specialty removal guard uses `active + pending` constraint (removal blocked if either exists in that specialty).
+- `D-063`: Student-visible professional credential field scope is `registry_id`, `authority`, and `country`, only for currently assigned professionals.
+- `D-064`: Invite-code regeneration auto-cancels pending requests tied to superseded code (audit reason: `code_rotated`).
+- `D-065`: Milestone A includes a quick self-guided start action in onboarding that commits student role and routes to self-managed setup.
+- `D-066`: Milestone A invite flow supports QR-code scanning with validation parity to manual invite entry.
+- `D-067`: Milestone A auth/invite surfaces require reason-specific actionable error copy for known failures.
+- `D-068`: Milestone A analytics taxonomy is mandatory for auth, onboarding, self-guided start, and invite funnels with structured context fields and sensitive-data redaction.
+- `D-069`: Students impacted by invite-code regeneration must see explicit pending-canceled reason and reconnect CTA.
+- `D-070`: Professional pending-request queue must support search/filter and bulk deny operations.
+- `D-071`: Students can submit plan-change requests on assigned plans; request flow is advisory and does not grant direct edit rights.
+- `D-072`: Nutrition/training plan builders include starter template library with clone-then-customize behavior.
+- `D-073`: Recipe image upload UX must show progress, recoverable failure reason, and retry path while preserving draft edits.
+- `D-074`: Offline core screens show persistent read-only banner and explicit write-lock reasons for blocked actions.
+- `D-075`: Professional monetization flow must show pre-lapse warning before entitlement lock state.
+- `D-076`: Specialty-removal blocked states include direct assist actions to resolve active/pending blockers.
+- `D-077`: MVP launch includes baseline accessibility coverage for core screens (contrast, dynamic text scaling, focus order, screen-reader labels).
+- `D-078`: Habit-tracking P1 scope is narrowed to water tracking only (no sleep/steps in this item), with daily intake history and streak visibility.
+- `D-079`: Water goals can be set by students for self-management, and nutritionists can set/update water goals for assigned students.
+- `D-080`: Plan cloning/bulk-assignment P1 scope requires named predefined plans created by professionals (for example `Caloric Deficit A/B`), with per-student fine-tuning after assignment.
+- `D-081`: Effective water-goal precedence uses nutritionist-defined goal when active nutrition assignment override exists; otherwise stored student personal goal is used.
+- `D-082`: Bulk-assigned plans are independent per-student copies; later edits to source predefined plans do not mutate already assigned student plans.
+- `D-083`: Deferred technical wiring tasks must be tracked in `docs/discovery/pending-wiring-checklist-v1.md` and resolved before release hardening.
+- `D-084`: Product localization baseline requires all user-facing strings to be provided for `en-US`, `pt-BR`, and `es-ES`.
+
+## Pending Decisions
+- See `docs/discovery/open-questions-v1.md`.

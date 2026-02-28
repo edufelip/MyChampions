@@ -1,0 +1,95 @@
+# BR-002 Role Assignment And Plan Governance (Proposed)
+
+## Rules
+- `BR-201`: Every account must have a primary journey context: Student or Professional.
+- `BR-202`: Professional specialty can include nutritionist, fitness coach, or both.
+- `BR-203`: A Student can have only one active nutritionist relationship at a time.
+- `BR-204`: A Student can have only one active fitness coach relationship at a time.
+- `BR-205`: A single Professional can serve as both nutritionist and fitness coach for the same Student if the Professional has both specialties.
+- `BR-206`: A Professional can manage multiple students concurrently.
+- `BR-207`: Assigned plans (professional-authored) have higher authority than student self-authored plans for the same specialty while assignment is active.
+- `BR-208`: Student self-managed plans are allowed only when no active professional assignment exists for that specialty, unless explicit coexistence policy is defined later.
+- `BR-209`: Plan customization by professionals must remain within valid nutritional/training data constraints defined by product and compliance policy.
+- `BR-210`: Nutrition macro tracking must include carbs, proteins, and fats.
+- `BR-211`: User role is immutable; switching role requires creating a separate account with a different email.
+- `BR-212`: Professional credential capture is optional and does not include verification workflow in MVP.
+- `BR-213`: Assignment activation uses a two-step handshake: professional shares code, student submits code, professional confirms activation.
+- `BR-214`: All relationship and plan history records must be preserved after termination for auditability and continuity.
+- `BR-215`: Students cannot edit professionally assigned plans; assigned plans are view-only on the student side.
+- `BR-216`: Student self-managed plans for a specialty are archived when professional assignment becomes active in that specialty.
+- `BR-217`: Archived student self-managed plans are visible to professionals only with student consent.
+- `BR-218`: Students are never payers in the subscription model.
+- `BR-219`: A professional can manage up to 10 active students without paid subscription.
+- `BR-220`: Active student count above 10 is blocked unless professional subscription entitlement is active.
+- `BR-221`: Subscription entitlement lifecycle is controlled by store billing and synchronized through RevenueCat.
+- `BR-222`: Either side of an active assignment can unbind at any time.
+- `BR-223`: A replacement assignment in the same specialty cannot be simultaneously active; previous binding must be ended first.
+- `BR-224`: Training plans are professional-defined and fully customizable; app enforces no fixed domain workout fields beyond storage metadata.
+- `BR-225`: Release eligibility requires compliance with Apple/Google store policies for payments, privacy, account deletion, and data disclosures.
+- `BR-226`: Student-facing onboarding and empty-state copy must communicate self-guided usage as a first-class path, not as an error or fallback.
+- `BR-227`: User-facing copy should avoid internal domain jargon when a plain-language alternative is available.
+- `BR-228`: Professional active-student cap counting uses unique active student accounts per professional, regardless of one or two active specialties for each student.
+- `BR-229`: Professional credential status is internal metadata and must not be exposed as a visible verification label or filter in student-facing connection surfaces.
+- `BR-230`: Assignment lifecycle states are `invited`, `pending_confirmation`, `active`, and `ended`, with deterministic transitions:
+  - `invited` -> `pending_confirmation` when student submits invite code.
+  - `pending_confirmation` -> `active` when professional confirms.
+  - `active` -> `ended` when student or professional unbinds.
+- `BR-231`: Account deletion workflows must remove direct personal identifiers from retained historical relationship/plan records and keep only anonymized or pseudonymized data required for legal, billing, security, and continuity constraints.
+- `BR-232`: Supported MVP auth methods are email/password, Google, and Apple.
+- `BR-233`: Password policy requires minimum 8 characters, at least one uppercase letter, one number, one special character, and no emojis.
+- `BR-234`: Email uniqueness is global per account; same email cannot create multiple accounts.
+- `BR-235`: Social login with matching email links provider identity into existing account.
+- `BR-236`: Role-selection route is bypassed for accounts with locked role and must auto-redirect to role home.
+- `BR-237`: Professional may add specialties post-onboarding.
+- `BR-238`: Professional may remove specialty only when that specialty has no active or pending students and at least one specialty remains on account.
+- `BR-239`: Credential records are stored per specialty, with max one `professional_registry` credential per specialty in MVP.
+- `BR-240`: Student-visible credential info is limited to currently assigned professionals and field scope is constrained to `registry_id`, `authority`, and `country`.
+- `BR-241`: Professional invite code is persistent by default, revocable/regenerable on demand, and only one active code exists per professional at a time; regeneration invalidates the old code and auto-cancels pending requests tied to that old code.
+- `BR-242`: Pending connection requests awaiting professional action are capped at 10 per professional.
+- `BR-243`: Professional dashboard must show active and pending counts separately.
+- `BR-244`: Wrong-role route access is hard-blocked and redirected to role home.
+- `BR-245`: Offline mode allows read-only cached access; writes are blocked until connectivity is restored.
+- `BR-246`: Mixed error UX strategy applies: field-level validation inline, recoverable load failures as screen state, and transient operation feedback via toast/snackbar.
+- `BR-247`: If entitlement lapses while professional is over cap, block new activations and lock professional plan updates for students until entitlement is active again.
+- `BR-248`: Student home prioritizes nutrition sections above training sections and highlights pending connection status.
+- `BR-249`: Professional bottom navigation areas are dashboard, students, nutrition, training, and account/settings.
+- `BR-250`: Student bottom navigation areas are home, nutrition, training, recipes, and account/settings.
+- `BR-251`: Password special-character requirement is satisfied only by ASCII punctuation symbols; emoji and non-ASCII symbol characters do not satisfy this rule.
+- `BR-252`: Offline cached content older than 24 hours is treated as stale and must show stale-state UI metadata (including last-sync timestamp) while remaining read-only.
+- `BR-253`: Native directories are source-controlled artifacts generated once via `expo prebuild` and then manually maintained; recurrent prebuild regeneration is not part of normal workflow.
+- `BR-254`: Build and release automation must remain operational without EAS service dependency.
+- `BR-255`: MVP utility-class styling standard in mobile UI is NativeWind.
+- `BR-256`: QA distribution policy is branch-driven:
+  - Release branches publish to TestFlight.
+  - Pull requests into `develop` publish to Firebase App Distribution.
+- `BR-257`: Client-side compression is required before any image/media upload to Supabase Storage.
+- `BR-258`: Production monitoring scope in MVP includes Firebase Crashlytics (crashes + ANRs) and excludes additional non-crash error-monitoring platforms.
+- `BR-259`: Release updates in MVP are delivered only through App Store/Play Store binaries; OTA update channels are disabled.
+- `BR-260`: Signing assets are managed via platform-native CI secret management rather than centralized Fastlane certificate stores.
+- `BR-261`: Image/media uploads must pass post-compression limits of `<= 1.5 MB` and `<= 1600 px` longest side; uploads exceeding limits are blocked client-side.
+- `BR-262`: Quick self-guided start path is student-only and must preserve role-lock governance before entering student tracking routes.
+- `BR-263`: Invite code submission via QR scan and manual input must converge to the same backend validation and lifecycle transition logic.
+- `BR-264`: Auth and invite error states must map to machine-readable `reason_code` values and expose actionable recovery copy to the user.
+- `BR-265`: Milestone A analytics taxonomy must use canonical event naming with deterministic properties (`surface`, `step`, `result`, optional `reason_code`).
+- `BR-266`: Milestone A analytics payloads for auth and invite flows must redact sensitive fields and exclude raw credentials/codes/tokens from telemetry.
+- `BR-267`: Pending-request cancellation caused by invite-code regeneration must be visible to impacted students with explicit reason and reconnect guidance.
+- `BR-268`: Professional pending queue management supports search/filter and bulk-deny operations without bypassing pending-cap or lifecycle constraints.
+- `BR-269`: Plan-change requests are advisory artifacts linked to assigned plans; they do not grant student edit rights on assigned plan structures.
+- `BR-270`: Starter templates are system-provided baselines that professionals can clone/customize; original starter definitions remain immutable.
+- `BR-271`: Recoverable media upload failures must expose retry path and preserve local draft state.
+- `BR-272`: Offline state must be clearly signaled with persistent banner and write-lock reason whenever write actions are blocked.
+- `BR-273`: Entitlement pre-lapse warning must be shown before write-lock enforcement for professionals at risk of cap lock.
+- `BR-274`: Specialty-removal blocked state must include direct navigation/actions to resolve active/pending blockers.
+- `BR-275`: Accessibility baseline requires support for dynamic text scaling, screen-reader semantics, logical focus order, and sufficient contrast on core screens.
+- `BR-276`: BL-104 habit-tracking scope is hydration-only (water intake); sleep and steps are excluded from this item.
+- `BR-277`: Students can define and update personal daily water-goal targets for self-management contexts.
+- `BR-278`: Nutritionists can define and update daily water-goal targets for students with active nutrition assignment.
+- `BR-279`: Effective water-goal precedence is nutritionist-defined goal (when active assignment + goal exists); otherwise student personal goal applies.
+- `BR-280`: Water streak progression is based on daily completion against effective goal; non-complete days break the active streak.
+- `BR-281`: Predefined plans are professional-owned named library items for nutrition and/or training domains.
+- `BR-282`: Bulk assignment clones predefined plans into per-student copies; later edits to source predefined plan do not retroactively mutate already assigned student copies.
+- `BR-283`: Bulk assignment flow must allow per-student fine-tuning before final assignment confirmation.
+- `BR-284`: Localization baseline requires every user-facing string key to have `en-US`, `pt-BR`, and `es-ES` values before release readiness.
+
+## Constraints
+- Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.
