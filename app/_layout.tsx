@@ -65,6 +65,11 @@ function RootLayoutContent() {
         <Stack.Screen name="student/training" options={{ headerShown: true }} />
         <Stack.Screen name="student/professionals" options={{ headerShown: true }} />
         <Stack.Screen name="professional/pending" options={{ headerShown: true }} />
+        <Stack.Screen name="professional/home" options={{ headerShown: true }} />
+        <Stack.Screen name="professional/specialty" options={{ headerShown: true }} />
+        <Stack.Screen name="professional/students" options={{ headerShown: true }} />
+        <Stack.Screen name="professional/student-profile" options={{ headerShown: true }} />
+        <Stack.Screen name="professional/subscription" options={{ headerShown: true }} />
         <Stack.Screen
           name="modal"
           options={{ presentation: 'modal', title: t('shell.modal.title') }}

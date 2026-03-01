@@ -110,5 +110,8 @@
 - `D-099`: Connection lifecycle Data Connect operations (invite submit, professional confirm, end connection, `getMyConnections`) follow the same HTTP-over-GraphQL pattern as the profile source (`features/auth/profile-source.ts`): Firebase ID token in `Authorization` header, typed GraphQL calls, `ConnectionSourceError` typed errors. Connection status and `canceled_reason` normalization is isolated in `features/connections/connection.logic.ts` for unit testability.
 - `D-100`: Connection lifecycle screen wiring uses a `useConnections` React hook in `features/connections/use-connections.ts` as the single UI adapter over connection-source; screens import only the hook and logic types, never connection-source directly. Route guard extended in `auth-route-guard.logic.ts` to enforce `/student/*` → student-only and `/professional/*` → professional-only path prefixes.
 
+- `D-101`: Professional screen stubs use `useState<EntitlementStatus>('unknown')` (not `const`) to prevent TypeScript literal narrowing; this pattern must be applied to all stub state that will later be replaced by live data.
+- `D-102`: Phase 5 professional screens (SC-202, SC-204, SC-205, SC-206, SC-212) are implemented with stub data for Data Connect and RevenueCat wiring; all deferred items are tracked in `docs/discovery/pending-wiring-checklist-v1.md`.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

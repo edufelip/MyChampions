@@ -38,7 +38,20 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Workflows were adapted to this repository conventions (`npm ci`, `mychampions` iOS workspace/scheme, and `com.edufelip.mychampions` package identifiers).
 - `Done`: CI secret inventory documented in `docs/discovery/ci-secrets-matrix-v1.md` with required/optional scope per workflow.
 
-## Billing And Subscription Wiring
+## Professional Screen Wiring (Phase 5)
+- `Done`: SC-202 Specialty screen (`app/professional/specialty.tsx`) implemented — add/remove specialties and upsert credentials via `useSpecialties` hook stub; Data Connect endpoint wiring deferred.
+- `Done`: SC-204 Professional Home (`app/professional/home.tsx`) implemented — invite code display via `useInviteCode`, subscription state via `resolveSubscriptionState`; RevenueCat entitlement wired as stub `'unknown'`.
+- `Done`: SC-205 Student Roster (`app/professional/students.tsx`) implemented — search + filter chip UI, FlatList with stub empty data; Data Connect student-roster endpoint wiring deferred.
+- `Done`: SC-206 Student Profile Professional View (`app/professional/student-profile.tsx`) implemented — assignment status cards, unbind CTA, plan-change requests, water goal form; Data Connect endpoint wiring deferred.
+- `Done`: SC-212 Professional Subscription Gate (`app/professional/subscription.tsx`) implemented — entitlement status display, cap usage, purchase/restore/refresh CTAs; RevenueCat SDK wiring deferred.
+- `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 5 new professional screens.
+- `Pending`: Wire professional-source Data Connect endpoints for student roster, assignment status, and unbind operations into SC-205, SC-206.
+- `Pending`: Wire RevenueCat entitlement live state into SC-204, SC-206, SC-212 (replacing `useState<EntitlementStatus>('unknown')` stubs).
+
+## Localization
+- `Done`: All `pro.home.*`, `pro.specialty.*`, `pro.students.*`, `pro.student_profile.*`, `pro.subscription.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts`.
+
+
 - `Pending`: Wire RevenueCat entitlement checks to professional cap-sensitive actions.
 - `Pending`: Wire pre-lapse warning data source and lock transitions from live entitlement state.
 
