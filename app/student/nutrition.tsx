@@ -9,7 +9,7 @@
  *  - Empty state with self-guided CTA when no nutritionist assigned
  *
  * Docs: docs/screens/v2/SC-209-student-nutrition-tracking.md
- * Refs: D-041, D-074, D-081, FR-211, FR-218, FR-219, FR-220, FR-221, FR-222, BR-269, BR-276
+ * Refs: D-041, D-074, D-081, FR-211, FR-214, FR-218, FR-219, FR-220, FR-221, FR-222, BR-269, BR-272, BR-276
  *
  * Meal log wiring (fatsecret) is deferred — tracked in pending-wiring-checklist-v1.md.
  */
@@ -32,6 +32,7 @@ import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
 import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 import { usePlans } from '@/features/plans/use-plans';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -49,9 +50,10 @@ export default function StudentNutritionScreen() {
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
 
-  // Offline — stubbed; real wiring deferred
+  // Real network connectivity via NetInfo (BL-008, FR-214, BR-272)
+  const networkStatus = useNetworkStatus();
   const offlineDisplay = resolveOfflineDisplayState({
-    networkStatus: 'online',
+    networkStatus,
     lastSyncedAtIso: null,
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;

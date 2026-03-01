@@ -12,8 +12,7 @@
  * Docs: docs/screens/v2/SC-203-student-home-dashboard.md
  * Refs: D-044, D-047, D-074, D-081, FR-214, FR-218, FR-219, FR-220, FR-221, FR-222
  *
- * Offline wiring: network status is currently stubbed as 'online'.
- * Real wiring deferred — tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Offline wiring: real network status via useNetworkStatus (BL-008, FR-214).
  */
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -36,6 +35,7 @@ import {
   type OfflineDisplayState,
   type StaleElapsed,
 } from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
@@ -73,9 +73,10 @@ export default function StudentHomeScreen() {
   const router = useRouter();
   const { currentUser } = useAuthSession();
 
-  // Offline display — network status stubbed as 'online' until NetInfo is wired
+  // Real network connectivity via NetInfo (BL-008, FR-214, BR-272)
+  const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
-    networkStatus: 'online',
+    networkStatus,
     lastSyncedAtIso: null,
   });
 

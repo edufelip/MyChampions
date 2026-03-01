@@ -55,6 +55,18 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire RevenueCat entitlement checks to professional cap-sensitive actions.
 - `Pending`: Wire pre-lapse warning data source and lock transitions from live entitlement state.
 
+## Offline Banner + Write-Lock (BL-008)
+- `Done`: `features/offline/offline.logic.ts` — pure functions: `resolveCacheFreshness`, `checkWriteLock`, `resolveOfflineDisplayState`, `buildStaleElapsed`, `isDefinitelyOffline`. Unit tests in `offline.logic.test.ts` (included in 301-test suite, TC-261).
+- `Done`: `features/offline/use-network-status.ts` — React hook `useNetworkStatus` wiring `@react-native-community/netinfo`; returns `'online' | 'offline' | 'unknown'`.
+- `Done`: `@react-native-community/netinfo` installed (v12.0.1).
+- `Done`: `app/student/home.tsx` (SC-203) — `useNetworkStatus` replaces `networkStatus: 'online'` stub; offline banner + write-lock shown on all section cards and hydration card.
+- `Done`: `app/student/nutrition.tsx` (SC-209) — `useNetworkStatus` replaces stub; offline banner + write-lock on water widget and plan-change form.
+- `Done`: `app/student/training.tsx` (SC-210) — `useNetworkStatus` replaces stub; offline banner + write-lock on plan-change form.
+- `Done`: `app/professional/home.tsx` (SC-204) — `useNetworkStatus` replaces stub; offline banner + write-lock on invite-code and roster CTAs.
+- `Done`: All `offline.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
+- `Pending`: Wire `lastSyncedAtIso` from real data-layer sync timestamps (currently `null` — stale indicator never shown). Deferred until Data Connect cache layer is implemented.
+- `Pending`: Wire offline banner + write-lock into remaining screens not yet wired: `pro/students.tsx`, `pro/student-profile.tsx`, `pro/specialty.tsx`, `pro/pending.tsx`, `pro/subscription.tsx`, `settings/account.tsx`, `nutrition/custom-meals/index.tsx`, `nutrition/custom-meals/[mealId].tsx`, `shared/recipes/[shareToken].tsx`.
+
 ## Water Tracking (BL-104)
 - `Done`: `features/nutrition/water-tracking.logic.ts` — pure functions: `resolveEffectiveWaterGoal`, `resolveWaterDayStatus`, `calculateWaterStreak`, `validateWaterGoalInput`, `validateWaterIntakeInput`, `normalizeWaterTrackingError`.
 - `Done`: `features/nutrition/water-tracking.logic.test.ts` — unit tests included in 301-test suite (TC-264–TC-267).

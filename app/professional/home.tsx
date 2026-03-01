@@ -14,7 +14,7 @@
  *       FR-185, FR-188, FR-204, FR-210, FR-214, FR-215, FR-217
  *       BR-213, BR-219–221, BR-241–243, BR-247, BR-249, BR-263, BR-268, BR-272–273, BR-275
  *
- * Offline wiring: network status stubbed as 'online'.
+ * Offline wiring: real network status via useNetworkStatus (BL-008, FR-214).
  * Subscription / RevenueCat wiring deferred.
  * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
  */
@@ -44,6 +44,7 @@ import {
   type OfflineDisplayState,
   type StaleElapsed,
 } from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -61,9 +62,10 @@ export default function ProfessionalHomeScreen() {
   const router = useRouter();
   const { currentUser } = useAuthSession();
 
-  // Offline — stubbed as 'online' until NetInfo is wired
+  // Real network connectivity via NetInfo (BL-008, FR-214, BR-272)
+  const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
-    networkStatus: 'online',
+    networkStatus,
     lastSyncedAtIso: null,
   });
 
