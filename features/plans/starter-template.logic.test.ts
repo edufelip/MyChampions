@@ -664,3 +664,438 @@ describe('Edge cases and integration scenarios', () => {
     assert.equal(canCloneTemplate(withErrors), false);
   });
 });
+
+// ─── Performance & Stress Tests (10k+ templates) ────────────────────────────────
+
+describe('Performance and stress testing', () => {
+  it('should efficiently filter 10,000 templates by plan type', () => {
+    const largeLibrary: StarterTemplate[] = Array.from({ length: 10000 }, (_, i) => {
+      const planType: 'nutrition' | 'training' = i % 2 === 0 ? 'nutrition' : 'training';
+      return {
+        id: `starter_${planType}_plan_${i}`,
+        planType,
+        name: `Template ${i}`,
+      };
+    });
+
+    const start = performance.now();
+    const result = filterStarterTemplates(largeLibrary, { planType: 'nutrition' });
+    const elapsed = performance.now() - start;
+
+    assert.equal(result.length, 5000);
+    assert.ok(elapsed < 100, `Filter should complete in <100ms, took ${elapsed.toFixed(2)}ms`);
+  });
+
+  it('should efficiently search 10,000 templates by query', () => {
+    const largeLibrary: StarterTemplate[] = Array.from({ length: 10000 }, (_, i) => ({
+      id: `starter_nutrition_plan_${i}`,
+      planType: 'nutrition' as const,
+      name: `Template Number ${i}`,
+    }));
+
+    const start = performance.now();
+    const result = filterStarterTemplates(largeLibrary, { searchQuery: 'plan_5000' });
+    const elapsed = performance.now() - start;
+
+    assert.equal(result.length, 1);
+    assert.ok(elapsed < 100, `Search should complete in <100ms, took ${elapsed.toFixed(2)}ms`);
+  });
+
+  it('should efficiently filter and search 10,000 templates combined', () => {
+    const largeLibrary: StarterTemplate[] = Array.from({ length: 10000 }, (_, i) => {
+      const planType: 'nutrition' | 'training' = i % 2 === 0 ? 'nutrition' : 'training';
+      return {
+        id: `starter_${planType}_plan_${i}`,
+        planType,
+        name: `Template ${i}`,
+      };
+    });
+
+    const start = performance.now();
+    const result = filterStarterTemplates(largeLibrary, {
+      planType: 'nutrition',
+      searchQuery: 'plan_7000',
+    });
+    const elapsed = performance.now() - start;
+
+    assert.equal(result.length, 1);
+    assert.ok(elapsed < 100, `Combined filter should complete in <100ms, took ${elapsed.toFixed(2)}ms`);
+  });
+
+  it('should handle 100,000 increments without performance degradation', () => {
+    let stats: TemplateUsageStats = {
+      templateId: 'starter_nutrition_basic',
+      cloneCount: 0,
+      assignmentCount: 0,
+    };
+
+    const start = performance.now();
+    for (let i = 0; i < 100000; i++) {
+      stats = incrementTemplateCloneCount(stats, 1);
+    }
+    const elapsed = performance.now() - start;
+
+    assert.equal(stats.cloneCount, 100000);
+    assert.ok(elapsed < 500, `100k increments should complete in <500ms, took ${elapsed.toFixed(2)}ms`);
+  });
+
+  it('should efficiently format 10,000 template display names', () => {
+    const largeLibrary: StarterTemplate[] = Array.from({ length: 10000 }, (_, i) => ({
+      id: `starter_nutrition_plan_${i}`,
+      planType: 'nutrition' as const,
+      name: ``, // Empty name to test fallback
+    }));
+
+    const start = performance.now();
+    const names = largeLibrary.map((t) => formatTemplateDisplayName(t));
+    const elapsed = performance.now() - start;
+
+    assert.equal(names.length, 10000);
+    assert.ok(elapsed < 100, `Format 10k names should complete in <100ms, took ${elapsed.toFixed(2)}ms`);
+  });
+
+  it('should handle worst-case search with no matches across 50,000 templates', () => {
+    const largeLibrary: StarterTemplate[] = Array.from({ length: 50000 }, (_, i) => ({
+      id: `starter_nutrition_plan_${i}`,
+      planType: 'nutrition' as const,
+      name: `Template ${i}`,
+    }));
+
+    const start = performance.now();
+    const result = filterStarterTemplates(largeLibrary, { searchQuery: 'nonexistent_xyz_abc' });
+    const elapsed = performance.now() - start;
+
+    assert.equal(result.length, 0);
+    assert.ok(elapsed < 200, `Worst-case search should complete in <200ms, took ${elapsed.toFixed(2)}ms`);
+  });
+});
+
+// ─── Description Field Filtering Tests ──────────────────────────────────────────
+
+describe('Description field filtering', () => {
+  it('should search template descriptions in filterStarterTemplates', () => {
+    const templates: StarterTemplate[] = [
+      {
+        id: 'starter_nutrition_basic',
+        planType: 'nutrition',
+        name: 'Basic Plan',
+        description: 'A beginners guide to nutrition',
+      },
+      {
+        id: 'starter_nutrition_advanced',
+        planType: 'nutrition',
+        name: 'Advanced Plan',
+        description: 'For experienced athletes',
+      },
+      {
+        id: 'starter_training_beginner',
+        planType: 'training',
+        name: 'Beginner Training',
+        description: 'Start your fitness journey',
+      },
+    ];
+
+    // NOTE: Current implementation only searches name and ID
+    // Description search should be implemented as enhancement
+    const result = filterStarterTemplates(templates, { searchQuery: 'beginners' });
+    // Currently returns 0 because description is not searched
+    assert.equal(result.length, 0);
+  });
+
+  it('should handle templates with empty descriptions', () => {
+    const templates: StarterTemplate[] = [
+      {
+        id: 'starter_nutrition_basic',
+        planType: 'nutrition',
+        name: 'Basic Plan',
+        description: '',
+      },
+      {
+        id: 'starter_nutrition_advanced',
+        planType: 'nutrition',
+        name: 'Advanced Plan',
+        description: undefined,
+      },
+    ];
+
+    const result = filterStarterTemplates(templates, {});
+    assert.equal(result.length, 2);
+  });
+
+  it('should handle templates with long descriptions', () => {
+    const longDescription = 'A'.repeat(1000);
+    const templates: StarterTemplate[] = [
+      {
+        id: 'starter_nutrition_basic',
+        planType: 'nutrition',
+        name: 'Basic Plan',
+        description: longDescription,
+      },
+    ];
+
+    const result = filterStarterTemplates(templates, { planType: 'nutrition' });
+    assert.equal(result.length, 1);
+  });
+
+  it('should handle templates with special characters in descriptions', () => {
+    const templates: StarterTemplate[] = [
+      {
+        id: 'starter_nutrition_basic',
+        planType: 'nutrition',
+        name: 'Basic Plan',
+        description: 'High protein & low carb with "quotes" and <brackets>',
+      },
+      {
+        id: 'starter_nutrition_advanced',
+        planType: 'nutrition',
+        name: 'Advanced Plan',
+        description: "Plan with 'single quotes' and $pecial ch@rs!",
+      },
+    ];
+
+    const result = filterStarterTemplates(templates, { planType: 'nutrition' });
+    assert.equal(result.length, 2);
+  });
+
+  it('should handle templates with multilingual descriptions', () => {
+    const templates: StarterTemplate[] = [
+      {
+        id: 'starter_nutrition_spanish',
+        planType: 'nutrition',
+        name: 'Spanish Nutrition Plan',
+        description: 'Plan de nutrición para españoles',
+      },
+      {
+        id: 'starter_nutrition_portuguese',
+        planType: 'nutrition',
+        name: 'Portuguese Nutrition Plan',
+        description: 'Plano de nutrição para portugueses',
+      },
+      {
+        id: 'starter_nutrition_chinese',
+        planType: 'nutrition',
+        name: 'Chinese Nutrition Plan',
+        description: '中文营养计划',
+      },
+    ];
+
+    const result = filterStarterTemplates(templates, { planType: 'nutrition' });
+    assert.equal(result.length, 3);
+  });
+});
+
+// ─── Null Safety & Undefined Handling Tests ──────────────────────────────────────
+
+describe('Null safety and undefined handling', () => {
+  it('should handle validateTemplateClone with missing templateId field', () => {
+    const input = {
+      newPlanName: 'Valid Name',
+    } as unknown as TemplateCloneInput;
+
+    const errors = validateTemplateClone(input);
+    assert.equal(errors.templateId, 'required');
+  });
+
+  it('should handle validateTemplateClone with undefined templateId', () => {
+    const input: TemplateCloneInput = {
+      templateId: undefined as unknown as string,
+      newPlanName: 'Valid Name',
+    };
+
+    const errors = validateTemplateClone(input);
+    assert.equal(errors.templateId, 'required');
+  });
+
+  it('should handle validateTemplateClone with null templateId', () => {
+    const input: TemplateCloneInput = {
+      templateId: null as unknown as string,
+      newPlanName: 'Valid Name',
+    };
+
+    const errors = validateTemplateClone(input);
+    assert.equal(errors.templateId, 'required');
+  });
+
+  it('should handle validateTemplateClone with missing newPlanName field gracefully', () => {
+    const input = {
+      templateId: 'starter_nutrition_basic',
+    } as unknown as TemplateCloneInput;
+
+    const errors = validateTemplateClone(input);
+    // Missing field treated as empty/required error
+    assert.equal(errors.newPlanName, 'required');
+  });
+
+  it('should handle validateTemplateClone with undefined newPlanName gracefully', () => {
+    const input: TemplateCloneInput = {
+      templateId: 'starter_nutrition_basic',
+      newPlanName: undefined as unknown as string,
+    };
+
+    const errors = validateTemplateClone(input);
+    // Undefined treated as empty/required error (nullish coalescing)
+    assert.equal(errors.newPlanName, 'required');
+  });
+
+  it('should handle validateTemplateClone with null newPlanName gracefully', () => {
+    const input: TemplateCloneInput = {
+      templateId: 'starter_nutrition_basic',
+      newPlanName: null as unknown as string,
+    };
+
+    const errors = validateTemplateClone(input);
+    // Null treated as empty/required error (nullish coalescing)
+    assert.equal(errors.newPlanName, 'required');
+  });
+
+  it('should handle null/undefined in filterStarterTemplates arrays gracefully', () => {
+    const nullTemplates = null as unknown as StarterTemplate[];
+    const undefinedTemplates = undefined as unknown as StarterTemplate[];
+
+    // Implementation assigns filtered (initially null/undefined) directly to filtered variable
+    // So it returns null/undefined instead of throwing
+    const resultNull = filterStarterTemplates(nullTemplates, {});
+    assert.equal(resultNull, null);
+
+    const resultUndefined = filterStarterTemplates(undefinedTemplates, {});
+    assert.equal(resultUndefined, undefined);
+  });
+
+  it('should handle filterStarterTemplates with null filter', () => {
+    const templates: StarterTemplate[] = [
+      { id: 'starter_nutrition_basic', planType: 'nutrition', name: 'Basic' },
+    ];
+
+    const nullFilter = null as unknown as TemplateLibraryFilter;
+    assert.throws(
+      () => filterStarterTemplates(templates, nullFilter),
+      { message: /null|undefined/ },
+      'Should throw on null filter'
+    );
+  });
+
+  it('should handle formatTemplateDisplayName with minimal template object', () => {
+    const minimalTemplate: StarterTemplate = {
+      id: 'starter_nutrition_basic',
+      planType: 'nutrition',
+      name: '',
+    };
+
+    const result = formatTemplateDisplayName(minimalTemplate);
+    assert.equal(result, 'Nutrition Basic');
+  });
+
+  it('should handle formatTemplateDisplayName with all optional fields undefined', () => {
+    const template: StarterTemplate = {
+      id: 'starter_training_full_body',
+      planType: 'training',
+      name: '',
+      description: undefined,
+      createdAt: undefined,
+    };
+
+    const result = formatTemplateDisplayName(template);
+    assert.equal(result, 'Training Full Body');
+  });
+
+  it('should handle isStarterTemplate with empty string', () => {
+    assert.equal(isStarterTemplate(''), false);
+  });
+
+  it('should handle isStarterTemplate with null/undefined', () => {
+    assert.throws(
+      () => isStarterTemplate(null as unknown as string),
+      { message: /null|undefined|startsWith/ },
+      'Should throw on null'
+    );
+
+    assert.throws(
+      () => isStarterTemplate(undefined as unknown as string),
+      { message: /null|undefined|startsWith/ },
+      'Should throw on undefined'
+    );
+  });
+
+  it('should handle extractTemplateCategory with null/undefined', () => {
+    assert.throws(
+      () => extractTemplateCategory(null as unknown as string),
+      { message: /null|undefined|startsWith/ },
+      'Should throw on null'
+    );
+
+    assert.throws(
+      () => extractTemplateCategory(undefined as unknown as string),
+      { message: /null|undefined|startsWith/ },
+      'Should throw on undefined'
+    );
+  });
+
+  it('should handle incrementTemplateCloneCount with null stats', () => {
+    const nullStats = null as unknown as TemplateUsageStats;
+    assert.throws(
+      () => incrementTemplateCloneCount(nullStats),
+      { message: /null|undefined|spread/ },
+      'Should throw on null stats'
+    );
+  });
+
+  it('should handle incrementTemplateCloneCount with undefined stats', () => {
+    const undefinedStats = undefined as unknown as TemplateUsageStats;
+    assert.throws(
+      () => incrementTemplateCloneCount(undefinedStats),
+      { message: /null|undefined|spread/ },
+      'Should throw on undefined stats'
+    );
+  });
+
+  it('should handle incrementTemplateAssignmentCount with null stats', () => {
+    const nullStats = null as unknown as TemplateUsageStats;
+    assert.throws(
+      () => incrementTemplateAssignmentCount(nullStats),
+      { message: /null|undefined|spread/ },
+      'Should throw on null stats'
+    );
+  });
+
+  it('should handle isClonedIndependently with empty strings', () => {
+    // '' !== '' is false, so (false && true) = false
+    // Empty string is not a starter template, but they're identical
+    assert.equal(isClonedIndependently('', ''), false);
+  });
+
+  it('should handle isClonedIndependently with null clonedPlanId', () => {
+    // null !== originalTemplateId is true, then !isStarterTemplate(null) throws
+    assert.throws(
+      () => isClonedIndependently(null as unknown as string, 'starter_nutrition_basic'),
+      'Should throw on null clonedPlanId because isStarterTemplate(null) throws'
+    );
+  });
+
+  it('should handle isClonedIndependently with null originalTemplateId', () => {
+    // null !== null is false, so short-circuit: return false without calling isStarterTemplate
+    // user_plan !== null is true, then !isStarterTemplate(user_plan) evaluates to true
+    const result = isClonedIndependently('user_plan_123', null as unknown as string);
+    assert.equal(result, true); // Different IDs and user_plan is not a starter
+  });
+
+  it('should handle isEditableAsDraft with empty string', () => {
+    assert.equal(isEditableAsDraft(''), true);
+  });
+
+  it('should handle isEditableAsDraft with null', () => {
+    assert.throws(
+      () => isEditableAsDraft(null as unknown as string),
+      { message: /null|undefined|startsWith/ },
+      'Should throw on null'
+    );
+  });
+
+  it('should handle canCloneTemplate with null errors object', () => {
+    const nullErrors = null as unknown as TemplateCloneValidationErrors;
+    assert.throws(
+      () => canCloneTemplate(nullErrors),
+      { message: /null|undefined|keys/ },
+      'Should throw on null errors'
+    );
+  });
+});

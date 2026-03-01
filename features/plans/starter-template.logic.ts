@@ -82,11 +82,13 @@ export function validateTemplateClone(input: TemplateCloneInput): TemplateCloneV
     errors.templateId = 'invalid_format';
   }
 
-  if (!input.newPlanName.trim()) {
+  // Safely handle undefined/null newPlanName
+  const planName = input.newPlanName ?? '';
+  if (!planName.trim()) {
     errors.newPlanName = 'required';
-  } else if (input.newPlanName.trim().length < MIN_PLAN_NAME_LENGTH) {
+  } else if (planName.trim().length < MIN_PLAN_NAME_LENGTH) {
     errors.newPlanName = 'too_short';
-  } else if (input.newPlanName.length > MAX_PLAN_NAME_LENGTH) {
+  } else if (planName.length > MAX_PLAN_NAME_LENGTH) {
     errors.newPlanName = 'too_long';
   }
 
