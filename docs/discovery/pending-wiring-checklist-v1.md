@@ -50,7 +50,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 
 ## Localization
 - `Done`: All `pro.home.*`, `pro.specialty.*`, `pro.students.*`, `pro.student_profile.*`, `pro.subscription.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts`.
-
+- `Done`: All `settings.account.*`, `meal.builder.*`, `meal.library.*`, `shared_recipe.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts` (Phase 6).
 
 - `Pending`: Wire RevenueCat entitlement checks to professional cap-sensitive actions.
 - `Pending`: Wire pre-lapse warning data source and lock transitions from live entitlement state.
@@ -72,6 +72,19 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire fatsecret food lookup to nutrition plan builder and tracking search surfaces.
 - `Pending`: Wire predefined plan library persistence and bulk-assignment orchestration APIs.
 - `Pending`: Wire water-goal ownership precedence from live assignment + nutritionist override data.
+
+## Account Settings & Custom Meal Screens (Phase 6)
+- `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.
+- `Done`: SC-214 Custom Meal Builder (`app/nutrition/custom-meals/[mealId].tsx`) implemented — create/edit form with all 7 fields, image upload stub, share CTA; Data Connect and Cloud Storage wiring deferred.
+- `Done`: SC-215 Custom Meal Library & Quick Log (`app/nutrition/custom-meals/index.tsx`) implemented — FlatList of meals, quick-log grams input with nutrition preview; Data Connect and portion-log persistence deferred.
+- `Done`: SC-216 Shared Recipe Save Confirmation (`app/shared/recipes/[shareToken].tsx`) implemented — token preview, ownership note, import; Data Connect share endpoint wiring deferred.
+- `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 4 new Phase 6 screens.
+- `Pending`: Wire Data Connect profile-delete operation into SC-213 account deletion flow.
+- `Pending`: Wire Data Connect custom-meal CRUD operations into SC-214 and SC-215 (replacing stub source layer).
+- `Pending`: Wire Data Connect share-link generation (`createMealShareLink`) and import (`importSharedMeal`, `previewSharedMeal`) endpoints into SC-214, SC-215, SC-216.
+- `Pending`: Wire Firebase Cloud Storage image upload pipeline into SC-214 image upload stub.
+- `Pending`: Wire portion-log persistence (Data Connect) into SC-215 quick-log confirm action.
+- `Pending`: Wire deep-link resume (post-auth redirect back to `/shared/recipes/:shareToken`) for unauthenticated share link recipients in SC-216.
 
 ## Media Wiring
 - `Pending`: Wire image compression + upload pipeline to Firebase Cloud Storage in production flow.

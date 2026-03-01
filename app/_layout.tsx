@@ -70,6 +70,10 @@ function RootLayoutContent() {
         <Stack.Screen name="professional/students" options={{ headerShown: true }} />
         <Stack.Screen name="professional/student-profile" options={{ headerShown: true }} />
         <Stack.Screen name="professional/subscription" options={{ headerShown: true }} />
+        <Stack.Screen name="settings/account" options={{ headerShown: true }} />
+        <Stack.Screen name="nutrition/custom-meals/index" options={{ headerShown: true }} />
+        <Stack.Screen name="nutrition/custom-meals/[mealId]" options={{ headerShown: true }} />
+        <Stack.Screen name="shared/recipes/[shareToken]" options={{ headerShown: true }} />
         <Stack.Screen
           name="modal"
           options={{ presentation: 'modal', title: t('shell.modal.title') }}
