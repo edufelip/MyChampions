@@ -102,13 +102,13 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.nutrition.empty.title` | SC-209 | Tracking empty state | No meals logged yet | Nenhuma refeição registrada ainda | TODO | |
 | `student.nutrition.empty.helper` | SC-209 | Tracking empty helper | No nutritionist connected? You can still build and track your own plan today. | Sem nutricionista conectado? Você ainda pode criar e acompanhar seu próprio plano hoje. | TODO | Must preserve optionality |
 | `student.nutrition.empty.cta` | SC-209 | Tracking empty CTA | Start my nutrition plan | Começar meu plano de nutrição | TODO | |
-| `student.hydration.card_title` | SC-203/SC-209 | Hydration summary title | Water intake | Consumo de água | TODO | BL-104 |
-| `student.hydration.progress` | SC-203/SC-209 | Hydration progress helper | {consumed} / {goal} ml | {consumido} / {meta} ml | TODO | BL-104 |
-| `student.hydration.cta_log` | SC-209 | Hydration primary action | Log water | Registrar água | TODO | BL-104 |
-| `student.hydration.cta_set_goal` | SC-209 | Hydration goal action | Set water goal | Definir meta de água | TODO | BL-104 |
-| `student.hydration.goal_owner_student` | SC-209 | Goal ownership helper | Using your personal water goal | Usando sua meta pessoal de água | TODO | BL-104 |
-| `student.hydration.goal_owner_nutritionist` | SC-209 | Goal ownership helper | Daily water goal defined by your nutritionist | Meta diária de água definida pelo seu nutricionista | TODO | BL-104 |
-| `student.hydration.streak` | SC-203/SC-209 | Streak helper | Current streak: {days} days | Sequência atual: {days} dias | TODO | BL-104 |
+| `student.hydration.card_title` | SC-203/SC-209 | Hydration summary title | Water intake | Consumo de água | Consumo de agua | BL-104 |
+| `student.hydration.progress` | SC-203/SC-209 | Hydration progress helper | {consumed} / {goal} ml | {consumido} / {meta} ml | {consumed} / {goal} ml | BL-104 |
+| `student.hydration.cta_log` | SC-209 | Hydration primary action | Log water | Registrar água | Registrar agua | BL-104 |
+| `student.hydration.cta_set_goal` | SC-209 | Hydration goal action | Set water goal | Definir meta de água | Definir objetivo de agua | BL-104 |
+| `student.hydration.goal_owner_student` | SC-209 | Goal ownership helper | Using your personal water goal | Usando sua meta pessoal de água | Usando tu objetivo personal de agua | BL-104 |
+| `student.hydration.goal_owner_nutritionist` | SC-209 | Goal ownership helper | Daily water goal defined by your nutritionist | Meta diária de água definida pelo seu nutricionista | Objetivo diario de agua definido por tu nutricionista | BL-104 |
+| `student.hydration.streak` | SC-203/SC-209 | Streak helper | Current streak: {days} days | Sequência atual: {days} dias | Racha actual: {days} días | BL-104 |
 | `student.plan_change.cta` | SC-209/SC-210 | Assigned-plan action | Request plan change | Solicitar alteração no plano | TODO | BL-005 |
 | `student.plan_change.sheet.title` | SC-209/SC-210 | Change-request sheet title | What would you like to change? | O que você gostaria de mudar? | TODO | BL-005 |
 | `student.plan_change.field.reason` | SC-209/SC-210 | Change-request input label | Explain your request | Explique sua solicitação | TODO | BL-005 |
@@ -127,9 +127,9 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.predefined_plan.bulk_assign.fine_tune_title` | SC-207/SC-208 | Fine-tune step title | Fine-tune each student plan | Ajustar o plano de cada aluno | TODO | BL-106 |
 | `pro.predefined_plan.bulk_assign.cta_finalize` | SC-207/SC-208 | Final bulk assign CTA | Confirm assignments | Confirmar atribuições | TODO | BL-106 |
 | `pro.predefined_plan.copy_independent_note` | SC-207/SC-208 | Copy isolation helper | Each student gets an independent copy. Future library edits won't change assigned plans. | Cada aluno recebe uma cópia independente. Alterações futuras na biblioteca não mudam planos já atribuídos. | TODO | BL-106 |
-| `pro.student.water_goal.section_title` | SC-206 | Professional water goal section title | Student water goal | Meta de água do aluno | TODO | BL-104 |
-| `pro.student.water_goal.field_daily_ml` | SC-206 | Professional water goal input label | Daily water goal (ml) | Meta diária de água (ml) | TODO | BL-104 |
-| `pro.student.water_goal.cta_save` | SC-206 | Professional water goal save CTA | Save water goal | Salvar meta de água | TODO | BL-104 |
+| `pro.student.water_goal.section_title` | SC-206 | Professional water goal section title | Student water goal | Meta de água do aluno | Objetivo de agua del alumno | BL-104 |
+| `pro.student.water_goal.field_daily_ml` | SC-206 | Professional water goal input label | Daily water goal (ml) | Meta diária de água (ml) | Objetivo diario de agua (ml) | BL-104 |
+| `pro.student.water_goal.cta_save` | SC-206 | Professional water goal save CTA | Save water goal | Salvar meta de água | Establecer objetivo de agua | BL-104 |
 | `custom_meal.builder.title` | SC-214 | Builder screen title | Create custom meal | Criar refeição personalizada | TODO | |
 | `custom_meal.builder.helper` | SC-214 | Builder helper text | Add total meal weight and nutrients. We use this to calculate any portion you log. | Adicione o peso total da refeição e os nutrientes. Usamos isso para calcular qualquer porção que você registrar. | TODO | |
 | `custom_meal.field.name` | SC-214 | Field label | Meal name | Nome da refeição | TODO | |

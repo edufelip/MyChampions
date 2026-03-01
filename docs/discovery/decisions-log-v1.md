@@ -124,6 +124,11 @@
 - `D-112`: Plan builder logic (validation, totals calculation, error normalization) is isolated in `features/plans/plan-builder.logic.ts` (pure functions, no Firebase deps). Data Connect CRUD operations (create/update plan, add/remove items/sessions) are stubbed in `features/plans/plan-builder-source.ts` following the existing `gql<T>()` + `PlanSourceError` pattern. React hook `features/plans/use-plan-builder.ts` adapts source for screen consumption.
 - `D-113`: Fatsecret food search is intentionally stubbed (`searchFoods` returns empty array) for SC-207 MVP; the search entry point UI is shown but wiring is deferred. Stub is tracked in `docs/discovery/pending-wiring-checklist-v1.md`.
 - `D-114`: Starter templates are returned by a stub `getStarterTemplates(planType)` in plan-builder-source; the stub returns two hardcoded template stubs per plan type. Template cloning (`cloneStarterTemplate`) is also stubbed and tracked for later Data Connect wiring.
+- `D-115`: BL-104 water tracker is implemented as embedded widgets in existing screens — no standalone route is created. Implementation surfaces:
+  - `HydrationCard` in `app/student/home.tsx` (SC-203) — compact daily hydration summary with progress and streak.
+  - `WaterWidget` in `app/student/nutrition.tsx` (SC-209) — full intake log form and personal goal form.
+  - Nutritionist override goal form in `app/professional/student-profile.tsx` (SC-206) — calls `setNutritionistWaterGoalForStudent` (stub; Data Connect wiring deferred).
+  - SC-220 documents the water tracker feature across all three surfaces.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

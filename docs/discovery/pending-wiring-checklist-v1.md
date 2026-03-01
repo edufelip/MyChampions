@@ -55,6 +55,19 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire RevenueCat entitlement checks to professional cap-sensitive actions.
 - `Pending`: Wire pre-lapse warning data source and lock transitions from live entitlement state.
 
+## Water Tracking (BL-104)
+- `Done`: `features/nutrition/water-tracking.logic.ts` — pure functions: `resolveEffectiveWaterGoal`, `resolveWaterDayStatus`, `calculateWaterStreak`, `validateWaterGoalInput`, `validateWaterIntakeInput`, `normalizeWaterTrackingError`.
+- `Done`: `features/nutrition/water-tracking.logic.test.ts` — unit tests included in 301-test suite (TC-264–TC-267).
+- `Done`: `features/nutrition/water-tracking-source.ts` — Data Connect stub surface: `getMyWaterLogs`, `logWaterIntake`, `setStudentWaterGoal`, `getMyWaterGoalContext`, `setNutritionistWaterGoalForStudent`.
+- `Done`: `features/nutrition/use-water-tracking.ts` — React hook with `idle/loading/ready/error` state machine, `logIntake`, `setGoal`, `validateGoal`, `validateIntake`.
+- `Done`: `HydrationCard` in `app/student/home.tsx` (SC-203) — wired to `useWaterTracking`; shows progress, streak, goal ownership label.
+- `Done`: `WaterWidget` in `app/student/nutrition.tsx` (SC-209) — intake log form + personal goal form wired to `useWaterTracking`.
+- `Done`: Nutritionist water goal form in `app/professional/student-profile.tsx` (SC-206) — `setNutritionistWaterGoalForStudent` wired via `useWaterTracking.setGoal`.
+- `Done`: All localization keys present in `en-US`, `pt-BR`, and `es-ES` (`student.hydration.*`, `student.home.hydration.*`, `student.nutrition.water.*`, `pro.student_profile.water_goal.*`).
+- `Done`: Screen spec created at `docs/screens/v2/SC-220-water-tracker.md`.
+- `Pending`: Wire Data Connect endpoints for water tracking (`getMyWaterLogs`, `logWaterIntake`, `setStudentWaterGoal`, `getMyWaterGoalContext`, `setNutritionistWaterGoalForStudent`) replacing stubs in `water-tracking-source.ts`.
+- `Pending`: Wire water-goal ownership precedence from live assignment + nutritionist override data (tracked in Food/Plan/Data Wiring section below).
+
 ## Food/Plan/Data Wiring
 - `In progress`: Implement Firebase Data Connect profile connector contract (`getMyProfile`, `upsertUserProfile`, `setLockedRole`) and switch auth route-guard profile source to Data Connect.
   - Done: App-side profile source abstraction created in `features/auth/profile-source.ts` and integrated into auth session provider.
