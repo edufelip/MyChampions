@@ -67,6 +67,20 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire `lastSyncedAtIso` from real data-layer sync timestamps (currently `null` — stale indicator never shown). Deferred until Data Connect cache layer is implemented.
 - `Pending`: Wire offline banner + write-lock into remaining screens not yet wired: `pro/students.tsx`, `pro/student-profile.tsx`, `pro/specialty.tsx`, `pro/pending.tsx`, `pro/subscription.tsx`, `settings/account.tsx`, `nutrition/custom-meals/index.tsx`, `nutrition/custom-meals/[mealId].tsx`, `shared/recipes/[shareToken].tsx`.
 
+## Professional Pending Queue Tools (BL-004)
+- `Done`: `features/connections/pending-queue.logic.ts` — pure functions: `filterPendingQueue`, `canBulkDeny`, `validateBulkDeny`, `buildBulkDenyConfirmationMessage`, `formatSearchResultsSummary`. Supports search by student UID, specialty filtering, and bulk deny validation.
+- `Done`: `features/connections/pending-queue.logic.test.ts` — comprehensive unit tests (26 tests, TC-257, TC-258) covering filter combinations, bulk deny validation, confirmation messaging, and edge cases.
+- `Done`: `app/professional/pending.tsx` (SC-204/SC-205) — Pending connection queue fully wired with:
+  * Search bar filtering by student ID (substring match, case-insensitive)
+  * Row-based selection for bulk operations
+  * Individual confirm/deny actions per pending request
+  * Bulk deny with confirmation alert showing count and specialty distribution
+  * Optimistic removal after successful bulk deny
+  * Error handling with retry CTA
+  * Empty state and loading indicators
+- `Done`: All `pro.pending.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (`search.placeholder`, `filter.label`, `bulk_deny.cta`, `bulk_deny.confirm_title`, `bulk_deny.confirm_body`, `bulk_deny.success`, `confirm.cta`, `deny.cta`, `empty`, `error`).
+- `Pending`: Wire `confirmConnection` and `unbindConnection` source methods to real Data Connect connector endpoints (currently using connection-source stubs).
+
 ## Plan Change Request Flow (BL-005)
 - `Done`: `features/plans/plan-change-request.logic.ts` — pure functions: `validatePlanChangeRequestInput`, `normalizePlanChangeRequestStatus`, `normalizePlanType`, `normalizePlanChangeRequestError`. Unit tests in `plan-change-request.logic.test.ts` (11 tests, TC-259).
 - `Done`: `features/plans/plan-source.ts` — Data Connect stub surface: `submitPlanChangeRequest`, `reviewPlanChangeRequest`, `getStudentPlanChangeRequests`.
