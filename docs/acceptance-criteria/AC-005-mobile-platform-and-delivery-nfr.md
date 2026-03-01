@@ -9,7 +9,7 @@ Mobile platform constraints and delivery workflow without EAS dependency.
 - `AC-503`: Mobile UI utility-class styling is implemented with NativeWind in MVP.
 - `AC-504`: Release branch iOS builds are distributed through TestFlight.
 - `AC-505`: Pull requests targeting `develop` trigger QA distribution to Firebase App Distribution.
-- `AC-506`: Image/media uploads are client-compressed before upload to Supabase Storage.
+- `AC-506`: Image/media uploads are client-compressed before upload to Firebase Cloud Storage.
 - `AC-507`: Runtime monitoring in MVP uses Crashlytics for crashes/ANRs.
 - `AC-508`: Additional non-crash monitoring tooling is not required for MVP.
 - `AC-509`: OTA updates are disabled in MVP and production updates are shipped only through App Store/Play binaries.
@@ -17,6 +17,7 @@ Mobile platform constraints and delivery workflow without EAS dependency.
 - `AC-511`: Post-compression uploads enforce `<= 1.5 MB` file size and `<= 1600 px` longest-side dimension.
 - `AC-512`: Core screens meet accessibility baseline for contrast, dynamic text scaling, focus order, and screen-reader labels.
 - `AC-513`: User-facing strings use localization keys with populated values for `en-US`, `pt-BR`, and `es-ES` in release-candidate builds.
+- `AC-514`: Detox E2E suite is configured for iOS simulator and Android emulator builds, and includes auth sign-in smoke scenarios (empty-submit validation + success route to role-selection).
 
 ## Gherkin Scenarios
 ```gherkin
@@ -68,4 +69,10 @@ Feature: Mobile platform and delivery constraints
     Given release-candidate build strings are prepared
     When localization table and runtime resource bundles are validated
     Then all user-facing keys have populated values for en-US, pt-BR, and es-ES
+
+  Scenario: Detox auth smoke coverage
+    Given Detox config and native build profiles are available for iOS and Android
+    When the auth smoke suite runs
+    Then empty sign-in submission shows required-field validation errors
+    And valid credential submission routes the user to role-selection screen
 ```

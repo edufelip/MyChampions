@@ -25,6 +25,63 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Firebase auth config
+
+Auth flow (email/password, Google, Apple) is wired to Firebase Auth and reads keys from `app.json`:
+
+```json
+{
+  "expo": {
+    "extra": {
+      "firebase": {
+        "apiKey": "...",
+        "authDomain": "...",
+        "projectId": "...",
+        "storageBucket": "...",
+        "messagingSenderId": "...",
+        "appId": "...",
+        "iosClientId": "...",
+        "androidClientId": "...",
+        "webClientId": "..."
+      }
+    }
+  }
+}
+```
+
+Replace all `REPLACE_ME` values before testing auth providers.
+
+## Testing
+
+1. Unit tests
+
+   ```bash
+   npm run test:unit
+   ```
+
+2. E2E (Detox) iOS
+
+   ```bash
+   npm run test:e2e:build:ios
+   npm run test:e2e:ios
+   ```
+
+3. E2E (Detox) Android
+
+   ```bash
+   npm run test:e2e:build:android
+   npm run test:e2e:android
+   ```
+
+4. E2E debug variants (optional)
+
+   ```bash
+   npm run test:e2e:build:ios:debug
+   npm run test:e2e:ios:debug
+   npm run test:e2e:build:android:debug
+   npm run test:e2e:android:debug
+   ```
+
 ## Get a fresh project
 
 When you're ready, run:

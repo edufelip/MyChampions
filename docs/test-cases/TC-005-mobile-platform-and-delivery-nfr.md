@@ -17,6 +17,7 @@
 | TC-511 | Post-Compression Upload Limits | User selects oversized image | Run compression and pre-upload validation | Upload blocked if file remains > 1.5 MB or longest side > 1600 px; valid compressed media uploads successfully |
 | TC-512 | Accessibility Baseline Validation | Core screens implemented with baseline a11y support | Run contrast/text-scaling/screen-reader/focus-order checks on core screens | Core screens pass baseline accessibility checks without blocking issues |
 | TC-513 | Localization Baseline Completeness | Localization resources prepared for release-candidate build | Validate user-facing string keys across locale bundles | Every key has populated values in en-US, pt-BR, and es-ES |
+| TC-514 | Detox Auth Smoke Suite | Detox config, native projects, and simulator/emulator tooling available | Build app with Detox profile and run `auth-sign-in` E2E spec | Empty submit surfaces required-field errors; valid sign-in navigates to role-selection; suite passes on configured device profile |
 
 ## Notes
 - Add Android Play-track distribution tests if Android store automation is added before MVP freeze.

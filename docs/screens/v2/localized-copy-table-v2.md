@@ -20,34 +20,51 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 
 | Key | Screen | Context | en-US | pt-BR | es-ES | Notes |
 |---|---|---|---|---|---|---|
-| `auth.role.title` | SC-201 | Role selection header | How do you want to use the app? | Como você quer usar o app? | TODO | First-time onboarding |
-| `auth.role.intro` | SC-201 | Role selection helper | You can start on your own now and connect with a professional later. | Você pode começar por conta própria agora e se conectar com um profissional depois. | TODO | Must preserve optionality message |
-| `auth.role.option_self.title` | SC-201 | Student role card | I want to track my own progress | Quero acompanhar meu próprio progresso | TODO | Plain-language label |
-| `auth.role.option_self.subtitle` | SC-201 | Student role card subtitle | Log meals and workouts by yourself. No professional required. | Registre refeições e treinos por conta própria. Nenhum profissional é necessário. | TODO | Critical clarity copy |
-| `auth.role.option_pro.title` | SC-201 | Professional role card | I'm a nutritionist or fitness coach | Sou nutricionista ou treinador físico | TODO | Use ASCII apostrophe |
-| `auth.role.option_pro.subtitle` | SC-201 | Professional role card subtitle | Manage clients, assign plans, and track student progress. | Gerencie clientes, atribua planos e acompanhe o progresso dos alunos. | TODO | |
-| `auth.role.lock_note` | SC-201 | Role immutability helper | Account type can't be changed later. You can create another account with a different email if needed. | O tipo de conta não pode ser alterado depois. Você pode criar outra conta com outro e-mail, se precisar. | TODO | Role immutability disclosure |
-| `auth.role.cta_continue` | SC-201 | Primary CTA | Continue | Continuar | TODO | |
-| `auth.role.cta_back` | SC-201 | Secondary CTA | Back | Voltar | TODO | |
-| `auth.role.cta_start_self_guided` | SC-201 | Quick self-guided CTA | Start on my own now | Começar por conta própria agora | TODO | BL-001 |
-| `auth.signin.title` | SC-217 | Sign-in header | Welcome back | Que bom ter você de volta | TODO | |
-| `auth.signin.cta_primary` | SC-217 | Primary CTA | Sign in | Entrar | TODO | |
-| `auth.signin.cta_create` | SC-217 | Secondary CTA | Create account | Criar conta | TODO | |
-| `auth.signin.or_continue` | SC-217 | Social auth divider | or continue with | ou continue com | TODO | |
-| `auth.signin.error.invalid_credentials` | SC-217 | Sign-in error message | Email or password is incorrect. Try again or reset your password. | E-mail ou senha incorretos. Tente novamente ou redefina sua senha. | TODO | BL-010 |
-| `auth.signin.error.network` | SC-217 | Sign-in error message | Couldn't connect right now. Check your connection and try again. | Não foi possível conectar agora. Verifique sua conexão e tente novamente. | TODO | BL-010 |
-| `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | TODO | |
-| `auth.signup.field.name` | SC-218 | Name label | Full name | Nome completo | TODO | |
-| `auth.signup.field.email` | SC-218 | Email label | Email | E-mail | TODO | |
-| `auth.signup.field.password` | SC-218 | Password label | Password | Senha | TODO | |
-| `auth.signup.field.password_confirm` | SC-218 | Password confirm label | Confirm password | Confirmar senha | TODO | |
-| `auth.signup.password_helper` | SC-218 | Password rule helper | Use at least 8 characters, including uppercase, number, and a symbol (e.g., ! @ #). | Use pelo menos 8 caracteres, com letra maiúscula, número e um símbolo (ex.: ! @ #). | TODO | |
-| `auth.signup.validation.password_policy` | SC-218 | Password validation message | Password must include at least 8 characters, 1 uppercase letter, 1 number, and 1 symbol (e.g., ! @ #). | A senha deve ter pelo menos 8 caracteres, 1 letra maiúscula, 1 número e 1 símbolo (ex.: ! @ #). | TODO | |
-| `auth.signup.validation.no_emoji` | SC-218 | Password validation message | Password cannot contain emoji. | A senha não pode conter emoji. | TODO | |
-| `auth.signup.validation.password_mismatch` | SC-218 | Password mismatch message | Password confirmation does not match. | A confirmação de senha não confere. | TODO | |
-| `auth.signup.validation.email_exists` | SC-218 | Duplicate email message | This email is already in use. Sign in to continue. | Este e-mail já está em uso. Faça login para continuar. | TODO | |
-| `auth.password.toggle_show` | SC-217/SC-218 | Password visibility toggle | Show password | Mostrar senha | TODO | Accessibility and clarity |
-| `auth.password.toggle_hide` | SC-217/SC-218 | Password visibility toggle | Hide password | Ocultar senha | TODO | Accessibility and clarity |
+| `auth.role.title` | SC-201 | Role selection header | How do you want to use the app? | Como você quer usar o app? | ¿Cómo quieres usar la app? | First-time onboarding |
+| `auth.role.intro` | SC-201 | Role selection helper | You can start on your own now and connect with a professional later. | Você pode começar por conta própria agora e se conectar com um profissional depois. | Puedes empezar por tu cuenta ahora y conectarte con un profesional después. | Must preserve optionality message |
+| `auth.role.option_self.title` | SC-201 | Student role card | I want to track my own progress | Quero acompanhar meu próprio progresso | Quiero seguir mi propio progreso | Plain-language label |
+| `auth.role.option_self.subtitle` | SC-201 | Student role card subtitle | Log meals and workouts by yourself. No professional required. | Registre refeições e treinos por conta própria. Nenhum profissional é necessário. | Registra comidas y entrenamientos por tu cuenta. No necesitas un profesional. | Critical clarity copy |
+| `auth.role.option_pro.title` | SC-201 | Professional role card | I'm a nutritionist or fitness coach | Sou nutricionista ou treinador físico | Soy nutricionista o entrenador físico | Use ASCII apostrophe |
+| `auth.role.option_pro.subtitle` | SC-201 | Professional role card subtitle | Manage clients, assign plans, and track student progress. | Gerencie clientes, atribua planos e acompanhe o progresso dos alunos. | Gestiona clientes, asigna planes y sigue el progreso de tus alumnos. | |
+| `auth.role.lock_note` | SC-201 | Role immutability helper | Account type can't be changed later. You can create another account with a different email if needed. | O tipo de conta não pode ser alterado depois. Você pode criar outra conta com outro e-mail, se precisar. | El tipo de cuenta no se puede cambiar después. Puedes crear otra cuenta con otro correo si lo necesitas. | Role immutability disclosure |
+| `auth.role.cta_continue` | SC-201 | Primary CTA | Continue | Continuar | Continuar | |
+| `auth.role.cta_back` | SC-201 | Secondary CTA | Back | Voltar | Volver | |
+| `auth.role.cta_start_self_guided` | SC-201 | Quick self-guided CTA | Start on my own now | Começar por conta própria agora | Empezar por mi cuenta ahora | BL-001 |
+| `auth.role.validation.required` | SC-201 | Required validation message | Choose how you want to use the app to continue. | Escolha como quer usar o app para continuar. | Elige cómo quieres usar la app para continuar. | |
+| `auth.role.error.save_failed` | SC-201 | Role save failure message | Could not save your role right now. Try again. | Não foi possível salvar seu perfil agora. Tente novamente. | No se pudo guardar tu perfil ahora. Inténtalo de nuevo. | Data Connect profile write failure |
+| `auth.signin.title` | SC-217 | Sign-in header | Welcome back | Que bom ter você de volta | Bienvenido de nuevo | |
+| `auth.signin.cta_primary` | SC-217 | Primary CTA | Sign in | Entrar | Iniciar sesión | |
+| `auth.signin.cta_create` | SC-217 | Secondary CTA | Create account | Criar conta | Crear cuenta | |
+| `auth.signin.or_continue` | SC-217 | Social auth divider | or continue with | ou continue com | o continuar con | |
+| `auth.signin.error.invalid_credentials` | SC-217 | Sign-in error message | Email or password is incorrect. Try again or reset your password. | E-mail ou senha incorretos. Tente novamente ou redefina sua senha. | El correo o la contraseña son incorrectos. Inténtalo de nuevo o restablece tu contraseña. | BL-010 |
+| `auth.signin.error.network` | SC-217 | Sign-in error message | Couldn't connect right now. Check your connection and try again. | Não foi possível conectar agora. Verifique sua conexão e tente novamente. | No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo. | BL-010 |
+| `auth.signin.error.provider_conflict` | SC-217 | Sign-in provider conflict | This email is already linked to another sign-in method. Sign in with your existing method first. | Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado. | Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método. | BL-010 |
+| `auth.signin.error.configuration` | SC-217 | Sign-in configuration error | Authentication is not configured yet. Set Firebase keys and try again. | A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente. | La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo. | |
+| `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | Crea tu cuenta | |
+| `auth.field.name` | SC-218 | Name label | Name | Nome | Nombre | Shared auth field label |
+| `auth.field.email` | SC-217/SC-218 | Email label | Email | E-mail | Correo electrónico | Shared auth field label |
+| `auth.field.password` | SC-217/SC-218 | Password label | Password | Senha | Contraseña | Shared auth field label |
+| `auth.field.password_confirmation` | SC-218 | Password confirm label | Confirm password | Confirmar senha | Confirmar contraseña | |
+| `auth.placeholder.name` | SC-218 | Name placeholder | Full name | Nome completo | Nombre completo | |
+| `auth.placeholder.email` | SC-217/SC-218 | Email placeholder | Email | E-mail | Correo electrónico | Shared auth placeholder |
+| `auth.placeholder.password` | SC-217/SC-218 | Password placeholder | Password | Senha | Contraseña | Shared auth placeholder |
+| `auth.placeholder.password_confirmation` | SC-218 | Password confirmation placeholder | Confirm password | Confirmar senha | Confirmar contraseña | |
+| `auth.signup.cta_primary` | SC-218 | Primary CTA | Create account | Criar conta | Crear cuenta | |
+| `auth.signup.or_continue` | SC-218 | Social auth divider | or continue with | ou continue com | o continuar con | |
+| `auth.signup.password_helper` | SC-218 | Password rule helper | Use at least 8 characters, including uppercase, number, and a symbol (e.g., ! @ #). | Use pelo menos 8 caracteres, incluindo maiúscula, número e símbolo (ex.: ! @ #). | Usa al menos 8 caracteres, incluyendo mayúscula, número y símbolo (ej.: ! @ #). | |
+| `auth.validation.name_required` | SC-218 | Required validation message | Name is required. | Nome é obrigatório. | El nombre es obligatorio. | |
+| `auth.validation.email_required` | SC-217/SC-218 | Required validation message | Email is required. | E-mail é obrigatório. | El correo es obligatorio. | |
+| `auth.validation.password_required` | SC-217/SC-218 | Required validation message | Password is required. | Senha é obrigatória. | La contraseña es obligatoria. | |
+| `auth.validation.password_confirmation_required` | SC-218 | Required validation message | Password confirmation is required. | A confirmação de senha é obrigatória. | La confirmación de contraseña es obligatoria. | |
+| `auth.validation.password_policy` | SC-218 | Password validation message | Use at least 8 characters with uppercase, number, and an ASCII symbol (e.g., ! @ #). Emoji are not allowed. | Use pelo menos 8 caracteres com letra maiúscula, número e símbolo ASCII (ex.: ! @ #). Emoji não é permitido. | Usa al menos 8 caracteres con mayúscula, número y símbolo ASCII (ej.: ! @ #). No se permiten emojis. | |
+| `auth.validation.password_confirmation_mismatch` | SC-218 | Password mismatch message | Password confirmation must match your password. | A confirmação de senha deve ser igual à senha. | La confirmación debe coincidir con tu contraseña. | |
+| `auth.signup.error.duplicate_email` | SC-218 | Duplicate email message | This email is already in use. Sign in to continue. | Este e-mail já está em uso. Entre para continuar. | Este correo ya está en uso. Inicia sesión para continuar. | BL-010 |
+| `auth.signup.error.network` | SC-218 | Sign-up network error message | Couldn't connect right now. Check your connection and try again. | Não foi possível conectar agora. Verifique sua conexão e tente novamente. | No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo. | BL-010 |
+| `auth.signup.error.provider_conflict` | SC-218 | Sign-up provider conflict | This email is already linked to another sign-in method. Sign in with your existing method first. | Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado. | Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método. | BL-010 |
+| `auth.signup.error.configuration` | SC-218 | Sign-up configuration error | Authentication is not configured yet. Set Firebase keys and try again. | A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente. | La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo. | |
+| `auth.signup.cta_back_signin` | SC-218 | Back-to-sign-in CTA | Back to sign in | Voltar para entrar | Volver a iniciar sesión | |
+| `auth.password.toggle_show` | SC-217/SC-218 | Password visibility toggle | Show password | Mostrar senha | Mostrar contraseña | Accessibility and clarity |
+| `auth.password.toggle_hide` | SC-217/SC-218 | Password visibility toggle | Hide password | Ocultar senha | Ocultar contraseña | Accessibility and clarity |
 | `student.home.no_pro.title` | SC-203 | Empty-state card title | No professional connected yet | Nenhum profissional conectado ainda | TODO | |
 | `student.home.no_pro.body` | SC-203 | Empty-state card helper | You can still start tracking today on your own. | Você ainda pode começar a acompanhar hoje por conta própria. | TODO | Non-blocking tone |
 | `student.home.cta_start_nutrition` | SC-203 | Empty-state CTA | Start my nutrition plan | Começar meu plano de nutrição | TODO | |

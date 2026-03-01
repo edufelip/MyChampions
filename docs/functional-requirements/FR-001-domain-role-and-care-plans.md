@@ -106,7 +106,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-194`: Tailwind-style UI implementation in React Native shall use NativeWind for MVP.
 - `FR-195`: iOS QA distribution on release branches shall publish builds through TestFlight.
 - `FR-196`: Pull requests targeting `develop` shall publish QA builds through Firebase App Distribution.
-- `FR-197`: Image/media uploads shall apply mandatory client-side compression before sending to Supabase Storage.
+- `FR-197`: Image/media uploads shall apply mandatory client-side compression before sending to Firebase Cloud Storage.
 - `FR-198`: Runtime stability monitoring in MVP shall use Firebase Crashlytics for crashes and ANRs.
 - `FR-199`: Non-crash monitoring tooling (for example Sentry) is out of MVP scope.
 - `FR-200`: MVP update delivery shall be store-only (App Store / Play Store binaries) with no OTA update channel.
@@ -137,6 +137,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-225`: Bulk assignment flow shall support per-student fine-tuning before finalizing assigned plan copies.
 - `FR-226`: Assigned plans created from predefined templates (single or bulk) shall be independent per-student copies to avoid unintended cross-student mutation from later edits.
 - `FR-227`: All user-facing product strings shall be localized for `en-US`, `pt-BR`, and `es-ES`.
+- `FR-228`: The project shall maintain Detox-based end-to-end smoke coverage for critical user journeys (at minimum auth entry validation and successful sign-in routing) as part of the testing routine.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

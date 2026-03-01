@@ -54,11 +54,18 @@
 - Duplicate email error: `This email is already in use. Sign in to continue.`
 
 ## Implementation Snapshot (2026-02-28)
-- Route scaffold is present in code:
+- Implemented in code:
   - `app/auth/create-account.tsx`
+  - `features/auth/create-account.logic.ts`
+  - `features/auth/create-account.logic.test.ts`
 - Current implementation status:
-  - Placeholder screen only (navigation path exists).
-  - Full create-account form, validation rules, and provider wiring are pending next implementation slice.
+  - Full create-account form is implemented with localized fields for `name`, `email`, `password`, and `password_confirmation`.
+  - Password and password-confirmation reveal/hide toggles are implemented.
+  - Validation rules are enforced in tested domain logic (`required`, password policy, no emoji, ASCII symbol, password confirmation match).
+  - Contextual submit error mapping is implemented for `duplicate_email`, `network`, `provider_conflict`, and `configuration`.
+  - Email/password sign-up is wired to Firebase Auth.
+  - Google and Apple social auth are wired to Firebase Auth credentials.
+  - Successful sign-up is driven by Firebase Auth session state for route-guard enforcement.
 
 ## Links
 - Functional requirement: FR-101, FR-163, FR-164, FR-165, FR-166, FR-167, FR-168, FR-169, FR-171, FR-172, FR-182, FR-190, FR-205, FR-206, FR-207, FR-208, FR-217

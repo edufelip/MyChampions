@@ -52,16 +52,16 @@
 - `D-047`: Offline cached content stale policy uses 24-hour TTL with stale indicator + last-sync timestamp while preserving read-only access.
 - `D-048`: Mobile client stack is React Native with Expo.
 - `D-049`: Build/release pipeline must not depend on EAS services; Android/iOS native packages and CI/CD are managed independently.
-- `D-050`: Backend platform baseline is Supabase (Postgres, Auth, Storage).
-- `D-051`: Social authentication is implemented through Supabase Auth providers.
+- `D-050`: Backend platform baseline is Firebase (Auth, Data Connect, Cloud Storage).
+- `D-051`: Social authentication is implemented through Firebase Auth providers.
 - `D-052`: Firebase Crashlytics is mandatory for production crash monitoring.
-- `D-053`: User-uploaded media (including recipe images) is stored in Supabase Storage.
+- `D-053`: User-uploaded media (including recipe images) is stored in Firebase Cloud Storage.
 - `D-054`: UI stack for MVP uses NativeWind (Tailwind-style React Native styling).
 - `D-055`: Native projects (`ios/`, `android/`) are committed from day 1 after a single `expo prebuild`, and are then maintained directly without recurring prebuild regeneration.
 - `D-056`: QA distribution strategy:
   - Release branches distribute iOS builds via TestFlight.
   - Pull requests into `develop` distribute builds via Firebase App Distribution.
-- `D-057`: Client-side media compression is mandatory before upload to Supabase Storage.
+- `D-057`: Client-side media compression is mandatory before upload to Firebase Cloud Storage.
 - `D-058`: Non-crash monitoring tooling (for example Sentry) is out of MVP; Crashlytics is used for crashes/ANRs only.
 - `D-059`: MVP update delivery strategy is store-only (no OTA channel).
 - `D-060`: CI signing strategy uses platform-native secret management.
@@ -89,6 +89,24 @@
 - `D-082`: Bulk-assigned plans are independent per-student copies; later edits to source predefined plans do not mutate already assigned student plans.
 - `D-083`: Deferred technical wiring tasks must be tracked in `docs/discovery/pending-wiring-checklist-v1.md` and resolved before release hardening.
 - `D-084`: Product localization baseline requires all user-facing strings to be provided for `en-US`, `pt-BR`, and `es-ES`.
+- `D-085`: Detox is the E2E framework baseline; auth smoke scenarios are part of the test-oriented development routine for mobile flows.
+- `D-086`: Create-account UI and validation are implemented; email/password sign-up is wired through Firebase Auth.
+- `D-087`: Role-selection UI and quick self-guided entry are implemented before role-lock persistence/session wiring; selected role currently routes to role-specific placeholder destinations.
+- `D-088`: Route-guard enforcement is implemented with Firebase Auth session state for authentication and Data Connect-backed role profile source-of-truth.
+- `D-089`: Legacy backend-provider references are deprecated in project planning artifacts and replaced by Firebase equivalents; backend migration tracking is maintained in `docs/discovery/backend-provider-migration-v1.md`.
+- `D-090`: Auth entry providers (email/password, Google, Apple) are wired to Firebase Auth; provider-conflict handling is best-effort and role-lock profile persistence remains pending Data Connect wiring.
+- `D-091`: Native Firebase config selection follows environment-aware wiring:
+  - Android uses `dev`/`production` product flavors with flavor-specific `google-services.json` files under `android/app/src/<flavor>/`.
+  - iOS selects `GoogleService-Info-Dev.plist` vs `GoogleService-Info-Prod.plist`/`GoogleService-Info.plist` via Xcode build phase using `EXPO_PUBLIC_ENV` with configuration fallback.
+- `D-092`: CI/CD workflow baseline is inherited from `meer` and adapted to `my-champions`:
+  - Workflows cover Android/iOS PR checks, Firebase App Distribution for `develop`, and release-branch distribution pipelines.
+  - This project standardizes JS dependency installation in CI with `npm ci` (not `yarn`).
+- `D-093`: CI/CD secret names and requirements are governed by `docs/discovery/ci-secrets-matrix-v1.md`; workflow secret changes must update that document in the same change.
+- `D-094`: CI/CD bootstrap/validation execution should be tracked through issue template `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` for operational consistency.
+- `D-095`: Primary database model is Firebase Data Connect (Cloud SQL-backed); new persistence planning must not introduce Firestore as the primary domain database.
+- `D-096`: Data Connect integration contract source-of-truth is `docs/specs/firebase-data-connect-integration-spec.md`; connector surface changes must update this spec in the same change.
+- `D-097`: Auth role-lock persistence uses Data Connect profile-source abstraction with remote-only reads/writes; no local role-lock fallback path remains.
+- `D-098`: Live Data Connect profile operation compatibility is validated through `npm run validate:data-connect:profile` against environment endpoint + auth token.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

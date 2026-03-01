@@ -62,7 +62,7 @@
 - `BR-256`: QA distribution policy is branch-driven:
   - Release branches publish to TestFlight.
   - Pull requests into `develop` publish to Firebase App Distribution.
-- `BR-257`: Client-side compression is required before any image/media upload to Supabase Storage.
+- `BR-257`: Client-side compression is required before any image/media upload to Firebase Cloud Storage.
 - `BR-258`: Production monitoring scope in MVP includes Firebase Crashlytics (crashes + ANRs) and excludes additional non-crash error-monitoring platforms.
 - `BR-259`: Release updates in MVP are delivered only through App Store/Play Store binaries; OTA update channels are disabled.
 - `BR-260`: Signing assets are managed via platform-native CI secret management rather than centralized Fastlane certificate stores.
@@ -90,6 +90,7 @@
 - `BR-282`: Bulk assignment clones predefined plans into per-student copies; later edits to source predefined plan do not retroactively mutate already assigned student copies.
 - `BR-283`: Bulk assignment flow must allow per-student fine-tuning before final assignment confirmation.
 - `BR-284`: Localization baseline requires every user-facing string key to have `en-US`, `pt-BR`, and `es-ES` values before release readiness.
+- `BR-285`: Critical journey screens covered by Detox smoke tests must expose stable `testID` selectors; selector changes require synchronized updates in E2E tests in the same change.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

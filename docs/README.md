@@ -18,6 +18,8 @@ This repository uses a documentation-first workflow.
 - `docs/diagrams/`: Mermaid diagrams and architecture illustrations.
 - `docs/discovery/`: open questions, decisions, and unresolved assumptions.
   - Includes `pending-wiring-checklist-v1.md` for intentionally deferred implementation wiring tasks.
+  - Includes `backend-provider-migration-v1.md` to track backend provider migration touchpoints across planning artifacts.
+  - Includes `ci-secrets-matrix-v1.md` as CI/CD secret source-of-truth for GitHub workflows.
 - `docs/compliance/`: release policy baselines and store/privacy controls.
 - `docs/templates/`: reusable templates for new documentation entries.
 

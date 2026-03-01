@@ -56,9 +56,11 @@
 - Current implemented behavior:
   - Email/password inputs with non-empty validation.
   - Password reveal/hide control.
-  - Contextual error copy mapping for `invalid_credentials` and `network`.
-  - Social buttons currently route to role-selection placeholder until provider wiring lands.
-  - Email/password sign-in uses temporary deterministic stub outcomes (`invalid@example.com`, `network@example.com`) pending backend auth integration.
+  - Contextual error copy mapping for `invalid_credentials`, `network`, `provider_conflict`, and `configuration`.
+  - Email/password sign-in is wired to Firebase Auth.
+  - Google and Apple social sign-in are wired to Firebase Auth credentials.
+  - Successful sign-in is driven by Firebase Auth session state for route-guard enforcement.
+  - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes.
 
 ## Links
 - Functional requirement: FR-101, FR-163, FR-164, FR-169, FR-171, FR-172, FR-173, FR-182, FR-205, FR-206, FR-207, FR-208, FR-217

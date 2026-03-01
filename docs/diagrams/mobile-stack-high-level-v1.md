@@ -4,9 +4,9 @@
 flowchart LR
   U[Student / Professional User] --> A[Expo React Native App]
 
-  A --> B[Supabase Auth]
-  A --> C[Supabase Postgres + RLS]
-  A --> D[Supabase Storage]
+  A --> B[Firebase Auth]
+  A --> C[Firebase Data Connect + Cloud SQL]
+  A --> D[Firebase Cloud Storage]
   A --> E[fatsecret API]
   A --> F[RevenueCat]
   A --> G[Firebase Crashlytics]

@@ -50,6 +50,12 @@ Whenever behavior changes, update all impacted artifacts:
 - Diagrams: `docs/diagrams/`
 - Decisions/backlog mapping: `docs/discovery/`
 
+## Backend Provider Tracking
+- Current backend baseline is Firebase (`Auth`, `Cloud Firestore`, `Cloud Storage`).
+- Track backend-provider migration references in:
+  - `docs/discovery/backend-provider-migration-v1.md`
+- If a document introduces backend provider terminology, ensure it is consistent with Firebase baseline or explicitly marked as deprecated legacy context.
+
 ## Deferred Wiring Policy
 - If wiring is intentionally deferred, add/update an entry in:
   - `docs/discovery/pending-wiring-checklist-v1.md`

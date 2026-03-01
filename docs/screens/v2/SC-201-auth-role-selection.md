@@ -44,11 +44,16 @@
 - Quick self-guided CTA: `Start on my own now`
 
 ## Implementation Snapshot (2026-02-28)
-- Route scaffold is present in code:
+- Implemented in code:
   - `app/auth/role-selection.tsx`
+  - `features/auth/role-selection.logic.ts`
+  - `features/auth/role-selection.logic.test.ts`
 - Current implementation status:
-  - Placeholder screen only (navigation path exists from sign-in).
-  - Full role-card UX, role lock persistence, and quick self-guided action implementation are pending next implementation slice.
+  - Full role-card UX is implemented with student/professional options, role-lock helper copy, and required-selection validation.
+  - Quick self-guided action is implemented, commits `student` role lock through auth profile source abstraction, and routes to student home placeholder destination.
+  - Continue action commits selected role lock through auth profile source abstraction and routes role-specific placeholder destinations for student/professional paths.
+  - Route auto-bypass for locked-role accounts is enforced by global auth guard in `app/_layout.tsx`.
+  - Authentication session source is Firebase Auth; role-lock profile source is now Data Connect-backed via `features/auth/profile-source.ts` (remote-only reads/writes).
 
 ## Data Contract
 - Inputs:
