@@ -16,7 +16,7 @@
  * Refs: D-043, D-100, FR-106–108, FR-121, FR-123–125, FR-130–131, FR-185, FR-211
  *       BR-203–205, BR-213, BR-215–217, BR-222–223, BR-247, BR-269, BR-278–279
  */
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -33,6 +33,8 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
 import { validateWaterGoalInput } from '@/features/nutrition/water-tracking.logic';
+import { usePlans } from '@/features/plans/use-plans';
+import type { PlanChangeRequest } from '@/features/plans/plan-change-request.logic';
 import {
   resolveSubscriptionState,
   isPlanUpdateLocked,
@@ -66,10 +68,32 @@ export default function ProfessionalStudentProfileScreen() {
   });
   const isWriteLocked = isPlanUpdateLocked(subState);
 
+  // Plan change requests — loaded from professional context for this student.
+  const { getChangeRequestsForStudent, reviewChangeRequest } = usePlans(currentUser);
+  const [changeRequests, setChangeRequests] = useState<PlanChangeRequest[]>([]);
+  const [changeRequestsLoadError, setChangeRequestsLoadError] = useState<string | null>(null);
+  const [changeRequestsActionError, setChangeRequestsActionError] = useState<string | null>(null);
+
   // Water tracking for student — stubbed: student user not available in this context;
   // real wiring will pass student's user context from source layer.
   const today = new Date().toISOString().slice(0, 10);
   const { state: waterState, setGoal } = useWaterTracking(currentUser, today);
+
+  // Load change requests for this student on mount
+  const loadChangeRequests = useCallback(async () => {
+    if (!studentId) return;
+    setChangeRequestsLoadError(null);
+    const result = await getChangeRequestsForStudent(studentId);
+    if ('data' in result) {
+      setChangeRequests(result.data);
+    } else {
+      setChangeRequestsLoadError(t('pro.student_profile.plan_change_requests.load_error') as string);
+    }
+  }, [getChangeRequestsForStudent, studentId, t]);
+
+  useEffect(() => {
+    void loadChangeRequests();
+  }, [loadChangeRequests]);
 
   // Water goal form
   const [goalInput, setGoalInput] = useState('');
@@ -82,6 +106,22 @@ export default function ProfessionalStudentProfileScreen() {
   const [trainingStatus] = useState<AssignmentStatus>('none');
 
   // ── Handlers ───────────────────────────────────────────────────────────────
+
+  async function handleReviewChangeRequest(
+    requestId: string,
+    action: 'reviewed' | 'dismissed'
+  ) {
+    setChangeRequestsActionError(null);
+    const err = await reviewChangeRequest(requestId, action);
+    if (err) {
+      setChangeRequestsActionError(
+        t('pro.student_profile.plan_change_requests.action_error') as string
+      );
+    } else {
+      // Optimistically remove reviewed/dismissed request from list
+      setChangeRequests((prev) => prev.filter((r) => r.id !== requestId));
+    }
+  }
 
   function confirmUnbind() {
     Alert.alert(
@@ -184,7 +224,16 @@ export default function ProfessionalStudentProfileScreen() {
       ) : null}
 
       {/* Plan change requests */}
-      <PlanChangeRequestsCard palette={palette} t={t} />
+      <PlanChangeRequestsCard
+        requests={changeRequests}
+        loadError={changeRequestsLoadError}
+        actionError={changeRequestsActionError}
+        isWriteLocked={isWriteLocked}
+        palette={palette}
+        t={t}
+        onReview={(id: string) => { void handleReviewChangeRequest(id, 'reviewed'); }}
+        onDismiss={(id: string) => { void handleReviewChangeRequest(id, 'dismissed'); }}
+      />
 
       {/* Water goal section — only if nutrition assignment is active */}
       {nutritionStatus === 'active' ? (
@@ -243,10 +292,25 @@ function AssignmentCard({
 
 // ─── Plan Change Requests Card ────────────────────────────────────────────────
 
-function PlanChangeRequestsCard({ palette, t }: { palette: Palette; t: TFn }) {
-  // Stub: real request list from professional-source (deferred)
-  const requests: never[] = [];
-
+function PlanChangeRequestsCard({
+  requests,
+  loadError,
+  actionError,
+  isWriteLocked,
+  palette,
+  t,
+  onReview,
+  onDismiss,
+}: {
+  requests: PlanChangeRequest[];
+  loadError: string | null;
+  actionError: string | null;
+  isWriteLocked: boolean;
+  palette: Palette;
+  t: TFn;
+  onReview: (id: string) => void;
+  onDismiss: (id: string) => void;
+}) {
   return (
     <View
       style={[styles.card, { borderColor: palette.icon + '44' }]}
@@ -255,10 +319,62 @@ function PlanChangeRequestsCard({ palette, t }: { palette: Palette; t: TFn }) {
         {t('pro.student_profile.plan_change_requests.title')}
       </Text>
 
-      {requests.length === 0 ? (
+      {loadError ? (
+        <View accessibilityLiveRegion="polite">
+          <Text
+            style={[styles.errorText, { color: '#b3261e' }]}
+            testID="pro.student_profile.planChangeRequests.loadError">
+            {loadError}
+          </Text>
+        </View>
+      ) : requests.length === 0 ? (
         <Text style={[styles.meta, { color: palette.icon }]}>
           {t('pro.student_profile.plan_change_requests.empty')}
         </Text>
+      ) : (
+        requests.map((req) => (
+          <View
+            key={req.id}
+            style={[styles.requestRow, { borderColor: palette.icon + '33' }]}
+            testID={`pro.student_profile.planChangeRequest.${req.id}`}>
+            <Text style={[styles.requestText, { color: palette.text }]}>{req.requestText}</Text>
+            <Text style={[styles.meta, { color: palette.icon }]}>
+              {req.planType} · {req.status}
+            </Text>
+            {!isWriteLocked ? (
+              <View style={styles.requestActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onReview(req.id)}
+                  style={[styles.actionButton, { borderColor: palette.tint }]}
+                  testID={`pro.student_profile.planChangeRequest.${req.id}.review`}>
+                  <Text style={[styles.actionButtonText, { color: palette.tint }]}>
+                    {t('pro.student_profile.plan_change_requests.review')}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onDismiss(req.id)}
+                  style={[styles.actionButton, { borderColor: palette.icon }]}
+                  testID={`pro.student_profile.planChangeRequest.${req.id}.dismiss`}>
+                  <Text style={[styles.actionButtonText, { color: palette.icon }]}>
+                    {t('pro.student_profile.plan_change_requests.dismiss')}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        ))
+      )}
+
+      {actionError ? (
+        <View accessibilityLiveRegion="polite">
+          <Text
+            style={[styles.errorText, { color: '#b3261e' }]}
+            testID="pro.student_profile.planChangeRequests.actionError">
+            {actionError}
+          </Text>
+        </View>
       ) : null}
     </View>
   );
@@ -381,4 +497,32 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   destructiveButtonText: { fontSize: 15, fontWeight: '600' },
+  requestRow: {
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+    padding: 10,
+  },
+  requestText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  requestActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  actionButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 36,
+    paddingHorizontal: 10,
+  },
+  actionButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
 });

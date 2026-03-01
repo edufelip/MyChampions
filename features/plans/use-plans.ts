@@ -13,6 +13,7 @@ import {
   bulkAssignPredefinedPlan,
   submitPlanChangeRequest,
   reviewPlanChangeRequest,
+  getStudentPlanChangeRequests,
   type Plan,
   type PredefinedPlan,
 } from './plan-source';
@@ -47,6 +48,9 @@ export type UsePlansResult = {
     requestId: string,
     action: 'reviewed' | 'dismissed'
   ) => Promise<PlanChangeRequestErrorReason | null>;
+  getChangeRequestsForStudent: (
+    studentUid: string
+  ) => Promise<{ data: PlanChangeRequest[] } | { error: PlanChangeRequestErrorReason }>;
   bulkAssign: (
     predefinedPlanId: string,
     studentUids: string[]
@@ -117,6 +121,22 @@ export function usePlans(user: User | null): UsePlansResult {
     [user]
   );
 
+  const getChangeRequestsForStudent = useCallback(
+    async (
+      studentUid: string
+    ): Promise<{ data: PlanChangeRequest[] } | { error: PlanChangeRequestErrorReason }> => {
+      if (!user) return { error: 'unknown' };
+
+      try {
+        const data = await getStudentPlanChangeRequests(user, studentUid);
+        return { data };
+      } catch (err) {
+        return { error: normalizePlanChangeRequestError(err) };
+      }
+    },
+    [user]
+  );
+
   const bulkAssign = useCallback(
     async (
       predefinedPlanId: string,
@@ -141,6 +161,7 @@ export function usePlans(user: User | null): UsePlansResult {
     validateChangeRequest,
     submitChangeRequest,
     reviewChangeRequest,
+    getChangeRequestsForStudent,
     bulkAssign,
   };
 }

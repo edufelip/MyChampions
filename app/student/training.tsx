@@ -178,8 +178,8 @@ function PlanChangeRequestForm({
     if (errors.requestText) {
       setFieldError(
         errors.requestText === 'required'
-          ? t('student.nutrition.plan_change.validation.required')
-          : t('student.nutrition.plan_change.validation.too_short')
+          ? t('student.training.plan_change.validation.required')
+          : t('student.training.plan_change.validation.too_short')
       );
       return;
     }
@@ -196,7 +196,19 @@ function PlanChangeRequestForm({
       setRequestText('');
       setSuccessMsg(t('student.training.plan_change.success'));
     } else {
-      setFieldError(t('student.training.plan_change.error.unknown'));
+      switch (result.error) {
+        case 'plan_not_found':
+          setFieldError(t('student.training.plan_change.error.plan_not_found'));
+          break;
+        case 'no_active_assignment':
+          setFieldError(t('student.training.plan_change.error.no_active_assignment'));
+          break;
+        case 'network':
+          setFieldError(t('student.training.plan_change.error.network'));
+          break;
+        default:
+          setFieldError(t('student.training.plan_change.error.unknown'));
+      }
     }
   };
 

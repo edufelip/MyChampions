@@ -336,6 +336,69 @@ export async function submitPlanChangeRequest(
 }
 
 /**
+ * Returns all plan change requests submitted by a given student.
+ * Called from professional context to triage requests in SC-206.
+ * Advisory only — does not grant plan-edit rights (D-071, BR-269).
+ */
+export async function getStudentPlanChangeRequests(
+  user: User,
+  studentUid: string
+): Promise<PlanChangeRequest[]> {
+  const query = `
+    query GetStudentPlanChangeRequests($student_uid: String!) {
+      getStudentPlanChangeRequests(student_uid: $student_uid) {
+        id
+        plan_id
+        plan_type
+        student_uid
+        request_text
+        status
+        created_at
+      }
+    }
+  `;
+
+  const data = await gql<{
+    getStudentPlanChangeRequests?: Array<{
+      id?: string | null;
+      plan_id?: string | null;
+      plan_type?: string | null;
+      student_uid?: string | null;
+      request_text?: string | null;
+      status?: string | null;
+      created_at?: string | null;
+    }> | null;
+  }>(user, query, { student_uid: studentUid });
+
+  return (data.getStudentPlanChangeRequests ?? []).flatMap((raw) => {
+    const planType = normalizePlanType(raw.plan_type);
+    const status = normalizePlanChangeRequestStatus(raw.status);
+    if (
+      !raw.id ||
+      !raw.plan_id ||
+      !planType ||
+      !raw.student_uid ||
+      !raw.request_text ||
+      !status ||
+      !raw.created_at
+    ) {
+      return [];
+    }
+    return [
+      {
+        id: raw.id,
+        planId: raw.plan_id,
+        planType,
+        studentUid: raw.student_uid,
+        requestText: raw.request_text,
+        status,
+        createdAt: raw.created_at,
+      } satisfies PlanChangeRequest,
+    ];
+  });
+}
+
+/**
  * Professional reviews (or dismisses) a plan change request.
  * Advisory only — does not modify the plan (D-071).
  */
