@@ -139,7 +139,11 @@ export default function ProfessionalSpecialtyScreen() {
 
       {/* Loading */}
       {state.kind === 'loading' ? (
-        <ActivityIndicator testID="pro.specialty.loading" style={styles.centered} />
+        <ActivityIndicator
+          testID="pro.specialty.loading"
+          style={styles.centered}
+          accessibilityLabel={t('a11y.loading.default') as string}
+        />
       ) : null}
 
       {/* Error */}
@@ -153,9 +157,11 @@ export default function ProfessionalSpecialtyScreen() {
 
       {/* Action error */}
       {actionError ? (
-        <Text style={[styles.errorText, { color: '#b3261e' }]} testID="pro.specialty.actionError">
-          {actionError}
-        </Text>
+        <View accessibilityLiveRegion="polite">
+          <Text style={[styles.errorText, { color: '#b3261e' }]} testID="pro.specialty.actionError">
+            {actionError}
+          </Text>
+        </View>
       ) : null}
 
       {/* Empty */}
@@ -368,12 +374,14 @@ function CredentialForm({
       />
 
       {error ? (
-        <Text style={[styles.errorText, { color: '#b3261e' }]}>{error}</Text>
+        <View accessibilityLiveRegion="polite">
+          <Text style={[styles.errorText, { color: '#b3261e' }]}>{error}</Text>
+        </View>
       ) : null}
 
       <View style={styles.row}>
         {isSaving ? (
-          <ActivityIndicator />
+          <ActivityIndicator accessibilityLabel={t('a11y.loading.saving') as string} />
         ) : (
           <Pressable
             accessibilityRole="button"

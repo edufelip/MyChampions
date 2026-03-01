@@ -233,7 +233,8 @@ function AssignmentCard({
   return (
     <View
       style={[styles.card, { borderColor: palette.icon + '44' }]}
-      testID={`${testID}.assignmentCard`}>
+      testID={`${testID}.assignmentCard`}
+      accessibilityLabel={`${specialtyLabel}: ${statusLabel as string}`}>
       <Text style={[styles.cardTitle, { color: palette.text }]}>{specialtyLabel}</Text>
       <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
     </View>
@@ -310,7 +311,9 @@ function WaterGoalCard({
       />
 
       {goalError ? (
-        <Text style={[styles.errorText, { color: '#b3261e' }]}>{goalError}</Text>
+        <View accessibilityLiveRegion="polite">
+          <Text style={[styles.errorText, { color: '#b3261e' }]}>{goalError}</Text>
+        </View>
       ) : null}
 
       {isWriteLocked ? (
@@ -318,7 +321,7 @@ function WaterGoalCard({
           {t('offline.write_lock')}
         </Text>
       ) : isSaving ? (
-        <ActivityIndicator />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.saving') as string} />
       ) : (
         <Pressable
           accessibilityRole="button"

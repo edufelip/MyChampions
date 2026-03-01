@@ -452,4 +452,11 @@ export const esES: Record<TranslationKey, string> = {
   'shared_recipe.error.unknown': 'Algo salió mal. Inténtalo de nuevo.',
   'shared_recipe.error.save': 'No se pudo guardar la receta. Inténtalo de nuevo.',
   'shared_recipe.success': 'Receta guardada en tu cuenta.',
+  'a11y.loading.default': 'Cargando…',
+  'a11y.loading.submitting': 'Enviando…',
+  'a11y.loading.saving': 'Guardando…',
+  'a11y.loading.invite_code': 'Cargando código de invitación…',
+  'a11y.selected_count': '{count} seleccionado(s)',
+  'a11y.student_row': '{name}, {specialty}, {status}',
+  'a11y.stat_card': '{value} {label}',
 };

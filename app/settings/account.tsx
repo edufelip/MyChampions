@@ -142,11 +142,13 @@ export default function AccountSettingsScreen() {
         ) : (
           <>
             {errorMessage ? (
-              <Text
-                style={[styles.errorText, { color: '#b3261e' }]}
-                testID="settings.account.deleteError">
-                {errorMessage}
-              </Text>
+              <View accessibilityLiveRegion="polite">
+                <Text
+                  style={[styles.errorText, { color: '#b3261e' }]}
+                  testID="settings.account.deleteError">
+                  {errorMessage}
+                </Text>
+              </View>
             ) : null}
             <Pressable
               accessibilityRole="button"

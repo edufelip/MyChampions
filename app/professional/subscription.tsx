@@ -91,9 +91,16 @@ export default function ProfessionalSubscriptionScreen() {
         </Text>
 
         {isLoading ? (
-          <ActivityIndicator testID="pro.subscription.loading" />
+          <ActivityIndicator
+            testID="pro.subscription.loading"
+            accessibilityLabel={t('a11y.loading.default') as string}
+          />
         ) : (
-          <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
+          <Text
+            style={[styles.statusBadge, { color: statusColor }]}
+            accessibilityLabel={`${t('pro.subscription.title') as string}: ${statusLabel as string}`}>
+            {statusLabel}
+          </Text>
         )}
 
         <Text style={[styles.meta, { color: palette.icon }]}>{capLabel}</Text>

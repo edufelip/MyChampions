@@ -138,7 +138,7 @@ export default function ProfessionalPendingScreen() {
       {selectedIds.size > 0 ? (
         <View style={styles.bulkBar}>
           <Text style={[styles.bulkCount, { color: palette.text }]}>
-            {selectedIds.size} selected
+            {(t('a11y.selected_count') as string).replace('{count}', String(selectedIds.size))}
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -147,7 +147,10 @@ export default function ProfessionalPendingScreen() {
             style={[styles.bulkDenyButton, { borderColor: '#b3261e' }]}
             testID="pro.pending.bulkDenyButton">
             {isBulkDenying ? (
-              <ActivityIndicator color="#b3261e" />
+              <ActivityIndicator
+                color="#b3261e"
+                accessibilityLabel={t('a11y.loading.submitting') as string}
+              />
             ) : (
               <Text style={[styles.bulkDenyText]}>{t('pro.pending.bulk_deny.cta')}</Text>
             )}
@@ -157,7 +160,11 @@ export default function ProfessionalPendingScreen() {
 
       {/* ── List ─────────────────────────────────────────────── */}
       {state.kind === 'loading' ? (
-        <ActivityIndicator style={styles.centered} testID="pro.pending.loading" />
+        <ActivityIndicator
+          style={styles.centered}
+          testID="pro.pending.loading"
+          accessibilityLabel={t('a11y.loading.default') as string}
+        />
       ) : state.kind === 'error' ? (
         <View style={styles.centered}>
           <Text style={[styles.bodyText, { color: palette.text }]}>
@@ -235,7 +242,9 @@ function PendingRow({
         style={[
           styles.checkbox,
           { borderColor: isSelected ? palette.tint : palette.icon },
-        ]}>
+        ]}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isSelected }}>
         {isSelected ? <View style={[styles.checkboxFill, { backgroundColor: palette.tint }]} /> : null}
       </View>
 

@@ -189,7 +189,10 @@ export default function ProfessionalHomeScreen() {
         </Text>
 
         {codeState.kind === 'loading' ? (
-          <ActivityIndicator testID="pro.home.inviteCodeLoading" />
+          <ActivityIndicator
+            testID="pro.home.inviteCodeLoading"
+            accessibilityLabel={t('a11y.loading.invite_code') as string}
+          />
         ) : codeState.kind === 'ready' ? (
           <>
             {codeValue ? (
@@ -308,7 +311,10 @@ function StatCard({
   testID: string;
 }) {
   return (
-    <View style={[styles.statCard, { borderColor: palette.icon + '44' }]} testID={testID}>
+    <View
+      style={[styles.statCard, { borderColor: palette.icon + '44' }]}
+      testID={testID}
+      accessibilityLabel={`${value} ${label}`}>
       <Text style={[styles.statValue, { color: palette.tint }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: palette.icon }]}>{label}</Text>
     </View>

@@ -151,22 +151,28 @@ export default function StudentProfessionalsScreen() {
           ]}
           testID="student.professionals.connectButton">
           {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#fff" />
           ) : (
             <Text style={styles.connectButtonText}>{t('relationship.cta_submit_code')}</Text>
           )}
         </Pressable>
       </View>
 
-      {submitError ? (
-        <Text style={styles.inlineError} testID="student.professionals.submitError">
-          {submitError}
-        </Text>
-      ) : null}
+      <View accessibilityLiveRegion="polite">
+        {submitError ? (
+          <Text style={styles.inlineError} testID="student.professionals.submitError">
+            {submitError}
+          </Text>
+        ) : null}
+      </View>
 
       {/* ── Connection list ───────────────────────────────────── */}
       {state.kind === 'loading' ? (
-        <ActivityIndicator style={styles.centered} testID="student.professionals.loading" />
+        <ActivityIndicator
+          accessibilityLabel={t('a11y.loading.default')}
+          style={styles.centered}
+          testID="student.professionals.loading"
+        />
       ) : state.kind === 'error' ? (
         <View style={styles.centered}>
           <Text style={[styles.errorText, { color: palette.text }]}>
@@ -246,7 +252,9 @@ function ConnectionCard({
           {t('relationship.pending.helper')}
         </Text>
       ) : displayState.kind === 'canceled_code_rotated' ? (
-        <Text style={[styles.cardStatus, { color: '#b3261e' }]}>
+        <Text
+          accessibilityRole="alert"
+          style={[styles.cardStatus, { color: '#b3261e' }]}>
           {t('relationship.pending.canceled_code_rotated')}
         </Text>
       ) : displayState.kind === 'active' ? (

@@ -101,7 +101,11 @@ export default function ProfessionalStudentsScreen() {
 
       {/* List */}
       {isLoading ? (
-        <ActivityIndicator style={styles.centered} testID="pro.students.loading" />
+        <ActivityIndicator
+          style={styles.centered}
+          testID="pro.students.loading"
+          accessibilityLabel={t('a11y.loading.default') as string}
+        />
       ) : (
         <FlatList
           data={visible}
@@ -212,6 +216,12 @@ function StudentRowItem({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={
+        (t('a11y.student_row') as string)
+          .replace('{name}', student.displayName)
+          .replace('{specialty}', specialtyLabel as string)
+          .replace('{status}', statusLabel as string)
+      }
       onPress={onPress}
       style={[styles.row, { borderColor: palette.icon + '33' }]}
       testID={`pro.students.row.${student.id}`}>

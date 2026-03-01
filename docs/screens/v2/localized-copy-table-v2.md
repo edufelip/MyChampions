@@ -189,6 +189,14 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `common.loading.default` | Common | Generic loading text | Loading... | Carregando... | TODO | Shared utility string |
 | `common.empty.no_data` | Common | Generic empty text | Nothing here yet. | Ainda não há nada aqui. | TODO | Use only when screen-specific copy is unavailable |
 
+| `a11y.loading.default` | Global | SR loading label | Loading… | Carregando… | Cargando… | |
+| `a11y.loading.submitting` | Global | SR submit loading label | Submitting… | Enviando… | Enviando… | |
+| `a11y.loading.saving` | Global | SR save loading label | Saving… | Salvando… | Guardando… | |
+| `a11y.loading.invite_code` | SC-204 | SR invite code loading | Loading invite code… | Carregando código de convite… | Cargando código de invitación… | |
+| `a11y.selected_count` | SC-pending | SR bulk selection count | {count} selected | {count} selecionado(s) | {count} seleccionado(s) | Replaces hardcoded string in pending.tsx |
+| `a11y.student_row` | SC-205 | SR student row label | {name}, {specialty}, {status} | {name}, {specialty}, {status} | {name}, {specialty}, {status} | Combines name+specialty+status for SR |
+| `a11y.stat_card` | SC-204 | SR stat card label | {value} {label} | {value} {label} | {value} {label} | Combines value+label for stat cards |
+
 ## Notes
 - Replace `TODO` translations after localization review.
 - Keep this file aligned with screen specs and implementation keys.

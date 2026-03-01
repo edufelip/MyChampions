@@ -184,11 +184,13 @@ export default function SignInScreen() {
             testID="auth.signIn.emailInput"
             value={email}
           />
-          {errors.email ? (
-            <Text style={styles.inlineError} testID="auth.signIn.error.emailRequired">
-              {t(errors.email)}
-            </Text>
-          ) : null}
+          <View accessibilityLiveRegion="polite">
+            {errors.email ? (
+              <Text style={styles.inlineError} testID="auth.signIn.error.emailRequired">
+                {t(errors.email)}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.formSection}>
@@ -210,6 +212,7 @@ export default function SignInScreen() {
               accessibilityLabel={
                 showPassword ? t('auth.password.toggle_hide') : t('auth.password.toggle_show')
               }
+              accessibilityRole="button"
               onPress={() => setShowPassword((current) => !current)}
               testID="auth.signIn.passwordToggle"
               style={[styles.passwordToggle, { borderColor: palette.icon }]}>
@@ -218,18 +221,22 @@ export default function SignInScreen() {
               </Text>
             </Pressable>
           </View>
-          {errors.password ? (
-            <Text style={styles.inlineError} testID="auth.signIn.error.passwordRequired">
-              {t(errors.password)}
+          <View accessibilityLiveRegion="polite">
+            {errors.password ? (
+              <Text style={styles.inlineError} testID="auth.signIn.error.passwordRequired">
+                {t(errors.password)}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        <View accessibilityRole="alert">
+          {submitError ? (
+            <Text style={styles.submitError} testID="auth.signIn.error.submit">
+              {t(submitError)}
             </Text>
           ) : null}
         </View>
-
-        {submitError ? (
-          <Text style={styles.submitError} testID="auth.signIn.error.submit">
-            {t(submitError)}
-          </Text>
-        ) : null}
 
         <Pressable
           accessibilityRole="button"
@@ -244,7 +251,10 @@ export default function SignInScreen() {
             },
           ]}>
           {submitting ? (
-            <ActivityIndicator color={colorScheme === 'dark' ? '#11181C' : '#ffffff'} />
+            <ActivityIndicator
+              accessibilityLabel={t('a11y.loading.submitting')}
+              color={colorScheme === 'dark' ? '#11181C' : '#ffffff'}
+            />
           ) : (
             <Text style={styles.primaryButtonText}>{t('auth.signin.cta_primary')}</Text>
           )}

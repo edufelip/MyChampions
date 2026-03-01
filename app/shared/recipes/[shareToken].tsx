@@ -128,7 +128,10 @@ export default function SharedRecipeSaveScreen() {
 
       {screenState.kind === 'loading' ? (
         <View style={styles.center} testID="shared_recipe.loading">
-          <ActivityIndicator size="large" />
+          <ActivityIndicator
+            size="large"
+            accessibilityLabel={t('a11y.loading.default') as string}
+          />
         </View>
       ) : screenState.kind === 'error' ? (
         <ErrorView reason={screenState.reason} palette={palette} t={t} />
@@ -174,7 +177,7 @@ function ErrorView({
         : t('shared_recipe.error.unknown');
 
   return (
-    <View style={styles.center} testID="shared_recipe.error">
+    <View style={styles.center} testID="shared_recipe.error" accessibilityRole="alert">
       <Text style={[styles.errorText, { color: '#b3261e' }]}>{message}</Text>
     </View>
   );
@@ -240,16 +243,21 @@ function PreviewView({
 
       {/* Save error */}
       {saveError ? (
-        <Text
-          style={[styles.saveErrorText, { color: '#b3261e' }]}
-          testID="shared_recipe.saveError">
-          {saveError}
-        </Text>
+        <View accessibilityLiveRegion="polite">
+          <Text
+            style={[styles.saveErrorText, { color: '#b3261e' }]}
+            testID="shared_recipe.saveError">
+            {saveError}
+          </Text>
+        </View>
       ) : null}
 
       {/* CTAs */}
       {isSaving ? (
-        <ActivityIndicator testID="shared_recipe.savingIndicator" />
+        <ActivityIndicator
+          testID="shared_recipe.savingIndicator"
+          accessibilityLabel={t('a11y.loading.saving') as string}
+        />
       ) : (
         <Pressable
           accessibilityRole="button"

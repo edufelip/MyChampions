@@ -1,6 +1,6 @@
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, Fonts } from '@/constants/theme';
 import {
@@ -62,7 +62,10 @@ export default function RoleSelectionScreen() {
   const isProfessionalSelected = selectedRole === 'professional';
 
   return (
-    <View style={[styles.container, { backgroundColor: palette.background }]} testID="auth.roleSelection.screen">
+    <ScrollView
+      contentContainerStyle={[styles.container, { backgroundColor: palette.background }]}
+      style={{ backgroundColor: palette.background }}
+      testID="auth.roleSelection.screen">
       <Stack.Screen options={{ title: t('auth.role.title'), headerShown: false }} />
 
       <Text style={[styles.title, { color: palette.text }]} testID="auth.roleSelection.title">
@@ -72,6 +75,7 @@ export default function RoleSelectionScreen() {
 
       <Pressable
         accessibilityRole="button"
+        accessibilityState={{ selected: isStudentSelected }}
         onPress={() => {
           setSelectedRole('student');
           setRoleError(null);
@@ -89,6 +93,7 @@ export default function RoleSelectionScreen() {
 
       <Pressable
         accessibilityRole="button"
+        accessibilityState={{ selected: isProfessionalSelected }}
         onPress={() => {
           setSelectedRole('professional');
           setRoleError(null);
@@ -106,11 +111,13 @@ export default function RoleSelectionScreen() {
 
       <Text style={[styles.lockNote, { color: palette.icon }]}>{t('auth.role.lock_note')}</Text>
 
-      {roleError ? (
-        <Text style={styles.inlineError} testID="auth.roleSelection.error.roleRequired">
-          {t(roleError)}
-        </Text>
-      ) : null}
+      <View accessibilityLiveRegion="polite">
+        {roleError ? (
+          <Text style={styles.inlineError} testID="auth.roleSelection.error.roleRequired">
+            {t(roleError)}
+          </Text>
+        ) : null}
+      </View>
 
       <Pressable
         accessibilityRole="button"
@@ -145,16 +152,17 @@ export default function RoleSelectionScreen() {
           {t('auth.role.cta_back')}
         </Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 80,
+    paddingBottom: 40,
     gap: 16,
   },
   title: {

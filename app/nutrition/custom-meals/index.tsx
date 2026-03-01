@@ -123,7 +123,10 @@ export default function CustomMealLibraryScreen() {
 
       {state.kind === 'loading' ? (
         <View style={styles.center}>
-          <ActivityIndicator testID="meal.library.loading" />
+          <ActivityIndicator
+            testID="meal.library.loading"
+            accessibilityLabel={t('a11y.loading.default') as string}
+          />
         </View>
       ) : state.kind === 'error' ? (
         <View style={styles.center} testID="meal.library.error">
@@ -243,6 +246,7 @@ function MealRow({
       <View style={styles.mealActions}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={`${t('meal.library.quick_log.cta_log') as string} ${meal.name}`}
           onPress={onLog}
           style={[styles.smallButton, { backgroundColor: palette.tint }]}
           testID={`meal.library.row.${meal.id}.log`}>
@@ -250,6 +254,7 @@ function MealRow({
         </Pressable>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={`${t('meal.library.cta_edit') as string} ${meal.name}`}
           onPress={onEdit}
           style={[styles.ghostAction]}
           testID={`meal.library.row.${meal.id}.edit`}>
@@ -259,6 +264,7 @@ function MealRow({
         </Pressable>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={`${t('meal.library.cta_share') as string} ${meal.name}`}
           onPress={onShare}
           style={[styles.ghostAction]}
           testID={`meal.library.row.${meal.id}.share`}>
@@ -341,12 +347,15 @@ function QuickLogPanel({
         onChangeText={onChangeGrams}
         keyboardType="decimal-pad"
         autoFocus
+        accessibilityLabel={t('meal.library.quick_log.field.label') as string}
         testID="meal.library.quickLog.input"
       />
       {error ? (
-        <Text style={[styles.fieldError, { color: '#b3261e' }]} testID="meal.library.quickLog.error">
-          {error}
-        </Text>
+        <View accessibilityLiveRegion="polite">
+          <Text style={[styles.fieldError, { color: '#b3261e' }]} testID="meal.library.quickLog.error">
+            {error}
+          </Text>
+        </View>
       ) : null}
 
       {/* Nutrition preview */}
@@ -359,7 +368,7 @@ function QuickLogPanel({
 
       <View style={styles.panelActions}>
         {isLogging ? (
-          <ActivityIndicator />
+          <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting') as string} />
         ) : (
           <Pressable
             accessibilityRole="button"

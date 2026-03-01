@@ -443,4 +443,11 @@ export const ptBR: Record<TranslationKey, string> = {
   'shared_recipe.error.unknown': 'Algo deu errado. Tente novamente.',
   'shared_recipe.error.save': 'Não foi possível salvar a receita. Tente novamente.',
   'shared_recipe.success': 'Receita salva na sua conta.',
+  'a11y.loading.default': 'Carregando…',
+  'a11y.loading.submitting': 'Enviando…',
+  'a11y.loading.saving': 'Salvando…',
+  'a11y.loading.invite_code': 'Carregando código de convite…',
+  'a11y.selected_count': '{count} selecionado(s)',
+  'a11y.student_row': '{name}, {specialty}, {status}',
+  'a11y.stat_card': '{value} {label}',
 };

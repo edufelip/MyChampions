@@ -99,7 +99,11 @@ export default function StudentNutritionScreen() {
 
       {/* ── Nutrition plan area ───────────────────────────── */}
       {plansState.kind === 'loading' ? (
-        <ActivityIndicator style={styles.centered} testID="student.nutrition.plansLoading" />
+        <ActivityIndicator
+          accessibilityLabel={t('a11y.loading.default')}
+          style={styles.centered}
+          testID="student.nutrition.plansLoading"
+        />
       ) : hasActiveNutritionAssignment ? (
         <>
           {/* Assigned plan: read-only notice + change request */}
@@ -253,7 +257,7 @@ function WaterWidget({
       </Text>
 
       {state.kind === 'loading' ? (
-        <ActivityIndicator />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} />
       ) : state.kind === 'ready' ? (
         <>
           {progressText ? (
@@ -301,7 +305,7 @@ function WaterWidget({
                 ]}
                 testID="student.nutrition.waterWidget.logButton">
                 {isLoggingIntake ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#fff" />
                 ) : (
                   <Text style={styles.inlineButtonText}>
                     {t('student.nutrition.water.cta_log')}
@@ -312,7 +316,9 @@ function WaterWidget({
           ) : null}
 
           {intakeError ? (
-            <Text style={styles.inlineError}>{intakeError}</Text>
+            <View accessibilityLiveRegion="polite">
+              <Text style={styles.inlineError}>{intakeError}</Text>
+            </View>
           ) : null}
 
           {/* Set personal goal row — hidden when nutritionist owns goal */}
@@ -350,7 +356,7 @@ function WaterWidget({
                 ]}
                 testID="student.nutrition.waterWidget.setGoalButton">
                 {isSettingGoal ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#fff" />
                 ) : (
                   <Text style={styles.inlineButtonText}>
                     {t('student.nutrition.water.cta_set_goal')}
@@ -361,7 +367,9 @@ function WaterWidget({
           ) : null}
 
           {goalError ? (
-            <Text style={styles.inlineError}>{goalError}</Text>
+            <View accessibilityLiveRegion="polite">
+              <Text style={styles.inlineError}>{goalError}</Text>
+            </View>
           ) : null}
 
           {isWriteLocked ? (
@@ -498,19 +506,23 @@ function PlanChangeRequestForm({
           />
 
           {fieldError ? (
-            <Text
-              style={styles.inlineError}
-              testID={`student.${planType}.planChangeForm.error`}>
-              {fieldError}
-            </Text>
+            <View accessibilityLiveRegion="polite">
+              <Text
+                style={styles.inlineError}
+                testID={`student.${planType}.planChangeForm.error`}>
+                {fieldError}
+              </Text>
+            </View>
           ) : null}
 
           {successMsg ? (
-            <Text
-              style={[styles.successText, { color: palette.tint }]}
-              testID={`student.${planType}.planChangeForm.success`}>
-              {successMsg}
-            </Text>
+            <View accessibilityLiveRegion="polite">
+              <Text
+                style={[styles.successText, { color: palette.tint }]}
+                testID={`student.${planType}.planChangeForm.success`}>
+                {successMsg}
+              </Text>
+            </View>
           ) : null}
 
           <Pressable
@@ -525,7 +537,7 @@ function PlanChangeRequestForm({
             ]}
             testID={`student.${planType}.planChangeForm.submitButton`}>
             {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#fff" />
             ) : (
               <Text style={styles.primaryButtonText}>{t(ctaKey)}</Text>
             )}

@@ -130,7 +130,11 @@ export default function StudentHomeScreen() {
 
       {/* ── Global loading indicator ──────────────────────── */}
       {isLoading ? (
-        <ActivityIndicator style={styles.centered} testID="student.home.loading" />
+        <ActivityIndicator
+          accessibilityLabel={t('a11y.loading.default')}
+          style={styles.centered}
+          testID="student.home.loading"
+        />
       ) : null}
 
       {/* ── Hydration card ───────────────────────────────── */}
@@ -258,7 +262,7 @@ function HydrationCard({
       </Text>
 
       {waterState.kind === 'loading' ? (
-        <ActivityIndicator />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} />
       ) : waterState.kind === 'ready' ? (
         <>
           {progressLabel ? (

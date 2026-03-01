@@ -187,11 +187,13 @@ export default function CreateAccountScreen() {
             testID="auth.createAccount.nameInput"
             value={name}
           />
-          {errors.name ? (
-            <Text style={styles.inlineError} testID="auth.createAccount.error.nameRequired">
-              {t(errors.name)}
-            </Text>
-          ) : null}
+          <View accessibilityLiveRegion="polite">
+            {errors.name ? (
+              <Text style={styles.inlineError} testID="auth.createAccount.error.nameRequired">
+                {t(errors.name)}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.formSection}>
@@ -208,11 +210,13 @@ export default function CreateAccountScreen() {
             testID="auth.createAccount.emailInput"
             value={email}
           />
-          {errors.email ? (
-            <Text style={styles.inlineError} testID="auth.createAccount.error.emailRequired">
-              {t(errors.email)}
-            </Text>
-          ) : null}
+          <View accessibilityLiveRegion="polite">
+            {errors.email ? (
+              <Text style={styles.inlineError} testID="auth.createAccount.error.emailRequired">
+                {t(errors.email)}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.formSection}>
@@ -234,6 +238,7 @@ export default function CreateAccountScreen() {
               accessibilityLabel={
                 showPassword ? t('auth.password.toggle_hide') : t('auth.password.toggle_show')
               }
+              accessibilityRole="button"
               onPress={() => setShowPassword((current) => !current)}
               style={[styles.passwordToggle, { borderColor: palette.icon }]}
               testID="auth.createAccount.passwordToggle">
@@ -243,11 +248,13 @@ export default function CreateAccountScreen() {
             </Pressable>
           </View>
           <Text style={[styles.helperText, { color: palette.icon }]}>{t('auth.signup.password_helper')}</Text>
-          {errors.password ? (
-            <Text style={styles.inlineError} testID="auth.createAccount.error.password">
-              {t(errors.password)}
-            </Text>
-          ) : null}
+          <View accessibilityLiveRegion="polite">
+            {errors.password ? (
+              <Text style={styles.inlineError} testID="auth.createAccount.error.password">
+                {t(errors.password)}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.formSection}>
@@ -273,6 +280,7 @@ export default function CreateAccountScreen() {
                   ? t('auth.password.toggle_hide')
                   : t('auth.password.toggle_show')
               }
+              accessibilityRole="button"
               onPress={() => setShowPasswordConfirmation((current) => !current)}
               style={[styles.passwordToggle, { borderColor: palette.icon }]}
               testID="auth.createAccount.passwordConfirmationToggle">
@@ -283,18 +291,22 @@ export default function CreateAccountScreen() {
               </Text>
             </Pressable>
           </View>
-          {errors.passwordConfirmation ? (
-            <Text style={styles.inlineError} testID="auth.createAccount.error.passwordConfirmation">
-              {t(errors.passwordConfirmation)}
+          <View accessibilityLiveRegion="polite">
+            {errors.passwordConfirmation ? (
+              <Text style={styles.inlineError} testID="auth.createAccount.error.passwordConfirmation">
+                {t(errors.passwordConfirmation)}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        <View accessibilityRole="alert">
+          {submitError ? (
+            <Text style={styles.submitError} testID="auth.createAccount.error.submit">
+              {t(submitError)}
             </Text>
           ) : null}
         </View>
-
-        {submitError ? (
-          <Text style={styles.submitError} testID="auth.createAccount.error.submit">
-            {t(submitError)}
-          </Text>
-        ) : null}
 
         <Pressable
           accessibilityRole="button"
@@ -309,7 +321,10 @@ export default function CreateAccountScreen() {
           ]}
           testID="auth.createAccount.submitButton">
           {submitting ? (
-            <ActivityIndicator color={colorScheme === 'dark' ? '#11181C' : '#ffffff'} />
+            <ActivityIndicator
+              accessibilityLabel={t('a11y.loading.submitting')}
+              color={colorScheme === 'dark' ? '#11181C' : '#ffffff'}
+            />
           ) : (
             <Text style={styles.primaryButtonText}>{t('auth.signup.cta_primary')}</Text>
           )}

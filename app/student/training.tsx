@@ -80,7 +80,11 @@ export default function StudentTrainingScreen() {
 
       {/* ── Training plan area ────────────────────────────── */}
       {plansState.kind === 'loading' ? (
-        <ActivityIndicator style={styles.centered} testID="student.training.plansLoading" />
+        <ActivityIndicator
+          accessibilityLabel={t('a11y.loading.default')}
+          style={styles.centered}
+          testID="student.training.plansLoading"
+        />
       ) : hasActiveTrainingAssignment ? (
         <>
           {/* Assigned plan: read-only notice + change request */}
@@ -233,17 +237,21 @@ function PlanChangeRequestForm({
           />
 
           {fieldError ? (
-            <Text style={styles.inlineError} testID="student.training.planChangeForm.error">
-              {fieldError}
-            </Text>
+            <View accessibilityLiveRegion="polite">
+              <Text style={styles.inlineError} testID="student.training.planChangeForm.error">
+                {fieldError}
+              </Text>
+            </View>
           ) : null}
 
           {successMsg ? (
-            <Text
-              style={[styles.successText, { color: palette.tint }]}
-              testID="student.training.planChangeForm.success">
-              {successMsg}
-            </Text>
+            <View accessibilityLiveRegion="polite">
+              <Text
+                style={[styles.successText, { color: palette.tint }]}
+                testID="student.training.planChangeForm.success">
+                {successMsg}
+              </Text>
+            </View>
           ) : null}
 
           <Pressable
@@ -258,7 +266,7 @@ function PlanChangeRequestForm({
             ]}
             testID="student.training.planChangeForm.submitButton">
             {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#fff" />
             ) : (
               <Text style={styles.primaryButtonText}>{t('student.training.plan_change.cta')}</Text>
             )}

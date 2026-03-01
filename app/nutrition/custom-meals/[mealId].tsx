@@ -237,14 +237,19 @@ export default function CustomMealBuilderScreen() {
 
       {/* Save error */}
       {saveError ? (
-        <Text style={[styles.errorText, { color: '#b3261e' }]} testID="meal.builder.saveError">
-          {saveError}
-        </Text>
+        <View accessibilityLiveRegion="polite">
+          <Text style={[styles.errorText, { color: '#b3261e' }]} testID="meal.builder.saveError">
+            {saveError}
+          </Text>
+        </View>
       ) : null}
 
       {/* Save CTA */}
       {isSaving ? (
-        <ActivityIndicator testID="meal.builder.savingIndicator" />
+        <ActivityIndicator
+          testID="meal.builder.savingIndicator"
+          accessibilityLabel={t('a11y.loading.saving') as string}
+        />
       ) : (
         <Pressable
           accessibilityRole="button"
@@ -299,6 +304,7 @@ function ImageUploadStub({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityHint={t('meal.builder.image.cta_upload') as string}
       onPress={() => {
         // Image picker + upload deferred (pending-wiring-checklist-v1.md)
       }}
@@ -355,9 +361,11 @@ function FormField({
         testID={`${testID}.input`}
       />
       {error ? (
-        <Text style={[styles.fieldError, { color: '#b3261e' }]} testID={`${testID}.error`}>
-          {error}
-        </Text>
+        <View accessibilityLiveRegion="polite">
+          <Text style={[styles.fieldError, { color: '#b3261e' }]} testID={`${testID}.error`}>
+            {error}
+          </Text>
+        </View>
       ) : null}
     </View>
   );
