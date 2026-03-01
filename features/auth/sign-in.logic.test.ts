@@ -33,6 +33,18 @@ test('normalizeSignInReason maps network-like errors', () => {
   assert.equal(reason, 'network');
 });
 
+test('normalizeSignInReason maps provider conflict', () => {
+  const reason = normalizeSignInReason({ code: 'auth/account-exists-with-different-credential' });
+
+  assert.equal(reason, 'provider_conflict');
+});
+
+test('normalizeSignInReason maps missing config to configuration', () => {
+  const reason = normalizeSignInReason({ message: 'Firebase config is missing required keys: apiKey' });
+
+  assert.equal(reason, 'configuration');
+});
+
 test('normalizeSignInReason falls back to unknown', () => {
   const reason = normalizeSignInReason({ code: 'SOMETHING_ELSE' });
 
@@ -45,5 +57,10 @@ test('mapSignInReasonToMessageKey returns contextual key', () => {
     'auth.signin.error.invalid_credentials'
   );
   assert.equal(mapSignInReasonToMessageKey('network'), 'auth.signin.error.network');
+  assert.equal(
+    mapSignInReasonToMessageKey('provider_conflict'),
+    'auth.signin.error.provider_conflict'
+  );
+  assert.equal(mapSignInReasonToMessageKey('configuration'), 'auth.signin.error.configuration');
   assert.equal(mapSignInReasonToMessageKey('unknown'), 'common.error.generic');
 });
