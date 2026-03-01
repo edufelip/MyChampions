@@ -72,6 +72,24 @@ test('buildSelfGuidedStartClicked produces correct event', () => {
   assert.equal(event.properties.result, 'success');
 });
 
+test('buildSelfGuidedStartClicked event includes role_context as student', () => {
+  const event = buildSelfGuidedStartClicked();
+  assert.ok(event.properties.role_context === 'student', 'role_context must be student');
+});
+
+test('buildSelfGuidedStartClicked event result is always success', () => {
+  const event = buildSelfGuidedStartClicked();
+  assert.ok(event.properties.result === 'success', 'self-guided start result should always be success');
+});
+
+test('buildSelfGuidedStartClicked has expected property keys', () => {
+  const event = buildSelfGuidedStartClicked();
+  const keys = Object.keys(event.properties);
+  assert.ok(keys.includes('role_context'), 'properties should include role_context');
+  assert.ok(keys.includes('result'), 'properties should include result');
+  assert.ok(keys.includes('step'), 'properties should include step');
+});
+
 test('buildInviteSubmitRequested produces correct event', () => {
   const event = buildInviteSubmitRequested('manual');
   assert.equal(event.name, 'invite.submit.requested');
