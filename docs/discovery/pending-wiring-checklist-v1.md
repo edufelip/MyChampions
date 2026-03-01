@@ -81,6 +81,21 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: All `pro.pending.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (`search.placeholder`, `filter.label`, `bulk_deny.cta`, `bulk_deny.confirm_title`, `bulk_deny.confirm_body`, `bulk_deny.success`, `confirm.cta`, `deny.cta`, `empty`, `error`).
 - `Pending`: Wire `confirmConnection` and `unbindConnection` source methods to real Data Connect connector endpoints (currently using connection-source stubs).
 
+## Professional Specialty Removal Assist (BL-011)
+- `Done`: `features/professional/specialty-removal-assist.logic.ts` — pure functions: `resolveRemovalAssistState`, `buildActionMetadata`, `filterBlockersBySpecialty`, `countBlockers`, `canRemovalProceedNow`, `formatRemovalBlockedMessage`, `shouldShowBlockers`. Provides direct navigation/actions to resolve blocking conditions (active/pending students, last specialty).
+- `Done`: `features/professional/specialty-removal-assist.logic.test.ts` — comprehensive unit tests (34 tests, TC-262, TC-263) covering:
+  * Assist state resolution: no blockers, active students, pending students, last specialty priority order
+  * Action metadata: navigation targets, labels, descriptions, priority levels
+  * Blocker filtering by specialty and status
+  * Blocker counting (active vs pending)
+  * Removal proceed validation after assist actions
+  * Blocked message formatting with proper singularization
+  * Edge cases: zero total specialties, large blocker counts, mixed statuses
+- `Done`: `app/professional/specialty.tsx` (SC-202) — Specialty removal flow with blocking reason display (already implemented, awaiting assist action wiring).
+- `Done`: All `pro.specialty.removal_assist.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (8 keys: view_active, view_active_desc, view_pending, view_pending_desc, bulk_deny, bulk_deny_desc, add_specialty, add_specialty_desc).
+- `Pending`: Wire assist actions into SC-202 removal blocked state — display action buttons with labels/descriptions and navigate to appropriate screens (students roster, pending queue, specialty setup).
+- `Pending`: Wire activeStudentCount and pendingStudentCount from real Data Connect endpoint into specialty removal check (currently stubbed at 0 in SC-202).
+
 ## Plan Change Request Flow (BL-005)
 - `Done`: `features/plans/plan-change-request.logic.ts` — pure functions: `validatePlanChangeRequestInput`, `normalizePlanChangeRequestStatus`, `normalizePlanType`, `normalizePlanChangeRequestError`. Unit tests in `plan-change-request.logic.test.ts` (11 tests, TC-259).
 - `Done`: `features/plans/plan-source.ts` — Data Connect stub surface: `submitPlanChangeRequest`, `reviewPlanChangeRequest`, `getStudentPlanChangeRequests`.
