@@ -64,3 +64,43 @@ test('guard blocks wrong-role tab access', () => {
   assert.equal(studentRedirect, '/');
   assert.equal(professionalRedirect, '/explore');
 });
+
+test('guard blocks student from accessing professional routes', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: 'student',
+    pathname: '/professional/pending',
+  });
+
+  assert.equal(redirect, '/');
+});
+
+test('guard allows student on student-scoped routes', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: 'student',
+    pathname: '/student/professionals',
+  });
+
+  assert.equal(redirect, null);
+});
+
+test('guard blocks professional from accessing student routes', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: 'professional',
+    pathname: '/student/professionals',
+  });
+
+  assert.equal(redirect, '/explore');
+});
+
+test('guard allows professional on professional-scoped routes', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: 'professional',
+    pathname: '/professional/pending',
+  });
+
+  assert.equal(redirect, null);
+});
