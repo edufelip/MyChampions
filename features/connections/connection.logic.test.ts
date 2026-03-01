@@ -126,6 +126,66 @@ test('resolveConnectionDisplayState maps ended without code_rotated to ended', (
   assert.equal(state.kind, 'ended');
 });
 
+// ─── BL-003 TC-256: Pending canceled by code rotation ────────────────────────
+
+test('BL-003 TC-256: pending request canceled by code rotation shows canceled_code_rotated state', () => {
+  // Scenario: Student had pending_confirmation request, professional regenerated code
+  // System marks it as ended with canceledReason='code_rotated'
+  const canceledByRotation: ConnectionRecord = {
+    id: 'pending-cancelled-conn',
+    status: 'ended',
+    canceledReason: 'code_rotated',
+    specialty: 'nutritionist',
+    professionalAuthUid: 'prof-123',
+  };
+
+  const displayState = resolveConnectionDisplayState(canceledByRotation);
+
+  // Expected: show canceled_code_rotated with red styling + reconnect CTA
+  assert.equal(displayState.kind, 'canceled_code_rotated');
+  assert.equal(displayState.connectionId, 'pending-cancelled-conn');
+  assert.equal(displayState.specialty, 'nutritionist');
+});
+
+test('BL-003 TC-256: only code_rotated reason triggers canceled_code_rotated display', () => {
+  // Verify that canceled_code_rotated is only shown for this specific reason
+  const endedWithoutReason: ConnectionRecord = {
+    id: 'ended-conn-1',
+    status: 'ended',
+    canceledReason: null,
+    specialty: 'fitness_coach',
+    professionalAuthUid: 'prof-123',
+  };
+
+  const displayState = resolveConnectionDisplayState(endedWithoutReason);
+  assert.equal(displayState.kind, 'ended', 'null reason should map to ended, not canceled_code_rotated');
+});
+
+test('BL-003 TC-256: canceled_code_rotated preserves specialty for correct messaging', () => {
+  // Verify specialty is preserved for UI to show correct professional type
+  const nutritionistCanceled: ConnectionRecord = {
+    id: 'nutr-canceled',
+    status: 'ended',
+    canceledReason: 'code_rotated',
+    specialty: 'nutritionist',
+    professionalAuthUid: 'prof-1',
+  };
+
+  const coachCanceled: ConnectionRecord = {
+    id: 'coach-canceled',
+    status: 'ended',
+    canceledReason: 'code_rotated',
+    specialty: 'fitness_coach',
+    professionalAuthUid: 'prof-2',
+  };
+
+  const nutritionDisplay = resolveConnectionDisplayState(nutritionistCanceled);
+  const coachDisplay = resolveConnectionDisplayState(coachCanceled);
+
+  assert.equal(nutritionDisplay.specialty, 'nutritionist');
+  assert.equal(coachDisplay.specialty, 'fitness_coach');
+});
+
 // --- normalizeInviteSubmitError ---
 
 test('normalizeInviteSubmitError maps CODE_NOT_FOUND code', () => {

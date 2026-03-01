@@ -136,5 +136,7 @@
 
 - `D-118`: BL-001 quick self-guided start path is implemented in `app/auth/role-selection.tsx`. The "Start on my own now" CTA (`onQuickSelfGuided` function) commits student role via `lockRole('student')` and routes to student home (`'/'`). Analytics event `onboarding.self_guided_start.clicked` is emitted on tap. Student screens (`home.tsx`, `nutrition.tsx`, `training.tsx`) display self-guided empty states with localized CTAs when no professional is connected. Empty state copy explicitly communicates "No nutritionist connected? You can still..." / "No coach connected? You can still..." per BR-226. Data Connect endpoints for connections/plans/water are required for full self-guided functionality — tracked separately in pending-wiring-checklist-v1.md.
 
+- `D-119`: BL-003 pending-canceled-by-code-rotation notification is implemented in `features/connections/connection.logic.ts` and `app/student/professionals.tsx` (SC-211). The `canceled_code_rotated` display state is resolved when a connection record has `status='ended'` and `canceledReason='code_rotated'`. ConnectionCard renders this state with red styling (red text + red border) and displays locale key `relationship.pending.canceled_code_rotated` with actionable reconnect CTA per AC-253. All 3 locales (en-US, pt-BR, es-ES) provide clear copy explaining the code rotation and prompting reconnection. Unit tests in `connection.logic.test.ts` cover canceled_code_rotated detection and display state preservation (TC-256).
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

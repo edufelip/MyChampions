@@ -61,7 +61,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 ## Milestone B Spec Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
-| BL-003 Pending canceled notification on code rotation | Spec-ready | FR-209 | UC-002.3 | AC-253 | BR-267 | TC-256 |
+| BL-003 Pending canceled notification on code rotation | Implemented — canceled_code_rotated state wired in connection logic and UI, locale keys for all 3 languages | FR-209 | UC-002.3 | AC-253 | BR-267 | TC-256 |
 | BL-004 Professional pending queue tools | Spec-ready | FR-210 | UC-002.12 | AC-254 | BR-268 | TC-257, TC-258 |
 | BL-011 Specialty removal assist flow | Spec-ready | FR-216 | UC-002.16 | AC-258 | BR-274 | TC-262, TC-263 |
 
