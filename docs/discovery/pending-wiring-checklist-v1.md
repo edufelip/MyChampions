@@ -67,6 +67,18 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire `lastSyncedAtIso` from real data-layer sync timestamps (currently `null` — stale indicator never shown). Deferred until Data Connect cache layer is implemented.
 - `Pending`: Wire offline banner + write-lock into remaining screens not yet wired: `pro/students.tsx`, `pro/student-profile.tsx`, `pro/specialty.tsx`, `pro/pending.tsx`, `pro/subscription.tsx`, `settings/account.tsx`, `nutrition/custom-meals/index.tsx`, `nutrition/custom-meals/[mealId].tsx`, `shared/recipes/[shareToken].tsx`.
 
+## Plan Change Request Flow (BL-005)
+- `Done`: `features/plans/plan-change-request.logic.ts` — pure functions: `validatePlanChangeRequestInput`, `normalizePlanChangeRequestStatus`, `normalizePlanType`, `normalizePlanChangeRequestError`. Unit tests in `plan-change-request.logic.test.ts` (11 tests, TC-259).
+- `Done`: `features/plans/plan-source.ts` — Data Connect stub surface: `submitPlanChangeRequest`, `reviewPlanChangeRequest`, `getStudentPlanChangeRequests`.
+- `Done`: `features/plans/use-plans.ts` — React hook `usePlans` with `submitChangeRequest`, `validateChangeRequest`, `reviewChangeRequest`, `getChangeRequestsForStudent`.
+- `Done`: `app/student/nutrition.tsx` (SC-209) — `PlanChangeRequestForm` wired to `usePlans`; full validation + error handling with all error branches and write-lock guard.
+- `Done`: `app/student/training.tsx` (SC-210) — `PlanChangeRequestForm` wired to `usePlans`; full validation + error handling parity with nutrition screen.
+- `Done`: `app/professional/student-profile.tsx` (SC-206) — `PlanChangeRequestsCard` wired to `usePlans.getChangeRequestsForStudent`; lists pending requests with review/dismiss actions via `reviewChangeRequest`.
+- `Done`: All `student.nutrition.plan_change.*`, `student.training.plan_change.*`, and `pro.student_profile.plan_change_requests.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
+- `Done`: All plan-change keys tracked in `localized-copy-table-v2.md` with correct screen-specific key names.
+- `Pending`: Wire `submitPlanChangeRequest`, `reviewPlanChangeRequest`, and `getStudentPlanChangeRequests` to real Data Connect connector endpoints replacing GraphQL stubs in `plan-source.ts`.
+- `Pending`: Professional notification surface when student submits a change request (UC-002.13 step 3 — system notifies professional). Deferred until push notification infrastructure is provisioned.
+
 ## Water Tracking (BL-104)
 - `Done`: `features/nutrition/water-tracking.logic.ts` — pure functions: `resolveEffectiveWaterGoal`, `resolveWaterDayStatus`, `calculateWaterStreak`, `validateWaterGoalInput`, `validateWaterIntakeInput`, `normalizeWaterTrackingError`.
 - `Done`: `features/nutrition/water-tracking.logic.test.ts` — unit tests included in 301-test suite (TC-264–TC-267).
@@ -125,15 +137,6 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire Data Connect endpoints for plan CRUD (`createNutritionPlan`, `updateNutritionPlan`, `addNutritionMealItem`, `removeNutritionMealItem`, `createTrainingPlan`, `updateTrainingPlan`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`) replacing stubs in `plan-builder-source.ts`.
 - `Pending`: Wire fatsecret food lookup into `searchFoods` in `plan-builder-source.ts`; requires fatsecret API key provisioned server-side (D-113).
 - `Pending`: Wire `getStarterTemplates` and `cloneStarterTemplate` to real Data Connect starter template operations (D-114).
-
-## Plan Builder Screens (SC-207, SC-208 — Phase 10)
-- `Done`: `features/plans/plan-builder.logic.ts` — pure validation, calculation, and error normalization functions for nutrition and training plan builder inputs.
-- `Done`: `features/plans/plan-builder-source.ts` — Data Connect CRUD stubs (create/update plan, add/remove items/sessions, starter templates, bulk assign) following existing `gql<T>()` + `PlanSourceError` pattern.
-- `Done`: `features/plans/use-plan-builder.ts` — React hook adapting plan-builder-source for screen consumption.
-- `Done`: `pro.plan.*` and `pro.library.*` localization keys added to en-US, pt-BR, es-ES and tracked in localized-copy-table-v2.md.
-- `Pending`: Wire Data Connect endpoints for plan CRUD (createNutritionPlan, updateNutritionPlan, addNutritionMealItem, removeNutritionMealItem, createTrainingPlan, updateTrainingPlan, addTrainingSession, removeTrainingSession, addTrainingSessionItem, removeTrainingSessionItem) replacing stubs in `plan-builder-source.ts`.
-- `Pending`: Wire fatsecret food lookup into `searchFoods` in `plan-builder-source.ts` (currently returns empty array stub); requires fatsecret API key provisioned server-side.
-- `Pending`: Wire `getStarterTemplates` and `cloneStarterTemplate` to real Data Connect starter template operations (currently returning hardcoded stubs).
 
 ## Account Settings & Custom Meal Screens (Phase 6)
 - `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.
@@ -201,3 +204,11 @@ Track intentionally deferred implementation wiring so it is completed before rel
 
 ## Validation Gate Before Release
 - Every item in this checklist must be either `Done` or explicitly deferred in a release decision note.
+
+## BL-002 QR Invite Scan (SC-211)
+- `Done`: `expo-camera@~16.0.18` installed and `CameraView` + `useCameraPermissions` wired into `app/student/professionals.tsx`.
+- `Done`: `parseQrInvitePayload` pure logic in `features/connections/qr-invite.logic.ts` handles bare codes, custom-scheme deep links, and HTTPS deep links (query-param and path-segment forms).
+- `Done`: QR and manual entry paths converge at `onSubmitCode(code, surface)` — same `submitCode` hook call, same analytics events, same error branches (BR-263).
+- `Done`: Camera permission denial shows inline error with fallback instruction to use manual entry (AC-249).
+- `Done`: Invalid QR payload shows actionable inline error within the modal; close button allows switch to manual entry (TC-251).
+- `Done`: iOS `NSCameraUsageDescription` added to `app.config.ts` `ios.infoPlist` and `expo-camera` plugin registered with `microphonePermission: false` (camera-only, no audio). Requires `expo prebuild` to propagate to native `Info.plist`.

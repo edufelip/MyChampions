@@ -54,7 +54,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
 | BL-001 Quick self-guided start path | Spec-ready | FR-203 | UC-002.8 | AC-248 | BR-262 | TC-249 |
-| BL-002 Invite code QR scan | Spec-ready | FR-204 | UC-002.9 | AC-249 | BR-263 | TC-250, TC-251 |
+| BL-002 Invite code QR scan | Implemented — expo-camera wired, same submitCode pipeline as manual entry | FR-204 | UC-002.9 | AC-249 | BR-263 | TC-250, TC-251 |
 | BL-010 Auth/invite error copy hardening | Spec-ready | FR-205 | UC-002.10 | AC-250 | BR-264 | TC-252, TC-253 |
 | BL-012 Product analytics event taxonomy | Spec-ready | FR-206, FR-207, FR-208 | UC-002.11 | AC-251, AC-252 | BR-265, BR-266 | TC-254, TC-255 |
 
@@ -68,7 +68,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 ## Milestone C Spec Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
-| BL-005 Student plan change request flow | Spec-ready | FR-211 | UC-002.13 | AC-255 | BR-269 | TC-259 |
+| BL-005 Student plan change request flow | Screens implemented; Data Connect endpoint wiring deferred | FR-211 | UC-002.13 | AC-255 | BR-269 | TC-259 |
 | BL-006 Professional starter template library | Spec-ready | FR-212 | UC-002.14 | AC-256 | BR-270 | TC-260 |
 | BL-007 Image upload progress and retry UX | Spec-ready | FR-213 | UC-003.8 | AC-424, AC-425 | BR-271 | TC-426, TC-427 |
 | BL-008 Explicit offline banner and write-lock explanations | Spec-ready | FR-214 | UC-002.17 | AC-257 | BR-272 | TC-261 |

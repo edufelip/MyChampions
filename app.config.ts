@@ -81,6 +81,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: iosBundleId,
+      infoPlist: {
+        NSCameraUsageDescription:
+          'My Champions uses the camera to scan QR invite codes from your professional.',
+      },
     },
     android: {
       adaptiveIcon: {
@@ -100,6 +104,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [
       'expo-apple-authentication',
       'expo-router',
+      [
+        'expo-camera',
+        {
+          cameraPermission:
+            'My Champions uses the camera to scan QR invite codes from your professional.',
+          microphonePermission: false,
+          recordAudioAndroid: false,
+        },
+      ],
       [
         'expo-splash-screen',
         {

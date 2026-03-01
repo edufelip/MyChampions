@@ -130,5 +130,9 @@
   - Nutritionist override goal form in `app/professional/student-profile.tsx` (SC-206) — calls `setNutritionistWaterGoalForStudent` (stub; Data Connect wiring deferred).
   - SC-220 documents the water tracker feature across all three surfaces.
 
+- `D-116`: BL-005 plan change request flow is implemented with screen-specific localization keys per plan type (`student.nutrition.plan_change.*` for SC-209, `student.training.plan_change.*` for SC-210) rather than a single shared key group. Professional-side triage uses `pro.student_profile.plan_change_requests.*` keys in SC-206. Pure logic in `plan-change-request.logic.ts`, Data Connect stubs in `plan-source.ts` (`submitPlanChangeRequest`, `reviewPlanChangeRequest`, `getStudentPlanChangeRequests`), React hook in `use-plans.ts`. Professional notification on submission is deferred until push notification infrastructure is provisioned.
+
+- `D-117`: BL-002 QR invite scan is implemented using `expo-camera@~16.0.18` (`CameraView` + `useCameraPermissions`). The scanner is presented as a full-screen `Modal` (no new route) to keep the implementation KISS/YAGNI. QR and manual entry paths converge at the same `submitCode` hook method per BR-263 — `onSubmitCode(code, surface)` accepts `'manual' | 'qr'` and routes to the same analytics events and error branches. Payload parsing is isolated in `features/connections/qr-invite.logic.ts` (pure, no React/Firebase deps). Path-segment extraction requires the segment to immediately follow an `invite` path segment to avoid false-positive matches on generic URL paths. Camera permission denied shows an inline error in the main screen rather than opening the modal.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
