@@ -3,11 +3,21 @@ import type { TranslationKey } from './en-US';
 export const ptBR: Record<TranslationKey, string> = {
   'common.error.generic': 'Algo deu errado. Tente novamente.',
   'auth.field.email': 'E-mail',
+  'auth.field.name': 'Nome',
   'auth.field.password': 'Senha',
+  'auth.field.password_confirmation': 'Confirmar senha',
   'auth.placeholder.email': 'E-mail',
+  'auth.placeholder.name': 'Nome completo',
   'auth.placeholder.password': 'Senha',
+  'auth.placeholder.password_confirmation': 'Confirmar senha',
+  'auth.validation.name_required': 'Nome é obrigatório.',
   'auth.validation.email_required': 'E-mail é obrigatório.',
   'auth.validation.password_required': 'Senha é obrigatória.',
+  'auth.validation.password_confirmation_required': 'A confirmação de senha é obrigatória.',
+  'auth.validation.password_policy':
+    'Use pelo menos 8 caracteres com letra maiúscula, número e símbolo ASCII (ex.: ! @ #). Emoji não é permitido.',
+  'auth.validation.password_confirmation_mismatch':
+    'A confirmação de senha deve ser igual à senha.',
   'auth.signin.title': 'Que bom ter você de volta',
   'auth.signin.cta_primary': 'Entrar',
   'auth.signin.cta_create': 'Criar conta',
@@ -15,6 +25,10 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.signin.error.invalid_credentials':
     'E-mail ou senha incorretos. Tente novamente ou redefina sua senha.',
   'auth.signin.error.network': 'Não foi possível conectar agora. Verifique sua conexão e tente novamente.',
+  'auth.signin.error.provider_conflict':
+    'Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado.',
+  'auth.signin.error.configuration':
+    'A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente.',
   'auth.social.google': 'Google',
   'auth.social.apple': 'Apple',
   'auth.password.toggle_show': 'Mostrar senha',
@@ -22,9 +36,34 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.password.toggle_show_short': 'Mostrar',
   'auth.password.toggle_hide_short': 'Ocultar',
   'auth.signup.title': 'Crie sua conta',
+  'auth.signup.cta_primary': 'Criar conta',
+  'auth.signup.or_continue': 'ou continue com',
+  'auth.signup.password_helper':
+    'Use pelo menos 8 caracteres, incluindo maiúscula, número e símbolo (ex.: ! @ #).',
+  'auth.signup.error.duplicate_email': 'Este e-mail já está em uso. Entre para continuar.',
+  'auth.signup.error.network': 'Não foi possível conectar agora. Verifique sua conexão e tente novamente.',
+  'auth.signup.error.provider_conflict':
+    'Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado.',
+  'auth.signup.error.configuration':
+    'A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente.',
   'auth.signup.placeholder.body':
     'A implementação do formulário de criação de conta começa na próxima etapa.',
   'auth.signup.cta_back_signin': 'Voltar para entrar',
+  'auth.role.title': 'Como você quer usar o app?',
+  'auth.role.intro': 'Você pode começar por conta própria agora e se conectar com um profissional depois.',
+  'auth.role.option_self.title': 'Quero acompanhar meu próprio progresso',
+  'auth.role.option_self.subtitle':
+    'Registre refeições e treinos por conta própria. Nenhum profissional é necessário.',
+  'auth.role.option_pro.title': 'Sou nutricionista ou treinador físico',
+  'auth.role.option_pro.subtitle':
+    'Gerencie clientes, atribua planos e acompanhe o progresso dos alunos.',
+  'auth.role.lock_note':
+    'O tipo de conta não pode ser alterado depois. Você pode criar outra conta com outro e-mail, se precisar.',
+  'auth.role.cta_continue': 'Continuar',
+  'auth.role.cta_back': 'Voltar',
+  'auth.role.cta_start_self_guided': 'Começar por conta própria agora',
+  'auth.role.validation.required': 'Escolha como quer usar o app para continuar.',
+  'auth.role.error.save_failed': 'Não foi possível salvar seu perfil agora. Tente novamente.',
   'auth.role.placeholder.title': 'Seleção de perfil',
   'auth.role.placeholder.body':
     'O fluxo de login já está ligado. A implementação da seleção de perfil é a próxima etapa.',

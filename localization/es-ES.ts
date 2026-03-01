@@ -3,11 +3,22 @@ import type { TranslationKey } from './en-US';
 export const esES: Record<TranslationKey, string> = {
   'common.error.generic': 'Algo salió mal. Inténtalo de nuevo.',
   'auth.field.email': 'Correo electrónico',
+  'auth.field.name': 'Nombre',
   'auth.field.password': 'Contraseña',
+  'auth.field.password_confirmation': 'Confirmar contraseña',
   'auth.placeholder.email': 'Correo electrónico',
+  'auth.placeholder.name': 'Nombre completo',
   'auth.placeholder.password': 'Contraseña',
+  'auth.placeholder.password_confirmation': 'Confirmar contraseña',
+  'auth.validation.name_required': 'El nombre es obligatorio.',
   'auth.validation.email_required': 'El correo es obligatorio.',
   'auth.validation.password_required': 'La contraseña es obligatoria.',
+  'auth.validation.password_confirmation_required':
+    'La confirmación de contraseña es obligatoria.',
+  'auth.validation.password_policy':
+    'Usa al menos 8 caracteres con mayúscula, número y símbolo ASCII (ej.: ! @ #). No se permiten emojis.',
+  'auth.validation.password_confirmation_mismatch':
+    'La confirmación debe coincidir con tu contraseña.',
   'auth.signin.title': 'Bienvenido de nuevo',
   'auth.signin.cta_primary': 'Iniciar sesión',
   'auth.signin.cta_create': 'Crear cuenta',
@@ -16,6 +27,10 @@ export const esES: Record<TranslationKey, string> = {
     'El correo o la contraseña son incorrectos. Inténtalo de nuevo o restablece tu contraseña.',
   'auth.signin.error.network':
     'No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo.',
+  'auth.signin.error.provider_conflict':
+    'Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método.',
+  'auth.signin.error.configuration':
+    'La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo.',
   'auth.social.google': 'Google',
   'auth.social.apple': 'Apple',
   'auth.password.toggle_show': 'Mostrar contraseña',
@@ -23,9 +38,36 @@ export const esES: Record<TranslationKey, string> = {
   'auth.password.toggle_show_short': 'Mostrar',
   'auth.password.toggle_hide_short': 'Ocultar',
   'auth.signup.title': 'Crea tu cuenta',
+  'auth.signup.cta_primary': 'Crear cuenta',
+  'auth.signup.or_continue': 'o continuar con',
+  'auth.signup.password_helper':
+    'Usa al menos 8 caracteres, incluyendo mayúscula, número y símbolo (ej.: ! @ #).',
+  'auth.signup.error.duplicate_email':
+    'Este correo ya está en uso. Inicia sesión para continuar.',
+  'auth.signup.error.network':
+    'No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo.',
+  'auth.signup.error.provider_conflict':
+    'Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método.',
+  'auth.signup.error.configuration':
+    'La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo.',
   'auth.signup.placeholder.body':
     'La implementación del formulario de creación de cuenta comienza en el siguiente bloque.',
   'auth.signup.cta_back_signin': 'Volver a iniciar sesión',
+  'auth.role.title': '¿Cómo quieres usar la app?',
+  'auth.role.intro': 'Puedes empezar por tu cuenta ahora y conectarte con un profesional después.',
+  'auth.role.option_self.title': 'Quiero seguir mi propio progreso',
+  'auth.role.option_self.subtitle':
+    'Registra comidas y entrenamientos por tu cuenta. No necesitas un profesional.',
+  'auth.role.option_pro.title': 'Soy nutricionista o entrenador físico',
+  'auth.role.option_pro.subtitle':
+    'Gestiona clientes, asigna planes y sigue el progreso de tus alumnos.',
+  'auth.role.lock_note':
+    'El tipo de cuenta no se puede cambiar después. Puedes crear otra cuenta con otro correo si lo necesitas.',
+  'auth.role.cta_continue': 'Continuar',
+  'auth.role.cta_back': 'Volver',
+  'auth.role.cta_start_self_guided': 'Empezar por mi cuenta ahora',
+  'auth.role.validation.required': 'Elige cómo quieres usar la app para continuar.',
+  'auth.role.error.save_failed': 'No se pudo guardar tu perfil ahora. Inténtalo de nuevo.',
   'auth.role.placeholder.title': 'Selección de rol',
   'auth.role.placeholder.body':
     'El flujo de inicio de sesión ya está conectado. La implementación de selección de rol es el siguiente bloque.',

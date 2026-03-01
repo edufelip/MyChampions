@@ -1,5 +1,9 @@
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Google from 'expo-auth-session/providers/google';
+import * as Crypto from 'expo-crypto';
+import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,12 +14,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { GoogleAuthProvider, OAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 
 import { Colors, Fonts } from '@/constants/theme';
+import { signInOrLinkWithCredential } from '@/features/auth/firebase-social-auth';
+import { getFirebaseAuth, firebaseOAuthConfig } from '@/features/auth/firebase';
 import {
   mapSignInReasonToMessageKey,
   normalizeSignInReason,
-  SignInFailure,
   type SignInErrorMessageKey,
   type SignInRequest,
   validateSignInInput,
@@ -24,17 +30,16 @@ import {
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
-async function signInWithEmailPassword(input: SignInRequest): Promise<void> {
-  const normalizedEmail = input.email.trim().toLowerCase();
+WebBrowser.maybeCompleteAuthSession();
 
-  // Temporary deterministic failure cases until backend auth integration lands.
-  if (normalizedEmail === 'invalid@example.com') {
-    throw new SignInFailure('invalid_credentials');
+function createNonce(length = 32) {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  let value = '';
+  for (let i = 0; i < length; i += 1) {
+    value += chars.charAt(Math.floor(Math.random() * chars.length));
   }
 
-  if (normalizedEmail === 'network@example.com') {
-    throw new SignInFailure('network');
-  }
+  return value;
 }
 
 export default function SignInScreen() {
@@ -42,6 +47,11 @@ export default function SignInScreen() {
   const palette = Colors[colorScheme];
   const router = useRouter();
   const { t } = useTranslation();
+  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
+    iosClientId: firebaseOAuthConfig.iosClientId,
+    androidClientId: firebaseOAuthConfig.androidClientId,
+    webClientId: firebaseOAuthConfig.webClientId,
+  });
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,10 +81,83 @@ export default function SignInScreen() {
     }
   };
 
-  const onSocialSignIn = () => {
-    // Placeholder navigation path until provider-based auth integration.
-    router.replace('/auth/role-selection');
+  const onGoogleSignIn = async () => {
+    setSubmitError(null);
+
+    try {
+      await promptGoogle();
+    } catch (error: unknown) {
+      const reason = normalizeSignInReason(error);
+      setSubmitError(mapSignInReasonToMessageKey(reason));
+    }
   };
+
+  const onAppleSignIn = async () => {
+    setSubmitError(null);
+
+    try {
+      if (Platform.OS !== 'ios') {
+        throw new Error('Apple Sign-In is only available on iOS.');
+      }
+
+      const nonce = createNonce();
+      const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+      const appleCredential = await AppleAuthentication.signInAsync({
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
+        nonce: hashedNonce,
+      });
+
+      if (!appleCredential.identityToken) {
+        throw new Error('Apple identity token is missing.');
+      }
+
+      setSubmitting(true);
+      const provider = new OAuthProvider('apple.com');
+      const firebaseCredential = provider.credential({
+        idToken: appleCredential.identityToken,
+        rawNonce: nonce,
+      });
+      await signInOrLinkWithCredential(firebaseCredential);
+      router.replace('/auth/role-selection');
+    } catch (error: unknown) {
+      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      if (code.includes('ERR_REQUEST_CANCELED')) {
+        return;
+      }
+
+      const reason = normalizeSignInReason(error);
+      setSubmitError(mapSignInReasonToMessageKey(reason));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (googleResponse?.type !== 'success') {
+      return;
+    }
+
+    const idToken =
+      googleResponse.authentication?.idToken ||
+      (typeof googleResponse.params?.id_token === 'string' ? googleResponse.params.id_token : '');
+    if (!idToken) {
+      setSubmitError('common.error.generic');
+      return;
+    }
+
+    setSubmitting(true);
+    void signInOrLinkWithCredential(GoogleAuthProvider.credential(idToken))
+      .then(() => {
+        router.replace('/auth/role-selection');
+      })
+      .catch((error: unknown) => {
+        const reason = normalizeSignInReason(error);
+        setSubmitError(mapSignInReasonToMessageKey(reason));
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
+  }, [googleResponse, router]);
 
   return (
     <KeyboardAvoidingView
@@ -83,7 +166,9 @@ export default function SignInScreen() {
       <Stack.Screen options={{ title: t('auth.signin.cta_primary'), headerShown: false }} />
 
       <View style={styles.content}>
-        <Text style={[styles.title, { color: palette.text }]}>{t('auth.signin.title')}</Text>
+        <Text testID="auth.signIn.title" style={[styles.title, { color: palette.text }]}>
+          {t('auth.signin.title')}
+        </Text>
 
         <View style={styles.formSection}>
           <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.email')}</Text>
@@ -96,9 +181,14 @@ export default function SignInScreen() {
             placeholder={t('auth.placeholder.email')}
             placeholderTextColor={palette.icon}
             style={[styles.input, { borderColor: palette.icon, color: palette.text }]}
+            testID="auth.signIn.emailInput"
             value={email}
           />
-          {errors.email ? <Text style={styles.inlineError}>{t(errors.email)}</Text> : null}
+          {errors.email ? (
+            <Text style={styles.inlineError} testID="auth.signIn.error.emailRequired">
+              {t(errors.email)}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.formSection}>
@@ -113,6 +203,7 @@ export default function SignInScreen() {
               placeholderTextColor={palette.icon}
               secureTextEntry={!showPassword}
               style={[styles.input, styles.passwordInput, { borderColor: palette.icon, color: palette.text }]}
+              testID="auth.signIn.passwordInput"
               value={password}
             />
             <Pressable
@@ -120,21 +211,31 @@ export default function SignInScreen() {
                 showPassword ? t('auth.password.toggle_hide') : t('auth.password.toggle_show')
               }
               onPress={() => setShowPassword((current) => !current)}
+              testID="auth.signIn.passwordToggle"
               style={[styles.passwordToggle, { borderColor: palette.icon }]}>
               <Text style={[styles.passwordToggleText, { color: palette.text }]}>
                 {showPassword ? t('auth.password.toggle_hide_short') : t('auth.password.toggle_show_short')}
               </Text>
             </Pressable>
           </View>
-          {errors.password ? <Text style={styles.inlineError}>{t(errors.password)}</Text> : null}
+          {errors.password ? (
+            <Text style={styles.inlineError} testID="auth.signIn.error.passwordRequired">
+              {t(errors.password)}
+            </Text>
+          ) : null}
         </View>
 
-        {submitError ? <Text style={styles.submitError}>{t(submitError)}</Text> : null}
+        {submitError ? (
+          <Text style={styles.submitError} testID="auth.signIn.error.submit">
+            {t(submitError)}
+          </Text>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"
           disabled={submitting}
           onPress={onEmailPasswordSignIn}
+          testID="auth.signIn.submitButton"
           style={({ pressed }) => [
             styles.primaryButton,
             {
@@ -154,13 +255,17 @@ export default function SignInScreen() {
         <View style={styles.socialRow}>
           <Pressable
             accessibilityRole="button"
-            onPress={onSocialSignIn}
+            disabled={submitting || !googleRequest}
+            onPress={onGoogleSignIn}
+            testID="auth.signIn.googleButton"
             style={[styles.socialButton, { borderColor: palette.icon }]}>
             <Text style={[styles.socialButtonText, { color: palette.text }]}>{t('auth.social.google')}</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            onPress={onSocialSignIn}
+            disabled={submitting}
+            onPress={onAppleSignIn}
+            testID="auth.signIn.appleButton"
             style={[styles.socialButton, { borderColor: palette.icon }]}>
             <Text style={[styles.socialButtonText, { color: palette.text }]}>{t('auth.social.apple')}</Text>
           </Pressable>
@@ -169,6 +274,7 @@ export default function SignInScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push('/auth/create-account')}
+          testID="auth.signIn.createAccountButton"
           style={styles.secondaryButton}>
           <Text style={[styles.secondaryButtonText, { color: palette.tint }]}>
             {t('auth.signin.cta_create')}
@@ -278,3 +384,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+async function signInWithEmailPassword(input: SignInRequest): Promise<void> {
+  const auth = getFirebaseAuth();
+  await signInWithEmailAndPassword(auth, input.email.trim().toLowerCase(), input.password);
+}

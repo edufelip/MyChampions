@@ -1,4 +1,9 @@
-export type SignInErrorReason = 'invalid_credentials' | 'network' | 'unknown';
+export type SignInErrorReason =
+  | 'invalid_credentials'
+  | 'network'
+  | 'provider_conflict'
+  | 'configuration'
+  | 'unknown';
 
 export type SignInRequest = {
   email: string;
@@ -13,6 +18,8 @@ export type SignInValidationErrors = {
 export type SignInErrorMessageKey =
   | 'auth.signin.error.invalid_credentials'
   | 'auth.signin.error.network'
+  | 'auth.signin.error.provider_conflict'
+  | 'auth.signin.error.configuration'
   | 'common.error.generic';
 
 export class SignInFailure extends Error {
@@ -54,10 +61,26 @@ export function normalizeSignInReason(error: unknown): SignInErrorReason {
 
   if (
     code.includes('invalid_credentials') ||
+    code.includes('invalid-login') ||
+    code.includes('wrong-password') ||
+    code.includes('user-not-found') ||
     code.includes('invalid_login') ||
     message.includes('invalid credentials')
   ) {
     return 'invalid_credentials';
+  }
+
+  if (code.includes('account-exists-with-different-credential')) {
+    return 'provider_conflict';
+  }
+
+  if (
+    code.includes('missing required keys') ||
+    code.includes('invalid-api-key') ||
+    message.includes('missing required keys') ||
+    message.includes('invalid api key')
+  ) {
+    return 'configuration';
   }
 
   if (
@@ -79,6 +102,14 @@ export function mapSignInReasonToMessageKey(reason: SignInErrorReason): SignInEr
 
   if (reason === 'network') {
     return 'auth.signin.error.network';
+  }
+
+  if (reason === 'provider_conflict') {
+    return 'auth.signin.error.provider_conflict';
+  }
+
+  if (reason === 'configuration') {
+    return 'auth.signin.error.configuration';
   }
 
   return 'common.error.generic';

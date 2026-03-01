@@ -1,11 +1,21 @@
 export const enUS = {
   'common.error.generic': 'Something went wrong. Try again.',
   'auth.field.email': 'Email',
+  'auth.field.name': 'Name',
   'auth.field.password': 'Password',
+  'auth.field.password_confirmation': 'Confirm password',
   'auth.placeholder.email': 'Email',
+  'auth.placeholder.name': 'Full name',
   'auth.placeholder.password': 'Password',
+  'auth.placeholder.password_confirmation': 'Confirm password',
+  'auth.validation.name_required': 'Name is required.',
   'auth.validation.email_required': 'Email is required.',
   'auth.validation.password_required': 'Password is required.',
+  'auth.validation.password_confirmation_required': 'Password confirmation is required.',
+  'auth.validation.password_policy':
+    'Use at least 8 characters with uppercase, number, and an ASCII symbol (e.g., ! @ #). Emoji are not allowed.',
+  'auth.validation.password_confirmation_mismatch':
+    'Password confirmation must match your password.',
   'auth.signin.title': 'Welcome back',
   'auth.signin.cta_primary': 'Sign in',
   'auth.signin.cta_create': 'Create account',
@@ -13,6 +23,10 @@ export const enUS = {
   'auth.signin.error.invalid_credentials':
     'Email or password is incorrect. Try again or reset your password.',
   'auth.signin.error.network': "Couldn't connect right now. Check your connection and try again.",
+  'auth.signin.error.provider_conflict':
+    'This email is already linked to another sign-in method. Sign in with your existing method first.',
+  'auth.signin.error.configuration':
+    'Authentication is not configured yet. Set Firebase keys and try again.',
   'auth.social.google': 'Google',
   'auth.social.apple': 'Apple',
   'auth.password.toggle_show': 'Show password',
@@ -20,9 +34,32 @@ export const enUS = {
   'auth.password.toggle_show_short': 'Show',
   'auth.password.toggle_hide_short': 'Hide',
   'auth.signup.title': 'Create your account',
+  'auth.signup.cta_primary': 'Create account',
+  'auth.signup.or_continue': 'or continue with',
+  'auth.signup.password_helper':
+    'Use at least 8 characters, including uppercase, number, and a symbol (e.g., ! @ #).',
+  'auth.signup.error.duplicate_email': 'This email is already in use. Sign in to continue.',
+  'auth.signup.error.network': "Couldn't connect right now. Check your connection and try again.",
+  'auth.signup.error.provider_conflict':
+    'This email is already linked to another sign-in method. Sign in with your existing method first.',
+  'auth.signup.error.configuration':
+    'Authentication is not configured yet. Set Firebase keys and try again.',
   'auth.signup.placeholder.body':
     'Create-account form implementation starts in the next screen slice.',
   'auth.signup.cta_back_signin': 'Back to sign in',
+  'auth.role.title': 'How do you want to use the app?',
+  'auth.role.intro': 'You can start on your own now and connect with a professional later.',
+  'auth.role.option_self.title': 'I want to track my own progress',
+  'auth.role.option_self.subtitle': 'Log meals and workouts by yourself. No professional required.',
+  'auth.role.option_pro.title': "I'm a nutritionist or fitness coach",
+  'auth.role.option_pro.subtitle': 'Manage clients, assign plans, and track student progress.',
+  'auth.role.lock_note':
+    "Account type can't be changed later. You can create another account with a different email if needed.",
+  'auth.role.cta_continue': 'Continue',
+  'auth.role.cta_back': 'Back',
+  'auth.role.cta_start_self_guided': 'Start on my own now',
+  'auth.role.validation.required': 'Choose how you want to use the app to continue.',
+  'auth.role.error.save_failed': 'Could not save your role right now. Try again.',
   'auth.role.placeholder.title': 'Role selection',
   'auth.role.placeholder.body':
     'Sign-in flow is wired. Role-selection implementation is the next screen slice.',
