@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+.npm-cache/
 
 # Expo
 .expo/
@@ -32,6 +33,16 @@ yarn-error.*
 
 # local env files
 .env*.local
+
+# iOS/Android Firebase configs
+GoogleService-Info.plist
+GoogleService-Info-Dev.plist
+GoogleService-Info-Prod.plist
+ios/GoogleService-Info.plist
+ios/GoogleService-Info-Dev.plist
+ios/GoogleService-Info-Prod.plist
+**/google-services.json
+google-services-dev.json
 
 # typescript
 *.tsbuildinfo

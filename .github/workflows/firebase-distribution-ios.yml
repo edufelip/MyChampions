@@ -1,0 +1,301 @@
+name: iOS Firebase Distribution
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [develop]
+  pull_request:
+    branches:
+      - develop
+      - release/**
+      - hotfix/**
+
+jobs:
+  firebase-distribution:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-latest
+
+    env:
+      KEYCHAIN_PASSWORD: ${{ secrets.IOS_ADHOC_KEYCHAIN_PASSWORD }}
+      IOS_PROFILE_NAME: ${{ secrets.IOS_ADHOC_PROFILE_NAME }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write .env
+        run: |
+          cat <<'ENVEOF' > .env
+          ${{ secrets.ENV_FILE }}
+          ENVEOF
+
+      - name: Export env vars
+        run: |
+          set -a
+          source .env
+          set +a
+          env | grep '^EXPO_PUBLIC_' >> "$GITHUB_ENV" || true
+
+      - name: Set debug API flag
+        run: |
+          echo "EXPO_PUBLIC_USE_DEV_API=true" >> "$GITHUB_ENV"
+
+      - name: Set Expo environment
+        run: |
+          echo "EXPO_PUBLIC_ENV=dev" >> "$GITHUB_ENV"
+
+      - name: Set MyChampions environment
+        run: |
+          echo "MYCHAMPIONS_ENV=dev" >> "$GITHUB_ENV"
+
+      - name: Validate Expo environment
+        run: |
+          if [ "$EXPO_PUBLIC_ENV" != "dev" ]; then
+            echo "EXPO_PUBLIC_ENV must be 'dev' (got '$EXPO_PUBLIC_ENV')" >&2
+            exit 1
+          fi
+          echo "EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
+
+      - name: Validate Firebase secrets
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64_DEV }}
+          FIREBASE_APP_ID_IOS: ${{ secrets.FIREBASE_APP_ID_IOS_DEV }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST_BASE64" ]; then
+            echo "GOOGLE_SERVICE_INFO_PLIST_BASE64_DEV is not set" >&2
+            exit 1
+          fi
+          if [ -z "$FIREBASE_APP_ID_IOS" ]; then
+            echo "FIREBASE_APP_ID_IOS_DEV is not set" >&2
+            exit 1
+          fi
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON is not set" >&2
+            exit 1
+          fi
+
+      - name: Bump iOS build number
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" ios/mychampions/Info.plist
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install JS deps
+        run: npm ci
+        working-directory: .
+
+      - name: Install pods
+        env:
+          COCOAPODS_CACHE_DIR: ${{ runner.temp }}/.cocoapods-cache
+        run: |
+          mkdir -p "$COCOAPODS_CACHE_DIR"
+          cd ios
+          pod install --silent
+
+      - name: Write GoogleService-Info-Dev.plist
+        working-directory: ios
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64_DEV }}
+        run: |
+          echo "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 -d > GoogleService-Info-Dev.plist
+
+      - name: Ensure GoogleService-Info.plist exists
+        working-directory: ios
+        run: |
+          cp -f GoogleService-Info-Dev.plist GoogleService-Info.plist
+
+      - name: Sync Google Sign-In scheme (dev)
+        run: |
+          python3 - <<'PY'
+          import plistlib
+          import sys
+
+          info_path = "ios/mychampions/Info.plist"
+          gservice_path = "ios/GoogleService-Info-Dev.plist"
+
+          with open(gservice_path, "rb") as f:
+            gservice = plistlib.load(f)
+          scheme = gservice.get("REVERSED_CLIENT_ID")
+          if not scheme:
+            print("REVERSED_CLIENT_ID missing in GoogleService-Info.plist", file=sys.stderr)
+            sys.exit(1)
+
+          with open(info_path, "rb") as f:
+            info = plistlib.load(f)
+
+          url_types = info.get("CFBundleURLTypes", [])
+          google_entry = None
+          for entry in url_types:
+            schemes = entry.get("CFBundleURLSchemes", [])
+            if any(s.startswith("com.googleusercontent.apps.") for s in schemes):
+              google_entry = entry
+              break
+
+          if google_entry is None:
+            url_types.append({"CFBundleURLSchemes": [scheme]})
+          else:
+            google_entry["CFBundleURLSchemes"] = [scheme]
+
+          info["CFBundleURLTypes"] = url_types
+
+          with open(info_path, "wb") as f:
+            plistlib.dump(info, f)
+
+          print(f"Updated Google Sign-In scheme to {scheme}")
+          PY
+
+      - name: Validate Google Sign-In scheme
+        run: |
+          PLIST_REVERSED=$(/usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" ios/GoogleService-Info-Dev.plist)
+          if ! /usr/libexec/PlistBuddy -c "Print :CFBundleURLTypes" ios/mychampions/Info.plist | grep -Fq "$PLIST_REVERSED"; then
+            echo "Google Sign-In mismatch: Info.plist missing REVERSED_CLIENT_ID scheme ($PLIST_REVERSED)" >&2
+            exit 1
+          fi
+
+      - name: Set up keychain and certificates
+        env:
+          CERT_P12_BASE64: ${{ secrets.IOS_ADHOC_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_ADHOC_CERT_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_ADHOC_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+          PROFILE_PATH="$RUNNER_TEMP/build_profile.mobileprovision"
+          PROFILE_DEST="$HOME/Library/MobileDevice/Provisioning Profiles/mychampions-dev.mobileprovision"
+
+          echo -n "$CERT_P12_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          echo -n "$PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security import "$CERTIFICATE_PATH" \
+            -P "$CERT_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$PROFILE_DEST"
+
+      - name: Validate provisioning profile entitlements (push)
+        run: |
+          PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/mychampions-dev.mobileprovision"
+          if [ ! -f "$PROFILE_PATH" ]; then
+            echo "Provisioning profile not found at $PROFILE_PATH" >&2
+            exit 1
+          fi
+
+          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
+          APS_ENV=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:aps-environment" "$RUNNER_TEMP/profile.plist" 2>/dev/null || true)
+
+          if [ -z "$APS_ENV" ]; then
+            echo "Provisioning profile missing Push Notifications entitlement (aps-environment)." >&2
+            exit 1
+          fi
+
+          echo "Detected aps-environment: $APS_ENV"
+
+      - name: Build archive (DevRelease)
+        env:
+          KEYCHAIN_PATH: ${{ runner.temp }}/app-signing.keychain-db
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace mychampions.xcworkspace \
+            -scheme mychampions \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$PWD/build/mychampionsDev.xcarchive" \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Development" \
+            DEVELOPMENT_TEAM=${{ secrets.IOS_TEAM_ID }} \
+            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_NAME" \
+            CODE_SIGN_ENTITLEMENTS="mychampions/mychampions.entitlements" \
+            PRODUCT_BUNDLE_IDENTIFIER="com.edufelip.mychampions.dev" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH"
+
+      - name: Export IPA (development)
+        env:
+          KEYCHAIN_PATH: ${{ runner.temp }}/app-signing.keychain-db
+        run: |
+          cat <<EOF > ios/ExportOptionsDevelopment.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>development</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>compileBitcode</key><false/>
+            <key>stripSwiftSymbols</key><true/>
+              <key>provisioningProfiles</key>
+              <dict>
+              <key>com.edufelip.mychampions.dev</key><string>${IOS_PROFILE_NAME}</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
+          cd ios
+          xcodebuild -exportArchive \
+            -archivePath "$PWD/build/mychampionsDev.xcarchive" \
+            -exportOptionsPlist ExportOptionsDevelopment.plist \
+            -exportPath "$PWD/build" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH"
+
+      - name: Resolve IPA path
+        run: |
+          IPA_PATH=$(ls ios/build/*.ipa | head -n 1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "IPA not found in ios/build" && exit 1
+          fi
+          echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
+
+      - name: Release notes
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            NOTES="$PR_TITLE"
+            if [ -z "$NOTES" ]; then
+              NOTES="PR #$PR_NUMBER"
+            fi
+          else
+            NOTES=$(git log -1 --pretty=%B)
+          fi
+          echo "RELEASE_NOTES<<EOF" >> "$GITHUB_ENV"
+          echo "$NOTES" >> "$GITHUB_ENV"
+          echo "EOF" >> "$GITHUB_ENV"
+
+      - name: Write Firebase service account
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > "$RUNNER_TEMP/firebase-service-account.json"
+
+      - name: Upload to Firebase App Distribution
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+        run: |
+          npx --yes firebase-tools@latest appdistribution:distribute "$IPA_PATH" \
+            --app "${{ secrets.FIREBASE_APP_ID_IOS_DEV }}" \
+            --groups "base-group" \
+            --release-notes "$RELEASE_NOTES"
+
+      - name: Clean keychain and profiles
+        if: always()
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          security delete-keychain "$KEYCHAIN_PATH" || true
+          rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision || true

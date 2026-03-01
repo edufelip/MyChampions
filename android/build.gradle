@@ -9,6 +9,7 @@ buildscript {
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    classpath('com.google.gms:google-services:4.4.2')
   }
 }
 
@@ -17,6 +18,19 @@ allprojects {
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
+  }
+}
+
+subprojects { subproject ->
+  subproject.plugins.withId("com.android.library") {
+    def androidExt = subproject.extensions.findByName("android")
+    if (androidExt != null) {
+      androidExt.packagingOptions {
+        jniLibs {
+          pickFirsts += ["**/libfbjni.so"]
+        }
+      }
+    }
   }
 }
 

@@ -1,0 +1,66 @@
+name: iOS PR Checks
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - release/**
+      - hotfix/**
+
+jobs:
+  build:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write .env
+        run: |
+          cat <<'EOF' > .env
+          ${{ secrets.ENV_FILE }}
+          EOF
+      - name: Set Expo environment (dev)
+        run: |
+          echo "EXPO_PUBLIC_ENV=dev" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Ensure firebase secrets exist
+        run: |
+          if [ -z "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64_DEV }}" ]; then
+            echo "GOOGLE_SERVICE_INFO_PLIST_BASE64_DEV is not set" >&2
+            exit 1
+          fi
+      - name: Install JS deps
+        run: npm ci
+        working-directory: .
+      - name: Install pods
+        env:
+          COCOAPODS_CACHE_DIR: ${{ runner.temp }}/.cocoapods-cache
+        run: |
+          mkdir -p "$COCOAPODS_CACHE_DIR"
+          cd ios
+          pod install --silent
+      - name: Write GoogleService-Info-Dev.plist
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64_DEV }}
+        run: |
+          if [ -n "$GOOGLE_SERVICE_INFO_PLIST_BASE64" ]; then
+            echo "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 -d > ios/GoogleService-Info-Dev.plist
+          fi
+      - name: Ensure GoogleService-Info.plist exists
+        run: |
+          cp -f ios/GoogleService-Info-Dev.plist ios/GoogleService-Info.plist
+      - name: List available simulators
+        run: xcrun simctl list devices available
+      - name: Build (simulator debug)
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace mychampions.xcworkspace \
+            -scheme mychampions \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            build

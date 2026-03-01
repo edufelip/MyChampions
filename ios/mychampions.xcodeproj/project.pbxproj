@@ -145,6 +145,7 @@
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
+				D4B9A6A72FEA100B00F10001 /* [Firebase] Select GoogleService plist */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				09787286B482D4B057C8153B /* [CP] Embed Pods Frameworks */,
 			);
@@ -294,6 +295,30 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-mychampions/Pods-mychampions-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		D4B9A6A72FEA100B00F10001 /* [Firebase] Select GoogleService plist */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(PROJECT_DIR)/mychampions/GoogleService-Info.plist",
+				"$(PROJECT_DIR)/mychampions/GoogleService-Info-Dev.plist",
+				"$(PROJECT_DIR)/mychampions/GoogleService-Info-Prod.plist",
+				"$(PROJECT_DIR)/GoogleService-Info.plist",
+				"$(PROJECT_DIR)/GoogleService-Info-Dev.plist",
+				"$(PROJECT_DIR)/GoogleService-Info-Prod.plist",
+				"$(PROJECT_DIR)/../GoogleService-Info.plist",
+				"$(PROJECT_DIR)/../GoogleService-Info-Dev.plist",
+				"$(PROJECT_DIR)/../GoogleService-Info-Prod.plist",
+			);
+			name = "[Firebase] Select GoogleService plist";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/GoogleService-Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nENVIRONMENT=\"${EXPO_PUBLIC_ENV:-}\"\nif [ -z \"$ENVIRONMENT\" ]; then\n  case \"${CONFIGURATION:-}\" in\n    Debug|Dev|DevRelease|*Dev*|*Debug*)\n      ENVIRONMENT=\"dev\"\n      ;;\n    *)\n      ENVIRONMENT=\"production\"\n      ;;\n  esac\nfi\n\ncase \"$ENVIRONMENT\" in\n  prod|production)\n    CANDIDATE_NAMES=\"GoogleService-Info.plist GoogleService-Info-Prod.plist\"\n    ;;\n  dev)\n    CANDIDATE_NAMES=\"GoogleService-Info-Dev.plist GoogleService-Info.plist\"\n    ;;\n  *)\n    echo \"Unknown EXPO_PUBLIC_ENV: $ENVIRONMENT (expected dev|prod|production)\" >&2\n    exit 1\n    ;;\n esac\n\nSOURCE_PLIST=\"\"\nfor BASE_DIR in \"${PROJECT_DIR}/mychampions\" \"${PROJECT_DIR}\" \"${PROJECT_DIR}/..\"; do\n  for FILE_NAME in $CANDIDATE_NAMES; do\n    CANDIDATE_PATH=\"${BASE_DIR}/${FILE_NAME}\"\n    if [ -f \"$CANDIDATE_PATH\" ]; then\n      SOURCE_PLIST=\"$CANDIDATE_PATH\"\n      break 2\n    fi\n  done\ndone\n\nif [ -z \"$SOURCE_PLIST\" ]; then\n  echo \"GoogleService plist not found for env '$ENVIRONMENT'. Looked for: $CANDIDATE_NAMES under ${PROJECT_DIR}/mychampions, ${PROJECT_DIR}, ${PROJECT_DIR}/..\" >&2\n  exit 1\nfi\n\nDEST_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nmkdir -p \"$(dirname \"$DEST_PATH\")\"\ncp \"$SOURCE_PLIST\" \"$DEST_PATH\"\necho \"Using GoogleService plist: $SOURCE_PLIST\"\n";
+		};
 		CCE87D1AF1FD7FA4CCE836AA /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -359,7 +384,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.eduardo880.mychampions;
+				PRODUCT_BUNDLE_IDENTIFIER = com.edufelip.mychampions;
 				PRODUCT_NAME = mychampions;
 				SWIFT_OBJC_BRIDGING_HEADER = "mychampions/mychampions-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -390,7 +415,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.eduardo880.mychampions;
+				PRODUCT_BUNDLE_IDENTIFIER = com.edufelip.mychampions;
 				PRODUCT_NAME = mychampions;
 				SWIFT_OBJC_BRIDGING_HEADER = "mychampions/mychampions-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

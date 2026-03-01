@@ -1,0 +1,244 @@
+name: Android Release
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - release/**
+      - hotfix/**
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write .env
+        run: |
+          cat <<'EOF' > .env
+          ${{ secrets.ENV_FILE }}
+          EOF
+        working-directory: .
+      - name: Export env vars
+        run: |
+          tr -d '\r' < .env | \
+            awk '/^[[:space:]]*(export[[:space:]]+)?EXPO_PUBLIC_[A-Za-z0-9_]+=/ { sub(/^[[:space:]]*export[[:space:]]+/, "", $0); print $0; }' \
+            >> "$GITHUB_ENV"
+        working-directory: .
+
+      - name: Set Expo environment
+        run: |
+          echo "EXPO_PUBLIC_ENV=prod" >> "$GITHUB_ENV"
+        working-directory: .
+
+      - name: Validate Expo environment
+        run: |
+          if [ "$EXPO_PUBLIC_ENV" != "prod" ]; then
+            echo "EXPO_PUBLIC_ENV must be 'prod' (got '$EXPO_PUBLIC_ENV')" >&2
+            exit 1
+          fi
+          echo "EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
+        working-directory: .
+
+      - name: Validate Firebase secrets
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "GOOGLE_SERVICES_JSON_BASE64 is not set" >&2
+            exit 1
+          fi
+        working-directory: .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install JS deps
+        run: npm ci
+        working-directory: .
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Set CI version code
+        run: echo "CI_VERSION_CODE=${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/mychampions-release-key.jks
+
+      - name: Create keystore.properties
+        run: |
+          cat <<EOF > keystore.properties
+          storeFile=app/mychampions-release-key.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
+          EOF
+
+      - name: Write google-services.json
+        run: |
+          mkdir -p app/src/production
+          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > app/src/production/google-services.json
+
+      - name: Resolve required Google Sign-In SHA-1 values
+        env:
+          STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYPASS: ${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
+          PLAY_SIGNING_SHA1: ${{ secrets.ANDROID_PLAY_SIGNING_SHA1 }}
+        run: |
+          UPLOAD_SHA1=$(keytool -list -v \
+            -keystore app/mychampions-release-key.jks \
+            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -storepass "$STOREPASS" \
+            -keypass "$KEYPASS" | awk -F': ' '/SHA1:/{print $2; exit}')
+
+          if [ -z "$UPLOAD_SHA1" ]; then
+            echo "Unable to extract upload key SHA-1 from app/mychampions-release-key.jks" >&2
+            exit 1
+          fi
+
+          REQUIRED_SHA1S="$UPLOAD_SHA1"
+          if [ -n "$PLAY_SIGNING_SHA1" ]; then
+            REQUIRED_SHA1S="$REQUIRED_SHA1S,$PLAY_SIGNING_SHA1"
+          fi
+
+          echo "GOOGLE_ANDROID_REQUIRED_SHA1S=$REQUIRED_SHA1S" >> "$GITHUB_ENV"
+          echo "Google Sign-In required SHA-1 values: $REQUIRED_SHA1S"
+
+      - name: Build release bundle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: wrapper
+          build-root-directory: android
+          arguments: |
+            clean
+            bundleProductionRelease
+            -PCI_VERSION_CODE=${{ env.CI_VERSION_CODE }}
+            --no-daemon
+            -Dorg.gradle.parallel=false
+      - name: Verify mapping file
+        run: test -f app/build/outputs/mapping/productionRelease/mapping.txt
+      - name: Verify native debug symbols
+        id: verify_native_symbols
+        continue-on-error: true
+        run: test -s app/build/outputs/native-debug-symbols/productionRelease/native-debug-symbols.zip
+      - name: Extract native debug symbols manually if missing
+        if: steps.verify_native_symbols.outcome == 'failure'
+        run: |
+          echo "AGP did not generate native-debug-symbols.zip, attempting manual extraction..."
+          SYMBOLS_DIR="app/build/outputs/native-debug-symbols/productionRelease"
+          OUTPUT_ZIP="$PWD/$SYMBOLS_DIR/native-debug-symbols.zip"
+          NATIVE_TABLES_DIR="app/build/intermediates/native_symbol_tables/productionRelease/extractProductionReleaseNativeSymbolTables/out"
+          mkdir -p "$SYMBOLS_DIR"
+
+          if [ ! -d "$NATIVE_TABLES_DIR" ]; then
+            echo "ERROR: Native symbol tables directory not found: $NATIVE_TABLES_DIR"
+            exit 1
+          fi
+
+          SYM_COUNT=$(find "$NATIVE_TABLES_DIR" -type f -name "*.sym" | wc -l | tr -d ' ')
+          if [ "$SYM_COUNT" -eq 0 ]; then
+            echo "ERROR: No .sym files found in $NATIVE_TABLES_DIR"
+            exit 1
+          fi
+
+          echo "Found $SYM_COUNT .sym files under $NATIVE_TABLES_DIR, creating symbols archive..."
+          rm -f "$OUTPUT_ZIP"
+          (cd "$NATIVE_TABLES_DIR" && zip -q -r "$OUTPUT_ZIP" .)
+
+          if test -s "$OUTPUT_ZIP"; then
+            echo "Native debug symbols archive created successfully at $OUTPUT_ZIP"
+          else
+            echo "ERROR: Failed to create native-debug-symbols.zip"
+            exit 1
+          fi
+      - name: Verify native debug symbols (final)
+        if: always()
+        run: test -s app/build/outputs/native-debug-symbols/productionRelease/native-debug-symbols.zip
+      - name: Validate native debug symbols archive format
+        run: |
+          SYMBOLS_ZIP="app/build/outputs/native-debug-symbols/productionRelease/native-debug-symbols.zip"
+          ENTRIES_FILE="$RUNNER_TEMP/native-symbols-entries.txt"
+
+          test -s "$SYMBOLS_ZIP"
+          unzip -Z1 "$SYMBOLS_ZIP" | sed '/\/$/d' > "$ENTRIES_FILE"
+
+          TOTAL_ENTRIES=$(wc -l < "$ENTRIES_FILE" | tr -d ' ')
+          SYM_ENTRIES=$(grep -Ec '\.sym$' "$ENTRIES_FILE" || true)
+          BAD_LIB_PREFIX=$(grep -Ec '^lib/' "$ENTRIES_FILE" || true)
+          BAD_NON_ABI=$(grep -Evc '^(arm64-v8a|armeabi-v7a|x86|x86_64)/' "$ENTRIES_FILE" || true)
+
+          echo "Total entries: $TOTAL_ENTRIES"
+          echo ".sym entries: $SYM_ENTRIES"
+          echo "Entries with lib/ prefix: $BAD_LIB_PREFIX"
+          echo "Entries outside ABI roots: $BAD_NON_ABI"
+
+          if [ "$TOTAL_ENTRIES" -eq 0 ]; then
+            echo "ERROR: Native symbols archive is empty"
+            exit 1
+          fi
+
+          if [ "$SYM_ENTRIES" -eq 0 ]; then
+            echo "ERROR: Native symbols archive does not contain .sym files"
+            exit 1
+          fi
+
+          if [ "$SYM_ENTRIES" -ne "$TOTAL_ENTRIES" ]; then
+            echo "ERROR: Native symbols archive contains non-.sym entries"
+            exit 1
+          fi
+
+          if [ "$BAD_LIB_PREFIX" -ne 0 ]; then
+            echo "ERROR: Native symbols archive uses lib/ prefix, expected ABI-root layout"
+            exit 1
+          fi
+
+          if [ "$BAD_NON_ABI" -ne 0 ]; then
+            echo "ERROR: Native symbols archive contains entries outside ABI-root folders"
+            exit 1
+          fi
+      - name: Show native symbols archive summary
+        if: always()
+        run: |
+          SYMBOLS_ZIP="app/build/outputs/native-debug-symbols/productionRelease/native-debug-symbols.zip"
+          if [ -f "$SYMBOLS_ZIP" ]; then
+            ls -lh "$SYMBOLS_ZIP"
+            unzip -Z1 "$SYMBOLS_ZIP" | sed -n '1,30p'
+          else
+            echo "Native symbols archive not found at $SYMBOLS_ZIP"
+          fi
+
+      - name: Verify signed AAB
+        run: |
+          AAB_PATH="app/build/outputs/bundle/productionRelease/app-production-release.aab"
+          test -s "$AAB_PATH"
+
+          VERIFY_OUTPUT=$(jarsigner -verify -verbose -certs "$AAB_PATH" 2>&1)
+          echo "$VERIFY_OUTPUT"
+
+          if ! echo "$VERIFY_OUTPUT" | grep -q "jar verified."; then
+            echo "AAB signature verification failed." >&2
+            exit 1
+          fi
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release.aab
+          path: android/app/build/outputs/bundle/productionRelease/app-production-release.aab
+
+      - name: Upload to Play (internal track)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.edufelip.mychampions
+          releaseFiles: android/app/build/outputs/bundle/productionRelease/app-production-release.aab
+          mappingFile: android/app/build/outputs/mapping/productionRelease/mapping.txt
+          debugSymbols: android/app/build/outputs/native-debug-symbols/productionRelease/native-debug-symbols.zip
+          track: internal
+          status: draft
+          # status: completed
