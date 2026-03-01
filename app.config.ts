@@ -1,72 +1,76 @@
-import type { ExpoConfig, ConfigContext } from 'expo/config';
+import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 type AppVariant = 'dev' | 'prod';
+
+type FirebaseConfig = {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+  iosClientId: string;
+  androidClientId: string;
+  webClientId: string;
+  iosAppId: string;
+  androidAppId: string;
+};
 
 type VariantConfig = {
   name: string;
   iosBundleId: string;
   androidPackage: string;
-  firebase: {
-    apiKey: string;
-    authDomain: string;
-    projectId: string;
-    storageBucket: string;
-    messagingSenderId: string;
-    appId: string;
-    iosClientId: string;
-    androidClientId: string;
-    webClientId: string;
-    iosAppId: string;
-    androidAppId: string;
-  };
+  firebase: FirebaseConfig;
 };
 
-const VARIANT_CONFIG: Record<AppVariant, VariantConfig> = {
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${key}.\nCopy .env.example to .env and fill in all values.`
+    );
+  }
+  return value;
+}
+
+function resolveFirebaseConfig(prefix: 'FIREBASE_DEV' | 'FIREBASE_PROD'): FirebaseConfig {
+  return {
+    apiKey: requireEnv(`${prefix}_API_KEY`),
+    authDomain: requireEnv(`${prefix}_AUTH_DOMAIN`),
+    projectId: requireEnv(`${prefix}_PROJECT_ID`),
+    storageBucket: requireEnv(`${prefix}_STORAGE_BUCKET`),
+    messagingSenderId: requireEnv(`${prefix}_MESSAGING_SENDER_ID`),
+    appId: requireEnv(`${prefix}_APP_ID`),
+    iosClientId: requireEnv(`${prefix}_IOS_CLIENT_ID`),
+    androidClientId: requireEnv(`${prefix}_ANDROID_CLIENT_ID`),
+    webClientId: requireEnv(`${prefix}_WEB_CLIENT_ID`),
+    iosAppId: requireEnv(`${prefix}_IOS_APP_ID`),
+    androidAppId: requireEnv(`${prefix}_ANDROID_APP_ID`),
+  };
+}
+
+const VARIANT_IDENTIFIERS: Record<AppVariant, Omit<VariantConfig, 'firebase'>> = {
   dev: {
     name: 'my-champions-dev',
     iosBundleId: 'com.edufelip.mychampions.dev',
     androidPackage: 'com.edufelip.mychampions.dev',
-    firebase: {
-      apiKey: 'AIzaSyBJOd7In-eY4_3v0aPPttp2tW7Q6r7GysI',
-      authDomain: 'mychampions-fb928.firebaseapp.com',
-      projectId: 'mychampions-fb928',
-      storageBucket: 'mychampions-fb928.firebasestorage.app',
-      messagingSenderId: '942354515358',
-      appId: '1:942354515358:android:b6a797dedb042d3ee6428f',
-      iosClientId: '942354515358-fursf2upkr1ggp1tfhojo1uhiqmtsc2t.apps.googleusercontent.com',
-      androidClientId: '942354515358-ldkltehi2l9d942219l68rlbjav7d9mc.apps.googleusercontent.com',
-      webClientId: '942354515358-ldkltehi2l9d942219l68rlbjav7d9mc.apps.googleusercontent.com',
-      iosAppId: '1:942354515358:ios:f2809afd8d187c7ee6428f',
-      androidAppId: '1:942354515358:android:b6a797dedb042d3ee6428f',
-    },
   },
   prod: {
     name: 'my-champions',
     iosBundleId: 'com.edufelip.mychampions',
     androidPackage: 'com.edufelip.mychampions',
-    firebase: {
-      apiKey: 'AIzaSyBJOd7In-eY4_3v0aPPttp2tW7Q6r7GysI',
-      authDomain: 'mychampions-fb928.firebaseapp.com',
-      projectId: 'mychampions-fb928',
-      storageBucket: 'mychampions-fb928.firebasestorage.app',
-      messagingSenderId: '942354515358',
-      appId: '1:942354515358:android:589e71dbec2da54fe6428f',
-      iosClientId: '942354515358-6pqkvvhajja4uon9igq3rtcp2q3k9qvo.apps.googleusercontent.com',
-      androidClientId: '942354515358-ldkltehi2l9d942219l68rlbjav7d9mc.apps.googleusercontent.com',
-      webClientId: '942354515358-ldkltehi2l9d942219l68rlbjav7d9mc.apps.googleusercontent.com',
-      iosAppId: '1:942354515358:ios:7e79b38901952c7ee6428f',
-      androidAppId: '1:942354515358:android:589e71dbec2da54fe6428f',
-    },
   },
 };
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const variant = (process.env.APP_VARIANT === 'prod' ? 'prod' : 'dev') as AppVariant;
-  const selected = VARIANT_CONFIG[variant];
+  const prefix = variant === 'prod' ? 'FIREBASE_PROD' : 'FIREBASE_DEV';
+  const { name, iosBundleId, androidPackage } = VARIANT_IDENTIFIERS[variant];
+  const firebase = resolveFirebaseConfig(prefix);
 
   return {
     ...config,
-    name: selected.name,
+    name,
     slug: 'my-champions',
     version: '1.0.0',
     orientation: 'portrait',
@@ -76,7 +80,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: selected.iosBundleId,
+      bundleIdentifier: iosBundleId,
     },
     android: {
       adaptiveIcon: {
@@ -87,7 +91,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      package: selected.androidPackage,
+      package: androidPackage,
     },
     web: {
       output: 'static',
@@ -115,7 +119,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     extra: {
       appVariant: variant,
-      firebase: selected.firebase,
+      firebase,
       dataConnect: {
         graphqlEndpoint: process.env.EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT ?? '',
         apiKey: process.env.EXPO_PUBLIC_DATA_CONNECT_API_KEY ?? '',

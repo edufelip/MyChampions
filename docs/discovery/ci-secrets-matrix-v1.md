@@ -12,8 +12,9 @@ Define all GitHub Actions secrets required by `.github/workflows/` so CI/CD setu
 
 ## Global Notes
 - Store all values in **GitHub repository secrets** (or environment-level secrets for stricter release controls).
-- `ENV_FILE` must contain only non-sensitive `EXPO_PUBLIC_*` keys intended for client/runtime config.
-- Firebase config files (`google-services.json`, `GoogleService-Info*.plist`) are injected in CI from base64 secrets and must not be committed.
+- `ENV_FILE` must contain **all** variables listed in `.env.example`: Firebase JS config (`FIREBASE_DEV_*`, `FIREBASE_PROD_*`), Data Connect vars (`EXPO_PUBLIC_DATA_CONNECT_*`), and `APP_VARIANT`. Firebase config is no longer hardcoded in `app.config.ts` — it is read from env vars at build time.
+- Firebase config files (`google-services.json`, `GoogleService-Info*.plist`) are injected in CI from base64 secrets and must not be committed. These are the native Firebase configs; `ENV_FILE` carries the JS/Expo layer config separately.
+- `.env.example` in the repository root lists all required variable names with empty values. Copy to `.env` locally and populate. `.env` is gitignored.
 - Use issue template `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` to track repository bootstrap and validation runs.
 
 ## Secret Inventory

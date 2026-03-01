@@ -31,8 +31,16 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files — never commit real values; use .env.example as template
+.env
+.env.local
+.env.dev
+.env.prod
 .env*.local
+
+# scratch / debug scripts
+test-dc*.ts
+test-dc*.js
 
 # iOS/Android Firebase configs
 GoogleService-Info.plist
