@@ -60,6 +60,9 @@ function RootLayoutContent() {
         <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
         <Stack.Screen name="auth/create-account" options={{ headerShown: false }} />
         <Stack.Screen name="auth/role-selection" options={{ headerShown: false }} />
+        <Stack.Screen name="student/home" options={{ headerShown: true }} />
+        <Stack.Screen name="student/nutrition" options={{ headerShown: true }} />
+        <Stack.Screen name="student/training" options={{ headerShown: true }} />
         <Stack.Screen name="student/professionals" options={{ headerShown: true }} />
         <Stack.Screen name="professional/pending" options={{ headerShown: true }} />
         <Stack.Screen
