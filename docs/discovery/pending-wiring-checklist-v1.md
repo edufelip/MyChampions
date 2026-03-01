@@ -73,6 +73,19 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire predefined plan library persistence and bulk-assignment orchestration APIs.
 - `Pending`: Wire water-goal ownership precedence from live assignment + nutritionist override data.
 
+## Bottom Navigation Shell (Phase 7)
+- `Done`: `app/(tabs)/_layout.tsx` replaced with role-aware tab layout (D-045):
+  - Professional: Dashboard / Students / Nutrition / Training / Account
+  - Student: Home / Nutrition / Training / Recipes / Account
+  - Tabs not belonging to the current role are hidden via `href: null`.
+- `Done`: `IconSymbol` MAPPING expanded with tab bar icon pairs (SF Symbols + Material Icons).
+- `Done`: `shell.tabs.*` and `shell.placeholder.coming_soon` localization keys added to en-US, pt-BR, es-ES.
+- `Done`: Tab screens created: `(tabs)/index.tsx`, `(tabs)/students.tsx`, `(tabs)/nutrition.tsx`, `(tabs)/training.tsx`, `(tabs)/recipes.tsx`, `(tabs)/account.tsx`.
+- `Done`: Professional nutrition placeholder (`app/professional/nutrition.tsx`) and training placeholder (`app/professional/training.tsx`) created for SC-207/SC-208 (not yet implemented).
+- `Pending`: Implement SC-207 Nutrition Plan Builder for professional nutrition tab.
+- `Pending`: Implement SC-208 Training Plan Builder for professional training tab.
+- `Pending`: Replace professional nutrition/training placeholders with live screens after SC-207/SC-208 are implemented.
+
 ## Account Settings & Custom Meal Screens (Phase 6)
 - `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.
 - `Done`: SC-214 Custom Meal Builder (`app/nutrition/custom-meals/[mealId].tsx`) implemented — create/edit form with all 7 fields, image upload stub, share CTA; Data Connect and Cloud Storage wiring deferred.

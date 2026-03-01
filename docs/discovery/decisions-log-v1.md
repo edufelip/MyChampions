@@ -113,6 +113,7 @@
 - `D-101`: Professional screen stubs use `useState<EntitlementStatus>('unknown')` (not `const`) to prevent TypeScript literal narrowing; this pattern must be applied to all stub state that will later be replaced by live data.
 - `D-102`: Phase 5 professional screens (SC-202, SC-204, SC-205, SC-206, SC-212) are implemented with stub data for Data Connect and RevenueCat wiring; all deferred items are tracked in `docs/discovery/pending-wiring-checklist-v1.md`.
 - `D-103`: Phase 6 screens (SC-213, SC-214, SC-215, SC-216) are implemented with stub data for Data Connect, Cloud Storage, and deep-link resume wiring; all deferred items are tracked in `docs/discovery/pending-wiring-checklist-v1.md`. Privacy policy URL in SC-213 is a placeholder that must be replaced with the real legal URL before release.
+- `D-104`: Phase 7 bottom navigation shell is implemented per D-045. Professional SC-207 (nutrition plan builder) and SC-208 (training plan builder) tabs show "coming soon" placeholders until those screens are implemented. The `(tabs)/_layout.tsx` uses `href: null` to hide role-inappropriate tabs rather than conditional rendering, keeping expo-router file-system routing intact.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
