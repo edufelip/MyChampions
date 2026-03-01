@@ -161,6 +161,13 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire upload progress/retry state to real network/upload events.
 
 ## AI Meal Photo Analysis (BL-108)
+- `Done`: `features/nutrition/meal-photo-analysis.logic.ts` — pure functions: `isValidMacroEstimate`, `parseMacroEstimateFromResponse`, `mapMacroEstimateToMealInput`, `normalizePhotoAnalysisError`, `buildAnalysisSystemPrompt`, `buildAnalysisUserPrompt`.
+- `Done`: `features/nutrition/meal-photo-analysis.logic.test.ts` — unit tests included in 301-test suite (TC-271–TC-274).
+- `Done`: `features/nutrition/meal-photo-analysis-source.ts` — HTTP source `analyzeMealPhoto`: Firebase ID token header, typed `PhotoAnalysisSourceError`, full response/error mapping.
+- `Done`: `features/nutrition/use-meal-photo-analysis.ts` — React hook `useMealPhotoAnalysis` with `idle/capturing/compressing/analyzing/done/error` state machine; `startCapture` (stub), `analyze`, `reset`, `preFillMealInput`.
+- `Done`: SC-214 and SC-215 wired to `useMealPhotoAnalysis` — camera CTA, result pre-fill, attach-photo toggle (SC-214 only).
+- `Done`: All `meal.photo_analysis.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
+- `Done`: SC-219 screen spec updated to reflect actual implementation.
 - `Pending`: Provision Firebase Cloud Function `analyzeMealPhoto` with the following contract:
   ```
   POST /analyzeMealPhoto
