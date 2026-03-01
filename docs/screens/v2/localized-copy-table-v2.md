@@ -196,6 +196,15 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `a11y.selected_count` | SC-pending | SR bulk selection count | {count} selected | {count} selecionado(s) | {count} seleccionado(s) | Replaces hardcoded string in pending.tsx |
 | `a11y.student_row` | SC-205 | SR student row label | {name}, {specialty}, {status} | {name}, {specialty}, {status} | {name}, {specialty}, {status} | Combines name+specialty+status for SR |
 | `a11y.stat_card` | SC-204 | SR stat card label | {value} {label} | {value} {label} | {value} {label} | Combines value+label for stat cards |
+| `meal.photo_analysis.cta` | SC-214/SC-215 | Camera/AI entry CTA | Analyze with AI | Analisar com IA | Analizar con IA | BL-108 |
+| `meal.photo_analysis.analyzing` | SC-219 | In-progress loading text | Analyzing your meal… | Analisando sua refeição… | Analizando tu comida… | BL-108 |
+| `meal.photo_analysis.disclaimer` | SC-219 | Estimate disclaimer | These are AI estimates. Please verify before saving. | Estes são valores estimados pela IA. Verifique antes de salvar. | Estos son valores estimados por IA. Verifícalos antes de guardar. | BR-290; always shown with results |
+| `meal.photo_analysis.error.unrecognizable` | SC-219 | Unrecognizable image error | Couldn't identify a meal in this photo. Try again or fill in manually. | Não foi possível identificar uma refeição nesta foto. Tente novamente ou preencha manualmente. | No se pudo identificar una comida en esta foto. Inténtalo de nuevo o rellena manualmente. | BL-108 |
+| `meal.photo_analysis.error.quota` | SC-219 | Quota exceeded error | AI analysis is temporarily unavailable. Please fill in manually. | A análise por IA está temporariamente indisponível. Por favor, preencha manualmente. | El análisis de IA no está disponible temporalmente. Por favor, rellena manualmente. | BL-108 |
+| `meal.photo_analysis.error.network` | SC-219 | Network error | Network error during analysis. Check your connection and try again. | Erro de rede durante a análise. Verifique sua conexão e tente novamente. | Error de red durante el análisis. Comprueba tu conexión e inténtalo de nuevo. | BL-108 |
+| `meal.photo_analysis.error.generic` | SC-219 | Generic fallback error | Analysis failed. You can still fill in the fields manually. | A análise falhou. Você ainda pode preencher os campos manualmente. | El análisis falló. Aún puedes rellenar los campos manualmente. | BL-108 |
+| `meal.photo_analysis.attach_photo.label` | SC-214 | Optional photo attachment toggle | Also attach this photo to the meal | Também anexar esta foto à refeição | También adjuntar esta foto a la comida | SC-214 only; post-analysis optional step |
+| `meal.photo_analysis.confidence.low` | SC-219 | Low-confidence warning | Low confidence — double-check these estimates | Baixa confiança — confira esses valores | Baja confianza — revisa estos valores | Shown when confidence='low' |
 
 ## Notes
 - Replace `TODO` translations after localization review.

@@ -459,4 +459,13 @@ export const esES: Record<TranslationKey, string> = {
   'a11y.selected_count': '{count} seleccionado(s)',
   'a11y.student_row': '{name}, {specialty}, {status}',
   'a11y.stat_card': '{value} {label}',
+  'meal.photo_analysis.cta': 'Analizar con IA',
+  'meal.photo_analysis.analyzing': 'Analizando tu comida…',
+  'meal.photo_analysis.disclaimer': 'Estos son valores estimados por IA. Verifícalos antes de guardar.',
+  'meal.photo_analysis.error.unrecognizable': 'No se pudo identificar una comida en esta foto. Inténtalo de nuevo o rellena manualmente.',
+  'meal.photo_analysis.error.quota': 'El análisis de IA no está disponible temporalmente. Por favor, rellena manualmente.',
+  'meal.photo_analysis.error.network': 'Error de red durante el análisis. Comprueba tu conexión e inténtalo de nuevo.',
+  'meal.photo_analysis.error.generic': 'El análisis falló. Aún puedes rellenar los campos manualmente.',
+  'meal.photo_analysis.attach_photo.label': 'También adjuntar esta foto a la comida',
+  'meal.photo_analysis.confidence.low': 'Baja confianza — revisa estos valores',
 };

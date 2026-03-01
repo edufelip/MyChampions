@@ -6,21 +6,29 @@
  * Create or edit a custom meal with all nutrition fields, optional ingredient
  * cost, image upload (stubbed), and recipe share-link generation.
  *
+ * AI meal photo analysis (BL-108): camera CTA pre-fills form fields with
+ * AI-estimated macros. Camera capture and image compression are stubs —
+ * real wiring deferred per docs/discovery/pending-wiring-checklist-v1.md.
  * Image upload pipeline is deferred — progress/retry UI is present but wired
  * to a stub (no Firebase Cloud Storage call yet).
  * Share link generation is deferred — source layer is stubbed.
  * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
  *
  * Docs: docs/screens/v2/SC-214-custom-meal-builder.md
- * Refs: D-017, D-023, D-027, D-029, D-073, FR-137, FR-138, FR-142–144, FR-148,
- *       FR-150, FR-155, FR-159, FR-162, FR-197, FR-202, FR-213
- *       BR-257, BR-261, BR-271, BR-301–303, BR-308–310, BR-313, BR-316,
- *       BR-322, BR-324, BR-327
- *       UC-003.1, UC-003.3, UC-003.4, UC-003.8
- *       AC-401, AC-402, AC-406–408, AC-412, AC-413, AC-418, AC-420, AC-423–425
- *       TC-401–403, TC-407–409, TC-412, TC-413, TC-415, TC-420, TC-422, TC-425–427
+ *       docs/screens/v2/SC-219-ai-meal-photo-analysis.md
+ * Refs: D-017, D-023, D-027, D-029, D-073, D-106–D-110,
+ *       FR-137, FR-138, FR-142–144, FR-148,
+ *       FR-150, FR-155, FR-159, FR-162, FR-197, FR-202, FR-213,
+ *       FR-229–FR-239
+ *       BR-257, BR-261, BR-271, BR-286–290, BR-301–303, BR-308–310, BR-313,
+ *       BR-316, BR-322, BR-324, BR-327
+ *       UC-003.1, UC-003.3, UC-003.4, UC-003.8, UC-003.9
+ *       AC-401, AC-402, AC-406–408, AC-412, AC-413, AC-418, AC-420, AC-423–425,
+ *       AC-513–AC-519
+ *       TC-401–403, TC-407–409, TC-412, TC-413, TC-415, TC-420, TC-422, TC-425–427,
+ *       TC-271–TC-274
  */
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -43,6 +51,8 @@ import {
   type CustomMealValidationErrors,
   type ImageUploadState,
 } from '@/features/nutrition/custom-meal.logic';
+import { useMealPhotoAnalysis } from '@/features/nutrition/use-meal-photo-analysis';
+import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -63,6 +73,28 @@ export default function CustomMealBuilderScreen() {
 
   const isCreateMode = !mealId || mealId === 'new';
   const { create, update, shareLink } = useCustomMeals(currentUser);
+
+  // ── AI photo analysis ──────────────────────────────────────────────────────
+  const analysis = useMealPhotoAnalysis(currentUser);
+
+  // Pre-fill form fields when analysis completes (BR-288, FR-234)
+  useEffect(() => {
+    if (analysis.state.kind !== 'done') return;
+    const prefill = analysis.preFillMealInput();
+    if (prefill) {
+      setForm((prev) => ({ ...prev, ...prefill }));
+    }
+  }, [analysis.state.kind]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Stub: immediately follow startCapture with analyze('') since camera is deferred
+  const handleAnalyzeCta = useCallback(() => {
+    analysis.startCapture();
+    // Real camera would provide the base64 image; stub passes empty string
+    void analysis.analyze('');
+  }, [analysis]);
+
+  // Track attach-photo toggle (optional, shown after analysis completes — D-109)
+  const [attachPhoto, setAttachPhoto] = useState(false);
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [form, setForm] = useState<CustomMealInput>({
@@ -154,6 +186,17 @@ export default function CustomMealBuilderScreen() {
       <Text style={[styles.helper, { color: palette.icon }]}>
         {t('meal.builder.helper')}
       </Text>
+
+      {/* AI photo analysis CTA & status (BL-108, FR-229, AC-513) */}
+      <MealPhotoAnalysisSection
+        analysisState={analysis.state}
+        attachPhoto={attachPhoto}
+        onAnalyzeCta={handleAnalyzeCta}
+        onReset={analysis.reset}
+        onToggleAttach={() => setAttachPhoto((v) => !v)}
+        palette={palette}
+        t={t}
+      />
 
       {/* Image upload stub */}
       <ImageUploadStub
@@ -274,6 +317,140 @@ export default function CustomMealBuilderScreen() {
       ) : null}
     </ScrollView>
   );
+}
+
+// ─── Meal Photo Analysis Section ─────────────────────────────────────────────
+// Refs: BL-108, FR-229–FR-239, AC-513–AC-519, BR-286–BR-290
+
+function MealPhotoAnalysisSection({
+  analysisState,
+  attachPhoto,
+  onAnalyzeCta,
+  onReset,
+  onToggleAttach,
+  palette,
+  t,
+}: {
+  analysisState: import('@/features/nutrition/use-meal-photo-analysis').PhotoAnalysisState;
+  attachPhoto: boolean;
+  onAnalyzeCta: () => void;
+  onReset: () => void;
+  onToggleAttach: () => void;
+  palette: Palette;
+  t: TFn;
+}) {
+  const isActive =
+    analysisState.kind === 'capturing' ||
+    analysisState.kind === 'compressing' ||
+    analysisState.kind === 'analyzing';
+
+  const errorMessage = analysisState.kind === 'error'
+    ? resolveAnalysisError(analysisState.reason, t)
+    : null;
+
+  const isLowConfidence =
+    analysisState.kind === 'done' && analysisState.estimate.confidence === 'low';
+
+  return (
+    <View style={[styles.analysisSection, { borderColor: palette.tint + '44' }]} testID="meal.photoAnalysis.section">
+      {/* Primary CTA */}
+      {analysisState.kind === 'idle' || analysisState.kind === 'error' ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAnalyzeCta}
+          style={[styles.outlineButton, { borderColor: palette.tint }]}
+          testID="meal.photoAnalysis.cta">
+          <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
+            {t('meal.photo_analysis.cta')}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {/* Analyzing indicator */}
+      {isActive ? (
+        <View style={styles.analysisRow} testID="meal.photoAnalysis.analyzing">
+          <ActivityIndicator size="small" color={palette.tint} />
+          <Text style={[styles.analysisMeta, { color: palette.icon }]}>
+            {t('meal.photo_analysis.analyzing')}
+          </Text>
+        </View>
+      ) : null}
+
+      {/* Error message (AC-516, BR-289) */}
+      {errorMessage ? (
+        <View accessibilityLiveRegion="polite" testID="meal.photoAnalysis.error">
+          <Text style={[styles.analysisMeta, { color: '#b3261e' }]}>{errorMessage}</Text>
+        </View>
+      ) : null}
+
+      {/* Done — disclaimer + optional low-confidence warning + attach toggle + reset */}
+      {analysisState.kind === 'done' ? (
+        <View style={styles.analysisDoneBlock}>
+          {/* AI disclaimer (BR-290, AC-515) */}
+          <View
+            style={[styles.disclaimerBanner, { backgroundColor: palette.tint + '18', borderColor: palette.tint + '44' }]}
+            testID="meal.photoAnalysis.disclaimer">
+            <Text style={[styles.analysisMeta, { color: palette.text }]}>
+              {t('meal.photo_analysis.disclaimer')}
+            </Text>
+          </View>
+
+          {/* Low-confidence warning (BR-289) */}
+          {isLowConfidence ? (
+            <Text
+              style={[styles.analysisMeta, { color: '#b3261e' }]}
+              testID="meal.photoAnalysis.lowConfidence">
+              {t('meal.photo_analysis.confidence.low')}
+            </Text>
+          ) : null}
+
+          {/* Attach photo toggle (D-109) */}
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: attachPhoto }}
+            onPress={onToggleAttach}
+            style={styles.attachToggleRow}
+            testID="meal.photoAnalysis.attachToggle">
+            <View
+              style={[
+                styles.checkbox,
+                {
+                  borderColor: palette.tint,
+                  backgroundColor: attachPhoto ? palette.tint : 'transparent',
+                },
+              ]}
+            />
+            <Text style={[styles.analysisMeta, { color: palette.text }]}>
+              {t('meal.photo_analysis.attach_photo.label')}
+            </Text>
+          </Pressable>
+
+          {/* Try again link */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={onReset}
+            testID="meal.photoAnalysis.reset">
+            <Text style={[styles.analysisMeta, { color: palette.tint }]}>
+              {t('meal.photo_analysis.cta')}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function resolveAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string {
+  switch (reason) {
+    case 'unrecognizable_image':
+      return t('meal.photo_analysis.error.unrecognizable') as string;
+    case 'quota_exceeded':
+      return t('meal.photo_analysis.error.quota') as string;
+    case 'network':
+      return t('meal.photo_analysis.error.network') as string;
+    default:
+      return t('meal.photo_analysis.error.generic') as string;
+  }
 }
 
 // ─── Image Upload Stub ────────────────────────────────────────────────────────
@@ -461,5 +638,27 @@ const styles = StyleSheet.create({
     fontFamily: Fonts?.rounded ?? 'normal',
     fontSize: 16,
     fontWeight: '700',
+  },
+  // AI photo analysis section
+  analysisSection: {
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 10,
+    padding: 12,
+  },
+  analysisRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  analysisMeta: { fontSize: 13, lineHeight: 18 },
+  analysisDoneBlock: { gap: 8 },
+  disclaimerBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  attachToggleRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  checkbox: {
+    borderRadius: 4,
+    borderWidth: 1.5,
+    height: 18,
+    width: 18,
   },
 });

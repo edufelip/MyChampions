@@ -450,4 +450,13 @@ export const ptBR: Record<TranslationKey, string> = {
   'a11y.selected_count': '{count} selecionado(s)',
   'a11y.student_row': '{name}, {specialty}, {status}',
   'a11y.stat_card': '{value} {label}',
+  'meal.photo_analysis.cta': 'Analisar com IA',
+  'meal.photo_analysis.analyzing': 'Analisando sua refeição…',
+  'meal.photo_analysis.disclaimer': 'Estes são valores estimados pela IA. Verifique antes de salvar.',
+  'meal.photo_analysis.error.unrecognizable': 'Não foi possível identificar uma refeição nesta foto. Tente novamente ou preencha manualmente.',
+  'meal.photo_analysis.error.quota': 'A análise por IA está temporariamente indisponível. Por favor, preencha manualmente.',
+  'meal.photo_analysis.error.network': 'Erro de rede durante a análise. Verifique sua conexão e tente novamente.',
+  'meal.photo_analysis.error.generic': 'A análise falhou. Você ainda pode preencher os campos manualmente.',
+  'meal.photo_analysis.attach_photo.label': 'Também anexar esta foto à refeição',
+  'meal.photo_analysis.confidence.low': 'Baixa confiança — confira esses valores',
 };

@@ -5,19 +5,24 @@
  * Browse saved custom meals and quickly log consumed grams with proportional
  * nutrition calculation shown before confirmation.
  *
+ * AI meal photo analysis (BL-108): camera CTA in the quick-log panel pre-fills
+ * grams from the AI-estimated totalGrams. Camera capture and image compression
+ * are stubs — real wiring deferred per docs/discovery/pending-wiring-checklist-v1.md.
  * Data Connect meal source wiring is deferred — list populated from
  * useCustomMeals hook (stub returns empty until endpoint is live).
  * Portion log persistence is also deferred.
  * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
  *
  * Docs: docs/screens/v2/SC-215-custom-meal-library-and-quick-log.md
- * Refs: D-017, D-021, D-023, FR-139–144, FR-147, FR-150
- *       BR-304–310, BR-313, BR-316
- *       UC-003.2, UC-003.3, UC-003.4, UC-003.6
- *       AC-403–408, AC-411, AC-413
- *       TC-404–409, TC-412, TC-414, TC-415
+ *       docs/screens/v2/SC-219-ai-meal-photo-analysis.md
+ * Refs: D-017, D-021, D-023, D-106–D-110,
+ *       FR-139–144, FR-147, FR-150, FR-229–FR-239
+ *       BR-286–290, BR-304–310, BR-313, BR-316
+ *       UC-003.2, UC-003.3, UC-003.4, UC-003.6, UC-003.9
+ *       AC-403–408, AC-411, AC-413, AC-513–AC-519
+ *       TC-271–TC-274, TC-404–409, TC-412, TC-414, TC-415
  */
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -38,6 +43,8 @@ import {
   calculatePortionNutrition,
   type CustomMeal,
 } from '@/features/nutrition/custom-meal.logic';
+import { useMealPhotoAnalysis } from '@/features/nutrition/use-meal-photo-analysis';
+import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -63,6 +70,25 @@ export default function CustomMealLibraryScreen() {
   const [quickLog, setQuickLog] = useState<QuickLogPanelState>({ kind: 'closed' });
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
 
+  // ── AI photo analysis (BL-108) ─────────────────────────────────────────────
+  const analysis = useMealPhotoAnalysis(currentUser);
+
+  // When analysis completes, pre-fill quickLog grams with estimated totalGrams (FR-236)
+  useEffect(() => {
+    if (analysis.state.kind !== 'done') return;
+    if (quickLog.kind !== 'open') return;
+    const totalGrams = String(analysis.state.estimate.totalGrams);
+    setQuickLog((prev) =>
+      prev.kind === 'open' ? { ...prev, grams: totalGrams, error: null } : prev
+    );
+  }, [analysis.state.kind]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Stub: immediately follow startCapture with analyze('') since camera is deferred
+  const handleAnalyzeCta = useCallback(() => {
+    analysis.startCapture();
+    void analysis.analyze('');
+  }, [analysis]);
+
   // ── Quick log handlers ─────────────────────────────────────────────────────
 
   function openQuickLog(meal: CustomMeal) {
@@ -71,6 +97,7 @@ export default function CustomMealLibraryScreen() {
 
   function closeQuickLog() {
     setQuickLog({ kind: 'closed' });
+    analysis.reset();
   }
 
   function handleGramsChange(value: string) {
@@ -172,6 +199,9 @@ export default function CustomMealLibraryScreen() {
           error={quickLog.error}
           isLogging={isLoggingMeal}
           nutritionPreview={nutritionPreview}
+          analysisState={analysis.state}
+          onAnalyzeCta={handleAnalyzeCta}
+          onResetAnalysis={analysis.reset}
           palette={palette}
           t={t}
           onChangeGrams={handleGramsChange}
@@ -285,6 +315,9 @@ function QuickLogPanel({
   error,
   isLogging,
   nutritionPreview,
+  analysisState,
+  onAnalyzeCta,
+  onResetAnalysis,
   palette,
   t,
   onChangeGrams,
@@ -296,6 +329,9 @@ function QuickLogPanel({
   error: string | null;
   isLogging: boolean;
   nutritionPreview: { calories: number; carbs: number; proteins: number; fats: number } | null;
+  analysisState: import('@/features/nutrition/use-meal-photo-analysis').PhotoAnalysisState;
+  onAnalyzeCta: () => void;
+  onResetAnalysis: () => void;
   palette: Palette;
   t: TFn;
   onChangeGrams: (v: string) => void;
@@ -366,6 +402,15 @@ function QuickLogPanel({
         </View>
       ) : null}
 
+      {/* AI photo analysis (BL-108, FR-236, AC-517) */}
+      <QuickLogAnalysisRow
+        analysisState={analysisState}
+        onAnalyzeCta={onAnalyzeCta}
+        onResetAnalysis={onResetAnalysis}
+        palette={palette}
+        t={t}
+      />
+
       <View style={styles.panelActions}>
         {isLogging ? (
           <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting') as string} />
@@ -390,6 +435,93 @@ function QuickLogPanel({
       </View>
     </View>
   );
+}
+
+// ─── Quick Log Analysis Row ───────────────────────────────────────────────────
+// Shown inside the Quick Log panel to trigger/display AI photo analysis.
+// Refs: BL-108, FR-236, AC-517, BR-289, BR-290
+
+function QuickLogAnalysisRow({
+  analysisState,
+  onAnalyzeCta,
+  onResetAnalysis,
+  palette,
+  t,
+}: {
+  analysisState: import('@/features/nutrition/use-meal-photo-analysis').PhotoAnalysisState;
+  onAnalyzeCta: () => void;
+  onResetAnalysis: () => void;
+  palette: Palette;
+  t: TFn;
+}) {
+  const isActive =
+    analysisState.kind === 'capturing' ||
+    analysisState.kind === 'compressing' ||
+    analysisState.kind === 'analyzing';
+
+  return (
+    <View testID="meal.library.quickLog.analysis">
+      {/* CTA — idle or after error */}
+      {analysisState.kind === 'idle' || analysisState.kind === 'error' ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAnalyzeCta}
+          style={[styles.analysisCtaButton, { borderColor: palette.tint }]}
+          testID="meal.library.quickLog.analysis.cta">
+          <Text style={[styles.analysisCtaText, { color: palette.tint }]}>
+            {t('meal.photo_analysis.cta')}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {/* Analyzing indicator */}
+      {isActive ? (
+        <View style={styles.analysisInlineRow} testID="meal.library.quickLog.analysis.analyzing">
+          <ActivityIndicator size="small" color={palette.tint} />
+          <Text style={[styles.analysisMeta, { color: palette.icon }]}>
+            {t('meal.photo_analysis.analyzing')}
+          </Text>
+        </View>
+      ) : null}
+
+      {/* Error */}
+      {analysisState.kind === 'error' ? (
+        <View accessibilityLiveRegion="polite" testID="meal.library.quickLog.analysis.error">
+          <Text style={[styles.analysisMeta, { color: '#b3261e' }]}>
+            {resolveQuickLogAnalysisError(analysisState.reason, t)}
+          </Text>
+        </View>
+      ) : null}
+
+      {/* Done — disclaimer + low confidence + reset */}
+      {analysisState.kind === 'done' ? (
+        <View style={styles.analysisInlineRow} testID="meal.library.quickLog.analysis.done">
+          <Text style={[styles.analysisMeta, { color: palette.icon }]}>
+            {t('meal.photo_analysis.disclaimer')}
+          </Text>
+          {analysisState.estimate.confidence === 'low' ? (
+            <Text style={[styles.analysisMeta, { color: '#b3261e' }]}>{t('meal.photo_analysis.confidence.low')}</Text>
+          ) : null}
+          <Pressable accessibilityRole="button" onPress={onResetAnalysis} testID="meal.library.quickLog.analysis.reset">
+            <Text style={[styles.analysisMeta, { color: palette.tint }]}>{t('meal.photo_analysis.cta')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function resolveQuickLogAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string {
+  switch (reason) {
+    case 'unrecognizable_image':
+      return t('meal.photo_analysis.error.unrecognizable') as string;
+    case 'quota_exceeded':
+      return t('meal.photo_analysis.error.quota') as string;
+    case 'network':
+      return t('meal.photo_analysis.error.network') as string;
+    default:
+      return t('meal.photo_analysis.error.generic') as string;
+  }
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -479,4 +611,15 @@ const styles = StyleSheet.create({
   panelActions: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   cancelButton: { paddingVertical: 8, paddingHorizontal: 4 },
   cancelButtonText: { fontSize: 14 },
+  // AI photo analysis in quick-log panel
+  analysisCtaButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    minHeight: 40,
+  },
+  analysisCtaText: { fontSize: 13, fontWeight: '600' },
+  analysisInlineRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  analysisMeta: { fontSize: 12, lineHeight: 18 },
 });

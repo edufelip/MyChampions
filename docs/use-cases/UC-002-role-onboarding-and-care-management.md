@@ -263,3 +263,28 @@
   4. Professional fine-tunes each student draft as needed.
   5. Professional confirms assignments.
 - Expected result: Multiple students receive independent assigned plan copies with optional per-student adjustments.
+
+## UC-003.9 Capture Meal Photo For AI Macronutrient Estimation
+- Primary actor: Student (or professional).
+- Trigger: User opens the camera entry point within SC-214 (Custom Meal Builder) or SC-215 (Custom Meal Library Quick Log).
+- Preconditions: User is authenticated; camera permission granted or requested.
+- Main flow:
+  1. User taps the camera/AI analysis CTA in the meal form (SC-214) or quick-log panel (SC-215).
+  2. App opens device camera (or image picker).
+  3. User captures or selects a photo of the meal.
+  4. App compresses the photo client-side (≤1.5 MB / ≤1600 px per FR-202 / FR-230).
+  5. App sends compressed base64 image to Firebase Cloud Function proxy (`analyzeMealPhoto`).
+  6. Cloud Function validates Firebase Auth ID token and calls OpenAI GPT-4o Vision.
+  7. Cloud Function returns structured macro estimates (calories, carbs, proteins, fats, totalGrams, confidence).
+  8. App pre-fills the relevant form fields with the returned estimates.
+  9. App displays AI disclaimer: results are estimates and should be verified.
+  10. User reviews and optionally edits the pre-filled values.
+  11. In SC-214: user may optionally attach the captured photo to the meal image record.
+  12. User confirms save (SC-214) or log (SC-215).
+- Alternate flows:
+  - If camera permission is denied, app shows permission guidance.
+  - If Cloud Function returns an error (network/quota/unrecognizable), app shows reason-specific recoverable error; user can dismiss and fill fields manually.
+  - If user declines photo attachment in SC-214, meal is saved without image.
+- Expected result: Meal form or quick-log panel is pre-filled with AI-estimated macro values; user confirms and saves/logs.
+
+(End of file - total 265 lines)

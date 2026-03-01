@@ -74,6 +74,10 @@
 | TC-268 | Named Predefined Plan Creation | Professional has specialty access | Create predefined plan with custom name (for example `Caloric Deficit A`) | Predefined plan appears in professional private library with saved name |
 | TC-269 | Predefined Plan Bulk Assignment With Fine-Tuning | Professional has predefined plan and multiple target students | Bulk assign plan to selected students and adjust each student draft | Assignment succeeds and per-student customizations are preserved |
 | TC-270 | Assigned Copy Independence | Predefined plan already assigned to students | Edit source predefined plan after assignment | Existing assigned student plans remain unchanged |
+| TC-271 | AI Meal Photo — Success | User in SC-214 or SC-215 with camera permission | Capture meal photo; analysis returns estimates | Form fields are pre-filled with AI estimates; AI disclaimer is visible; all fields are editable |
+| TC-272 | AI Meal Photo — Image Compression | User captures high-resolution meal photo | Photo captured before Cloud Function call | Transmitted image is ≤1.5 MB and ≤1600 px longest side |
+| TC-273 | AI Meal Photo — Analysis Failure | User captures photo; Cloud Function returns error (network/quota/unrecognizable) | Analysis completes with error | Reason-specific recoverable error is shown; form fields remain available for manual entry |
+| TC-274 | AI Meal Photo — Optional Attachment | User completes analysis in SC-214 | User declines to attach the captured photo | Meal saves without image; no error is shown |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.

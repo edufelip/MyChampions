@@ -71,6 +71,13 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-263`: Hydration tracker provides visible daily completion status and streak progression based on effective water goal.
 - `AC-264`: Professionals can create named predefined nutrition/training plans in a reusable private library.
 - `AC-265`: Professionals can bulk assign predefined plans to multiple students and fine-tune each student copy before finalization; assigned copies remain independent.
+- `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
+- `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.
+- `AC-515`: In SC-214, AI macro estimates pre-fill all form fields (calories, carbs, proteins, fats, totalGrams) for user review and editing before saving.
+- `AC-516`: In SC-215, AI macro estimates pre-fill the quick-log grams/nutrition panel for user review and editing before logging.
+- `AC-517`: User can edit all AI-pre-filled fields before confirming; no field is locked or auto-saved after analysis.
+- `AC-518`: AI analysis failure (network, quota, unrecognizable image) surfaces a reason-specific recoverable error; form fields remain available for manual entry.
+- `AC-519`: OpenAI API key is not present in client binary or any client-accessible environment variable; analysis calls route through Firebase Cloud Function proxy with Auth ID token validation.
 
 ## Gherkin Scenarios
 ```gherkin
@@ -261,4 +268,26 @@ Feature: Role-based onboarding and care assignments
     And fine-tunes each student draft before confirm
     Then each student receives an independent assigned copy
     And later edits to predefined source do not mutate assigned student copies
+
+  Scenario: AI meal photo analysis — success path
+    Given user opens SC-214 or SC-215 and camera permission is granted
+    When user captures a meal photo and analysis succeeds
+    Then form fields are pre-filled with AI macro estimates
+    And AI disclaimer is visible
+    And all fields remain editable before save
+
+  Scenario: AI meal photo analysis — failure path
+    Given user opens SC-214 or SC-215 and captures a photo
+    When analysis fails due to network error, quota limit, or unrecognizable image
+    Then reason-specific recoverable error is shown
+    And form fields remain available for manual entry
+
+  Scenario: AI analysis photo attachment optional in SC-214
+    Given user has completed AI analysis in SC-214
+    When user declines to attach the captured photo to the meal
+    Then meal saves without an image and no error is shown
+
+  Scenario: OpenAI key never in client binary
+    Given the app binary is inspected
+    Then no OpenAI API key is present in client code or env config exposed to client
 ```

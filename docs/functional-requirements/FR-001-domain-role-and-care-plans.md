@@ -138,6 +138,17 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-226`: Assigned plans created from predefined templates (single or bulk) shall be independent per-student copies to avoid unintended cross-student mutation from later edits.
 - `FR-227`: All user-facing product strings shall be localized for `en-US`, `pt-BR`, and `es-ES`.
 - `FR-228`: The project shall maintain Detox-based end-to-end smoke coverage for critical user journeys (at minimum auth entry validation and successful sign-in routing) as part of the testing routine.
+- `FR-229`: The app shall support camera capture within the meal registration flow to enable AI-powered macronutrient estimation.
+- `FR-230`: A captured meal photo shall be compressed client-side (≤1.5 MB, ≤1600 px longest side per FR-202) before transmission to any remote service.
+- `FR-231`: The compressed image shall be sent as base64 to a Firebase Cloud Function proxy; the proxy calls OpenAI GPT-4o Vision and returns structured macro estimates (calories, carbs, proteins, fats, totalGrams, confidence).
+- `FR-232`: AI macro estimates shall pre-fill the meal form fields (calories, carbs, proteins, fats, totalGrams) for user review and editing before any save operation.
+- `FR-233`: The camera/AI analysis entry point shall be available in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
+- `FR-234`: In SC-214, AI result pre-fills the named meal creation form; user may edit all fields before saving the named meal record.
+- `FR-235`: In SC-215, AI result pre-fills a one-shot quick-log grams panel; user confirms or edits before logging the portion.
+- `FR-236`: After analysis in SC-214, user may optionally attach the captured photo to the meal image record; declining attachment does not block meal save.
+- `FR-237`: The OpenAI API key must never be embedded in the client binary or exposed via client-accessible environment variables; all AI analysis calls must route through a Firebase Cloud Function proxy that validates the caller's Firebase Auth ID token.
+- `FR-238`: If AI analysis fails (network error, quota exceeded, or unrecognizable image), the app shall surface a recoverable, reason-specific error and leave all form fields available for manual entry.
+- `FR-239`: The UI must display an AI estimate disclaimer whenever analysis results are shown, making clear these are estimates the user should verify before saving.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

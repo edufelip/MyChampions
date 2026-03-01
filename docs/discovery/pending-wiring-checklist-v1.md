@@ -123,5 +123,25 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire image compression + upload pipeline to Firebase Cloud Storage in production flow.
 - `Pending`: Wire upload progress/retry state to real network/upload events.
 
+## AI Meal Photo Analysis (BL-108)
+- `Pending`: Provision Firebase Cloud Function `analyzeMealPhoto` with the following contract:
+  ```
+  POST /analyzeMealPhoto
+  Headers: Authorization: Bearer <Firebase Auth ID token>
+  Body:    { image: string (base64, JPEG), mimeType: 'image/jpeg' }
+  Response 200: { calories: number, carbs: number, proteins: number, fats: number, totalGrams: number, confidence: 'high' | 'medium' | 'low' }
+  Response 400: { error: 'unrecognizable_image' }
+  Response 429: { error: 'quota_exceeded' }
+  Response 401: { error: 'unauthenticated' }
+  Response 500: { error: 'unknown' }
+  ```
+  - Cloud Function must validate Firebase Auth ID token before proxying to OpenAI (BR-288).
+  - OpenAI API key must be stored as a Cloud Function secret/env var only — never in client binary (D-106, BR-289).
+  - Function URL must be provided via `EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL` env var.
+- `Pending`: Wire `EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL` env var in `.env.dev` and `.env.production` with deployed Cloud Function URL.
+- `Pending`: Wire real camera capture / image picker (Expo Camera or `expo-image-picker`) into `use-meal-photo-analysis.ts` (currently deferred — hook uses stub capture state).
+- `Pending`: Wire `expo-image-manipulator` (or equivalent) for client-side compression in the `compressing` state of `use-meal-photo-analysis.ts`.
+- `Pending`: Wire SC-214 photo attachment toggle into existing Cloud Storage image upload pipeline once that pipeline is implemented (D-109).
+
 ## Validation Gate Before Release
 - Every item in this checklist must be either `Done` or explicitly deferred in a release decision note.

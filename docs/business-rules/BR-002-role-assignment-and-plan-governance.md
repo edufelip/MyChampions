@@ -91,6 +91,11 @@
 - `BR-283`: Bulk assignment flow must allow per-student fine-tuning before final assignment confirmation.
 - `BR-284`: Localization baseline requires every user-facing string key to have `en-US`, `pt-BR`, and `es-ES` values before release readiness.
 - `BR-285`: Critical journey screens covered by Detox smoke tests must expose stable `testID` selectors; selector changes require synchronized updates in E2E tests in the same change.
+- `BR-286`: AI meal photo analysis result is advisory only; all macro fields pre-filled by AI remain user-editable before any save or log operation.
+- `BR-287`: A captured meal image must be compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission to the Cloud Function proxy (per FR-202 / D-061).
+- `BR-288`: The Firebase Cloud Function proxy for AI analysis must validate the caller's Firebase Auth ID token before forwarding the request to OpenAI; unauthenticated calls must be rejected.
+- `BR-289`: The OpenAI API key used for meal photo analysis must never be embedded in the client binary or exposed through any client-accessible environment variable.
+- `BR-290`: An AI estimate disclaimer must be displayed whenever analysis results pre-fill form fields, making clear to the user that values are estimates and should be verified before saving.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.
