@@ -1,0 +1,8 @@
+{
+  "dataconnect": {
+    "source": "dataconnect/sql"
+  },
+  "hosting": {
+    "public": "public"
+  }
+}

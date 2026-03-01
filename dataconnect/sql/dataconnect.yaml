@@ -1,0 +1,5 @@
+specVersion: v1
+serviceId: mychampions-fb928-service
+location: us-east4
+schema:
+  - schema.sql

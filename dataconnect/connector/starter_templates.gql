@@ -1,0 +1,263 @@
+"""
+Starter Templates Connector
+Provides GraphQL queries and mutations for managing professional starter plan templates.
+Ref: BL-006, FR-212, FR-247, AC-256, BR-270, TC-260
+"""
+
+type StarterTemplate @table(name: "starter_templates") {
+  id: String!
+  plan_type: String! @sql.column(name: "plan_type")
+  name: String!
+  description: String
+  created_at: Time! @sql.column(name: "created_at")
+  updated_at: Time! @sql.column(name: "updated_at")
+}
+
+type TemplateUsageStats @table(name: "template_usage_stats") {
+  template_id: String! @sql.column(name: "template_id")
+  clone_count: Int! @sql.column(name: "clone_count")
+  assignment_count: Int! @sql.column(name: "assignment_count")
+  updated_at: Time! @sql.column(name: "updated_at")
+}
+
+# ─── Queries ────────────────────────────────────────────────────────────────────
+
+"""
+Get all starter templates, optionally filtered by plan type.
+"""
+query GetStarterTemplates($planType: String) {
+  starter_templates(
+    where: { plan_type: { eq: $planType } }
+    orderBy: [{ name: ASC }]
+  ) {
+    edges {
+      node {
+        id
+        plan_type
+        name
+        description
+        created_at
+        updated_at
+      }
+    }
+  }
+}
+
+"""
+Get a single starter template by ID.
+"""
+query GetStarterTemplate($id: String!) {
+  starter_templates(where: { id: { eq: $id } }) {
+    edges {
+      node {
+        id
+        plan_type
+        name
+        description
+        created_at
+        updated_at
+      }
+    }
+  }
+}
+
+"""
+Search starter templates by name or ID.
+"""
+query SearchStarterTemplates($query: String!) {
+  starter_templates(
+    where: {
+      _or: [
+        { name: { contains: $query } }
+        { id: { contains: $query } }
+      ]
+    }
+    orderBy: [{ name: ASC }]
+  ) {
+    edges {
+      node {
+        id
+        plan_type
+        name
+        description
+        created_at
+      }
+    }
+  }
+}
+
+"""
+Get nutrition plan templates.
+"""
+query GetNutritionTemplates {
+  starter_templates(
+    where: { plan_type: { eq: "nutrition" } }
+    orderBy: [{ name: ASC }]
+  ) {
+    edges {
+      node {
+        id
+        plan_type
+        name
+        description
+        created_at
+      }
+    }
+  }
+}
+
+"""
+Get training plan templates.
+"""
+query GetTrainingTemplates {
+  starter_templates(
+    where: { plan_type: { eq: "training" } }
+    orderBy: [{ name: ASC }]
+  ) {
+    edges {
+      node {
+        id
+        plan_type
+        name
+        description
+        created_at
+      }
+    }
+  }
+}
+
+"""
+Get template usage statistics.
+"""
+query GetTemplateStats($templateId: String!) {
+  template_usage_stats(where: { template_id: { eq: $templateId } }) {
+    edges {
+      node {
+        template_id
+        clone_count
+        assignment_count
+        updated_at
+      }
+    }
+  }
+}
+
+"""
+Get top 10 most-cloned templates.
+"""
+query GetPopularTemplates($limit: Int!) {
+  template_usage_stats(
+    orderBy: [{ clone_count: DESC }]
+    limit: $limit
+  ) {
+    edges {
+      node {
+        template_id
+        clone_count
+        assignment_count
+      }
+    }
+  }
+}
+
+# ─── Mutations ──────────────────────────────────────────────────────────────────
+
+"""
+Create a new starter template (admin only).
+"""
+mutation CreateStarterTemplate(
+  $id: String!
+  $plan_type: String!
+  $name: String!
+  $description: String
+) {
+  insert_starter_templates(
+    data: {
+      id: $id
+      plan_type: $plan_type
+      name: $name
+      description: $description
+    }
+  ) {
+    id
+    plan_type
+    name
+    description
+    created_at
+  }
+}
+
+"""
+Update a starter template (admin only).
+"""
+mutation UpdateStarterTemplate(
+  $id: String!
+  $name: String
+  $description: String
+) {
+  update_starter_templates(
+    where: { id: { eq: $id } }
+    data: {
+      name: $name
+      description: $description
+    }
+  ) {
+    id
+    plan_type
+    name
+    description
+    updated_at
+  }
+}
+
+"""
+Delete a starter template (admin only).
+"""
+mutation DeleteStarterTemplate($id: String!) {
+  delete_starter_templates(where: { id: { eq: $id } })
+}
+
+"""
+Increment template clone count (called when template is cloned).
+"""
+mutation IncrementTemplateCloneCount($templateId: String!) {
+  update_template_usage_stats(
+    where: { template_id: { eq: $templateId } }
+    data: { clone_count: { increment: 1 } }
+  ) {
+    template_id
+    clone_count
+    updated_at
+  }
+}
+
+"""
+Increment template assignment count (called when cloned plan is assigned to student).
+"""
+mutation IncrementTemplateAssignmentCount($templateId: String!) {
+  update_template_usage_stats(
+    where: { template_id: { eq: $templateId } }
+    data: { assignment_count: { increment: 1 } }
+  ) {
+    template_id
+    assignment_count
+    updated_at
+  }
+}
+
+"""
+Initialize usage stats for a new template.
+"""
+mutation InitializeTemplateStats($templateId: String!) {
+  insert_template_usage_stats(
+    data: {
+      template_id: $templateId
+      clone_count: 0
+      assignment_count: 0
+    }
+  ) {
+    template_id
+    clone_count
+    assignment_count
+  }
+}
