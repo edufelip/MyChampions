@@ -1,4 +1,6 @@
 import { enUS, type TranslationKey } from './en-US';
+
+export type { TranslationKey };
 import { esES } from './es-ES';
 import { ptBR } from './pt-BR';
 

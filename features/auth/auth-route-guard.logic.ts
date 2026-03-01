@@ -44,12 +44,17 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
     return home;
   }
 
-  if (input.lockedRole === 'student' && path.startsWith('/explore')) {
-    return '/';
+  // Role-scoped route guard: students cannot access /professional/* and vice versa
+  if (input.lockedRole === 'student') {
+    if (path.startsWith('/explore') || path.startsWith('/professional/')) {
+      return '/';
+    }
   }
 
-  if (input.lockedRole === 'professional' && path === '/') {
-    return '/explore';
+  if (input.lockedRole === 'professional') {
+    if (path === '/' || path.startsWith('/student/')) {
+      return '/explore';
+    }
   }
 
   return null;

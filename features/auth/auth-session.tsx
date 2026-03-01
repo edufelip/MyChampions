@@ -9,6 +9,7 @@ type AuthSessionContextValue = {
   isHydrated: boolean;
   isAuthenticated: boolean;
   lockedRole: RoleIntent | null;
+  currentUser: User | null;
   lockRole: (role: RoleIntent) => Promise<void>;
   clearSession: () => void;
 };
@@ -64,6 +65,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       isHydrated,
       isAuthenticated,
       lockedRole,
+      currentUser,
       lockRole: async (role: RoleIntent) => {
         if (!currentUser) {
           throw new Error('No authenticated user found.');
