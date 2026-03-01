@@ -7,7 +7,7 @@
  * and unbind confirmation flow.
  */
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +23,13 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import type { ConnectionDisplayState } from '@/features/connections/connection.logic';
+import {
+  buildInvitePendingCanceled,
+  buildInvitePendingCreated,
+  buildInviteSubmitFailed,
+  buildInviteSubmitRequested,
+} from '@/features/analytics/analytics.logic';
+import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
 
@@ -32,12 +39,24 @@ export default function StudentProfessionalsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
+  const { emitEvent } = useAnalytics();
 
   const { state, reload, submitCode, unbindConnection } = useConnections(currentUser);
 
   const [inviteCode, setInviteCode] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Emit canceled event once when canceled_code_rotated connections first appear.
+  const emittedCanceledRef = useRef(false);
+  useEffect(() => {
+    if (state.kind !== 'ready' || emittedCanceledRef.current) return;
+    const hasCanceled = state.displayStates.some((ds) => ds.kind === 'canceled_code_rotated');
+    if (hasCanceled) {
+      emittedCanceledRef.current = true;
+      emitEvent(buildInvitePendingCanceled());
+    }
+  }, [state, emitEvent]);
 
   const onSubmitCode = async () => {
     const trimmed = inviteCode.trim();
@@ -46,14 +65,19 @@ export default function StudentProfessionalsScreen() {
     setIsSubmitting(true);
     setSubmitError(null);
 
+    emitEvent(buildInviteSubmitRequested('manual'));
+
     const errorReason = await submitCode(trimmed);
 
     setIsSubmitting(false);
 
     if (!errorReason) {
+      emitEvent(buildInvitePendingCreated('manual'));
       setInviteCode('');
       return;
     }
+
+    emitEvent(buildInviteSubmitFailed('manual', errorReason));
 
     switch (errorReason) {
       case 'code_not_found':

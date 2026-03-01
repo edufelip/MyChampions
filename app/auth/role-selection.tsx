@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, Fonts } from '@/constants/theme';
@@ -9,6 +9,12 @@ import {
   validateRoleSelectionInput,
 } from '@/features/auth/role-selection.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
+import {
+  buildAuthEntryViewed,
+  buildRoleSelected,
+  buildSelfGuidedStartClicked,
+} from '@/features/analytics/analytics.logic';
+import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -18,11 +24,17 @@ export default function RoleSelectionScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { lockRole } = useAuthSession();
+  const { emitEvent } = useAnalytics();
   const [selectedRole, setSelectedRole] = useState<RoleIntent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [roleError, setRoleError] = useState<'auth.role.validation.required' | 'auth.role.error.save_failed' | null>(
     null
   );
+
+  useEffect(() => {
+    emitEvent(buildAuthEntryViewed('role_selection'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onContinue = async () => {
     const errors = validateRoleSelectionInput({ role: selectedRole });
@@ -33,6 +45,7 @@ export default function RoleSelectionScreen() {
 
     setRoleError(null);
     const role = selectedRole as RoleIntent;
+    emitEvent(buildRoleSelected(role));
     setIsSubmitting(true);
     try {
       await lockRole(role);
@@ -46,6 +59,7 @@ export default function RoleSelectionScreen() {
 
   const onQuickSelfGuided = async () => {
     setRoleError(null);
+    emitEvent(buildSelfGuidedStartClicked());
     setIsSubmitting(true);
     try {
       setSelectedRole('student');

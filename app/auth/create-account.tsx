@@ -27,6 +27,12 @@ import {
 } from '@/features/auth/create-account.logic';
 import { signInOrLinkWithCredential } from '@/features/auth/firebase-social-auth';
 import { getFirebaseAuth, firebaseOAuthConfig } from '@/features/auth/firebase';
+import {
+  buildAuthEntryViewed,
+  buildSignUpFailed,
+  buildSignUpSubmitted,
+} from '@/features/analytics/analytics.logic';
+import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -47,6 +53,7 @@ export default function CreateAccountScreen() {
   const palette = Colors[colorScheme];
   const router = useRouter();
   const { t } = useTranslation();
+  const { emitEvent } = useAnalytics();
   const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
     iosClientId: firebaseOAuthConfig.iosClientId,
     androidClientId: firebaseOAuthConfig.androidClientId,
@@ -63,6 +70,11 @@ export default function CreateAccountScreen() {
   const [submitError, setSubmitError] = useState<CreateAccountErrorMessageKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    emitEvent(buildAuthEntryViewed('auth_create_account'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const onCreateAccount = async () => {
     const nextErrors = validateCreateAccountInput({ name, email, password, passwordConfirmation });
     setErrors(nextErrors);
@@ -72,12 +84,14 @@ export default function CreateAccountScreen() {
       return;
     }
 
+    emitEvent(buildSignUpSubmitted('email_password'));
     setSubmitting(true);
     try {
       await createAccountWithEmailPassword({ name, email, password, passwordConfirmation });
       router.replace('/auth/role-selection');
     } catch (error: unknown) {
       const reason = normalizeCreateAccountReason(error);
+      emitEvent(buildSignUpFailed('email_password', reason));
       setSubmitError(mapCreateAccountReasonToMessageKey(reason));
     } finally {
       setSubmitting(false);
@@ -86,17 +100,20 @@ export default function CreateAccountScreen() {
 
   const onGoogleCreateAccount = async () => {
     setSubmitError(null);
+    emitEvent(buildSignUpSubmitted('google'));
 
     try {
       await promptGoogle();
     } catch (error: unknown) {
       const reason = normalizeCreateAccountReason(error);
+      emitEvent(buildSignUpFailed('google', reason));
       setSubmitError(mapCreateAccountReasonToMessageKey(reason));
     }
   };
 
   const onAppleCreateAccount = async () => {
     setSubmitError(null);
+    emitEvent(buildSignUpSubmitted('apple'));
 
     try {
       if (Platform.OS !== 'ios') {
@@ -129,6 +146,7 @@ export default function CreateAccountScreen() {
       }
 
       const reason = normalizeCreateAccountReason(error);
+      emitEvent(buildSignUpFailed('apple', reason));
       setSubmitError(mapCreateAccountReasonToMessageKey(reason));
     } finally {
       setSubmitting(false);
@@ -144,6 +162,7 @@ export default function CreateAccountScreen() {
       googleResponse.authentication?.idToken ||
       (typeof googleResponse.params?.id_token === 'string' ? googleResponse.params.id_token : '');
     if (!idToken) {
+      emitEvent(buildSignUpFailed('google', 'missing_id_token'));
       setSubmitError('common.error.generic');
       return;
     }
@@ -155,12 +174,13 @@ export default function CreateAccountScreen() {
       })
       .catch((error: unknown) => {
         const reason = normalizeCreateAccountReason(error);
+        emitEvent(buildSignUpFailed('google', reason));
         setSubmitError(mapCreateAccountReasonToMessageKey(reason));
       })
       .finally(() => {
         setSubmitting(false);
       });
-  }, [googleResponse, router]);
+  }, [googleResponse, router, emitEvent]);
 
   return (
     <KeyboardAvoidingView

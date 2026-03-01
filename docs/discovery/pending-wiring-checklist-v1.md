@@ -99,6 +99,16 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire portion-log persistence (Data Connect) into SC-215 quick-log confirm action.
 - `Pending`: Wire deep-link resume (post-auth redirect back to `/shared/recipes/:shareToken`) for unauthenticated share link recipients in SC-216.
 
+## Analytics Event Emission (Phase 9 — BL-012)
+- `Done`: `features/analytics/analytics.logic.ts` — pure event builder functions for all Milestone A events (auth entry viewed, sign-in submitted/failed, sign-up submitted/failed, role selected, self-guided start clicked, invite submit requested/failed/pending-created/pending-canceled) with `redactEventProperties` guard. 146 unit tests cover all builders and redaction (TC-254, TC-255).
+- `Done`: `features/analytics/use-analytics.ts` — React hook wrapping `transportEvent` stub (console.log in `__DEV__`, no-op otherwise). Real SDK transport deferred (tracked below).
+- `Done`: `app/auth/sign-in.tsx` — emits `auth.entry.viewed` on mount; `auth.sign_in.submitted` before each channel attempt; `auth.sign_in.failed` with `reason_code` on failure for email/password, Google, and Apple channels.
+- `Done`: `app/auth/create-account.tsx` — emits `auth.entry.viewed` on mount; `auth.sign_up.submitted`/`auth.sign_up.failed` for email/password, Google, and Apple channels.
+- `Done`: `app/auth/role-selection.tsx` — emits `auth.entry.viewed` on mount; `onboarding.role.selected` with `role_context` on continue; `onboarding.self_guided_start.clicked` on quick-start shortcut.
+- `Done`: `app/student/professionals.tsx` — emits `invite.submit.requested` on manual code submit; `invite.pending.created` on success; `invite.submit.failed` with `reason_code` on failure; `invite.pending.canceled` (once, via ref guard) when `canceled_code_rotated` connections surface.
+- `Pending`: Wire real analytics SDK transport (Firebase Analytics, Amplitude, or equivalent) in `features/analytics/use-analytics.ts` to replace `console.log` stub. Update `pending-wiring-checklist-v1.md` when complete.
+- `Pending`: Emit analytics events for professional-side Milestone A actions (pending queue confirm/deny) when SC-204/SC-205 Data Connect wiring is complete.
+
 ## Accessibility Baseline (Phase 8 — BL-013)
 - `Done`: All auth screens (`sign-in.tsx`, `create-account.tsx`, `role-selection.tsx`) annotated with `accessibilityLabel`, `accessibilityRole`, `accessibilityState`, and live-region wrappers on error messages.
 - `Done`: All student screens (`home.tsx`, `nutrition.tsx`, `training.tsx`, `professionals.tsx`) annotated with `accessibilityLabel` on `ActivityIndicator` loading states and `accessibilityLiveRegion="polite"` on error messages.

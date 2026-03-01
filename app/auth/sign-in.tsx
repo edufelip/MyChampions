@@ -27,6 +27,12 @@ import {
   validateSignInInput,
   type SignInValidationErrors,
 } from '@/features/auth/sign-in.logic';
+import {
+  buildAuthEntryViewed,
+  buildSignInFailed,
+  buildSignInSubmitted,
+} from '@/features/analytics/analytics.logic';
+import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -47,6 +53,7 @@ export default function SignInScreen() {
   const palette = Colors[colorScheme];
   const router = useRouter();
   const { t } = useTranslation();
+  const { emitEvent } = useAnalytics();
   const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
     iosClientId: firebaseOAuthConfig.iosClientId,
     androidClientId: firebaseOAuthConfig.androidClientId,
@@ -60,6 +67,11 @@ export default function SignInScreen() {
   const [submitError, setSubmitError] = useState<SignInErrorMessageKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    emitEvent(buildAuthEntryViewed('auth_sign_in'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const onEmailPasswordSignIn = async () => {
     const nextErrors = validateSignInInput({ email, password });
     setErrors(nextErrors);
@@ -69,12 +81,14 @@ export default function SignInScreen() {
       return;
     }
 
+    emitEvent(buildSignInSubmitted('email_password'));
     setSubmitting(true);
     try {
       await signInWithEmailPassword({ email, password });
       router.replace('/auth/role-selection');
     } catch (error: unknown) {
       const reason = normalizeSignInReason(error);
+      emitEvent(buildSignInFailed('email_password', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
     } finally {
       setSubmitting(false);
@@ -83,17 +97,20 @@ export default function SignInScreen() {
 
   const onGoogleSignIn = async () => {
     setSubmitError(null);
+    emitEvent(buildSignInSubmitted('google'));
 
     try {
       await promptGoogle();
     } catch (error: unknown) {
       const reason = normalizeSignInReason(error);
+      emitEvent(buildSignInFailed('google', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
     }
   };
 
   const onAppleSignIn = async () => {
     setSubmitError(null);
+    emitEvent(buildSignInSubmitted('apple'));
 
     try {
       if (Platform.OS !== 'ios') {
@@ -126,6 +143,7 @@ export default function SignInScreen() {
       }
 
       const reason = normalizeSignInReason(error);
+      emitEvent(buildSignInFailed('apple', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
     } finally {
       setSubmitting(false);
@@ -141,6 +159,7 @@ export default function SignInScreen() {
       googleResponse.authentication?.idToken ||
       (typeof googleResponse.params?.id_token === 'string' ? googleResponse.params.id_token : '');
     if (!idToken) {
+      emitEvent(buildSignInFailed('google', 'missing_id_token'));
       setSubmitError('common.error.generic');
       return;
     }
@@ -152,12 +171,13 @@ export default function SignInScreen() {
       })
       .catch((error: unknown) => {
         const reason = normalizeSignInReason(error);
+        emitEvent(buildSignInFailed('google', reason));
         setSubmitError(mapSignInReasonToMessageKey(reason));
       })
       .finally(() => {
         setSubmitting(false);
       });
-  }, [googleResponse, router]);
+  }, [googleResponse, router, emitEvent]);
 
   return (
     <KeyboardAvoidingView
