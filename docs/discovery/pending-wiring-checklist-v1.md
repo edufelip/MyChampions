@@ -99,6 +99,21 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: SC-208 Training Plan Builder implemented at `app/professional/training/plans/[planId].tsx`; `app/professional/training.tsx` converted to predefined plan library list screen.
 - `Done`: Routes `professional/nutrition/plans/[planId]` and `professional/training/plans/[planId]` registered in `app/_layout.tsx`.
 
+## Plan Builder (BL-106 — SC-207, SC-208)
+- `Done`: `features/plans/plan-builder.logic.ts` — pure functions: `validateNutritionPlanInput`, `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError`.
+- `Done`: `features/plans/plan-builder.logic.test.ts` — unit tests included in 301-test suite (TC-275–TC-280).
+- `Done`: `features/plans/plan-builder-source.ts` — Data Connect stub surface for nutrition CRUD (`createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`) and training CRUD (`createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`), plus `getStarterTemplates`, `cloneStarterTemplate`, `searchFoods`.
+- `Done`: `features/plans/use-plan-builder.ts` — `useNutritionPlanBuilder` and `useTrainingPlanBuilder` hooks with `idle/loading/ready/saving/error` state machines.
+- `Done`: `app/professional/nutrition.tsx` — plan library list screen (SC-207 lib).
+- `Done`: `app/professional/nutrition/plans/[planId].tsx` — nutrition plan builder screen (SC-207).
+- `Done`: `app/professional/training.tsx` — plan library list screen (SC-208 lib).
+- `Done`: `app/professional/training/plans/[planId].tsx` — training plan builder screen (SC-208).
+- `Done`: All `pro.plan.*`, `pro.library.*`, `pro.predefined_plan.*`, `pro.template_library.*`, `pro.template.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
+- `Done`: SC-207 and SC-208 screen specs updated to reflect actual implementation.
+- `Pending`: Wire Data Connect endpoints for plan CRUD (`createNutritionPlan`, `updateNutritionPlan`, `addNutritionMealItem`, `removeNutritionMealItem`, `createTrainingPlan`, `updateTrainingPlan`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`) replacing stubs in `plan-builder-source.ts`.
+- `Pending`: Wire fatsecret food lookup into `searchFoods` in `plan-builder-source.ts`; requires fatsecret API key provisioned server-side (D-113).
+- `Pending`: Wire `getStarterTemplates` and `cloneStarterTemplate` to real Data Connect starter template operations (D-114).
+
 ## Plan Builder Screens (SC-207, SC-208 — Phase 10)
 - `Done`: `features/plans/plan-builder.logic.ts` — pure validation, calculation, and error normalization functions for nutrition and training plan builder inputs.
 - `Done`: `features/plans/plan-builder-source.ts` — Data Connect CRUD stubs (create/update plan, add/remove items/sessions, starter templates, bulk assign) following existing `gql<T>()` + `PlanSourceError` pattern.
