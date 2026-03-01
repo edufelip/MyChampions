@@ -50,7 +50,11 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `In progress`: Implement Data Connect connection lifecycle connectors for invite submit/confirm/end and code rotation cancellation semantics.
   - Done: Pure connection logic module created in `features/connections/connection.logic.ts` (status/reason normalization, display state resolution, error mapping).
   - Done: Data Connect source module created in `features/connections/connection-source.ts` (`submitInviteCode`, `confirmPendingConnection`, `endConnection`, `getMyConnections`).
-  - Pending: Wire connection-source operations into app screens (invite entry, professional queue, connection detail).
+  - Done: Wire connection-source operations into app screens:
+    - `app/student/professionals.tsx` (SC-211): invite code entry → `submitInviteCode`, connection list → `getMyConnections` + `resolveConnectionDisplayState`, unbind → `endConnection`. Surfaces `canceled_code_rotated` state (BL-003 / D-069).
+    - `app/professional/pending.tsx` (SC-204/SC-205 subset): pending queue → `getMyConnections` (pending_confirmation filter), accept → `confirmPendingConnection`, deny/bulk deny → `endConnection`.
+    - `features/connections/use-connections.ts`: React hook wrapping connection-source for UI consumption.
+    - Route guard extended to block student from `/professional/*` and professional from `/student/*`.
   - Pending: Live endpoint compatibility validation for connection operations against deployed connector.
 - `Pending`: Wire fatsecret food lookup to nutrition plan builder and tracking search surfaces.
 - `Pending`: Wire predefined plan library persistence and bulk-assignment orchestration APIs.

@@ -108,6 +108,7 @@
 - `D-097`: Auth role-lock persistence uses Data Connect profile-source abstraction with remote-only reads/writes; no local role-lock fallback path remains.
 - `D-098`: Live Data Connect profile operation compatibility is validated through `npm run validate:data-connect:profile` against environment endpoint + auth token.
 - `D-099`: Connection lifecycle Data Connect operations (invite submit, professional confirm, end connection, `getMyConnections`) follow the same HTTP-over-GraphQL pattern as the profile source (`features/auth/profile-source.ts`): Firebase ID token in `Authorization` header, typed GraphQL calls, `ConnectionSourceError` typed errors. Connection status and `canceled_reason` normalization is isolated in `features/connections/connection.logic.ts` for unit testability.
+- `D-100`: Connection lifecycle screen wiring uses a `useConnections` React hook in `features/connections/use-connections.ts` as the single UI adapter over connection-source; screens import only the hook and logic types, never connection-source directly. Route guard extended in `auth-route-guard.logic.ts` to enforce `/student/*` → student-only and `/professional/*` → professional-only path prefixes.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

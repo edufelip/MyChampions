@@ -65,40 +65,40 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.signup.cta_back_signin` | SC-218 | Back-to-sign-in CTA | Back to sign in | Voltar para entrar | Volver a iniciar sesión | |
 | `auth.password.toggle_show` | SC-217/SC-218 | Password visibility toggle | Show password | Mostrar senha | Mostrar contraseña | Accessibility and clarity |
 | `auth.password.toggle_hide` | SC-217/SC-218 | Password visibility toggle | Hide password | Ocultar senha | Ocultar contraseña | Accessibility and clarity |
-| `student.home.no_pro.title` | SC-203 | Empty-state card title | No professional connected yet | Nenhum profissional conectado ainda | TODO | |
-| `student.home.no_pro.body` | SC-203 | Empty-state card helper | You can still start tracking today on your own. | Você ainda pode começar a acompanhar hoje por conta própria. | TODO | Non-blocking tone |
-| `student.home.cta_start_nutrition` | SC-203 | Empty-state CTA | Start my nutrition plan | Começar meu plano de nutrição | TODO | |
-| `student.home.cta_start_training` | SC-203 | Empty-state CTA | Start my training plan | Começar meu plano de treino | TODO | |
-| `student.home.cta_manage_professionals` | SC-203 | Action CTA | Manage professionals | Gerenciar profissionais | TODO | |
-| `student.home.offline.stale_badge` | SC-203 | Offline stale indicator | Data may be outdated | Os dados podem estar desatualizados | TODO | Show when cache is stale |
-| `student.home.offline.last_sync` | SC-203 | Offline stale metadata | Last updated: {datetime} | Última atualização: {datetime} | TODO | Timestamp format localized |
-| `student.home.offline.banner_read_only` | SC-203 | Offline persistent banner | You're offline. You can view cached data, but updates are locked until connection returns. | Você está offline. Você pode ver dados em cache, mas as atualizações ficam bloqueadas até a conexão voltar. | TODO | BL-008 |
-| `student.home.offline.write_lock` | SC-203 | Offline blocked-write helper | Connect to the internet to save changes. | Conecte-se à internet para salvar alterações. | TODO | BL-008 |
-| `relationship.title` | SC-211 | Screen title | Connect with professionals | Conectar com profissionais | TODO | Plain-language screen title |
-| `relationship.intro` | SC-211 | Intro copy | Have a professional? Enter their invite code. | Tem um profissional? Insira o código de convite. | TODO | |
-| `relationship.helper_self_guided` | SC-211 | Optionality helper | Don't have one yet? You can keep using the app on your own. | Ainda não tem? Você pode continuar usando o app por conta própria. | TODO | Critical clarity copy |
-| `relationship.input.invite_code` | SC-211 | Input placeholder | Enter invite code | Inserir código de convite | TODO | |
-| `relationship.cta_scan_qr` | SC-211 | QR scan action | Scan QR code | Escanear QR code | TODO | BL-002 |
-| `relationship.cta_submit_code` | SC-211 | Submit CTA | Connect | Conectar | TODO | |
-| `relationship.error.invalid_code` | SC-211 | Invite error message | This invite code is invalid. Ask your professional for a new code. | Este código de convite é inválido. Peça um novo código ao profissional. | TODO | BL-010 |
-| `relationship.error.pending_cap` | SC-211 | Invite error message | This professional has too many pending requests right now. Try again later. | Este profissional está com muitas solicitações pendentes agora. Tente novamente mais tarde. | TODO | BL-010 |
-| `relationship.pending.helper` | SC-211 | Pending assignment state | Waiting for professional confirmation to activate this connection. | Aguardando confirmação do profissional para ativar esta conexão. | TODO | |
-| `relationship.pending.canceled_code_rotated` | SC-211 | Pending request canceled state | This request was canceled because the professional regenerated their invite code. Ask for the new code to reconnect. | Esta solicitação foi cancelada porque o profissional regenerou o código de convite. Peça o novo código para se conectar novamente. | TODO | |
-| `pro.pending.search.placeholder` | SC-205 | Pending queue search | Search pending requests | Buscar solicitações pendentes | TODO | BL-004 |
-| `pro.pending.filter.label` | SC-205 | Pending queue filter | Filter requests | Filtrar solicitações | TODO | BL-004 |
-| `pro.pending.bulk_deny.cta` | SC-205 | Bulk deny action | Deny selected | Negar selecionadas | TODO | BL-004 |
-| `pro.pending.bulk_deny.confirm_title` | SC-205 | Bulk deny confirmation | Deny selected requests? | Negar solicitações selecionadas? | TODO | BL-004 |
-| `pro.pending.bulk_deny.confirm_body` | SC-205 | Bulk deny confirmation helper | Selected students can request again later with your invite code. | Alunos selecionados podem solicitar novamente depois com seu código de convite. | TODO | BL-004 |
-| `pro.pending.bulk_deny.success` | SC-205 | Bulk deny success feedback | Requests denied successfully. | Solicitações negadas com sucesso. | TODO | BL-004 |
-| `relationship.empty.cta_continue_self` | SC-211 | Empty-state CTA | Continue self-guided | Continuar por conta própria | TODO | |
-| `relationship.unbind.cta` | SC-211 | Unbind action | End connection | Encerrar conexão | TODO | |
-| `relationship.unbind.confirm_title` | SC-211 | Unbind confirmation modal | End this professional connection? | Encerrar esta conexão profissional? | TODO | |
-| `relationship.unbind.confirm_body` | SC-211 | Unbind confirmation modal | You can reconnect later with an invite code. Your history will be kept. | Você pode se reconectar depois com um código de convite. Seu histórico será mantido. | TODO | Reflects retention policy |
-| `relationship.unbind.confirm_yes` | SC-211 | Confirmation CTA | End connection | Encerrar conexão | TODO | |
-| `relationship.unbind.confirm_no` | SC-211 | Cancel CTA | Keep connection | Manter conexão | TODO | |
-| `relationship.credential.registry_id` | SC-211 | Credential field label | Registry ID | Registro profissional | TODO | Visible only for assigned professional |
-| `relationship.credential.authority` | SC-211 | Credential field label | Authority | Órgão | TODO | Visible only for assigned professional |
-| `relationship.credential.country` | SC-211 | Credential field label | Country | País | TODO | Visible only for assigned professional |
+| `student.home.no_pro.title` | SC-203 | Empty-state card title | No professional connected yet | Nenhum profissional conectado ainda | Aún no hay profesional conectado | |
+| `student.home.no_pro.body` | SC-203 | Empty-state card helper | You can still start tracking today on your own. | Você ainda pode começar a acompanhar hoje por conta própria. | Aún puedes empezar a hacer seguimiento hoy por tu cuenta. | Non-blocking tone |
+| `student.home.cta_start_nutrition` | SC-203 | Empty-state CTA | Start my nutrition plan | Começar meu plano de nutrição | Iniciar mi plan de nutrición | |
+| `student.home.cta_start_training` | SC-203 | Empty-state CTA | Start my training plan | Começar meu plano de treino | Iniciar mi plan de entrenamiento | |
+| `student.home.cta_manage_professionals` | SC-203 | Action CTA | Manage professionals | Gerenciar profissionais | Gestionar profesionales | |
+| `student.home.offline.stale_badge` | SC-203 | Offline stale indicator | Data may be outdated | Os dados podem estar desatualizados | Los datos pueden estar desactualizados | Show when cache is stale |
+| `student.home.offline.last_sync` | SC-203 | Offline stale metadata | Last updated: {datetime} | Última atualização: {datetime} | Última actualización: {datetime} | Timestamp format localized |
+| `student.home.offline.banner_read_only` | SC-203 | Offline persistent banner | You're offline. You can view cached data, but updates are locked until connection returns. | Você está offline. Você pode ver dados em cache, mas as atualizações ficam bloqueadas até a conexão voltar. | Estás sin conexión. Puedes ver los datos en caché, pero las actualizaciones están bloqueadas hasta que vuelva la conexión. | BL-008 |
+| `student.home.offline.write_lock` | SC-203 | Offline blocked-write helper | Connect to the internet to save changes. | Conecte-se à internet para salvar alterações. | Conéctate a internet para guardar los cambios. | BL-008 |
+| `relationship.title` | SC-211 | Screen title | Connect with professionals | Conectar com profissionais | Conectar con profesionales | Plain-language screen title |
+| `relationship.intro` | SC-211 | Intro copy | Have a professional? Enter their invite code. | Tem um profissional? Insira o código de convite. | ¿Tienes un profesional? Introduce su código de invitación. | |
+| `relationship.helper_self_guided` | SC-211 | Optionality helper | Don't have one yet? You can keep using the app on your own. | Ainda não tem? Você pode continuar usando o app por conta própria. | ¿Aún no tienes uno? Puedes seguir usando la app por tu cuenta. | Critical clarity copy |
+| `relationship.input.invite_code` | SC-211 | Input placeholder | Enter invite code | Inserir código de convite | Introduce el código de invitación | |
+| `relationship.cta_scan_qr` | SC-211 | QR scan action | Scan QR code | Escanear QR code | Escanear código QR | BL-002 |
+| `relationship.cta_submit_code` | SC-211 | Submit CTA | Connect | Conectar | Conectar | |
+| `relationship.error.invalid_code` | SC-211 | Invite error message | This invite code is invalid. Ask your professional for a new code. | Este código de convite é inválido. Peça um novo código ao profissional. | Este código de invitación no es válido. Pide un nuevo código a tu profesional. | BL-010 |
+| `relationship.error.pending_cap` | SC-211 | Invite error message | This professional has too many pending requests right now. Try again later. | Este profissional está com muitas solicitações pendentes agora. Tente novamente mais tarde. | Este profesional tiene demasiadas solicitudes pendientes ahora. Inténtalo más tarde. | BL-010 |
+| `relationship.pending.helper` | SC-211 | Pending assignment state | Waiting for professional confirmation to activate this connection. | Aguardando confirmação do profissional para ativar esta conexão. | Esperando confirmación del profesional para activar esta conexión. | |
+| `relationship.pending.canceled_code_rotated` | SC-211 | Pending request canceled state | This request was canceled because the professional regenerated their invite code. Ask for the new code to reconnect. | Esta solicitação foi cancelada porque o profissional regenerou o código de convite. Peça o novo código para se conectar novamente. | Esta solicitud fue cancelada porque el profesional regeneró su código de invitación. Pide el nuevo código para volver a conectarte. | |
+| `pro.pending.search.placeholder` | SC-205 | Pending queue search | Search pending requests | Buscar solicitações pendentes | Buscar solicitudes pendientes | BL-004 |
+| `pro.pending.filter.label` | SC-205 | Pending queue filter | Filter requests | Filtrar solicitações | Filtrar solicitudes | BL-004 |
+| `pro.pending.bulk_deny.cta` | SC-205 | Bulk deny action | Deny selected | Negar selecionadas | Rechazar seleccionadas | BL-004 |
+| `pro.pending.bulk_deny.confirm_title` | SC-205 | Bulk deny confirmation | Deny selected requests? | Negar solicitações selecionadas? | ¿Rechazar solicitudes seleccionadas? | BL-004 |
+| `pro.pending.bulk_deny.confirm_body` | SC-205 | Bulk deny confirmation helper | Selected students can request again later with your invite code. | Alunos selecionados podem solicitar novamente depois com seu código de convite. | Los alumnos seleccionados pueden volver a solicitar más tarde con tu código de invitación. | BL-004 |
+| `pro.pending.bulk_deny.success` | SC-205 | Bulk deny success feedback | Requests denied successfully. | Solicitações negadas com sucesso. | Solicitudes rechazadas correctamente. | BL-004 |
+| `relationship.empty.cta_continue_self` | SC-211 | Empty-state CTA | Continue self-guided | Continuar por conta própria | Continuar por mi cuenta | |
+| `relationship.unbind.cta` | SC-211 | Unbind action | End connection | Encerrar conexão | Terminar conexión | |
+| `relationship.unbind.confirm_title` | SC-211 | Unbind confirmation modal | End this professional connection? | Encerrar esta conexão profissional? | ¿Terminar esta conexión profesional? | |
+| `relationship.unbind.confirm_body` | SC-211 | Unbind confirmation modal | You can reconnect later with an invite code. Your history will be kept. | Você pode se reconectar depois com um código de convite. Seu histórico será mantido. | Puedes volver a conectarte más tarde con un código de invitación. Tu historial se conservará. | Reflects retention policy |
+| `relationship.unbind.confirm_yes` | SC-211 | Confirmation CTA | End connection | Encerrar conexão | Terminar conexión | |
+| `relationship.unbind.confirm_no` | SC-211 | Cancel CTA | Keep connection | Manter conexão | Mantener conexión | |
+| `relationship.credential.registry_id` | SC-211 | Credential field label | Registry ID | Registro profissional | ID de registro | Visible only for assigned professional |
+| `relationship.credential.authority` | SC-211 | Credential field label | Authority | Órgão | Organismo | Visible only for assigned professional |
+| `relationship.credential.country` | SC-211 | Credential field label | Country | País | País | Visible only for assigned professional |
 | `student.nutrition.empty.title` | SC-209 | Tracking empty state | No meals logged yet | Nenhuma refeição registrada ainda | TODO | |
 | `student.nutrition.empty.helper` | SC-209 | Tracking empty helper | No nutritionist connected? You can still build and track your own plan today. | Sem nutricionista conectado? Você ainda pode criar e acompanhar seu próprio plano hoje. | TODO | Must preserve optionality |
 | `student.nutrition.empty.cta` | SC-209 | Tracking empty CTA | Start my nutrition plan | Começar meu plano de nutrição | TODO | |

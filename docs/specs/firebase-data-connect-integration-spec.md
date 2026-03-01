@@ -162,7 +162,10 @@ Define the implementation contract for moving app domain persistence to Firebase
   - `confirmPendingConnection(user, connectionId)` → `{ connectionId, status: 'active' }`
   - `endConnection(user, connectionId)` → `void`
   - `getMyConnections(user)` → `ConnectionRecord[]` (exposes `canceled_reason` for `code_rotated` handling)
-- Pending: wire connection-source operations into invite entry, professional queue, and connection detail screens.
+- Done: connection-source wired into:
+  - `app/student/professionals.tsx` (SC-211): invite entry, connection status list (`canceled_code_rotated` included), unbind.
+  - `app/professional/pending.tsx` (SC-204/SC-205): pending queue with search, accept/deny, bulk deny.
+  - `features/connections/use-connections.ts`: React hook adapter (no Firebase deps in screen components).
 - Pending: live endpoint compatibility validation for connection operations.
 
 ## Test Strategy (Must Have Before Release)
