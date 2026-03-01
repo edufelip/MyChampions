@@ -96,6 +96,12 @@
 - `BR-288`: The Firebase Cloud Function proxy for AI analysis must validate the caller's Firebase Auth ID token before forwarding the request to OpenAI; unauthenticated calls must be rejected.
 - `BR-289`: The OpenAI API key used for meal photo analysis must never be embedded in the client binary or exposed through any client-accessible environment variable.
 - `BR-290`: An AI estimate disclaimer must be displayed whenever analysis results pre-fill form fields, making clear to the user that values are estimates and should be verified before saving.
+- `BR-291`: A nutrition plan name is required and must be at least 2 characters; saving without a valid name is blocked.
+- `BR-292`: Calorie and macro targets (carbs, proteins, fats) must each be zero or a positive number; negative values are invalid.
+- `BR-293`: A training plan name is required and must be at least 2 characters; saving without a valid name is blocked.
+- `BR-294`: Training session items have no fixed mandatory domain fields beyond a non-empty name; quantity and notes are optional.
+- `BR-295`: Starter template cloning produces a new editable predefined plan draft; the original template record must not be modified by the clone operation.
+- `BR-296`: Plan builder screens are accessible only to professional role accounts; student route access to `/professional/nutrition/plans/*` and `/professional/training/plans/*` is blocked by the route guard.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

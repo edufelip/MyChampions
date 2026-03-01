@@ -149,6 +149,15 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-237`: The OpenAI API key must never be embedded in the client binary or exposed via client-accessible environment variables; all AI analysis calls must route through a Firebase Cloud Function proxy that validates the caller's Firebase Auth ID token.
 - `FR-238`: If AI analysis fails (network error, quota exceeded, or unrecognizable image), the app shall surface a recoverable, reason-specific error and leave all form fields available for manual entry.
 - `FR-239`: The UI must display an AI estimate disclaimer whenever analysis results are shown, making clear these are estimates the user should verify before saving.
+- `FR-240`: The professional nutrition plan builder (SC-207) shall allow professionals to create and edit named predefined nutrition plans with a user-defined plan name.
+- `FR-241`: The nutrition plan builder shall allow setting calorie and macro targets (carbs, proteins, fats) as numeric inputs.
+- `FR-242`: The nutrition plan builder shall allow adding and removing nutrition items (food entries) on a plan.
+- `FR-243`: The nutrition plan builder shall provide a food search entry point backed by fatsecret; in MVP the food search stub returns an empty result set (fatsecret wiring deferred).
+- `FR-244`: The professional training plan builder (SC-208) shall allow professionals to create and edit named predefined training plans with a user-defined plan name.
+- `FR-245`: The training plan builder shall allow adding and removing sessions, where each session has a name and optional notes, and supports a list of custom session items (FR-132, BR-224).
+- `FR-246`: Each custom session item shall have a name, optional quantity, and optional notes; no fixed domain workout fields are required beyond storage metadata.
+- `FR-247`: Both nutrition and training plan builders shall allow professionals to start from a starter template by cloning it into an editable draft; the original starter template must remain immutable (FR-212, BR-270).
+- `FR-248`: Both nutrition and training plan builders shall surface assign and bulk-assign CTAs wired to existing bulkAssignPredefinedPlan source operation (FR-223–FR-226, D-082).
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

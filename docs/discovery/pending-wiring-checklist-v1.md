@@ -82,9 +82,18 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `shell.tabs.*` and `shell.placeholder.coming_soon` localization keys added to en-US, pt-BR, es-ES.
 - `Done`: Tab screens created: `(tabs)/index.tsx`, `(tabs)/students.tsx`, `(tabs)/nutrition.tsx`, `(tabs)/training.tsx`, `(tabs)/recipes.tsx`, `(tabs)/account.tsx`.
 - `Done`: Professional nutrition placeholder (`app/professional/nutrition.tsx`) and training placeholder (`app/professional/training.tsx`) created for SC-207/SC-208 (not yet implemented).
-- `Pending`: Implement SC-207 Nutrition Plan Builder for professional nutrition tab.
-- `Pending`: Implement SC-208 Training Plan Builder for professional training tab.
-- `Pending`: Replace professional nutrition/training placeholders with live screens after SC-207/SC-208 are implemented.
+- `Done`: SC-207 Nutrition Plan Builder implemented at `app/professional/nutrition/plans/[planId].tsx`; `app/professional/nutrition.tsx` converted to predefined plan library list screen.
+- `Done`: SC-208 Training Plan Builder implemented at `app/professional/training/plans/[planId].tsx`; `app/professional/training.tsx` converted to predefined plan library list screen.
+- `Done`: Routes `professional/nutrition/plans/[planId]` and `professional/training/plans/[planId]` registered in `app/_layout.tsx`.
+
+## Plan Builder Screens (SC-207, SC-208 — Phase 10)
+- `Done`: `features/plans/plan-builder.logic.ts` — pure validation, calculation, and error normalization functions for nutrition and training plan builder inputs.
+- `Done`: `features/plans/plan-builder-source.ts` — Data Connect CRUD stubs (create/update plan, add/remove items/sessions, starter templates, bulk assign) following existing `gql<T>()` + `PlanSourceError` pattern.
+- `Done`: `features/plans/use-plan-builder.ts` — React hook adapting plan-builder-source for screen consumption.
+- `Done`: `pro.plan.*` and `pro.library.*` localization keys added to en-US, pt-BR, es-ES and tracked in localized-copy-table-v2.md.
+- `Pending`: Wire Data Connect endpoints for plan CRUD (createNutritionPlan, updateNutritionPlan, addNutritionMealItem, removeNutritionMealItem, createTrainingPlan, updateTrainingPlan, addTrainingSession, removeTrainingSession, addTrainingSessionItem, removeTrainingSessionItem) replacing stubs in `plan-builder-source.ts`.
+- `Pending`: Wire fatsecret food lookup into `searchFoods` in `plan-builder-source.ts` (currently returns empty array stub); requires fatsecret API key provisioned server-side.
+- `Pending`: Wire `getStarterTemplates` and `cloneStarterTemplate` to real Data Connect starter template operations (currently returning hardcoded stubs).
 
 ## Account Settings & Custom Meal Screens (Phase 6)
 - `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.

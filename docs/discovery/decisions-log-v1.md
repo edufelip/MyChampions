@@ -120,6 +120,10 @@
 - `D-108`: AI macro estimates always pre-fill editable form fields (calories, carbs, proteins, fats, totalGrams); no auto-save without explicit user confirmation. An AI disclaimer is always shown alongside pre-filled values.
 - `D-109`: In SC-214, attaching the captured photo to the meal image record is optional after analysis. Analysis-only path does not require a Cloud Storage upload; photo attachment reuses the existing image upload stub.
 - `D-110`: AI analysis errors (network, quota, unrecognizable image) are recoverable. User is shown a reason-specific error message and can dismiss it to fill form fields manually. Analysis failure is never a hard failure blocking meal creation.
+- `D-111`: SC-207 (Nutrition Plan Builder) and SC-208 (Training Plan Builder) are implemented as route-level screens at `/professional/nutrition/plans/:planId` and `/professional/training/plans/:planId`. The tab-level `app/professional/nutrition.tsx` and `app/professional/training.tsx` become plan library list screens showing the professional's predefined plan library with create and open CTAs.
+- `D-112`: Plan builder logic (validation, totals calculation, error normalization) is isolated in `features/plans/plan-builder.logic.ts` (pure functions, no Firebase deps). Data Connect CRUD operations (create/update plan, add/remove items/sessions) are stubbed in `features/plans/plan-builder-source.ts` following the existing `gql<T>()` + `PlanSourceError` pattern. React hook `features/plans/use-plan-builder.ts` adapts source for screen consumption.
+- `D-113`: Fatsecret food search is intentionally stubbed (`searchFoods` returns empty array) for SC-207 MVP; the search entry point UI is shown but wiring is deferred. Stub is tracked in `docs/discovery/pending-wiring-checklist-v1.md`.
+- `D-114`: Starter templates are returned by a stub `getStarterTemplates(planType)` in plan-builder-source; the stub returns two hardcoded template stubs per plan type. Template cloning (`cloneStarterTemplate`) is also stubbed and tracked for later Data Connect wiring.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

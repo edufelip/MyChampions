@@ -290,4 +290,45 @@ Feature: Role-based onboarding and care assignments
   Scenario: OpenAI key never in client binary
     Given the app binary is inspected
     Then no OpenAI API key is present in client code or env config exposed to client
+
+  Scenario: SC-207 Nutrition plan builder — create named plan
+    Given a professional with nutrition specialty opens the plan builder
+    When they enter a plan name, calorie target, and macro targets
+    And save the plan
+    Then the predefined plan appears in the professional private nutrition library
+
+  Scenario: SC-207 Nutrition plan builder — add and remove item
+    Given a professional is editing a nutrition plan
+    When they add a food item with name, quantity, and notes
+    And then remove it
+    Then the item list updates accordingly
+
+  Scenario: SC-207 Nutrition plan builder — starter template clone
+    Given a professional opens a starter template in the nutrition plan builder
+    When they begin editing
+    Then an editable cloned draft is created
+    And the original starter template remains unchanged
+
+  Scenario: SC-207 Nutrition plan builder — bulk assign
+    Given a professional has a saved predefined nutrition plan
+    When they bulk assign it to multiple students
+    Then each student receives an independent plan copy
+    And later edits to the predefined source do not affect assigned copies
+
+  Scenario: SC-208 Training plan builder — create named plan with sessions
+    Given a professional with training specialty opens the training plan builder
+    When they enter a plan name, add one or more sessions with custom items
+    And save the plan
+    Then the predefined plan appears in the professional private training library
+
+  Scenario: SC-208 Training plan builder — starter template clone
+    Given a professional opens a starter template in the training plan builder
+    When they begin editing
+    Then an editable cloned draft is created
+    And the original starter template remains unchanged
+
+  Scenario: Plan builder — validation guards
+    Given a professional is on the nutrition plan builder
+    When they attempt to save with no plan name entered
+    Then a validation error is shown and save is blocked
 ```

@@ -206,6 +206,61 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `meal.photo_analysis.attach_photo.label` | SC-214 | Optional photo attachment toggle | Also attach this photo to the meal | Também anexar esta foto à refeição | También adjuntar esta foto a la comida | SC-214 only; post-analysis optional step |
 | `meal.photo_analysis.confidence.low` | SC-219 | Low-confidence warning | Low confidence — double-check these estimates | Baixa confiança — confira esses valores | Baja confianza — revisa estos valores | Shown when confidence='low' |
 
+| `pro.library.nutrition.title` | SC-207 lib | Tab screen header | Nutrition Plans | Planos de Nutrição | Planes de Nutrición | |
+| `pro.library.nutrition.empty` | SC-207 lib | Empty state body | No nutrition plans yet. Create your first plan. | Nenhum plano de nutrição ainda. Crie seu primeiro plano. | Aún no hay planes de nutrición. Crea tu primer plan. | |
+| `pro.library.nutrition.cta_create` | SC-207 lib | Create CTA | Create nutrition plan | Criar plano de nutrição | Crear plan de nutrición | |
+| `pro.library.training.title` | SC-208 lib | Tab screen header | Training Plans | Planos de Treino | Planes de Entrenamiento | |
+| `pro.library.training.empty` | SC-208 lib | Empty state body | No training plans yet. Create your first plan. | Nenhum plano de treino ainda. Crie seu primeiro plano. | Aún no hay planes de entrenamiento. Crea tu primer plan. | |
+| `pro.library.training.cta_create` | SC-208 lib | Create CTA | Create training plan | Criar plano de treino | Crear plan de entrenamiento | |
+| `pro.library.cta_open` | SC-207/208 lib | Open plan CTA | Open | Abrir | Abrir | |
+| `pro.library.error` | SC-207/208 lib | Load error | Could not load plans. Try again. | Não foi possível carregar os planos. Tente novamente. | No se pudieron cargar los planes. Inténtalo de nuevo. | |
+| `pro.plan.nutrition.title.create` | SC-207 | Screen title (create) | Create nutrition plan | Criar plano de nutrição | Crear plan de nutrición | |
+| `pro.plan.nutrition.title.edit` | SC-207 | Screen title (edit) | Edit nutrition plan | Editar plano de nutrição | Editar plan de nutrición | |
+| `pro.plan.training.title.create` | SC-208 | Screen title (create) | Create training plan | Criar plano de treino | Crear plan de entrenamiento | |
+| `pro.plan.training.title.edit` | SC-208 | Screen title (edit) | Edit training plan | Editar plano de treino | Editar plan de entrenamiento | |
+| `pro.plan.field.name.label` | SC-207/208 | Plan name label | Plan name | Nome do plano | Nombre del plan | BR-281, BR-291, BR-293 |
+| `pro.plan.field.name.placeholder` | SC-207/208 | Plan name placeholder | e.g. Caloric Deficit A | ex.: Déficit Calórico A | p.ej. Déficit Calórico A | |
+| `pro.plan.field.calories_target.label` | SC-207 | Calorie target label | Calorie target (kcal) | Meta de calorias (kcal) | Meta de calorías (kcal) | BR-210 |
+| `pro.plan.field.calories_target.placeholder` | SC-207 | Calorie placeholder | e.g. 2000 | ex.: 2000 | p.ej. 2000 | |
+| `pro.plan.field.carbs_target.label` | SC-207 | Carbs target label | Carbs target (g) | Meta de carboidratos (g) | Meta de carbohidratos (g) | BR-210 |
+| `pro.plan.field.proteins_target.label` | SC-207 | Proteins target label | Proteins target (g) | Meta de proteínas (g) | Meta de proteínas (g) | BR-210 |
+| `pro.plan.field.fats_target.label` | SC-207 | Fats target label | Fats target (g) | Meta de gorduras (g) | Meta de grasas (g) | BR-210 |
+| `pro.plan.section.meals` | SC-207 | Section header | Meals | Refeições | Comidas | |
+| `pro.plan.section.sessions` | SC-208 | Section header | Sessions | Sessões | Sesiones | |
+| `pro.plan.cta.add_meal` | SC-207 | Add item CTA | Add food item | Adicionar alimento | Añadir alimento | |
+| `pro.plan.cta.add_session` | SC-208 | Add session CTA | Add session | Adicionar sessão | Añadir sesión | |
+| `pro.plan.cta.add_item` | SC-208 | Add session item CTA | Add item | Adicionar item | Añadir ítem | |
+| `pro.plan.cta.save` | SC-207/208 | Save CTA | Save plan | Salvar plano | Guardar plan | |
+| `pro.plan.cta.assign` | SC-207/208 | Assign CTA | Assign to student | Atribuir ao aluno | Asignar al alumno | |
+| `pro.plan.cta.bulk_assign` | SC-207/208 | Bulk assign CTA | Bulk assign | Atribuição em massa | Asignación masiva | D-082 |
+| `pro.plan.cta.clone_template` | SC-207/208 | Template clone CTA | Start from template | Começar com modelo | Empezar desde plantilla | FR-247 |
+| `pro.plan.template.starter_label` | SC-207/208 | Template section label | Starter templates | Modelos iniciais | Plantillas iniciales | |
+| `pro.plan.template.picker_title` | SC-207/208 | Template picker title | Choose a starter template | Escolha um modelo inicial | Elige una plantilla inicial | |
+| `pro.plan.template.cta_use` | SC-207/208 | Use template CTA | Use this template | Usar este modelo | Usar esta plantilla | |
+| `pro.plan.food_search.placeholder` | SC-207 | Food search input | Search foods… | Buscar alimentos… | Buscar alimentos… | FR-243; fatsecret deferred |
+| `pro.plan.food_search.empty` | SC-207 | Empty food search | No foods found. Try a different search term. | Nenhum alimento encontrado. Tente outro termo. | No se encontraron alimentos. Prueba otro término. | |
+| `pro.plan.food_search.stub_notice` | SC-207 | Stub notice | Food search will be available in a future update. | A busca de alimentos estará disponível em uma atualização futura. | La búsqueda de alimentos estará disponible en una próxima actualización. | D-113 |
+| `pro.plan.validation.name_required` | SC-207/208 | Name required error | Plan name is required. | O nome do plano é obrigatório. | El nombre del plan es obligatorio. | BR-291, BR-293 |
+| `pro.plan.validation.name_too_short` | SC-207/208 | Name too short error | Plan name must be at least 2 characters. | O nome do plano deve ter pelo menos 2 caracteres. | El nombre del plan debe tener al menos 2 caracteres. | |
+| `pro.plan.validation.calories_non_negative` | SC-207 | Negative calories error | Calorie target must be zero or more. | A meta de calorias deve ser zero ou mais. | La meta de calorías debe ser cero o más. | BR-292 |
+| `pro.plan.validation.macros_non_negative` | SC-207 | Negative macros error | Macro targets must be zero or more. | As metas de macronutrientes devem ser zero ou mais. | Las metas de macronutrientes deben ser cero o más. | BR-292 |
+| `pro.plan.error.save` | SC-207/208 | Save error | Could not save plan. Try again. | Não foi possível salvar o plano. Tente novamente. | No se pudo guardar el plan. Inténtalo de nuevo. | |
+| `pro.plan.error.load` | SC-207/208 | Load error | Could not load plan. Try again. | Não foi possível carregar o plano. Tente novamente. | No se pudo cargar el plan. Inténtalo de nuevo. | |
+| `pro.plan.error.assign` | SC-207/208 | Assign error | Could not assign plan. Try again. | Não foi possível atribuir o plano. Tente novamente. | No se pudo asignar el plan. Inténtalo de nuevo. | |
+| `pro.plan.assign.title` | SC-207/208 | Assign modal title | Assign plan | Atribuir plano | Asignar plan | |
+| `pro.plan.assign.student_count` | SC-207/208 | Student count label | {count} student(s) selected | {count} aluno(s) selecionado(s) | {count} alumno(s) seleccionado(s) | |
+| `pro.plan.assign.confirm` | SC-207/208 | Confirm assign CTA | Confirm assignment | Confirmar atribuição | Confirmar asignación | |
+| `pro.plan.assign.fine_tune_notice` | SC-207/208 | Fine-tune notice | Each student receives an independent copy you can fine-tune before confirming. | Cada aluno recebe uma cópia independente que você pode ajustar antes de confirmar. | Cada alumno recibe una copia independiente que puedes ajustar antes de confirmar. | BR-283 |
+| `pro.plan.session.field.name.label` | SC-208 | Session name label | Session name | Nome da sessão | Nombre de la sesión | |
+| `pro.plan.session.field.name.placeholder` | SC-208 | Session name placeholder | e.g. Day A — Upper Body | ex.: Dia A — Superior | p.ej. Día A — Tren superior | |
+| `pro.plan.session.field.notes.label` | SC-208 | Session notes label | Session notes (optional) | Notas da sessão (opcional) | Notas de la sesión (opcional) | |
+| `pro.plan.item.field.name.label` | SC-208 | Item name label | Exercise / item name | Nome do exercício / item | Nombre del ejercicio / ítem | BR-294 |
+| `pro.plan.item.field.name.placeholder` | SC-208 | Item name placeholder | e.g. Bench Press | ex.: Supino reto | p.ej. Press de banca | |
+| `pro.plan.item.field.quantity.label` | SC-208 | Item quantity label | Quantity (optional) | Quantidade (opcional) | Cantidad (opcional) | |
+| `pro.plan.item.field.quantity.placeholder` | SC-208 | Item quantity placeholder | e.g. 3 sets × 10 reps | ex.: 3 séries × 10 reps | p.ej. 3 series × 10 reps | |
+| `pro.plan.item.field.notes.label` | SC-208 | Item notes label | Notes (optional) | Observações (opcional) | Notas (opcional) | |
+| `pro.plan.predefined.label` | SC-207/208 | Plan kind badge | Predefined plan | Plano predefinido | Plan predefinido | BR-281 |
+
 ## Notes
 - Replace `TODO` translations after localization review.
 - Keep this file aligned with screen specs and implementation keys.

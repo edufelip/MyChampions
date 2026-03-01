@@ -78,6 +78,12 @@
 | TC-272 | AI Meal Photo — Image Compression | User captures high-resolution meal photo | Photo captured before Cloud Function call | Transmitted image is ≤1.5 MB and ≤1600 px longest side |
 | TC-273 | AI Meal Photo — Analysis Failure | User captures photo; Cloud Function returns error (network/quota/unrecognizable) | Analysis completes with error | Reason-specific recoverable error is shown; form fields remain available for manual entry |
 | TC-274 | AI Meal Photo — Optional Attachment | User completes analysis in SC-214 | User declines to attach the captured photo | Meal saves without image; no error is shown |
+| TC-275 | SC-207 Create Named Nutrition Plan | Professional on plan builder | Enter plan name, calorie/macro targets, save | Plan appears in predefined nutrition library |
+| TC-276 | SC-207 Validation — Name Required | Professional on plan builder | Attempt save with empty name | Validation error shown; save blocked |
+| TC-277 | SC-207 Add/Remove Food Item | Professional editing nutrition plan | Add food item then remove it | Item list reflects add and remove operations |
+| TC-278 | SC-208 Create Named Training Plan With Session | Professional on training plan builder | Enter plan name, add session with one custom item, save | Plan appears in predefined training library |
+| TC-279 | SC-208 Validation — Name Required | Professional on training plan builder | Attempt save with empty name | Validation error shown; save blocked |
+| TC-280 | SC-207/SC-208 Starter Template Clone | Professional opens starter template | Begin editing | Editable cloned draft created; original starter unchanged |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.
