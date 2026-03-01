@@ -21,6 +21,7 @@ import {
   incrementTemplateAssignmentCount,
   type StarterTemplate,
   type TemplateCloneInput,
+  type TemplateCloneValidationErrors,
   type TemplateLibraryFilter,
   type TemplateUsageStats,
 } from './starter-template.logic';
@@ -73,6 +74,20 @@ describe('extractTemplateCategory()', () => {
     assert.equal(extractTemplateCategory('starter_invalid_category'), null);
     assert.equal(extractTemplateCategory('starter_'), null);
   });
+
+  it('should handle category names with complex suffixes', () => {
+    // Valid: category followed by underscore and suffix
+    assert.equal(extractTemplateCategory('starter_nutrition_'), 'nutrition');
+    assert.equal(extractTemplateCategory('starter_training_'), 'training');
+    assert.equal(extractTemplateCategory('starter_nutrition_plan_1'), 'nutrition');
+    assert.equal(extractTemplateCategory('starter_training_program_advanced'), 'training');
+  });
+
+  it('should be case-sensitive for category names', () => {
+    assert.equal(extractTemplateCategory('starter_NUTRITION_basic'), null);
+    assert.equal(extractTemplateCategory('starter_Nutrition_basic'), null);
+    assert.equal(extractTemplateCategory('starter_TRAINING_full'), null);
+  });
 });
 
 // ─── Clone Validation Tests (6 tests) ──────────────────────────────────────────
@@ -120,13 +135,58 @@ describe('validateTemplateClone()', () => {
     });
     assert.equal(errors.newPlanName, 'too_short');
 
-    // Too long (over 100 characters)
+    // Too long (over 100 characters, checking untrimmed length)
     const longName = 'A'.repeat(101);
     errors = validateTemplateClone({
       templateId: 'starter_nutrition_basic',
       newPlanName: longName,
     });
     assert.equal(errors.newPlanName, 'too_long');
+  });
+
+  it('should validate exact boundary conditions for plan name', () => {
+    // Exactly 2 characters (minimum allowed)
+    let errors = validateTemplateClone({
+      templateId: 'starter_nutrition_basic',
+      newPlanName: 'AB',
+    });
+    assert.deepEqual(errors, {});
+
+    // Exactly 100 characters (maximum allowed)
+    const exactMax = 'A'.repeat(100);
+    errors = validateTemplateClone({
+      templateId: 'starter_nutrition_basic',
+      newPlanName: exactMax,
+    });
+    assert.deepEqual(errors, {});
+
+    // 101 characters (too long)
+    const oneTooLong = 'A'.repeat(101);
+    errors = validateTemplateClone({
+      templateId: 'starter_nutrition_basic',
+      newPlanName: oneTooLong,
+    });
+    assert.equal(errors.newPlanName, 'too_long');
+  });
+
+  it('should handle plan names with special characters and numbers', () => {
+    const validNames = [
+      'Plan #1',
+      '2024 Summer Plan',
+      'Plan-With-Dashes',
+      'Plan.With.Dots',
+      'Plan & Co.',
+      'Español Plán',
+      '计划', // Chinese characters
+    ];
+
+    validNames.forEach((name) => {
+      const errors = validateTemplateClone({
+        templateId: 'starter_nutrition_basic',
+        newPlanName: name,
+      });
+      assert.deepEqual(errors, {}, `should accept: ${name}`);
+    });
   });
 
   it('should handle multiple validation errors', () => {
@@ -199,6 +259,37 @@ describe('filterStarterTemplates()', () => {
     const result = filterStarterTemplates(templates, { searchQuery: 'nonexistent' });
     assert.equal(result.length, 0);
   });
+
+  it('should handle null and undefined filter values gracefully', () => {
+    let result = filterStarterTemplates(templates, { planType: null });
+    assert.equal(result.length, 4); // All templates (null is falsy)
+
+    result = filterStarterTemplates(templates, { planType: undefined });
+    assert.equal(result.length, 4); // All templates (undefined is falsy)
+
+    result = filterStarterTemplates(templates, { searchQuery: '' });
+    assert.equal(result.length, 4); // Empty string is falsy after trim
+  });
+
+  it('should search across ID field', () => {
+    const result = filterStarterTemplates(templates, { searchQuery: 'starter_nutrition' });
+    assert.equal(result.length, 2);
+    assert.ok(result.every((t) => t.id.includes('starter_nutrition')));
+  });
+
+  it('should handle partial word matches in search', () => {
+    const result = filterStarterTemplates(templates, { searchQuery: 'body' });
+    assert.equal(result.length, 1);
+    assert.equal(result[0].id, 'starter_training_full_body');
+  });
+
+  it('should handle search with special characters', () => {
+    const templatesWithSpecial = [
+      { id: 'starter_nutrition_high-protein', planType: 'nutrition' as const, name: 'High-Protein Diet' },
+    ];
+    const result = filterStarterTemplates(templatesWithSpecial, { searchQuery: 'high-protein' });
+    assert.equal(result.length, 1);
+  });
 });
 
 // ─── Display Name Formatting Tests (3 tests) ───────────────────────────────────
@@ -236,6 +327,43 @@ describe('formatTemplateDisplayName()', () => {
       name: '',
     };
     assert.equal(formatTemplateDisplayName(template2), 'Training Full Body Advanced');
+  });
+
+  it('should fallback to ID formatting when name field is empty', () => {
+    const template: StarterTemplate = {
+      id: 'starter_nutrition_vegan',
+      planType: 'nutrition',
+      name: '',
+    };
+    assert.equal(formatTemplateDisplayName(template), 'Nutrition Vegan');
+  });
+
+  it('should preserve special characters in template name field', () => {
+    const template: StarterTemplate = {
+      id: 'starter_nutrition_basic',
+      planType: 'nutrition',
+      name: 'High-Protein & Low-Carb Diet #1',
+    };
+    assert.equal(formatTemplateDisplayName(template), 'High-Protein & Low-Carb Diet #1');
+  });
+
+  it('should handle very long template names', () => {
+    const longName = 'A'.repeat(100);
+    const template: StarterTemplate = {
+      id: 'starter_nutrition_basic',
+      planType: 'nutrition',
+      name: longName,
+    };
+    assert.equal(formatTemplateDisplayName(template), longName);
+  });
+
+  it('should handle Unicode characters in template names', () => {
+    const template: StarterTemplate = {
+      id: 'starter_nutrition_basic',
+      planType: 'nutrition',
+      name: 'Dieta Española 计划 पोषण',
+    };
+    assert.equal(formatTemplateDisplayName(template), 'Dieta Española 计划 पोषण');
   });
 });
 
@@ -310,6 +438,33 @@ describe('incrementTemplateCloneCount()', () => {
     assert.equal(result.cloneCount, 11);
     assert.equal(result.assignmentCount, 8);
   });
+
+  it('should handle zero and negative increments', () => {
+    const stats: TemplateUsageStats = {
+      templateId: 'starter_nutrition_basic',
+      cloneCount: 5,
+      assignmentCount: 3,
+    };
+
+    // Zero increment
+    let result = incrementTemplateCloneCount(stats, 0);
+    assert.equal(result.cloneCount, 5);
+
+    // Negative increment (edge case — should allow but result in negative count)
+    result = incrementTemplateCloneCount(stats, -2);
+    assert.equal(result.cloneCount, 3);
+  });
+
+  it('should handle large increments', () => {
+    const stats: TemplateUsageStats = {
+      templateId: 'starter_nutrition_basic',
+      cloneCount: 0,
+      assignmentCount: 0,
+    };
+
+    const result = incrementTemplateCloneCount(stats, 1000000);
+    assert.equal(result.cloneCount, 1000000);
+  });
 });
 
 describe('incrementTemplateAssignmentCount()', () => {
@@ -336,6 +491,33 @@ describe('incrementTemplateAssignmentCount()', () => {
     const result = incrementTemplateAssignmentCount(stats);
     assert.equal(result.assignmentCount, 16);
     assert.equal(result.cloneCount, 20);
+  });
+
+  it('should handle zero and negative increments', () => {
+    const stats: TemplateUsageStats = {
+      templateId: 'starter_nutrition_basic',
+      cloneCount: 5,
+      assignmentCount: 3,
+    };
+
+    // Zero increment
+    let result = incrementTemplateAssignmentCount(stats, 0);
+    assert.equal(result.assignmentCount, 3);
+
+    // Negative increment (edge case)
+    result = incrementTemplateAssignmentCount(stats, -1);
+    assert.equal(result.assignmentCount, 2);
+  });
+
+  it('should handle large increments', () => {
+    const stats: TemplateUsageStats = {
+      templateId: 'starter_training_hiit',
+      cloneCount: 100,
+      assignmentCount: 50,
+    };
+
+    const result = incrementTemplateAssignmentCount(stats, 9999);
+    assert.equal(result.assignmentCount, 10049);
   });
 });
 
@@ -420,5 +602,65 @@ describe('Edge cases and integration scenarios', () => {
 
     // Non-starter IDs
     assert.equal(extractTemplateCategory('user_nutrition_plan'), null);
+  });
+
+  it('should handle complex filtering scenarios with large datasets', () => {
+    // Simulate large template library
+    const largeLibrary: StarterTemplate[] = Array.from({ length: 100 }, (_, i) => {
+      const planType: 'nutrition' | 'training' = i % 2 === 0 ? 'nutrition' : 'training';
+      return {
+        id: `starter_${planType}_plan_${i}`,
+        planType,
+        name: `Template ${i}`,
+      };
+    });
+
+    // Filter by type
+    let result = filterStarterTemplates(largeLibrary, { planType: 'nutrition' });
+    assert.equal(result.length, 50);
+
+    // Search across large dataset
+    result = filterStarterTemplates(largeLibrary, { searchQuery: 'plan_50' });
+    assert.equal(result.length, 1);
+    assert.equal(result[0].id, 'starter_nutrition_plan_50');
+  });
+
+  it('should handle plan name validation with trimming consistency', () => {
+    // Plan name with leading/trailing spaces should trim consistently
+    const errors1 = validateTemplateClone({
+      templateId: 'starter_nutrition_basic',
+      newPlanName: '  AB  ', // 2 chars after trim, valid
+    });
+    assert.deepEqual(errors1, {});
+
+    const errors2 = validateTemplateClone({
+      templateId: 'starter_nutrition_basic',
+      newPlanName: '  A  ', // 1 char after trim, invalid
+    });
+    assert.equal(errors2.newPlanName, 'too_short');
+  });
+
+  it('should correctly identify cloned plan independence in complex scenarios', () => {
+    // Original starter template
+    const originalTemplate = 'starter_nutrition_basic';
+
+    // Multiple clones from same template
+    const clone1 = 'user_clone_1';
+    const clone2 = 'user_clone_2';
+    const clone3 = 'starter_nutrition_custom'; // Falsely looks like clone but is starter
+
+    assert.equal(isClonedIndependently(clone1, originalTemplate), true);
+    assert.equal(isClonedIndependently(clone2, originalTemplate), true);
+    assert.equal(isClonedIndependently(clone3, originalTemplate), false); // Still starter
+  });
+
+  it('should handle canCloneTemplate with empty error object', () => {
+    const noErrors: TemplateCloneValidationErrors = {};
+    assert.equal(canCloneTemplate(noErrors), true);
+
+    const withErrors: TemplateCloneValidationErrors = {
+      templateId: 'required',
+    };
+    assert.equal(canCloneTemplate(withErrors), false);
   });
 });
