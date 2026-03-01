@@ -152,6 +152,19 @@ Define the implementation contract for moving app domain persistence to Firebase
 - Pending finalization is connector schema/runtime compatibility in deployed Data Connect environments.
 - Repository validation utility exists at `scripts/validate-data-connect-profile-ops.mjs` for live endpoint contract checks.
 
+### Connection Lifecycle (In Progress)
+- Pure connection logic module at `features/connections/connection.logic.ts`:
+  - Types: `ConnectionStatus`, `CanceledReason`, `ConnectionRecord`, `ConnectionDisplayState`.
+  - Functions: `normalizeConnectionStatus`, `normalizeCanceledReason`, `normalizeConnectionSpecialty`, `resolveConnectionDisplayState`, `normalizeInviteSubmitError`, `normalizeConnectionActionError`.
+  - `resolveConnectionDisplayState` maps `status + canceled_reason` to a discriminated `ConnectionDisplayState` union, including `canceled_code_rotated` display state for code-rotation auto-cancellations.
+- Data Connect source module at `features/connections/connection-source.ts`:
+  - `submitInviteCode(user, code)` → `{ connectionId, status: 'pending_confirmation' }`
+  - `confirmPendingConnection(user, connectionId)` → `{ connectionId, status: 'active' }`
+  - `endConnection(user, connectionId)` → `void`
+  - `getMyConnections(user)` → `ConnectionRecord[]` (exposes `canceled_reason` for `code_rotated` handling)
+- Pending: wire connection-source operations into invite entry, professional queue, and connection detail screens.
+- Pending: live endpoint compatibility validation for connection operations.
+
 ## Test Strategy (Must Have Before Release)
 - Unit tests:
   - role-lock immutability

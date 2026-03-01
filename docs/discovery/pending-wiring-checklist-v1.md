@@ -47,7 +47,11 @@ Track intentionally deferred implementation wiring so it is completed before rel
   - Done: App-side profile source abstraction created in `features/auth/profile-source.ts` and integrated into auth session provider.
   - Done: Live endpoint contract validator added at `scripts/validate-data-connect-profile-ops.mjs` (`npm run validate:data-connect:profile`).
   - Pending: Finalize production Data Connect connector schema/operation compatibility and environment endpoint provisioning.
-- `Pending`: Implement Data Connect connection lifecycle connectors for invite submit/confirm/end and code rotation cancellation semantics.
+- `In progress`: Implement Data Connect connection lifecycle connectors for invite submit/confirm/end and code rotation cancellation semantics.
+  - Done: Pure connection logic module created in `features/connections/connection.logic.ts` (status/reason normalization, display state resolution, error mapping).
+  - Done: Data Connect source module created in `features/connections/connection-source.ts` (`submitInviteCode`, `confirmPendingConnection`, `endConnection`, `getMyConnections`).
+  - Pending: Wire connection-source operations into app screens (invite entry, professional queue, connection detail).
+  - Pending: Live endpoint compatibility validation for connection operations against deployed connector.
 - `Pending`: Wire fatsecret food lookup to nutrition plan builder and tracking search surfaces.
 - `Pending`: Wire predefined plan library persistence and bulk-assignment orchestration APIs.
 - `Pending`: Wire water-goal ownership precedence from live assignment + nutritionist override data.
