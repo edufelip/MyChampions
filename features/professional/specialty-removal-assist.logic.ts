@@ -10,13 +10,17 @@ import type { ConnectionRecord } from '@/features/connections/connection.logic';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type SpecialtyRemovalBlocker = 'has_active_students' | 'has_pending_students' | 'last_specialty';
+/**
+ * Type alias for backward compatibility.
+ * @deprecated Use SpecialtyRemovalBlockReason from specialty.logic instead.
+ */
+export type SpecialtyRemovalBlocker = SpecialtyRemovalBlockReason;
 
 export type AssistAction = 'view_active' | 'view_pending' | 'bulk_deny_pending' | 'add_specialty';
 
 export type RemovalAssistState = {
   blocked: boolean;
-  blockReason: SpecialtyRemovalBlocker | null;
+  blockReason: SpecialtyRemovalBlockReason | null;
   activeStudentCount: number;
   pendingStudentCount: number;
   totalSpecialties: number;
@@ -45,7 +49,7 @@ export function resolveRemovalAssistState(input: {
   const { activeStudentCount, pendingStudentCount, totalActiveSpecialties } = input;
 
   // Determine primary block reason (priority order: last_specialty, active, pending)
-  let blockReason: SpecialtyRemovalBlocker | null = null;
+  let blockReason: SpecialtyRemovalBlockReason | null = null;
   const actions: AssistAction[] = [];
 
   if (totalActiveSpecialties <= 1) {
@@ -157,10 +161,42 @@ export function canRemovalProceedNow(
 }
 
 /**
+ * Get localization keys for blocked removal message.
+ * Returns structured keys and parameters for message formatting by UI layer.
+ */
+export function getRemovalBlockedMessageKeys(
+  blockReason: SpecialtyRemovalBlockReason
+): {
+  titleKey: string;
+  bodyKey: string;
+  bodyParams?: Record<string, string | number>;
+} {
+  switch (blockReason) {
+    case 'has_active_students':
+      return {
+        titleKey: 'pro.specialty.removal_blocked.title',
+        bodyKey: 'pro.specialty.removal_blocked.active_students_body',
+      };
+    case 'has_pending_students':
+      return {
+        titleKey: 'pro.specialty.removal_blocked.title',
+        bodyKey: 'pro.specialty.removal_blocked.pending_students_body',
+      };
+    case 'last_specialty':
+      return {
+        titleKey: 'pro.specialty.removal_blocked.title',
+        bodyKey: 'pro.specialty.removal_blocked.last_specialty_body',
+      };
+  }
+}
+
+/**
  * Format assist message for blocked removal state.
+ * @deprecated Use getRemovalBlockedMessageKeys() instead for localization support.
+ * Kept for backward compatibility; generates English-only messages.
  */
 export function formatRemovalBlockedMessage(
-  blockReason: SpecialtyRemovalBlocker,
+  blockReason: SpecialtyRemovalBlockReason,
   activeCount: number,
   pendingCount: number
 ): {
@@ -188,6 +224,6 @@ export function formatRemovalBlockedMessage(
 /**
  * Determine if assist UI should show blockers (active/pending students).
  */
-export function shouldShowBlockers(blockReason: SpecialtyRemovalBlocker | null): boolean {
+export function shouldShowBlockers(blockReason: SpecialtyRemovalBlockReason | null): boolean {
   return blockReason === 'has_active_students' || blockReason === 'has_pending_students';
 }

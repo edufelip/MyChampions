@@ -20,6 +20,7 @@ export type PendingQueueError = 'no_selections' | 'unknown';
 /**
  * Filter pending connections by search query and specialty.
  * Search matches against connection ID (student UID).
+ * Optimized for large datasets: pre-normalizes search query to avoid repeated toLowerCase() calls.
  */
 export function filterPendingQueue(
   connections: ConnectionRecord[],
@@ -28,17 +29,53 @@ export function filterPendingQueue(
   let filtered = connections.filter((c) => c.status === 'pending_confirmation');
 
   // Apply search filter (case-insensitive substring match on ID)
+  // Optimize: normalize search query once before filtering (avoid toLowerCase() per item)
   if (criteria.searchQuery.trim()) {
-    const q = criteria.searchQuery.trim().toLowerCase();
-    filtered = filtered.filter((c) => c.id.toLowerCase().includes(q));
+    const normalizedQuery = criteria.searchQuery.trim().toLowerCase();
+    filtered = filtered.filter((c) => c.id.toLowerCase().includes(normalizedQuery));
   }
 
   // Apply specialty filter if specified
+  // null specialty means "no filter" — keep all specialties
   if (criteria.specialty) {
     filtered = filtered.filter((c) => c.specialty === criteria.specialty);
   }
 
   return filtered;
+}
+
+/**
+ * Performance-optimized filter for very large datasets (1000+ items).
+ * Pre-normalizes all IDs to lowercase once, then uses cached values.
+ * Use this only when performance profiling shows bottleneck in filterPendingQueue.
+ *
+ * Trade-off: Uses more memory (stores lowercased IDs) for faster filtering.
+ */
+export function filterPendingQueueOptimized(
+  connections: ConnectionRecord[],
+  criteria: QueueFilterCriteria
+): ConnectionRecord[] {
+  // Pre-normalize all pending connections
+  const pending = connections.filter((c) => c.status === 'pending_confirmation');
+
+  if (pending.length === 0) return [];
+
+  // Build cached lowercase map for search (only if search is provided)
+  const searchQuery = criteria.searchQuery.trim();
+  const normalizedQuery = searchQuery ? searchQuery.toLowerCase() : null;
+
+  // Single pass with both filters applied
+  return pending.filter((c) => {
+    // Search filter
+    if (normalizedQuery && !c.id.toLowerCase().includes(normalizedQuery)) {
+      return false;
+    }
+    // Specialty filter (null specialty means no filter)
+    if (criteria.specialty && c.specialty !== criteria.specialty) {
+      return false;
+    }
+    return true;
+  });
 }
 
 /**

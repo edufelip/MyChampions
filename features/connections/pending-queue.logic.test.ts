@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   filterPendingQueue,
+  filterPendingQueueOptimized,
   canBulkDeny,
   validateBulkDeny,
   buildBulkDenyConfirmationMessage,
@@ -326,4 +327,66 @@ test('BL-004 Edge case: numeric search in ID', () => {
 
   assert.equal(result.length, 1);
   assert.equal(result[0]?.id, 'student-alice-123');
+});
+
+// ─── Optimized Filter for Large Datasets ───────────────────────────────────────
+
+test('BL-004 Optimized: returns same results as standard filter', () => {
+  const criteria: QueueFilterCriteria = { searchQuery: 'alice', specialty: 'nutritionist' };
+  
+  const standardResult = filterPendingQueue(mockConnections, criteria);
+  const optimizedResult = filterPendingQueueOptimized(mockConnections, criteria);
+
+  assert.deepEqual(optimizedResult, standardResult);
+  assert.equal(optimizedResult.length, 1);
+  assert.equal(optimizedResult[0]?.id, 'student-alice-123');
+});
+
+test('BL-004 Optimized: single pass filter correctness', () => {
+  const criteria: QueueFilterCriteria = { searchQuery: 'student', specialty: 'fitness_coach' };
+  const result = filterPendingQueueOptimized(mockConnections, criteria);
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0]?.specialty, 'fitness_coach');
+  assert(result[0]?.id.includes('student'));
+});
+
+test('BL-004 Optimized: handles empty search query', () => {
+  const criteria: QueueFilterCriteria = { searchQuery: '   ', specialty: 'nutritionist' };
+  const result = filterPendingQueueOptimized(mockConnections, criteria);
+
+  assert.equal(result.length, 2);
+  result.forEach((r) => {
+    assert.equal(r.specialty, 'nutritionist');
+  });
+});
+
+test('BL-004 Optimized: case-insensitive search works', () => {
+  const criteria: QueueFilterCriteria = { searchQuery: 'CHARLIE' };
+  const result = filterPendingQueueOptimized(mockConnections, criteria);
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0]?.id, 'student-charlie-789');
+});
+
+test('BL-004 Optimized: no filters returns all pending', () => {
+  const criteria: QueueFilterCriteria = { searchQuery: '' };
+  const result = filterPendingQueueOptimized(mockConnections, criteria);
+
+  assert.equal(result.length, 3);
+});
+
+test('BL-004 Optimized: empty list returns empty', () => {
+  const criteria: QueueFilterCriteria = { searchQuery: 'alice', specialty: 'nutritionist' };
+  const result = filterPendingQueueOptimized([], criteria);
+
+  assert.equal(result.length, 0);
+});
+
+test('BL-004 Optimized: null specialty means no filter', () => {
+  const criteria: QueueFilterCriteria = { searchQuery: 'student', specialty: null };
+  const result = filterPendingQueueOptimized(mockConnections, criteria);
+
+  // All have 'student' in ID, so all should match
+  assert.equal(result.length, 3);
 });

@@ -12,6 +12,7 @@ import {
   countBlockers,
   canRemovalProceedNow,
   formatRemovalBlockedMessage,
+  getRemovalBlockedMessageKeys,
   shouldShowBlockers,
   type RemovalAssistState,
 } from './specialty-removal-assist.logic';
@@ -359,4 +360,34 @@ test('BL-011 Edge case: empty action list when no blockers', () => {
   });
 
   assert.equal(state.availableActions.length, 0);
+});
+
+// ─── Localized Message Keys ────────────────────────────────────────────────────
+
+test('BL-011 Localization: returns message keys for active students block', () => {
+  const keys = getRemovalBlockedMessageKeys('has_active_students');
+
+  assert.equal(keys.titleKey, 'pro.specialty.removal_blocked.title');
+  assert.equal(keys.bodyKey, 'pro.specialty.removal_blocked.active_students_body');
+});
+
+test('BL-011 Localization: returns message keys for pending students block', () => {
+  const keys = getRemovalBlockedMessageKeys('has_pending_students');
+
+  assert.equal(keys.titleKey, 'pro.specialty.removal_blocked.title');
+  assert.equal(keys.bodyKey, 'pro.specialty.removal_blocked.pending_students_body');
+});
+
+test('BL-011 Localization: returns message keys for last specialty block', () => {
+  const keys = getRemovalBlockedMessageKeys('last_specialty');
+
+  assert.equal(keys.titleKey, 'pro.specialty.removal_blocked.title');
+  assert.equal(keys.bodyKey, 'pro.specialty.removal_blocked.last_specialty_body');
+});
+
+test('BL-011 Localization: formatRemovalBlockedMessage still works (backward compatibility)', () => {
+  const msg = formatRemovalBlockedMessage('has_active_students', 2, 0);
+
+  assert.equal(msg.title, 'Cannot remove specialty');
+  assert(msg.body.includes('2 active students'));
 });
