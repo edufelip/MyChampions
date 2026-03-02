@@ -8,6 +8,7 @@ import {
   resolveConnectionDisplayState,
   normalizeInviteSubmitError,
   normalizeConnectionActionError,
+  mapInviteSubmitReasonToMessageKey,
   type ConnectionRecord,
 } from './connection.logic';
 
@@ -291,4 +292,55 @@ test('normalizeConnectionActionError maps NETWORK_ERROR to network', () => {
 test('normalizeConnectionActionError falls back to unknown', () => {
   assert.equal(normalizeConnectionActionError({ code: 'OTHER' }), 'unknown');
   assert.equal(normalizeConnectionActionError(null), 'unknown');
+});
+
+// ─── BL-010: mapInviteSubmitReasonToMessageKey ────────────────────────────────
+
+test('mapInviteSubmitReasonToMessageKey maps code_not_found to invalid_code key', () => {
+  assert.equal(
+    mapInviteSubmitReasonToMessageKey('code_not_found'),
+    'relationship.error.invalid_code'
+  );
+});
+
+test('mapInviteSubmitReasonToMessageKey maps code_expired to invalid_code key', () => {
+  assert.equal(
+    mapInviteSubmitReasonToMessageKey('code_expired'),
+    'relationship.error.invalid_code'
+  );
+});
+
+test('mapInviteSubmitReasonToMessageKey maps already_connected', () => {
+  assert.equal(
+    mapInviteSubmitReasonToMessageKey('already_connected'),
+    'relationship.error.already_connected'
+  );
+});
+
+test('mapInviteSubmitReasonToMessageKey maps pending_cap_reached to pending_cap key', () => {
+  assert.equal(
+    mapInviteSubmitReasonToMessageKey('pending_cap_reached'),
+    'relationship.error.pending_cap'
+  );
+});
+
+test('mapInviteSubmitReasonToMessageKey maps network', () => {
+  assert.equal(
+    mapInviteSubmitReasonToMessageKey('network'),
+    'relationship.error.network'
+  );
+});
+
+test('mapInviteSubmitReasonToMessageKey maps configuration to unknown key', () => {
+  assert.equal(
+    mapInviteSubmitReasonToMessageKey('configuration'),
+    'relationship.error.unknown'
+  );
+});
+
+test('mapInviteSubmitReasonToMessageKey maps unknown to unknown key', () => {
+  assert.equal(
+    mapInviteSubmitReasonToMessageKey('unknown'),
+    'relationship.error.unknown'
+  );
 });
