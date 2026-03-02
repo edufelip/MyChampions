@@ -45,6 +45,11 @@ import {
 } from '@/features/nutrition/custom-meal.logic';
 import { useMealPhotoAnalysis } from '@/features/nutrition/use-meal-photo-analysis';
 import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -66,6 +71,13 @@ export default function CustomMealLibraryScreen() {
   const router = useRouter();
   const { currentUser } = useAuthSession();
   const { state, shareLink, remove } = useCustomMeals(currentUser);
+
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   const [quickLog, setQuickLog] = useState<QuickLogPanelState>({ kind: 'closed' });
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
@@ -148,6 +160,17 @@ export default function CustomMealLibraryScreen() {
     <View style={[styles.container, { backgroundColor: palette.background }]} testID="meal.library.screen">
       <Stack.Screen options={{ title: t('meal.library.title'), headerShown: true }} />
 
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="meal.library.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
+
       {state.kind === 'loading' ? (
         <View style={styles.center}>
           <ActivityIndicator
@@ -171,6 +194,7 @@ export default function CustomMealLibraryScreen() {
               meal={item}
               palette={palette}
               t={t}
+              isWriteLocked={isWriteLocked}
               onLog={() => openQuickLog(item)}
               onEdit={() => router.push(`/nutrition/custom-meals/${item.id}`)}
               onShare={() => handleShare(item)}
@@ -198,6 +222,7 @@ export default function CustomMealLibraryScreen() {
           grams={quickLog.grams}
           error={quickLog.error}
           isLogging={isLoggingMeal}
+          isWriteLocked={isWriteLocked}
           nutritionPreview={nutritionPreview}
           analysisState={analysis.state}
           onAnalyzeCta={handleAnalyzeCta}
@@ -249,6 +274,7 @@ function MealRow({
   meal,
   palette,
   t,
+  isWriteLocked,
   onLog,
   onEdit,
   onShare,
@@ -256,6 +282,7 @@ function MealRow({
   meal: CustomMeal;
   palette: Palette;
   t: TFn;
+  isWriteLocked: boolean;
   onLog: () => void;
   onEdit: () => void;
   onShare: () => void;
@@ -277,8 +304,9 @@ function MealRow({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${t('meal.library.quick_log.cta_log') as string} ${meal.name}`}
+          disabled={isWriteLocked}
           onPress={onLog}
-          style={[styles.smallButton, { backgroundColor: palette.tint }]}
+          style={[styles.smallButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID={`meal.library.row.${meal.id}.log`}>
           <Text style={styles.smallButtonText}>{t('meal.library.quick_log.cta_log')}</Text>
         </Pressable>
@@ -295,8 +323,9 @@ function MealRow({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${t('meal.library.cta_share') as string} ${meal.name}`}
+          disabled={isWriteLocked}
           onPress={onShare}
-          style={[styles.ghostAction]}
+          style={[styles.ghostAction, { opacity: isWriteLocked ? 0.4 : 1 }]}
           testID={`meal.library.row.${meal.id}.share`}>
           <Text style={[styles.ghostActionText, { color: palette.tint }]}>
             {t('meal.library.cta_share')}
@@ -314,6 +343,7 @@ function QuickLogPanel({
   grams,
   error,
   isLogging,
+  isWriteLocked,
   nutritionPreview,
   analysisState,
   onAnalyzeCta,
@@ -328,6 +358,7 @@ function QuickLogPanel({
   grams: string;
   error: string | null;
   isLogging: boolean;
+  isWriteLocked: boolean;
   nutritionPreview: { calories: number; carbs: number; proteins: number; fats: number } | null;
   analysisState: import('@/features/nutrition/use-meal-photo-analysis').PhotoAnalysisState;
   onAnalyzeCta: () => void;
@@ -417,8 +448,9 @@ function QuickLogPanel({
         ) : (
           <Pressable
             accessibilityRole="button"
+            disabled={isWriteLocked}
             onPress={onConfirm}
-            style={[styles.primaryButton, { backgroundColor: palette.tint }]}
+            style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
             testID="meal.library.quickLog.cta.confirm">
             <Text style={styles.primaryButtonText}>{t('meal.library.quick_log.cta_log')}</Text>
           </Pressable>
@@ -622,4 +654,15 @@ const styles = StyleSheet.create({
   analysisCtaText: { fontSize: 13, fontWeight: '600' },
   analysisInlineRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   analysisMeta: { fontSize: 12, lineHeight: 18 },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    margin: 16,
+    marginBottom: 0,
+    padding: 10,
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });

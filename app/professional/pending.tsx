@@ -22,6 +22,11 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import type { ConnectionRecord } from '@/features/connections/connection.logic';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
 
@@ -30,6 +35,13 @@ export default function ProfessionalPendingScreen() {
   const palette = Colors[colorScheme];
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
+
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   const { state, reload, confirmConnection, unbindConnection } = useConnections(currentUser);
 
@@ -119,6 +131,17 @@ export default function ProfessionalPendingScreen() {
       testID="pro.pending.screen">
       <Stack.Screen options={{ title: t('pro.pending.filter.label'), headerShown: true }} />
 
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="pro.pending.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
+
       {/* ── Search bar ────────────────────────────────────────── */}
       <TextInput
         accessibilityLabel={t('pro.pending.search.placeholder')}
@@ -142,7 +165,7 @@ export default function ProfessionalPendingScreen() {
           </Text>
           <Pressable
             accessibilityRole="button"
-            disabled={isBulkDenying}
+            disabled={isBulkDenying || isWriteLocked}
             onPress={onBulkDeny}
             style={[styles.bulkDenyButton, { borderColor: '#b3261e' }]}
             testID="pro.pending.bulkDenyButton">
@@ -195,6 +218,7 @@ export default function ProfessionalPendingScreen() {
             palette={palette}
             t={t}
             testIndex={i}
+            isWriteLocked={isWriteLocked}
           />
         ))
       )}
@@ -215,6 +239,7 @@ function PendingRow({
   palette,
   t,
   testIndex,
+  isWriteLocked,
 }: {
   connection: ConnectionRecord;
   isSelected: boolean;
@@ -224,6 +249,7 @@ function PendingRow({
   palette: Palette;
   t: (key: TranslationKey) => string;
   testIndex: number;
+  isWriteLocked: boolean;
 }) {
   return (
     <Pressable
@@ -260,15 +286,17 @@ function PendingRow({
       <View style={styles.rowActions}>
         <Pressable
           accessibilityRole="button"
+          disabled={isWriteLocked}
           onPress={() => onAccept(connection.id)}
-          style={[styles.actionButton, { backgroundColor: palette.tint }]}
+          style={[styles.actionButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID={`pro.pending.acceptButton.${testIndex}`}>
           <Text style={styles.actionButtonText}>{t('pro.pending.confirm.cta')}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
+          disabled={isWriteLocked}
           onPress={() => onDeny(connection.id)}
-          style={[styles.actionButton, { backgroundColor: '#b3261e' }]}
+          style={[styles.actionButton, { backgroundColor: '#b3261e', opacity: isWriteLocked ? 0.4 : 1 }]}
           testID={`pro.pending.denyButton.${testIndex}`}>
           <Text style={styles.actionButtonText}>{t('pro.pending.deny.cta')}</Text>
         </Pressable>
@@ -378,6 +406,15 @@ const styles = StyleSheet.create({
   link: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
 

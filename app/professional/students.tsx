@@ -28,6 +28,11 @@ import {
 import { Stack, useRouter } from 'expo-router';
 
 import { Colors, Fonts } from '@/constants/theme';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -58,6 +63,12 @@ export default function ProfessionalStudentsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
 
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKind>('all');
 
@@ -82,6 +93,17 @@ export default function ProfessionalStudentsScreen() {
       style={[styles.container, { backgroundColor: palette.background }]}
       testID="pro.students.screen">
       <Stack.Screen options={{ title: t('pro.students.title'), headerShown: true }} />
+
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="pro.students.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Search bar */}
       <View style={[styles.searchBar, { borderColor: palette.icon + '66' }]}>
@@ -280,4 +302,12 @@ const styles = StyleSheet.create({
   badge: { fontSize: 12, fontWeight: '600' },
   emptyText: { fontSize: 14, padding: 32, textAlign: 'center' },
   centered: { marginTop: 32 },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    margin: 16,
+    marginBottom: 0,
+    padding: 10,
+  },
+  offlineBannerText: { fontSize: 13, lineHeight: 18 },
 });

@@ -26,6 +26,11 @@ import {
 import { Stack } from 'expo-router';
 
 import { Colors, Fonts } from '@/constants/theme';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -45,6 +50,13 @@ export default function AccountSettingsScreen() {
   const { t } = useTranslation();
 
   const [deleteState, setDeleteState] = useState<DeleteRequestState>({ kind: 'idle' });
+
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   // Privacy policy URL — deferred: replace with env-based legal config link
   const PRIVACY_POLICY_URL = 'https://example.com/privacy';
@@ -93,6 +105,7 @@ export default function AccountSettingsScreen() {
       : null;
 
   const isSubmitting = deleteState.kind === 'pending';
+  const isDeleteLocked = isSubmitting || isWriteLocked;
 
   return (
     <ScrollView
@@ -100,6 +113,17 @@ export default function AccountSettingsScreen() {
       contentContainerStyle={styles.content}
       testID="settings.account.screen">
       <Stack.Screen options={{ title: t('settings.account.title'), headerShown: true }} />
+
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="settings.account.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Privacy policy */}
       <View
@@ -153,10 +177,10 @@ export default function AccountSettingsScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={handleRequestDeletion}
-              disabled={isSubmitting}
+              disabled={isDeleteLocked}
               style={[
                 styles.destructiveButton,
-                { borderColor: '#b3261e', opacity: isSubmitting ? 0.6 : 1 },
+                { borderColor: '#b3261e', opacity: isDeleteLocked ? 0.5 : 1 },
               ]}
               testID="settings.account.deleteCta">
               <Text style={[styles.destructiveButtonText, { color: '#b3261e' }]}>
@@ -211,4 +235,13 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   destructiveButtonText: { fontSize: 15, fontWeight: '600' },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });

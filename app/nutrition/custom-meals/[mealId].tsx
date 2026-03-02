@@ -49,10 +49,19 @@ import {
   validateCustomMealInput,
   type CustomMealInput,
   type CustomMealValidationErrors,
-  type ImageUploadState,
 } from '@/features/nutrition/custom-meal.logic';
+import {
+  resolveImageUploadDisplay,
+  buildUploadProgressMessage,
+  type ImageUploadState,
+} from '@/features/nutrition/image-upload.logic';
 import { useMealPhotoAnalysis } from '@/features/nutrition/use-meal-photo-analysis';
 import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -119,6 +128,13 @@ export default function CustomMealBuilderScreen() {
   // Real upload wiring deferred (pending-wiring-checklist-v1.md, D-073)
   const [imageUpload] = useState<ImageUploadState>({ kind: 'idle' });
 
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
+
   // ── Field helper ───────────────────────────────────────────────────────────
   function setField(field: keyof CustomMealInput, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -182,6 +198,17 @@ export default function CustomMealBuilderScreen() {
       testID="meal.builder.screen">
       <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
 
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="meal.builder.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Helper text */}
       <Text style={[styles.helper, { color: palette.icon }]}>
         {t('meal.builder.helper')}
@@ -198,8 +225,8 @@ export default function CustomMealBuilderScreen() {
         t={t}
       />
 
-      {/* Image upload stub */}
-      <ImageUploadStub
+      {/* Image upload progress + retry (BL-007, FR-213, AC-424, AC-425) */}
+      <ImageUploadSection
         uploadState={imageUpload}
         palette={palette}
         t={t}
@@ -296,8 +323,9 @@ export default function CustomMealBuilderScreen() {
       ) : (
         <Pressable
           accessibilityRole="button"
+          disabled={isWriteLocked}
           onPress={handleSave}
-          style={[styles.primaryButton, { backgroundColor: palette.tint }]}
+          style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID="meal.builder.cta.save">
           <Text style={styles.primaryButtonText}>{t('meal.builder.cta_save')}</Text>
         </Pressable>
@@ -307,8 +335,9 @@ export default function CustomMealBuilderScreen() {
       {savedMealId ? (
         <Pressable
           accessibilityRole="button"
+          disabled={isWriteLocked}
           onPress={handleShare}
-          style={[styles.outlineButton, { borderColor: palette.tint }]}
+          style={[styles.outlineButton, { borderColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID="meal.builder.cta.share">
           <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
             {t('meal.builder.cta_share')}
@@ -453,9 +482,11 @@ function resolveAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string 
   }
 }
 
-// ─── Image Upload Stub ────────────────────────────────────────────────────────
+// ─── Image Upload Section ─────────────────────────────────────────────────────
+// BL-007: Renders upload progress bar, error messages, and retry CTA.
+// Refs: FR-213, AC-424, AC-425, BR-261, BR-271
 
-function ImageUploadStub({
+function ImageUploadSection({
   uploadState,
   palette,
   t,
@@ -464,36 +495,80 @@ function ImageUploadStub({
   palette: Palette;
   t: TFn;
 }) {
-  const label =
-    uploadState.kind === 'uploading'
-      ? (t('meal.builder.image.uploading') as string).replace(
-          '{percent}',
-          String(uploadState.progressPercent)
-        )
-      : uploadState.kind === 'failed'
-        ? t('meal.builder.image.upload_failed')
-        : uploadState.kind === 'done'
-          ? t('meal.builder.image.cta_change')
-          : t('meal.builder.image.cta_upload');
+  const display = resolveImageUploadDisplay(uploadState);
 
-  const isRetry = uploadState.kind === 'failed';
+  // Primary area label
+  const areaLabel: string = display.isDone
+    ? (t('meal.builder.image.cta_change') as string)
+    : (t('meal.builder.image.cta_upload') as string);
+
+  // Progress message when uploading
+  const progressMessage: string | null = display.showProgress && display.progressPercent !== null
+    ? buildUploadProgressMessage(
+        t('custom_meal.image.upload_progress') as string,
+        display.progressPercent
+      )
+    : null;
+
+  // Error message key → localized string
+  const errorMessage: string | null = display.errorMessageKey
+    ? (t(display.errorMessageKey as Parameters<TFn>[0]) as string)
+    : null;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityHint={t('meal.builder.image.cta_upload') as string}
-      onPress={() => {
-        // Image picker + upload deferred (pending-wiring-checklist-v1.md)
-      }}
-      style={[styles.imageUploadArea, { borderColor: palette.icon + '55' }]}
-      testID="meal.builder.imageUpload">
-      <Text style={[styles.imageUploadLabel, { color: isRetry ? '#b3261e' : palette.icon }]}>
-        {label}
-      </Text>
-      {uploadState.kind === 'uploading' ? (
-        <ActivityIndicator size="small" style={styles.imageUploadIndicator} />
+    <View testID="meal.builder.imageUpload.section">
+      {/* Tap area: upload / change photo */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityHint={t('meal.builder.image.cta_upload') as string}
+        onPress={() => {
+          // Image picker + upload wiring deferred (pending-wiring-checklist-v1.md)
+        }}
+        style={[styles.imageUploadArea, { borderColor: palette.icon + '55' }]}
+        testID="meal.builder.imageUpload">
+        <Text style={[styles.imageUploadLabel, { color: palette.icon }]}>
+          {areaLabel}
+        </Text>
+        {display.showProgress ? (
+          <ActivityIndicator size="small" style={styles.imageUploadIndicator} />
+        ) : null}
+      </Pressable>
+
+      {/* Progress message (AC-424) */}
+      {progressMessage ? (
+        <Text
+          style={[styles.imageUploadMeta, { color: palette.icon }]}
+          accessibilityLiveRegion="polite"
+          testID="meal.builder.imageUpload.progress">
+          {progressMessage}
+        </Text>
       ) : null}
-    </Pressable>
+
+      {/* Error message (AC-425, BR-271) */}
+      {errorMessage ? (
+        <View accessibilityLiveRegion="polite">
+          <Text
+            style={[styles.imageUploadMeta, { color: '#b3261e' }]}
+            testID="meal.builder.imageUpload.error">
+            {errorMessage}
+          </Text>
+        </View>
+      ) : null}
+
+      {/* Retry CTA — only shown for retryable errors (BR-271) */}
+      {display.canRetry ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            // Retry wiring deferred (pending-wiring-checklist-v1.md)
+          }}
+          testID="meal.builder.imageUpload.retry">
+          <Text style={[styles.imageUploadMeta, { color: palette.tint }]}>
+            {t('custom_meal.image.retry')}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
@@ -618,6 +693,7 @@ const styles = StyleSheet.create({
     minHeight: 72,
   },
   imageUploadLabel: { fontSize: 14 },
+  imageUploadMeta: { fontSize: 12, marginTop: 4 },
   imageUploadIndicator: {},
   primaryButton: {
     alignItems: 'center',
@@ -660,5 +736,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     height: 18,
     width: 18,
+  },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

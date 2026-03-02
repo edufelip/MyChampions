@@ -4,7 +4,7 @@
  *
  * All Data Connect calls are intentionally stubbed — endpoints are not yet live.
  * Food search (fatsecret) returns an empty array stub (D-113).
- * Starter template operations return hardcoded stubs (D-114).
+ * Starter template operations are wired to Data Connect generated SDK (D-114).
  *
  * Deferred wiring tracked in docs/discovery/pending-wiring-checklist-v1.md.
  * Refs: D-111–D-114, FR-240–FR-248, BR-291–BR-296
@@ -13,12 +13,19 @@
 import Constants from 'expo-constants';
 import type { User } from 'firebase/auth';
 import {
-  getNutritionTemplates,
-  getTrainingTemplates,
-  cloneAsNutritionPlan,
-  cloneAsTrainingPlan,
+  getNutritionTemplates as _getNutritionTemplates,
+  getTrainingTemplates as _getTrainingTemplates,
+  cloneAsNutritionPlan as _cloneAsNutritionPlan,
+  cloneAsTrainingPlan as _cloneAsTrainingPlan,
+  type GetNutritionTemplatesData,
+  type GetTrainingTemplatesData,
+  type CloneAsNutritionPlanData,
+  type CloneAsNutritionPlanVariables,
+  type CloneAsTrainingPlanData,
+  type CloneAsTrainingPlanVariables,
 } from '@mychampions/dataconnect-generated';
-import { getDataConnectInstance } from '../dataconnect';
+import type { DataConnect } from 'firebase/data-connect';
+import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
 
 import type {
   NutritionPlanInput,
@@ -30,6 +37,10 @@ import type {
   TrainingSessionItem,
   TrainingSessionItemInput,
   StarterTemplate,
+} from './plan-builder.logic';
+import {
+  deriveStarterTemplatePlanType,
+  coalesceTemplateDescription,
 } from './plan-builder.logic';
 import type { PlanType } from './plan-change-request.logic';
 
@@ -704,22 +715,46 @@ export async function removeTrainingSessionItem(
 // ─── Starter templates ────────────────────────────────────────────────────────
 
 /**
+ * Injectable dependencies for starter template operations.
+ * Production code uses real SDK defaults; tests inject mocks.
+ * Uses explicit single-overload signatures to avoid TypeScript overload-resolution
+ * issues when mocking in tests.
+ * Refs: D-114
+ */
+export type StarterTemplateDeps = {
+  getNutritionTemplates: (dc: DataConnect) => Promise<{ data: GetNutritionTemplatesData }>;
+  getTrainingTemplates: (dc: DataConnect) => Promise<{ data: GetTrainingTemplatesData }>;
+  cloneAsNutritionPlan: (dc: DataConnect, vars: CloneAsNutritionPlanVariables) => Promise<{ data: CloneAsNutritionPlanData }>;
+  cloneAsTrainingPlan: (dc: DataConnect, vars: CloneAsTrainingPlanVariables) => Promise<{ data: CloneAsTrainingPlanData }>;
+  getDataConnectInstance: () => DataConnect;
+};
+
+const defaultStarterTemplateDeps: StarterTemplateDeps = {
+  getNutritionTemplates: _getNutritionTemplates,
+  getTrainingTemplates: _getTrainingTemplates,
+  cloneAsNutritionPlan: _cloneAsNutritionPlan,
+  cloneAsTrainingPlan: _cloneAsTrainingPlan,
+  getDataConnectInstance: _getDataConnectInstance,
+};
+
+/**
  * Returns starter templates for a given plan type from Data Connect.
  * Refs: D-114, FR-247, BR-270, BR-295
  */
 export async function getStarterTemplates(
-  planType: PlanType
+  planType: PlanType,
+  deps: StarterTemplateDeps = defaultStarterTemplateDeps
 ): Promise<StarterTemplate[]> {
-  const dc = getDataConnectInstance();
+  const dc = deps.getDataConnectInstance();
   const { data } = await (planType === 'nutrition'
-    ? getNutritionTemplates(dc)
-    : getTrainingTemplates(dc));
+    ? deps.getNutritionTemplates(dc)
+    : deps.getTrainingTemplates(dc));
 
   return data.starterTemplates.map((t) => ({
     id: t.id,
     planType: planType,
     name: t.name,
-    description: t.description ?? undefined,
+    description: coalesceTemplateDescription(t.description),
   }));
 }
 
@@ -731,14 +766,11 @@ export async function getStarterTemplates(
 export async function cloneStarterTemplate(
   user: User,
   templateId: string,
-  name: string
+  name: string,
+  deps: StarterTemplateDeps = defaultStarterTemplateDeps
 ): Promise<{ id: string; planType: PlanType; name: string }> {
-  // Derive planType from the starter template ID prefix (starter_nutrition_* / starter_training_*)
-  const planType: PlanType | null = templateId.startsWith('starter_nutrition_')
-    ? 'nutrition'
-    : templateId.startsWith('starter_training_')
-      ? 'training'
-      : null;
+  // Derive planType from the starter template ID prefix via pure helper (testable separately)
+  const planType = deriveStarterTemplatePlanType(templateId);
 
   if (!planType) {
     throw new PlanBuilderSourceError(
@@ -747,12 +779,12 @@ export async function cloneStarterTemplate(
     );
   }
 
-  const dc = getDataConnectInstance();
+  const dc = deps.getDataConnectInstance();
   const professionalId = user.uid;
 
   const { data } = await (planType === 'nutrition'
-    ? cloneAsNutritionPlan(dc, { professionalId, sourceTemplateId: templateId, name })
-    : cloneAsTrainingPlan(dc, { professionalId, sourceTemplateId: templateId, name }));
+    ? deps.cloneAsNutritionPlan(dc, { professionalId, sourceTemplateId: templateId, name })
+    : deps.cloneAsTrainingPlan(dc, { professionalId, sourceTemplateId: templateId, name }));
 
   const key = planType === 'nutrition'
     ? (data as { nutritionPlan_insert: { id: string } }).nutritionPlan_insert

@@ -11,8 +11,7 @@
  * Docs: docs/screens/v2/SC-202-professional-specialty-setup.md
  * Refs: D-100, FR-103, FR-119, FR-158, FR-174–177, BR-202, BR-212, BR-229, BR-237–239
  *
- * Offline wiring: network status stubbed as 'online'.
- * Deferred — tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Offline wiring: real network status via useNetworkStatus (BL-008, FR-214).
  */
 import { useState } from 'react';
 import {
@@ -29,6 +28,11 @@ import { Stack } from 'expo-router';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useSpecialties } from '@/features/professional/use-professional';
 import type { Specialty, SpecialtyRecord } from '@/features/professional/specialty.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -52,6 +56,13 @@ export default function ProfessionalSpecialtyScreen() {
   const palette = Colors[colorScheme];
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
+
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   const { state, addSpecialty, removeSpecialty, checkRemoval, upsertCredential } =
     useSpecialties(currentUser);
@@ -137,6 +148,17 @@ export default function ProfessionalSpecialtyScreen() {
       testID="pro.specialty.screen">
       <Stack.Screen options={{ title: t('pro.specialty.title'), headerShown: true }} />
 
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="pro.specialty.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Loading */}
       {state.kind === 'loading' ? (
         <ActivityIndicator
@@ -181,6 +203,7 @@ export default function ProfessionalSpecialtyScreen() {
           t={t}
           onRemove={handleRemove}
           onOpenCredential={openCredentialForm}
+          isWriteLocked={isWriteLocked}
         />
       ) : null}
 
@@ -190,6 +213,7 @@ export default function ProfessionalSpecialtyScreen() {
         palette={palette}
         t={t}
         onAdd={handleAdd}
+        isWriteLocked={isWriteLocked}
       />
 
       {/* Credential form */}
@@ -206,6 +230,7 @@ export default function ProfessionalSpecialtyScreen() {
           }
           onSave={handleSaveCredential}
           onSkip={() => setCredentialFor(null)}
+          isWriteLocked={isWriteLocked}
         />
       ) : null}
     </ScrollView>
@@ -220,12 +245,14 @@ function SpecialtyList({
   t,
   onRemove,
   onOpenCredential,
+  isWriteLocked,
 }: {
   specialties: SpecialtyRecord[];
   palette: Palette;
   t: TFn;
   onRemove: (s: Specialty) => void;
   onOpenCredential: (s: Specialty) => void;
+  isWriteLocked: boolean;
 }) {
   return (
     <>
@@ -244,8 +271,9 @@ function SpecialtyList({
             <Pressable
               accessibilityRole="button"
               onPress={() => onOpenCredential(record.specialty)}
+              disabled={isWriteLocked}
               testID={`pro.specialty.credential.${record.specialty}`}>
-              <Text style={[styles.link, { color: palette.tint }]}>
+              <Text style={[styles.link, { color: isWriteLocked ? palette.icon : palette.tint }]}>
                 {t('pro.specialty.credential.title')}
               </Text>
             </Pressable>
@@ -253,8 +281,9 @@ function SpecialtyList({
             <Pressable
               accessibilityRole="button"
               onPress={() => onRemove(record.specialty)}
+              disabled={isWriteLocked}
               testID={`pro.specialty.remove.${record.specialty}`}>
-              <Text style={[styles.link, { color: '#b3261e' }]}>
+              <Text style={[styles.link, { color: isWriteLocked ? palette.icon : '#b3261e' }]}>
                 {t('pro.specialty.remove')}
               </Text>
             </Pressable>
@@ -272,11 +301,13 @@ function AddSpecialtyButtons({
   palette,
   t,
   onAdd,
+  isWriteLocked,
 }: {
   specialties: SpecialtyRecord[];
   palette: Palette;
   t: TFn;
   onAdd: (s: Specialty) => void;
+  isWriteLocked: boolean;
 }) {
   const hasNutritionist = specialties.some((s) => s.specialty === 'nutritionist');
   const hasFitnessCoach = specialties.some((s) => s.specialty === 'fitness_coach');
@@ -287,9 +318,10 @@ function AddSpecialtyButtons({
         <Pressable
           accessibilityRole="button"
           onPress={() => onAdd('nutritionist')}
-          style={[styles.outlineButton, { borderColor: palette.tint }]}
+          disabled={isWriteLocked}
+          style={[styles.outlineButton, { borderColor: isWriteLocked ? palette.icon : palette.tint }]}
           testID="pro.specialty.add.nutritionist">
-          <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
+          <Text style={[styles.outlineButtonText, { color: isWriteLocked ? palette.icon : palette.tint }]}>
             {t('pro.specialty.add_nutritionist')}
           </Text>
         </Pressable>
@@ -299,9 +331,10 @@ function AddSpecialtyButtons({
         <Pressable
           accessibilityRole="button"
           onPress={() => onAdd('fitness_coach')}
-          style={[styles.outlineButton, { borderColor: palette.tint }]}
+          disabled={isWriteLocked}
+          style={[styles.outlineButton, { borderColor: isWriteLocked ? palette.icon : palette.tint }]}
           testID="pro.specialty.add.fitness_coach">
-          <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
+          <Text style={[styles.outlineButtonText, { color: isWriteLocked ? palette.icon : palette.tint }]}>
             {t('pro.specialty.add_fitness_coach')}
           </Text>
         </Pressable>
@@ -322,6 +355,7 @@ function CredentialForm({
   onChange,
   onSave,
   onSkip,
+  isWriteLocked,
 }: {
   specialty: Specialty;
   form: CredentialFormData;
@@ -332,6 +366,7 @@ function CredentialForm({
   onChange: (field: keyof CredentialFormData, value: string) => void;
   onSave: () => void;
   onSkip: () => void;
+  isWriteLocked: boolean;
 }) {
   const specialtyLabel =
     specialty === 'nutritionist'
@@ -386,7 +421,8 @@ function CredentialForm({
           <Pressable
             accessibilityRole="button"
             onPress={onSave}
-            style={[styles.primaryButton, { backgroundColor: palette.tint }]}
+            disabled={isWriteLocked || isSaving}
+            style={[styles.primaryButton, { backgroundColor: isWriteLocked ? palette.icon : palette.tint }]}
             testID="pro.specialty.credential.save">
             <Text style={styles.primaryButtonText}>
               {t('pro.specialty.credential.save')}
@@ -483,4 +519,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  offlineBannerText: { fontSize: 13, lineHeight: 18 },
 });

@@ -40,6 +40,11 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import type { SharedMealSnapshot } from '@/features/nutrition/custom-meal.logic';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -68,6 +73,13 @@ export default function SharedRecipeSaveScreen() {
   const [screenState, setScreenState] = useState<ScreenState>({ kind: 'loading' });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   // ── Resolve share token on mount ───────────────────────────────────────────
 
@@ -148,6 +160,8 @@ export default function SharedRecipeSaveScreen() {
           snapshot={screenState.snapshot}
           isSaving={isSaving}
           saveError={saveError}
+          isWriteLocked={isWriteLocked}
+          offlineDisplay={offlineDisplay}
           palette={palette}
           t={t}
           onSave={handleSave}
@@ -189,6 +203,8 @@ function PreviewView({
   snapshot,
   isSaving,
   saveError,
+  isWriteLocked,
+  offlineDisplay,
   palette,
   t,
   onSave,
@@ -197,6 +213,8 @@ function PreviewView({
   snapshot: SharedMealSnapshot;
   isSaving: boolean;
   saveError: string | null;
+  isWriteLocked: boolean;
+  offlineDisplay: OfflineDisplayState;
   palette: Palette;
   t: TFn;
   onSave: () => void;
@@ -217,6 +235,18 @@ function PreviewView({
 
   return (
     <View style={styles.previewContainer} testID="shared_recipe.preview">
+
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="shared_recipe.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Recipe name */}
       <Text
         style={[styles.recipeName, { color: palette.text }]}
@@ -261,8 +291,9 @@ function PreviewView({
       ) : (
         <Pressable
           accessibilityRole="button"
+          disabled={isWriteLocked}
           onPress={onSave}
-          style={[styles.primaryButton, { backgroundColor: palette.tint }]}
+          style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID="shared_recipe.cta.save">
           <Text style={styles.primaryButtonText}>{t('shared_recipe.cta_save')}</Text>
         </Pressable>
@@ -378,4 +409,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   cancelButtonText: { fontSize: 14 },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });

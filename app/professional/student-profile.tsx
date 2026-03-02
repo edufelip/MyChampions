@@ -31,6 +31,11 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
 import { validateWaterGoalInput } from '@/features/nutrition/water-tracking.logic';
 import { usePlans } from '@/features/plans/use-plans';
@@ -66,7 +71,12 @@ export default function ProfessionalStudentProfileScreen() {
     activeStudentCount: 0,
     entitlementStatus: stubbedEntitlement,
   });
-  const isWriteLocked = isPlanUpdateLocked(subState);
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+  const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   // Plan change requests — loaded from professional context for this student.
   const { getChangeRequestsForStudent, reviewChangeRequest } = usePlans(currentUser);
@@ -180,6 +190,17 @@ export default function ProfessionalStudentProfileScreen() {
           headerShown: true,
         }}
       />
+
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="pro.student_profile.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Entitlement lock notice */}
       {isWriteLocked ? (
@@ -525,4 +546,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  offlineBannerText: { fontSize: 13, lineHeight: 18 },
 });

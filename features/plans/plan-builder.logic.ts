@@ -82,7 +82,38 @@ export type StarterTemplate = {
   id: string;
   planType: PlanType;
   name: string;
+  description?: string;
 };
+
+// ─── Starter template source helpers ─────────────────────────────────────────
+
+/**
+ * Derives a PlanType from a starter template ID using the canonical prefix convention.
+ * Returns null if the prefix cannot be recognised.
+ *
+ * @example
+ *   deriveStarterTemplatePlanType('starter_nutrition_abc') // 'nutrition'
+ *   deriveStarterTemplatePlanType('starter_training_xyz')  // 'training'
+ *   deriveStarterTemplatePlanType('my_plan')               // null
+ *
+ * Refs: D-114, BR-295
+ */
+export function deriveStarterTemplatePlanType(templateId: string): PlanType | null {
+  if (templateId.startsWith('starter_nutrition_')) return 'nutrition';
+  if (templateId.startsWith('starter_training_')) return 'training';
+  return null;
+}
+
+/**
+ * Coalesces a nullable description string from the SDK to undefined.
+ * Ensures the StarterTemplate type contract (description?: string) is satisfied.
+ * Refs: D-114
+ */
+export function coalesceTemplateDescription(
+  description: string | null | undefined
+): string | undefined {
+  return description ?? undefined;
+}
 
 // ─── Error types ──────────────────────────────────────────────────────────────
 
