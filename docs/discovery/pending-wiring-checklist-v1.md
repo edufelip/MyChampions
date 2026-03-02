@@ -165,8 +165,8 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: SC-207 and SC-208 screen specs updated to reflect actual implementation.
 - `Pending`: Wire Data Connect endpoints for plan CRUD (`createNutritionPlan`, `updateNutritionPlan`, `addNutritionMealItem`, `removeNutritionMealItem`, `createTrainingPlan`, `updateTrainingPlan`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`) replacing stubs in `plan-builder-source.ts`.
 - `Pending`: Wire fatsecret food lookup into `searchFoods` in `plan-builder-source.ts`; requires fatsecret API key provisioned server-side (D-113).
-- `Done`: `features/plans/starter-template.logic.ts` — pure logic layer with 11 functions and 35 comprehensive unit tests covering template detection, cloning validation, library filtering, display name formatting, immutability verification, and usage tracking (BL-006, FR-212, AC-256, TC-260).
-- `Pending`: Wire `getStarterTemplates` and `cloneStarterTemplate` to real Data Connect starter template operations (D-114).
+- `Done`: `features/plans/starter-template.logic.ts` — pure logic layer with 11 functions and 88 comprehensive unit tests (BL-006, FR-212, AC-256, TC-260).
+- `Done`: D-114 — `getStarterTemplates` and `cloneStarterTemplate` wired to Data Connect generated SDK. `features/dataconnect.ts` initialises singleton. `getNutritionTemplates` / `getTrainingTemplates` / `cloneAsNutritionPlan` / `cloneAsTrainingPlan` from `@mychampions/dataconnect-generated` replace hardcoded stubs in `plan-builder-source.ts`.
 
 ## Account Settings & Custom Meal Screens (Phase 6)
 - `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.

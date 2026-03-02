@@ -69,7 +69,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
 | BL-005 Student plan change request flow | Screens implemented; Data Connect endpoint wiring deferred | FR-211 | UC-002.13 | AC-255 | BR-269 | TC-259 |
-| BL-006 Professional starter template library | Implemented — pure logic layer (11 functions) with 35 comprehensive tests covering template detection, cloning, filtering, and immutability | FR-212 | UC-002.14 | AC-256 | BR-270 | TC-260 |
+| BL-006 Professional starter template library | Implemented end-to-end — pure logic layer (11 functions, 88 tests), Data Connect schema + connectors, generated SDK wired into plan-builder-source.ts (D-114 complete) | FR-212 | UC-002.14 | AC-256 | BR-270 | TC-260 |
 | BL-007 Image upload progress and retry UX | Spec-ready | FR-213 | UC-003.8 | AC-424, AC-425 | BR-271 | TC-426, TC-427 |
 | BL-008 Explicit offline banner and write-lock explanations | Spec-ready | FR-214 | UC-002.17 | AC-257 | BR-272 | TC-261 |
 | BL-009 Subscription pre-lapse warning | Spec-ready | FR-215 | UC-002.15 | AC-312 | BR-273 | TC-311 |

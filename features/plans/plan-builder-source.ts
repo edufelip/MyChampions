@@ -12,6 +12,13 @@
 
 import Constants from 'expo-constants';
 import type { User } from 'firebase/auth';
+import {
+  getNutritionTemplates,
+  getTrainingTemplates,
+  cloneAsNutritionPlan,
+  cloneAsTrainingPlan,
+} from '@mychampions/dataconnect-generated';
+import { getDataConnectInstance } from '../dataconnect';
 
 import type {
   NutritionPlanInput,
@@ -697,68 +704,68 @@ export async function removeTrainingSessionItem(
 // ─── Starter templates ────────────────────────────────────────────────────────
 
 /**
- * Returns starter templates for a given plan type.
- * Stub: returns two hardcoded templates per type (D-114).
- * Wiring of real Data Connect starter template source is deferred.
- * Refs: FR-247, BR-270, BR-295
+ * Returns starter templates for a given plan type from Data Connect.
+ * Refs: D-114, FR-247, BR-270, BR-295
  */
 export async function getStarterTemplates(
   planType: PlanType
 ): Promise<StarterTemplate[]> {
-  if (planType === 'nutrition') {
-    return [
-      { id: 'starter_nutrition_basic', planType: 'nutrition', name: 'Basic Caloric Balance' },
-      { id: 'starter_nutrition_deficit', planType: 'nutrition', name: 'Caloric Deficit A' },
-    ];
-  }
-  return [
-    { id: 'starter_training_full_body', planType: 'training', name: 'Full Body Routine' },
-    { id: 'starter_training_upper_lower', planType: 'training', name: 'Upper/Lower Split' },
-  ];
+  const dc = getDataConnectInstance();
+  const { data } = await (planType === 'nutrition'
+    ? getNutritionTemplates(dc)
+    : getTrainingTemplates(dc));
+
+  return data.starterTemplates.map((t) => ({
+    id: t.id,
+    planType: planType,
+    name: t.name,
+    description: t.description ?? undefined,
+  }));
 }
 
 /**
- * Clones a starter template into a new editable predefined plan draft.
- * Stub: endpoint wiring deferred (D-114).
- * Refs: FR-247, BR-270, BR-295, TC-280
+ * Clones a starter template into a new editable plan draft via Data Connect.
+ * Dispatches to CloneAsNutritionPlan or CloneAsTrainingPlan based on templateId prefix.
+ * Refs: D-114, FR-247, BR-270, BR-295, TC-280
  */
 export async function cloneStarterTemplate(
   user: User,
   templateId: string,
   name: string
 ): Promise<{ id: string; planType: PlanType; name: string }> {
-  const mutation = `
-    mutation CloneStarterTemplate($template_id: String!, $name: String!) {
-      cloneStarterTemplate(template_id: $template_id, name: $name) {
-        id
-        plan_type
-        name
-      }
-    }
-  `;
-
-  const data = await gql<{
-    cloneStarterTemplate?: {
-      id?: string | null;
-      plan_type?: string | null;
-      name?: string | null;
-    } | null;
-  }>(user, mutation, { template_id: templateId, name });
-
-  const raw = data.cloneStarterTemplate;
-  const planType: PlanType | null =
-    raw?.plan_type === 'nutrition' || raw?.plan_type === 'training'
-      ? raw.plan_type
+  // Derive planType from the starter template ID prefix (starter_nutrition_* / starter_training_*)
+  const planType: PlanType | null = templateId.startsWith('starter_nutrition_')
+    ? 'nutrition'
+    : templateId.startsWith('starter_training_')
+      ? 'training'
       : null;
 
-  if (!raw?.id || !planType || !raw.name) {
+  if (!planType) {
     throw new PlanBuilderSourceError(
       'invalid_response',
-      'cloneStarterTemplate returned incomplete data.'
+      `Cannot derive planType from templateId: ${templateId}`
     );
   }
 
-  return { id: raw.id, planType, name: raw.name };
+  const dc = getDataConnectInstance();
+  const professionalId = user.uid;
+
+  const { data } = await (planType === 'nutrition'
+    ? cloneAsNutritionPlan(dc, { professionalId, sourceTemplateId: templateId, name })
+    : cloneAsTrainingPlan(dc, { professionalId, sourceTemplateId: templateId, name }));
+
+  const key = planType === 'nutrition'
+    ? (data as { nutritionPlan_insert: { id: string } }).nutritionPlan_insert
+    : (data as { trainingPlan_insert: { id: string } }).trainingPlan_insert;
+
+  if (!key?.id) {
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'cloneStarterTemplate returned no plan ID.'
+    );
+  }
+
+  return { id: key.id, planType, name };
 }
 
 // ─── Food search stub ─────────────────────────────────────────────────────────
