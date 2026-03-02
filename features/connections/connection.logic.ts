@@ -141,3 +141,31 @@ export function normalizeConnectionActionError(
   }
   return 'unknown';
 }
+
+/**
+ * BL-010: Maps a normalized InviteSubmitErrorReason to the corresponding
+ * localization message key for display in the UI.
+ *
+ * Note: `code_not_found` and `code_expired` both map to `relationship.error.invalid_code`
+ * because from the user's perspective both result in an "invalid code" experience.
+ * `configuration` falls back to `unknown` as it is an internal error not exposed to users.
+ */
+export function mapInviteSubmitReasonToMessageKey(
+  reason: InviteSubmitErrorReason
+): string {
+  switch (reason) {
+    case 'code_not_found':
+    case 'code_expired':
+      return 'relationship.error.invalid_code';
+    case 'already_connected':
+      return 'relationship.error.already_connected';
+    case 'pending_cap_reached':
+      return 'relationship.error.pending_cap';
+    case 'network':
+      return 'relationship.error.network';
+    case 'configuration':
+    case 'unknown':
+    default:
+      return 'relationship.error.unknown';
+  }
+}
