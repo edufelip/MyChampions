@@ -264,6 +264,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.specialty.removal_blocked.active_students_body': 'Esta especialidad tiene {count} alumno{plural} activo. Desvincule o complete las asignaciones activas primero.',
   'pro.specialty.removal_blocked.pending_students_body': 'Esta especialidad tiene {count} alumno{plural} pendiente. Acepte o rechace las solicitudes pendientes primero.',
   'pro.specialty.removal_blocked.last_specialty_body': 'Debe tener al menos una especialidad. Añada una nueva especialidad antes de eliminar esta.',
+  'pro.specialty.remove_blocked.dismiss': 'Descartar',
   'pro.students.title': 'Mis alumnos',
   'pro.students.search.placeholder': 'Buscar alumnos',
   'pro.students.filter.active': 'Activos',

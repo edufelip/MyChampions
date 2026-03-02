@@ -7,6 +7,7 @@
 
 import type { Specialty, SpecialtyRemovalBlockReason } from './specialty.logic';
 import type { ConnectionRecord } from '@/features/connections/connection.logic';
+import type { TranslationKey } from '@/localization';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,8 +30,8 @@ export type RemovalAssistState = {
 
 export type AssistActionMetadata = {
   action: AssistAction;
-  label: string; // Localization key
-  description: string; // Localization key
+  label: TranslationKey; // Localization key
+  description: TranslationKey; // Localization key
   navigationTarget?: string; // Route to navigate to (e.g., "/professional/students?specialty=nutritionist")
   priority: 'primary' | 'secondary';
 };
@@ -167,8 +168,8 @@ export function canRemovalProceedNow(
 export function getRemovalBlockedMessageKeys(
   blockReason: SpecialtyRemovalBlockReason
 ): {
-  titleKey: string;
-  bodyKey: string;
+  titleKey: TranslationKey;
+  bodyKey: TranslationKey;
   bodyParams?: Record<string, string | number>;
 } {
   switch (blockReason) {

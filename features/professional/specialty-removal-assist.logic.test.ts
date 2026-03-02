@@ -16,6 +16,7 @@ import {
   shouldShowBlockers,
   type RemovalAssistState,
 } from './specialty-removal-assist.logic';
+import { checkSpecialtyRemoval } from './specialty.logic';
 import type { ConnectionRecord } from '@/features/connections/connection.logic';
 
 // ─── Test fixtures ────────────────────────────────────────────────────────────
@@ -390,4 +391,79 @@ test('BL-011 Localization: formatRemovalBlockedMessage still works (backward com
 
   assert.equal(msg.title, 'Cannot remove specialty');
   assert(msg.body.includes('2 active students'));
+});
+
+// ─── Consistency: checkSpecialtyRemoval ↔ resolveRemovalAssistState ────────────
+
+test('BL-011 Consistency: same inputs yield same blockReason — last_specialty', () => {
+  const checkResult = checkSpecialtyRemoval({
+    specialtyToRemove: 'nutritionist',
+    activeStudentCountForSpecialty: 0,
+    pendingStudentCountForSpecialty: 0,
+    totalActiveSpecialtyCount: 1,
+  });
+  const assistState = resolveRemovalAssistState({
+    specialty: 'nutritionist',
+    activeStudentCount: 0,
+    pendingStudentCount: 0,
+    totalActiveSpecialties: 1,
+  });
+
+  assert.equal(checkResult.allowed, false);
+  assert.equal(checkResult.allowed === false ? checkResult.reason : null, assistState.blockReason);
+});
+
+test('BL-011 Consistency: same inputs yield same blockReason — has_active_students', () => {
+  const checkResult = checkSpecialtyRemoval({
+    specialtyToRemove: 'nutritionist',
+    activeStudentCountForSpecialty: 3,
+    pendingStudentCountForSpecialty: 1,
+    totalActiveSpecialtyCount: 2,
+  });
+  const assistState = resolveRemovalAssistState({
+    specialty: 'nutritionist',
+    activeStudentCount: 3,
+    pendingStudentCount: 1,
+    totalActiveSpecialties: 2,
+  });
+
+  assert.equal(checkResult.allowed, false);
+  assert.equal(checkResult.allowed === false ? checkResult.reason : null, assistState.blockReason);
+});
+
+test('BL-011 Consistency: same inputs yield same blockReason — has_pending_students', () => {
+  const checkResult = checkSpecialtyRemoval({
+    specialtyToRemove: 'fitness_coach',
+    activeStudentCountForSpecialty: 0,
+    pendingStudentCountForSpecialty: 2,
+    totalActiveSpecialtyCount: 2,
+  });
+  const assistState = resolveRemovalAssistState({
+    specialty: 'fitness_coach',
+    activeStudentCount: 0,
+    pendingStudentCount: 2,
+    totalActiveSpecialties: 2,
+  });
+
+  assert.equal(checkResult.allowed, false);
+  assert.equal(checkResult.allowed === false ? checkResult.reason : null, assistState.blockReason);
+});
+
+test('BL-011 Consistency: both agree removal is allowed when no blockers', () => {
+  const checkResult = checkSpecialtyRemoval({
+    specialtyToRemove: 'nutritionist',
+    activeStudentCountForSpecialty: 0,
+    pendingStudentCountForSpecialty: 0,
+    totalActiveSpecialtyCount: 2,
+  });
+  const assistState = resolveRemovalAssistState({
+    specialty: 'nutritionist',
+    activeStudentCount: 0,
+    pendingStudentCount: 0,
+    totalActiveSpecialties: 2,
+  });
+
+  assert.equal(checkResult.allowed, true);
+  assert.equal(assistState.blocked, false);
+  assert.equal(assistState.blockReason, null);
 });

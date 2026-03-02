@@ -16,7 +16,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,7 +23,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
@@ -35,6 +34,12 @@ import {
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useSpecialties } from '@/features/professional/use-professional';
 import type { Specialty, SpecialtyRecord } from '@/features/professional/specialty.logic';
+import {
+  resolveRemovalAssistState,
+  buildActionMetadata,
+  getRemovalBlockedMessageKeys,
+  type RemovalAssistState,
+} from '@/features/professional/specialty-removal-assist.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -56,6 +61,7 @@ export default function ProfessionalSpecialtyScreen() {
   const palette = Colors[colorScheme];
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
+  const router = useRouter();
 
   const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
@@ -79,6 +85,12 @@ export default function ProfessionalSpecialtyScreen() {
 
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // BL-011: blocked removal assist state
+  const [blockedAssist, setBlockedAssist] = useState<{
+    specialty: Specialty;
+    assistState: RemovalAssistState;
+  } | null>(null);
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   function findRecord(specialty: Specialty): SpecialtyRecord | undefined {
@@ -96,19 +108,26 @@ export default function ProfessionalSpecialtyScreen() {
 
   async function handleRemove(specialty: Specialty) {
     setActionError(null);
+    setBlockedAssist(null);
     const record = findRecord(specialty);
     if (!record) return;
 
-    // activeCount / pendingCount come from the record when available (stubbed 0 — real wiring deferred)
-    const result = checkRemoval(specialty, 0, 0);
+    // activeCount / pendingCount come from the record when available (stubbed 0 — real wiring deferred).
+    // We pass the same counts to both the guard check and the assist state so the block reason
+    // is derived once from a single source of truth (checkRemoval → result.reason).
+    const activeStudentCount = 0;
+    const pendingStudentCount = 0;
+    const result = checkRemoval(specialty, activeStudentCount, pendingStudentCount);
     if (result.allowed === false) {
-      const reason =
-        result.reason === 'has_active_students'
-          ? (t('pro.specialty.remove_blocked.active') as string)
-          : result.reason === 'has_pending_students'
-            ? (t('pro.specialty.remove_blocked.pending') as string)
-            : (t('pro.specialty.remove_blocked.last') as string);
-      Alert.alert(reason);
+      const totalSpecialties = state.kind === 'ready' ? state.specialties.length : 1;
+      // Use the same counts that produced result.reason — no independent re-derivation.
+      const assistState = resolveRemovalAssistState({
+        specialty,
+        activeStudentCount,
+        pendingStudentCount,
+        totalActiveSpecialties: totalSpecialties,
+      });
+      setBlockedAssist({ specialty, assistState });
       return;
     }
 
@@ -186,6 +205,24 @@ export default function ProfessionalSpecialtyScreen() {
         </View>
       ) : null}
 
+      {/* BL-011: Inline removal assist card */}
+      {blockedAssist ? (
+        <RemovalAssistCard
+          specialty={blockedAssist.specialty}
+          assistState={blockedAssist.assistState}
+          palette={palette}
+          t={t}
+          onAction={(navigationTarget) => {
+            setBlockedAssist(null);
+            // `as never` is required because expo-router typed routes only accept literal
+            // string types at compile time, not runtime string variables. The runtime route
+            // strings returned by buildActionMetadata are validated at the logic layer.
+            if (navigationTarget) router.push(navigationTarget as never);
+          }}
+          onDismiss={() => setBlockedAssist(null)}
+        />
+      ) : null}
+
       {/* Empty */}
       {state.kind === 'ready' && state.specialties.length === 0 ? (
         <Text
@@ -234,6 +271,78 @@ export default function ProfessionalSpecialtyScreen() {
         />
       ) : null}
     </ScrollView>
+  );
+}
+
+// ─── Removal Assist Card (BL-011) ────────────────────────────────────────────
+
+function RemovalAssistCard({
+  specialty,
+  assistState,
+  palette,
+  t,
+  onAction,
+  onDismiss,
+}: {
+  specialty: Specialty;
+  assistState: RemovalAssistState;
+  palette: Palette;
+  t: TFn;
+  onAction: (navigationTarget: string | undefined) => void;
+  onDismiss: () => void;
+}) {
+  if (!assistState.blocked || !assistState.blockReason) return null;
+
+  const { titleKey, bodyKey } = getRemovalBlockedMessageKeys(assistState.blockReason);
+  const actions = assistState.availableActions.map((a) => buildActionMetadata(a, specialty));
+
+  return (
+    <View
+      style={[styles.assistCard, { borderColor: '#b3261e66', backgroundColor: '#b3261e11' }]}
+      accessibilityRole="alert"
+      testID="pro.specialty.removalAssist">
+      <Text style={[styles.assistTitle, { color: '#b3261e' }]}>
+        {t(titleKey)}
+      </Text>
+      <Text style={[styles.assistBody, { color: palette.text }]}>
+        {t(bodyKey)}
+      </Text>
+
+      {actions.map((meta) => (
+        <Pressable
+          key={meta.action}
+          accessibilityRole="button"
+          accessibilityLabel={t(meta.label)}
+          onPress={() => onAction(meta.navigationTarget)}
+          style={[
+            styles.assistAction,
+            meta.priority === 'primary'
+              ? { backgroundColor: palette.tint }
+              : { borderColor: palette.tint, borderWidth: 1.5 },
+          ]}
+          testID={`pro.specialty.removalAssist.${meta.action}`}>
+          <Text
+            style={[
+              styles.assistActionText,
+              meta.priority === 'primary' ? { color: '#fff' } : { color: palette.tint },
+            ]}>
+            {t(meta.label)}
+          </Text>
+          <Text style={[styles.assistActionDesc, { color: meta.priority === 'primary' ? '#ffffffbb' : palette.icon }]}>
+            {t(meta.description)}
+          </Text>
+        </Pressable>
+      ))}
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={onDismiss}
+        testID="pro.specialty.removalAssist.dismiss">
+        <Text style={[styles.link, { color: palette.icon }]}>
+          {t('pro.specialty.remove_blocked.dismiss') as string}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -525,4 +634,26 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   offlineBannerText: { fontSize: 13, lineHeight: 18 },
+  assistCard: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    gap: 12,
+    padding: 16,
+  },
+  assistTitle: {
+    fontFamily: Fonts?.rounded ?? 'normal',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  assistBody: { fontSize: 13, lineHeight: 18 },
+  assistAction: {
+    borderRadius: 10,
+    gap: 2,
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  assistActionText: { fontSize: 14, fontWeight: '600' },
+  assistActionDesc: { fontSize: 12 },
 });

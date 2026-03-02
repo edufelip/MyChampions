@@ -255,6 +255,7 @@ export const enUS = {
   'pro.specialty.removal_blocked.active_students_body': 'This specialty has {count} active student{plural}. Unbind or complete active assignments first.',
   'pro.specialty.removal_blocked.pending_students_body': 'This specialty has {count} pending student{plural}. Accept or deny pending requests first.',
   'pro.specialty.removal_blocked.last_specialty_body': 'You must have at least one specialty. Add a new specialty before removing this one.',
+  'pro.specialty.remove_blocked.dismiss': 'Dismiss',
   'pro.students.title': 'My students',
   'pro.students.search.placeholder': 'Search students',
   'pro.students.filter.active': 'Active',

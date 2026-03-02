@@ -63,7 +63,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 |---|---|---|---|---|---|---|
 | BL-003 Pending canceled notification on code rotation | Implemented — canceled_code_rotated state wired in connection logic and UI, locale keys for all 3 languages | FR-209 | UC-002.3 | AC-253 | BR-267 | TC-256 |
 | BL-004 Professional pending queue tools | Implemented — search/filter/bulk deny UI wired in SC-204/SC-205, pure logic layer with 26 comprehensive tests | FR-210 | UC-002.12 | AC-254 | BR-268 | TC-257, TC-258 |
-| BL-011 Specialty removal assist flow | Implemented — removal assist logic layer with blocker resolution actions, 34 comprehensive tests covering assist state resolution and action metadata | FR-216 | UC-002.16 | AC-258 | BR-274 | TC-262, TC-263 |
+| BL-011 Specialty removal assist flow | Implemented — removal assist logic layer with blocker resolution actions, 34 comprehensive tests covering assist state resolution and action metadata; SC-202 wired with inline `RemovalAssistCard` replacing `Alert.alert`; action buttons navigate to students roster, pending queue, and specialty setup using `useRouter`; `dismiss` locale key added to all 3 bundles (D-124) | FR-216 | UC-002.16 | AC-258 | BR-274 | TC-262, TC-263 |
 
 ## Milestone C Spec Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
@@ -73,7 +73,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 | BL-007 Image upload progress and retry UX | Implemented — pure logic layer (`image-upload.logic.ts`, 62 tests), discriminated union `ImageUploadState`, retryable/non-retryable error classification, 5 locale keys in all 3 bundles, screen wiring in `nutrition/custom-meals/[mealId].tsx` | FR-213 | UC-003.8 | AC-424, AC-425 | BR-271 | TC-426, TC-427 |
 | BL-008 Explicit offline banner and write-lock explanations | Implemented — offline banner + write-lock gated on all 12 screens: `pro/home`, `pro/students`, `pro/student-profile`, `pro/specialty`, `pro/pending`, `pro/subscription`, `student/home`, `student/nutrition`, `student/training`, `settings/account`, `nutrition/custom-meals/index`, `nutrition/custom-meals/[mealId]`, `shared/recipes/[shareToken]` | FR-214 | UC-002.17 | AC-257 | BR-272 | TC-261 |
 | BL-009 Subscription pre-lapse warning | Implemented — `pre_lapse.title`, `pre_lapse.body`, `pre_lapse.cta_renew` locale keys in all 3 bundles; renew CTA Pressable added in `pro/subscription.tsx`; purchase/restore CTAs gated with `isWriteLocked` | FR-215 | UC-002.15 | AC-312 | BR-273 | TC-311 |
-| BL-013 Accessibility baseline for MVP | Spec-ready | FR-217 | UC-002.18 | AC-512 | BR-275 | TC-512 |
+| BL-013 Accessibility baseline for MVP | Implemented — all auth, student, professional, and Phase 6 screens annotated with RN core a11y props (D-105, D-125); screen-reader Detox E2E smoke and color-contrast audit deferred to release hardening | FR-217 | UC-002.18 | AC-512 | BR-275 | TC-512 |
 
 All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/TC traceability.
 

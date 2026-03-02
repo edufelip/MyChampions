@@ -101,7 +101,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
   * Edge cases: zero total specialties, large blocker counts, mixed statuses
 - `Done`: `app/professional/specialty.tsx` (SC-202) — Specialty removal flow with blocking reason display (already implemented, awaiting assist action wiring).
 - `Done`: All `pro.specialty.removal_assist.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (8 keys: view_active, view_active_desc, view_pending, view_pending_desc, bulk_deny, bulk_deny_desc, add_specialty, add_specialty_desc).
-- `Pending`: Wire assist actions into SC-202 removal blocked state — display action buttons with labels/descriptions and navigate to appropriate screens (students roster, pending queue, specialty setup).
+- `Done`: Wire assist actions into SC-202 removal blocked state — `RemovalAssistCard` renders inline with title/body from `getRemovalBlockedMessageKeys`, action buttons from `buildActionMetadata`, and `useRouter.push` navigation to students roster, pending queue, or specialty setup; dismiss CTA clears blocked state. `pro.specialty.remove_blocked.dismiss` key added to all 3 locale bundles (D-124).
 - `Pending`: Wire activeStudentCount and pendingStudentCount from real Data Connect endpoint into specialty removal check (currently stubbed at 0 in SC-202).
 
 ## Plan Change Request Flow (BL-005)
@@ -209,11 +209,12 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: All auth screens (`sign-in.tsx`, `create-account.tsx`, `role-selection.tsx`) annotated with `accessibilityLabel`, `accessibilityRole`, `accessibilityState`, and live-region wrappers on error messages.
 - `Done`: All student screens (`home.tsx`, `nutrition.tsx`, `training.tsx`, `professionals.tsx`) annotated with `accessibilityLabel` on `ActivityIndicator` loading states and `accessibilityLiveRegion="polite"` on error messages.
 - `Done`: All professional screens (`home.tsx`, `students.tsx`, `student-profile.tsx`, `specialty.tsx`, `subscription.tsx`, `pending.tsx`) annotated — composite `accessibilityLabel` on stat/row cards, `accessibilityRole="checkbox"` + `accessibilityState={{ checked }}` on pending-queue selection, live-region error wrappers.
-- `Done`: Phase 6 screens (`settings/account.tsx`, `nutrition/custom-meals/index.tsx`, `nutrition/custom-meals/[mealId].tsx`, `shared/recipes/[shareToken].tsx`) annotated — contextual action button labels (`"Log <name>"`, `"Edit <name>"`, `"Share <name>"`), `accessibilityRole="alert"` on error views, live-region error wrappers.
+- `Done`: Phase 6 screens (`settings/account.tsx`, `nutrition/custom-meals/index.tsx`, `nutrition/custom-meals/[mealId].tsx`, `shared/recipes/[shareToken].tsx`) annotated — contextual action button labels (`"Log <name>"`, `"Edit <name>"`, `"Share <name>"`), `accessibilityRole="alert"` on error views, live-region error wrappers. Verified complete in BL-013 implementation session.
 - `Done`: 7 `a11y.*` localization keys added to all three locale bundles (`en-US`, `pt-BR`, `es-ES`) and tracked in `localized-copy-table-v2.md`.
 - `Done`: Accessibility baseline approach documented in `decisions-log-v1.md` as D-105 (React Native core a11y props only, no external a11y library).
-- `Pending`: Screen-reader end-to-end smoke test via Detox (deferred — requires Detox CI wiring).
-- `Pending`: Color-contrast audit with automated tool (deferred — requires design token finalization).
+- `Done`: BL-013 annotation layer complete across all MVP screens. Deferred items explicitly scoped out per D-125.
+- `Pending (deferred — release hardening)`: Screen-reader end-to-end smoke test via Detox (requires Detox CI wiring, D-125).
+- `Pending (deferred — release hardening)`: Color-contrast audit with automated tool (requires design token finalization, D-125).
 
 ## Media Wiring
 - `Pending`: Wire image compression + upload pipeline to Firebase Cloud Storage in production flow.

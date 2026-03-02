@@ -25,3 +25,11 @@ test('t returns localized value for key', () => {
 test('t interpolates params', () => {
   assert.equal(t('en-US', 'student.hydration.progress', { consumed: 500, goal: 2000 }), '500 / 2000 ml');
 });
+
+// ─── BL-011: dismiss key presence and correct copy in all locale bundles ───────
+
+test('BL-011 Locale: pro.specialty.remove_blocked.dismiss resolves in all locales', () => {
+  assert.equal(t('en-US', 'pro.specialty.remove_blocked.dismiss'), 'Dismiss');
+  assert.equal(t('pt-BR', 'pro.specialty.remove_blocked.dismiss'), 'Dispensar');
+  assert.equal(t('es-ES', 'pro.specialty.remove_blocked.dismiss'), 'Descartar');
+});
