@@ -31,6 +31,11 @@ import {
   FREE_STUDENT_CAP,
   type EntitlementStatus,
 } from '@/features/subscription/subscription.logic';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+} from '@/features/offline/offline.logic';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -53,6 +58,13 @@ export default function ProfessionalSubscriptionScreen() {
   });
 
   const isLocked = isPlanUpdateLocked(subState);
+
+  const networkStatus = useNetworkStatus();
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso: null,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner || isLocked;
 
   // Loading stub — true while RevenueCat SDK initialises (deferred)
   const isLoading = stubbedEntitlement === 'unknown';
@@ -82,6 +94,17 @@ export default function ProfessionalSubscriptionScreen() {
       testID="pro.subscription.screen">
       <Stack.Screen options={{ title: t('pro.subscription.title'), headerShown: true }} />
 
+      {/* Offline banner (BL-008) */}
+      {offlineDisplay.showOfflineBanner ? (
+        <View
+          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
+          testID="pro.subscription.offlineBanner">
+          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
+            {t('offline.banner')}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Status card */}
       <View
         style={[styles.card, { borderColor: palette.tint + '66' }]}
@@ -107,15 +130,30 @@ export default function ProfessionalSubscriptionScreen() {
         <Text style={[styles.meta, { color: palette.icon }]}>{t('pro.subscription.free_tier')}</Text>
       </View>
 
-      {/* Pre-lapse warning */}
+      {/* Pre-lapse warning (BL-009) */}
       {subState.isPreLapseWarningVisible ? (
         <View
           style={[styles.warningBanner, { borderColor: '#f59e0b' }]}
           testID="pro.subscription.warning"
           accessibilityRole="alert">
-          <Text style={[styles.warningText, { color: palette.text }]}>
-            {t('pro.subscription.warning')}
+          <Text style={[styles.warningTitle, { color: palette.text }]}>
+            {t('pro.subscription.pre_lapse.title')}
           </Text>
+          <Text style={[styles.warningText, { color: palette.text }]}>
+            {t('pro.subscription.pre_lapse.body')}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isWriteLocked}
+            onPress={() => {
+              // RevenueCat renew call deferred (pending-wiring-checklist-v1.md)
+            }}
+            style={[styles.renewButton, { borderColor: '#f59e0b', opacity: isWriteLocked ? 0.4 : 1 }]}
+            testID="pro.subscription.renewCta">
+            <Text style={[styles.renewButtonText, { color: '#b45309' }]}>
+              {t('pro.subscription.pre_lapse.cta_renew')}
+            </Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -139,20 +177,22 @@ export default function ProfessionalSubscriptionScreen() {
       {/* CTAs */}
       <Pressable
         accessibilityRole="button"
+        disabled={isWriteLocked}
         onPress={() => {
           // RevenueCat purchase call deferred (pending-wiring-checklist-v1.md)
         }}
-        style={[styles.primaryButton, { backgroundColor: palette.tint }]}
+        style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
         testID="pro.subscription.purchaseCta">
         <Text style={styles.primaryButtonText}>{t('pro.subscription.cta_purchase')}</Text>
       </Pressable>
 
       <Pressable
         accessibilityRole="button"
+        disabled={isWriteLocked}
         onPress={() => {
           // RevenueCat restore call deferred (pending-wiring-checklist-v1.md)
         }}
-        style={[styles.outlineButton, { borderColor: palette.icon }]}
+        style={[styles.outlineButton, { borderColor: palette.icon, opacity: isWriteLocked ? 0.4 : 1 }]}
         testID="pro.subscription.restoreCta">
         <Text style={[styles.outlineButtonText, { color: palette.icon }]}>
           {t('pro.subscription.cta_restore')}
@@ -191,9 +231,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f59e0b22',
     borderRadius: 10,
     borderWidth: 1,
+    gap: 8,
     padding: 12,
   },
+  warningTitle: { fontSize: 14, fontWeight: '700', lineHeight: 18 },
   warningText: { fontSize: 13, lineHeight: 18 },
+  renewButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    minHeight: 40,
+    marginTop: 4,
+  },
+  renewButtonText: { fontSize: 14, fontWeight: '700' },
   lockBanner: {
     backgroundColor: '#b3261e11',
     borderRadius: 10,
@@ -223,4 +274,13 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   ghostButtonText: { fontSize: 14, fontWeight: '600' },
+  offlineBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });
