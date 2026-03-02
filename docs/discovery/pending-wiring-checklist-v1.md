@@ -53,7 +53,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: All `settings.account.*`, `meal.builder.*`, `meal.library.*`, `shared_recipe.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts` (Phase 6).
 
 - `Pending`: Wire RevenueCat entitlement checks to professional cap-sensitive actions.
-- `Pending`: Wire pre-lapse warning data source and lock transitions from live entitlement state.
+- `Done`: BL-009 pre-lapse warning UI implemented in `app/professional/subscription.tsx` — `pre_lapse.title`, `pre_lapse.body`, `pre_lapse.cta_renew` locale keys; renew CTA Pressable gated with `isWriteLocked`; purchase/restore CTAs also gated. Live entitlement state wiring from RevenueCat remains deferred (tracked in Professional Screen Wiring section).
 
 ## Offline Banner + Write-Lock (BL-008)
 - `Done`: `features/offline/offline.logic.ts` — pure functions: `resolveCacheFreshness`, `checkWriteLock`, `resolveOfflineDisplayState`, `buildStaleElapsed`, `isDefinitelyOffline`. Unit tests in `offline.logic.test.ts` (included in 301-test suite, TC-261).
@@ -64,8 +64,16 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `app/student/training.tsx` (SC-210) — `useNetworkStatus` replaces stub; offline banner + write-lock on plan-change form.
 - `Done`: `app/professional/home.tsx` (SC-204) — `useNetworkStatus` replaces stub; offline banner + write-lock on invite-code and roster CTAs.
 - `Done`: All `offline.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
+- `Done`: `app/professional/students.tsx` (SC-205) — offline banner + write-lock wired.
+- `Done`: `app/professional/student-profile.tsx` (SC-206) — offline banner + write-lock wired.
+- `Done`: `app/professional/specialty.tsx` (SC-202) — offline banner + write-lock wired.
+- `Done`: `app/professional/pending.tsx` (SC-204/SC-205) — offline banner + write-lock wired; Accept/Deny Pressables gated.
+- `Done`: `app/professional/subscription.tsx` (SC-212) — offline banner + write-lock wired; purchase/restore/renew CTAs gated.
+- `Done`: `app/settings/account.tsx` (SC-213) — offline banner + write-lock wired; delete CTA gated.
+- `Done`: `app/nutrition/custom-meals/index.tsx` (SC-215) — offline banner + write-lock wired; MealRow log+share and QuickLogPanel confirm gated.
+- `Done`: `app/nutrition/custom-meals/[mealId].tsx` (SC-214) — offline banner + write-lock wired; Save+Share CTAs gated.
+- `Done`: `app/shared/recipes/[shareToken].tsx` (SC-216) — offline banner + write-lock wired; Save CTA in PreviewView gated.
 - `Pending`: Wire `lastSyncedAtIso` from real data-layer sync timestamps (currently `null` — stale indicator never shown). Deferred until Data Connect cache layer is implemented.
-- `Pending`: Wire offline banner + write-lock into remaining screens not yet wired: `pro/students.tsx`, `pro/student-profile.tsx`, `pro/specialty.tsx`, `pro/pending.tsx`, `pro/subscription.tsx`, `settings/account.tsx`, `nutrition/custom-meals/index.tsx`, `nutrition/custom-meals/[mealId].tsx`, `shared/recipes/[shareToken].tsx`.
 
 ## Professional Pending Queue Tools (BL-004)
 - `Done`: `features/connections/pending-queue.logic.ts` — pure functions: `filterPendingQueue`, `canBulkDeny`, `validateBulkDeny`, `buildBulkDenyConfirmationMessage`, `formatSearchResultsSummary`. Supports search by student UID, specialty filtering, and bulk deny validation.
@@ -167,6 +175,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire fatsecret food lookup into `searchFoods` in `plan-builder-source.ts`; requires fatsecret API key provisioned server-side (D-113).
 - `Done`: `features/plans/starter-template.logic.ts` — pure logic layer with 11 functions and 88 comprehensive unit tests (BL-006, FR-212, AC-256, TC-260).
 - `Done`: D-114 — `getStarterTemplates` and `cloneStarterTemplate` wired to Data Connect generated SDK. `features/dataconnect.ts` initialises singleton. `getNutritionTemplates` / `getTrainingTemplates` / `cloneAsNutritionPlan` / `cloneAsTrainingPlan` from `@mychampions/dataconnect-generated` replace hardcoded stubs in `plan-builder-source.ts`.
+- `Done`: D-114 test coverage — `deriveStarterTemplatePlanType` and `coalesceTemplateDescription` extracted as pure helpers into `plan-builder.logic.ts`. `features/plans/plan-builder-source.test.ts` added with 29 tests (TC-280) covering prefix routing, null coalescing, edge cases, boundaries, and case-sensitivity. `StarterTemplateDeps` injection type exported for future integration test expansion. Test suite at 569 pass, 0 fail.
 
 ## Account Settings & Custom Meal Screens (Phase 6)
 - `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.
@@ -181,8 +190,13 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire portion-log persistence (Data Connect) into SC-215 quick-log confirm action.
 - `Pending`: Wire deep-link resume (post-auth redirect back to `/shared/recipes/:shareToken`) for unauthenticated share link recipients in SC-216.
 
-## Analytics Event Emission (Phase 9 — BL-012)
-- `Done`: `features/analytics/analytics.logic.ts` — pure event builder functions for all Milestone A events (auth entry viewed, sign-in submitted/failed, sign-up submitted/failed, role selected, self-guided start clicked, invite submit requested/failed/pending-created/pending-canceled) with `redactEventProperties` guard. 146 unit tests cover all builders and redaction (TC-254, TC-255).
+## Auth/Invite Error Copy Hardening (BL-010)
+- `Done`: `mapInviteSubmitReasonToMessageKey(reason: InviteSubmitErrorReason): string` added to `features/connections/connection.logic.ts`. Maps all 7 error reasons to specific locale keys per D-123.
+- `Done`: 7 unit tests added to `features/connections/connection.logic.test.ts` covering every reason branch (TC-252, TC-253).
+- `Done`: 3 previously missing locale keys (`relationship.error.already_connected`, `relationship.error.network`, `relationship.error.unknown`) added to `en-US`, `pt-BR`, `es-ES` and `localized-copy-table-v2.md`.
+- `Pending`: Wire `mapInviteSubmitReasonToMessageKey` into the `app/student/professionals.tsx` invite-submit error display path (currently surfaces raw reason strings). Deferred until invite-submit UI error branch is refactored in a future screen-wiring session.
+
+## Analytics Event Emission (Phase 9 — BL-012)- `Done`: `features/analytics/analytics.logic.ts` — pure event builder functions for all Milestone A events (auth entry viewed, sign-in submitted/failed, sign-up submitted/failed, role selected, self-guided start clicked, invite submit requested/failed/pending-created/pending-canceled) with `redactEventProperties` guard. 146 unit tests cover all builders and redaction (TC-254, TC-255).
 - `Done`: `features/analytics/use-analytics.ts` — React hook wrapping `transportEvent` stub (console.log in `__DEV__`, no-op otherwise). Real SDK transport deferred (tracked below).
 - `Done`: `app/auth/sign-in.tsx` — emits `auth.entry.viewed` on mount; `auth.sign_in.submitted` before each channel attempt; `auth.sign_in.failed` with `reason_code` on failure for email/password, Google, and Apple channels.
 - `Done`: `app/auth/create-account.tsx` — emits `auth.entry.viewed` on mount; `auth.sign_up.submitted`/`auth.sign_up.failed` for email/password, Google, and Apple channels.

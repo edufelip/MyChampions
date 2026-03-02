@@ -55,7 +55,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 |---|---|---|---|---|---|---|
 | BL-001 Quick self-guided start path | Implemented — quick self-guided CTA in role-selection, role-lock + routing to student home, empty states with self-guided CTAs in all student screens | FR-203 | UC-002.8 | AC-248 | BR-262 | TC-249 |
 | BL-002 Invite code QR scan | Implemented — expo-camera wired, same submitCode pipeline as manual entry | FR-204 | UC-002.9 | AC-249 | BR-263 | TC-250, TC-251 |
-| BL-010 Auth/invite error copy hardening | Spec-ready | FR-205 | UC-002.10 | AC-250 | BR-264 | TC-252, TC-253 |
+| BL-010 Auth/invite error copy hardening | Implemented — `mapInviteSubmitReasonToMessageKey` pure helper added to `connection.logic.ts`; all 7 `InviteSubmitErrorReason` values mapped to specific locale keys; 7 new unit tests in `connection.logic.test.ts`; 3 previously missing locale keys added to copy table and all 3 locale bundles | FR-205 | UC-002.10 | AC-250 | BR-264 | TC-252, TC-253 |
 | BL-012 Product analytics event taxonomy | Spec-ready | FR-206, FR-207, FR-208 | UC-002.11 | AC-251, AC-252 | BR-265, BR-266 | TC-254, TC-255 |
 
 ## Milestone B Spec Coverage
@@ -70,9 +70,9 @@ Convert current brainstorming into an execution-ready product backlog with clear
 |---|---|---|---|---|---|---|
 | BL-005 Student plan change request flow | Screens implemented; Data Connect endpoint wiring deferred | FR-211 | UC-002.13 | AC-255 | BR-269 | TC-259 |
 | BL-006 Professional starter template library | Implemented end-to-end — pure logic layer (11 functions, 88 tests), Data Connect schema + connectors, generated SDK wired into plan-builder-source.ts (D-114 complete) | FR-212 | UC-002.14 | AC-256 | BR-270 | TC-260 |
-| BL-007 Image upload progress and retry UX | Spec-ready | FR-213 | UC-003.8 | AC-424, AC-425 | BR-271 | TC-426, TC-427 |
-| BL-008 Explicit offline banner and write-lock explanations | Spec-ready | FR-214 | UC-002.17 | AC-257 | BR-272 | TC-261 |
-| BL-009 Subscription pre-lapse warning | Spec-ready | FR-215 | UC-002.15 | AC-312 | BR-273 | TC-311 |
+| BL-007 Image upload progress and retry UX | Implemented — pure logic layer (`image-upload.logic.ts`, 62 tests), discriminated union `ImageUploadState`, retryable/non-retryable error classification, 5 locale keys in all 3 bundles, screen wiring in `nutrition/custom-meals/[mealId].tsx` | FR-213 | UC-003.8 | AC-424, AC-425 | BR-271 | TC-426, TC-427 |
+| BL-008 Explicit offline banner and write-lock explanations | Implemented — offline banner + write-lock gated on all 12 screens: `pro/home`, `pro/students`, `pro/student-profile`, `pro/specialty`, `pro/pending`, `pro/subscription`, `student/home`, `student/nutrition`, `student/training`, `settings/account`, `nutrition/custom-meals/index`, `nutrition/custom-meals/[mealId]`, `shared/recipes/[shareToken]` | FR-214 | UC-002.17 | AC-257 | BR-272 | TC-261 |
+| BL-009 Subscription pre-lapse warning | Implemented — `pre_lapse.title`, `pre_lapse.body`, `pre_lapse.cta_renew` locale keys in all 3 bundles; renew CTA Pressable added in `pro/subscription.tsx`; purchase/restore CTAs gated with `isWriteLocked` | FR-215 | UC-002.15 | AC-312 | BR-273 | TC-311 |
 | BL-013 Accessibility baseline for MVP | Spec-ready | FR-217 | UC-002.18 | AC-512 | BR-275 | TC-512 |
 
 All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/TC traceability.
