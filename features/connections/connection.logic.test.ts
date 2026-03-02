@@ -289,6 +289,27 @@ test('normalizeConnectionActionError maps NETWORK_ERROR to network', () => {
   );
 });
 
+test('normalizeConnectionActionError maps message containing network to network', () => {
+  assert.equal(
+    normalizeConnectionActionError({ message: 'network timeout occurred' }),
+    'network'
+  );
+});
+
+test('normalizeConnectionActionError maps message containing endpoint to configuration', () => {
+  assert.equal(
+    normalizeConnectionActionError({ message: 'Data Connect endpoint is not configured' }),
+    'configuration'
+  );
+});
+
+test('normalizeConnectionActionError maps message containing config to configuration', () => {
+  assert.equal(
+    normalizeConnectionActionError({ message: 'Missing config for remote call' }),
+    'configuration'
+  );
+});
+
 test('normalizeConnectionActionError falls back to unknown', () => {
   assert.equal(normalizeConnectionActionError({ code: 'OTHER' }), 'unknown');
   assert.equal(normalizeConnectionActionError(null), 'unknown');

@@ -101,6 +101,15 @@ test('resolveOfflineDisplayState does not show banner when online', () => {
   assert.equal(state.showOfflineBanner, false);
 });
 
+test('resolveOfflineDisplayState does not show banner when network status is unknown (optimistic, D-041)', () => {
+  // Unknown network status is treated as online-optimistic — no banner shown
+  const state = resolveOfflineDisplayState({
+    networkStatus: 'unknown',
+    lastSyncedAtIso: new Date().toISOString(),
+  });
+  assert.equal(state.showOfflineBanner, false);
+});
+
 test('resolveOfflineDisplayState includes staleElapsed when stale', () => {
   const now = new Date('2024-06-03T12:00:00Z');
   const lastSync = new Date(now.getTime() - 30 * 60 * 60 * 1000); // 30 hours ago (> 24h TTL = stale, 1 day unit)

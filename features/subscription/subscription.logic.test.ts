@@ -95,6 +95,18 @@ test('resolveSubscriptionState not locked when not lapsed even above cap', () =>
   assert.equal(state.isAboveCapLocked, false);
 });
 
+test('resolveSubscriptionState unknown entitlement — no lock and no warning (optimistic, D-041)', () => {
+  const state = resolveSubscriptionState({
+    activeStudentCount: FREE_STUDENT_CAP + 3,
+    entitlementStatus: 'unknown',
+  });
+  // Unknown entitlement is optimistic: neither locked nor warning shown
+  assert.equal(state.isAboveCapLocked, false);
+  assert.equal(state.isPreLapseWarningVisible, false);
+  assert.equal(state.entitlementStatus, 'unknown');
+  assert.equal(state.activeStudentCount, FREE_STUDENT_CAP + 3);
+});
+
 // --- normalizeEntitlementStatus ---
 
 test('normalizeEntitlementStatus accepts valid statuses', () => {

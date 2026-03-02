@@ -270,6 +270,13 @@ describe('buildUploadProgressMessage', () => {
     assert.equal(buildUploadProgressMessage(template, 33), '33%');
   });
 
+  it('rounds fractional progress to nearest integer', () => {
+    const template = '{progress}%';
+    assert.equal(buildUploadProgressMessage(template, 33.7), '34%');
+    assert.equal(buildUploadProgressMessage(template, 66.3), '66%');
+    assert.equal(buildUploadProgressMessage(template, 99.5), '100%');
+  });
+
   it('pt-BR template interpolation', () => {
     const template = 'Enviando imagem... {progress}%';
     assert.equal(buildUploadProgressMessage(template, 75), 'Enviando imagem... 75%');
