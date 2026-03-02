@@ -28,6 +28,9 @@ yarn-debug.*
 yarn-error.*
 firebase-debug.log
 
+# Firebase Data Connect — generated SDK (rebuilt via `firebase dataconnect:sdk:generate`)
+features/dataconnect-generated/
+
 # macOS
 .DS_Store
 *.pem

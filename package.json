@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
+    "@mychampions/dataconnect-generated": "file:features/dataconnect-generated",
     "@react-native-async-storage/async-storage": "^3.0.1",
     "@react-native-community/netinfo": "^12.0.1",
     "@react-navigation/bottom-tabs": "^7.4.0",

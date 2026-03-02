@@ -1,263 +1,132 @@
-"""
-Starter Templates Connector
-Provides GraphQL queries and mutations for managing professional starter plan templates.
-Ref: BL-006, FR-212, FR-247, AC-256, BR-270, TC-260
-"""
-
-type StarterTemplate @table(name: "starter_templates") {
-  id: String!
-  plan_type: String! @sql.column(name: "plan_type")
-  name: String!
-  description: String
-  created_at: Time! @sql.column(name: "created_at")
-  updated_at: Time! @sql.column(name: "updated_at")
-}
-
-type TemplateUsageStats @table(name: "template_usage_stats") {
-  template_id: String! @sql.column(name: "template_id")
-  clone_count: Int! @sql.column(name: "clone_count")
-  assignment_count: Int! @sql.column(name: "assignment_count")
-  updated_at: Time! @sql.column(name: "updated_at")
-}
+# Starter Templates Connector
+# Queries and mutations for managing professional starter plan templates.
+# Ref: BL-006, FR-212, FR-247, AC-256, BR-270, TC-260
 
 # ─── Queries ────────────────────────────────────────────────────────────────────
 
-"""
-Get all starter templates, optionally filtered by plan type.
-"""
-query GetStarterTemplates($planType: String) {
-  starter_templates(
-    where: { plan_type: { eq: $planType } }
-    orderBy: [{ name: ASC }]
-  ) {
-    edges {
-      node {
-        id
-        plan_type
-        name
-        description
-        created_at
-        updated_at
-      }
-    }
+query GetStarterTemplates($planType: String) @auth(level: USER) {
+  starterTemplates(where: { planType: { eq: $planType } }, orderBy: [{ name: ASC }]) {
+    id
+    planType
+    name
+    description
+    createdAt
+    updatedAt
   }
 }
 
-"""
-Get a single starter template by ID.
-"""
-query GetStarterTemplate($id: String!) {
-  starter_templates(where: { id: { eq: $id } }) {
-    edges {
-      node {
-        id
-        plan_type
-        name
-        description
-        created_at
-        updated_at
-      }
-    }
+query GetStarterTemplate($id: String!) @auth(level: USER) {
+  starterTemplate(id: $id) {
+    id
+    planType
+    name
+    description
+    createdAt
+    updatedAt
   }
 }
 
-"""
-Search starter templates by name or ID.
-"""
-query SearchStarterTemplates($query: String!) {
-  starter_templates(
-    where: {
-      _or: [
-        { name: { contains: $query } }
-        { id: { contains: $query } }
-      ]
-    }
-    orderBy: [{ name: ASC }]
-  ) {
-    edges {
-      node {
-        id
-        plan_type
-        name
-        description
-        created_at
-      }
-    }
+query GetNutritionTemplates @auth(level: USER) {
+  starterTemplates(where: { planType: { eq: "nutrition" } }, orderBy: [{ name: ASC }]) {
+    id
+    planType
+    name
+    description
+    createdAt
   }
 }
 
-"""
-Get nutrition plan templates.
-"""
-query GetNutritionTemplates {
-  starter_templates(
-    where: { plan_type: { eq: "nutrition" } }
-    orderBy: [{ name: ASC }]
-  ) {
-    edges {
-      node {
-        id
-        plan_type
-        name
-        description
-        created_at
-      }
-    }
+query GetTrainingTemplates @auth(level: USER) {
+  starterTemplates(where: { planType: { eq: "training" } }, orderBy: [{ name: ASC }]) {
+    id
+    planType
+    name
+    description
+    createdAt
   }
 }
 
-"""
-Get training plan templates.
-"""
-query GetTrainingTemplates {
-  starter_templates(
-    where: { plan_type: { eq: "training" } }
-    orderBy: [{ name: ASC }]
-  ) {
-    edges {
-      node {
-        id
-        plan_type
-        name
-        description
-        created_at
-      }
-    }
+query GetTemplateStats($templateId: String!) @auth(level: USER) {
+  templateUsageStat(key: { templateId: $templateId }) {
+    templateId
+    cloneCount
+    assignmentCount
+    updatedAt
   }
 }
 
-"""
-Get template usage statistics.
-"""
-query GetTemplateStats($templateId: String!) {
-  template_usage_stats(where: { template_id: { eq: $templateId } }) {
-    edges {
-      node {
-        template_id
-        clone_count
-        assignment_count
-        updated_at
-      }
-    }
-  }
-}
-
-"""
-Get top 10 most-cloned templates.
-"""
-query GetPopularTemplates($limit: Int!) {
-  template_usage_stats(
-    orderBy: [{ clone_count: DESC }]
-    limit: $limit
-  ) {
-    edges {
-      node {
-        template_id
-        clone_count
-        assignment_count
-      }
-    }
+query GetPopularTemplates($limit: Int!) @auth(level: USER) {
+  templateUsageStats(orderBy: [{ cloneCount: DESC }], limit: $limit) {
+    templateId
+    cloneCount
+    assignmentCount
   }
 }
 
 # ─── Mutations ──────────────────────────────────────────────────────────────────
 
-"""
-Create a new starter template (admin only).
-"""
-mutation CreateStarterTemplate(
-  $id: String!
-  $plan_type: String!
+mutation CreateStarterTemplate($planType: String!, $name: String!, $description: String)
+@auth(level: USER) {
+  starterTemplate_insert(
+    data: { planType: $planType, name: $name, description: $description }
+  )
+}
+
+mutation UpdateStarterTemplate($id: String!, $name: String, $description: String)
+@auth(level: USER) {
+  starterTemplate_update(id: $id, data: { name: $name, description: $description })
+}
+
+mutation DeleteStarterTemplate($id: String!) @auth(level: USER) {
+  starterTemplate_delete(id: $id)
+}
+
+mutation CloneAsNutritionPlan(
+  $professionalId: String!
+  $sourceTemplateId: String!
   $name: String!
-  $description: String
-) {
-  insert_starter_templates(
+) @auth(level: USER) {
+  nutritionPlan_insert(
     data: {
-      id: $id
-      plan_type: $plan_type
+      professionalId: $professionalId
+      sourceTemplate: { id: $sourceTemplateId }
       name: $name
-      description: $description
+      isDraft: true
     }
-  ) {
-    id
-    plan_type
-    name
-    description
-    created_at
-  }
+  )
 }
 
-"""
-Update a starter template (admin only).
-"""
-mutation UpdateStarterTemplate(
-  $id: String!
-  $name: String
-  $description: String
-) {
-  update_starter_templates(
-    where: { id: { eq: $id } }
+mutation CloneAsTrainingPlan(
+  $professionalId: String!
+  $sourceTemplateId: String!
+  $name: String!
+) @auth(level: USER) {
+  trainingPlan_insert(
     data: {
+      professionalId: $professionalId
+      sourceTemplate: { id: $sourceTemplateId }
       name: $name
-      description: $description
+      isDraft: true
     }
-  ) {
-    id
-    plan_type
-    name
-    description
-    updated_at
-  }
+  )
 }
 
-"""
-Delete a starter template (admin only).
-"""
-mutation DeleteStarterTemplate($id: String!) {
-  delete_starter_templates(where: { id: { eq: $id } })
+mutation InitializeTemplateStats($templateId: String!) @auth(level: USER) {
+  templateUsageStat_insert(
+    data: { templateId: $templateId, cloneCount: 0, assignmentCount: 0 }
+  )
 }
 
-"""
-Increment template clone count (called when template is cloned).
-"""
-mutation IncrementTemplateCloneCount($templateId: String!) {
-  update_template_usage_stats(
-    where: { template_id: { eq: $templateId } }
-    data: { clone_count: { increment: 1 } }
-  ) {
-    template_id
-    clone_count
-    updated_at
-  }
+mutation IncrementTemplateCloneCount($templateId: String!) @auth(level: USER) {
+  templateUsageStat_update(
+    key: { templateId: $templateId }
+    data: { cloneCount_expr: "cloneCount + 1" }
+  )
 }
 
-"""
-Increment template assignment count (called when cloned plan is assigned to student).
-"""
-mutation IncrementTemplateAssignmentCount($templateId: String!) {
-  update_template_usage_stats(
-    where: { template_id: { eq: $templateId } }
-    data: { assignment_count: { increment: 1 } }
-  ) {
-    template_id
-    assignment_count
-    updated_at
-  }
-}
-
-"""
-Initialize usage stats for a new template.
-"""
-mutation InitializeTemplateStats($templateId: String!) {
-  insert_template_usage_stats(
-    data: {
-      template_id: $templateId
-      clone_count: 0
-      assignment_count: 0
-    }
-  ) {
-    template_id
-    clone_count
-    assignment_count
-  }
+mutation IncrementTemplateAssignmentCount($templateId: String!) @auth(level: USER) {
+  templateUsageStat_update(
+    key: { templateId: $templateId }
+    data: { assignmentCount_expr: "assignmentCount + 1" }
+  )
 }

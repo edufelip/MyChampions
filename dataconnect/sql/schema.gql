@@ -1,0 +1,80 @@
+# Data Connect Schema for MyChampions
+# Defines the GraphQL types backed by CloudSQL PostgreSQL.
+# Ref: BL-006, FR-212, FR-247, AC-256, BR-270
+
+type StarterTemplate @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  planType: String! @col(name: "plan_type")
+  name: String!
+  description: String
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+type TemplateUsageStat @table {
+  templateId: String! @col(name: "template_id")
+  cloneCount: Int! @col(name: "clone_count") @default(value: 0)
+  assignmentCount: Int! @col(name: "assignment_count") @default(value: 0)
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+type NutritionPlan @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  professionalId: String! @col(name: "professional_id")
+  studentId: String @col(name: "student_id")
+  sourceTemplate: StarterTemplate
+  name: String!
+  isDraft: Boolean! @col(name: "is_draft") @default(value: true)
+  caloriesTarget: Int @col(name: "calories_target")
+  carbsTarget: Int @col(name: "carbs_target")
+  proteinsTarget: Int @col(name: "proteins_target")
+  fatsTarget: Int @col(name: "fats_target")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+type TrainingPlan @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  professionalId: String! @col(name: "professional_id")
+  studentId: String @col(name: "student_id")
+  sourceTemplate: StarterTemplate
+  name: String!
+  isDraft: Boolean! @col(name: "is_draft") @default(value: true)
+  focusArea: String @col(name: "focus_area")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+type NutritionPlanMeal @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  nutritionPlan: NutritionPlan!
+  foodName: String! @col(name: "food_name")
+  calories: Int
+  carbs: Int
+  proteins: Int
+  fats: Int
+  portions: Float
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+type TrainingPlanSession @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  trainingPlan: TrainingPlan!
+  sessionName: String! @col(name: "session_name")
+  dayOfWeek: Int @col(name: "day_of_week")
+  durationMinutes: Int @col(name: "duration_minutes")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+type TrainingSessionItem @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  session: TrainingPlanSession!
+  exerciseName: String! @col(name: "exercise_name")
+  sets: Int
+  reps: Int
+  weight: Float
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
