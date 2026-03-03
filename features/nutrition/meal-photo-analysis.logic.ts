@@ -26,6 +26,7 @@ export type PhotoAnalysisErrorReason =
   | 'network'
   | 'invalid_response'
   | 'configuration'
+  | 'unauthenticated'
   | 'unknown';
 
 // Raw shape returned by Cloud Function — may be untrusted/malformed
@@ -168,6 +169,14 @@ export function normalizePhotoAnalysisError(error: unknown): PhotoAnalysisErrorR
       msg?.includes('parse')
     ) {
       return 'invalid_response';
+    }
+    if (
+      code === 'unauthenticated' ||
+      msg?.includes('unauthenticated') ||
+      msg?.includes('unauthorized') ||
+      msg?.includes('id token')
+    ) {
+      return 'unauthenticated';
     }
     if (
       code === 'configuration' ||

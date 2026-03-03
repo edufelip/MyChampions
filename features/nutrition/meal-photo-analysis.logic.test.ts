@@ -244,6 +244,27 @@ test('normalizePhotoAnalysisError maps message containing "fetch"', () => {
   );
 });
 
+test('normalizePhotoAnalysisError maps code unauthenticated', () => {
+  assert.equal(
+    normalizePhotoAnalysisError({ code: 'unauthenticated', message: '' }),
+    'unauthenticated'
+  );
+});
+
+test('normalizePhotoAnalysisError maps message containing "unauthenticated"', () => {
+  assert.equal(
+    normalizePhotoAnalysisError({ message: 'Cloud Function rejected Auth ID token: unauthenticated' }),
+    'unauthenticated'
+  );
+});
+
+test('normalizePhotoAnalysisError maps message containing "id token"', () => {
+  assert.equal(
+    normalizePhotoAnalysisError({ message: 'Failed to verify id token' }),
+    'unauthenticated'
+  );
+});
+
 test('normalizePhotoAnalysisError returns unknown for unrecognized errors', () => {
   assert.equal(normalizePhotoAnalysisError(new Error('something weird')), 'unknown');
 });
