@@ -37,8 +37,8 @@ import { useInviteCode } from '@/features/professional/use-professional';
 import {
   resolveSubscriptionState,
   isPlanUpdateLocked,
-  type EntitlementStatus,
 } from '@/features/subscription/subscription.logic';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -70,15 +70,14 @@ export default function ProfessionalHomeScreen() {
   });
 
   // Invite code
-  const { state: codeState, rotate } = useInviteCode(currentUser);
+  const { state: codeState, rotate } = useInviteCode(Boolean(currentUser));
 
-  // Subscription — stubbed until RevenueCat is wired (D-009, D-043)
-  // Real entitlement status should come from subscription-source when wired.
-  const stubbedEntitlementStatus: EntitlementStatus = 'unknown';
-  const stubbedActiveStudentCount = 0;
+  // Live subscription entitlement from RevenueCat (D-128).
+  // activeStudentCount stays 0 until Data Connect roster is wired.
+  const { entitlementStatus, activeStudentCount } = useSubscription(Boolean(currentUser));
   const subState = resolveSubscriptionState({
-    activeStudentCount: stubbedActiveStudentCount,
-    entitlementStatus: stubbedEntitlementStatus,
+    activeStudentCount,
+    entitlementStatus,
   });
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
@@ -170,7 +169,7 @@ export default function ProfessionalHomeScreen() {
       <View style={styles.statsRow}>
         <StatCard
           label={t('pro.home.active_students') as string}
-          value={String(stubbedActiveStudentCount)}
+          value={String(activeStudentCount)}
           palette={palette}
           testID="pro.home.activeStudents"
         />

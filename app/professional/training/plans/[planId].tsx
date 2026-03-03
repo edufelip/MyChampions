@@ -72,7 +72,7 @@ export default function TrainingPlanBuilderScreen() {
     removeSessionItem,
     validateInput,
     validateSessionItem,
-  } = useTrainingPlanBuilder(currentUser);
+  } = useTrainingPlanBuilder(Boolean(currentUser));
 
   // ── Local form state ───────────────────────────────────────────────────────
   const isNew = planId === 'new';

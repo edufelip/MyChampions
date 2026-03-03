@@ -43,7 +43,7 @@ export default function ProfessionalPendingScreen() {
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
-  const { state, reload, confirmConnection, unbindConnection } = useConnections(currentUser);
+  const { state, reload, confirmConnection, unbindConnection } = useConnections(Boolean(currentUser));
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

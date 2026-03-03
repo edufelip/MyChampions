@@ -43,8 +43,8 @@ import type { PlanChangeRequest } from '@/features/plans/plan-change-request.log
 import {
   resolveSubscriptionState,
   isPlanUpdateLocked,
-  type EntitlementStatus,
 } from '@/features/subscription/subscription.logic';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -64,12 +64,12 @@ export default function ProfessionalStudentProfileScreen() {
   const { currentUser } = useAuthSession();
   const { studentId } = useLocalSearchParams<{ studentId: string }>();
 
-  // Subscription — stubbed until RevenueCat wired.
-  // useState<T> prevents TypeScript from narrowing to a literal type.
-  const [stubbedEntitlement] = useState<EntitlementStatus>('unknown');
+  // Live subscription entitlement from RevenueCat (D-128).
+  // activeStudentCount stays 0 until Data Connect roster is wired.
+  const { entitlementStatus, activeStudentCount } = useSubscription(Boolean(currentUser));
   const subState = resolveSubscriptionState({
-    activeStudentCount: 0,
-    entitlementStatus: stubbedEntitlement,
+    activeStudentCount,
+    entitlementStatus,
   });
   const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
@@ -79,7 +79,7 @@ export default function ProfessionalStudentProfileScreen() {
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   // Plan change requests — loaded from professional context for this student.
-  const { getChangeRequestsForStudent, reviewChangeRequest } = usePlans(currentUser);
+  const { getChangeRequestsForStudent, reviewChangeRequest } = usePlans(Boolean(currentUser));
   const [changeRequests, setChangeRequests] = useState<PlanChangeRequest[]>([]);
   const [changeRequestsLoadError, setChangeRequestsLoadError] = useState<string | null>(null);
   const [changeRequestsActionError, setChangeRequestsActionError] = useState<string | null>(null);
@@ -87,7 +87,7 @@ export default function ProfessionalStudentProfileScreen() {
   // Water tracking for student — stubbed: student user not available in this context;
   // real wiring will pass student's user context from source layer.
   const today = new Date().toISOString().slice(0, 10);
-  const { state: waterState, setGoal } = useWaterTracking(currentUser, today);
+  const { state: waterState, setGoal } = useWaterTracking(Boolean(currentUser), today);
 
   // Load change requests for this student on mount
   const loadChangeRequests = useCallback(async () => {

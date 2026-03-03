@@ -5,15 +5,13 @@
  * Shows entitlement status, active-student cap usage, and exposes
  * purchase / restore CTAs.
  *
- * RevenueCat wiring is deferred — subscription state is stubbed as 'unknown'.
- * Purchase / restore actions are no-ops until RevenueCat SDK is connected.
- * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * RevenueCat SDK is now wired via useSubscription (D-128).
+ * Active student count is still stubbed at 0 pending Data Connect roster endpoint.
  *
  * Docs: docs/screens/v2/SC-212-professional-subscription-gate.md
- * Refs: D-009–D-011, D-024, D-043, D-075, FR-126–129, FR-156, FR-185, FR-215, FR-217
+ * Refs: D-009–D-011, D-024, D-043, D-075, D-128, FR-126–129, FR-156, FR-185, FR-215, FR-217
  *       BR-218–221, BR-228, BR-247, BR-273, BR-275
  */
-import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -25,12 +23,13 @@ import {
 import { Stack } from 'expo-router';
 
 import { Colors, Fonts } from '@/constants/theme';
+import { useAuthSession } from '@/features/auth/auth-session';
 import {
   resolveSubscriptionState,
   isPlanUpdateLocked,
   FREE_STUDENT_CAP,
-  type EntitlementStatus,
 } from '@/features/subscription/subscription.logic';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -45,16 +44,22 @@ export default function ProfessionalSubscriptionScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const { t } = useTranslation();
+  const { currentUser } = useAuthSession();
 
-  // Stubbed entitlement — RevenueCat wiring deferred.
-  // useState<T> prevents TypeScript from narrowing to a literal type, which
-  // would make comparisons to other union members a type error.
-  const [stubbedEntitlement] = useState<EntitlementStatus>('unknown');
-  const [stubbedActiveStudentCount] = useState<number>(0);
+  // Live entitlement from RevenueCat (D-128).
+  // activeStudentCount stays 0 until Data Connect roster is wired (pending-wiring-checklist-v1.md).
+  const {
+    entitlementStatus,
+    activeStudentCount,
+    isLoading,
+    purchase,
+    restore,
+    refresh,
+  } = useSubscription(Boolean(currentUser));
 
   const subState = resolveSubscriptionState({
-    activeStudentCount: stubbedActiveStudentCount,
-    entitlementStatus: stubbedEntitlement,
+    activeStudentCount,
+    entitlementStatus,
   });
 
   const isLocked = isPlanUpdateLocked(subState);
@@ -66,25 +71,22 @@ export default function ProfessionalSubscriptionScreen() {
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner || isLocked;
 
-  // Loading stub — true while RevenueCat SDK initialises (deferred)
-  const isLoading = stubbedEntitlement === 'unknown';
-
   const statusLabel =
-    stubbedEntitlement === 'active'
+    entitlementStatus === 'active'
       ? t('pro.subscription.status.active')
-      : stubbedEntitlement === 'lapsed'
+      : entitlementStatus === 'lapsed'
         ? t('pro.subscription.status.inactive')
         : t('pro.subscription.status.unknown');
 
   const statusColor =
-    stubbedEntitlement === 'active'
+    entitlementStatus === 'active'
       ? '#16a34a'
-      : stubbedEntitlement === 'lapsed'
+      : entitlementStatus === 'lapsed'
         ? '#b3261e'
         : palette.icon;
 
   const capLabel = (t('pro.subscription.cap_usage') as string)
-    .replace('{count}', String(stubbedActiveStudentCount))
+    .replace('{count}', String(activeStudentCount))
     .replace('{limit}', String(FREE_STUDENT_CAP));
 
   return (
@@ -145,9 +147,7 @@ export default function ProfessionalSubscriptionScreen() {
           <Pressable
             accessibilityRole="button"
             disabled={isWriteLocked}
-            onPress={() => {
-              // RevenueCat renew call deferred (pending-wiring-checklist-v1.md)
-            }}
+            onPress={() => void refresh()}
             style={[styles.renewButton, { borderColor: '#f59e0b', opacity: isWriteLocked ? 0.4 : 1 }]}
             testID="pro.subscription.renewCta">
             <Text style={[styles.renewButtonText, { color: '#b45309' }]}>
@@ -179,7 +179,9 @@ export default function ProfessionalSubscriptionScreen() {
         accessibilityRole="button"
         disabled={isWriteLocked}
         onPress={() => {
-          // RevenueCat purchase call deferred (pending-wiring-checklist-v1.md)
+          // Package selection UI deferred; purchase called with undefined package for now
+          // (full paywall UI is out of MVP scope — D-075)
+          void purchase(undefined);
         }}
         style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
         testID="pro.subscription.purchaseCta">
@@ -189,9 +191,7 @@ export default function ProfessionalSubscriptionScreen() {
       <Pressable
         accessibilityRole="button"
         disabled={isWriteLocked}
-        onPress={() => {
-          // RevenueCat restore call deferred (pending-wiring-checklist-v1.md)
-        }}
+        onPress={() => void restore()}
         style={[styles.outlineButton, { borderColor: palette.icon, opacity: isWriteLocked ? 0.4 : 1 }]}
         testID="pro.subscription.restoreCta">
         <Text style={[styles.outlineButtonText, { color: palette.icon }]}>
@@ -201,9 +201,7 @@ export default function ProfessionalSubscriptionScreen() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => {
-          // Refresh entitlement from RevenueCat — deferred
-        }}
+        onPress={() => void refresh()}
         style={[styles.ghostButton]}
         testID="pro.subscription.refreshCta">
         <Text style={[styles.ghostButtonText, { color: palette.tint }]}>

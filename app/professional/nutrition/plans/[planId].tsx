@@ -67,7 +67,7 @@ export default function NutritionPlanBuilderScreen() {
     removeItem,
     searchFoods,
     validateInput,
-  } = useNutritionPlanBuilder(currentUser);
+  } = useNutritionPlanBuilder(Boolean(currentUser));
 
   // ── Local form state ───────────────────────────────────────────────────────
   const isNew = planId === 'new';

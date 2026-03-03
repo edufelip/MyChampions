@@ -71,10 +71,11 @@ export default function ProfessionalSpecialtyScreen() {
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   const { state, addSpecialty, removeSpecialty, checkRemoval, upsertCredential } =
-    useSpecialties(currentUser);
+    useSpecialties(Boolean(currentUser));
 
   // Credential form state: null = closed; set to specialty when open
   const [credentialFor, setCredentialFor] = useState<Specialty | null>(null);
+  const [credentialForId, setCredentialForId] = useState<string | null>(null);
   const [credentialForm, setCredentialForm] = useState<CredentialFormData>({
     registryId: '',
     authority: '',
@@ -131,30 +132,33 @@ export default function ProfessionalSpecialtyScreen() {
       return;
     }
 
-    const err = await removeSpecialty(specialty);
+    const err = await removeSpecialty(record.id);
     if (err) {
       setActionError(t('pro.specialty.remove_error') as string);
     }
   }
 
   function openCredentialForm(specialty: Specialty) {
+    const record = findRecord(specialty);
     setCredentialFor(specialty);
+    setCredentialForId(record?.id ?? null);
     setCredentialForm({ registryId: '', authority: '', country: '' });
     setCredentialError(null);
   }
 
   async function handleSaveCredential() {
-    if (!credentialFor) return;
+    if (!credentialFor || !credentialForId) return;
     setCredentialError(null);
     setIsSavingCredential(true);
 
-    const err = await upsertCredential(credentialFor, credentialForm);
+    const err = await upsertCredential(credentialForId, credentialForm);
     setIsSavingCredential(false);
 
     if (err) {
       setCredentialError(t('pro.specialty.credential.save_error') as string);
     } else {
       setCredentialFor(null);
+      setCredentialForId(null);
     }
   }
 
@@ -266,7 +270,7 @@ export default function ProfessionalSpecialtyScreen() {
             setCredentialForm((prev: CredentialFormData) => ({ ...prev, [field]: value }))
           }
           onSave={handleSaveCredential}
-          onSkip={() => setCredentialFor(null)}
+          onSkip={() => { setCredentialFor(null); setCredentialForId(null); }}
           isWriteLocked={isWriteLocked}
         />
       ) : null}
