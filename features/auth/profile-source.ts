@@ -1,21 +1,27 @@
-import Constants from 'expo-constants';
-import type { User } from 'firebase/auth';
+/**
+ * Auth profile Data Connect source — profile hydration, role-lock, deletion.
+ * Uses generated SDK (D-114 pattern) instead of raw GraphQL fetch.
+ * Refs: D-114, D-072, FR-101, BR-201
+ */
+
+import type { DataConnect } from 'firebase/data-connect';
+import {
+  getMyProfile as _getMyProfile,
+  upsertUserProfile as _upsertUserProfile,
+  setLockedRole as _setLockedRole,
+  deleteProfile as _deleteProfile,
+  type GetMyProfileData,
+  type UpsertUserProfileData,
+  type SetLockedRoleData,
+  type DeleteProfileData,
+  type UpsertUserProfileVariables,
+  type SetLockedRoleVariables,
+} from '@mychampions/dataconnect-generated';
+import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
 
 import type { RoleIntent } from './role-selection.logic';
 
-type DataConnectExtraConfig = {
-  graphqlEndpoint?: string;
-  apiKey?: string;
-};
-
-type AuthProfile = {
-  lockedRole: RoleIntent | null;
-};
-
-type DataConnectGraphQLResponse<T> = {
-  data?: T;
-  errors?: Array<{ message?: string }>;
-};
+// ─── Error type ───────────────────────────────────────────────────────────────
 
 type ProfileSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
@@ -29,132 +35,125 @@ export class ProfileSourceError extends Error {
   }
 }
 
+// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
+
+export type ProfileSourceDeps = {
+  getMyProfile: (dc: DataConnect) => Promise<{ data: GetMyProfileData }>;
+  upsertUserProfile: (dc: DataConnect, vars: UpsertUserProfileVariables) => Promise<{ data: UpsertUserProfileData }>;
+  setLockedRole: (dc: DataConnect, vars: SetLockedRoleVariables) => Promise<{ data: SetLockedRoleData }>;
+  deleteProfile: (dc: DataConnect) => Promise<{ data: DeleteProfileData }>;
+  getDataConnectInstance: () => DataConnect;
+};
+
+const defaultProfileSourceDeps: ProfileSourceDeps = {
+  getMyProfile: _getMyProfile,
+  upsertUserProfile: _upsertUserProfile,
+  setLockedRole: _setLockedRole,
+  deleteProfile: _deleteProfile,
+  getDataConnectInstance: _getDataConnectInstance,
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type AuthProfile = {
+  lockedRole: RoleIntent | null;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function normalizeLockedRole(value: unknown): RoleIntent | null {
   return value === 'student' || value === 'professional' ? value : null;
 }
 
-function resolveDataConnectConfig(): DataConnectExtraConfig {
-  const extra = (Constants.expoConfig?.extra ?? {}) as {
-    dataConnect?: DataConnectExtraConfig;
-  };
+// ─── Operations ───────────────────────────────────────────────────────────────
 
-  return extra.dataConnect ?? {};
-}
+/**
+ * Upserts the user profile in Data Connect (creates if not exists, updates display name/email).
+ * Ref: FR-101
+ */
+async function upsertRemoteProfile(
+  authUid: string,
+  displayName: string,
+  emailNormalized: string,
+  deps: ProfileSourceDeps
+): Promise<void> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.upsertUserProfile(dc, {
+    auth_uid: authUid,
+    display_name: displayName,
+    email_normalized: emailNormalized,
+  });
 
-async function executeDataConnectGraphQL<T>(
-  user: User,
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
-  const { graphqlEndpoint, apiKey } = resolveDataConnectConfig();
-  if (!graphqlEndpoint) {
+  if (!data.userProfile_upsert?.id) {
     throw new ProfileSourceError(
-      'configuration',
-      'Data Connect endpoint is not configured. Set EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT.'
+      'invalid_response',
+      'Data Connect did not return upserted profile identity.'
     );
   }
-
-  const idToken = await user.getIdToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${idToken}`,
-  };
-
-  if (apiKey) {
-    headers['x-goog-api-key'] = apiKey;
-  }
-
-  const response = await fetch(graphqlEndpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!response.ok) {
-    throw new ProfileSourceError('network', `Data Connect request failed with status ${response.status}.`);
-  }
-
-  const payload = (await response.json()) as DataConnectGraphQLResponse<T>;
-  if (payload.errors && payload.errors.length > 0) {
-    throw new ProfileSourceError('graphql', payload.errors[0]?.message ?? 'Data Connect operation failed.');
-  }
-
-  if (!payload.data) {
-    throw new ProfileSourceError('invalid_response', 'Data Connect operation returned no data payload.');
-  }
-
-  return payload.data;
 }
 
-async function upsertRemoteProfile(user: User): Promise<void> {
-  const mutation = `
-    mutation UpsertUserProfile($input: UpsertUserProfileInput!) {
-      upsertUserProfile(input: $input) {
-        auth_uid
-      }
-    }
-  `;
+/**
+ * Reads the current locked role from the remote profile.
+ * Returns null if no profile exists or role is not set.
+ */
+async function getRemoteLockedRole(deps: ProfileSourceDeps): Promise<RoleIntent | null> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.getMyProfile(dc);
 
-  const data = await executeDataConnectGraphQL<{
-    upsertUserProfile?: { auth_uid?: string | null } | null;
-  }>(user, mutation, {
-    input: {
-      auth_uid: user.uid,
-      display_name: user.displayName ?? '',
-      email_normalized: user.email?.toLowerCase() ?? '',
-    },
-  });
-
-  if (!data.upsertUserProfile?.auth_uid) {
-    throw new ProfileSourceError('invalid_response', 'Data Connect did not return upserted profile identity.');
-  }
+  const profile = data.userProfiles[0];
+  return normalizeLockedRole(profile?.lockedRole ?? null);
 }
 
-async function getRemoteLockedRole(user: User): Promise<RoleIntent | null> {
-  const query = `
-    query GetMyProfile {
-      getMyProfile {
-        locked_role
-      }
-    }
-  `;
-
-  const data = await executeDataConnectGraphQL<{
-    getMyProfile?: { locked_role?: string | null } | null;
-  }>(user, query);
-
-  return normalizeLockedRole(data.getMyProfile?.locked_role);
+/**
+ * Hydrates the user profile: upserts remote record and reads current locked role.
+ * Called on every auth session start.
+ * Ref: FR-101, D-072
+ */
+export async function hydrateProfileFromSource(
+  user: { uid: string; displayName: string | null; email: string | null },
+  deps: ProfileSourceDeps = defaultProfileSourceDeps
+): Promise<AuthProfile> {
+  await upsertRemoteProfile(
+    user.uid,
+    user.displayName ?? '',
+    user.email?.toLowerCase() ?? '',
+    deps
+  );
+  return { lockedRole: await getRemoteLockedRole(deps) };
 }
 
-async function setRemoteLockedRole(user: User, role: RoleIntent): Promise<RoleIntent | null> {
-  const mutation = `
-    mutation SetLockedRole($role: String!) {
-      setLockedRole(role: $role) {
-        locked_role
-      }
-    }
-  `;
+/**
+ * Locks the user's role in the remote profile.
+ * Calls setLockedRole then re-reads via getMyProfile to confirm the persisted value.
+ * Ref: FR-101, D-072
+ */
+export async function lockRoleInSource(
+  role: RoleIntent,
+  deps: ProfileSourceDeps = defaultProfileSourceDeps
+): Promise<AuthProfile> {
+  const dc = deps.getDataConnectInstance();
+  await deps.setLockedRole(dc, { role });
 
-  const data = await executeDataConnectGraphQL<{
-    setLockedRole?: { locked_role?: string | null } | null;
-  }>(user, mutation, { role });
-
-  return normalizeLockedRole(data.setLockedRole?.locked_role);
-}
-
-export async function hydrateProfileFromSource(user: User): Promise<AuthProfile> {
-  await upsertRemoteProfile(user);
-  return { lockedRole: await getRemoteLockedRole(user) };
-}
-
-export async function lockRoleInSource(user: User, role: RoleIntent): Promise<AuthProfile> {
-  const remoteRole = await setRemoteLockedRole(user, role);
-  if (!remoteRole) {
+  // Re-read to get confirmed server-side value
+  const confirmedRole = await getRemoteLockedRole(deps);
+  if (!confirmedRole) {
     throw new ProfileSourceError(
       'invalid_response',
       'Data Connect did not return a locked role after setLockedRole.'
     );
   }
 
-  return { lockedRole: remoteRole };
+  return { lockedRole: confirmedRole };
+}
+
+/**
+ * Deletes the user's profile from Data Connect.
+ * Called from account deletion flow (SC-213).
+ * Ref: D-072
+ */
+export async function deleteProfileFromSource(
+  deps: ProfileSourceDeps = defaultProfileSourceDeps
+): Promise<void> {
+  const dc = deps.getDataConnectInstance();
+  await deps.deleteProfile(dc);
 }

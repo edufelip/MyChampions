@@ -71,7 +71,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           throw new Error('No authenticated user found.');
         }
 
-        const profile = await lockRoleInSource(currentUser, role);
+        const profile = await lockRoleInSource(role);
         setLockedRole(profile.lockedRole);
       },
       clearSession: () => {
