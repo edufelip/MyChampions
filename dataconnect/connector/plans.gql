@@ -1,0 +1,298 @@
+# Plans Connector
+# Queries and mutations for nutrition/training plan CRUD, predefined library,
+# plan assignments, and plan change requests.
+# Ref: D-006, D-007, D-071, D-080, D-082, FR-211–FR-214, BR-269–BR-272
+
+# ─── Queries ─────────────────────────────────────────────────────────────────
+
+query GetMyPlans @auth(level: USER) {
+  nutritionPlans(
+    where: {
+      _or: [
+        { professionalId: { eq_expr: "auth.uid" } }
+        { studentId: { eq_expr: "auth.uid" } }
+      ]
+    }
+    orderBy: [{ updatedAt: DESC }]
+  ) {
+    id
+    name
+    isDraft
+    caloriesTarget
+    carbsTarget
+    proteinsTarget
+    fatsTarget
+    createdAt
+    updatedAt
+  }
+}
+
+query GetMyPredefinedPlans @auth(level: USER) {
+  nutritionPlans(
+    where: {
+      professionalId: { eq_expr: "auth.uid" }
+      isDraft: { eq: false }
+      studentId: { isNull: true }
+    }
+    orderBy: [{ createdAt: DESC }]
+  ) {
+    id
+    name
+    caloriesTarget
+    carbsTarget
+    proteinsTarget
+    fatsTarget
+    createdAt
+    updatedAt
+  }
+}
+
+query GetNutritionPlanDetail($plan_id: String!) @auth(level: USER) {
+  nutritionPlan(id: $plan_id) {
+    id
+    name
+    isDraft
+    caloriesTarget
+    carbsTarget
+    proteinsTarget
+    fatsTarget
+    createdAt
+    updatedAt
+    meals: nutritionPlanMeals_on_nutritionPlan {
+      id
+      foodName
+      calories
+      carbs
+      proteins
+      fats
+      portions
+    }
+  }
+}
+
+query GetTrainingPlanDetail($plan_id: String!) @auth(level: USER) {
+  trainingPlan(id: $plan_id) {
+    id
+    name
+    isDraft
+    focusArea
+    createdAt
+    updatedAt
+    sessions: trainingPlanSessions_on_trainingPlan {
+      id
+      sessionName
+      dayOfWeek
+      durationMinutes
+      items: trainingSessionItems_on_session {
+        id
+        exerciseName
+        sets
+        reps
+        weight
+      }
+    }
+  }
+}
+
+query GetStudentPlanChangeRequests($student_uid: String!) @auth(level: USER) {
+  planChangeRequests(
+    where: { studentAuthUid: { eq: $student_uid } }
+    orderBy: [{ createdAt: DESC }]
+  ) {
+    id
+    planId
+    planType
+    studentAuthUid
+    requestText
+    status
+    reviewedAt
+    createdAt
+  }
+}
+
+query GetMyPlanChangeRequests @auth(level: USER) {
+  planChangeRequests(
+    where: { studentAuthUid: { eq_expr: "auth.uid" } }
+    orderBy: [{ createdAt: DESC }]
+  ) {
+    id
+    planId
+    planType
+    status
+    requestText
+    createdAt
+  }
+}
+
+# ─── Mutations ────────────────────────────────────────────────────────────────
+
+mutation CreateNutritionPlan(
+  $name: String!
+  $calories_target: Int
+  $carbs_target: Int
+  $proteins_target: Int
+  $fats_target: Int
+) @auth(level: USER) {
+  nutritionPlan_insert(
+    data: {
+      professionalId_expr: "auth.uid"
+      name: $name
+      isDraft: false
+      caloriesTarget: $calories_target
+      carbsTarget: $carbs_target
+      proteinsTarget: $proteins_target
+      fatsTarget: $fats_target
+    }
+  )
+}
+
+mutation UpdateNutritionPlan(
+  $plan_id: UUID!
+  $name: String!
+  $calories_target: Int
+  $carbs_target: Int
+  $proteins_target: Int
+  $fats_target: Int
+) @auth(level: USER) {
+  nutritionPlan_update(
+    key: { id: $plan_id }
+    data: {
+      name: $name
+      caloriesTarget: $calories_target
+      carbsTarget: $carbs_target
+      proteinsTarget: $proteins_target
+      fatsTarget: $fats_target
+    }
+  )
+}
+
+mutation AddNutritionMealItem(
+  $plan_id: UUID!
+  $food_name: String!
+  $calories: Int
+  $carbs: Int
+  $proteins: Int
+  $fats: Int
+  $portions: Float
+) @auth(level: USER) {
+  nutritionPlanMeal_insert(
+    data: {
+      nutritionPlan: { id: $plan_id }
+      foodName: $food_name
+      calories: $calories
+      carbs: $carbs
+      proteins: $proteins
+      fats: $fats
+      portions: $portions
+    }
+  )
+}
+
+mutation RemoveNutritionMealItem($item_id: UUID!) @auth(level: USER) {
+  nutritionPlanMeal_delete(key: { id: $item_id })
+}
+
+mutation CreateTrainingPlan($name: String!, $focus_area: String) @auth(level: USER) {
+  trainingPlan_insert(
+    data: {
+      professionalId_expr: "auth.uid"
+      name: $name
+      isDraft: false
+      focusArea: $focus_area
+    }
+  )
+}
+
+mutation UpdateTrainingPlan(
+  $plan_id: UUID!
+  $name: String!
+  $focus_area: String
+) @auth(level: USER) {
+  trainingPlan_update(
+    key: { id: $plan_id }
+    data: { name: $name, focusArea: $focus_area }
+  )
+}
+
+mutation AddTrainingSession(
+  $plan_id: UUID!
+  $session_name: String!
+  $day_of_week: Int
+  $duration_minutes: Int
+) @auth(level: USER) {
+  trainingPlanSession_insert(
+    data: {
+      trainingPlan: { id: $plan_id }
+      sessionName: $session_name
+      dayOfWeek: $day_of_week
+      durationMinutes: $duration_minutes
+    }
+  )
+}
+
+mutation RemoveTrainingSession($session_id: UUID!) @auth(level: USER) {
+  trainingPlanSession_delete(key: { id: $session_id })
+}
+
+mutation AddTrainingSessionItem(
+  $session_id: UUID!
+  $exercise_name: String!
+  $sets: Int
+  $reps: Int
+  $weight: Float
+) @auth(level: USER) {
+  trainingSessionItem_insert(
+    data: {
+      session: { id: $session_id }
+      exerciseName: $exercise_name
+      sets: $sets
+      reps: $reps
+      weight: $weight
+    }
+  )
+}
+
+mutation RemoveTrainingSessionItem($item_id: UUID!) @auth(level: USER) {
+  trainingSessionItem_delete(key: { id: $item_id })
+}
+
+mutation SubmitPlanChangeRequest(
+  $plan_id: String!
+  $plan_type: String!
+  $request_text: String!
+) @auth(level: USER) {
+  planChangeRequest_insert(
+    data: {
+      planId: $plan_id
+      planType: $plan_type
+      studentAuthUid_expr: "auth.uid"
+      requestText: $request_text
+      status: "pending"
+    }
+  )
+}
+
+mutation ReviewPlanChangeRequest(
+  $request_id: UUID!
+  $status: String!
+) @auth(level: USER) {
+  planChangeRequest_update(
+    key: { id: $request_id }
+    data: { status: $status }
+  )
+}
+
+mutation BulkAssignNutritionPlan(
+  $plan_id: String!
+  $student_uid: String!
+) @auth(level: USER) {
+  planAssignment_insert(
+    data: {
+      planId: $plan_id
+      planType: "nutrition"
+      studentAuthUid: $student_uid
+      professionalAuthUid_expr: "auth.uid"
+      isActive: true
+    }
+  )
+}

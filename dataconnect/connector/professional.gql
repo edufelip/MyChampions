@@ -1,0 +1,77 @@
+# Professional Connector
+# Queries and mutations for professional roster management, student profiles,
+# invite code lifecycle, and student unbind.
+# Ref: FR-103, FR-174–FR-180, D-037, D-039, D-040, D-070, BR-234–BR-242
+
+# ─── Queries ─────────────────────────────────────────────────────────────────
+
+# Returns all students with an active connection for the current professional.
+query GetMyStudents @auth(level: USER) {
+  connections(
+    where: {
+      professionalAuthUid: { eq_expr: "auth.uid" }
+      status: { eq: "active" }
+    }
+    orderBy: [{ updatedAt: DESC }]
+  ) {
+    id
+    studentAuthUid
+    specialty
+    status
+    createdAt
+    updatedAt
+  }
+}
+
+# Returns a specific student profile visible to the current professional.
+query GetStudentProfile($student_uid: String!) @auth(level: USER) {
+  userProfiles(
+    where: { authUid: { eq: $student_uid } }
+    limit: 1
+  ) {
+    authUid
+    displayName
+    emailNormalized
+    createdAt
+  }
+}
+
+# Returns the current active invite code for the professional, or null.
+query GetOrCreateActiveInviteCode @auth(level: USER) {
+  inviteCodes(
+    where: {
+      professionalAuthUid: { eq_expr: "auth.uid" }
+      status: { eq: "active" }
+    }
+    orderBy: [{ createdAt: DESC }]
+    limit: 1
+  ) {
+    id
+    codeValue
+    status
+    rotatedAt
+    expiresAt
+    createdAt
+  }
+}
+
+# ─── Mutations ────────────────────────────────────────────────────────────────
+
+# Generates the first invite code for the professional (idempotent if already exists).
+mutation GenerateInitialInviteCode @auth(level: USER) {
+  inviteCode_insert(
+    data: {
+      professionalAuthUid_expr: "auth.uid"
+      codeValue_expr: "uuidV4()"
+      status: "active"
+    }
+  )
+}
+
+# Professional unbinds (ends) the connection with a student.
+mutation UnbindStudent($connection_id: UUID!) @auth(level: USER) {
+  connection_update(
+    key: { id: $connection_id }
+    data: { status: "ended" }
+  )
+}

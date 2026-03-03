@@ -1,6 +1,6 @@
 # Data Connect Schema for MyChampions
 # Defines the GraphQL types backed by CloudSQL PostgreSQL.
-# Ref: BL-006, FR-212, FR-247, AC-256, BR-270
+# Ref: BL-006, FR-212, FR-247, AC-256, BR-270, FR-103, FR-174–FR-222, BR-234–BR-280
 
 type StarterTemplate @table {
   id: String! @col(name: "id") @default(expr: "uuidV4()")
@@ -76,5 +76,150 @@ type TrainingSessionItem @table {
   reps: Int
   weight: Float
   createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+# ─── Auth / Profile ───────────────────────────────────────────────────────────
+# Ref: FR-103, D-097, D-050
+
+type UserProfile @table {
+  authUid: String! @col(name: "auth_uid")
+  displayName: String! @col(name: "display_name")
+  emailNormalized: String! @col(name: "email_normalized")
+  lockedRole: String @col(name: "locked_role")
+  locale: String @col(name: "locale")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+# ─── Specialties ──────────────────────────────────────────────────────────────
+# Ref: FR-174–FR-177, D-034, D-035, BR-234–BR-240
+
+type Specialty @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  professionalAuthUid: String! @col(name: "professional_auth_uid")
+  specialty: String! @col(name: "specialty")
+  isActive: Boolean! @col(name: "is_active") @default(value: true)
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+type Credential @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  specialty: Specialty!
+  credentialType: String! @col(name: "credential_type")
+  registryId: String! @col(name: "registry_id")
+  authority: String! @col(name: "authority")
+  country: String! @col(name: "country")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+# ─── Invite Code ──────────────────────────────────────────────────────────────
+# Ref: FR-179, FR-180, D-037, D-064, BR-241, BR-242
+
+type InviteCode @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  professionalAuthUid: String! @col(name: "professional_auth_uid")
+  codeValue: String! @col(name: "code_value")
+  status: String! @col(name: "status")
+  rotatedAt: Timestamp @col(name: "rotated_at")
+  expiresAt: Timestamp @col(name: "expires_at")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+}
+
+# ─── Connections ──────────────────────────────────────────────────────────────
+# Ref: D-003, D-004, D-012, D-064, D-069, FR-103, BR-241–BR-245
+
+type Connection @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  studentAuthUid: String! @col(name: "student_auth_uid")
+  professionalAuthUid: String! @col(name: "professional_auth_uid")
+  specialty: String! @col(name: "specialty")
+  status: String! @col(name: "status")
+  canceledReason: String @col(name: "canceled_reason")
+  inviteCodeId: String @col(name: "invite_code_id")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+# ─── Water Tracking ───────────────────────────────────────────────────────────
+# Ref: D-078–D-081, FR-218–FR-222, BR-276–BR-280, BL-104
+
+type WaterLog @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  studentAuthUid: String! @col(name: "student_auth_uid")
+  dateKey: String! @col(name: "date_key")
+  totalMl: Float! @col(name: "total_ml")
+  loggedAt: Timestamp! @col(name: "logged_at") @default(expr: "request.time")
+}
+
+type WaterGoal @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  studentAuthUid: String! @col(name: "student_auth_uid")
+  personalDailyMl: Float @col(name: "personal_daily_ml")
+  nutritionistDailyMl: Float @col(name: "nutritionist_daily_ml")
+  nutritionistAuthUid: String @col(name: "nutritionist_auth_uid")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+# ─── Custom Meals ─────────────────────────────────────────────────────────────
+# Ref: D-017–D-029, FR-137–FR-162, BR-301–BR-327
+
+type CustomMeal @table {
+  id: String! @col(name: "id") @default(expr: "uuidV7()")
+  ownerAuthUid: String! @col(name: "owner_auth_uid")
+  name: String!
+  totalGrams: Float! @col(name: "total_grams")
+  calories: Float!
+  carbs: Float!
+  proteins: Float!
+  fats: Float!
+  ingredientCost: Float @col(name: "ingredient_cost")
+  imageUrl: String @col(name: "image_url")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+  updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
+}
+
+type MealShareLink @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  meal: CustomMeal!
+  shareToken: String! @col(name: "share_token")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+}
+
+type PortionLog @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  studentAuthUid: String! @col(name: "student_auth_uid")
+  meal: CustomMeal!
+  grams: Float!
+  loggedAt: Timestamp! @col(name: "logged_at") @default(expr: "request.time")
+}
+
+# ─── Plan Change Requests ─────────────────────────────────────────────────────
+# Ref: D-071, FR-211, BR-269, BL-005
+
+type PlanChangeRequest @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  planId: String! @col(name: "plan_id")
+  planType: String! @col(name: "plan_type")
+  studentAuthUid: String! @col(name: "student_auth_uid")
+  requestText: String! @col(name: "request_text")
+  status: String! @col(name: "status") @default(value: "pending")
+  reviewedAt: Timestamp @col(name: "reviewed_at")
+  createdAt: Timestamp! @col(name: "created_at") @default(expr: "request.time")
+}
+
+# ─── Plan Assignments ─────────────────────────────────────────────────────────
+# Ref: D-006, D-007, D-082, FR-213, BR-270
+
+type PlanAssignment @table {
+  id: String! @col(name: "id") @default(expr: "uuidV4()")
+  studentAuthUid: String! @col(name: "student_auth_uid")
+  professionalAuthUid: String! @col(name: "professional_auth_uid")
+  planId: String! @col(name: "plan_id")
+  planType: String! @col(name: "plan_type")
+  isActive: Boolean! @col(name: "is_active") @default(value: true)
+  assignedAt: Timestamp! @col(name: "assigned_at") @default(expr: "request.time")
   updatedAt: Timestamp! @col(name: "updated_at") @default(expr: "request.time")
 }

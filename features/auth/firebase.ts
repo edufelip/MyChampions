@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 type FirebaseExtraConfig = {
   apiKey?: string;
@@ -44,6 +45,7 @@ function requireFirebaseConfig() {
 }
 
 let firebaseAuthInstance: Auth | null = null;
+let firebaseStorageInstance: FirebaseStorage | null = null;
 
 export function getFirebaseAuth() {
   if (firebaseAuthInstance) {
@@ -55,6 +57,23 @@ export function getFirebaseAuth() {
   firebaseAuthInstance = getAuth(firebaseApp);
 
   return firebaseAuthInstance;
+}
+
+/**
+ * Returns the Firebase Cloud Storage singleton.
+ * Shares the same Firebase App instance as getFirebaseAuth().
+ * Uses storageBucket from the Firebase config (D-050, D-053).
+ */
+export function getFirebaseStorage(): FirebaseStorage {
+  if (firebaseStorageInstance) {
+    return firebaseStorageInstance;
+  }
+
+  const firebaseConfig = requireFirebaseConfig();
+  const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  firebaseStorageInstance = getStorage(firebaseApp);
+
+  return firebaseStorageInstance;
 }
 
 export const firebaseOAuthConfig = {

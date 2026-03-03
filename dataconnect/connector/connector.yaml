@@ -1,4 +1,4 @@
-connectorId: starter-templates
+connectorId: mychampions
 authMode: PUBLIC
 generate:
   javascriptSdk:

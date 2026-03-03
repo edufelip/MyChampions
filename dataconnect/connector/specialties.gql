@@ -1,0 +1,59 @@
+# Specialties Connector
+# Queries and mutations for professional specialty and credential management.
+# Ref: FR-174–FR-177, D-034, D-035, BR-234–BR-240
+
+# ─── Queries ─────────────────────────────────────────────────────────────────
+
+query GetProfessionalSpecialties @auth(level: USER) {
+  specialties(
+    where: { professionalAuthUid: { eq_expr: "auth.uid" } }
+    orderBy: [{ createdAt: ASC }]
+  ) {
+    id
+    specialty
+    isActive
+    credential: credentials_on_specialty(limit: 1) {
+      id
+      credentialType
+      registryId
+      authority
+      country
+    }
+  }
+}
+
+# ─── Mutations ────────────────────────────────────────────────────────────────
+
+mutation AddProfessionalSpecialty($specialty: String!) @auth(level: USER) {
+  specialty_insert(
+    data: {
+      professionalAuthUid_expr: "auth.uid"
+      specialty: $specialty
+      isActive: true
+    }
+  )
+}
+
+mutation RemoveProfessionalSpecialty($specialty_id: UUID!) @auth(level: USER) {
+  specialty_update(
+    key: { id: $specialty_id }
+    data: { isActive: false }
+  )
+}
+
+mutation UpsertProfessionalCredential(
+  $specialty_id: UUID!
+  $registry_id: String!
+  $authority: String!
+  $country: String!
+) @auth(level: USER) {
+  credential_upsert(
+    data: {
+      specialty: { id: $specialty_id }
+      credentialType: "professional_registry"
+      registryId: $registry_id
+      authority: $authority
+      country: $country
+    }
+  )
+}

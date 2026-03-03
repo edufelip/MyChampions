@@ -1,0 +1,68 @@
+# Water Tracking Connector
+# Queries and mutations for daily intake logs and water goals.
+# Ref: D-078–D-081, FR-218–FR-222, BR-276–BR-280, BL-104
+
+# ─── Queries ─────────────────────────────────────────────────────────────────
+
+query GetMyWaterLogs @auth(level: USER) {
+  waterLogs(
+    where: { studentAuthUid: { eq_expr: "auth.uid" } }
+    orderBy: [{ loggedAt: DESC }]
+  ) {
+    id
+    dateKey
+    totalMl
+    loggedAt
+  }
+}
+
+# Returns the water goal context for the current student:
+# personal goal + active nutritionist override if assignment exists.
+query GetMyWaterGoalContext @auth(level: USER) {
+  waterGoals(
+    where: { studentAuthUid: { eq_expr: "auth.uid" } }
+    limit: 1
+  ) {
+    personalDailyMl
+    nutritionistDailyMl
+    nutritionistAuthUid
+    updatedAt
+  }
+}
+
+# ─── Mutations ────────────────────────────────────────────────────────────────
+
+# Accumulates intake for today's date key. Server resolves date to ISO YYYY-MM-DD.
+mutation LogWaterIntake($amount_ml: Float!) @auth(level: USER) {
+  waterLog_insert(
+    data: {
+      studentAuthUid_expr: "auth.uid"
+      dateKey_expr: "today()"
+      totalMl: $amount_ml
+    }
+  )
+}
+
+# Student sets personal daily water goal (D-079, FR-221, BR-278).
+mutation SetStudentWaterGoal($daily_ml: Float!) @auth(level: USER) {
+  waterGoal_upsert(
+    data: {
+      studentAuthUid_expr: "auth.uid"
+      personalDailyMl: $daily_ml
+    }
+  )
+}
+
+# Nutritionist sets override goal for an assigned student (D-081, FR-222, BR-279).
+mutation SetNutritionistWaterGoalForStudent(
+  $student_uid: String!
+  $daily_ml: Float!
+) @auth(level: USER) {
+  waterGoal_upsert(
+    data: {
+      studentAuthUid: $student_uid
+      nutritionistDailyMl: $daily_ml
+      nutritionistAuthUid_expr: "auth.uid"
+    }
+  )
+}

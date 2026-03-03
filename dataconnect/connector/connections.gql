@@ -1,0 +1,86 @@
+# Connections Connector
+# Queries and mutations for student↔professional connection lifecycle.
+# Ref: D-003, D-004, D-012, D-037, D-064, D-069, FR-103, BR-241–BR-245
+
+# ─── Queries ─────────────────────────────────────────────────────────────────
+
+# Returns all connections where the current user is the student or professional.
+query GetMyConnections @auth(level: USER) {
+  connections(
+    where: {
+      _or: [
+        { studentAuthUid: { eq_expr: "auth.uid" } }
+        { professionalAuthUid: { eq_expr: "auth.uid" } }
+      ]
+    }
+    orderBy: [{ updatedAt: DESC }]
+  ) {
+    id
+    studentAuthUid
+    professionalAuthUid
+    specialty
+    status
+    canceledReason
+    inviteCodeId
+    createdAt
+    updatedAt
+  }
+}
+
+# Returns pending connections for the professional to triage.
+query GetPendingConnections @auth(level: USER) {
+  connections(
+    where: {
+      professionalAuthUid: { eq_expr: "auth.uid" }
+      status: { eq: "pending_confirmation" }
+    }
+    orderBy: [{ createdAt: ASC }]
+  ) {
+    id
+    studentAuthUid
+    specialty
+    status
+    createdAt
+  }
+}
+
+# ─── Mutations ────────────────────────────────────────────────────────────────
+
+# Student submits an invite code — creates a new Connection in pending_confirmation status.
+mutation SubmitInviteCode($code: String!) @auth(level: USER) {
+  connection_insert(
+    data: {
+      studentAuthUid_expr: "auth.uid"
+      professionalAuthUid: $code
+      specialty: "nutritionist"
+      status: "pending_confirmation"
+    }
+  )
+}
+
+# Professional confirms a pending connection — transitions status to active.
+mutation ConfirmPendingConnection($connection_id: UUID!) @auth(level: USER) {
+  connection_update(
+    key: { id: $connection_id }
+    data: { status: "active" }
+  )
+}
+
+# Either party ends/denies a connection — transitions status to ended.
+mutation EndConnection($connection_id: UUID!) @auth(level: USER) {
+  connection_update(
+    key: { id: $connection_id }
+    data: { status: "ended" }
+  )
+}
+
+# Rotate invite code: marks old code rotated + ends all pending connections from it.
+mutation RotateInviteCode @auth(level: USER) {
+  inviteCode_insert(
+    data: {
+      professionalAuthUid_expr: "auth.uid"
+      codeValue_expr: "uuidV4()"
+      status: "active"
+    }
+  )
+}

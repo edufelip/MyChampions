@@ -1,0 +1,44 @@
+# Auth Profile Connector
+# Queries and mutations for user profile management (role-lock, upsert, delete).
+# Ref: FR-103, D-097, D-050, BR-262
+
+# ─── Queries ─────────────────────────────────────────────────────────────────
+
+query GetMyProfile @auth(level: USER) {
+  userProfiles(where: { authUid: { eq_expr: "auth.uid" } }, limit: 1) {
+    authUid
+    displayName
+    emailNormalized
+    lockedRole
+    locale
+    createdAt
+    updatedAt
+  }
+}
+
+# ─── Mutations ────────────────────────────────────────────────────────────────
+
+mutation UpsertUserProfile(
+  $auth_uid: String!
+  $display_name: String!
+  $email_normalized: String!
+) @auth(level: USER) {
+  userProfile_upsert(
+    data: {
+      authUid: $auth_uid
+      displayName: $display_name
+      emailNormalized: $email_normalized
+    }
+  )
+}
+
+mutation SetLockedRole($role: String!) @auth(level: USER) {
+  userProfile_update(
+    key: { authUid_expr: "auth.uid" }
+    data: { lockedRole: $role }
+  )
+}
+
+mutation DeleteProfile @auth(level: USER) {
+  userProfile_delete(key: { authUid_expr: "auth.uid" })
+}
