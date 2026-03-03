@@ -1,12 +1,30 @@
 /**
  * Professional Data Connect source — invite code and specialty operations.
- * All calls use Firebase Auth ID token in Authorization header.
+ * Uses Firebase Data Connect generated SDK (D-114 injectable deps pattern).
  * No business logic; all normalization delegates to logic modules.
  * Refs: FR-103, FR-174–FR-177, FR-179, FR-180, BR-234–BR-242
  */
 
-import Constants from 'expo-constants';
-import type { User } from 'firebase/auth';
+import type { DataConnect } from 'firebase/data-connect';
+
+import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
+import {
+  getOrCreateActiveInviteCode as _getOrCreateActiveInviteCode,
+  rotateInviteCode as _rotateInviteCode,
+  getProfessionalSpecialties as _getProfessionalSpecialties,
+  addProfessionalSpecialty as _addProfessionalSpecialty,
+  removeProfessionalSpecialty as _removeProfessionalSpecialty,
+  upsertProfessionalCredential as _upsertProfessionalCredential,
+  type GetOrCreateActiveInviteCodeData,
+  type RotateInviteCodeData,
+  type GetProfessionalSpecialtiesData,
+  type AddProfessionalSpecialtyData,
+  type AddProfessionalSpecialtyVariables,
+  type RemoveProfessionalSpecialtyData,
+  type RemoveProfessionalSpecialtyVariables,
+  type UpsertProfessionalCredentialData,
+  type UpsertProfessionalCredentialVariables,
+} from '@mychampions/dataconnect-generated';
 
 import {
   normalizeInviteCodeStatus,
@@ -19,17 +37,7 @@ import {
   type Credential,
 } from './specialty.logic';
 
-// ─── Transport helpers (shared with connection-source pattern) ─────────────────
-
-type DataConnectExtraConfig = {
-  graphqlEndpoint?: string;
-  apiKey?: string;
-};
-
-type DataConnectGraphQLResponse<T> = {
-  data?: T;
-  errors?: Array<{ message?: string }>;
-};
+// ─── Error class ──────────────────────────────────────────────────────────────
 
 type ProfessionalSourceErrorCode =
   | 'configuration'
@@ -47,63 +55,36 @@ export class ProfessionalSourceError extends Error {
   }
 }
 
-function resolveConfig(): DataConnectExtraConfig {
-  const extra = (Constants.expoConfig?.extra ?? {}) as {
-    dataConnect?: DataConnectExtraConfig;
-  };
-  return extra.dataConnect ?? {};
-}
+// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
 
-async function gql<T>(
-  user: User,
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
-  const { graphqlEndpoint, apiKey } = resolveConfig();
-  if (!graphqlEndpoint) {
-    throw new ProfessionalSourceError(
-      'configuration',
-      'Data Connect endpoint is not configured. Set EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT.'
-    );
-  }
+export type ProfessionalSourceDeps = {
+  getOrCreateActiveInviteCode: (dc: DataConnect) => Promise<{ data: GetOrCreateActiveInviteCodeData }>;
+  rotateInviteCode: (dc: DataConnect) => Promise<{ data: RotateInviteCodeData }>;
+  getProfessionalSpecialties: (dc: DataConnect) => Promise<{ data: GetProfessionalSpecialtiesData }>;
+  addProfessionalSpecialty: (
+    dc: DataConnect,
+    vars: AddProfessionalSpecialtyVariables
+  ) => Promise<{ data: AddProfessionalSpecialtyData }>;
+  removeProfessionalSpecialty: (
+    dc: DataConnect,
+    vars: RemoveProfessionalSpecialtyVariables
+  ) => Promise<{ data: RemoveProfessionalSpecialtyData }>;
+  upsertProfessionalCredential: (
+    dc: DataConnect,
+    vars: UpsertProfessionalCredentialVariables
+  ) => Promise<{ data: UpsertProfessionalCredentialData }>;
+  getDataConnectInstance: () => DataConnect;
+};
 
-  const idToken = await user.getIdToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${idToken}`,
-  };
-  if (apiKey) headers['x-goog-api-key'] = apiKey;
-
-  const response = await fetch(graphqlEndpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!response.ok) {
-    throw new ProfessionalSourceError(
-      'network',
-      `Data Connect request failed with status ${response.status}.`
-    );
-  }
-
-  const payload = (await response.json()) as DataConnectGraphQLResponse<T>;
-  if (payload.errors && payload.errors.length > 0) {
-    throw new ProfessionalSourceError(
-      'graphql',
-      payload.errors[0]?.message ?? 'Data Connect operation failed.'
-    );
-  }
-
-  if (!payload.data) {
-    throw new ProfessionalSourceError(
-      'invalid_response',
-      'Data Connect operation returned no data payload.'
-    );
-  }
-
-  return payload.data;
-}
+const defaultDeps: ProfessionalSourceDeps = {
+  getOrCreateActiveInviteCode: _getOrCreateActiveInviteCode,
+  rotateInviteCode: _rotateInviteCode,
+  getProfessionalSpecialties: _getProfessionalSpecialties,
+  addProfessionalSpecialty: _addProfessionalSpecialty,
+  removeProfessionalSpecialty: _removeProfessionalSpecialty,
+  upsertProfessionalCredential: _upsertProfessionalCredential,
+  getDataConnectInstance: _getDataConnectInstance,
+};
 
 // ─── Invite code operations ───────────────────────────────────────────────────
 
@@ -111,45 +92,28 @@ async function gql<T>(
  * Fetches the professional's current active invite code, or creates one if
  * none exists (idempotent). Returns null if the server returns no code.
  * Ref: FR-179, D-037
+ *
+ * SDK note: returns inviteCodes[] array — use [0].
  */
-export async function getOrCreateActiveInviteCode(user: User): Promise<InviteCode | null> {
-  const query = `
-    query GetOrCreateActiveInviteCode {
-      getOrCreateActiveInviteCode {
-        id
-        code_value
-        status
-        rotated_at
-        expires_at
-        created_at
-      }
-    }
-  `;
+export async function getOrCreateActiveInviteCode(
+  deps = defaultDeps
+): Promise<InviteCode | null> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.getOrCreateActiveInviteCode(dc);
 
-  const data = await gql<{
-    getOrCreateActiveInviteCode?: {
-      id?: string | null;
-      code_value?: string | null;
-      status?: string | null;
-      rotated_at?: string | null;
-      expires_at?: string | null;
-      created_at?: string | null;
-    } | null;
-  }>(user, query);
-
-  const raw = data.getOrCreateActiveInviteCode;
-  if (!raw?.id || !raw.code_value || !raw.created_at) return null;
+  const raw = data.inviteCodes[0];
+  if (!raw?.id || !raw.codeValue || !raw.createdAt) return null;
 
   const status = normalizeInviteCodeStatus(raw.status);
   if (!status) return null;
 
   return {
     id: raw.id,
-    codeValue: raw.code_value,
+    codeValue: raw.codeValue,
     status,
-    rotatedAt: raw.rotated_at ?? null,
-    expiresAt: raw.expires_at ?? null,
-    createdAt: raw.created_at,
+    rotatedAt: raw.rotatedAt ?? null,
+    expiresAt: raw.expiresAt ?? null,
+    createdAt: raw.createdAt,
   };
 }
 
@@ -157,53 +121,23 @@ export async function getOrCreateActiveInviteCode(user: User): Promise<InviteCod
  * Rotates the professional's active invite code.
  * Auto-cancels pending requests created from the old code (D-064, D-037).
  * Returns the new active invite code.
+ *
+ * SDK note: rotateInviteCode returns just InviteCode_Key (id only).
+ * Must re-fetch getOrCreateActiveInviteCode to get full code data.
  */
-export async function rotateInviteCode(user: User): Promise<InviteCode> {
-  const mutation = `
-    mutation RotateInviteCode {
-      rotateInviteCode {
-        id
-        code_value
-        status
-        rotated_at
-        expires_at
-        created_at
-      }
-    }
-  `;
+export async function rotateInviteCode(deps = defaultDeps): Promise<InviteCode> {
+  const dc = deps.getDataConnectInstance();
+  await deps.rotateInviteCode(dc);
 
-  const data = await gql<{
-    rotateInviteCode?: {
-      id?: string | null;
-      code_value?: string | null;
-      status?: string | null;
-      rotated_at?: string | null;
-      expires_at?: string | null;
-      created_at?: string | null;
-    } | null;
-  }>(user, mutation);
-
-  const raw = data.rotateInviteCode;
-  if (!raw?.id || !raw.code_value || !raw.created_at) {
-    throw new ProfessionalSourceError('invalid_response', 'rotateInviteCode returned no code.');
-  }
-
-  const status = normalizeInviteCodeStatus(raw.status);
-  if (!status) {
+  // Re-fetch to get full code data (SDK only returns the key)
+  const code = await getOrCreateActiveInviteCode(deps);
+  if (!code) {
     throw new ProfessionalSourceError(
       'invalid_response',
-      `rotateInviteCode returned unrecognized status: ${raw.status}.`
+      'rotateInviteCode succeeded but subsequent fetch returned no code.'
     );
   }
-
-  return {
-    id: raw.id,
-    codeValue: raw.code_value,
-    status,
-    rotatedAt: raw.rotated_at ?? null,
-    expiresAt: raw.expires_at ?? null,
-    createdAt: raw.created_at,
-  };
+  return code;
 }
 
 // ─── Specialty operations ─────────────────────────────────────────────────────
@@ -211,65 +145,33 @@ export async function rotateInviteCode(user: User): Promise<InviteCode> {
 /**
  * Returns all professional specialties (active and inactive) for the current user.
  * Ref: FR-103, FR-174
+ *
+ * SDK note: returns specialties[] with camelCase fields; credential is an array.
  */
-export async function getProfessionalSpecialties(user: User): Promise<SpecialtyRecord[]> {
-  const query = `
-    query GetProfessionalSpecialties {
-      getProfessionalSpecialties {
-        id
-        specialty
-        is_active
-        credential {
-          id
-          specialty
-          credential_type
-          registry_id
-          authority
-          country
-        }
-      }
-    }
-  `;
+export async function getProfessionalSpecialties(deps = defaultDeps): Promise<SpecialtyRecord[]> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.getProfessionalSpecialties(dc);
 
-  const data = await gql<{
-    getProfessionalSpecialties?: Array<{
-      id?: string | null;
-      specialty?: string | null;
-      is_active?: boolean | null;
-      credential?: {
-        id?: string | null;
-        specialty?: string | null;
-        credential_type?: string | null;
-        registry_id?: string | null;
-        authority?: string | null;
-        country?: string | null;
-      } | null;
-    }> | null;
-  }>(user, query);
-
-  const raw = data.getProfessionalSpecialties ?? [];
-
-  return raw.flatMap((item) => {
+  return (data.specialties ?? []).flatMap((item) => {
     const id = item.id;
     const specialty = normalizeSpecialty(item.specialty);
     if (!id || !specialty) return [];
 
+    // credential is an array in SDK — take first entry
     let credential: Credential | null = null;
-    if (item.credential?.id && item.credential.registry_id) {
-      const credSpecialty = normalizeSpecialty(item.credential.specialty);
-      if (credSpecialty) {
-        credential = {
-          id: item.credential.id,
-          specialty: credSpecialty,
-          credentialType: 'professional_registry',
-          registryId: item.credential.registry_id,
-          authority: item.credential.authority ?? '',
-          country: item.credential.country ?? '',
-        };
-      }
+    const credRaw = item.credential?.[0];
+    if (credRaw?.id && credRaw.registryId) {
+      credential = {
+        id: credRaw.id,
+        specialty,
+        credentialType: 'professional_registry',
+        registryId: credRaw.registryId,
+        authority: credRaw.authority ?? '',
+        country: credRaw.country ?? '',
+      };
     }
 
-    return [{ id, specialty, isActive: item.is_active ?? false, credential }];
+    return [{ id, specialty, isActive: item.isActive ?? false, credential }];
   });
 }
 
@@ -277,100 +179,69 @@ export async function getProfessionalSpecialties(user: User): Promise<SpecialtyR
  * Adds a new specialty for the professional.
  * Server blocks duplicates.
  * Ref: FR-175, D-034
+ *
+ * SDK note: addProfessionalSpecialty returns Specialty_Key (id only).
+ * Returns {id, specialty} using the caller-supplied specialty value.
  */
 export async function addProfessionalSpecialty(
-  user: User,
-  specialty: Specialty
+  specialty: Specialty,
+  deps = defaultDeps
 ): Promise<{ id: string; specialty: Specialty }> {
-  const mutation = `
-    mutation AddProfessionalSpecialty($specialty: String!) {
-      addProfessionalSpecialty(specialty: $specialty) {
-        id
-        specialty
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.addProfessionalSpecialty(dc, { specialty });
 
-  const data = await gql<{
-    addProfessionalSpecialty?: { id?: string | null; specialty?: string | null } | null;
-  }>(user, mutation, { specialty });
-
-  const id = data.addProfessionalSpecialty?.id;
-  const returnedSpecialty = normalizeSpecialty(data.addProfessionalSpecialty?.specialty);
-
-  if (!id || !returnedSpecialty) {
+  const id = data.specialty_insert?.id;
+  if (!id) {
     throw new ProfessionalSourceError(
       'invalid_response',
-      'addProfessionalSpecialty returned no specialty record.'
+      'addProfessionalSpecialty returned no specialty id.'
     );
   }
 
-  return { id, specialty: returnedSpecialty };
+  return { id, specialty };
 }
 
 /**
- * Removes a specialty.
+ * Removes a specialty by its record id.
  * Server enforces removal guard (active/pending students, last specialty).
  * Ref: FR-176, D-034, D-062, BR-234
+ *
+ * SDK note: removeProfessionalSpecialty takes specialty_id: UUIDString (record id),
+ * NOT the specialty string enum. Breaking change from old GraphQL stub.
  */
 export async function removeProfessionalSpecialty(
-  user: User,
-  specialty: Specialty
+  specialtyId: string,
+  deps = defaultDeps
 ): Promise<void> {
-  const mutation = `
-    mutation RemoveProfessionalSpecialty($specialty: String!) {
-      removeProfessionalSpecialty(specialty: $specialty) {
-        id
-      }
-    }
-  `;
-
-  await gql<{
-    removeProfessionalSpecialty?: { id?: string | null } | null;
-  }>(user, mutation, { specialty });
+  const dc = deps.getDataConnectInstance();
+  await deps.removeProfessionalSpecialty(dc, { specialty_id: specialtyId });
 }
 
 /**
  * Upserts credential for a specialty (max 1 per specialty in MVP, D-035).
  * Ref: FR-177
+ *
+ * SDK note: upsertProfessionalCredential takes specialty_id: UUIDString (record id),
+ * NOT the specialty string enum. Breaking change from old GraphQL stub.
  */
 export async function upsertProfessionalCredential(
-  user: User,
-  specialty: Specialty,
-  input: { registryId: string; authority: string; country: string }
+  specialtyId: string,
+  input: { registryId: string; authority: string; country: string },
+  deps = defaultDeps
 ): Promise<{ id: string }> {
-  const mutation = `
-    mutation UpsertProfessionalCredential(
-      $specialty: String!
-      $registry_id: String!
-      $authority: String!
-      $country: String!
-    ) {
-      upsertProfessionalCredential(
-        specialty: $specialty
-        registry_id: $registry_id
-        authority: $authority
-        country: $country
-      ) {
-        id
-      }
-    }
-  `;
-
-  const data = await gql<{
-    upsertProfessionalCredential?: { id?: string | null } | null;
-  }>(user, mutation, {
-    specialty,
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.upsertProfessionalCredential(dc, {
+    specialty_id: specialtyId,
     registry_id: input.registryId,
     authority: input.authority,
     country: input.country,
   });
 
-  const id = data.upsertProfessionalCredential?.id;
+  const id = data.credential_upsert?.id;
   if (!id) {
     throw new ProfessionalSourceError(
       'invalid_response',
-      'upsertProfessionalCredential returned no id.'
+      'upsertProfessionalCredential returned no credential id.'
     );
   }
 

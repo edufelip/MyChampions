@@ -5,7 +5,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
 
 import {
   getOrCreateActiveInviteCode,
@@ -53,41 +52,41 @@ export type UseInviteCodeResult = {
   rotate: () => Promise<InviteCodeActionErrorReason | null>;
 };
 
-export function useInviteCode(user: User | null): UseInviteCodeResult {
+export function useInviteCode(isAuthenticated: boolean): UseInviteCodeResult {
   const [state, setState] = useState<InviteCodeLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setState({ kind: 'idle' });
       return;
     }
 
     setState({ kind: 'loading' });
 
-    void getOrCreateActiveInviteCode(user)
+    void getOrCreateActiveInviteCode()
       .then((code) => {
         setState({ kind: 'ready', code, displayCode: resolveDisplayInviteCode(code) });
       })
       .catch((err: Error) => {
         setState({ kind: 'error', message: err.message });
       });
-  }, [user]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const rotate = useCallback(async (): Promise<InviteCodeActionErrorReason | null> => {
-    if (!user) return 'configuration';
+    if (!isAuthenticated) return 'configuration';
 
     try {
-      await rotateInviteCode(user);
+      await rotateInviteCode();
       load();
       return null;
     } catch (err) {
       return normalizeInviteCodeActionError(err);
     }
-  }, [user, load]);
+  }, [isAuthenticated, load]);
 
   return { state, reload: load, rotate };
 }
@@ -103,32 +102,32 @@ export type UseSpecialtiesResult = {
     pendingCount: number
   ) => SpecialtyRemovalResult;
   addSpecialty: (specialty: Specialty) => Promise<SpecialtyActionErrorReason | null>;
-  removeSpecialty: (specialty: Specialty) => Promise<SpecialtyActionErrorReason | null>;
+  removeSpecialty: (specialtyId: string) => Promise<SpecialtyActionErrorReason | null>;
   upsertCredential: (
-    specialty: Specialty,
+    specialtyId: string,
     input: { registryId: string; authority: string; country: string }
   ) => Promise<SpecialtyActionErrorReason | null>;
 };
 
-export function useSpecialties(user: User | null): UseSpecialtiesResult {
+export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
   const [state, setState] = useState<SpecialtiesLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setState({ kind: 'idle' });
       return;
     }
 
     setState({ kind: 'loading' });
 
-    void getProfessionalSpecialties(user)
+    void getProfessionalSpecialties()
       .then((specialties) => {
         setState({ kind: 'ready', specialties });
       })
       .catch((err: Error) => {
         setState({ kind: 'error', message: err.message });
       });
-  }, [user]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     load();
@@ -157,50 +156,50 @@ export function useSpecialties(user: User | null): UseSpecialtiesResult {
 
   const addSpecialty = useCallback(
     async (specialty: Specialty): Promise<SpecialtyActionErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        await addProfessionalSpecialty(user, specialty);
+        await addProfessionalSpecialty(specialty);
         load();
         return null;
       } catch (err) {
         return normalizeSpecialtyActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   const removeSpecialty = useCallback(
-    async (specialty: Specialty): Promise<SpecialtyActionErrorReason | null> => {
-      if (!user) return 'unknown';
+    async (specialtyId: string): Promise<SpecialtyActionErrorReason | null> => {
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        await removeProfessionalSpecialty(user, specialty);
+        await removeProfessionalSpecialty(specialtyId);
         load();
         return null;
       } catch (err) {
         return normalizeSpecialtyActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   const upsertCredential = useCallback(
     async (
-      specialty: Specialty,
+      specialtyId: string,
       input: { registryId: string; authority: string; country: string }
     ): Promise<SpecialtyActionErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        await upsertProfessionalCredential(user, specialty, input);
+        await upsertProfessionalCredential(specialtyId, input);
         load();
         return null;
       } catch (err) {
         return normalizeSpecialtyActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   return {
