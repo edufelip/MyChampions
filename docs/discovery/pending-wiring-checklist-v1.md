@@ -282,4 +282,4 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: QR and manual entry paths converge at `onSubmitCode(code, surface)` — same `submitCode` hook call, same analytics events, same error branches (BR-263).
 - `Done`: Camera permission denial shows inline error with fallback instruction to use manual entry (AC-249).
 - `Done`: Invalid QR payload shows actionable inline error within the modal; close button allows switch to manual entry (TC-251).
-- `Done`: iOS `NSCameraUsageDescription` added to `app.config.ts` `ios.infoPlist` and `expo-camera` plugin registered with `microphonePermission: false` (camera-only, no audio). Requires `expo prebuild` to propagate to native `Info.plist`.
+- `Done`: iOS `NSCameraUsageDescription` applied directly to `ios/mychampions/Info.plist` (no expo prebuild policy — D-055, D-129). `expo-camera` plugin is intentionally omitted from `app.config.ts` plugins array to prevent accidental overwrite on any future `expo prebuild` run.
