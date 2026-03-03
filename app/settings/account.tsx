@@ -5,9 +5,8 @@
  * Provides compliance-critical controls: privacy policy link and account
  * deletion initiation (FR-133, FR-157, BR-225, BR-231).
  *
- * Account deletion API wiring is deferred — deletion request is stubbed as a
- * no-op until the Data Connect profile-delete operation is implemented.
- * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Account deletion is wired to the Data Connect profile-delete operation via
+ * deleteProfileFromSource, followed by Firebase Auth sign-out.
  *
  * Docs: docs/screens/v2/SC-213-account-privacy-settings.md
  * Refs: FR-133, FR-157, UC-002.5, AC-305–308, AC-310, BR-225, BR-231
@@ -24,8 +23,11 @@ import {
   View,
 } from 'react-native';
 import { Stack } from 'expo-router';
+import { signOut } from 'firebase/auth';
 
 import { Colors, Fonts } from '@/constants/theme';
+import { deleteProfileFromSource } from '@/features/auth/profile-source';
+import { getFirebaseAuth } from '@/features/auth/firebase';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -86,9 +88,8 @@ export default function AccountSettingsScreen() {
   async function submitDeletionRequest() {
     setDeleteState({ kind: 'pending' });
     try {
-      // Account deletion API call deferred (pending-wiring-checklist-v1.md)
-      // Will call Data Connect profile-delete operation when wired.
-      await Promise.resolve(); // stub — no-op
+      await deleteProfileFromSource();
+      await signOut(getFirebaseAuth());
       setDeleteState({ kind: 'success' });
     } catch {
       setDeleteState({ kind: 'error', reason: 'unknown' });

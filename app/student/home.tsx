@@ -81,9 +81,9 @@ export default function StudentHomeScreen() {
   });
 
   // Data hooks
-  const { state: connectionsState } = useConnections(currentUser);
-  const { state: waterState } = useWaterTracking(currentUser, todayKey());
-  const { state: plansState } = usePlans(currentUser);
+  const { state: connectionsState } = useConnections(Boolean(currentUser));
+  const { state: waterState } = useWaterTracking(Boolean(currentUser), todayKey());
+  const { state: plansState } = usePlans(Boolean(currentUser));
 
   const hasPendingConnection =
     connectionsState.kind === 'ready' &&

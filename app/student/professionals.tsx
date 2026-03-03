@@ -26,6 +26,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import type { ConnectionDisplayState } from '@/features/connections/connection.logic';
+import { mapInviteSubmitReasonToMessageKey } from '@/features/connections/connection.logic';
 import { parseQrInvitePayload } from '@/features/connections/qr-invite.logic';
 import {
   buildInvitePendingCanceled,
@@ -45,7 +46,7 @@ export default function StudentProfessionalsScreen() {
   const { currentUser } = useAuthSession();
   const { emitEvent } = useAnalytics();
 
-  const { state, reload, submitCode, unbindConnection } = useConnections(currentUser);
+  const { state, reload, submitCode, unbindConnection } = useConnections(Boolean(currentUser));
 
   const [inviteCode, setInviteCode] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -91,23 +92,9 @@ export default function StudentProfessionalsScreen() {
 
       emitEvent(buildInviteSubmitFailed(surface, errorReason));
 
-      switch (errorReason) {
-        case 'code_not_found':
-        case 'code_expired':
-          setSubmitError(t('relationship.error.invalid_code'));
-          break;
-        case 'already_connected':
-          setSubmitError(t('relationship.error.already_connected'));
-          break;
-        case 'pending_cap_reached':
-          setSubmitError(t('relationship.error.pending_cap'));
-          break;
-        case 'network':
-          setSubmitError(t('relationship.error.network'));
-          break;
-        default:
-          setSubmitError(t('relationship.error.unknown'));
-      }
+      // BL-010: Use pure helper for reason → locale key mapping (D-123).
+      const messageKey = mapInviteSubmitReasonToMessageKey(errorReason);
+      setSubmitError(t(messageKey as Parameters<typeof t>[0]));
     },
     [emitEvent, submitCode, t]
   );

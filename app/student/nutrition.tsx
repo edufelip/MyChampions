@@ -59,8 +59,8 @@ export default function StudentNutritionScreen() {
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   // Data hooks
-  const waterHook = useWaterTracking(currentUser, todayKey());
-  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(currentUser);
+  const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
+  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
 
   // Assigned nutrition plan
   const assignedNutritionPlan =
@@ -449,7 +449,7 @@ function PlanChangeRequestForm({
     setFieldError(null);
     setSuccessMsg(null);
 
-    const result = await submitChangeRequest(planId, requestText);
+    const result = await submitChangeRequest(planId, planType, requestText);
 
     setIsSubmitting(false);
 

@@ -68,7 +68,7 @@ export default function SharedRecipeSaveScreen() {
   const router = useRouter();
   const { shareToken } = useLocalSearchParams<{ shareToken: string }>();
   const { currentUser } = useAuthSession();
-  const { previewImport, importMeal } = useCustomMeals(currentUser);
+  const { previewImport, importMeal } = useCustomMeals(Boolean(currentUser));
 
   const [screenState, setScreenState] = useState<ScreenState>({ kind: 'loading' });
   const [isSaving, setIsSaving] = useState(false);
