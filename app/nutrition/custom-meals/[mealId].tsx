@@ -4,19 +4,20 @@
  *        /nutrition/custom-meals/new  (create mode)
  *
  * Create or edit a custom meal with all nutrition fields, optional ingredient
- * cost, image upload (stubbed), and recipe share-link generation.
+ * cost, image upload (Firebase Cloud Storage), and recipe share-link generation.
  *
  * AI meal photo analysis (BL-108): camera CTA pre-fills form fields with
- * AI-estimated macros. Camera capture and image compression are stubs —
- * real wiring deferred per docs/discovery/pending-wiring-checklist-v1.md.
- * Image upload pipeline is deferred — progress/retry UI is present but wired
- * to a stub (no Firebase Cloud Storage call yet).
+ * AI-estimated macros. Uses expo-image-picker (camera + library) and
+ * expo-image-manipulator for client-side JPEG compression (FR-230, BR-287).
+ * Image upload pipeline: pick → compress → uploadBytesResumable → getDownloadURL
+ * (BL-007, D-053, D-057, D-073, D-130, D-131). Progress/retry UI wired to real
+ * upload state machine via useImageUpload hook.
  * Share link generation is deferred — source layer is stubbed.
  * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
  *
  * Docs: docs/screens/v2/SC-214-custom-meal-builder.md
  *       docs/screens/v2/SC-219-ai-meal-photo-analysis.md
- * Refs: D-017, D-023, D-027, D-029, D-073, D-106–D-110,
+ * Refs: D-017, D-023, D-027, D-029, D-073, D-106–D-110, D-130, D-131,
  *       FR-137, FR-138, FR-142–144, FR-148,
  *       FR-150, FR-155, FR-159, FR-162, FR-197, FR-202, FR-213,
  *       FR-229–FR-239
@@ -26,9 +27,11 @@
  *       AC-401, AC-402, AC-406–408, AC-412, AC-413, AC-418, AC-420, AC-423–425,
  *       AC-513–AC-519
  *       TC-401–403, TC-407–409, TC-412, TC-413, TC-415, TC-420, TC-422, TC-425–427,
- *       TC-271–TC-274
+ *       TC-271–TC-274, TC-286, TC-287
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useImageUpload } from '@/features/nutrition/use-image-upload';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   ActivityIndicator,
   Alert,
@@ -81,7 +84,14 @@ export default function CustomMealBuilderScreen() {
   const { mealId } = useLocalSearchParams<{ mealId: string }>();
 
   const isCreateMode = !mealId || mealId === 'new';
-  const { create, update, shareLink } = useCustomMeals(currentUser);
+  const { create, update, shareLink } = useCustomMeals(Boolean(currentUser));
+
+  // ── Subscription / AI paywall (D-132) ─────────────────────────────────────
+  const {
+    hasAiAccess,
+    isLoading: isSubscriptionLoading,
+    openAiPaywall,
+  } = useSubscription(Boolean(currentUser));
 
   // ── AI photo analysis ──────────────────────────────────────────────────────
   const analysis = useMealPhotoAnalysis(currentUser);
@@ -95,11 +105,9 @@ export default function CustomMealBuilderScreen() {
     }
   }, [analysis.state.kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Stub: immediately follow startCapture with analyze('') since camera is deferred
+  // startCapture() handles the full pick → compress → analyze pipeline (FR-230, BR-287).
   const handleAnalyzeCta = useCallback(() => {
     analysis.startCapture();
-    // Real camera would provide the base64 image; stub passes empty string
-    void analysis.analyze('');
   }, [analysis]);
 
   // Track attach-photo toggle (optional, shown after analysis completes — D-109)
@@ -124,9 +132,13 @@ export default function CustomMealBuilderScreen() {
     isCreateMode ? null : (mealId ?? null)
   );
 
-  // ── Image upload stub ──────────────────────────────────────────────────────
-  // Real upload wiring deferred (pending-wiring-checklist-v1.md, D-073)
-  const [imageUpload] = useState<ImageUploadState>({ kind: 'idle' });
+  // ── Image upload (BL-007, D-073, D-130, D-131) ────────────────────────────
+  // Replaces stub: real Firebase Cloud Storage upload with progress tracking.
+  const {
+    uploadState: imageUpload,
+    pickAndUpload,
+    retry: retryUpload,
+  } = useImageUpload(currentUser);
 
   const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
@@ -182,7 +194,7 @@ export default function CustomMealBuilderScreen() {
       Alert.alert('', t('meal.builder.share.error.unknown') as string);
       return;
     }
-    await Share.share({ url: result.shareUrl, message: result.shareUrl });
+    await Share.share({ message: result.shareLinkId });
   }
 
   // ── Title ──────────────────────────────────────────────────────────────────
@@ -214,13 +226,16 @@ export default function CustomMealBuilderScreen() {
         {t('meal.builder.helper')}
       </Text>
 
-      {/* AI photo analysis CTA & status (BL-108, FR-229, AC-513) */}
+      {/* AI photo analysis CTA & status (BL-108, FR-229, AC-513, D-132) */}
       <MealPhotoAnalysisSection
         analysisState={analysis.state}
         attachPhoto={attachPhoto}
         onAnalyzeCta={handleAnalyzeCta}
         onReset={analysis.reset}
         onToggleAttach={() => setAttachPhoto((v) => !v)}
+        hasAiAccess={hasAiAccess}
+        isSubscriptionLoading={isSubscriptionLoading}
+        onOpenPaywall={openAiPaywall}
         palette={palette}
         t={t}
       />
@@ -228,6 +243,8 @@ export default function CustomMealBuilderScreen() {
       {/* Image upload progress + retry (BL-007, FR-213, AC-424, AC-425) */}
       <ImageUploadSection
         uploadState={imageUpload}
+        onPickAndUpload={() => void pickAndUpload(savedMealId ?? 'new')}
+        onRetry={() => void retryUpload()}
         palette={palette}
         t={t}
       />
@@ -349,7 +366,7 @@ export default function CustomMealBuilderScreen() {
 }
 
 // ─── Meal Photo Analysis Section ─────────────────────────────────────────────
-// Refs: BL-108, FR-229–FR-239, AC-513–AC-519, BR-286–BR-290
+// Refs: BL-108, FR-229–FR-239, AC-513–AC-519, BR-286–BR-290, D-132
 
 function MealPhotoAnalysisSection({
   analysisState,
@@ -357,6 +374,9 @@ function MealPhotoAnalysisSection({
   onAnalyzeCta,
   onReset,
   onToggleAttach,
+  hasAiAccess,
+  isSubscriptionLoading,
+  onOpenPaywall,
   palette,
   t,
 }: {
@@ -365,6 +385,12 @@ function MealPhotoAnalysisSection({
   onAnalyzeCta: () => void;
   onReset: () => void;
   onToggleAttach: () => void;
+  /** Whether the current user has an active entitlement for AI features (D-132). */
+  hasAiAccess: boolean;
+  /** True while entitlement status is being fetched from RevenueCat. */
+  isSubscriptionLoading: boolean;
+  /** Opens the RevenueCat native paywall for the AI features offering. */
+  onOpenPaywall: () => void;
   palette: Palette;
   t: TFn;
 }) {
@@ -382,8 +408,35 @@ function MealPhotoAnalysisSection({
 
   return (
     <View style={[styles.analysisSection, { borderColor: palette.tint + '44' }]} testID="meal.photoAnalysis.section">
-      {/* Primary CTA */}
-      {analysisState.kind === 'idle' || analysisState.kind === 'error' ? (
+      {/* Paywall gate (D-132): show locked banner when user has no active AI entitlement */}
+      {!hasAiAccess && analysisState.kind === 'idle' ? (
+        isSubscriptionLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={palette.icon}
+            accessibilityLabel={t('meal.photo_analysis.paywall.loading') as string}
+            testID="meal.photoAnalysis.paywall.loading"
+          />
+        ) : (
+          <View style={styles.paywallBanner} testID="meal.photoAnalysis.paywall">
+            <Text style={[styles.analysisMeta, { color: palette.text }]}>
+              {t('meal.photo_analysis.paywall.locked')}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onOpenPaywall}
+              style={[styles.outlineButton, { borderColor: palette.tint, marginTop: 8 }]}
+              testID="meal.photoAnalysis.paywall.cta">
+              <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
+                {t('meal.photo_analysis.paywall.cta_upgrade')}
+              </Text>
+            </Pressable>
+          </View>
+        )
+      ) : null}
+
+      {/* Primary CTA — only shown when user has AI access */}
+      {hasAiAccess && (analysisState.kind === 'idle' || analysisState.kind === 'error') ? (
         <Pressable
           accessibilityRole="button"
           onPress={onAnalyzeCta}
@@ -488,10 +541,14 @@ function resolveAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string 
 
 function ImageUploadSection({
   uploadState,
+  onPickAndUpload,
+  onRetry,
   palette,
   t,
 }: {
   uploadState: ImageUploadState;
+  onPickAndUpload: () => void;
+  onRetry: () => void;
   palette: Palette;
   t: TFn;
 }) {
@@ -521,9 +578,7 @@ function ImageUploadSection({
       <Pressable
         accessibilityRole="button"
         accessibilityHint={t('meal.builder.image.cta_upload') as string}
-        onPress={() => {
-          // Image picker + upload wiring deferred (pending-wiring-checklist-v1.md)
-        }}
+        onPress={onPickAndUpload}
         style={[styles.imageUploadArea, { borderColor: palette.icon + '55' }]}
         testID="meal.builder.imageUpload">
         <Text style={[styles.imageUploadLabel, { color: palette.icon }]}>
@@ -559,9 +614,7 @@ function ImageUploadSection({
       {display.canRetry ? (
         <Pressable
           accessibilityRole="button"
-          onPress={() => {
-            // Retry wiring deferred (pending-wiring-checklist-v1.md)
-          }}
+          onPress={onRetry}
           testID="meal.builder.imageUpload.retry">
           <Text style={[styles.imageUploadMeta, { color: palette.tint }]}>
             {t('custom_meal.image.retry')}
@@ -721,6 +774,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 10,
     padding: 12,
+  },
+  paywallBanner: {
+    alignItems: 'center',
+    gap: 4,
   },
   analysisRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   analysisMeta: { fontSize: 13, lineHeight: 18 },

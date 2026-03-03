@@ -6,21 +6,22 @@
  * nutrition calculation shown before confirmation.
  *
  * AI meal photo analysis (BL-108): camera CTA in the quick-log panel pre-fills
- * grams from the AI-estimated totalGrams. Camera capture and image compression
- * are stubs — real wiring deferred per docs/discovery/pending-wiring-checklist-v1.md.
- * Data Connect meal source wiring is deferred — list populated from
- * useCustomMeals hook (stub returns empty until endpoint is live).
- * Portion log persistence is also deferred.
+ * grams from the AI-estimated totalGrams. Uses expo-image-picker (camera + library)
+ * and expo-image-manipulator for client-side JPEG compression (FR-230, BR-287).
+ * AI CTA is gated by paywall — requires premium_student or professional_unlimited
+ * entitlement (D-132). RevenueCat native paywall shown on upgrade tap.
+ * Data Connect meal source wiring is complete (D-126).
+ * Portion log persistence is wired via logPortion SDK operation.
  * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
  *
  * Docs: docs/screens/v2/SC-215-custom-meal-library-and-quick-log.md
  *       docs/screens/v2/SC-219-ai-meal-photo-analysis.md
- * Refs: D-017, D-021, D-023, D-106–D-110,
+ * Refs: D-017, D-021, D-023, D-106–D-110, D-132,
  *       FR-139–144, FR-147, FR-150, FR-229–FR-239
  *       BR-286–290, BR-304–310, BR-313, BR-316
  *       UC-003.2, UC-003.3, UC-003.4, UC-003.6, UC-003.9
  *       AC-403–408, AC-411, AC-413, AC-513–AC-519
- *       TC-271–TC-274, TC-404–409, TC-412, TC-414, TC-415
+ *       TC-271–TC-274, TC-286, TC-404–409, TC-412, TC-414, TC-415
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -45,6 +46,7 @@ import {
 } from '@/features/nutrition/custom-meal.logic';
 import { useMealPhotoAnalysis } from '@/features/nutrition/use-meal-photo-analysis';
 import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -70,7 +72,7 @@ export default function CustomMealLibraryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { currentUser } = useAuthSession();
-  const { state, shareLink, remove } = useCustomMeals(currentUser);
+  const { state, shareLink, remove, logPortion } = useCustomMeals(Boolean(currentUser));
 
   const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
@@ -81,6 +83,13 @@ export default function CustomMealLibraryScreen() {
 
   const [quickLog, setQuickLog] = useState<QuickLogPanelState>({ kind: 'closed' });
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
+
+  // ── Subscription / AI paywall (D-132) ─────────────────────────────────────
+  const {
+    hasAiAccess,
+    isLoading: isSubscriptionLoading,
+    openAiPaywall,
+  } = useSubscription(Boolean(currentUser));
 
   // ── AI photo analysis (BL-108) ─────────────────────────────────────────────
   const analysis = useMealPhotoAnalysis(currentUser);
@@ -95,10 +104,9 @@ export default function CustomMealLibraryScreen() {
     );
   }, [analysis.state.kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Stub: immediately follow startCapture with analyze('') since camera is deferred
+  // startCapture() handles the full pick → compress → analyze pipeline (FR-230, BR-287).
   const handleAnalyzeCta = useCallback(() => {
     analysis.startCapture();
-    void analysis.analyze('');
   }, [analysis]);
 
   // ── Quick log handlers ─────────────────────────────────────────────────────
@@ -131,9 +139,12 @@ export default function CustomMealLibraryScreen() {
     }
 
     setIsLoggingMeal(true);
-    // Portion log persistence deferred (pending-wiring-checklist-v1.md)
-    await Promise.resolve(); // stub
+    const error = await logPortion(quickLog.meal.id, parseFloat(quickLog.grams));
     setIsLoggingMeal(false);
+    if (error) {
+      setQuickLog({ ...quickLog, error: t('meal.library.quick_log.error') as string });
+      return;
+    }
     closeQuickLog();
   }
 
@@ -142,7 +153,7 @@ export default function CustomMealLibraryScreen() {
   async function handleShare(meal: CustomMeal) {
     const result = await shareLink(meal.id);
     if (typeof result === 'string') return; // error — silently ignore in library (full error in builder)
-    await Share.share({ url: result.shareUrl, message: result.shareUrl });
+    await Share.share({ message: result.shareLinkId });
   }
 
   // ── Nutrition preview ──────────────────────────────────────────────────────
@@ -227,6 +238,9 @@ export default function CustomMealLibraryScreen() {
           analysisState={analysis.state}
           onAnalyzeCta={handleAnalyzeCta}
           onResetAnalysis={analysis.reset}
+          hasAiAccess={hasAiAccess}
+          isSubscriptionLoading={isSubscriptionLoading}
+          onOpenPaywall={openAiPaywall}
           palette={palette}
           t={t}
           onChangeGrams={handleGramsChange}
@@ -348,6 +362,9 @@ function QuickLogPanel({
   analysisState,
   onAnalyzeCta,
   onResetAnalysis,
+  hasAiAccess,
+  isSubscriptionLoading,
+  onOpenPaywall,
   palette,
   t,
   onChangeGrams,
@@ -363,6 +380,9 @@ function QuickLogPanel({
   analysisState: import('@/features/nutrition/use-meal-photo-analysis').PhotoAnalysisState;
   onAnalyzeCta: () => void;
   onResetAnalysis: () => void;
+  hasAiAccess: boolean;
+  isSubscriptionLoading: boolean;
+  onOpenPaywall: () => void;
   palette: Palette;
   t: TFn;
   onChangeGrams: (v: string) => void;
@@ -433,11 +453,14 @@ function QuickLogPanel({
         </View>
       ) : null}
 
-      {/* AI photo analysis (BL-108, FR-236, AC-517) */}
+      {/* AI photo analysis (BL-108, FR-236, AC-517, D-132) */}
       <QuickLogAnalysisRow
         analysisState={analysisState}
         onAnalyzeCta={onAnalyzeCta}
         onResetAnalysis={onResetAnalysis}
+        hasAiAccess={hasAiAccess}
+        isSubscriptionLoading={isSubscriptionLoading}
+        onOpenPaywall={onOpenPaywall}
         palette={palette}
         t={t}
       />
@@ -471,18 +494,24 @@ function QuickLogPanel({
 
 // ─── Quick Log Analysis Row ───────────────────────────────────────────────────
 // Shown inside the Quick Log panel to trigger/display AI photo analysis.
-// Refs: BL-108, FR-236, AC-517, BR-289, BR-290
+// Refs: BL-108, FR-236, AC-517, BR-289, BR-290, D-132
 
 function QuickLogAnalysisRow({
   analysisState,
   onAnalyzeCta,
   onResetAnalysis,
+  hasAiAccess,
+  isSubscriptionLoading,
+  onOpenPaywall,
   palette,
   t,
 }: {
   analysisState: import('@/features/nutrition/use-meal-photo-analysis').PhotoAnalysisState;
   onAnalyzeCta: () => void;
   onResetAnalysis: () => void;
+  hasAiAccess: boolean;
+  isSubscriptionLoading: boolean;
+  onOpenPaywall: () => void;
   palette: Palette;
   t: TFn;
 }) {
@@ -493,8 +522,35 @@ function QuickLogAnalysisRow({
 
   return (
     <View testID="meal.library.quickLog.analysis">
-      {/* CTA — idle or after error */}
-      {analysisState.kind === 'idle' || analysisState.kind === 'error' ? (
+      {/* Paywall gate (D-132) */}
+      {!hasAiAccess && analysisState.kind === 'idle' ? (
+        isSubscriptionLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={palette.icon}
+            accessibilityLabel={t('meal.photo_analysis.paywall.loading') as string}
+            testID="meal.library.quickLog.analysis.paywall.loading"
+          />
+        ) : (
+          <View testID="meal.library.quickLog.analysis.paywall">
+            <Text style={[styles.analysisMeta, { color: palette.text }]}>
+              {t('meal.photo_analysis.paywall.locked')}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onOpenPaywall}
+              style={[styles.analysisCtaButton, { borderColor: palette.tint, marginTop: 6 }]}
+              testID="meal.library.quickLog.analysis.paywall.cta">
+              <Text style={[styles.analysisCtaText, { color: palette.tint }]}>
+                {t('meal.photo_analysis.paywall.cta_upgrade')}
+              </Text>
+            </Pressable>
+          </View>
+        )
+      ) : null}
+
+      {/* CTA — only when user has AI access and state is idle or error */}
+      {hasAiAccess && (analysisState.kind === 'idle' || analysisState.kind === 'error') ? (
         <Pressable
           accessibilityRole="button"
           onPress={onAnalyzeCta}
