@@ -55,7 +55,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 |---|---|---|---|---|---|---|
 | BL-001 Quick self-guided start path | Implemented — quick self-guided CTA in role-selection, role-lock + routing to student home, empty states with self-guided CTAs in all student screens | FR-203 | UC-002.8 | AC-248 | BR-262 | TC-249 |
 | BL-002 Invite code QR scan | Implemented — expo-camera wired, same submitCode pipeline as manual entry | FR-204 | UC-002.9 | AC-249 | BR-263 | TC-250, TC-251 |
-| BL-010 Auth/invite error copy hardening | Implemented — `mapInviteSubmitReasonToMessageKey` pure helper added to `connection.logic.ts`; all 7 `InviteSubmitErrorReason` values mapped to specific locale keys; 7 new unit tests in `connection.logic.test.ts`; 3 previously missing locale keys added to copy table and all 3 locale bundles | FR-205 | UC-002.10 | AC-250 | BR-264 | TC-252, TC-253 |
+| BL-010 Auth/invite error copy hardening | Implemented — `mapInviteSubmitReasonToMessageKey` pure helper added to `connection.logic.ts`; all 7 `InviteSubmitErrorReason` values mapped to specific locale keys; 7 new unit tests in `connection.logic.test.ts`; 3 previously missing locale keys added to copy table and all 3 locale bundles; helper wired into `app/student/professionals.tsx` replacing inline switch (D-123) | FR-205 | UC-002.10 | AC-250 | BR-264 | TC-252, TC-253 |
 | BL-012 Product analytics event taxonomy | Spec-ready | FR-206, FR-207, FR-208 | UC-002.11 | AC-251, AC-252 | BR-265, BR-266 | TC-254, TC-255 |
 
 ## Milestone B Spec Coverage
@@ -82,7 +82,7 @@ All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/
 |---|---|---|---|---|---|---|
 | BL-104 Water tracker with personal/professional goals | Screens implemented; Data Connect wiring deferred | FR-218, FR-219, FR-220, FR-221, FR-222 | UC-002.19 | AC-259, AC-260, AC-261, AC-262, AC-263 | BR-276, BR-277, BR-278, BR-279, BR-280 | TC-264, TC-265, TC-266, TC-267 |
 | BL-106 Named predefined plans + clone/bulk assignment | Screens implemented; Data Connect + fatsecret wiring deferred | FR-223, FR-224, FR-225, FR-226 | UC-002.20 | AC-264, AC-265 | BR-281, BR-282, BR-283 | TC-268, TC-269, TC-270 |
-| BL-108 AI meal photo macronutrient analysis | Logic/hook/source implemented; camera, compression, Cloud Function wiring deferred | FR-229, FR-230, FR-231, FR-232, FR-233, FR-234, FR-235, FR-236, FR-237, FR-238, FR-239 | UC-003.9 | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 | BR-286, BR-287, BR-288, BR-289, BR-290 | TC-271, TC-272, TC-273, TC-274 |
+| BL-108 AI meal photo macronutrient analysis | Implemented — logic/hook/source/Cloud Function/camera/compression all wired; photo Cloud Storage attachment and SC-214 attach-toggle integration deferred (D-109) | FR-229, FR-230, FR-231, FR-232, FR-233, FR-234, FR-235, FR-236, FR-237, FR-238, FR-239 | UC-003.9 | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 | BR-286, BR-287, BR-288, BR-289, BR-290 | TC-271, TC-272, TC-273, TC-274, TC-285 |
 
 ## Documentation Gate For Each Backlog Item
 - Add or update FR, UC, AC, BR, and TC artifacts.

@@ -10,10 +10,13 @@ Allow users to capture or select a photo of their meal and receive AI-estimated 
 
 AI estimates are always advisory — all fields remain editable after pre-fill (BR-286, D-108).
 
+**Paywall gate (D-132):** The AI analysis CTA is only accessible to users with an active `professional_unlimited` OR `premium_student` RevenueCat entitlement. When neither entitlement is `'active'`, the CTA is replaced by a locked paywall banner with an "Upgrade to unlock" CTA that presents the native RevenueCat paywall (`ai_features` offering). Status `'unknown'` (loading/error) is treated as locked (strict policy).
+
 ## User Actions
-- Tap the "Analyze with AI" CTA to initiate capture.
-- Camera or image picker opens (stub — deferred wiring).
-- On capture: image is compressed client-side (stub), then sent to Cloud Function.
+- When entitlement is active: tap "Analyze with AI" CTA to initiate capture.
+- When entitlement is not active: tap "Upgrade to unlock" CTA to open the native RevenueCat paywall for the `ai_features` offering; after purchase/dismissal, entitlement status is refreshed.
+- Action sheet presents "Take Photo" / "Choose from Library" / "Cancel".
+- On capture: image is compressed client-side via `expo-image-manipulator`, then sent to Cloud Function.
 - Review AI-estimated macros pre-filled into form fields.
 - Edit any field before confirming save.
 - Tap retry to dismiss error and attempt a new capture.
@@ -21,11 +24,13 @@ AI estimates are always advisory — all fields remain editable after pre-fill (
 
 ## States
 
-| State (`kind`) | Trigger | UI |
+| State | Trigger | UI |
 |---|---|---|
-| `idle` | Initial / after reset | "Analyze with AI" CTA visible |
-| `capturing` | `startCapture()` called | Native camera/picker open (stub) |
-| `compressing` | Capture complete | Brief loading indicator (stub — no-op currently) |
+| `paywall_locked` | `hasAiAccess === false` while `analysisState.kind === 'idle'` | Locked banner (`meal.photo_analysis.paywall.locked`) + "Upgrade to unlock" CTA; no analysis interaction available |
+| `paywall_loading` | `isSubscriptionLoading === true` and `hasAiAccess === false` | `ActivityIndicator` with `meal.photo_analysis.paywall.loading` label |
+| `idle` | `hasAiAccess === true` + initial / after reset | "Analyze with AI" CTA visible |
+| `capturing` | `startCapture()` called | Native camera/picker open via `expo-image-picker` |
+| `compressing` | Capture complete | Brief loading indicator; `expo-image-manipulator` resizes + compresses JPEG |
 | `analyzing` | `analyze(base64Image)` called | Full-width loading indicator with `meal.photo_analysis.analyzing` |
 | `done` | Cloud Function returns valid estimate | Pre-filled form fields + disclaimer banner + optional low-confidence warning |
 | `error` | Cloud Function or network failure | Reason-specific error message + retry CTA; form remains editable |
@@ -39,6 +44,7 @@ AI estimates are always advisory — all fields remain editable after pre-fill (
 | `network` | Network-level fetch failure | `meal.photo_analysis.error.network` |
 | `invalid_response` | Cloud Function returned malformed/non-JSON body | `meal.photo_analysis.error.generic` |
 | `configuration` | `EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL` not set | `meal.photo_analysis.error.generic` |
+| `unauthenticated` | HTTP 401 or 403 — Firebase ID token rejected | `meal.photo_analysis.error.generic` |
 | `unknown` | Any other failure | `meal.photo_analysis.error.generic` |
 
 All errors are recoverable — user can dismiss and fill fields manually (D-110).
@@ -80,6 +86,9 @@ Response 500: { error: 'unknown' }
 | `meal.photo_analysis.error.generic` | Generic fallback error |
 | `meal.photo_analysis.attach_photo.label` | Optional photo attachment toggle (SC-214 only) |
 | `meal.photo_analysis.confidence.low` | Low-confidence estimate warning |
+| `meal.photo_analysis.paywall.locked` | Paywall locked label (D-132) |
+| `meal.photo_analysis.paywall.cta_upgrade` | Paywall upgrade CTA — opens RevenueCat native paywall (D-132) |
+| `meal.photo_analysis.paywall.loading` | Subscription status loading indicator (D-132) |
 | `common.error.retry` | Retry CTA (shared) |
 
 All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
@@ -89,23 +98,33 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 - Loading `ActivityIndicator`: `accessibilityLabel` = `meal.photo_analysis.analyzing`.
 - Disclaimer banner: `accessibilityRole="alert"`.
 - Error container: `accessibilityRole="alert"` + `accessibilityLiveRegion="polite"`.
+- Paywall locked banner: `accessibilityRole="alert"` (informs screen reader that the feature is locked).
+- Paywall upgrade CTA: `accessibilityLabel` = `meal.photo_analysis.paywall.cta_upgrade`.
+- Paywall loading `ActivityIndicator`: `accessibilityLabel` = `meal.photo_analysis.paywall.loading`.
 
 ## Implementation Files
 | File | Purpose |
 |---|---|
 | `features/nutrition/meal-photo-analysis.logic.ts` | Pure functions: `isValidMacroEstimate`, `parseMacroEstimateFromResponse`, `mapMacroEstimateToMealInput`, `normalizePhotoAnalysisError`, `buildAnalysisSystemPrompt`, `buildAnalysisUserPrompt` |
-| `features/nutrition/meal-photo-analysis.logic.test.ts` | Unit tests (included in 301-test suite; TC-271–TC-274) |
-| `features/nutrition/meal-photo-analysis-source.ts` | HTTP source: `analyzeMealPhoto` — fetches Cloud Function with Firebase ID token; typed error surface via `PhotoAnalysisSourceError` |
-| `features/nutrition/use-meal-photo-analysis.ts` | React hook `useMealPhotoAnalysis` with state machine: `idle/capturing/compressing/analyzing/done/error`; `startCapture` (stub), `analyze`, `reset`, `preFillMealInput` |
-| `app/nutrition/custom-meals/[mealId].tsx` | SC-214 entry point — camera CTA, result pre-fill, attach-photo toggle |
-| `app/nutrition/custom-meals/index.tsx` | SC-215 entry point — camera CTA in quick-log panel, result pre-fill |
+| `features/nutrition/meal-photo-analysis.logic.test.ts` | Unit tests (included in 715-test suite; TC-271–TC-274) |
+| `features/nutrition/meal-photo-analysis-source.ts` | HTTP source: `analyzeMealPhoto` with `MealPhotoAnalysisSourceDeps` injectable pattern; typed `PhotoAnalysisSourceError` with `PhotoAnalysisErrorReason` union |
+| `features/nutrition/meal-photo-analysis-source.test.ts` | 21 unit tests (TC-285) |
+| `features/nutrition/use-meal-photo-analysis.ts` | React hook `useMealPhotoAnalysis` — full pipeline: `startCapture` (expo-image-picker action sheet → expo-image-manipulator compress → Cloud Function), `analyze` (direct injection), `reset`, `preFillMealInput` |
+| `features/subscription/subscription.logic.ts` | Pure entitlement logic — `AI_ENTITLEMENT_ID = 'premium_student'`, `hasAiAnalysisAccess()` (D-132) |
+| `features/subscription/subscription-source.ts` | RevenueCat source layer — `AI_FEATURES_ENTITLEMENT_ID`, `mapCustomerInfoToAiEntitlementStatus`, `presentAiPaywall` (D-132) |
+| `features/subscription/use-subscription.ts` | React hook — exposes `aiEntitlementStatus`, `hasAiAccess`, `openAiPaywall`; single `getCustomerInfo()` call maps both entitlements (D-132) |
+| `app/nutrition/custom-meals/[mealId].tsx` | SC-214 entry point — camera CTA gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill, attach-photo toggle |
+| `app/nutrition/custom-meals/index.tsx` | SC-215 entry point — camera CTA in quick-log panel gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill |
 
 ## Edge Cases
 - Camera/picker cancellation: state returns to `idle`; no form field changes.
 - Confidence `'low'`: low-confidence warning shown alongside results; fields remain editable.
-- Cloud Function responds `401`: treated as `configuration` error (token retrieval failure or misconfigured function auth).
-- Compression stub is a no-op: image is sent uncompressed until `expo-image-manipulator` wiring is complete (D-107).
+- Cloud Function responds `401` or `403`: treated as `'unauthenticated'` error (D-128).
+- Compression is applied via `expo-image-manipulator`: resizes to ≤ 1600 px longest side, compresses at 0.75 JPEG quality (FR-230, BR-287, D-107).
 - In SC-214: photo attachment after analysis is optional and independent of the analysis result (D-109).
+- Paywall dismissed without purchase: entitlement status is refreshed after `presentPaywall` resolves regardless of outcome; if user is still not entitled, paywall banner re-displays (D-132).
+- Subscription loading (`isSubscriptionLoading === true` and `hasAiAccess === false`): `ActivityIndicator` shown instead of locked banner — avoids false paywall flash before entitlement is known.
+- `aiEntitlementStatus === 'unknown'` (SDK not yet initialised or error): treated as locked — paywall banner shown (strict policy, D-132).
 
 ## Links
 | Artifact | IDs |
@@ -115,5 +134,5 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Acceptance criteria | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 |
 | Business rules | BR-286, BR-287, BR-288, BR-289, BR-290 |
 | Test cases | TC-271, TC-272, TC-273, TC-274 |
-| Decisions | D-106, D-107, D-108, D-109, D-110 |
+| Decisions | D-106, D-107, D-108, D-109, D-110, D-128, D-132 |
 | Backlog | BL-108 |

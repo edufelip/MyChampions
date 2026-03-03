@@ -5,6 +5,7 @@
 
 ## Objective
 - Let any authenticated user create and edit custom meals with nutrition totals, total weight, and optional ingredient cost.
+- The AI meal photo analysis CTA (SC-219) is embedded in this screen and is gated behind a RevenueCat paywall (D-132): only users with an active `professional_unlimited` OR `premium_student` entitlement can access the AI feature. Users without an active entitlement see a locked paywall banner with an "Upgrade to unlock" CTA.
 
 ## UX Copy Intent
 - Keep meal creation simple and practical for self-guided users.
@@ -17,6 +18,8 @@
   - Upload or update recipe image.
   - Optionally enter ingredient cost.
   - Save meal.
+  - Tap "Analyze with AI" to pre-fill fields via photo analysis (entitlement-gated, SC-219, D-132).
+  - Tap "Upgrade to unlock" to open native RevenueCat paywall when entitlement is not active.
 - Secondary:
   - Edit existing meal.
   - Generate share link for recipe.
@@ -60,9 +63,11 @@
 
 ## Links
 - Functional requirement: FR-137, FR-138, FR-142, FR-143, FR-144, FR-148, FR-150, FR-155, FR-159, FR-162, FR-197, FR-202, FR-213
-- Use case: UC-003.1, UC-003.3, UC-003.4, UC-003.8
+- Use case: UC-003.1, UC-003.3, UC-003.4, UC-003.8, UC-003.9
 - Acceptance criteria: AC-401, AC-402, AC-406, AC-407, AC-408, AC-412, AC-413, AC-418, AC-420, AC-423, AC-424, AC-425
 - Business rules: BR-257, BR-261, BR-271, BR-301, BR-302, BR-303, BR-308, BR-309, BR-310, BR-313, BR-316, BR-322, BR-324, BR-327
 - Test cases: TC-401, TC-402, TC-403, TC-407, TC-408, TC-409, TC-412, TC-413, TC-415, TC-420, TC-422, TC-425, TC-426, TC-427
+- Decisions: D-132 (AI paywall gate — `useSubscription` wired; `hasAiAccess`, `isSubscriptionLoading`, `onOpenPaywall` passed to `MealPhotoAnalysisSection`)
+- Related screen: SC-219 (AI Meal Photo Analysis)
 - Diagram: docs/diagrams/domain-relationships.md
 - Copy guidance: docs/screens/v2/copy-guidelines-v2.md

@@ -250,6 +250,9 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `meal.photo_analysis.error.generic` | SC-219 | Generic fallback error | Analysis failed. You can still fill in the fields manually. | A análise falhou. Você ainda pode preencher os campos manualmente. | El análisis falló. Aún puedes rellenar los campos manualmente. | BL-108 |
 | `meal.photo_analysis.attach_photo.label` | SC-214 | Optional photo attachment toggle | Also attach this photo to the meal | Também anexar esta foto à refeição | También adjuntar esta foto a la comida | SC-214 only; post-analysis optional step |
 | `meal.photo_analysis.confidence.low` | SC-219 | Low-confidence warning | Low confidence — double-check these estimates | Baixa confiança — confira esses valores | Baja confianza — revisa estos valores | Shown when confidence='low' |
+| `meal.photo_analysis.paywall.locked` | SC-214/SC-215 | Paywall locked label | AI analysis is a premium feature | Análise com IA é um recurso premium | El análisis con IA es una función premium | D-132; shown when hasAiAccess=false |
+| `meal.photo_analysis.paywall.cta_upgrade` | SC-214/SC-215 | Paywall upgrade CTA | Upgrade to unlock | Fazer upgrade para desbloquear | Actualizar para desbloquear | Opens RevenueCat native paywall; D-132 |
+| `meal.photo_analysis.paywall.loading` | SC-214/SC-215 | Subscription loading state | Checking subscription… | Verificando assinatura… | Verificando suscripción… | Shown while isSubscriptionLoading=true; D-132 |
 
 | `pro.library.nutrition.title` | SC-207 lib | Tab screen header | Nutrition Plans | Planos de Nutrição | Planes de Nutrición | |
 | `pro.library.nutrition.empty` | SC-207 lib | Empty state body | No nutrition plans yet. Create your first plan. | Nenhum plano de nutrição ainda. Crie seu primeiro plano. | Aún no hay planes de nutrición. Crea tu primer plan. | |
