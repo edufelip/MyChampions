@@ -7,6 +7,8 @@ import {
   resolveSubscriptionState,
   normalizeEntitlementStatus,
   isPlanUpdateLocked,
+  hasAiAnalysisAccess,
+  AI_ENTITLEMENT_ID,
 } from './subscription.logic';
 
 // --- checkStudentCapEnforcement ---
@@ -136,4 +138,38 @@ test('isPlanUpdateLocked returns false when active', () => {
     entitlementStatus: 'active',
   });
   assert.equal(isPlanUpdateLocked(state), false);
+});
+
+// --- hasAiAnalysisAccess (D-132) ---
+
+test('AI_ENTITLEMENT_ID is premium_student', () => {
+  assert.equal(AI_ENTITLEMENT_ID, 'premium_student');
+});
+
+test('hasAiAnalysisAccess: professional active + student unknown → true', () => {
+  assert.equal(hasAiAnalysisAccess('active', 'unknown'), true);
+});
+
+test('hasAiAnalysisAccess: professional unknown + student active → true', () => {
+  assert.equal(hasAiAnalysisAccess('unknown', 'active'), true);
+});
+
+test('hasAiAnalysisAccess: both active → true', () => {
+  assert.equal(hasAiAnalysisAccess('active', 'active'), true);
+});
+
+test('hasAiAnalysisAccess: professional lapsed + student lapsed → false', () => {
+  assert.equal(hasAiAnalysisAccess('lapsed', 'lapsed'), false);
+});
+
+test('hasAiAnalysisAccess: both unknown → false (strict lock on unknown)', () => {
+  assert.equal(hasAiAnalysisAccess('unknown', 'unknown'), false);
+});
+
+test('hasAiAnalysisAccess: professional lapsed + student unknown → false', () => {
+  assert.equal(hasAiAnalysisAccess('lapsed', 'unknown'), false);
+});
+
+test('hasAiAnalysisAccess: professional unknown + student lapsed → false', () => {
+  assert.equal(hasAiAnalysisAccess('unknown', 'lapsed'), false);
 });
