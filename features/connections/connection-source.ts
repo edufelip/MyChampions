@@ -1,5 +1,24 @@
-import Constants from 'expo-constants';
-import type { User } from 'firebase/auth';
+/**
+ * Connection Data Connect source — invite submit, confirm, end, list.
+ * Uses generated SDK (D-114 pattern) instead of raw GraphQL fetch.
+ * Refs: D-069, D-072, FR-106–FR-110, BR-220–BR-232
+ */
+
+import type { DataConnect } from 'firebase/data-connect';
+import {
+  getMyConnections as _getMyConnections,
+  submitInviteCode as _submitInviteCode,
+  confirmPendingConnection as _confirmPendingConnection,
+  endConnection as _endConnection,
+  type GetMyConnectionsData,
+  type SubmitInviteCodeData,
+  type SubmitInviteCodeVariables,
+  type ConfirmPendingConnectionData,
+  type ConfirmPendingConnectionVariables,
+  type EndConnectionData,
+  type EndConnectionVariables,
+} from '@mychampions/dataconnect-generated';
+import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
 
 import {
   normalizeConnectionStatus,
@@ -8,15 +27,7 @@ import {
   type ConnectionRecord,
 } from './connection.logic';
 
-type DataConnectExtraConfig = {
-  graphqlEndpoint?: string;
-  apiKey?: string;
-};
-
-type DataConnectGraphQLResponse<T> = {
-  data?: T;
-  errors?: Array<{ message?: string }>;
-};
+// ─── Error type ───────────────────────────────────────────────────────────────
 
 type ConnectionSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
@@ -30,88 +41,39 @@ export class ConnectionSourceError extends Error {
   }
 }
 
-function resolveDataConnectConfig(): DataConnectExtraConfig {
-  const extra = (Constants.expoConfig?.extra ?? {}) as {
-    dataConnect?: DataConnectExtraConfig;
-  };
+// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
 
-  return extra.dataConnect ?? {};
-}
+export type ConnectionSourceDeps = {
+  getMyConnections: (dc: DataConnect) => Promise<{ data: GetMyConnectionsData }>;
+  submitInviteCode: (dc: DataConnect, vars: SubmitInviteCodeVariables) => Promise<{ data: SubmitInviteCodeData }>;
+  confirmPendingConnection: (dc: DataConnect, vars: ConfirmPendingConnectionVariables) => Promise<{ data: ConfirmPendingConnectionData }>;
+  endConnection: (dc: DataConnect, vars: EndConnectionVariables) => Promise<{ data: EndConnectionData }>;
+  getDataConnectInstance: () => DataConnect;
+};
 
-async function executeDataConnectGraphQL<T>(
-  user: User,
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
-  const { graphqlEndpoint, apiKey } = resolveDataConnectConfig();
-  if (!graphqlEndpoint) {
-    throw new ConnectionSourceError(
-      'configuration',
-      'Data Connect endpoint is not configured. Set EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT.'
-    );
-  }
+const defaultConnectionSourceDeps: ConnectionSourceDeps = {
+  getMyConnections: _getMyConnections,
+  submitInviteCode: _submitInviteCode,
+  confirmPendingConnection: _confirmPendingConnection,
+  endConnection: _endConnection,
+  getDataConnectInstance: _getDataConnectInstance,
+};
 
-  const idToken = await user.getIdToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${idToken}`,
-  };
+// ─── Operations ───────────────────────────────────────────────────────────────
 
-  if (apiKey) {
-    headers['x-goog-api-key'] = apiKey;
-  }
-
-  const response = await fetch(graphqlEndpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!response.ok) {
-    throw new ConnectionSourceError(
-      'network',
-      `Data Connect request failed with status ${response.status}.`
-    );
-  }
-
-  const payload = (await response.json()) as DataConnectGraphQLResponse<T>;
-  if (payload.errors && payload.errors.length > 0) {
-    throw new ConnectionSourceError(
-      'graphql',
-      payload.errors[0]?.message ?? 'Data Connect operation failed.'
-    );
-  }
-
-  if (!payload.data) {
-    throw new ConnectionSourceError(
-      'invalid_response',
-      'Data Connect operation returned no data payload.'
-    );
-  }
-
-  return payload.data;
-}
-
+/**
+ * Submits an invite code, creating a new pending_confirmation connection.
+ * Returns the created connection id.
+ * Ref: FR-106, BR-220
+ */
 export async function submitInviteCode(
-  user: User,
-  code: string
+  code: string,
+  deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<{ connectionId: string; status: 'pending_confirmation' }> {
-  const mutation = `
-    mutation SubmitInviteCode($code: String!) {
-      submitInviteCode(code: $code) {
-        id
-        status
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.submitInviteCode(dc, { code });
 
-  const data = await executeDataConnectGraphQL<{
-    submitInviteCode?: { id?: string | null; status?: string | null } | null;
-  }>(user, mutation, { code });
-
-  const id = data.submitInviteCode?.id;
-  const status = data.submitInviteCode?.status;
-
+  const id = data.connection_insert?.id;
   if (!id) {
     throw new ConnectionSourceError(
       'invalid_response',
@@ -119,36 +81,22 @@ export async function submitInviteCode(
     );
   }
 
-  if (status !== 'pending_confirmation') {
-    throw new ConnectionSourceError(
-      'invalid_response',
-      `submitInviteCode returned unexpected status: ${status}.`
-    );
-  }
-
   return { connectionId: id, status: 'pending_confirmation' };
 }
 
+/**
+ * Professional confirms a pending connection request.
+ * Returns the confirmed connection id.
+ * Ref: FR-107, BR-221
+ */
 export async function confirmPendingConnection(
-  user: User,
-  connectionId: string
+  connectionId: string,
+  deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<{ connectionId: string; status: 'active' }> {
-  const mutation = `
-    mutation ConfirmPendingConnection($connection_id: UUID!) {
-      confirmPendingConnection(connection_id: $connection_id) {
-        id
-        status
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.confirmPendingConnection(dc, { connection_id: connectionId });
 
-  const data = await executeDataConnectGraphQL<{
-    confirmPendingConnection?: { id?: string | null; status?: string | null } | null;
-  }>(user, mutation, { connection_id: connectionId });
-
-  const id = data.confirmPendingConnection?.id;
-  const status = data.confirmPendingConnection?.status;
-
+  const id = data.connection_update?.id;
   if (!id) {
     throw new ConnectionSourceError(
       'invalid_response',
@@ -156,57 +104,33 @@ export async function confirmPendingConnection(
     );
   }
 
-  if (status !== 'active') {
-    throw new ConnectionSourceError(
-      'invalid_response',
-      `confirmPendingConnection returned unexpected status: ${status}.`
-    );
-  }
-
   return { connectionId: id, status: 'active' };
 }
 
-export async function endConnection(user: User, connectionId: string): Promise<void> {
-  const mutation = `
-    mutation EndConnection($connection_id: UUID!) {
-      endConnection(connection_id: $connection_id) {
-        id
-        status
-      }
-    }
-  `;
-
-  await executeDataConnectGraphQL<{
-    endConnection?: { id?: string | null; status?: string | null } | null;
-  }>(user, mutation, { connection_id: connectionId });
+/**
+ * Ends (cancels/denies) a connection.
+ * Ref: FR-108, D-064
+ */
+export async function endConnection(
+  connectionId: string,
+  deps: ConnectionSourceDeps = defaultConnectionSourceDeps
+): Promise<void> {
+  const dc = deps.getDataConnectInstance();
+  await deps.endConnection(dc, { connection_id: connectionId });
 }
 
-export async function getMyConnections(user: User): Promise<ConnectionRecord[]> {
-  const query = `
-    query GetMyConnections {
-      getMyConnections {
-        id
-        status
-        canceled_reason
-        specialty
-        professional_auth_uid
-      }
-    }
-  `;
+/**
+ * Returns all connections for the current user (student: their connections;
+ * professional: connections where they are the professional).
+ * Ref: FR-109
+ */
+export async function getMyConnections(
+  deps: ConnectionSourceDeps = defaultConnectionSourceDeps
+): Promise<ConnectionRecord[]> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.getMyConnections(dc);
 
-  const data = await executeDataConnectGraphQL<{
-    getMyConnections?: Array<{
-      id?: string | null;
-      status?: string | null;
-      canceled_reason?: string | null;
-      specialty?: string | null;
-      professional_auth_uid?: string | null;
-    }> | null;
-  }>(user, query);
-
-  const raw = data.getMyConnections ?? [];
-
-  return raw.flatMap((item) => {
+  return data.connections.flatMap((item) => {
     const id = item.id;
     const status = normalizeConnectionStatus(item.status);
     const specialty = normalizeConnectionSpecialty(item.specialty);
@@ -219,9 +143,9 @@ export async function getMyConnections(user: User): Promise<ConnectionRecord[]> 
       {
         id,
         status,
-        canceledReason: normalizeCanceledReason(item.canceled_reason),
+        canceledReason: normalizeCanceledReason(item.canceledReason ?? null),
         specialty,
-        professionalAuthUid: item.professional_auth_uid ?? '',
+        professionalAuthUid: item.professionalAuthUid ?? '',
       } satisfies ConnectionRecord,
     ];
   });

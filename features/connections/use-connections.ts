@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
 
 import {
   getMyConnections,
@@ -39,19 +38,20 @@ export type UseConnectionsResult = {
 /**
  * Wraps Data Connect connection-source operations for UI consumption.
  * Keeps Firebase / Data Connect concerns out of screen components.
+ * Auth user is no longer passed — SDK uses the authenticated session internally.
  */
-export function useConnections(user: User | null): UseConnectionsResult {
+export function useConnections(isAuthenticated: boolean): UseConnectionsResult {
   const [state, setState] = useState<ConnectionsLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setState({ kind: 'idle' });
       return;
     }
 
     setState({ kind: 'loading' });
 
-    void getMyConnections(user)
+    void getMyConnections()
       .then((connections) => {
         const displayStates = connections.map(resolveConnectionDisplayState);
         setState({ kind: 'ready', connections, displayStates });
@@ -59,7 +59,7 @@ export function useConnections(user: User | null): UseConnectionsResult {
       .catch((err: ConnectionSourceError) => {
         setState({ kind: 'error', message: err.message });
       });
-  }, [user]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     load();
@@ -67,47 +67,47 @@ export function useConnections(user: User | null): UseConnectionsResult {
 
   const submitCode = useCallback(
     async (code: string): Promise<InviteSubmitErrorReason | null> => {
-      if (!user) return 'configuration';
+      if (!isAuthenticated) return 'configuration';
 
       try {
-        await submitInviteCode(user, code);
+        await submitInviteCode(code);
         load();
         return null;
       } catch (err) {
         return normalizeInviteSubmitError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   const confirmConnection = useCallback(
     async (connectionId: string): Promise<ConnectionActionErrorReason | null> => {
-      if (!user) return 'configuration';
+      if (!isAuthenticated) return 'configuration';
 
       try {
-        await confirmPendingConnection(user, connectionId);
+        await confirmPendingConnection(connectionId);
         load();
         return null;
       } catch (err) {
         return normalizeConnectionActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   const unbindConnection = useCallback(
     async (connectionId: string): Promise<ConnectionActionErrorReason | null> => {
-      if (!user) return 'configuration';
+      if (!isAuthenticated) return 'configuration';
 
       try {
-        await endConnection(user, connectionId);
+        await endConnection(connectionId);
         load();
         return null;
       } catch (err) {
         return normalizeConnectionActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   return { state, reload: load, submitCode, confirmConnection, unbindConnection };
