@@ -38,6 +38,10 @@
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>My Champions uses the camera to scan QR invite codes from your professional and to take meal photos for AI nutrition analysis.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>My Champions accesses your photo library so you can analyze meal photos for nutrition estimates.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>

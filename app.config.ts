@@ -82,8 +82,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: true,
       bundleIdentifier: iosBundleId,
       infoPlist: {
-        NSCameraUsageDescription:
-          'My Champions uses the camera to scan QR invite codes from your professional.',
+        // Permission strings are applied directly to ios/mychampions/Info.plist
+        // (no expo prebuild policy — D-129). Kept here as documentation only;
+        // Expo SDK does not read these when plugins are omitted.
+        // NSCameraUsageDescription: see Info.plist
+        // NSPhotoLibraryUsageDescription: see Info.plist
       },
     },
     android: {
@@ -104,15 +107,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [
       'expo-apple-authentication',
       'expo-router',
-      [
-        'expo-camera',
-        {
-          cameraPermission:
-            'My Champions uses the camera to scan QR invite codes from your professional.',
-          microphonePermission: false,
-          recordAudioAndroid: false,
-        },
-      ],
+      // expo-camera and expo-image-picker native permissions are applied directly
+      // to ios/mychampions/Info.plist and android/app/src/main/AndroidManifest.xml.
+      // Plugin entries are omitted here because native dirs are maintained manually
+      // (no expo prebuild policy — D-129).
       [
         'expo-splash-screen',
         {
@@ -137,6 +135,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         graphqlEndpoint: process.env.EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT ?? '',
         apiKey: process.env.EXPO_PUBLIC_DATA_CONNECT_API_KEY ?? '',
       },
+      // RevenueCat SDK API key — read by subscription-source.ts via Constants.expoConfig.extra
+      // Key is public (client-side SDK key, not secret). D-128.
+      revenueCatApiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? '',
     },
   };
 };
