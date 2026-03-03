@@ -1,7 +1,7 @@
 /**
  * Unit tests for plan-builder.logic.ts
  * Runner: node:test + node:assert/strict (npm run test:unit)
- * Refs: D-111, FR-240–FR-248, BR-291–BR-296, TC-275–TC-280
+ * Refs: D-111, D-127, FR-240–FR-248, BR-291–BR-296, TC-275–TC-281
  */
 
 import { describe, it } from 'node:test';
@@ -14,9 +14,13 @@ import {
   calculateNutritionTotals,
   isStarterTemplate,
   normalizePlanBuilderError,
+  normalizeFoodArray,
+  normalizeFoodSearchResult,
   type NutritionPlanInput,
   type TrainingPlanInput,
   type TrainingSessionItemInput,
+  type RawFatsecretFood,
+  type RawFatsecretServing,
 } from './plan-builder.logic';
 
 // ─── validateNutritionPlanInput ───────────────────────────────────────────────
@@ -349,5 +353,272 @@ describe('normalizePlanBuilderError', () => {
 
   it('returns unknown for unrecognized error object', () => {
     assert.equal(normalizePlanBuilderError({ code: 'MYSTERY' }), 'unknown');
+  });
+});
+
+// ─── normalizeFoodArray ───────────────────────────────────────────────────────
+
+describe('normalizeFoodArray', () => {
+  it('wraps a single food object in an array', () => {
+    const food: RawFatsecretFood = { food_id: '1', food_name: 'Apple' };
+    const result = normalizeFoodArray(food);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.food_id, '1');
+  });
+
+  it('passes through an array unchanged', () => {
+    const foods: RawFatsecretFood[] = [
+      { food_id: '1', food_name: 'Apple' },
+      { food_id: '2', food_name: 'Banana' },
+    ];
+    const result = normalizeFoodArray(foods);
+    assert.equal(result.length, 2);
+  });
+
+  it('returns empty array for null', () => {
+    assert.deepEqual(normalizeFoodArray(null), []);
+  });
+
+  it('returns empty array for undefined', () => {
+    assert.deepEqual(normalizeFoodArray(undefined), []);
+  });
+
+  it('returns empty array for a string', () => {
+    assert.deepEqual(normalizeFoodArray('food'), []);
+  });
+
+  it('returns empty array for a number', () => {
+    assert.deepEqual(normalizeFoodArray(42), []);
+  });
+
+  it('returns empty array for an empty array', () => {
+    assert.deepEqual(normalizeFoodArray([]), []);
+  });
+});
+
+// ─── normalizeFoodSearchResult ────────────────────────────────────────────────
+
+describe('normalizeFoodSearchResult', () => {
+  const baseServing = {
+    calories: '300',
+    carbohydrate: '32.0',
+    protein: '15.0',
+    fat: '13.0',
+    metric_serving_amount: '100.000',
+    metric_serving_unit: 'g',
+  };
+
+  const baseFood: RawFatsecretFood = {
+    food_id: '41963',
+    food_name: 'Cheeseburger',
+    servings: { serving: baseServing },
+  };
+
+  it('returns correct per-100g values when serving is exactly 100g', () => {
+    const result = normalizeFoodSearchResult(baseFood);
+    assert.ok(result !== null);
+    assert.equal(result.id, '41963');
+    assert.equal(result.name, 'Cheeseburger');
+    assert.equal(result.caloriesPer100g, 300);
+    assert.equal(result.carbsPer100g, 32);
+    assert.equal(result.proteinsPer100g, 15);
+    assert.equal(result.fatsPer100g, 13);
+  });
+
+  it('scales macros correctly when serving is 200g', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: { ...baseServing, metric_serving_amount: '200.000' },
+      },
+    };
+    const result = normalizeFoodSearchResult(food);
+    assert.ok(result !== null);
+    assert.equal(result.caloriesPer100g, 150); // 300 / 2
+    assert.equal(result.carbsPer100g, 16); // 32 / 2
+    assert.equal(result.proteinsPer100g, 7.5); // 15 / 2
+    assert.equal(result.fatsPer100g, 6.5); // 13 / 2
+  });
+
+  it('scales macros correctly when serving is 50g', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: { ...baseServing, metric_serving_amount: '50.000' },
+      },
+    };
+    const result = normalizeFoodSearchResult(food);
+    assert.ok(result !== null);
+    assert.equal(result.caloriesPer100g, 600); // 300 * 2
+  });
+
+  it('picks first serving when serving is an array', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: [
+          baseServing,
+          { ...baseServing, calories: '999', metric_serving_amount: '50.000' },
+        ],
+      },
+    };
+    const result = normalizeFoodSearchResult(food);
+    assert.ok(result !== null);
+    assert.equal(result.caloriesPer100g, 300);
+  });
+
+  it('returns null when food_id is missing', () => {
+    const food: RawFatsecretFood = { food_name: 'Apple', servings: { serving: baseServing } };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('returns null when food_name is missing', () => {
+    const food: RawFatsecretFood = { food_id: '1', servings: { serving: baseServing } };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('returns null when servings is missing', () => {
+    const food: RawFatsecretFood = { food_id: '1', food_name: 'Apple' };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('returns null when metric_serving_unit is not g', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: { ...baseServing, metric_serving_unit: 'oz' },
+      },
+    };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('returns null when metric_serving_unit is ml', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: { ...baseServing, metric_serving_unit: 'ml' },
+      },
+    };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('returns null when metric_serving_amount is 0', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: { ...baseServing, metric_serving_amount: '0' },
+      },
+    };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('returns null when metric_serving_amount is non-numeric', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: { ...baseServing, metric_serving_amount: 'N/A' },
+      },
+    };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('returns null when metric_serving_amount is missing', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: {
+          calories: '300',
+          carbohydrate: '32.0',
+          protein: '15.0',
+          fat: '13.0',
+          metric_serving_unit: 'g',
+        },
+      },
+    };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('treats missing macro fields as 0 (does not crash)', () => {
+    const food: RawFatsecretFood = {
+      food_id: '99',
+      food_name: 'Mystery',
+      servings: {
+        serving: {
+          metric_serving_amount: '100',
+          metric_serving_unit: 'g',
+        },
+      },
+    };
+    const result = normalizeFoodSearchResult(food);
+    assert.ok(result !== null);
+    assert.equal(result.caloriesPer100g, 0);
+    assert.equal(result.carbsPer100g, 0);
+    assert.equal(result.proteinsPer100g, 0);
+    assert.equal(result.fatsPer100g, 0);
+  });
+
+  it('rounds per-100g values to 1 decimal place', () => {
+    // 1 calorie per 3g serving => 33.3... per 100g
+    const food: RawFatsecretFood = {
+      food_id: '5',
+      food_name: 'Oddball',
+      servings: {
+        serving: {
+          calories: '1',
+          carbohydrate: '0',
+          protein: '0',
+          fat: '0',
+          metric_serving_amount: '3',
+          metric_serving_unit: 'g',
+        },
+      },
+    };
+    const result = normalizeFoodSearchResult(food);
+    assert.ok(result !== null);
+    assert.equal(result.caloriesPer100g, 33.3);
+  });
+
+  it('returns null when serving array is empty', () => {
+    // fatsecret single-result wrapping normalised to [] by caller;
+    // but if serving itself is an empty array, first entry is undefined.
+    const food: RawFatsecretFood = {
+      food_id: '10',
+      food_name: 'Ghost',
+      servings: { serving: [] as unknown as RawFatsecretServing },
+    };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('returns null when metric_serving_amount is negative', () => {
+    const food: RawFatsecretFood = {
+      ...baseFood,
+      servings: {
+        serving: { ...baseServing, metric_serving_amount: '-100' },
+      },
+    };
+    assert.equal(normalizeFoodSearchResult(food), null);
+  });
+
+  it('treats negative macro field values as 0', () => {
+    const food: RawFatsecretFood = {
+      food_id: '11',
+      food_name: 'Weird',
+      servings: {
+        serving: {
+          calories: '-50',
+          carbohydrate: '-5',
+          protein: '-2',
+          fat: '-1',
+          metric_serving_amount: '100',
+          metric_serving_unit: 'g',
+        },
+      },
+    };
+    const result = normalizeFoodSearchResult(food);
+    assert.ok(result !== null);
+    assert.equal(result.caloriesPer100g, 0);
+    assert.equal(result.carbsPer100g, 0);
+    assert.equal(result.proteinsPer100g, 0);
+    assert.equal(result.fatsPer100g, 0);
   });
 });

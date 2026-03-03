@@ -2,11 +2,10 @@
  * React hook for plan builder operations — nutrition and training.
  * Wraps plan-builder-source for screen consumption.
  * No Firebase/Data Connect concerns in screen components.
- * Refs: D-111–D-114, FR-240–FR-248
+ * Refs: D-111–D-114, D-126, FR-240–FR-248
  */
 
 import { useCallback, useState } from 'react';
-import type { User } from 'firebase/auth';
 
 import {
   createNutritionPlan,
@@ -91,19 +90,19 @@ export type UseNutritionPlanBuilderResult = {
   validateInput: (input: NutritionPlanInput) => NutritionPlanValidationErrors;
 };
 
-export function useNutritionPlanBuilder(user: User | null): UseNutritionPlanBuilderResult {
+export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionPlanBuilderResult {
   const [state, setState] = useState<NutritionBuilderState>({ kind: 'idle' });
   const [templatePickerState, setTemplatePickerState] = useState<TemplatePickerState>({ kind: 'idle' });
   const [foodSearchState, setFoodSearchState] = useState<FoodSearchState>({ kind: 'idle' });
 
   const loadPlan = useCallback(
     (planId: string) => {
-      if (!user) {
+      if (!isAuthenticated) {
         setState({ kind: 'error', reason: 'unknown', message: 'Not authenticated.' });
         return;
       }
       setState({ kind: 'loading' });
-      void getNutritionPlanDetail(user, planId)
+      void getNutritionPlanDetail(planId)
         .then((plan) => setState({ kind: 'ready', plan }))
         .catch((err: Error) => {
           setState({
@@ -113,19 +112,19 @@ export function useNutritionPlanBuilder(user: User | null): UseNutritionPlanBuil
           });
         });
     },
-    [user]
+    [isAuthenticated]
   );
 
   const createPlan = useCallback(
     async (input: NutritionPlanInput): Promise<{ id: string } | { error: PlanBuilderErrorReason }> => {
-      if (!user) return { error: 'unknown' };
+      if (!isAuthenticated) return { error: 'unknown' };
 
       const errors = validateNutritionPlanInput(input);
       if (Object.keys(errors).length > 0) return { error: 'validation' };
 
       setState({ kind: 'saving' });
       try {
-        const plan = await createNutritionPlan(user, input);
+        const plan = await createNutritionPlan(input);
         setState({ kind: 'ready', plan });
         return { id: plan.id };
       } catch (err) {
@@ -134,12 +133,12 @@ export function useNutritionPlanBuilder(user: User | null): UseNutritionPlanBuil
         return { error: reason };
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const savePlan = useCallback(
     async (planId: string, input: NutritionPlanInput): Promise<PlanBuilderErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       const errors = validateNutritionPlanInput(input);
       if (Object.keys(errors).length > 0) return 'validation';
@@ -150,9 +149,9 @@ export function useNutritionPlanBuilder(user: User | null): UseNutritionPlanBuil
       });
 
       try {
-        await updateNutritionPlan(user, planId, input);
+        await updateNutritionPlan(planId, input);
         // Reload to get authoritative state from server
-        const updated = await getNutritionPlanDetail(user, planId);
+        const updated = await getNutritionPlanDetail(planId);
         setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
@@ -161,14 +160,14 @@ export function useNutritionPlanBuilder(user: User | null): UseNutritionPlanBuil
         return reason;
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const addItem = useCallback(
     async (planId: string, item: NutritionMealItemInput): Promise<PlanBuilderErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
       try {
-        const newItem = await addNutritionMealItem(user, planId, item);
+        const newItem = await addNutritionMealItem(planId, item);
         setState((prev) => {
           if (prev.kind !== 'ready') return prev;
           return { ...prev, plan: { ...prev.plan, items: [...prev.plan.items, newItem] } };
@@ -178,14 +177,14 @@ export function useNutritionPlanBuilder(user: User | null): UseNutritionPlanBuil
         return normalizePlanBuilderError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const removeItem = useCallback(
     async (planId: string, itemId: string): Promise<PlanBuilderErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
       try {
-        await removeNutritionMealItem(user, planId, itemId);
+        await removeNutritionMealItem(planId, itemId);
         setState((prev) => {
           if (prev.kind !== 'ready') return prev;
           return {
@@ -198,7 +197,7 @@ export function useNutritionPlanBuilder(user: User | null): UseNutritionPlanBuil
         return normalizePlanBuilderError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const loadTemplates = useCallback(() => {
@@ -212,15 +211,18 @@ export function useNutritionPlanBuilder(user: User | null): UseNutritionPlanBuil
 
   const cloneTemplate = useCallback(
     async (templateId: string, name: string): Promise<{ id: string; planType: PlanType } | { error: PlanBuilderErrorReason }> => {
-      if (!user) return { error: 'unknown' };
+      if (!isAuthenticated) return { error: 'unknown' };
       try {
-        const result = await cloneStarterTemplate(user, templateId, name);
+        // cloneStarterTemplate still requires a user.uid for the professionalId in the SDK call.
+        // The SDK itself handles auth; uid is used only for the clone vars.
+        // Pass a sentinel object — the DC instance carries the real auth token.
+        const result = await cloneStarterTemplate({ uid: '' }, templateId, name);
         return { id: result.id, planType: result.planType };
       } catch (err) {
         return { error: normalizePlanBuilderError(err) };
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const runFoodSearch = useCallback((query: string) => {
@@ -275,18 +277,18 @@ export type UseTrainingPlanBuilderResult = {
   validateSessionItem: (item: TrainingSessionItemInput) => TrainingSessionItemValidationErrors;
 };
 
-export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilderResult {
+export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPlanBuilderResult {
   const [state, setState] = useState<TrainingBuilderState>({ kind: 'idle' });
   const [templatePickerState, setTemplatePickerState] = useState<TemplatePickerState>({ kind: 'idle' });
 
   const loadPlan = useCallback(
     (planId: string) => {
-      if (!user) {
+      if (!isAuthenticated) {
         setState({ kind: 'error', reason: 'unknown', message: 'Not authenticated.' });
         return;
       }
       setState({ kind: 'loading' });
-      void getTrainingPlanDetail(user, planId)
+      void getTrainingPlanDetail(planId)
         .then((plan) => setState({ kind: 'ready', plan }))
         .catch((err: Error) => {
           setState({
@@ -296,19 +298,19 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
           });
         });
     },
-    [user]
+    [isAuthenticated]
   );
 
   const createPlan = useCallback(
     async (input: TrainingPlanInput): Promise<{ id: string } | { error: PlanBuilderErrorReason }> => {
-      if (!user) return { error: 'unknown' };
+      if (!isAuthenticated) return { error: 'unknown' };
 
       const errors = validateTrainingPlanInput(input);
       if (Object.keys(errors).length > 0) return { error: 'validation' };
 
       setState({ kind: 'saving' });
       try {
-        const plan = await createTrainingPlan(user, input);
+        const plan = await createTrainingPlan(input);
         setState({ kind: 'ready', plan });
         return { id: plan.id };
       } catch (err) {
@@ -317,12 +319,12 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
         return { error: reason };
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const savePlan = useCallback(
     async (planId: string, input: TrainingPlanInput): Promise<PlanBuilderErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       const errors = validateTrainingPlanInput(input);
       if (Object.keys(errors).length > 0) return 'validation';
@@ -333,8 +335,8 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
       });
 
       try {
-        await updateTrainingPlan(user, planId, input);
-        const updated = await getTrainingPlanDetail(user, planId);
+        await updateTrainingPlan(planId, input);
+        const updated = await getTrainingPlanDetail(planId);
         setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
@@ -343,14 +345,14 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
         return reason;
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const addSession = useCallback(
     async (planId: string, session: TrainingSessionInput): Promise<PlanBuilderErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
       try {
-        const newSession = await addTrainingSession(user, planId, session);
+        const newSession = await addTrainingSession(planId, session);
         setState((prev) => {
           if (prev.kind !== 'ready') return prev;
           return { ...prev, plan: { ...prev.plan, sessions: [...prev.plan.sessions, newSession] } };
@@ -360,14 +362,14 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
         return normalizePlanBuilderError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const removeSession = useCallback(
     async (planId: string, sessionId: string): Promise<PlanBuilderErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
       try {
-        await removeTrainingSession(user, planId, sessionId);
+        await removeTrainingSession(planId, sessionId);
         setState((prev) => {
           if (prev.kind !== 'ready') return prev;
           return {
@@ -380,16 +382,16 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
         return normalizePlanBuilderError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const addSessionItem = useCallback(
     async (sessionId: string, item: TrainingSessionItemInput): Promise<PlanBuilderErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
       const itemErrors = validateTrainingSessionItemInput(item);
       if (Object.keys(itemErrors).length > 0) return 'validation';
       try {
-        const newItem = await addTrainingSessionItem(user, sessionId, item);
+        const newItem = await addTrainingSessionItem(sessionId, item);
         setState((prev) => {
           if (prev.kind !== 'ready') return prev;
           const sessions = prev.plan.sessions.map((s) =>
@@ -402,14 +404,14 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
         return normalizePlanBuilderError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const removeSessionItem = useCallback(
     async (sessionId: string, itemId: string): Promise<PlanBuilderErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
       try {
-        await removeTrainingSessionItem(user, sessionId, itemId);
+        await removeTrainingSessionItem(sessionId, itemId);
         setState((prev) => {
           if (prev.kind !== 'ready') return prev;
           const sessions = prev.plan.sessions.map((s) =>
@@ -422,7 +424,7 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
         return normalizePlanBuilderError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const loadTemplates = useCallback(() => {
@@ -436,15 +438,15 @@ export function useTrainingPlanBuilder(user: User | null): UseTrainingPlanBuilde
 
   const cloneTemplate = useCallback(
     async (templateId: string, name: string): Promise<{ id: string; planType: PlanType } | { error: PlanBuilderErrorReason }> => {
-      if (!user) return { error: 'unknown' };
+      if (!isAuthenticated) return { error: 'unknown' };
       try {
-        const result = await cloneStarterTemplate(user, templateId, name);
+        const result = await cloneStarterTemplate({ uid: '' }, templateId, name);
         return { id: result.id, planType: result.planType };
       } catch (err) {
         return { error: normalizePlanBuilderError(err) };
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const validateInput = useCallback(

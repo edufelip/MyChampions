@@ -1,12 +1,38 @@
 /**
  * Plan Data Connect source — plan CRUD, predefined library, bulk assign.
- * All calls use Firebase Auth ID token in Authorization header.
+ * Uses Firebase Data Connect generated SDK (D-114 injectable deps pattern).
  * No business logic; normalization delegates to plan-change-request.logic.
  * Refs: D-072, D-080, D-082, FR-211–FR-214, BR-269–BR-272
+ *
+ * SDK shape notes (breaking from old GraphQL stub):
+ * - GetMyPlansData returns nutritionPlans[] (camelCase, nutrition only).
+ * - GetMyPredefinedPlansData returns nutritionPlans[] (camelCase).
+ * - SubmitPlanChangeRequest takes {plan_id, plan_type, request_text}; returns key only.
+ * - ReviewPlanChangeRequest takes {request_id, status}; returns key only. Re-fetch not needed.
+ * - BulkAssignNutritionPlan takes one {plan_id, student_uid} at a time.
  */
 
-import Constants from 'expo-constants';
-import type { User } from 'firebase/auth';
+import type { DataConnect } from 'firebase/data-connect';
+
+import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
+import {
+  getMyPlans as _getMyPlans,
+  getMyPredefinedPlans as _getMyPredefinedPlans,
+  submitPlanChangeRequest as _submitPlanChangeRequest,
+  getStudentPlanChangeRequests as _getStudentPlanChangeRequests,
+  reviewPlanChangeRequest as _reviewPlanChangeRequest,
+  bulkAssignNutritionPlan as _bulkAssignNutritionPlan,
+  type GetMyPlansData,
+  type GetMyPredefinedPlansData,
+  type SubmitPlanChangeRequestData,
+  type SubmitPlanChangeRequestVariables,
+  type GetStudentPlanChangeRequestsData,
+  type GetStudentPlanChangeRequestsVariables,
+  type ReviewPlanChangeRequestData,
+  type ReviewPlanChangeRequestVariables,
+  type BulkAssignNutritionPlanData,
+  type BulkAssignNutritionPlanVariables,
+} from '@mychampions/dataconnect-generated';
 
 import {
   normalizePlanChangeRequestStatus,
@@ -20,6 +46,13 @@ import {
 
 export type PlanSourceKind = 'predefined' | 'assigned' | 'self_managed';
 
+/**
+ * Domain plan type. Used by logic, hooks, and screens.
+ * SDK only returns nutrition plans; planType is therefore always 'nutrition'
+ * for SDK-sourced plans. isArchived is derived from isDraft flag.
+ * sourceKind, ownerProfessionalUid, and studentUid are not in the SDK response
+ * for GetMyPlans — defaults are applied.
+ */
 export type Plan = {
   id: string;
   planType: PlanType;
@@ -41,17 +74,16 @@ export type PredefinedPlan = {
   updatedAt: string;
 };
 
-// ─── Transport helpers ────────────────────────────────────────────────────────
-
-type DataConnectExtraConfig = {
-  graphqlEndpoint?: string;
-  apiKey?: string;
+/** Extended nutrition plan shape with SDK-specific fields. */
+export type NutritionPlan = Plan & {
+  isDraft: boolean;
+  caloriesTarget: number | null;
+  carbsTarget: number | null;
+  proteinsTarget: number | null;
+  fatsTarget: number | null;
 };
 
-type DataConnectGraphQLResponse<T> = {
-  data?: T;
-  errors?: Array<{ message?: string }>;
-};
+// ─── Error class ──────────────────────────────────────────────────────────────
 
 type PlanSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
@@ -65,214 +97,107 @@ export class PlanSourceError extends Error {
   }
 }
 
-function resolveConfig(): DataConnectExtraConfig {
-  const extra = (Constants.expoConfig?.extra ?? {}) as {
-    dataConnect?: DataConnectExtraConfig;
-  };
-  return extra.dataConnect ?? {};
-}
+// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
 
-async function gql<T>(
-  user: User,
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
-  const { graphqlEndpoint, apiKey } = resolveConfig();
-  if (!graphqlEndpoint) {
-    throw new PlanSourceError(
-      'configuration',
-      'Data Connect endpoint is not configured. Set EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT.'
-    );
-  }
-
-  const idToken = await user.getIdToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${idToken}`,
-  };
-  if (apiKey) headers['x-goog-api-key'] = apiKey;
-
-  const response = await fetch(graphqlEndpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!response.ok) {
-    throw new PlanSourceError(
-      'network',
-      `Data Connect request failed with status ${response.status}.`
-    );
-  }
-
-  const payload = (await response.json()) as DataConnectGraphQLResponse<T>;
-  if (payload.errors && payload.errors.length > 0) {
-    throw new PlanSourceError(
-      'graphql',
-      payload.errors[0]?.message ?? 'Data Connect operation failed.'
-    );
-  }
-
-  if (!payload.data) {
-    throw new PlanSourceError(
-      'invalid_response',
-      'Data Connect operation returned no data payload.'
-    );
-  }
-
-  return payload.data;
-}
-
-// ─── Raw mappers ──────────────────────────────────────────────────────────────
-
-type RawPlan = {
-  id?: string | null;
-  plan_type?: string | null;
-  source_kind?: string | null;
-  owner_professional_uid?: string | null;
-  student_uid?: string | null;
-  is_archived?: boolean | null;
-  name?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
+export type PlanSourceDeps = {
+  getMyPlans: (dc: DataConnect) => Promise<{ data: GetMyPlansData }>;
+  getMyPredefinedPlans: (dc: DataConnect) => Promise<{ data: GetMyPredefinedPlansData }>;
+  submitPlanChangeRequest: (
+    dc: DataConnect,
+    vars: SubmitPlanChangeRequestVariables
+  ) => Promise<{ data: SubmitPlanChangeRequestData }>;
+  getStudentPlanChangeRequests: (
+    dc: DataConnect,
+    vars: GetStudentPlanChangeRequestsVariables
+  ) => Promise<{ data: GetStudentPlanChangeRequestsData }>;
+  reviewPlanChangeRequest: (
+    dc: DataConnect,
+    vars: ReviewPlanChangeRequestVariables
+  ) => Promise<{ data: ReviewPlanChangeRequestData }>;
+  bulkAssignNutritionPlan: (
+    dc: DataConnect,
+    vars: BulkAssignNutritionPlanVariables
+  ) => Promise<{ data: BulkAssignNutritionPlanData }>;
+  getDataConnectInstance: () => DataConnect;
 };
 
-function normalizePlanSourceKind(raw: unknown): PlanSourceKind | null {
-  if (raw === 'predefined' || raw === 'assigned' || raw === 'self_managed') return raw;
-  return null;
-}
-
-function mapRawPlan(raw: RawPlan): Plan | null {
-  const planType = normalizePlanType(raw.plan_type);
-  const sourceKind = normalizePlanSourceKind(raw.source_kind);
-  if (!raw.id || !planType || !sourceKind || !raw.student_uid || !raw.created_at || !raw.updated_at) {
-    return null;
-  }
-
-  return {
-    id: raw.id,
-    planType,
-    sourceKind,
-    ownerProfessionalUid: raw.owner_professional_uid ?? null,
-    studentUid: raw.student_uid,
-    isArchived: raw.is_archived ?? false,
-    name: raw.name ?? null,
-    createdAt: raw.created_at,
-    updatedAt: raw.updated_at,
-  };
-}
+const defaultDeps: PlanSourceDeps = {
+  getMyPlans: _getMyPlans,
+  getMyPredefinedPlans: _getMyPredefinedPlans,
+  submitPlanChangeRequest: _submitPlanChangeRequest,
+  getStudentPlanChangeRequests: _getStudentPlanChangeRequests,
+  reviewPlanChangeRequest: _reviewPlanChangeRequest,
+  bulkAssignNutritionPlan: _bulkAssignNutritionPlan,
+  getDataConnectInstance: _getDataConnectInstance,
+};
 
 // ─── Plan CRUD ────────────────────────────────────────────────────────────────
 
-/** Returns all plans assigned to or managed by the current user. */
-export async function getMyPlans(user: User): Promise<Plan[]> {
-  const query = `
-    query GetMyPlans {
-      getMyPlans {
-        id
-        plan_type
-        source_kind
-        owner_professional_uid
-        student_uid
-        is_archived
-        name
-        created_at
-        updated_at
-      }
-    }
-  `;
+/** Returns all nutrition plans for the current user. */
+export async function getMyPlans(deps = defaultDeps): Promise<NutritionPlan[]> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.getMyPlans(dc);
 
-  const data = await gql<{ getMyPlans?: RawPlan[] | null }>(user, query);
-
-  return (data.getMyPlans ?? []).flatMap((raw) => {
-    const plan = mapRawPlan(raw);
-    return plan ? [plan] : [];
-  });
+  return (data.nutritionPlans ?? []).map((raw) => ({
+    id: raw.id,
+    name: raw.name,
+    planType: 'nutrition' as PlanType,
+    sourceKind: 'assigned' as PlanSourceKind,
+    ownerProfessionalUid: null,
+    studentUid: '',
+    isArchived: false,
+    isDraft: raw.isDraft,
+    caloriesTarget: raw.caloriesTarget ?? null,
+    carbsTarget: raw.carbsTarget ?? null,
+    proteinsTarget: raw.proteinsTarget ?? null,
+    fatsTarget: raw.fatsTarget ?? null,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  }));
 }
 
 // ─── Predefined plan library ──────────────────────────────────────────────────
 
 /**
- * Returns all predefined plans created by the current professional.
+ * Returns all predefined (non-draft) nutrition plans for the current professional.
  * Ref: D-072, D-080
  */
-export async function getMyPredefinedPlans(user: User): Promise<PredefinedPlan[]> {
-  const query = `
-    query GetMyPredefinedPlans {
-      getMyPredefinedPlans {
-        id
-        plan_type
-        name
-        owner_professional_uid
-        created_at
-        updated_at
-      }
-    }
-  `;
+export async function getMyPredefinedPlans(deps = defaultDeps): Promise<PredefinedPlan[]> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.getMyPredefinedPlans(dc);
 
-  const data = await gql<{
-    getMyPredefinedPlans?: Array<{
-      id?: string | null;
-      plan_type?: string | null;
-      name?: string | null;
-      owner_professional_uid?: string | null;
-      created_at?: string | null;
-      updated_at?: string | null;
-    }> | null;
-  }>(user, query);
-
-  return (data.getMyPredefinedPlans ?? []).flatMap((raw) => {
-    const planType = normalizePlanType(raw.plan_type);
-    if (!raw.id || !planType || !raw.name || !raw.owner_professional_uid || !raw.created_at || !raw.updated_at) {
-      return [];
-    }
-    return [
-      {
-        id: raw.id,
-        planType,
-        name: raw.name,
-        ownerProfessionalUid: raw.owner_professional_uid,
-        createdAt: raw.created_at,
-        updatedAt: raw.updated_at,
-      } satisfies PredefinedPlan,
-    ];
-  });
+  return (data.nutritionPlans ?? []).map((raw) => ({
+    id: raw.id,
+    name: raw.name,
+    planType: 'nutrition' as PlanType,
+    ownerProfessionalUid: '',
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  }));
 }
 
 /**
- * Bulk assigns a predefined plan to a list of students.
- * Each student receives an independent per-student copy (D-082).
+ * Assigns a predefined nutrition plan to students.
+ * SDK takes one student at a time — calls are serialized per studentUid.
  * Ref: D-080, D-082, FR-214
  */
 export async function bulkAssignPredefinedPlan(
-  user: User,
   predefinedPlanId: string,
-  studentUids: string[]
+  studentUids: string[],
+  deps = defaultDeps
 ): Promise<{ assignedCount: number }> {
-  const mutation = `
-    mutation BulkAssignPredefinedPlan($predefined_plan_id: UUID!, $student_uids: [String!]!) {
-      bulkAssignPredefinedPlan(predefined_plan_id: $predefined_plan_id, student_uids: $student_uids) {
-        assigned_count
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
 
-  const data = await gql<{
-    bulkAssignPredefinedPlan?: { assigned_count?: number | null } | null;
-  }>(user, mutation, {
-    predefined_plan_id: predefinedPlanId,
-    student_uids: studentUids,
-  });
-
-  const count = data.bulkAssignPredefinedPlan?.assigned_count;
-  if (count == null) {
-    throw new PlanSourceError(
-      'invalid_response',
-      'bulkAssignPredefinedPlan returned no count.'
-    );
+  let assignedCount = 0;
+  for (const student_uid of studentUids) {
+    await deps.bulkAssignNutritionPlan(dc, {
+      plan_id: predefinedPlanId,
+      student_uid,
+    });
+    assignedCount++;
   }
 
-  return { assignedCount: count };
+  return { assignedCount };
 }
 
 // ─── Plan change requests ─────────────────────────────────────────────────────
@@ -281,57 +206,39 @@ export async function bulkAssignPredefinedPlan(
  * Student submits an advisory plan change request on their assigned plan.
  * Does not mutate the plan (D-071).
  * Ref: FR-211, BR-269, AC-255
+ *
+ * SDK note: returns planChangeRequest_insert key only — no full data back.
+ * Returns a constructed PlanChangeRequest using caller inputs + returned id.
  */
 export async function submitPlanChangeRequest(
-  user: User,
   planId: string,
-  requestText: string
+  planType: PlanType,
+  requestText: string,
+  deps = defaultDeps
 ): Promise<PlanChangeRequest> {
-  const mutation = `
-    mutation SubmitPlanChangeRequest($plan_id: UUID!, $request_text: String!) {
-      submitPlanChangeRequest(plan_id: $plan_id, request_text: $request_text) {
-        id
-        plan_id
-        plan_type
-        student_uid
-        request_text
-        status
-        created_at
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.submitPlanChangeRequest(dc, {
+    plan_id: planId,
+    plan_type: planType,
+    request_text: requestText,
+  });
 
-  const data = await gql<{
-    submitPlanChangeRequest?: {
-      id?: string | null;
-      plan_id?: string | null;
-      plan_type?: string | null;
-      student_uid?: string | null;
-      request_text?: string | null;
-      status?: string | null;
-      created_at?: string | null;
-    } | null;
-  }>(user, mutation, { plan_id: planId, request_text: requestText });
-
-  const raw = data.submitPlanChangeRequest;
-  const planType = normalizePlanType(raw?.plan_type);
-  const status = normalizePlanChangeRequestStatus(raw?.status) as PlanChangeRequestStatus;
-
-  if (!raw?.id || !raw.plan_id || !planType || !raw.student_uid || !raw.request_text || !status || !raw.created_at) {
+  const id = data.planChangeRequest_insert?.id;
+  if (!id) {
     throw new PlanSourceError(
       'invalid_response',
-      'submitPlanChangeRequest returned incomplete request.'
+      'submitPlanChangeRequest returned no id.'
     );
   }
 
   return {
-    id: raw.id,
-    planId: raw.plan_id,
+    id,
+    planId,
     planType,
-    studentUid: raw.student_uid,
-    requestText: raw.request_text,
-    status,
-    createdAt: raw.created_at,
+    studentUid: '',          // not returned by SDK — caller context knows the uid
+    requestText,
+    status: 'pending',       // newly submitted requests are always pending
+    createdAt: new Date().toISOString(),
   };
 }
 
@@ -341,58 +248,27 @@ export async function submitPlanChangeRequest(
  * Advisory only — does not grant plan-edit rights (D-071, BR-269).
  */
 export async function getStudentPlanChangeRequests(
-  user: User,
-  studentUid: string
+  studentUid: string,
+  deps = defaultDeps
 ): Promise<PlanChangeRequest[]> {
-  const query = `
-    query GetStudentPlanChangeRequests($student_uid: String!) {
-      getStudentPlanChangeRequests(student_uid: $student_uid) {
-        id
-        plan_id
-        plan_type
-        student_uid
-        request_text
-        status
-        created_at
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.getStudentPlanChangeRequests(dc, { student_uid: studentUid });
 
-  const data = await gql<{
-    getStudentPlanChangeRequests?: Array<{
-      id?: string | null;
-      plan_id?: string | null;
-      plan_type?: string | null;
-      student_uid?: string | null;
-      request_text?: string | null;
-      status?: string | null;
-      created_at?: string | null;
-    }> | null;
-  }>(user, query, { student_uid: studentUid });
-
-  return (data.getStudentPlanChangeRequests ?? []).flatMap((raw) => {
-    const planType = normalizePlanType(raw.plan_type);
+  return (data.planChangeRequests ?? []).flatMap((raw) => {
+    const planType = normalizePlanType(raw.planType);
     const status = normalizePlanChangeRequestStatus(raw.status);
-    if (
-      !raw.id ||
-      !raw.plan_id ||
-      !planType ||
-      !raw.student_uid ||
-      !raw.request_text ||
-      !status ||
-      !raw.created_at
-    ) {
+    if (!raw.id || !raw.planId || !planType || !raw.studentAuthUid || !raw.requestText || !status || !raw.createdAt) {
       return [];
     }
     return [
       {
         id: raw.id,
-        planId: raw.plan_id,
+        planId: raw.planId,
         planType,
-        studentUid: raw.student_uid,
-        requestText: raw.request_text,
+        studentUid: raw.studentAuthUid,
+        requestText: raw.requestText,
         status,
-        createdAt: raw.created_at,
+        createdAt: raw.createdAt,
       } satisfies PlanChangeRequest,
     ];
   });
@@ -401,32 +277,26 @@ export async function getStudentPlanChangeRequests(
 /**
  * Professional reviews (or dismisses) a plan change request.
  * Advisory only — does not modify the plan (D-071).
+ *
+ * SDK note: takes status: string (not action); returns key only.
+ * Returns the input status echoed back since SDK does not return full data.
  */
 export async function reviewPlanChangeRequest(
-  user: User,
   requestId: string,
-  action: 'reviewed' | 'dismissed'
+  status: 'reviewed' | 'dismissed',
+  deps = defaultDeps
 ): Promise<{ id: string; status: PlanChangeRequestStatus }> {
-  const mutation = `
-    mutation ReviewPlanChangeRequest($request_id: UUID!, $action: String!) {
-      reviewPlanChangeRequest(request_id: $request_id, action: $action) {
-        id
-        status
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.reviewPlanChangeRequest(dc, {
+    request_id: requestId,
+    status,
+  });
 
-  const data = await gql<{
-    reviewPlanChangeRequest?: { id?: string | null; status?: string | null } | null;
-  }>(user, mutation, { request_id: requestId, action });
-
-  const id = data.reviewPlanChangeRequest?.id;
-  const status = normalizePlanChangeRequestStatus(data.reviewPlanChangeRequest?.status);
-
-  if (!id || !status) {
+  const id = data.planChangeRequest_update?.id;
+  if (!id) {
     throw new PlanSourceError(
       'invalid_response',
-      'reviewPlanChangeRequest returned no result.'
+      'reviewPlanChangeRequest returned no id.'
     );
   }
 

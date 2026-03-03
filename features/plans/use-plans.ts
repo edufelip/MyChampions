@@ -5,7 +5,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
 
 import {
   getMyPlans,
@@ -20,6 +19,7 @@ import {
 import {
   validatePlanChangeRequestInput,
   normalizePlanChangeRequestError,
+  type PlanType,
   type PlanChangeRequest,
   type PlanChangeRequestInput,
   type PlanChangeRequestValidationErrors,
@@ -42,6 +42,7 @@ export type UsePlansResult = {
   validateChangeRequest: (input: PlanChangeRequestInput) => PlanChangeRequestValidationErrors;
   submitChangeRequest: (
     planId: string,
+    planType: PlanType,
     requestText: string
   ) => Promise<{ data: PlanChangeRequest } | { error: PlanChangeRequestErrorReason }>;
   reviewChangeRequest: (
@@ -57,23 +58,23 @@ export type UsePlansResult = {
   ) => Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }>;
 };
 
-export function usePlans(user: User | null): UsePlansResult {
+export function usePlans(isAuthenticated: boolean): UsePlansResult {
   const [state, setState] = useState<PlansLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setState({ kind: 'idle' });
       return;
     }
 
     setState({ kind: 'loading' });
 
-    void Promise.all([getMyPlans(user), getMyPredefinedPlans(user)])
+    void Promise.all([getMyPlans(), getMyPredefinedPlans()])
       .then(([plans, predefinedPlans]) => {
         setState({ kind: 'ready', plans, predefinedPlans });
       })
       .catch((err: Error) => setState({ kind: 'error', message: err.message }));
-  }, [user]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     load();
@@ -87,21 +88,22 @@ export function usePlans(user: User | null): UsePlansResult {
   const submitChangeRequest = useCallback(
     async (
       planId: string,
+      planType: PlanType,
       requestText: string
     ): Promise<{ data: PlanChangeRequest } | { error: PlanChangeRequestErrorReason }> => {
-      if (!user) return { error: 'unknown' };
+      if (!isAuthenticated) return { error: 'unknown' };
 
       const errors = validatePlanChangeRequestInput({ requestText });
       if (Object.keys(errors).length > 0) return { error: 'validation' };
 
       try {
-        const data = await submitPlanChangeRequest(user, planId, requestText);
+        const data = await submitPlanChangeRequest(planId, planType, requestText);
         return { data };
       } catch (err) {
         return { error: normalizePlanChangeRequestError(err) };
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const reviewChangeRequest = useCallback(
@@ -109,32 +111,32 @@ export function usePlans(user: User | null): UsePlansResult {
       requestId: string,
       action: 'reviewed' | 'dismissed'
     ): Promise<PlanChangeRequestErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        await reviewPlanChangeRequest(user, requestId, action);
+        await reviewPlanChangeRequest(requestId, action);
         return null;
       } catch (err) {
         return normalizePlanChangeRequestError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const getChangeRequestsForStudent = useCallback(
     async (
       studentUid: string
     ): Promise<{ data: PlanChangeRequest[] } | { error: PlanChangeRequestErrorReason }> => {
-      if (!user) return { error: 'unknown' };
+      if (!isAuthenticated) return { error: 'unknown' };
 
       try {
-        const data = await getStudentPlanChangeRequests(user, studentUid);
+        const data = await getStudentPlanChangeRequests(studentUid);
         return { data };
       } catch (err) {
         return { error: normalizePlanChangeRequestError(err) };
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const bulkAssign = useCallback(
@@ -142,17 +144,17 @@ export function usePlans(user: User | null): UsePlansResult {
       predefinedPlanId: string,
       studentUids: string[]
     ): Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }> => {
-      if (!user) return { error: 'unknown' };
+      if (!isAuthenticated) return { error: 'unknown' };
 
       try {
-        const result = await bulkAssignPredefinedPlan(user, predefinedPlanId, studentUids);
+        const result = await bulkAssignPredefinedPlan(predefinedPlanId, studentUids);
         load();
         return result;
       } catch (err) {
         return { error: normalizePlanChangeRequestError(err) };
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   return {

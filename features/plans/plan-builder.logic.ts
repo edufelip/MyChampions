@@ -1,9 +1,10 @@
 /**
- * Plan builder logic — nutrition and training plan creation/editing.
+ * Plan builder logic — nutrition and training plan creation/editing,
+ * plus pure fatsecret API response normalization helpers.
  * Pure functions, no Firebase dependencies.
- * Refs: D-111–D-114, FR-240–FR-248, BR-291–BR-296,
+ * Refs: D-111–D-114, D-127, FR-240–FR-248, BR-291–BR-296,
  *       AC-207, AC-208, AC-256, AC-264, AC-265,
- *       TC-275–TC-280
+ *       TC-275–TC-280, TC-281
  */
 
 import type { PlanType } from './plan-change-request.logic';
@@ -269,4 +270,88 @@ export function normalizePlanBuilderError(error: unknown): PlanBuilderErrorReaso
     if (msg?.includes('endpoint') || msg?.includes('config')) return 'configuration';
   }
   return 'unknown';
+}
+
+// ─── fatsecret response normalization ─────────────────────────────────────────
+// Raw types matching the fatsecret Platform API v2 JSON response.
+// Refs: D-127, FR-243
+
+export type RawFatsecretServing = {
+  calories?: string;
+  carbohydrate?: string;
+  protein?: string;
+  fat?: string;
+  metric_serving_amount?: string;
+  metric_serving_unit?: string;
+};
+
+export type RawFatsecretFood = {
+  food_id?: string;
+  food_name?: string;
+  servings?: {
+    serving?: RawFatsecretServing | RawFatsecretServing[];
+  };
+};
+
+export type FoodSearchResult = {
+  id: string;
+  name: string;
+  caloriesPer100g: number;
+  carbsPer100g: number;
+  proteinsPer100g: number;
+  fatsPer100g: number;
+};
+
+/**
+ * Normalizes the fatsecret `food` field which may be a single object or an
+ * array when results > 1.
+ * Returns an empty array for any non-object input.
+ * Refs: D-127
+ */
+export function normalizeFoodArray(raw: unknown): RawFatsecretFood[] {
+  if (!raw || typeof raw !== 'object') return [];
+  if (Array.isArray(raw)) return raw as RawFatsecretFood[];
+  return [raw as RawFatsecretFood];
+}
+
+/**
+ * Normalizes per-serving macro values to per-100g using metric_serving_amount.
+ * Returns null when:
+ *  - food_id or food_name are missing
+ *  - no serving data is available
+ *  - metric_serving_unit is not 'g' (cannot safely normalize to per-100g)
+ *  - metric_serving_amount is 0 or unparseable
+ * Refs: D-127, FR-243
+ */
+export function normalizeFoodSearchResult(raw: RawFatsecretFood): FoodSearchResult | null {
+  if (!raw.food_id || !raw.food_name) return null;
+
+  const servingsField = raw.servings?.serving;
+  if (!servingsField) return null;
+
+  // serving may be single object or array; pick first entry
+  const serving = Array.isArray(servingsField) ? servingsField[0] : servingsField;
+  if (!serving) return null;
+
+  const unit = serving.metric_serving_unit;
+  if (unit !== 'g') return null; // cannot normalize non-gram servings to per-100g
+
+  const servingGrams = parseFloat(serving.metric_serving_amount ?? '');
+  if (!isFinite(servingGrams) || servingGrams <= 0) return null;
+
+  const scaleFactor = 100 / servingGrams;
+
+  const parse = (s: string | undefined): number => {
+    const n = parseFloat(s ?? '0');
+    return isFinite(n) && n >= 0 ? n : 0;
+  };
+
+  return {
+    id: raw.food_id,
+    name: raw.food_name,
+    caloriesPer100g: Math.round(parse(serving.calories) * scaleFactor * 10) / 10,
+    carbsPer100g: Math.round(parse(serving.carbohydrate) * scaleFactor * 10) / 10,
+    proteinsPer100g: Math.round(parse(serving.protein) * scaleFactor * 10) / 10,
+    fatsPer100g: Math.round(parse(serving.fat) * scaleFactor * 10) / 10,
+  };
 }
