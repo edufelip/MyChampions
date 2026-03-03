@@ -5,7 +5,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
 
 import {
   getMyWaterLogs,
@@ -56,18 +55,18 @@ export type UseWaterTrackingResult = {
   setGoal: (dailyMl: number) => Promise<WaterTrackingActionErrorReason | null>;
 };
 
-export function useWaterTracking(user: User | null, todayKey: string): UseWaterTrackingResult {
+export function useWaterTracking(isAuthenticated: boolean, todayKey: string): UseWaterTrackingResult {
   const [state, setState] = useState<WaterTrackingLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setState({ kind: 'idle' });
       return;
     }
 
     setState({ kind: 'loading' });
 
-    void Promise.all([getMyWaterLogs(user), getMyWaterGoalContext(user)])
+    void Promise.all([getMyWaterLogs(), getMyWaterGoalContext()])
       .then(([logs, goalContext]) => {
         const effectiveGoal = resolveEffectiveWaterGoal(goalContext);
 
@@ -87,7 +86,7 @@ export function useWaterTracking(user: User | null, todayKey: string): UseWaterT
         setState({ kind: 'ready', logs, effectiveGoal, todayConsumedMl, todayStatus, streak });
       })
       .catch((err: Error) => setState({ kind: 'error', message: err.message }));
-  }, [user, todayKey]);
+  }, [isAuthenticated, todayKey]);
 
   useEffect(() => {
     load();
@@ -105,32 +104,32 @@ export function useWaterTracking(user: User | null, todayKey: string): UseWaterT
 
   const logIntake = useCallback(
     async (amountMl: number): Promise<WaterTrackingActionErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        await logWaterIntake(user, amountMl);
+        await logWaterIntake(amountMl);
         load();
         return null;
       } catch (err) {
         return normalizeWaterTrackingError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   const setGoal = useCallback(
     async (dailyMl: number): Promise<WaterTrackingActionErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        await setStudentWaterGoal(user, dailyMl);
+        await setStudentWaterGoal(dailyMl);
         load();
         return null;
       } catch (err) {
         return normalizeWaterTrackingError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   return { state, reload: load, validateGoal, validateIntake, logIntake, setGoal };

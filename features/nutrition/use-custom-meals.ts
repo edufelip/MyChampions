@@ -5,7 +5,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
 
 import {
   getMyCustomMeals,
@@ -15,6 +14,7 @@ import {
   createMealShareLink,
   previewSharedMeal,
   importSharedMeal,
+  logPortionFromSource,
 } from './custom-meal-source';
 import {
   validateCustomMealInput,
@@ -52,26 +52,27 @@ export type UseCustomMealsResult = {
   create: (input: CustomMealInput) => Promise<MealActionErrorReason | null>;
   update: (id: string, input: CustomMealInput) => Promise<MealActionErrorReason | null>;
   remove: (id: string) => Promise<MealActionErrorReason | null>;
-  shareLink: (mealId: string) => Promise<{ shareToken: string; shareUrl: string } | MealActionErrorReason>;
+  shareLink: (mealId: string) => Promise<{ shareLinkId: string } | MealActionErrorReason>;
   previewImport: (shareToken: string) => Promise<SharedMealSnapshot | MealActionErrorReason>;
   importMeal: (shareToken: string) => Promise<MealActionErrorReason | null>;
+  logPortion: (mealId: string, grams: number) => Promise<MealActionErrorReason | null>;
 };
 
-export function useCustomMeals(user: User | null): UseCustomMealsResult {
+export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
   const [state, setState] = useState<CustomMealsLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setState({ kind: 'idle' });
       return;
     }
 
     setState({ kind: 'loading' });
 
-    void getMyCustomMeals(user)
+    void getMyCustomMeals()
       .then((meals) => setState({ kind: 'ready', meals }))
       .catch((err: Error) => setState({ kind: 'error', message: err.message }));
-  }, [user]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     load();
@@ -100,13 +101,13 @@ export function useCustomMeals(user: User | null): UseCustomMealsResult {
 
   const create = useCallback(
     async (input: CustomMealInput): Promise<MealActionErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       const errors = validateCustomMealInput(input);
       if (Object.keys(errors).length > 0) return 'validation';
 
       try {
-        await createCustomMeal(user, {
+        await createCustomMeal({
           name: input.name.trim(),
           totalGrams: parseFloat(input.totalGrams),
           calories: parseFloat(input.calories),
@@ -121,18 +122,18 @@ export function useCustomMeals(user: User | null): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   const update = useCallback(
     async (id: string, input: CustomMealInput): Promise<MealActionErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       const errors = validateCustomMealInput(input);
       if (Object.keys(errors).length > 0) return 'validation';
 
       try {
-        await updateCustomMeal(user, id, {
+        await updateCustomMeal(id, {
           name: input.name.trim(),
           totalGrams: parseFloat(input.totalGrams),
           calories: parseFloat(input.calories),
@@ -147,63 +148,77 @@ export function useCustomMeals(user: User | null): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   const remove = useCallback(
     async (id: string): Promise<MealActionErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        await deleteCustomMeal(user, id);
+        await deleteCustomMeal(id);
         load();
         return null;
       } catch (err) {
         return normalizeMealActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
   );
 
   const shareLink = useCallback(
-    async (mealId: string): Promise<{ shareToken: string; shareUrl: string } | MealActionErrorReason> => {
-      if (!user) return 'unknown';
+    async (mealId: string): Promise<{ shareLinkId: string } | MealActionErrorReason> => {
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        return await createMealShareLink(user, mealId);
+        return await createMealShareLink(mealId);
       } catch (err) {
         return normalizeMealActionError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const previewImport = useCallback(
     async (shareToken: string): Promise<SharedMealSnapshot | MealActionErrorReason> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        return await previewSharedMeal(user, shareToken);
+        return await previewSharedMeal(shareToken);
       } catch (err) {
         return normalizeMealActionError(err);
       }
     },
-    [user]
+    [isAuthenticated]
   );
 
   const importMeal = useCallback(
     async (shareToken: string): Promise<MealActionErrorReason | null> => {
-      if (!user) return 'unknown';
+      if (!isAuthenticated) return 'unknown';
 
       try {
-        await importSharedMeal(user, shareToken);
+        await importSharedMeal(shareToken);
         load();
         return null;
       } catch (err) {
         return normalizeMealActionError(err);
       }
     },
-    [user, load]
+    [isAuthenticated, load]
+  );
+
+  const logPortion = useCallback(
+    async (mealId: string, grams: number): Promise<MealActionErrorReason | null> => {
+      if (!isAuthenticated) return 'unknown';
+
+      try {
+        await logPortionFromSource(mealId, grams);
+        return null;
+      } catch (err) {
+        return normalizeMealActionError(err);
+      }
+    },
+    [isAuthenticated]
   );
 
   return {
@@ -219,5 +234,6 @@ export function useCustomMeals(user: User | null): UseCustomMealsResult {
     shareLink,
     previewImport,
     importMeal,
+    logPortion,
   };
 }

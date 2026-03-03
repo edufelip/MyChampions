@@ -1,26 +1,43 @@
 /**
  * Custom meal Data Connect source — CRUD, share link, recipe import.
- * All calls use Firebase Auth ID token in Authorization header.
+ * Uses Firebase Data Connect generated SDK (D-114, D-126).
+ * Auth handled internally by SDK via Firebase Auth current user.
  * No business logic; normalization delegates to custom-meal.logic.
  * Refs: D-017–D-029, FR-137–FR-162, BR-301–BR-327
  */
 
-import Constants from 'expo-constants';
-import type { User } from 'firebase/auth';
+import { type DataConnect } from 'firebase/data-connect';
+
+import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
+import {
+  getMyCustomMeals as _getMyCustomMeals,
+  createCustomMeal as _createCustomMeal,
+  updateCustomMeal as _updateCustomMeal,
+  deleteCustomMeal as _deleteCustomMeal,
+  createMealShareLink as _createMealShareLink,
+  previewSharedMeal as _previewSharedMeal,
+  importSharedMeal as _importSharedMeal,
+  logPortion as _logPortion,
+  type GetMyCustomMealsData,
+  type CreateCustomMealData,
+  type CreateCustomMealVariables,
+  type UpdateCustomMealData,
+  type UpdateCustomMealVariables,
+  type DeleteCustomMealData,
+  type DeleteCustomMealVariables,
+  type CreateMealShareLinkData,
+  type CreateMealShareLinkVariables,
+  type PreviewSharedMealData,
+  type PreviewSharedMealVariables,
+  type ImportSharedMealData,
+  type ImportSharedMealVariables,
+  type LogPortionData,
+  type LogPortionVariables,
+} from '@mychampions/dataconnect-generated';
 
 import type { CustomMeal, SharedMealSnapshot } from './custom-meal.logic';
 
-// ─── Transport helpers ────────────────────────────────────────────────────────
-
-type DataConnectExtraConfig = {
-  graphqlEndpoint?: string;
-  apiKey?: string;
-};
-
-type DataConnectGraphQLResponse<T> = {
-  data?: T;
-  errors?: Array<{ message?: string }>;
-};
+// ─── Error class ──────────────────────────────────────────────────────────────
 
 type CustomMealSourceErrorCode =
   | 'configuration'
@@ -38,147 +55,88 @@ export class CustomMealSourceError extends Error {
   }
 }
 
-function resolveConfig(): DataConnectExtraConfig {
-  const extra = (Constants.expoConfig?.extra ?? {}) as {
-    dataConnect?: DataConnectExtraConfig;
-  };
-  return extra.dataConnect ?? {};
-}
+// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
 
-async function gql<T>(
-  user: User,
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
-  const { graphqlEndpoint, apiKey } = resolveConfig();
-  if (!graphqlEndpoint) {
-    throw new CustomMealSourceError(
-      'configuration',
-      'Data Connect endpoint is not configured. Set EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT.'
-    );
-  }
+export type CustomMealSourceDeps = {
+  getDataConnectInstance: () => DataConnect;
+  getMyCustomMeals: (dc: DataConnect) => Promise<{ data: GetMyCustomMealsData }>;
+  createCustomMeal: (
+    dc: DataConnect,
+    vars: CreateCustomMealVariables
+  ) => Promise<{ data: CreateCustomMealData }>;
+  updateCustomMeal: (
+    dc: DataConnect,
+    vars: UpdateCustomMealVariables
+  ) => Promise<{ data: UpdateCustomMealData }>;
+  deleteCustomMeal: (
+    dc: DataConnect,
+    vars: DeleteCustomMealVariables
+  ) => Promise<{ data: DeleteCustomMealData }>;
+  createMealShareLink: (
+    dc: DataConnect,
+    vars: CreateMealShareLinkVariables
+  ) => Promise<{ data: CreateMealShareLinkData }>;
+  previewSharedMeal: (
+    dc: DataConnect,
+    vars: PreviewSharedMealVariables
+  ) => Promise<{ data: PreviewSharedMealData }>;
+  importSharedMeal: (
+    dc: DataConnect,
+    vars: ImportSharedMealVariables
+  ) => Promise<{ data: ImportSharedMealData }>;
+  logPortion: (
+    dc: DataConnect,
+    vars: LogPortionVariables
+  ) => Promise<{ data: LogPortionData }>;
+};
 
-  const idToken = await user.getIdToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${idToken}`,
-  };
-  if (apiKey) headers['x-goog-api-key'] = apiKey;
-
-  const response = await fetch(graphqlEndpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!response.ok) {
-    throw new CustomMealSourceError(
-      'network',
-      `Data Connect request failed with status ${response.status}.`
-    );
-  }
-
-  const payload = (await response.json()) as DataConnectGraphQLResponse<T>;
-  if (payload.errors && payload.errors.length > 0) {
-    throw new CustomMealSourceError(
-      'graphql',
-      payload.errors[0]?.message ?? 'Data Connect operation failed.'
-    );
-  }
-
-  if (!payload.data) {
-    throw new CustomMealSourceError(
-      'invalid_response',
-      'Data Connect operation returned no data payload.'
-    );
-  }
-
-  return payload.data;
-}
+const defaultDeps: CustomMealSourceDeps = {
+  getDataConnectInstance: _getDataConnectInstance,
+  getMyCustomMeals: _getMyCustomMeals,
+  createCustomMeal: _createCustomMeal,
+  updateCustomMeal: _updateCustomMeal,
+  deleteCustomMeal: _deleteCustomMeal,
+  createMealShareLink: _createMealShareLink,
+  previewSharedMeal: _previewSharedMeal,
+  importSharedMeal: _importSharedMeal,
+  logPortion: _logPortion,
+};
 
 // ─── Raw meal mapper ──────────────────────────────────────────────────────────
 
-type RawMeal = {
-  id?: string | null;
-  name?: string | null;
-  total_grams?: number | null;
-  calories?: number | null;
-  carbs?: number | null;
-  proteins?: number | null;
-  fats?: number | null;
-  ingredient_cost?: number | null;
-  image_url?: string | null;
-  owner_uid?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-};
-
-function mapRawMeal(raw: RawMeal): CustomMeal | null {
-  if (
-    !raw.id ||
-    !raw.name ||
-    raw.total_grams == null ||
-    raw.calories == null ||
-    raw.carbs == null ||
-    raw.proteins == null ||
-    raw.fats == null ||
-    !raw.owner_uid ||
-    !raw.created_at ||
-    !raw.updated_at
-  ) {
-    return null;
-  }
-
+function mapSdkMeal(
+  raw: GetMyCustomMealsData['customMeals'][number]
+): CustomMeal {
   return {
     id: raw.id,
     name: raw.name,
-    totalGrams: raw.total_grams,
+    totalGrams: raw.totalGrams,
     calories: raw.calories,
     carbs: raw.carbs,
     proteins: raw.proteins,
     fats: raw.fats,
-    ingredientCost: raw.ingredient_cost ?? null,
-    imageUrl: raw.image_url ?? null,
-    ownerUid: raw.owner_uid,
-    createdAt: raw.created_at,
-    updatedAt: raw.updated_at,
+    ingredientCost: raw.ingredientCost ?? null,
+    imageUrl: raw.imageUrl ?? null,
+    ownerUid: raw.ownerAuthUid,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
   };
 }
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
 
 /** Returns all custom meals owned by the current user. */
-export async function getMyCustomMeals(user: User): Promise<CustomMeal[]> {
-  const query = `
-    query GetMyCustomMeals {
-      getMyCustomMeals {
-        id
-        name
-        total_grams
-        calories
-        carbs
-        proteins
-        fats
-        ingredient_cost
-        image_url
-        owner_uid
-        created_at
-        updated_at
-      }
-    }
-  `;
-
-  const data = await gql<{ getMyCustomMeals?: RawMeal[] | null }>(user, query);
-
-  return (data.getMyCustomMeals ?? []).flatMap((raw) => {
-    const meal = mapRawMeal(raw);
-    return meal ? [meal] : [];
-  });
+export async function getMyCustomMeals(deps = defaultDeps): Promise<CustomMeal[]> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.getMyCustomMeals(dc);
+  return data.customMeals.map(mapSdkMeal);
 }
 
-/** Creates a new custom meal. Returns the created meal with server-assigned id. */
+/**
+ * Creates a new custom meal.
+ * SDK returns only a key; re-fetches meals to return the created meal.
+ */
 export async function createCustomMeal(
-  user: User,
   input: {
     name: string;
     totalGrams: number;
@@ -188,46 +146,11 @@ export async function createCustomMeal(
     fats: number;
     ingredientCost?: number | null;
     imageUrl?: string | null;
-  }
+  },
+  deps = defaultDeps
 ): Promise<CustomMeal> {
-  const mutation = `
-    mutation CreateCustomMeal(
-      $name: String!
-      $total_grams: Float!
-      $calories: Float!
-      $carbs: Float!
-      $proteins: Float!
-      $fats: Float!
-      $ingredient_cost: Float
-      $image_url: String
-    ) {
-      createCustomMeal(
-        name: $name
-        total_grams: $total_grams
-        calories: $calories
-        carbs: $carbs
-        proteins: $proteins
-        fats: $fats
-        ingredient_cost: $ingredient_cost
-        image_url: $image_url
-      ) {
-        id
-        name
-        total_grams
-        calories
-        carbs
-        proteins
-        fats
-        ingredient_cost
-        image_url
-        owner_uid
-        created_at
-        updated_at
-      }
-    }
-  `;
-
-  const data = await gql<{ createCustomMeal?: RawMeal | null }>(user, mutation, {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.createCustomMeal(dc, {
     name: input.name,
     total_grams: input.totalGrams,
     calories: input.calories,
@@ -238,16 +161,22 @@ export async function createCustomMeal(
     image_url: input.imageUrl ?? null,
   });
 
-  const meal = mapRawMeal(data.createCustomMeal ?? {});
-  if (!meal) {
-    throw new CustomMealSourceError('invalid_response', 'createCustomMeal returned no meal.');
+  const insertedId = data.customMeal_insert.id;
+
+  // Re-fetch to get full meal data
+  const { data: listData } = await deps.getMyCustomMeals(dc);
+  const found = listData.customMeals.find((m) => m.id === insertedId);
+  if (!found) {
+    throw new CustomMealSourceError('invalid_response', 'createCustomMeal: meal not found after insert.');
   }
-  return meal;
+  return mapSdkMeal(found);
 }
 
-/** Updates an existing custom meal. Returns updated meal. */
+/**
+ * Updates an existing custom meal.
+ * SDK returns only a key; re-fetches meals to return the updated meal.
+ */
 export async function updateCustomMeal(
-  user: User,
   id: string,
   input: {
     name: string;
@@ -258,48 +187,11 @@ export async function updateCustomMeal(
     fats: number;
     ingredientCost?: number | null;
     imageUrl?: string | null;
-  }
+  },
+  deps = defaultDeps
 ): Promise<CustomMeal> {
-  const mutation = `
-    mutation UpdateCustomMeal(
-      $id: UUID!
-      $name: String!
-      $total_grams: Float!
-      $calories: Float!
-      $carbs: Float!
-      $proteins: Float!
-      $fats: Float!
-      $ingredient_cost: Float
-      $image_url: String
-    ) {
-      updateCustomMeal(
-        id: $id
-        name: $name
-        total_grams: $total_grams
-        calories: $calories
-        carbs: $carbs
-        proteins: $proteins
-        fats: $fats
-        ingredient_cost: $ingredient_cost
-        image_url: $image_url
-      ) {
-        id
-        name
-        total_grams
-        calories
-        carbs
-        proteins
-        fats
-        ingredient_cost
-        image_url
-        owner_uid
-        created_at
-        updated_at
-      }
-    }
-  `;
-
-  const data = await gql<{ updateCustomMeal?: RawMeal | null }>(user, mutation, {
+  const dc = deps.getDataConnectInstance();
+  await deps.updateCustomMeal(dc, {
     id,
     name: input.name,
     total_grams: input.totalGrams,
@@ -311,61 +203,36 @@ export async function updateCustomMeal(
     image_url: input.imageUrl ?? null,
   });
 
-  const meal = mapRawMeal(data.updateCustomMeal ?? {});
-  if (!meal) {
-    throw new CustomMealSourceError('invalid_response', 'updateCustomMeal returned no meal.');
+  // Re-fetch to get full updated meal data
+  const { data: listData } = await deps.getMyCustomMeals(dc);
+  const found = listData.customMeals.find((m) => m.id === id);
+  if (!found) {
+    throw new CustomMealSourceError('invalid_response', 'updateCustomMeal: meal not found after update.');
   }
-  return meal;
+  return mapSdkMeal(found);
 }
 
 /** Deletes a custom meal by id. */
-export async function deleteCustomMeal(user: User, id: string): Promise<void> {
-  const mutation = `
-    mutation DeleteCustomMeal($id: UUID!) {
-      deleteCustomMeal(id: $id) {
-        id
-      }
-    }
-  `;
-
-  await gql<{ deleteCustomMeal?: { id?: string | null } | null }>(user, mutation, { id });
+export async function deleteCustomMeal(id: string, deps = defaultDeps): Promise<void> {
+  const dc = deps.getDataConnectInstance();
+  await deps.deleteCustomMeal(dc, { id });
 }
 
 // ─── Share link ───────────────────────────────────────────────────────────────
 
 /**
- * Generates a share token for a custom meal.
- * Returns a deep-link URL the user can share.
+ * Generates a share link for a custom meal.
+ * SDK returns MealShareLink_Key only (no shareToken/shareUrl fields).
+ * Returns the inserted record id; callers should construct deep-link from id.
  * Rate-limited server-side (D-028).
  */
 export async function createMealShareLink(
-  user: User,
-  mealId: string
-): Promise<{ shareToken: string; shareUrl: string }> {
-  const mutation = `
-    mutation CreateMealShareLink($meal_id: UUID!) {
-      createMealShareLink(meal_id: $meal_id) {
-        share_token
-        share_url
-      }
-    }
-  `;
-
-  const data = await gql<{
-    createMealShareLink?: { share_token?: string | null; share_url?: string | null } | null;
-  }>(user, mutation, { meal_id: mealId });
-
-  const shareToken = data.createMealShareLink?.share_token;
-  const shareUrl = data.createMealShareLink?.share_url;
-
-  if (!shareToken || !shareUrl) {
-    throw new CustomMealSourceError(
-      'invalid_response',
-      'createMealShareLink returned no token or URL.'
-    );
-  }
-
-  return { shareToken, shareUrl };
+  mealId: string,
+  deps = defaultDeps
+): Promise<{ shareLinkId: string }> {
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.createMealShareLink(dc, { meal_id: mealId });
+  return { shareLinkId: data.mealShareLink_insert.id };
 }
 
 // ─── Recipe import ────────────────────────────────────────────────────────────
@@ -376,93 +243,64 @@ export async function createMealShareLink(
  * Ref: D-022, D-023
  */
 export async function previewSharedMeal(
-  user: User,
-  shareToken: string
+  shareToken: string,
+  deps = defaultDeps
 ): Promise<SharedMealSnapshot> {
-  const query = `
-    query PreviewSharedMeal($share_token: String!) {
-      previewSharedMeal(share_token: $share_token) {
-        name
-        total_grams
-        calories
-        carbs
-        proteins
-        fats
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.previewSharedMeal(dc, { share_token: shareToken });
 
-  const data = await gql<{
-    previewSharedMeal?: {
-      name?: string | null;
-      total_grams?: number | null;
-      calories?: number | null;
-      carbs?: number | null;
-      proteins?: number | null;
-      fats?: number | null;
-    } | null;
-  }>(user, query, { share_token: shareToken });
-
-  const raw = data.previewSharedMeal;
-  if (
-    !raw?.name ||
-    raw.total_grams == null ||
-    raw.calories == null ||
-    raw.carbs == null ||
-    raw.proteins == null ||
-    raw.fats == null
-  ) {
-    throw new CustomMealSourceError(
-      'invalid_response',
-      'previewSharedMeal returned incomplete snapshot.'
-    );
+  const link = data.mealShareLinks[0];
+  if (!link) {
+    throw new CustomMealSourceError('invalid_response', 'previewSharedMeal: share link not found.');
   }
 
+  const meal = link.meal;
+
   return {
-    name: raw.name,
-    totalGrams: raw.total_grams,
-    calories: raw.calories,
-    carbs: raw.carbs,
-    proteins: raw.proteins,
-    fats: raw.fats,
+    name: meal.name,
+    totalGrams: meal.totalGrams,
+    calories: meal.calories,
+    carbs: meal.carbs,
+    proteins: meal.proteins,
+    fats: meal.fats,
   };
 }
 
 /**
  * Imports a shared meal as a recipient-owned copy.
  * Idempotent: same token + same recipient returns existing copy (D-021).
+ * SDK returns only a key; re-fetches meals to return the imported meal.
  * Ref: D-018, D-019, D-021, D-023
  */
 export async function importSharedMeal(
-  user: User,
-  shareToken: string
+  shareToken: string,
+  deps = defaultDeps
 ): Promise<CustomMeal> {
-  const mutation = `
-    mutation ImportSharedMeal($share_token: String!) {
-      importSharedMeal(share_token: $share_token) {
-        id
-        name
-        total_grams
-        calories
-        carbs
-        proteins
-        fats
-        ingredient_cost
-        image_url
-        owner_uid
-        created_at
-        updated_at
-      }
-    }
-  `;
+  const dc = deps.getDataConnectInstance();
+  const { data } = await deps.importSharedMeal(dc, { share_token: shareToken });
 
-  const data = await gql<{ importSharedMeal?: RawMeal | null }>(user, mutation, {
-    share_token: shareToken,
-  });
+  const insertedId = data.customMeal_insert.id;
 
-  const meal = mapRawMeal(data.importSharedMeal ?? {});
-  if (!meal) {
-    throw new CustomMealSourceError('invalid_response', 'importSharedMeal returned no meal.');
+  // Re-fetch to get full meal data
+  const { data: listData } = await deps.getMyCustomMeals(dc);
+  const found = listData.customMeals.find((m) => m.id === insertedId);
+  if (!found) {
+    throw new CustomMealSourceError('invalid_response', 'importSharedMeal: meal not found after import.');
   }
-  return meal;
+  return mapSdkMeal(found);
+}
+
+// ─── Portion log ──────────────────────────────────────────────────────────────
+
+/**
+ * Logs a consumed portion of a custom meal.
+ * Ref: UC-003.3, FR-150, BR-316
+ */
+export async function logPortionFromSource(
+  mealId: string,
+  grams: number,
+  deps = defaultDeps
+): Promise<void> {
+  const dc = deps.getDataConnectInstance();
+  await deps.logPortion(dc, { meal_id: mealId, grams });
 }
