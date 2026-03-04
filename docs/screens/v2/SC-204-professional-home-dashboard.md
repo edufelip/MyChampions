@@ -24,6 +24,12 @@
 - Error: dashboard data retrieval failure.
 - Success: student management shortcuts and status widgets visible.
 
+## Design Structure (D-134)
+- Screen shell adopts DS structure (`DsScreen`) for consistent playful background and spacing.
+- Dashboard blocks use DS surface primitives (`DsCard`) and unified CTA primitives (`DsPillButton`).
+- Offline and lock warnings follow DS semantic alert structure while preserving existing gating logic.
+- Invite-code actions and navigation CTAs remain behavior-equivalent; only presentation layer is standardized.
+
 ## Validation Rules
 - Any operation that would exceed 10 active students must trigger subscription gate if no entitlement.
 - Invite-code initiated assignments stay pending until professional confirmation.
