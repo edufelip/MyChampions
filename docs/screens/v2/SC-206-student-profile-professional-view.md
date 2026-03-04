@@ -6,6 +6,12 @@
 ## Objective
 - Enable per-student assignment oversight and plan authoring/assignment workflows.
 
+## Design Structure (D-134)
+- Screen shell uses `DsScreen` with shared blob background and semantic DS theme tokens.
+- Assignment, plan-change triage, and water-goal sections are presented as stacked `DsCard` blocks with consistent spacing/radius.
+- Primary/secondary actions use DS pill button treatment; destructive action keeps warning color semantics.
+- Offline/write-lock communication uses DS warning/offline surfaces while preserving existing business gating logic.
+
 ## User Actions
 - Primary:
   - View student assignment status by specialty.
