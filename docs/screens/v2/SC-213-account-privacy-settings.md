@@ -6,6 +6,12 @@
 ## Objective
 - Provide compliance-critical user controls for privacy policy access and account deletion initiation.
 
+## Design Structure (D-134)
+- Route uses `DsScreen` shell with semantic DS theme tokens and shared spacing rhythm.
+- Offline communication uses `DsOfflineBanner` while preserving BL-008 write-lock restrictions.
+- Privacy and delete areas remain sectioned content blocks with DS-aligned button hierarchy.
+- Success/error feedback keeps existing compliance logic and localized copy keys with DS visual treatment.
+
 ## User Actions
 - Primary:
   - View privacy policy link.
