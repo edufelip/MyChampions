@@ -9,7 +9,7 @@
  *  - See removal-blocker reasons (active/pending students, last-specialty rule)
  *
  * Docs: docs/screens/v2/SC-202-professional-specialty-setup.md
- * Refs: D-100, FR-103, FR-119, FR-158, FR-174–177, BR-202, BR-212, BR-229, BR-237–239
+ * Refs: D-100, D-134, FR-103, FR-119, FR-158, FR-174–177, BR-202, BR-212, BR-229, BR-237–239
  *
  * Offline wiring: real network status via useNetworkStatus (BL-008, FR-214).
  */
@@ -17,7 +17,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -25,25 +24,33 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { DsCard } from '@/components/ds/primitives/DsCard';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import {
+  DsRadius,
+  DsSpace,
+  DsTypography,
+  getDsTheme,
+} from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
-import { useSpecialties } from '@/features/professional/use-professional';
-import type { Specialty, SpecialtyRecord } from '@/features/professional/specialty.logic';
 import {
-  resolveRemovalAssistState,
   buildActionMetadata,
   getRemovalBlockedMessageKeys,
+  resolveRemovalAssistState,
   type RemovalAssistState,
 } from '@/features/professional/specialty-removal-assist.logic';
+import type { Specialty, SpecialtyRecord } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type CredentialFormData = {
   registryId: string;
@@ -51,14 +58,18 @@ type CredentialFormData = {
   country: string;
 };
 
-type Palette = (typeof Colors)['light'];
 type TFn = ReturnType<typeof useTranslation>['t'];
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfessionalSpecialtyScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
+  const palette = {
+    text: theme.color.textPrimary,
+    icon: theme.color.textSecondary,
+    tint: theme.color.accentPrimary,
+  };
+
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
   const router = useRouter();
@@ -73,7 +84,6 @@ export default function ProfessionalSpecialtyScreen() {
   const { state, addSpecialty, removeSpecialty, checkRemoval, upsertCredential } =
     useSpecialties(Boolean(currentUser));
 
-  // Credential form state: null = closed; set to specialty when open
   const [credentialFor, setCredentialFor] = useState<Specialty | null>(null);
   const [credentialForId, setCredentialForId] = useState<string | null>(null);
   const [credentialForm, setCredentialForm] = useState<CredentialFormData>({
@@ -86,13 +96,10 @@ export default function ProfessionalSpecialtyScreen() {
 
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // BL-011: blocked removal assist state
   const [blockedAssist, setBlockedAssist] = useState<{
     specialty: Specialty;
     assistState: RemovalAssistState;
   } | null>(null);
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
 
   function findRecord(specialty: Specialty): SpecialtyRecord | undefined {
     if (state.kind !== 'ready') return undefined;
@@ -113,15 +120,11 @@ export default function ProfessionalSpecialtyScreen() {
     const record = findRecord(specialty);
     if (!record) return;
 
-    // activeCount / pendingCount come from the record when available (stubbed 0 — real wiring deferred).
-    // We pass the same counts to both the guard check and the assist state so the block reason
-    // is derived once from a single source of truth (checkRemoval → result.reason).
     const activeStudentCount = 0;
     const pendingStudentCount = 0;
     const result = checkRemoval(specialty, activeStudentCount, pendingStudentCount);
-    if (result.allowed === false) {
+    if (!result.allowed) {
       const totalSpecialties = state.kind === 'ready' ? state.specialties.length : 1;
-      // Use the same counts that produced result.reason — no independent re-derivation.
       const assistState = resolveRemovalAssistState({
         specialty,
         activeStudentCount,
@@ -156,90 +159,75 @@ export default function ProfessionalSpecialtyScreen() {
 
     if (err) {
       setCredentialError(t('pro.specialty.credential.save_error') as string);
-    } else {
-      setCredentialFor(null);
-      setCredentialForId(null);
+      return;
     }
+
+    setCredentialFor(null);
+    setCredentialForId(null);
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: palette.background }]}
-      contentContainerStyle={styles.content}
-      testID="pro.specialty.screen">
+    <DsScreen scheme={scheme} testID="pro.specialty.screen" contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.specialty.title'), headerShown: true }} />
 
-      {/* Offline banner (BL-008) */}
       {offlineDisplay.showOfflineBanner ? (
-        <View
-          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
-          testID="pro.specialty.offlineBanner">
-          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
-            {t('offline.banner')}
-          </Text>
-        </View>
+        <DsOfflineBanner
+          scheme={scheme}
+          text={t('offline.banner') as string}
+          testID="pro.specialty.offlineBanner"
+        />
       ) : null}
 
-      {/* Loading */}
       {state.kind === 'loading' ? (
         <ActivityIndicator
           testID="pro.specialty.loading"
           style={styles.centered}
           accessibilityLabel={t('a11y.loading.default') as string}
+          color={theme.color.accentPrimary}
         />
       ) : null}
 
-      {/* Error */}
       {state.kind === 'error' ? (
-        <Text
-          style={[styles.errorText, { color: '#b3261e' }]}
-          testID="pro.specialty.error">
+        <Text style={[styles.errorText, { color: theme.color.danger }]} testID="pro.specialty.error">
           {state.message}
         </Text>
       ) : null}
 
-      {/* Action error */}
       {actionError ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.errorText, { color: '#b3261e' }]} testID="pro.specialty.actionError">
+          <Text style={[styles.errorText, { color: theme.color.danger }]} testID="pro.specialty.actionError">
             {actionError}
           </Text>
         </View>
       ) : null}
 
-      {/* BL-011: Inline removal assist card */}
       {blockedAssist ? (
         <RemovalAssistCard
           specialty={blockedAssist.specialty}
           assistState={blockedAssist.assistState}
+          scheme={scheme}
           palette={palette}
           t={t}
           onAction={(navigationTarget) => {
             setBlockedAssist(null);
-            // `as never` is required because expo-router typed routes only accept literal
-            // string types at compile time, not runtime string variables. The runtime route
-            // strings returned by buildActionMetadata are validated at the logic layer.
             if (navigationTarget) router.push(navigationTarget as never);
           }}
           onDismiss={() => setBlockedAssist(null)}
         />
       ) : null}
 
-      {/* Empty */}
       {state.kind === 'ready' && state.specialties.length === 0 ? (
-        <Text
-          style={[styles.emptyText, { color: palette.icon }]}
-          testID="pro.specialty.empty">
-          {t('pro.specialty.empty')}
-        </Text>
+        <DsCard scheme={scheme} variant="muted">
+          <Text style={[styles.emptyText, { color: palette.icon }]} testID="pro.specialty.empty">
+            {t('pro.specialty.empty')}
+          </Text>
+        </DsCard>
       ) : null}
 
-      {/* Specialty rows */}
       {state.kind === 'ready' ? (
         <SpecialtyList
           specialties={state.specialties}
+          scheme={scheme}
           palette={palette}
           t={t}
           onRemove={handleRemove}
@@ -248,41 +236,43 @@ export default function ProfessionalSpecialtyScreen() {
         />
       ) : null}
 
-      {/* Add buttons */}
       <AddSpecialtyButtons
         specialties={state.kind === 'ready' ? state.specialties : []}
+        scheme={scheme}
         palette={palette}
         t={t}
         onAdd={handleAdd}
         isWriteLocked={isWriteLocked}
       />
 
-      {/* Credential form */}
       {credentialFor ? (
         <CredentialForm
           specialty={credentialFor}
           form={credentialForm}
           error={credentialError}
           isSaving={isSavingCredential}
+          scheme={scheme}
           palette={palette}
           t={t}
           onChange={(field, value) =>
             setCredentialForm((prev: CredentialFormData) => ({ ...prev, [field]: value }))
           }
           onSave={handleSaveCredential}
-          onSkip={() => { setCredentialFor(null); setCredentialForId(null); }}
+          onSkip={() => {
+            setCredentialFor(null);
+            setCredentialForId(null);
+          }}
           isWriteLocked={isWriteLocked}
         />
       ) : null}
-    </ScrollView>
+    </DsScreen>
   );
 }
-
-// ─── Removal Assist Card (BL-011) ────────────────────────────────────────────
 
 function RemovalAssistCard({
   specialty,
   assistState,
+  scheme,
   palette,
   t,
   onAction,
@@ -290,7 +280,8 @@ function RemovalAssistCard({
 }: {
   specialty: Specialty;
   assistState: RemovalAssistState;
-  palette: Palette;
+  scheme: 'light' | 'dark';
+  palette: { text: string; icon: string; tint: string };
   t: TFn;
   onAction: (navigationTarget: string | undefined) => void;
   onDismiss: () => void;
@@ -301,16 +292,9 @@ function RemovalAssistCard({
   const actions = assistState.availableActions.map((a) => buildActionMetadata(a, specialty));
 
   return (
-    <View
-      style={[styles.assistCard, { borderColor: '#b3261e66', backgroundColor: '#b3261e11' }]}
-      accessibilityRole="alert"
-      testID="pro.specialty.removalAssist">
-      <Text style={[styles.assistTitle, { color: '#b3261e' }]}>
-        {t(titleKey)}
-      </Text>
-      <Text style={[styles.assistBody, { color: palette.text }]}>
-        {t(bodyKey)}
-      </Text>
+    <DsCard scheme={scheme} variant="warning" accessibilityRole="alert" testID="pro.specialty.removalAssist">
+      <Text style={[styles.assistTitle, { color: '#b3261e' }]}>{t(titleKey)}</Text>
+      <Text style={[styles.assistBody, { color: palette.text }]}>{t(bodyKey)}</Text>
 
       {actions.map((meta) => (
         <Pressable
@@ -332,7 +316,11 @@ function RemovalAssistCard({
             ]}>
             {t(meta.label)}
           </Text>
-          <Text style={[styles.assistActionDesc, { color: meta.priority === 'primary' ? '#ffffffbb' : palette.icon }]}>
+          <Text
+            style={[
+              styles.assistActionDesc,
+              { color: meta.priority === 'primary' ? '#ffffffbb' : palette.icon },
+            ]}>
             {t(meta.description)}
           </Text>
         </Pressable>
@@ -346,14 +334,13 @@ function RemovalAssistCard({
           {t('pro.specialty.remove_blocked.dismiss') as string}
         </Text>
       </Pressable>
-    </View>
+    </DsCard>
   );
 }
 
-// ─── Specialty List ───────────────────────────────────────────────────────────
-
 function SpecialtyList({
   specialties,
+  scheme,
   palette,
   t,
   onRemove,
@@ -361,7 +348,8 @@ function SpecialtyList({
   isWriteLocked,
 }: {
   specialties: SpecialtyRecord[];
-  palette: Palette;
+  scheme: 'light' | 'dark';
+  palette: { text: string; icon: string; tint: string };
   t: TFn;
   onRemove: (s: Specialty) => void;
   onOpenCredential: (s: Specialty) => void;
@@ -370,10 +358,7 @@ function SpecialtyList({
   return (
     <>
       {specialties.map((record) => (
-        <View
-          key={record.specialty}
-          style={[styles.card, { borderColor: palette.tint + '66' }]}
-          testID={`pro.specialty.row.${record.specialty}`}>
+        <DsCard scheme={scheme} key={record.specialty} testID={`pro.specialty.row.${record.specialty}`}>
           <Text style={[styles.cardTitle, { color: palette.text }]}>
             {record.specialty === 'nutritionist'
               ? t('pro.specialty.nutritionist')
@@ -401,23 +386,22 @@ function SpecialtyList({
               </Text>
             </Pressable>
           </View>
-        </View>
+        </DsCard>
       ))}
     </>
   );
 }
 
-// ─── Add Specialty Buttons ────────────────────────────────────────────────────
-
 function AddSpecialtyButtons({
   specialties,
-  palette,
+  scheme,
   t,
   onAdd,
   isWriteLocked,
 }: {
   specialties: SpecialtyRecord[];
-  palette: Palette;
+  scheme: 'light' | 'dark';
+  palette: { text: string; icon: string; tint: string };
   t: TFn;
   onAdd: (s: Specialty) => void;
   isWriteLocked: boolean;
@@ -428,41 +412,36 @@ function AddSpecialtyButtons({
   return (
     <View style={styles.addButtonsRow}>
       {!hasNutritionist ? (
-        <Pressable
-          accessibilityRole="button"
+        <DsPillButton
+          scheme={scheme}
+          variant="secondary"
+          label={t('pro.specialty.add_nutritionist') as string}
           onPress={() => onAdd('nutritionist')}
           disabled={isWriteLocked}
-          style={[styles.outlineButton, { borderColor: isWriteLocked ? palette.icon : palette.tint }]}
-          testID="pro.specialty.add.nutritionist">
-          <Text style={[styles.outlineButtonText, { color: isWriteLocked ? palette.icon : palette.tint }]}>
-            {t('pro.specialty.add_nutritionist')}
-          </Text>
-        </Pressable>
+          testID="pro.specialty.add.nutritionist"
+        />
       ) : null}
 
       {!hasFitnessCoach ? (
-        <Pressable
-          accessibilityRole="button"
+        <DsPillButton
+          scheme={scheme}
+          variant="secondary"
+          label={t('pro.specialty.add_fitness_coach') as string}
           onPress={() => onAdd('fitness_coach')}
           disabled={isWriteLocked}
-          style={[styles.outlineButton, { borderColor: isWriteLocked ? palette.icon : palette.tint }]}
-          testID="pro.specialty.add.fitness_coach">
-          <Text style={[styles.outlineButtonText, { color: isWriteLocked ? palette.icon : palette.tint }]}>
-            {t('pro.specialty.add_fitness_coach')}
-          </Text>
-        </Pressable>
+          testID="pro.specialty.add.fitness_coach"
+        />
       ) : null}
     </View>
   );
 }
-
-// ─── Credential Form ──────────────────────────────────────────────────────────
 
 function CredentialForm({
   specialty,
   form,
   error,
   isSaving,
+  scheme,
   palette,
   t,
   onChange,
@@ -474,7 +453,8 @@ function CredentialForm({
   form: CredentialFormData;
   error: string | null;
   isSaving: boolean;
-  palette: Palette;
+  scheme: 'light' | 'dark';
+  palette: { text: string; icon: string; tint: string };
   t: TFn;
   onChange: (field: keyof CredentialFormData, value: string) => void;
   onSave: () => void;
@@ -482,16 +462,12 @@ function CredentialForm({
   isWriteLocked: boolean;
 }) {
   const specialtyLabel =
-    specialty === 'nutritionist'
-      ? t('pro.specialty.nutritionist')
-      : t('pro.specialty.fitness_coach');
+    specialty === 'nutritionist' ? t('pro.specialty.nutritionist') : t('pro.specialty.fitness_coach');
 
   return (
-    <View
-      style={[styles.card, { borderColor: palette.tint + '66' }]}
-      testID="pro.specialty.credentialForm">
+    <DsCard scheme={scheme} testID="pro.specialty.credentialForm" style={styles.cardGap}>
       <Text style={[styles.cardTitle, { color: palette.text }]}>
-        {t('pro.specialty.credential.title')} — {specialtyLabel}
+        {t('pro.specialty.credential.title')} - {specialtyLabel}
       </Text>
 
       <LabeledInput
@@ -531,32 +507,23 @@ function CredentialForm({
         {isSaving ? (
           <ActivityIndicator accessibilityLabel={t('a11y.loading.saving') as string} />
         ) : (
-          <Pressable
-            accessibilityRole="button"
+          <DsPillButton
+            scheme={scheme}
+            label={t('pro.specialty.credential.save') as string}
             onPress={onSave}
             disabled={isWriteLocked || isSaving}
-            style={[styles.primaryButton, { backgroundColor: isWriteLocked ? palette.icon : palette.tint }]}
-            testID="pro.specialty.credential.save">
-            <Text style={styles.primaryButtonText}>
-              {t('pro.specialty.credential.save')}
-            </Text>
-          </Pressable>
+            style={styles.saveButton}
+            testID="pro.specialty.credential.save"
+          />
         )}
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={onSkip}
-          testID="pro.specialty.credential.skip">
-          <Text style={[styles.link, { color: palette.icon }]}>
-            {t('pro.specialty.credential.skip')}
-          </Text>
+        <Pressable accessibilityRole="button" onPress={onSkip} testID="pro.specialty.credential.skip">
+          <Text style={[styles.link, { color: palette.icon }]}>{t('pro.specialty.credential.skip')}</Text>
         </Pressable>
       </View>
-    </View>
+    </DsCard>
   );
 }
-
-// ─── Labeled Input ────────────────────────────────────────────────────────────
 
 function LabeledInput({
   label,
@@ -570,14 +537,14 @@ function LabeledInput({
   placeholder: string;
   value: string;
   onChangeText: (v: string) => void;
-  palette: Palette;
+  palette: { text: string; icon: string; tint: string };
   testID: string;
 }) {
   return (
     <View style={styles.fieldWrapper}>
       <Text style={[styles.fieldLabel, { color: palette.text }]}>{label}</Text>
       <TextInput
-        style={[styles.input, { borderColor: palette.icon + '66', color: palette.text }]}
+        style={[styles.input, { borderColor: `${palette.icon}66`, color: palette.text }]}
         placeholder={placeholder}
         placeholderTextColor={palette.icon}
         value={value}
@@ -589,75 +556,49 @@ function LabeledInput({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 16 },
-  centered: { alignSelf: 'center', marginVertical: 16 },
-  card: { borderRadius: 12, borderWidth: 1.5, gap: 10, padding: 16 },
+  content: {
+    flexGrow: 1,
+    gap: DsSpace.lg,
+    padding: DsSpace.lg,
+    paddingBottom: DsSpace.xxl,
+  },
+  centered: { alignSelf: 'center', marginVertical: DsSpace.md },
   cardTitle: {
+    ...DsTypography.cardTitle,
     fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 16,
-    fontWeight: '700',
   },
-  row: { flexDirection: 'row', gap: 16, alignItems: 'center' },
-  addButtonsRow: { gap: 12 },
-  link: { fontSize: 14, fontWeight: '600' },
-  outlineButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  outlineButtonText: { fontSize: 15, fontWeight: '600' },
-  primaryButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  emptyText: { fontSize: 14, textAlign: 'center' },
-  errorText: { fontSize: 13 },
-  fieldWrapper: { gap: 4 },
-  fieldLabel: { fontSize: 13, fontWeight: '600' },
+  row: { alignItems: 'center', flexDirection: 'row', gap: DsSpace.lg },
+  addButtonsRow: { gap: DsSpace.md },
+  link: { ...DsTypography.body, fontWeight: '700' },
+  emptyText: { ...DsTypography.body, textAlign: 'center' },
+  errorText: { ...DsTypography.caption },
+  fieldWrapper: { gap: DsSpace.xs },
+  fieldLabel: { ...DsTypography.caption, fontWeight: '700' },
   input: {
-    borderRadius: 8,
+    borderRadius: DsRadius.md,
     borderWidth: 1,
     fontSize: 15,
     minHeight: 44,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  offlineBanner: {
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 10,
-  },
-  offlineBannerText: { fontSize: 13, lineHeight: 18 },
-  assistCard: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    gap: 12,
-    padding: 16,
+    paddingHorizontal: DsSpace.md,
+    paddingVertical: DsSpace.sm,
   },
   assistTitle: {
     fontFamily: Fonts?.rounded ?? 'normal',
     fontSize: 15,
     fontWeight: '700',
   },
-  assistBody: { fontSize: 13, lineHeight: 18 },
+  assistBody: { ...DsTypography.caption },
   assistAction: {
-    borderRadius: 10,
+    borderRadius: DsRadius.md,
     gap: 2,
-    minHeight: 48,
     justifyContent: 'center',
+    minHeight: 48,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  assistActionText: { fontSize: 14, fontWeight: '600' },
-  assistActionDesc: { fontSize: 12 },
+  assistActionText: { ...DsTypography.body, fontWeight: '700' },
+  assistActionDesc: { ...DsTypography.caption },
+  cardGap: { gap: DsSpace.sm },
+  saveButton: { flex: 1 },
 });
