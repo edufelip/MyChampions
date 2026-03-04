@@ -6,6 +6,12 @@
 ## Objective
 - Enforce and manage monetization for professional accounts exceeding 10 active students.
 
+## Design Structure (D-134)
+- Screen shell uses `DsScreen` with shared background treatment and semantic DS colors.
+- Entitlement status, warning, and lock states are rendered with stacked `DsCard` blocks.
+- Purchase/restore actions use DS pill buttons; refresh stays as a lightweight text action.
+- Offline messaging uses `DsOfflineBanner` and keeps BL-008 write-lock gating.
+
 ## User Actions
 - Primary:
   - View current entitlement status.
