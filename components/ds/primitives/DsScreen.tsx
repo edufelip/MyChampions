@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  type ScrollViewProps,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { type DsColorScheme, getDsTheme } from '@/constants/design-system';
 
@@ -11,7 +17,7 @@ type DsScreenProps = {
   testID?: string;
   contentContainerStyle?: StyleProp<ViewStyle>;
   withBlobs?: boolean;
-};
+} & Omit<ScrollViewProps, 'style' | 'contentContainerStyle' | 'children'>;
 
 export function DsScreen({
   scheme,
@@ -19,6 +25,7 @@ export function DsScreen({
   testID,
   contentContainerStyle,
   withBlobs = true,
+  ...scrollViewProps
 }: DsScreenProps) {
   const theme = getDsTheme(scheme);
 
@@ -26,7 +33,8 @@ export function DsScreen({
     <ScrollView
       style={[styles.container, { backgroundColor: theme.color.canvas }]}
       contentContainerStyle={[styles.content, contentContainerStyle]}
-      testID={testID}>
+      testID={testID}
+      {...scrollViewProps}>
       {withBlobs ? <DsBlobBackground scheme={scheme} /> : null}
       {children}
     </ScrollView>

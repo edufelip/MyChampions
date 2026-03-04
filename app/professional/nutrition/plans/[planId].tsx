@@ -20,7 +20,6 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -28,7 +27,9 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { getDsTheme } from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import {
@@ -40,8 +41,13 @@ import { useTranslation } from '@/localization';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Palette = (typeof Colors)['light'];
 type TFn = ReturnType<typeof useTranslation>['t'];
+type Palette = {
+  background: string;
+  text: string;
+  tint: string;
+  icon: string;
+};
 
 type AddItemFormState =
   | { kind: 'closed' }
@@ -51,7 +57,14 @@ type AddItemFormState =
 
 export default function NutritionPlanBuilderScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
+  const palette = {
+    background: theme.color.canvas,
+    text: theme.color.textPrimary,
+    tint: theme.color.accentPrimary,
+    icon: theme.color.textSecondary,
+  };
   const { t } = useTranslation();
   const router = useRouter();
   const { planId } = useLocalSearchParams<{ planId: string }>();
@@ -161,8 +174,8 @@ export default function NutritionPlanBuilderScreen() {
     : t('pro.plan.nutrition.title.edit');
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: palette.background }]}
+    <DsScreen
+      scheme={scheme}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
@@ -304,7 +317,7 @@ export default function NutritionPlanBuilderScreen() {
           </Text>
         )}
       </Pressable>
-    </ScrollView>
+    </DsScreen>
   );
 }
 
