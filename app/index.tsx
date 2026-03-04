@@ -1,9 +1,9 @@
 import { Redirect } from 'expo-router';
 
 /**
- * Root path always resolves through auth guard flow.
- * Public entry target stays the sign-in route.
+ * Root path enters the tab shell; auth/session routing is enforced globally
+ * in app/_layout.tsx by resolveAuthGuardRedirect.
  */
 export default function IndexRedirect() {
-  return <Redirect href="/auth/sign-in" />;
+  return <Redirect href="/(tabs)" />;
 }

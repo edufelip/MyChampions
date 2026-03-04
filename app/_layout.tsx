@@ -1,13 +1,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
-import { resolveAuthGuardRedirect } from '@/features/auth/auth-route-guard.logic';
+import { normalizeGuardPathname, resolveAuthGuardRedirect } from '@/features/auth/auth-route-guard.logic';
 import { AuthSessionProvider, useAuthSession } from '@/features/auth/auth-session';
 
 export const unstable_settings = {
@@ -27,7 +27,9 @@ function RootLayoutContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
-  const { isHydrated, isAuthenticated, lockedRole } = useAuthSession();
+  const normalizedPathname = normalizeGuardPathname(pathname);
+  const lastRedirectAttemptRef = useRef<string | null>(null);
+  const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance } = useAuthSession();
 
   useEffect(() => {
     if (!isHydrated) {
@@ -37,13 +39,25 @@ function RootLayoutContent() {
     const redirect = resolveAuthGuardRedirect({
       isAuthenticated,
       lockedRole,
-      pathname,
+      needsTermsAcceptance,
+      pathname: normalizedPathname,
     });
 
-    if (redirect && redirect !== pathname) {
+    if (!redirect || redirect === normalizedPathname) {
+      lastRedirectAttemptRef.current = null;
+      return;
+    }
+
+    const redirectAttemptKey = `${normalizedPathname}->${redirect}`;
+    if (lastRedirectAttemptRef.current === redirectAttemptKey) {
+      return;
+    }
+
+    lastRedirectAttemptRef.current = redirectAttemptKey;
+    if (redirect !== normalizedPathname) {
       router.replace(redirect);
     }
-  }, [isAuthenticated, isHydrated, lockedRole, pathname, router]);
+  }, [isAuthenticated, isHydrated, lockedRole, needsTermsAcceptance, normalizedPathname, router]);
 
   if (!isHydrated) {
     return (
@@ -59,6 +73,7 @@ function RootLayoutContent() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
         <Stack.Screen name="auth/create-account" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/accept-terms" options={{ headerShown: false }} />
         <Stack.Screen name="auth/role-selection" options={{ headerShown: false }} />
         <Stack.Screen name="student/home" options={{ headerShown: true }} />
         <Stack.Screen name="student/nutrition" options={{ headerShown: true }} />

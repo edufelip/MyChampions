@@ -3,8 +3,25 @@ import type { RoleIntent } from './role-selection.logic';
 export type AuthGuardInput = {
   isAuthenticated: boolean;
   lockedRole: RoleIntent | null;
+  needsTermsAcceptance: boolean;
   pathname: string;
 };
+
+export function normalizeGuardPathname(pathname: string | null | undefined): string {
+  const raw = (pathname ?? '').trim();
+  if (raw.length === 0) {
+    return '/';
+  }
+
+  let next = raw.startsWith('/') ? raw : `/${raw}`;
+  next = next.replace(/\/{2,}/g, '/');
+
+  if (next.length > 1 && next.endsWith('/')) {
+    next = next.slice(0, -1);
+  }
+
+  return next;
+}
 
 export function roleHomePath(role: RoleIntent): string {
   if (role === 'professional') {
@@ -15,7 +32,7 @@ export function roleHomePath(role: RoleIntent): string {
 }
 
 export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
-  const path = input.pathname || '/';
+  const path = normalizeGuardPathname(input.pathname);
   const isAuthRoute = path.startsWith('/auth/');
 
   if (!input.isAuthenticated) {
@@ -24,6 +41,22 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
     }
 
     return '/auth/sign-in';
+  }
+
+  if (input.needsTermsAcceptance) {
+    if (path !== '/auth/accept-terms') {
+      return '/auth/accept-terms';
+    }
+
+    return null;
+  }
+
+  if (path === '/auth/accept-terms') {
+    if (input.lockedRole) {
+      return roleHomePath(input.lockedRole);
+    }
+
+    return '/auth/role-selection';
   }
 
   if (!input.lockedRole) {
