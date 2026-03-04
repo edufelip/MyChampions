@@ -25,6 +25,12 @@
 - Error: invite submission or unbind failure.
 - Success: relationship status updated, including canceled-pending states with reconnect guidance.
 
+## Design Structure (D-134)
+- Screen shell uses design-system primitives (`DsScreen`) with shared playful background structure.
+- Form actions and cards use shared DS primitives (`DsPillButton`, `DsCard`).
+- Relationship cards preserve the same status-color semantics while following DS card composition.
+- Business logic and hooks remain in the screen layer; DS components remain presentation-only.
+
 ## Validation Rules
 - Invite-based assignment requires professional confirmation before becoming active.
 - Student cannot hold more than one active professional per specialty.
