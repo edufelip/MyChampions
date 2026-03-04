@@ -36,7 +36,6 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -45,7 +44,10 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { getDsTheme } from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import {
@@ -70,14 +72,26 @@ import { useTranslation } from '@/localization';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Palette = (typeof Colors)['light'];
+type Palette = {
+  background: string;
+  text: string;
+  icon: string;
+  tint: string;
+};
 type TFn = ReturnType<typeof useTranslation>['t'];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CustomMealBuilderScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
+  const palette = {
+    background: theme.color.canvas,
+    text: theme.color.textPrimary,
+    icon: theme.color.textSecondary,
+    tint: theme.color.accentPrimary,
+  };
   const { t } = useTranslation();
   const router = useRouter();
   const { currentUser } = useAuthSession();
@@ -203,22 +217,19 @@ export default function CustomMealBuilderScreen() {
     : t('meal.builder.title.edit');
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: palette.background }]}
+    <DsScreen
+      scheme={scheme}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
       testID="meal.builder.screen">
       <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
 
-      {/* Offline banner (BL-008) */}
       {offlineDisplay.showOfflineBanner ? (
-        <View
-          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
-          testID="meal.builder.offlineBanner">
-          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
-            {t('offline.banner')}
-          </Text>
-        </View>
+        <DsOfflineBanner
+          scheme={scheme}
+          text={t('offline.banner') as string}
+          testID="meal.builder.offlineBanner"
+        />
       ) : null}
 
       {/* Helper text */}
@@ -361,7 +372,7 @@ export default function CustomMealBuilderScreen() {
           </Text>
         </Pressable>
       ) : null}
-    </ScrollView>
+    </DsScreen>
   );
 }
 
