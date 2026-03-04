@@ -29,14 +29,16 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { getDsTheme } from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import type { SharedMealSnapshot } from '@/features/nutrition/custom-meal.logic';
@@ -50,7 +52,12 @@ import { useTranslation } from '@/localization';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Palette = (typeof Colors)['light'];
+type Palette = {
+  background: string;
+  text: string;
+  icon: string;
+  tint: string;
+};
 type TFn = ReturnType<typeof useTranslation>['t'];
 
 type ScreenState =
@@ -63,7 +70,14 @@ type ScreenState =
 
 export default function SharedRecipeSaveScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
+  const palette = {
+    background: theme.color.canvas,
+    text: theme.color.textPrimary,
+    icon: theme.color.textSecondary,
+    tint: theme.color.accentPrimary,
+  };
   const { t } = useTranslation();
   const router = useRouter();
   const { shareToken } = useLocalSearchParams<{ shareToken: string }>();
@@ -130,8 +144,8 @@ export default function SharedRecipeSaveScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: palette.background }]}
+    <DsScreen
+      scheme={scheme}
       contentContainerStyle={styles.content}
       testID="shared_recipe.screen">
       <Stack.Screen
@@ -161,6 +175,7 @@ export default function SharedRecipeSaveScreen() {
           isSaving={isSaving}
           saveError={saveError}
           isWriteLocked={isWriteLocked}
+          scheme={scheme}
           offlineDisplay={offlineDisplay}
           palette={palette}
           t={t}
@@ -168,7 +183,7 @@ export default function SharedRecipeSaveScreen() {
           onCancel={() => router.back()}
         />
       )}
-    </ScrollView>
+    </DsScreen>
   );
 }
 
@@ -204,6 +219,7 @@ function PreviewView({
   isSaving,
   saveError,
   isWriteLocked,
+  scheme,
   offlineDisplay,
   palette,
   t,
@@ -214,6 +230,7 @@ function PreviewView({
   isSaving: boolean;
   saveError: string | null;
   isWriteLocked: boolean;
+  scheme: 'light' | 'dark';
   offlineDisplay: OfflineDisplayState;
   palette: Palette;
   t: TFn;
@@ -238,13 +255,11 @@ function PreviewView({
 
       {/* Offline banner (BL-008) */}
       {offlineDisplay.showOfflineBanner ? (
-        <View
-          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
-          testID="shared_recipe.offlineBanner">
-          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
-            {t('offline.banner')}
-          </Text>
-        </View>
+        <DsOfflineBanner
+          scheme={scheme}
+          text={t('offline.banner') as string}
+          testID="shared_recipe.offlineBanner"
+        />
       ) : null}
 
       {/* Recipe name */}
