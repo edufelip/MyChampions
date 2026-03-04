@@ -39,14 +39,27 @@
 ## Copy Draft (Initial)
 - No-professional card title: `No professional connected yet`
 - No-professional card body: `You can still start tracking today on your own.`
-- Nutrition CTA: `Start my nutrition plan`
-- Training CTA: `Start my training plan`
-- Hydration card title: `Water intake`
+- Nutrition CTA: `View Plan` (active) / `Start on my own` (empty)
+- Training CTA: `Start Training` (active) / `Start on my own` (empty)
+- Hydration card title: `Hydration`
+- Pending status pill: `Pending Connection`
+- Offline mode title: `Offline Mode`
 - Hydration progress helper: `{consumed} / {goal} ml`
 - Offline stale badge: `Data may be outdated`
 - Offline last-sync meta: `Last updated: {datetime}`
 - Offline banner: `You're offline. You can view cached data, but updates are locked until connection returns.`
 - Write-lock helper: `Connect to the internet to save changes.`
+
+## Implementation Snapshot (2026-03-04)
+- `app/student/home.tsx` was redesigned to the playful dashboard layout reference with three explicit UI states:
+  - `success`: active cards with hydration, nutrition plan, workout, and manage-professionals CTA.
+  - `offline + no active plan`: red offline banner + read-only lock behavior with disabled self-guided CTA buttons.
+  - `loading`: skeleton card stack + stale-data warning strip.
+- Existing behavior constraints are preserved:
+  - Offline write-lock still gates write actions.
+  - Pending connection state remains prominent.
+  - Hydration still reflects effective-goal ownership rules.
+  - Nutrition remains above training in layout order.
 
 ## Data Contract
 - Inputs:

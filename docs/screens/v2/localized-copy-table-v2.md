@@ -80,6 +80,26 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.home.offline.last_sync` | SC-203 | Offline stale metadata | Last updated: {datetime} | Última atualização: {datetime} | Última actualización: {datetime} | Timestamp format localized |
 | `student.home.offline.banner_read_only` | SC-203 | Offline persistent banner | You're offline. You can view cached data, but updates are locked until connection returns. | Você está offline. Você pode ver dados em cache, mas as atualizações ficam bloqueadas até a conexão voltar. | Estás sin conexión. Puedes ver los datos en caché, pero las actualizaciones están bloqueadas hasta que vuelva la conexión. | BL-008 |
 | `student.home.offline.write_lock` | SC-203 | Offline blocked-write helper | Connect to the internet to save changes. | Conecte-se à internet para salvar alterações. | Conéctate a internet para guardar los cambios. | BL-008 |
+| `student.home.title` | SC-203 | Dashboard title | My Dashboard | Meu Painel | Mi Panel | Stitch-aligned heading |
+| `student.home.pending_connection` | SC-203 | Pending pill label | Pending Connection | Conexão Pendente | Conexión Pendiente | Stitch compact status pill |
+| `student.home.hydration.title` | SC-203 | Hydration card title | Hydration | Hidratação | Hidratación | Stitch card title |
+| `student.home.hydration.progress` | SC-203 | Hydration progress value | {consumed} / {goal} ml | {consumed} / {goal} ml | {consumed} / {goal} ml | |
+| `student.home.hydration.goal_student` | SC-203 | Goal owner helper | Using your personal water goal | Usando seu objetivo pessoal de água | Usando tu objetivo personal de agua | |
+| `student.home.hydration.goal_nutritionist` | SC-203 | Goal owner helper | Goal set by Nutritionist | Meta definida pelo nutricionista | Meta definida por el nutricionista | Stitch compact helper |
+| `student.home.hydration.no_goal` | SC-203 | No-goal helper | Set a daily water goal to track progress | Defina um objetivo diário de água para acompanhar o progresso | Establece un objetivo diario de agua para seguir tu progreso | |
+| `student.home.nutrition.section` | SC-203 | Nutrition card title | Nutrition Plan | Plano de Nutrição | Plan de Nutrición | Stitch active state |
+| `student.home.training.section` | SC-203 | Training card title | Workout of the Day | Treino do Dia | Entrenamiento del Día | Stitch active state |
+| `student.home.nutrition.plan_available` | SC-203 | Active nutrition helper | Plan available for today | Plano disponível para hoje | Plan disponible para hoy | |
+| `student.home.training.plan_available` | SC-203 | Active training helper | Full body session available | Sessão de corpo inteiro disponível | Sesión de cuerpo completo disponible | |
+| `student.home.no_active_plan` | SC-203 | Empty plan helper | No active plan | Nenhum plano ativo | Sin plan activo | Stitch offline/empty state |
+| `student.home.cta_nutrition` | SC-203 | Active nutrition CTA | View Plan | Ver Plano | Ver Plan | Stitch active state |
+| `student.home.cta_training` | SC-203 | Active training CTA | Start Training | Iniciar Treino | Iniciar Entrenamiento | Stitch active state |
+| `student.home.cta_start_self` | SC-203 | Empty-state CTA | Start on my own | Começar por conta própria | Empezar por mi cuenta | Stitch offline/empty state |
+| `student.home.cta_professionals` | SC-203 | Manage professionals CTA | Manage professionals | Gerenciar profissionais | Gestionar profesionales | |
+| `student.home.offline.mode` | SC-203 | Offline banner title | Offline Mode | Modo Offline | Modo Sin Conexión | Stitch offline state |
+| `student.home.offline.read_only_badge` | SC-203 | Hydration read-only badge | Offline: Read-only | Offline: Somente leitura | Sin conexión: Solo lectura | Stitch offline state |
+| `student.home.loading.stale_title` | SC-203 | Loading stale warning title | Stale Data | Dados Desatualizados | Datos Desactualizados | Stitch loading state |
+| `student.home.loading.stale_body` | SC-203 | Loading stale warning helper | Last sync > 24h ago. Pull down to refresh. | Última sincronização > 24h. Puxe para atualizar. | Última sincronización > 24h. Desliza hacia abajo para actualizar. | Stitch loading state |
 | `relationship.title` | SC-211 | Screen title | Connect with professionals | Conectar com profissionais | Conectar con profesionales | Plain-language screen title |
 | `relationship.intro` | SC-211 | Intro copy | Have a professional? Enter their invite code. | Tem um profissional? Insira o código de convite. | ¿Tienes un profesional? Introduce su código de invitación. | |
 | `relationship.helper_self_guided` | SC-211 | Optionality helper | Don't have one yet? You can keep using the app on your own. | Ainda não tem? Você pode continuar usando o app por conta própria. | ¿Aún no tienes uno? Puedes seguir usando la app por tu cuenta. | Critical clarity copy |

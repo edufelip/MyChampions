@@ -35,10 +35,18 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 
 ## Recommended Student Empty-State Copy
 - Dashboard no-professional state: `No professional connected yet — you can still start tracking today.`
-- Nutrition no-assignment state: `Start your own nutrition plan now. You can connect with a nutritionist anytime.`
-- Training no-assignment state: `Start your own training plan now. You can connect with a coach anytime.`
+- Nutrition no-assignment state: `No active plan`
+- Training no-assignment state: `No active plan`
+- Empty-state CTA: `Start on my own`
+- Dashboard pending status: `Pending Connection`
+- Hydration title: `Hydration`
+- Hydration nutritionist helper: `Goal set by Nutritionist`
+- Active nutrition title/CTA: `Nutrition Plan` / `View Plan`
+- Active training title/CTA: `Workout of the Day` / `Start Training`
 - Offline stale indicator: `Data may be outdated`
 - Offline last-sync meta: `Last updated: {datetime}`
+- Offline mode banner title: `Offline Mode`
+- Hydration read-only badge: `Offline: Read-only`
 - Offline banner: `You're offline. You can view cached data, but updates are locked until connection returns.`
 - Offline write-lock helper: `Connect to the internet to save changes.`
 
