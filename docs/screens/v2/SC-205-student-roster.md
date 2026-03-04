@@ -6,6 +6,12 @@
 ## Objective
 - Allow professionals to browse and select managed students for follow-up and plan actions.
 
+## Design Structure (D-134)
+- Screen shell uses `DsScreen` with blob background and themed canvas.
+- Search/filter controls are grouped in a top `DsCard` with pill-style filter chips.
+- Roster rows are rendered inside a dedicated `DsCard` list container using DS spacing/radius/typography tokens.
+- Offline state uses `DsOfflineBanner`; all copy remains localization-key driven.
+
 ## User Actions
 - Primary:
   - Browse linked student list.
