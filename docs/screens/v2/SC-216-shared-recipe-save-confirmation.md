@@ -6,6 +6,12 @@
 ## Objective
 - Let any recipient open a shared recipe link, then authenticate (if needed), review details, and confirm saving an account-owned copy.
 
+## Design Structure (D-134)
+- Route uses `DsScreen` shell with shared DS background/theme tokens.
+- Offline state in preview mode uses `DsOfflineBanner` with BL-008 write-lock semantics.
+- Preview, error, and success sections follow DS spacing/typography hierarchy with localization-key copy only.
+- Primary/secondary confirmation actions keep existing business flow while matching DS action styling.
+
 ## UX Copy Intent
 - Make ownership outcome explicit: saving creates a personal copy.
 - Keep flow safe with a clear confirmation step before import.
