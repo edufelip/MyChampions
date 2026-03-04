@@ -32,7 +32,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.role.cta_start_self_guided` | SC-201 | Quick self-guided CTA | Start on my own now | Começar por conta própria agora | Empezar por mi cuenta ahora | BL-001 |
 | `auth.role.validation.required` | SC-201 | Required validation message | Choose how you want to use the app to continue. | Escolha como quer usar o app para continuar. | Elige cómo quieres usar la app para continuar. | |
 | `auth.role.error.save_failed` | SC-201 | Role save failure message | Could not save your role right now. Try again. | Não foi possível salvar seu perfil agora. Tente novamente. | No se pudo guardar tu perfil ahora. Inténtalo de nuevo. | Data Connect profile write failure |
-| `auth.signin.title` | SC-217 | Sign-in header | Welcome back | Que bom ter você de volta | Bienvenido de nuevo | |
+| `auth.signin.title` | SC-217 | Sign-in header | Welcome | Boas-vindas | Bienvenido | |
 | `auth.signin.subtitle` | SC-217 | Sign-in subtitle | Ready to crush your goals today? | Pronto para superar suas metas hoje? | ¿Listo para superar tus metas hoy? | Design-aligned supporting copy |
 | `auth.signin.field.email` | SC-217 | Sign-in email label | Email Address | Endereço de e-mail | Correo electrónico | Sign-in specific label |
 | `auth.signin.placeholder.email` | SC-217 | Sign-in email placeholder | hello@fitness.app | hello@fitness.app | hello@fitness.app | Design reference placeholder |

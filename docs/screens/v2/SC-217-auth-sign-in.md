@@ -43,7 +43,7 @@
 - Wrong-role route attempts after sign-in are redirected to role home by route guard.
 
 ## Copy Draft (Initial)
-- Title: `Welcome back`
+- Title: `Welcome`
 - Subtitle: `Ready to crush your goals today?`
 - Email label: `Email Address`
 - Email placeholder: `hello@fitness.app`
@@ -59,14 +59,15 @@
 - Implemented in code with route and UI scaffold:
   - `app/auth/sign-in.tsx`
 - Current implemented behavior:
+  - No back button in header; sign-in is treated as the primary auth entry state.
   - Email/password inputs with non-empty validation.
-  - Password reveal/hide control.
+  - Password reveal/hide eye toggle embedded inside the password input field.
   - Contextual error copy mapping for `invalid_credentials`, `network`, `provider_conflict`, and `configuration`.
   - Email/password sign-in is wired to Firebase Auth.
   - Google and Apple social sign-in are wired to Firebase Auth credentials.
   - Successful sign-in is driven by Firebase Auth session state for route-guard enforcement.
   - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes.
-  - Visual treatment follows a playful rounded layout with decorative background blobs, circular brand icon badge, pill-shaped inputs/buttons, and a compact social sign-in row while preserving documented copy/validation rules.
+  - Visual treatment follows a playful rounded layout with decorative background blobs, circular brand icon badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.
   - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
 
 ## Links
