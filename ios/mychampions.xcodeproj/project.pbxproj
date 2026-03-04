@@ -250,14 +250,10 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-mychampions/Pods-mychampions-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -272,52 +268,44 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-mychampions/Pods-mychampions-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/PurchasesHybridCommon/PurchasesHybridCommon.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly/RCT-Folly_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/RevenueCat/RevenueCat.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/RevenueCatUI/RevenueCat_RevenueCatUI.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/boost/boost_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/glog/glog_privacy.bundle",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoApplication_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/PurchasesHybridCommon.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RCT-Folly_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNCAsyncStorage_resources.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RevenueCat.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RevenueCat_RevenueCatUI.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SDWebImage.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/boost_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/glog_privacy.bundle",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-mychampions/Pods-mychampions-resources.sh\"\n";
 			showEnvVarsInLog = 0;
-		};
-		D4B9A6A72FEA100B00F10001 /* [Firebase] Select GoogleService plist */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(PROJECT_DIR)/mychampions/GoogleService-Info.plist",
-				"$(PROJECT_DIR)/mychampions/GoogleService-Info-Dev.plist",
-				"$(PROJECT_DIR)/mychampions/GoogleService-Info-Prod.plist",
-				"$(PROJECT_DIR)/GoogleService-Info.plist",
-				"$(PROJECT_DIR)/GoogleService-Info-Dev.plist",
-				"$(PROJECT_DIR)/GoogleService-Info-Prod.plist",
-				"$(PROJECT_DIR)/../GoogleService-Info.plist",
-				"$(PROJECT_DIR)/../GoogleService-Info-Dev.plist",
-				"$(PROJECT_DIR)/../GoogleService-Info-Prod.plist",
-			);
-			name = "[Firebase] Select GoogleService plist";
-			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/GoogleService-Info.plist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\n\nENVIRONMENT=\"${EXPO_PUBLIC_ENV:-}\"\nif [ -z \"$ENVIRONMENT\" ]; then\n  case \"${CONFIGURATION:-}\" in\n    Debug|Dev|DevRelease|*Dev*|*Debug*)\n      ENVIRONMENT=\"dev\"\n      ;;\n    *)\n      ENVIRONMENT=\"production\"\n      ;;\n  esac\nfi\n\ncase \"$ENVIRONMENT\" in\n  prod|production)\n    CANDIDATE_NAMES=\"GoogleService-Info.plist GoogleService-Info-Prod.plist\"\n    ;;\n  dev)\n    CANDIDATE_NAMES=\"GoogleService-Info-Dev.plist GoogleService-Info.plist\"\n    ;;\n  *)\n    echo \"Unknown EXPO_PUBLIC_ENV: $ENVIRONMENT (expected dev|prod|production)\" >&2\n    exit 1\n    ;;\n esac\n\nSOURCE_PLIST=\"\"\nfor BASE_DIR in \"${PROJECT_DIR}/mychampions\" \"${PROJECT_DIR}\" \"${PROJECT_DIR}/..\"; do\n  for FILE_NAME in $CANDIDATE_NAMES; do\n    CANDIDATE_PATH=\"${BASE_DIR}/${FILE_NAME}\"\n    if [ -f \"$CANDIDATE_PATH\" ]; then\n      SOURCE_PLIST=\"$CANDIDATE_PATH\"\n      break 2\n    fi\n  done\ndone\n\nif [ -z \"$SOURCE_PLIST\" ]; then\n  echo \"GoogleService plist not found for env '$ENVIRONMENT'. Looked for: $CANDIDATE_NAMES under ${PROJECT_DIR}/mychampions, ${PROJECT_DIR}, ${PROJECT_DIR}/..\" >&2\n  exit 1\nfi\n\nDEST_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nmkdir -p \"$(dirname \"$DEST_PATH\")\"\ncp \"$SOURCE_PLIST\" \"$DEST_PATH\"\necho \"Using GoogleService plist: $SOURCE_PLIST\"\n";
 		};
 		CCE87D1AF1FD7FA4CCE836AA /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -342,6 +330,30 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-mychampions/expo-configure-project.sh\"\n";
+		};
+		D4B9A6A72FEA100B00F10001 /* [Firebase] Select GoogleService plist */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(PROJECT_DIR)/mychampions/GoogleService-Info.plist",
+				"$(PROJECT_DIR)/mychampions/GoogleService-Info-Dev.plist",
+				"$(PROJECT_DIR)/mychampions/GoogleService-Info-Prod.plist",
+				"$(PROJECT_DIR)/GoogleService-Info.plist",
+				"$(PROJECT_DIR)/GoogleService-Info-Dev.plist",
+				"$(PROJECT_DIR)/GoogleService-Info-Prod.plist",
+				"$(PROJECT_DIR)/../GoogleService-Info.plist",
+				"$(PROJECT_DIR)/../GoogleService-Info-Dev.plist",
+				"$(PROJECT_DIR)/../GoogleService-Info-Prod.plist",
+			);
+			name = "[Firebase] Select GoogleService plist";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/GoogleService-Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nENVIRONMENT=\"${EXPO_PUBLIC_ENV:-}\"\nif [ -z \"$ENVIRONMENT\" ]; then\n  case \"${CONFIGURATION:-}\" in\n    Debug|Dev|DevRelease|*Dev*|*Debug*)\n      ENVIRONMENT=\"dev\"\n      ;;\n    *)\n      ENVIRONMENT=\"production\"\n      ;;\n  esac\nfi\n\ncase \"$ENVIRONMENT\" in\n  prod|production)\n    CANDIDATE_NAMES=\"GoogleService-Info.plist GoogleService-Info-Prod.plist\"\n    ;;\n  dev)\n    CANDIDATE_NAMES=\"GoogleService-Info-Dev.plist GoogleService-Info.plist\"\n    ;;\n  *)\n    echo \"Unknown EXPO_PUBLIC_ENV: $ENVIRONMENT (expected dev|prod|production)\" >&2\n    exit 1\n    ;;\n esac\n\nSOURCE_PLIST=\"\"\nfor BASE_DIR in \"${PROJECT_DIR}/mychampions\" \"${PROJECT_DIR}\" \"${PROJECT_DIR}/..\"; do\n  for FILE_NAME in $CANDIDATE_NAMES; do\n    CANDIDATE_PATH=\"${BASE_DIR}/${FILE_NAME}\"\n    if [ -f \"$CANDIDATE_PATH\" ]; then\n      SOURCE_PLIST=\"$CANDIDATE_PATH\"\n      break 2\n    fi\n  done\ndone\n\nif [ -z \"$SOURCE_PLIST\" ]; then\n  echo \"GoogleService plist not found for env '$ENVIRONMENT'. Looked for: $CANDIDATE_NAMES under ${PROJECT_DIR}/mychampions, ${PROJECT_DIR}, ${PROJECT_DIR}/..\" >&2\n  exit 1\nfi\n\nDEST_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nmkdir -p \"$(dirname \"$DEST_PATH\")\"\ncp \"$SOURCE_PLIST\" \"$DEST_PATH\"\necho \"Using GoogleService plist: $SOURCE_PLIST\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
