@@ -192,5 +192,12 @@
   - Shared connector id: `EXPO_PUBLIC_DATA_CONNECT_CONNECTOR_ID` (current value `mychampions`)
   `features/dataconnect.ts` now builds `getDataConnect(app, { connector, service, location })` from `Constants.expoConfig.extra.dataConnect` rather than importing a single hardcoded generated `connectorConfig`. CI workflows now set `APP_VARIANT` explicitly per lane and run `scripts/check-dataconnect-runtime-config.mjs` before build/distribution.
 
+- `D-134`: UI redesign patterns are standardized into an in-repo design system layer (tokens + primitives + patterns) for React Native screens:
+  - Tokens source-of-truth: `constants/design-system.ts` (semantic colors, spacing, radius, typography, shadow; light/dark theme mapping).
+  - Primitive layer: `components/ds/primitives/*` (`DsScreen`, `DsBlobBackground`, `DsCard`, `DsPillButton`, `DsOfflineBanner`, `DsIconButton`).
+  - Pattern layer: `components/ds/patterns/*` (`WeekStrip`, `ReadOnlyNoticeCard`, `HeroEmptyState`, `PlanChangeRequestCard`).
+  - First adoption surfaces: `app/student/nutrition.tsx` and `app/student/training.tsx`.
+  - Architectural rule: business hooks and data logic remain in screens/features; DS components remain presentation-only and localization-key driven (no hardcoded user copy).
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
