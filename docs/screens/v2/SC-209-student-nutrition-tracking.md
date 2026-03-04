@@ -51,13 +51,16 @@
 - If consumed grams from custom meal exceed meal total grams, proportional scaling still applies.
 - If nutritionist override goal is removed or assignment ends, hydration target falls back to stored student personal goal.
 
-## Copy Draft (Initial)
-- Empty state title: `No meals logged yet`
-- Empty state helper: `No nutritionist connected? You can still build and track your own plan today.`
-- CTA: `Start my nutrition plan`
+## Copy Draft (Current)
+- Screen title: `Nutrition Today`
+- Empty state title: `No active plan yet`
+- Empty state helper: `You can track your own meals or wait for a professional to assign you a personalized plan.`
+- Empty-state CTA: `Start tracking meals`
 - Hydration widget title: `Water intake`
-- Hydration helper (personal goal): `Set your daily water goal.`
-- Hydration helper (nutritionist goal): `Daily water goal defined by your nutritionist.`
+- Hydration goal badge (personal): `Personal Goal`
+- Hydration goal badge (nutritionist): `Goal set by Nutritionist`
+- Hydration intake CTA: `Log Intake`
+- Hydration set-goal CTA: `Set Daily Goal`
 
 ## Links
 - Functional requirement: FR-114, FR-115, FR-116, FR-123, FR-124, FR-135, FR-139, FR-140, FR-141, FR-211, FR-214, FR-218, FR-219, FR-220, FR-221, FR-222

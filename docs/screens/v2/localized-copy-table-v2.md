@@ -131,9 +131,19 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `relationship.credential.registry_id` | SC-211 | Credential field label | Registry ID | Registro profissional | ID de registro | Visible only for assigned professional |
 | `relationship.credential.authority` | SC-211 | Credential field label | Authority | Órgão | Organismo | Visible only for assigned professional |
 | `relationship.credential.country` | SC-211 | Credential field label | Country | País | País | Visible only for assigned professional |
-| `student.nutrition.empty.title` | SC-209 | Tracking empty state | No meals logged yet | Nenhuma refeição registrada ainda | Aún no hay comidas registradas | |
-| `student.nutrition.empty.helper` | SC-209 | Tracking empty helper | No nutritionist connected? You can still build and track your own plan today. | Sem nutricionista conectado? Você ainda pode criar e acompanhar seu próprio plano hoje. | ¿Sin nutricionista conectado? Aún puedes crear y seguir tu propio plan hoy. | Must preserve optionality |
-| `student.nutrition.empty.cta` | SC-209 | Tracking empty CTA | Start my nutrition plan | Começar meu plano de nutrição | Iniciar mi plan de nutrición | |
+| `student.nutrition.title` | SC-209 | Screen title | Nutrition Today | Nutrição de Hoje | Nutrición de Hoy | |
+| `student.nutrition.empty.title` | SC-209 | Tracking empty state | No active plan yet | Nenhum plano ativo ainda | Aún no hay un plan activo | |
+| `student.nutrition.empty.body` | SC-209 | Tracking empty helper | You can track your own meals or wait for a professional to assign you a personalized plan. | Você pode acompanhar suas próprias refeições ou esperar um profissional atribuir um plano personalizado. | Puedes seguir tus propias comidas o esperar a que un profesional te asigne un plan personalizado. | Must preserve self-guided optionality |
+| `student.nutrition.empty.cta` | SC-209 | Tracking empty CTA | Start tracking meals | Começar a acompanhar refeições | Empezar a registrar comidas | |
+| `student.nutrition.water.title` | SC-209 | Hydration card title | Water intake | Ingestão de água | Ingesta de agua | BL-104 |
+| `student.nutrition.water.personal_goal` | SC-209 | Goal ownership badge | Personal Goal | Meta Pessoal | Objetivo Personal | BL-104 |
+| `student.nutrition.water.nutritionist_goal` | SC-209 | Goal ownership badge | Goal set by Nutritionist | Meta definida pelo Nutricionista | Objetivo definido por tu Nutricionista | BL-104 |
+| `student.nutrition.water.cta_log` | SC-209 | Hydration primary action | Log Intake | Registrar Consumo | Registrar Consumo | BL-104 |
+| `student.nutrition.water.cta_set_goal` | SC-209 | Hydration goal action | Set Daily Goal | Definir Meta Diária | Definir Objetivo Diario | BL-104 |
+| `student.nutrition.water.log.label` | SC-209 | Hydration intake label | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
+| `student.nutrition.water.log.placeholder` | SC-209 | Hydration intake placeholder | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
+| `student.nutrition.water.goal.label` | SC-209 | Hydration goal label | Goal (ml) | Meta (ml) | Objetivo (ml) | BL-104 |
+| `student.nutrition.water.goal.placeholder` | SC-209 | Hydration goal placeholder | Goal (ml) | Meta (ml) | Objetivo (ml) | BL-104 |
 | `student.hydration.card_title` | SC-203/SC-209 | Hydration summary title | Water intake | Consumo de água | Consumo de agua | BL-104 |
 | `student.hydration.progress` | SC-203/SC-209 | Hydration progress helper | {consumed} / {goal} ml | {consumido} / {meta} ml | {consumed} / {goal} ml | BL-104 |
 | `student.hydration.cta_log` | SC-209 | Hydration primary action | Log water | Registrar água | Registrar agua | BL-104 |

@@ -35,7 +35,7 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 
 ## Recommended Student Empty-State Copy
 - Dashboard no-professional state: `No professional connected yet — you can still start tracking today.`
-- Nutrition no-assignment state: `No active plan`
+- Nutrition no-assignment state: `No active plan yet`
 - Training no-assignment state: `No active plan`
 - Empty-state CTA: `Start on my own`
 - Dashboard pending status: `Pending Connection`
@@ -78,10 +78,10 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 ## Recommended Hydration Copy (BL-104)
 - Card title: `Water intake`
 - Progress helper: `{consumed} / {goal} ml`
-- Log CTA: `Log water`
-- Set-goal CTA: `Set water goal`
-- Student-goal helper: `Using your personal water goal`
-- Nutritionist-goal helper: `Daily water goal defined by your nutritionist`
+- Log CTA: `Log Intake`
+- Set-goal CTA: `Set Daily Goal`
+- Student-goal helper: `Personal Goal`
+- Nutritionist-goal helper: `Goal set by Nutritionist`
 - Streak helper: `Current streak: {days} days`
 - Professional section title: `Student water goal`
 - Professional input label: `Daily water goal (ml)`
