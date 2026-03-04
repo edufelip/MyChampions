@@ -2,55 +2,39 @@
  * SC-209 Student Nutrition Tracking
  * Route: /student/nutrition
  *
- * Surfaces:
- *  - Daily water intake tracking + effective goal (nutritionist override or student personal)
- *  - Plan change request form for assigned nutrition plans (advisory, D-071)
- *  - Offline banner + write-lock (D-041, D-074)
- *  - Empty state with self-guided CTA when no nutritionist assigned
- *
- * Docs: docs/screens/v2/SC-209-student-nutrition-tracking.md
- * Refs: D-041, D-074, D-081, FR-211, FR-214, FR-218, FR-219, FR-220, FR-221, FR-222, BR-269, BR-272, BR-276
- *
- * Meal log wiring (fatsecret) is deferred — tracked in pending-wiring-checklist-v1.md.
+ * Visual refresh (2026-03-04): playful nutrition dashboard style aligned with auth/home family.
+ * Keeps BL-008 offline/write-lock and D-081 hydration-goal ownership behavior.
  */
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
-import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
-import { usePlans } from '@/features/plans/use-plans';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
+import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
+import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+type Palette = (typeof Colors)['light'];
+type TFn = ReturnType<typeof useTranslation>['t'];
 
 export default function StudentNutritionScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
+  const router = useRouter();
   const { currentUser } = useAuthSession();
 
-  // Real network connectivity via NetInfo (BL-008, FR-214, BR-272)
   const networkStatus = useNetworkStatus();
   const offlineDisplay = resolveOfflineDisplayState({
     networkStatus,
@@ -58,109 +42,130 @@ export default function StudentNutritionScreen() {
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
-  // Data hooks
   const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
   const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
 
-  // Assigned nutrition plan
   const assignedNutritionPlan =
     plansState.kind === 'ready'
       ? plansState.plans.find(
-          (p) => p.planType === 'nutrition' && p.sourceKind === 'assigned' && !p.isArchived
+          (plan) => plan.planType === 'nutrition' && plan.sourceKind === 'assigned' && !plan.isArchived
         ) ?? null
       : null;
 
   const hasActiveNutritionAssignment = assignedNutritionPlan !== null;
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.push('/student/home');
+  };
+
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: palette.background }]}
+      style={[styles.container, { backgroundColor: isDark ? '#221410' : '#fff5f0' }]}
       contentContainerStyle={styles.content}
       testID="student.nutrition.screen">
-      <Stack.Screen options={{ title: t('student.nutrition.title'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('student.nutrition.title'), headerShown: false }} />
 
-      {/* ── Offline banner ─────────────────────────────────── */}
-      {offlineDisplay.showOfflineBanner ? (
-        <View
-          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
-          testID="student.nutrition.offlineBanner"
-          accessibilityRole="alert">
-          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
-            {t('offline.banner')}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* ── Hydration widget ──────────────────────────────── */}
-      <WaterWidget
-        waterHook={waterHook}
-        palette={palette}
-        t={t}
-        isWriteLocked={isWriteLocked}
+      <View
+        pointerEvents="none"
+        style={[styles.blob, styles.blobTopLeft, { backgroundColor: isDark ? '#5f4f29' : '#ffeca1' }]}
+      />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.blob,
+          styles.blobBottomRight,
+          { backgroundColor: isDark ? '#2e5b4a' : '#a1e8cc' },
+        ]}
       />
 
-      {/* ── Nutrition plan area ───────────────────────────── */}
-      {plansState.kind === 'loading' ? (
-        <ActivityIndicator
-          accessibilityLabel={t('a11y.loading.default')}
-          style={styles.centered}
-          testID="student.nutrition.plansLoading"
-        />
-      ) : hasActiveNutritionAssignment ? (
-        <>
-          {/* Assigned plan: read-only notice + change request */}
-          <View
-            style={[styles.infoBox, { borderColor: palette.tint + '66' }]}
-            testID="student.nutrition.assignedPlanNotice">
-            <Text style={[styles.infoText, { color: palette.icon }]}>
-              {t('student.nutrition.assigned_plan.read_only_notice')}
-            </Text>
-          </View>
-          <PlanChangeRequestForm
-            planId={assignedNutritionPlan!.id}
-            palette={palette}
-            t={t}
-            isWriteLocked={isWriteLocked}
-            submitChangeRequest={submitChangeRequest}
-            validateChangeRequest={validateChangeRequest}
-            planType="nutrition"
-          />
-        </>
-      ) : (
-        /* Empty state — no nutritionist assigned */
-        <View style={styles.emptyState} testID="student.nutrition.emptyState">
-          <Text style={[styles.emptyTitle, { color: palette.text }]}>
-            {t('student.nutrition.empty.title')}
-          </Text>
-          <Text style={[styles.emptyBody, { color: palette.icon }]}>
-            {t('student.nutrition.empty.body')}
-          </Text>
+      <View style={styles.shell}>
+        <View style={styles.headerRow}>
           <Pressable
             accessibilityRole="button"
-            disabled={isWriteLocked}
-            onPress={() => Alert.alert(t('student.nutrition.empty.cta'))}
-            style={[
-              styles.primaryButton,
-              { backgroundColor: isWriteLocked ? palette.icon : palette.tint },
-            ]}
-            testID="student.nutrition.emptyCta">
-            <Text style={styles.primaryButtonText}>{t('student.nutrition.empty.cta')}</Text>
+            accessibilityLabel={t('auth.role.cta_back')}
+            onPress={handleBack}
+            style={({ pressed }) => [
+              styles.circleButton,
+              { backgroundColor: isDark ? '#2a1f1b' : '#ffffff', transform: [{ scale: pressed ? 0.96 : 1 }] },
+            ]}>
+            <MaterialIcons color={palette.text} name="arrow-back" size={22} />
           </Pressable>
-          {isWriteLocked ? (
-            <Text style={[styles.writeLock, { color: '#b3261e' }]}>
-              {t('offline.write_lock')}
-            </Text>
-          ) : null}
+
+          <Text style={[styles.pageTitle, { color: palette.text }]}>{t('student.nutrition.title')}</Text>
+          <View style={styles.circleButtonSpacer} />
         </View>
-      )}
+
+        {offlineDisplay.showOfflineBanner ? (
+          <View style={styles.offlineBanner} testID="student.nutrition.offlineBanner" accessibilityRole="alert">
+            <MaterialIcons color="#ef4444" name="cloud-off" size={18} />
+            <Text style={styles.offlineBannerText}>{t('offline.banner')}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.sectionStack}>
+          <WaterWidget waterHook={waterHook} palette={palette} t={t} isWriteLocked={isWriteLocked} />
+
+          {plansState.kind === 'loading' ? (
+            <View style={[styles.card, styles.loadingCard]} testID="student.nutrition.plansLoading">
+              <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color="#ff7b72" />
+            </View>
+          ) : hasActiveNutritionAssignment ? (
+            <>
+              <View style={styles.readOnlyCard} testID="student.nutrition.assignedPlanNotice">
+                <Text style={styles.readOnlyLabel}>{t('student.nutrition.assigned_plan.read_only_notice')}</Text>
+              </View>
+
+              <PlanChangeRequestForm
+                planId={assignedNutritionPlan.id}
+                palette={palette}
+                t={t}
+                isWriteLocked={isWriteLocked}
+                submitChangeRequest={submitChangeRequest}
+                validateChangeRequest={validateChangeRequest}
+                planType="nutrition"
+              />
+            </>
+          ) : (
+            <View style={[styles.card, styles.emptyCard]} testID="student.nutrition.emptyState">
+              <View style={styles.emptyIconBlob}>
+                <MaterialIcons color="#334155" name="set-meal" size={42} />
+                <View style={styles.emptyIconDot} />
+              </View>
+
+              <Text style={[styles.emptyTitle, { color: palette.text }]}>{t('student.nutrition.empty.title')}</Text>
+              <Text style={[styles.emptyBody, { color: palette.icon }]}>{t('student.nutrition.empty.body')}</Text>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={isWriteLocked}
+                onPress={() => router.push('/nutrition/custom-meals')}
+                style={({ pressed }) => [
+                  styles.primaryPillButton,
+                  {
+                    backgroundColor: '#ff7b72',
+                    opacity: isWriteLocked ? 0.6 : 1,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
+                  },
+                ]}
+                testID="student.nutrition.emptyCta">
+                <Text style={styles.primaryPillButtonText}>{t('student.nutrition.empty.cta')}</Text>
+                <MaterialIcons color="#ffffff" name="restaurant-menu" size={20} />
+              </Pressable>
+
+              {isWriteLocked ? (
+                <Text style={styles.writeLockText}>{t('offline.write_lock')}</Text>
+              ) : null}
+            </View>
+          )}
+        </View>
+      </View>
     </ScrollView>
   );
 }
-
-// ─── Water Widget ─────────────────────────────────────────────────────────────
-
-type Palette = (typeof Colors)['light'];
-type TFn = ReturnType<typeof useTranslation>['t'];
 
 function WaterWidget({
   waterHook,
@@ -183,11 +188,15 @@ function WaterWidget({
   const [goalError, setGoalError] = useState<string | null>(null);
   const [isSettingGoal, setIsSettingGoal] = useState(false);
 
+  const goal = state.kind === 'ready' && state.effectiveGoal ? state.effectiveGoal.dailyMl : null;
+  const consumed = state.kind === 'ready' ? state.todayConsumedMl : 0;
+
   const canSetPersonalGoal =
     state.kind === 'ready' &&
-    (state.effectiveGoal === null || state.effectiveGoal.owner === 'student');
+    (state.effectiveGoal === null || state.effectiveGoal.owner === 'student') &&
+    !isWriteLocked;
 
-  const goalOwnerHelper =
+  const goalOwnerLabel =
     state.kind === 'ready' && state.effectiveGoal?.owner === 'nutritionist'
       ? t('student.nutrition.water.nutritionist_goal')
       : t('student.nutrition.water.personal_goal');
@@ -203,17 +212,17 @@ function WaterWidget({
       return;
     }
 
-    const amountMl = parseInt(intakeRaw.trim(), 10);
-    setIsLoggingIntake(true);
     setIntakeError(null);
-    const err = await logIntake(amountMl);
+    setIsLoggingIntake(true);
+    const err = await logIntake(parseInt(intakeRaw.trim(), 10));
     setIsLoggingIntake(false);
 
     if (!err) {
       setIntakeRaw('');
-    } else {
-      setIntakeError(t('common.error.generic'));
+      return;
     }
+
+    setIntakeError(t('common.error.generic'));
   };
 
   const onSetGoal = async () => {
@@ -227,169 +236,147 @@ function WaterWidget({
       return;
     }
 
-    const dailyMl = parseInt(goalRaw.trim(), 10);
-    setIsSettingGoal(true);
     setGoalError(null);
-    const err = await setGoal(dailyMl);
+    setIsSettingGoal(true);
+    const err = await setGoal(parseInt(goalRaw.trim(), 10));
     setIsSettingGoal(false);
 
     if (!err) {
       setGoalRaw('');
-    } else {
-      setGoalError(t('common.error.generic'));
+      return;
     }
+
+    setGoalError(t('common.error.generic'));
   };
 
-  const progressText =
-    state.kind === 'ready' && state.effectiveGoal
-      ? (t('student.nutrition.water.title') as string) +
-        ': ' +
-        String(state.todayConsumedMl) +
-        ' / ' +
-        String(state.effectiveGoal.dailyMl) +
-        ' ml'
-      : null;
-
   return (
-    <View
-      style={[styles.card, { borderColor: palette.tint + '66' }]}
-      testID="student.nutrition.waterWidget">
-      <Text style={[styles.cardTitle, { color: palette.text }]}>
-        {t('student.nutrition.water.title')}
-      </Text>
-
+    <View style={[styles.card, styles.waterCard]} testID="student.nutrition.waterWidget">
       {state.kind === 'loading' ? (
-        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color="#ff7b72" />
+      ) : state.kind === 'error' ? (
+        <Text style={styles.inlineError}>{t('common.error.generic')}</Text>
       ) : state.kind === 'ready' ? (
         <>
-          {progressText ? (
-            <Text
-              style={[styles.cardValue, { color: palette.tint }]}
-              testID="student.nutrition.waterWidget.progress">
-              {progressText}
-            </Text>
-          ) : null}
+          <View style={styles.waterHeaderRow}>
+            <View style={styles.waterHeaderLeft}>
+              <View style={styles.waterValueRow}>
+                <Text style={styles.waterValue}>{String(consumed)}</Text>
+                <Text style={styles.waterGoalValue}>{`/ ${goal ?? 0} ml`}</Text>
+              </View>
 
-          <Text style={[styles.cardMeta, { color: palette.icon }]}>{goalOwnerHelper}</Text>
+              <View style={styles.goalBadge}>
+                <MaterialIcons color="#ff7b72" name="flag" size={14} />
+                <Text style={styles.goalBadgeText}>{goalOwnerLabel}</Text>
+              </View>
+            </View>
 
-          {/* Log intake row */}
+            <View style={styles.waterIconWrap}>
+              <MaterialIcons color="#38bdf8" name="water-drop" size={32} />
+            </View>
+          </View>
+
           {!isWriteLocked ? (
-            <View style={styles.inputRow}>
-              <TextInput
-                accessibilityLabel={t('student.nutrition.water.log.label')}
-                keyboardType="numeric"
-                onChangeText={(v) => {
-                  setIntakeRaw(v);
-                  setIntakeError(null);
-                }}
-                placeholder={t('student.nutrition.water.log.placeholder')}
-                placeholderTextColor={palette.icon}
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: palette.background,
-                    borderColor: intakeError ? '#b3261e' : palette.icon,
-                    color: palette.text,
-                  },
-                ]}
-                testID="student.nutrition.waterWidget.intakeInput"
-                value={intakeRaw}
-              />
-              <Pressable
-                accessibilityRole="button"
-                disabled={isLoggingIntake}
-                onPress={() => {
-                  void onLogIntake();
-                }}
-                style={[
-                  styles.inlineButton,
-                  { backgroundColor: isLoggingIntake ? palette.icon : palette.tint },
-                ]}
-                testID="student.nutrition.waterWidget.logButton">
-                {isLoggingIntake ? (
-                  <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#fff" />
-                ) : (
-                  <Text style={styles.inlineButtonText}>
-                    {t('student.nutrition.water.cta_log')}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          ) : null}
+            <>
+              <View style={styles.inputRow}>
+                <TextInput
+                  accessibilityLabel={t('student.nutrition.water.log.label')}
+                  keyboardType="numeric"
+                  onChangeText={(value) => {
+                    setIntakeRaw(value);
+                    setIntakeError(null);
+                  }}
+                  placeholder={t('student.nutrition.water.log.placeholder')}
+                  placeholderTextColor={palette.icon}
+                  style={[styles.textInput, intakeError ? styles.textInputError : null]}
+                  testID="student.nutrition.waterWidget.intakeInput"
+                  value={intakeRaw}
+                />
 
-          {intakeError ? (
-            <View accessibilityLiveRegion="polite">
-              <Text style={styles.inlineError}>{intakeError}</Text>
-            </View>
-          ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isLoggingIntake}
+                  onPress={() => {
+                    void onLogIntake();
+                  }}
+                  style={({ pressed }) => [
+                    styles.primaryInputButton,
+                    {
+                      opacity: isLoggingIntake ? 0.7 : 1,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    },
+                  ]}
+                  testID="student.nutrition.waterWidget.logButton">
+                  {isLoggingIntake ? (
+                    <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#ffffff" />
+                  ) : (
+                    <Text style={styles.primaryInputButtonText}>{t('student.nutrition.water.cta_log')}</Text>
+                  )}
+                </Pressable>
+              </View>
 
-          {/* Set personal goal row — hidden when nutritionist owns goal */}
-          {canSetPersonalGoal && !isWriteLocked ? (
-            <View style={styles.inputRow}>
-              <TextInput
-                accessibilityLabel={t('student.nutrition.water.goal.label')}
-                keyboardType="numeric"
-                onChangeText={(v) => {
-                  setGoalRaw(v);
-                  setGoalError(null);
-                }}
-                placeholder={t('student.nutrition.water.goal.placeholder')}
-                placeholderTextColor={palette.icon}
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: palette.background,
-                    borderColor: goalError ? '#b3261e' : palette.icon,
-                    color: palette.text,
-                  },
-                ]}
-                testID="student.nutrition.waterWidget.goalInput"
-                value={goalRaw}
-              />
-              <Pressable
-                accessibilityRole="button"
-                disabled={isSettingGoal}
-                onPress={() => {
-                  void onSetGoal();
-                }}
-                style={[
-                  styles.inlineButton,
-                  { backgroundColor: isSettingGoal ? palette.icon : palette.tint },
-                ]}
-                testID="student.nutrition.waterWidget.setGoalButton">
-                {isSettingGoal ? (
-                  <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#fff" />
-                ) : (
-                  <Text style={styles.inlineButtonText}>
-                    {t('student.nutrition.water.cta_set_goal')}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          ) : null}
+              {intakeError ? (
+                <View accessibilityLiveRegion="polite">
+                  <Text style={styles.inlineError}>{intakeError}</Text>
+                </View>
+              ) : null}
 
-          {goalError ? (
-            <View accessibilityLiveRegion="polite">
-              <Text style={styles.inlineError}>{goalError}</Text>
-            </View>
-          ) : null}
+              {canSetPersonalGoal ? (
+                <View style={styles.inputRow}>
+                  <TextInput
+                    accessibilityLabel={t('student.nutrition.water.goal.label')}
+                    keyboardType="numeric"
+                    onChangeText={(value) => {
+                      setGoalRaw(value);
+                      setGoalError(null);
+                    }}
+                    placeholder={t('student.nutrition.water.goal.placeholder')}
+                    placeholderTextColor={palette.icon}
+                    style={[styles.textInput, goalError ? styles.textInputError : null]}
+                    testID="student.nutrition.waterWidget.goalInput"
+                    value={goalRaw}
+                  />
 
-          {isWriteLocked ? (
-            <Text
-              style={[styles.writeLock, { color: '#b3261e' }]}
-              testID="student.nutrition.waterWidget.writeLock">
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={isSettingGoal}
+                    onPress={() => {
+                      void onSetGoal();
+                    }}
+                    style={({ pressed }) => [
+                      styles.secondaryInputButton,
+                      {
+                        opacity: isSettingGoal ? 0.7 : 1,
+                        transform: [{ scale: pressed ? 0.98 : 1 }],
+                      },
+                    ]}
+                    testID="student.nutrition.waterWidget.setGoalButton">
+                    {isSettingGoal ? (
+                      <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#ff7b72" />
+                    ) : (
+                      <Text style={styles.secondaryInputButtonText}>
+                        {t('student.nutrition.water.cta_set_goal')}
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {goalError ? (
+                <View accessibilityLiveRegion="polite">
+                  <Text style={styles.inlineError}>{goalError}</Text>
+                </View>
+              ) : null}
+            </>
+          ) : (
+            <Text style={styles.writeLockText} testID="student.nutrition.waterWidget.writeLock">
               {t('offline.write_lock')}
             </Text>
-          ) : null}
+          )}
         </>
-      ) : state.kind === 'error' ? (
-        <Text style={[styles.cardMeta, { color: '#b3261e' }]}>{t('common.error.generic')}</Text>
       ) : null}
     </View>
   );
 }
-
-// ─── Plan Change Request Form ─────────────────────────────────────────────────
 
 function PlanChangeRequestForm({
   planId,
@@ -450,68 +437,58 @@ function PlanChangeRequestForm({
     setSuccessMsg(null);
 
     const result = await submitChangeRequest(planId, planType, requestText);
-
     setIsSubmitting(false);
 
     if ('data' in result) {
       setRequestText('');
       setSuccessMsg(t(successKey));
-    } else {
-      switch (result.error) {
-        case 'plan_not_found':
-          setFieldError(t('student.nutrition.plan_change.error.plan_not_found'));
-          break;
-        case 'no_active_assignment':
-          setFieldError(t('student.nutrition.plan_change.error.no_active_assignment'));
-          break;
-        case 'network':
-          setFieldError(t('student.nutrition.plan_change.error.network'));
-          break;
-        default:
-          setFieldError(t('student.nutrition.plan_change.error.unknown'));
-      }
+      return;
+    }
+
+    switch (result.error) {
+      case 'plan_not_found':
+        setFieldError(t('student.nutrition.plan_change.error.plan_not_found'));
+        break;
+      case 'no_active_assignment':
+        setFieldError(t('student.nutrition.plan_change.error.no_active_assignment'));
+        break;
+      case 'network':
+        setFieldError(t('student.nutrition.plan_change.error.network'));
+        break;
+      default:
+        setFieldError(t('student.nutrition.plan_change.error.unknown'));
     }
   };
 
   return (
-    <View
-      style={[styles.card, { borderColor: palette.icon + '44' }]}
-      testID={`student.${planType}.planChangeForm`}>
-      <Text style={[styles.cardTitle, { color: palette.text }]}>{t(titleKey)}</Text>
+    <View style={[styles.card, styles.planChangeCard]} testID={`student.${planType}.planChangeForm`}>
+      <Text style={[styles.planChangeTitle, { color: palette.text }]}>{t(titleKey)}</Text>
 
       {isWriteLocked ? (
-        <Text style={[styles.writeLock, { color: '#b3261e' }]}>{t('offline.write_lock')}</Text>
+        <Text style={styles.writeLockText}>{t('offline.write_lock')}</Text>
       ) : (
         <>
-          <Text style={[styles.fieldLabel, { color: palette.text }]}>{t(labelKey)}</Text>
+          <Text style={[styles.planChangeLabel, { color: palette.text }]}>{t(labelKey)}</Text>
+
           <TextInput
             accessibilityLabel={t(labelKey)}
             multiline
             numberOfLines={4}
-            onChangeText={(v) => {
-              setRequestText(v);
+            onChangeText={(value) => {
+              setRequestText(value);
               setFieldError(null);
               setSuccessMsg(null);
             }}
             placeholder={t(placeholderKey)}
             placeholderTextColor={palette.icon}
-            style={[
-              styles.multilineInput,
-              {
-                backgroundColor: palette.background,
-                borderColor: fieldError ? '#b3261e' : palette.icon,
-                color: palette.text,
-              },
-            ]}
+            style={[styles.multilineInput, fieldError ? styles.textInputError : null]}
             testID={`student.${planType}.planChangeForm.input`}
             value={requestText}
           />
 
           {fieldError ? (
             <View accessibilityLiveRegion="polite">
-              <Text
-                style={styles.inlineError}
-                testID={`student.${planType}.planChangeForm.error`}>
+              <Text style={styles.inlineError} testID={`student.${planType}.planChangeForm.error`}>
                 {fieldError}
               </Text>
             </View>
@@ -520,7 +497,7 @@ function PlanChangeRequestForm({
           {successMsg ? (
             <View accessibilityLiveRegion="polite">
               <Text
-                style={[styles.successText, { color: palette.tint }]}
+                style={styles.successText}
                 testID={`student.${planType}.planChangeForm.success`}>
                 {successMsg}
               </Text>
@@ -533,15 +510,19 @@ function PlanChangeRequestForm({
             onPress={() => {
               void onSubmit();
             }}
-            style={[
-              styles.primaryButton,
-              { backgroundColor: isSubmitting ? palette.icon : palette.tint },
+            style={({ pressed }) => [
+              styles.primaryPillButton,
+              {
+                backgroundColor: '#ff7b72',
+                opacity: isSubmitting ? 0.7 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
             ]}
             testID={`student.${planType}.planChangeForm.submitButton`}>
             {isSubmitting ? (
-              <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#fff" />
+              <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#ffffff" />
             ) : (
-              <Text style={styles.primaryButtonText}>{t(ctaKey)}</Text>
+              <Text style={styles.primaryPillButtonText}>{t(ctaKey)}</Text>
             )}
           </Pressable>
         </>
@@ -550,132 +531,299 @@ function PlanChangeRequestForm({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 40,
-    gap: 16,
+    flexGrow: 1,
   },
-  centered: {
-    alignSelf: 'center',
-    marginVertical: 16,
+  blob: {
+    borderRadius: 999,
+    opacity: 0.6,
+    position: 'absolute',
+  },
+  blobTopLeft: {
+    height: 300,
+    left: -110,
+    top: -70,
+    width: 300,
+  },
+  blobBottomRight: {
+    bottom: -80,
+    height: 340,
+    right: -130,
+    width: 340,
+  },
+  shell: {
+    flex: 1,
+    gap: 12,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+  },
+  headerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  circleButton: {
+    alignItems: 'center',
+    borderRadius: 24,
+    elevation: 1,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  circleButtonSpacer: {
+    height: 48,
+    width: 48,
+  },
+  pageTitle: {
+    fontFamily: Fonts.rounded,
+    fontSize: 22,
+    fontWeight: '700',
   },
   offlineBanner: {
-    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: '#fee2e2',
+    borderColor: '#fecaca',
+    borderRadius: 14,
     borderWidth: 1,
-    gap: 4,
-    padding: 12,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   offlineBannerText: {
+    color: '#b91c1c',
+    flex: 1,
     fontSize: 13,
+    fontWeight: '600',
     lineHeight: 18,
+  },
+  sectionStack: {
+    gap: 12,
   },
   card: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    gap: 8,
+    backgroundColor: '#ffffffee',
+    borderColor: '#f1f5f9',
+    borderRadius: 30,
+    borderWidth: 1,
+    elevation: 1,
     padding: 16,
   },
-  cardTitle: {
-    fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 16,
+  loadingCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
+  },
+  waterCard: {
+    gap: 10,
+  },
+  waterHeaderRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  waterHeaderLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
+  waterValueRow: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  waterValue: {
+    color: '#0f172a',
+    fontFamily: Fonts.rounded,
+    fontSize: 44,
     fontWeight: '700',
+    lineHeight: 48,
   },
-  cardValue: {
-    fontSize: 20,
-    fontWeight: '700',
+  waterGoalValue: {
+    color: '#64748b',
+    fontSize: 19,
+    fontWeight: '600',
+    marginBottom: 5,
   },
-  cardMeta: {
-    fontSize: 13,
-    lineHeight: 18,
+  goalBadge: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#ff7b721a',
+    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  infoBox: {
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
+  goalBadgeText: {
+    color: '#ff7b72',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
-  infoText: {
-    fontSize: 13,
-    lineHeight: 18,
+  waterIconWrap: {
+    alignItems: 'center',
+    backgroundColor: '#e0f2fe',
+    borderRadius: 30,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
   },
   inputRow: {
     flexDirection: 'row',
     gap: 8,
   },
   textInput: {
-    borderRadius: 10,
-    borderWidth: 1.5,
+    backgroundColor: '#f8fafc',
+    borderColor: 'transparent',
+    borderRadius: 16,
+    borderWidth: 2,
+    color: '#0f172a',
     flex: 1,
-    fontSize: 15,
-    minHeight: 44,
+    fontSize: 14,
+    fontWeight: '600',
+    minHeight: 48,
     paddingHorizontal: 12,
   },
-  inlineButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: 14,
+  textInputError: {
+    borderColor: '#b3261e',
   },
-  inlineButtonText: {
-    color: '#fff',
-    fontSize: 14,
+  primaryInputButton: {
+    alignItems: 'center',
+    backgroundColor: '#ff7b72',
+    borderRadius: 16,
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  primaryInputButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  secondaryInputButton: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#ff7b7233',
+    borderRadius: 16,
+    borderWidth: 2,
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  secondaryInputButtonText: {
+    color: '#ff7b72',
+    fontSize: 13,
     fontWeight: '700',
   },
   inlineError: {
     color: '#b3261e',
     fontSize: 13,
+    lineHeight: 18,
   },
-  successText: {
+  readOnlyCard: {
+    backgroundColor: '#fff7ed',
+    borderColor: '#fed7aa',
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 12,
+  },
+  readOnlyLabel: {
+    color: '#9a3412',
     fontSize: 13,
     fontWeight: '600',
+    lineHeight: 18,
   },
-  fieldLabel: {
+  planChangeCard: {
+    gap: 10,
+  },
+  planChangeTitle: {
+    fontFamily: Fonts.rounded,
+    fontSize: 19,
+    fontWeight: '700',
+  },
+  planChangeLabel: {
     fontSize: 14,
     fontWeight: '600',
   },
   multilineInput: {
-    borderRadius: 10,
-    borderWidth: 1.5,
+    backgroundColor: '#f8fafc',
+    borderColor: 'transparent',
+    borderRadius: 16,
+    borderWidth: 2,
+    color: '#0f172a',
     fontSize: 14,
-    minHeight: 96,
+    minHeight: 104,
     padding: 12,
     textAlignVertical: 'top',
   },
-  primaryButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 15,
+  successText: {
+    color: '#16a34a',
+    fontSize: 13,
     fontWeight: '700',
   },
-  emptyState: {
+  emptyCard: {
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 32,
+    gap: 10,
+    paddingVertical: 24,
+  },
+  emptyIconBlob: {
+    alignItems: 'center',
+    backgroundColor: '#a1e8cc',
+    borderRadius: 40,
+    height: 112,
+    justifyContent: 'center',
+    marginBottom: 4,
+    position: 'relative',
+    width: 112,
+  },
+  emptyIconDot: {
+    backgroundColor: '#ffeca1',
+    borderRadius: 14,
+    height: 28,
+    position: 'absolute',
+    right: -4,
+    top: -2,
+    width: 28,
   },
   emptyTitle: {
-    fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 18,
+    fontFamily: Fonts.rounded,
+    fontSize: 30,
     fontWeight: '700',
     textAlign: 'center',
   },
   emptyBody: {
     fontSize: 14,
     lineHeight: 20,
+    marginBottom: 4,
+    maxWidth: 280,
     textAlign: 'center',
   },
-  writeLock: {
+  primaryPillButton: {
+    alignItems: 'center',
+    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    minHeight: 54,
+    paddingHorizontal: 18,
+    width: '100%',
+  },
+  primaryPillButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  writeLockText: {
+    color: '#b3261e',
     fontSize: 13,
+    lineHeight: 18,
   },
 });
