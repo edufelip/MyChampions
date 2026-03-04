@@ -13,7 +13,7 @@
  * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
  *
  * Docs: docs/screens/v2/SC-206-student-profile-professional-view.md
- * Refs: D-043, D-100, FR-106–108, FR-121, FR-123–125, FR-130–131, FR-185, FR-211
+ * Refs: D-043, D-100, D-134, FR-106–108, FR-121, FR-123–125, FR-130–131, FR-185, FR-211
  *       BR-203–205, BR-213, BR-215–217, BR-222–223, BR-247, BR-269, BR-278–279
  */
 import { useCallback, useEffect, useState } from 'react';
@@ -21,7 +21,6 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -29,7 +28,18 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { DsCard } from '@/components/ds/primitives/DsCard';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import {
+  DsRadius,
+  DsSpace,
+  DsTypography,
+  getDsTheme,
+  type DsTheme,
+} from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import {
   resolveOfflineDisplayState,
@@ -38,39 +48,30 @@ import {
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
 import { validateWaterGoalInput } from '@/features/nutrition/water-tracking.logic';
-import { usePlans } from '@/features/plans/use-plans';
 import type { PlanChangeRequest } from '@/features/plans/plan-change-request.logic';
+import { usePlans } from '@/features/plans/use-plans';
 import {
-  resolveSubscriptionState,
   isPlanUpdateLocked,
+  resolveSubscriptionState,
 } from '@/features/subscription/subscription.logic';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type AssignmentStatus = 'active' | 'pending' | 'none';
-
-type Palette = (typeof Colors)['light'];
 type TFn = ReturnType<typeof useTranslation>['t'];
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfessionalStudentProfileScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
   const { studentId } = useLocalSearchParams<{ studentId: string }>();
 
-  // Live subscription entitlement from RevenueCat (D-128).
-  // activeStudentCount stays 0 until Data Connect roster is wired.
   const { entitlementStatus, activeStudentCount } = useSubscription(Boolean(currentUser));
-  const subState = resolveSubscriptionState({
-    activeStudentCount,
-    entitlementStatus,
-  });
+  const subState = resolveSubscriptionState({ activeStudentCount, entitlementStatus });
+
   const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
     networkStatus,
@@ -78,59 +79,44 @@ export default function ProfessionalStudentProfileScreen() {
   });
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
-  // Plan change requests — loaded from professional context for this student.
   const { getChangeRequestsForStudent, reviewChangeRequest } = usePlans(Boolean(currentUser));
   const [changeRequests, setChangeRequests] = useState<PlanChangeRequest[]>([]);
   const [changeRequestsLoadError, setChangeRequestsLoadError] = useState<string | null>(null);
   const [changeRequestsActionError, setChangeRequestsActionError] = useState<string | null>(null);
 
-  // Water tracking for student — stubbed: student user not available in this context;
-  // real wiring will pass student's user context from source layer.
   const today = new Date().toISOString().slice(0, 10);
   const { state: waterState, setGoal } = useWaterTracking(Boolean(currentUser), today);
 
-  // Load change requests for this student on mount
   const loadChangeRequests = useCallback(async () => {
     if (!studentId) return;
     setChangeRequestsLoadError(null);
     const result = await getChangeRequestsForStudent(studentId);
     if ('data' in result) {
       setChangeRequests(result.data);
-    } else {
-      setChangeRequestsLoadError(t('pro.student_profile.plan_change_requests.load_error') as string);
+      return;
     }
+    setChangeRequestsLoadError(t('pro.student_profile.plan_change_requests.load_error') as string);
   }, [getChangeRequestsForStudent, studentId, t]);
 
   useEffect(() => {
     void loadChangeRequests();
   }, [loadChangeRequests]);
 
-  // Water goal form
   const [goalInput, setGoalInput] = useState('');
   const [goalError, setGoalError] = useState<string | null>(null);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
 
-  // Stub assignment status — useState gives a typed AssignmentStatus, not a narrowed literal.
-  // Replaced by real fetch from professional-source when Data Connect endpoint is wired.
   const [nutritionStatus] = useState<AssignmentStatus>('none');
   const [trainingStatus] = useState<AssignmentStatus>('none');
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
-
-  async function handleReviewChangeRequest(
-    requestId: string,
-    action: 'reviewed' | 'dismissed'
-  ) {
+  async function handleReviewChangeRequest(requestId: string, action: 'reviewed' | 'dismissed') {
     setChangeRequestsActionError(null);
     const err = await reviewChangeRequest(requestId, action);
     if (err) {
-      setChangeRequestsActionError(
-        t('pro.student_profile.plan_change_requests.action_error') as string
-      );
-    } else {
-      // Optimistically remove reviewed/dismissed request from list
-      setChangeRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setChangeRequestsActionError(t('pro.student_profile.plan_change_requests.action_error') as string);
+      return;
     }
+    setChangeRequests((prev) => prev.filter((r) => r.id !== requestId));
   }
 
   function confirmUnbind() {
@@ -138,10 +124,7 @@ export default function ProfessionalStudentProfileScreen() {
       t('pro.student_profile.unbind.confirm_title') as string,
       t('pro.student_profile.unbind.confirm_body') as string,
       [
-        {
-          text: t('pro.student_profile.unbind.confirm_no') as string,
-          style: 'cancel',
-        },
+        { text: t('pro.student_profile.unbind.confirm_no') as string, style: 'cancel' },
         {
           text: t('pro.student_profile.unbind.confirm_yes') as string,
           style: 'destructive',
@@ -177,48 +160,31 @@ export default function ProfessionalStudentProfileScreen() {
     }
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: palette.background }]}
-      contentContainerStyle={styles.content}
-      testID="pro.student_profile.screen">
-      <Stack.Screen
-        options={{
-          title: t('pro.student_profile.title'),
-          headerShown: true,
-        }}
-      />
+    <DsScreen scheme={scheme} testID="pro.student_profile.screen" contentContainerStyle={styles.content}>
+      <Stack.Screen options={{ title: t('pro.student_profile.title'), headerShown: true }} />
 
-      {/* Offline banner (BL-008) */}
       {offlineDisplay.showOfflineBanner ? (
-        <View
-          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
-          testID="pro.student_profile.offlineBanner">
-          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
-            {t('offline.banner')}
-          </Text>
-        </View>
+        <DsOfflineBanner
+          scheme={scheme}
+          text={t('offline.banner') as string}
+          testID="pro.student_profile.offlineBanner"
+        />
       ) : null}
 
-      {/* Entitlement lock notice */}
       {isWriteLocked ? (
-        <View
-          style={[styles.lockBanner, { borderColor: '#b3261e' }]}
-          testID="pro.student_profile.entitlementLock"
-          accessibilityRole="alert">
-          <Text style={[styles.errorText, { color: '#b3261e' }]}>
+        <DsCard scheme={scheme} variant="warning" testID="pro.student_profile.entitlementLock">
+          <Text style={[styles.errorText, { color: theme.color.danger }]}>
             {t('pro.student_profile.entitlement_lock')}
           </Text>
-        </View>
+        </DsCard>
       ) : null}
 
-      {/* Assignment status cards */}
       <AssignmentCard
         specialtyLabel={t('pro.student_profile.specialty.nutritionist') as string}
         status={nutritionStatus}
-        palette={palette}
+        scheme={scheme}
+        theme={theme}
         t={t}
         testID="pro.student_profile.nutrition"
       />
@@ -226,67 +192,70 @@ export default function ProfessionalStudentProfileScreen() {
       <AssignmentCard
         specialtyLabel={t('pro.student_profile.specialty.fitness_coach') as string}
         status={trainingStatus}
-        palette={palette}
+        scheme={scheme}
+        theme={theme}
         t={t}
         testID="pro.student_profile.training"
       />
 
-      {/* Unbind CTA */}
       {(nutritionStatus === 'active' || trainingStatus === 'active') && !isWriteLocked ? (
         <Pressable
           accessibilityRole="button"
           onPress={confirmUnbind}
-          style={[styles.destructiveButton, { borderColor: '#b3261e' }]}
+          style={[styles.destructiveButton, { borderColor: theme.color.danger }]}
           testID="pro.student_profile.unbindCta">
-          <Text style={[styles.destructiveButtonText, { color: '#b3261e' }]}>
+          <Text style={[styles.destructiveButtonText, { color: theme.color.danger }]}>
             {t('pro.student_profile.unbind.cta')}
           </Text>
         </Pressable>
       ) : null}
 
-      {/* Plan change requests */}
       <PlanChangeRequestsCard
         requests={changeRequests}
         loadError={changeRequestsLoadError}
         actionError={changeRequestsActionError}
         isWriteLocked={isWriteLocked}
-        palette={palette}
+        scheme={scheme}
+        theme={theme}
         t={t}
-        onReview={(id: string) => { void handleReviewChangeRequest(id, 'reviewed'); }}
-        onDismiss={(id: string) => { void handleReviewChangeRequest(id, 'dismissed'); }}
+        onReview={(id: string) => {
+          void handleReviewChangeRequest(id, 'reviewed');
+        }}
+        onDismiss={(id: string) => {
+          void handleReviewChangeRequest(id, 'dismissed');
+        }}
       />
 
-      {/* Water goal section — only if nutrition assignment is active */}
       {nutritionStatus === 'active' ? (
         <WaterGoalCard
-          studentId={studentId ?? ''}
           goalInput={goalInput}
           goalError={goalError}
           isSaving={isSavingGoal}
           isWriteLocked={isWriteLocked}
           waterState={waterState}
-          palette={palette}
+          theme={theme}
           t={t}
           onChangeGoal={setGoalInput}
           onSaveGoal={handleSetGoal}
+          scheme={scheme}
         />
       ) : null}
-    </ScrollView>
+    </DsScreen>
   );
 }
-
-// ─── Assignment Card ──────────────────────────────────────────────────────────
 
 function AssignmentCard({
   specialtyLabel,
   status,
-  palette,
+  scheme,
+  theme,
   t,
   testID,
 }: {
   specialtyLabel: string;
   status: AssignmentStatus;
-  palette: Palette;
+  scheme: 'light' | 'dark';
+  theme: DsTheme;
   t: TFn;
   testID: string;
 }) {
@@ -294,31 +263,33 @@ function AssignmentCard({
     status === 'active'
       ? t('pro.student_profile.assignment.active')
       : status === 'pending'
-        ? t('pro.student_profile.assignment.pending')
-        : t('pro.student_profile.assignment.none');
+      ? t('pro.student_profile.assignment.pending')
+      : t('pro.student_profile.assignment.none');
 
   const statusColor =
-    status === 'active' ? '#16a34a' : status === 'pending' ? palette.icon : palette.icon + '99';
+    status === 'active'
+      ? '#16a34a'
+      : status === 'pending'
+      ? theme.color.textSecondary
+      : `${theme.color.textSecondary}99`;
 
   return (
-    <View
-      style={[styles.card, { borderColor: palette.icon + '44' }]}
-      testID={`${testID}.assignmentCard`}
-      accessibilityLabel={`${specialtyLabel}: ${statusLabel as string}`}>
-      <Text style={[styles.cardTitle, { color: palette.text }]}>{specialtyLabel}</Text>
-      <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
-    </View>
+    <DsCard scheme={scheme} testID={`${testID}.assignmentCard`}>
+      <View accessibilityLabel={`${specialtyLabel}: ${statusLabel as string}`}>
+        <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{specialtyLabel}</Text>
+        <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
+      </View>
+    </DsCard>
   );
 }
-
-// ─── Plan Change Requests Card ────────────────────────────────────────────────
 
 function PlanChangeRequestsCard({
   requests,
   loadError,
   actionError,
   isWriteLocked,
-  palette,
+  scheme,
+  theme,
   t,
   onReview,
   onDismiss,
@@ -327,61 +298,60 @@ function PlanChangeRequestsCard({
   loadError: string | null;
   actionError: string | null;
   isWriteLocked: boolean;
-  palette: Palette;
+  scheme: 'light' | 'dark';
+  theme: DsTheme;
   t: TFn;
   onReview: (id: string) => void;
   onDismiss: (id: string) => void;
 }) {
   return (
-    <View
-      style={[styles.card, { borderColor: palette.icon + '44' }]}
-      testID="pro.student_profile.planChangeRequests">
-      <Text style={[styles.cardTitle, { color: palette.text }]}>
+    <DsCard scheme={scheme} testID="pro.student_profile.planChangeRequests" style={styles.cardWithGap}>
+      <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
         {t('pro.student_profile.plan_change_requests.title')}
       </Text>
 
       {loadError ? (
         <View accessibilityLiveRegion="polite">
           <Text
-            style={[styles.errorText, { color: '#b3261e' }]}
+            style={[styles.errorText, { color: theme.color.danger }]}
             testID="pro.student_profile.planChangeRequests.loadError">
             {loadError}
           </Text>
         </View>
       ) : requests.length === 0 ? (
-        <Text style={[styles.meta, { color: palette.icon }]}>
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
           {t('pro.student_profile.plan_change_requests.empty')}
         </Text>
       ) : (
         requests.map((req) => (
           <View
             key={req.id}
-            style={[styles.requestRow, { borderColor: palette.icon + '33' }]}
+            style={[styles.requestRow, { borderColor: theme.color.border }]}
             testID={`pro.student_profile.planChangeRequest.${req.id}`}>
-            <Text style={[styles.requestText, { color: palette.text }]}>{req.requestText}</Text>
-            <Text style={[styles.meta, { color: palette.icon }]}>
+            <Text style={[styles.requestText, { color: theme.color.textPrimary }]}>{req.requestText}</Text>
+            <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
               {req.planType} · {req.status}
             </Text>
             {!isWriteLocked ? (
               <View style={styles.requestActions}>
-                <Pressable
-                  accessibilityRole="button"
+                <DsPillButton
+                  scheme={scheme}
+                  variant="secondary"
+                  label={t('pro.student_profile.plan_change_requests.review') as string}
                   onPress={() => onReview(req.id)}
-                  style={[styles.actionButton, { borderColor: palette.tint }]}
-                  testID={`pro.student_profile.planChangeRequest.${req.id}.review`}>
-                  <Text style={[styles.actionButtonText, { color: palette.tint }]}>
-                    {t('pro.student_profile.plan_change_requests.review')}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
+                  fullWidth={false}
+                  style={styles.actionPill}
+                  testID={`pro.student_profile.planChangeRequest.${req.id}.review`}
+                />
+                <DsPillButton
+                  scheme={scheme}
+                  variant="secondary"
+                  label={t('pro.student_profile.plan_change_requests.dismiss') as string}
                   onPress={() => onDismiss(req.id)}
-                  style={[styles.actionButton, { borderColor: palette.icon }]}
-                  testID={`pro.student_profile.planChangeRequest.${req.id}.dismiss`}>
-                  <Text style={[styles.actionButtonText, { color: palette.icon }]}>
-                    {t('pro.student_profile.plan_change_requests.dismiss')}
-                  </Text>
-                </Pressable>
+                  fullWidth={false}
+                  style={styles.actionPill}
+                  testID={`pro.student_profile.planChangeRequest.${req.id}.dismiss`}
+                />
               </View>
             ) : null}
           </View>
@@ -391,54 +361,59 @@ function PlanChangeRequestsCard({
       {actionError ? (
         <View accessibilityLiveRegion="polite">
           <Text
-            style={[styles.errorText, { color: '#b3261e' }]}
+            style={[styles.errorText, { color: theme.color.danger }]}
             testID="pro.student_profile.planChangeRequests.actionError">
             {actionError}
           </Text>
         </View>
       ) : null}
-    </View>
+    </DsCard>
   );
 }
-
-// ─── Water Goal Card ──────────────────────────────────────────────────────────
 
 function WaterGoalCard({
   goalInput,
   goalError,
   isSaving,
   isWriteLocked,
-  palette,
+  waterState,
+  theme,
   t,
   onChangeGoal,
   onSaveGoal,
+  scheme,
 }: {
-  studentId: string;
   goalInput: string;
   goalError: string | null;
   isSaving: boolean;
   isWriteLocked: boolean;
   waterState: ReturnType<typeof useWaterTracking>['state'];
-  palette: Palette;
+  theme: DsTheme;
   t: TFn;
   onChangeGoal: (v: string) => void;
   onSaveGoal: () => void;
+  scheme: 'light' | 'dark';
 }) {
   return (
-    <View
-      style={[styles.card, { borderColor: palette.tint + '66' }]}
-      testID="pro.student_profile.waterGoalCard">
-      <Text style={[styles.cardTitle, { color: palette.text }]}>
+    <DsCard scheme={scheme} testID="pro.student_profile.waterGoalCard" style={styles.cardWithGap}>
+      <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
         {t('pro.student_profile.water_goal.title')}
       </Text>
 
-      <Text style={[styles.fieldLabel, { color: palette.text }]}>
+      <Text style={[styles.fieldLabel, { color: theme.color.textPrimary }]}>
         {t('pro.student_profile.water_goal.label')}
       </Text>
       <TextInput
-        style={[styles.input, { borderColor: palette.icon + '66', color: palette.text }]}
+        style={[
+          styles.input,
+          {
+            borderColor: theme.color.border,
+            color: theme.color.textPrimary,
+            backgroundColor: theme.color.surfaceMuted,
+          },
+        ]}
         placeholder={t('pro.student_profile.water_goal.placeholder') as string}
-        placeholderTextColor={palette.icon}
+        placeholderTextColor={theme.color.textSecondary}
         value={goalInput}
         onChangeText={onChangeGoal}
         keyboardType="numeric"
@@ -447,109 +422,97 @@ function WaterGoalCard({
         accessibilityLabel={t('pro.student_profile.water_goal.label') as string}
       />
 
+      {waterState.kind === 'ready' ? (
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
+          {String(waterState.todayTotalMl)} / {String(waterState.goalMl)} ml
+        </Text>
+      ) : null}
+
       {goalError ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.errorText, { color: '#b3261e' }]}>{goalError}</Text>
+          <Text style={[styles.errorText, { color: theme.color.danger }]}>{goalError}</Text>
         </View>
       ) : null}
 
       {isWriteLocked ? (
-        <Text style={[styles.meta, { color: '#b3261e' }]}>
-          {t('offline.write_lock')}
-        </Text>
+        <Text style={[styles.meta, { color: theme.color.danger }]}>{t('offline.write_lock')}</Text>
       ) : isSaving ? (
-        <ActivityIndicator accessibilityLabel={t('a11y.loading.saving') as string} />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.saving') as string} color={theme.color.accentPrimary} />
       ) : (
-        <Pressable
-          accessibilityRole="button"
+        <DsPillButton
+          scheme={scheme}
+          label={t('pro.student_profile.water_goal.save') as string}
           onPress={onSaveGoal}
-          style={[styles.primaryButton, { backgroundColor: palette.tint }]}
-          testID="pro.student_profile.waterGoal.save">
-          <Text style={styles.primaryButtonText}>
-            {t('pro.student_profile.water_goal.save')}
-          </Text>
-        </Pressable>
+          testID="pro.student_profile.waterGoal.save"
+        />
       )}
-    </View>
+    </DsCard>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 16 },
-  lockBanner: {
-    backgroundColor: '#b3261e11',
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
+  content: {
+    flexGrow: 1,
+    gap: DsSpace.lg,
+    padding: DsSpace.lg,
+    paddingBottom: DsSpace.xxl,
   },
-  card: { borderRadius: 12, borderWidth: 1.5, gap: 8, padding: 16 },
+  cardWithGap: {
+    gap: DsSpace.sm,
+  },
   cardTitle: {
+    ...DsTypography.cardTitle,
     fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 16,
+  },
+  statusBadge: {
+    ...DsTypography.body,
     fontWeight: '700',
   },
-  statusBadge: { fontSize: 14, fontWeight: '600' },
-  meta: { fontSize: 13, lineHeight: 18 },
-  fieldLabel: { fontSize: 13, fontWeight: '600' },
+  meta: {
+    ...DsTypography.caption,
+  },
+  fieldLabel: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
   input: {
-    borderRadius: 8,
+    borderRadius: DsRadius.lg,
     borderWidth: 1,
     fontSize: 15,
     minHeight: 44,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: DsSpace.md,
+    paddingVertical: DsSpace.sm,
   },
-  errorText: { fontSize: 13 },
-  primaryButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    justifyContent: 'center',
-    minHeight: 48,
+  errorText: {
+    ...DsTypography.caption,
   },
-  primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   destructiveButton: {
     alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: DsRadius.pill,
+    borderWidth: 2,
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 54,
   },
-  destructiveButtonText: { fontSize: 15, fontWeight: '600' },
+  destructiveButtonText: {
+    ...DsTypography.button,
+    fontWeight: '700',
+  },
   requestRow: {
-    borderRadius: 8,
+    borderRadius: DsRadius.md,
     borderWidth: 1,
-    gap: 6,
-    padding: 10,
+    gap: DsSpace.xs,
+    padding: DsSpace.sm,
   },
   requestText: {
-    fontSize: 14,
-    lineHeight: 20,
+    ...DsTypography.body,
   },
   requestActions: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
+    gap: DsSpace.xs,
+    marginTop: DsSpace.xs,
   },
-  actionButton: {
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
+  actionPill: {
     flex: 1,
-    justifyContent: 'center',
-    minHeight: 36,
-    paddingHorizontal: 10,
+    minHeight: 42,
   },
-  actionButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  offlineBanner: {
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 10,
-  },
-  offlineBannerText: { fontSize: 13, lineHeight: 18 },
 });
