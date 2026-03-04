@@ -37,13 +37,13 @@
 - Screen title: `How do you want to use the app?`
 - Intro: `You can start on your own now and connect with a professional later.`
 - Option A title: `I want to track my own progress`
-- Option A subtitle: `Log meals and workouts by yourself. No professional required.`
+- Option A subtitle: `Student account`
 - Option B title: `I’m a nutritionist or fitness coach`
-- Option B subtitle: `Manage clients, assign plans, and track student progress.`
-- Role lock helper: `Account type can’t be changed later. You can create another account with a different email if needed.`
+- Option B subtitle: `Professional account`
+- Role lock helper: `Account type can’t be changed later. Please choose carefully based on your needs.`
 - Quick self-guided CTA: `Start on my own now`
 
-## Implementation Snapshot (2026-02-28)
+## Implementation Snapshot (2026-03-04)
 - Implemented in code:
   - `app/auth/role-selection.tsx`
   - `features/auth/role-selection.logic.ts`
@@ -54,6 +54,15 @@
   - Continue action commits selected role lock through auth profile source abstraction and routes role-specific placeholder destinations for student/professional paths.
   - Route auto-bypass for locked-role accounts is enforced by global auth guard in `app/_layout.tsx`.
   - Authentication session source is Firebase Auth; role-lock profile source is now Data Connect-backed via `features/auth/profile-source.ts` (remote-only reads/writes).
+  - Visual layout is aligned with Stitch role-selection reference (`0e872419a1ff45b39fbc89d7c3592c44`) using the same playful auth system as SC-217/SC-218:
+    - Soft peach background with decorative blobs.
+    - Header-level quick self-guided CTA and rounded back control.
+    - Elevated rounded role cards with selected badge and icon treatment.
+    - Highlighted lock-note panel and rounded primary CTA.
+
+## Design Reference Assets
+- `docs/design-assets/stitch/13906080126528974652/0e872419a1ff45b39fbc89d7c3592c44.html`
+- `docs/design-assets/stitch/13906080126528974652/0e872419a1ff45b39fbc89d7c3592c44.png`
 
 ## Data Contract
 - Inputs:

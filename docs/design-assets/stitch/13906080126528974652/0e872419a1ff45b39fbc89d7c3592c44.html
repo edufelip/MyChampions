@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Role Selection Light Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff7b72", // Coral pink
+                        "background-light": "#fff5f0", // Soft pastel peach
+                        "background-dark": "#221410",
+                        "blob-yellow": "#ffeca1",
+                        "blob-mint": "#a1e8cc",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "serif": ["Georgia", "serif"] // Fallback for rounded serif if needed
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "1.5rem",
+                        "xl": "2rem",
+                        "2xl": "2.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .bouncy-button {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .bouncy-button:active {
+            transform: scale(0.95);
+        }
+        .blob-1 {
+            position: absolute;
+            top: -10%;
+            left: -15%;
+            width: 300px;
+            height: 300px;
+            background: #ffeca1;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            z-index: 0;
+            opacity: 0.6;
+        }
+        .blob-2 {
+            position: absolute;
+            bottom: -5%;
+            right: -20%;
+            width: 350px;
+            height: 350px;
+            background: #a1e8cc;
+            border-radius: 50% 50% 30% 70% / 50% 40% 60% 50%;
+            z-index: 0;
+            opacity: 0.6;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light font-display text-slate-900 min-h-screen relative overflow-x-hidden flex justify-center items-center py-8">
+<div class="blob-1"></div>
+<div class="blob-2 fixed"></div>
+<div class="relative z-10 w-full max-w-md mx-auto flex flex-col p-6 min-h-screen">
+<div class="flex items-center justify-between py-4">
+<button class="flex items-center justify-center size-12 bg-white rounded-full shadow-sm text-slate-700">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<button class="text-sm font-bold text-slate-500 bg-white/50 px-4 py-2 rounded-full shadow-sm backdrop-blur-sm">
+      Start on my own now
+    </button>
+</div>
+<div class="mt-6 mb-8 text-center">
+<h2 class="text-3xl font-serif font-bold text-slate-900 tracking-tight leading-tight mb-4">How do you want to use the app?</h2>
+<p class="text-base text-slate-600 font-medium px-4">You can start on your own now and connect with a professional later.</p>
+</div>
+<div class="flex flex-col gap-4 w-full mt-2">
+<button class="relative w-full bg-white rounded-2xl p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] border-4 border-primary shadow-[0_0_20px_rgba(255,123,114,0.2)] transition-all flex flex-col gap-4 items-start bouncy-button">
+<div class="absolute top-4 right-4 size-6 bg-primary rounded-full flex items-center justify-center text-white shadow-sm">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+</div>
+<div class="size-12 bg-primary/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-2xl">fitness_center</span>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 mb-1">I want to track my own progress</h3>
+<p class="text-sm text-slate-500 font-medium">Student account</p>
+</div>
+</button>
+<button class="relative w-full bg-white rounded-2xl p-6 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] border-4 border-transparent hover:border-slate-200 transition-all flex flex-col gap-4 items-start bouncy-button">
+<div class="size-12 bg-slate-100 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500 text-2xl">assignment</span>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 mb-1">I’m a nutritionist or fitness coach</h3>
+<p class="text-sm text-slate-500 font-medium">Professional account</p>
+</div>
+</button>
+</div>
+<div class="mt-auto pt-8 pb-4 text-center flex flex-col items-center">
+<div class="flex items-start gap-2 text-left bg-orange-50 p-4 rounded-xl border border-orange-100 mb-6 shadow-sm">
+<span class="material-symbols-outlined text-orange-400 text-xl shrink-0">info</span>
+<p class="text-sm text-slate-600 font-medium">Account type can’t be changed later. Please choose carefully based on your needs.</p>
+</div>
+<button class="w-full h-14 bg-primary text-white rounded-full font-bold text-lg shadow-[0_8px_20px_rgba(255,123,114,0.3)] bouncy-button flex items-center justify-center gap-2 mb-4">
+                Continue
+                <span class="material-symbols-outlined text-xl">arrow_forward</span>
+</button>
+</div>
+</div>
+</body></html>

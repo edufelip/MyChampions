@@ -12,10 +12,10 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 - Screen title: `How do you want to use the app?`
 - Intro text: `You can start on your own now and connect with a professional later.`
 - Student card title: `I want to track my own progress`
-- Student card subtitle: `Log meals and workouts by yourself. No professional required.`
+- Student card subtitle: `Student account`
 - Professional card title: `I’m a nutritionist or fitness coach`
-- Professional card subtitle: `Manage clients, assign plans, and track student progress.`
-- Role lock note: `Account type can’t be changed later. You can create another account with a different email if needed.`
+- Professional card subtitle: `Professional account`
+- Role lock note: `Account type can’t be changed later. Please choose carefully based on your needs.`
 - Quick self-guided CTA: `Start on my own now`
 
 ## Recommended Auth Copy (SC-217 / SC-218)

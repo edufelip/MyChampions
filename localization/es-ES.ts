@@ -62,13 +62,10 @@ export const esES: Record<TranslationKey, string> = {
   'auth.role.title': '¿Cómo quieres usar la app?',
   'auth.role.intro': 'Puedes empezar por tu cuenta ahora y conectarte con un profesional después.',
   'auth.role.option_self.title': 'Quiero seguir mi propio progreso',
-  'auth.role.option_self.subtitle':
-    'Registra comidas y entrenamientos por tu cuenta. No necesitas un profesional.',
+  'auth.role.option_self.subtitle': 'Cuenta de alumno',
   'auth.role.option_pro.title': 'Soy nutricionista o entrenador físico',
-  'auth.role.option_pro.subtitle':
-    'Gestiona clientes, asigna planes y sigue el progreso de tus alumnos.',
-  'auth.role.lock_note':
-    'El tipo de cuenta no se puede cambiar después. Puedes crear otra cuenta con otro correo si lo necesitas.',
+  'auth.role.option_pro.subtitle': 'Cuenta profesional',
+  'auth.role.lock_note': 'El tipo de cuenta no se puede cambiar después. Elige cuidadosamente según tus necesidades.',
   'auth.role.cta_continue': 'Continuar',
   'auth.role.cta_back': 'Volver',
   'auth.role.cta_start_self_guided': 'Empezar por mi cuenta ahora',

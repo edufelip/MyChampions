@@ -1,6 +1,14 @@
 import { Stack, useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { Colors, Fonts } from '@/constants/theme';
 import {
@@ -21,6 +29,7 @@ import { useTranslation } from '@/localization';
 export default function RoleSelectionScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const router = useRouter();
   const { t } = useTranslation();
   const { lockRole } = useAuthSession();
@@ -77,95 +86,159 @@ export default function RoleSelectionScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.container, { backgroundColor: palette.background }]}
-      style={{ backgroundColor: palette.background }}
+      contentContainerStyle={[styles.container, { backgroundColor: isDark ? '#221410' : '#fff5f0' }]}
+      style={{ backgroundColor: isDark ? '#221410' : '#fff5f0' }}
       testID="auth.roleSelection.screen">
       <Stack.Screen options={{ title: t('auth.role.title'), headerShown: false }} />
 
-      <Text style={[styles.title, { color: palette.text }]} testID="auth.roleSelection.title">
-        {t('auth.role.title')}
-      </Text>
-      <Text style={[styles.intro, { color: palette.icon }]}>{t('auth.role.intro')}</Text>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ selected: isStudentSelected }}
-        onPress={() => {
-          setSelectedRole('student');
-          setRoleError(null);
-        }}
+      <View
+        pointerEvents="none"
         style={[
-          styles.roleCard,
-          { borderColor: isStudentSelected ? palette.tint : palette.icon },
+          styles.blob,
+          styles.blobTopLeft,
+          { backgroundColor: isDark ? '#5f4f29' : '#ffeca1' },
         ]}
-        testID="auth.roleSelection.studentCard">
-        <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_self.title')}</Text>
-        <Text style={[styles.roleSubtitle, { color: palette.icon }]}>
-          {t('auth.role.option_self.subtitle')}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ selected: isProfessionalSelected }}
-        onPress={() => {
-          setSelectedRole('professional');
-          setRoleError(null);
-        }}
+      />
+      <View
+        pointerEvents="none"
         style={[
-          styles.roleCard,
-          { borderColor: isProfessionalSelected ? palette.tint : palette.icon },
+          styles.blob,
+          styles.blobBottomRight,
+          { backgroundColor: isDark ? '#2e5b4a' : '#a1e8cc' },
         ]}
-        testID="auth.roleSelection.professionalCard">
-        <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_pro.title')}</Text>
-        <Text style={[styles.roleSubtitle, { color: palette.icon }]}>
-          {t('auth.role.option_pro.subtitle')}
-        </Text>
-      </Pressable>
+      />
 
-      <Text style={[styles.lockNote, { color: palette.icon }]}>{t('auth.role.lock_note')}</Text>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace('/auth/sign-in')}
+            style={[styles.backButton, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}
+            testID="auth.roleSelection.backButton">
+            <MaterialIcons color={palette.text} name="arrow-back" size={22} />
+          </Pressable>
 
-      <View accessibilityLiveRegion="polite">
-        {roleError ? (
-          <Text style={styles.inlineError} testID="auth.roleSelection.error.roleRequired">
-            {t(roleError)}
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={() => {
+              void onQuickSelfGuided();
+            }}
+            style={[styles.quickStartButton, { backgroundColor: isDark ? '#2a1f1b' : 'rgba(255,255,255,0.7)' }]}
+            testID="auth.roleSelection.quickSelfGuidedButton">
+            <Text style={[styles.quickStartButtonText, { color: palette.icon }]}>
+              {t('auth.role.cta_start_self_guided')}
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.titleArea}>
+          <Text style={[styles.title, { color: palette.text }]} testID="auth.roleSelection.title">
+            {t('auth.role.title')}
           </Text>
-        ) : null}
+          <Text style={[styles.intro, { color: palette.icon }]}>{t('auth.role.intro')}</Text>
+        </View>
+
+        <View style={styles.cardGroup}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: isStudentSelected }}
+            onPress={() => {
+              setSelectedRole('student');
+              setRoleError(null);
+            }}
+            style={[
+              styles.roleCard,
+              {
+                backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                borderColor: isStudentSelected ? '#ff7b72' : 'transparent',
+              },
+            ]}
+            testID="auth.roleSelection.studentCard">
+            {isStudentSelected ? (
+              <View style={styles.selectedBadge}>
+                <MaterialIcons color="#ffffff" name="check" size={14} />
+              </View>
+            ) : null}
+
+            <View style={[styles.cardIcon, { backgroundColor: isDark ? '#3b2f2a' : '#fff1ee' }]}>
+              <MaterialIcons color="#ff7b72" name="fitness-center" size={24} />
+            </View>
+
+            <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_self.title')}</Text>
+            <Text style={[styles.roleSubtitle, { color: palette.icon }]}>{t('auth.role.option_self.subtitle')}</Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: isProfessionalSelected }}
+            onPress={() => {
+              setSelectedRole('professional');
+              setRoleError(null);
+            }}
+            style={[
+              styles.roleCard,
+              {
+                backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                borderColor: isProfessionalSelected ? '#ff7b72' : 'transparent',
+              },
+            ]}
+            testID="auth.roleSelection.professionalCard">
+            {isProfessionalSelected ? (
+              <View style={styles.selectedBadge}>
+                <MaterialIcons color="#ffffff" name="check" size={14} />
+              </View>
+            ) : null}
+
+            <View style={[styles.cardIcon, { backgroundColor: isDark ? '#3b2f2a' : '#f5f5f5' }]}>
+              <MaterialIcons color={palette.icon} name="assignment" size={24} />
+            </View>
+
+            <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_pro.title')}</Text>
+            <Text style={[styles.roleSubtitle, { color: palette.icon }]}>{t('auth.role.option_pro.subtitle')}</Text>
+          </Pressable>
+        </View>
+
+        <View style={[styles.lockNotePanel, { backgroundColor: isDark ? '#33261f' : '#fff0e5', borderColor: isDark ? '#4a372e' : '#f8dece' }]}>
+          <MaterialIcons color={isDark ? '#fbbf8f' : '#fb923c'} name="info-outline" size={20} style={styles.lockNoteIcon} />
+          <Text style={[styles.lockNote, { color: palette.icon }]}>{t('auth.role.lock_note')}</Text>
+        </View>
+
+        <View accessibilityLiveRegion="polite">
+          {roleError ? (
+            <Text style={styles.inlineError} testID="auth.roleSelection.error.roleRequired">
+              {t(roleError)}
+            </Text>
+          ) : null}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          disabled={isSubmitting}
+          onPress={() => {
+            void onContinue();
+          }}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            {
+              opacity: isSubmitting ? 0.7 : 1,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
+            },
+          ]}
+          testID="auth.roleSelection.continueButton">
+          {isSubmitting ? (
+            <ActivityIndicator
+              accessibilityLabel={t('a11y.loading.submitting')}
+              color="#ffffff"
+            />
+          ) : (
+            <>
+              <Text style={styles.primaryButtonText}>{t('auth.role.cta_continue')}</Text>
+              <MaterialIcons color="#ffffff" name="arrow-forward" size={20} />
+            </>
+          )}
+        </Pressable>
       </View>
-
-      <Pressable
-        accessibilityRole="button"
-        disabled={isSubmitting}
-        onPress={() => {
-          void onContinue();
-        }}
-        style={[styles.primaryButton, { backgroundColor: palette.tint }]}
-        testID="auth.roleSelection.continueButton">
-        <Text style={styles.primaryButtonText}>{t('auth.role.cta_continue')}</Text>
-      </Pressable>
-
-      <Pressable
-        accessibilityRole="button"
-        disabled={isSubmitting}
-        onPress={() => {
-          void onQuickSelfGuided();
-        }}
-        style={styles.secondaryButton}
-        testID="auth.roleSelection.quickSelfGuidedButton">
-        <Text style={[styles.secondaryButtonText, { color: palette.tint }]}>
-          {t('auth.role.cta_start_self_guided')}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.replace('/auth/sign-in')}
-        style={styles.backButton}
-        testID="auth.roleSelection.backButton">
-        <Text style={[styles.buttonText, { color: palette.tint }]}>
-          {t('auth.role.cta_back')}
-        </Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -173,71 +246,149 @@ export default function RoleSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    justifyContent: 'flex-start',
+  },
+  blob: {
+    borderRadius: 999,
+    opacity: 0.6,
+    position: 'absolute',
+  },
+  blobTopLeft: {
+    height: 300,
+    left: -110,
+    top: -80,
+    width: 300,
+  },
+  blobBottomRight: {
+    bottom: -100,
+    height: 340,
+    right: -130,
+    width: 340,
+  },
+  content: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 80,
-    paddingBottom: 40,
-    gap: 16,
+    paddingBottom: 24,
+    paddingTop: 14,
+  },
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    alignItems: 'center',
+    borderRadius: 24,
+    elevation: 1,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  quickStartButton: {
+    borderRadius: 20,
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  quickStartButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  titleArea: {
+    marginBottom: 16,
+    marginTop: 24,
   },
   title: {
     fontFamily: Fonts.rounded,
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: '700',
+    lineHeight: 40,
+    textAlign: 'center',
   },
   intro: {
     fontSize: 15,
     lineHeight: 22,
-    marginBottom: 8,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  cardGroup: {
+    gap: 12,
+    marginTop: 4,
   },
   roleCard: {
+    borderRadius: 22,
+    borderWidth: 3,
+    elevation: 1,
+    gap: 10,
+    minHeight: 150,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    position: 'relative',
+  },
+  selectedBadge: {
+    alignItems: 'center',
+    backgroundColor: '#ff7b72',
     borderRadius: 12,
-    borderWidth: 1.5,
-    gap: 6,
-    padding: 14,
+    height: 24,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    width: 24,
+  },
+  cardIcon: {
+    alignItems: 'center',
+    borderRadius: 24,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
   },
   roleTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
+    lineHeight: 24,
   },
   roleSubtitle: {
     fontSize: 14,
     lineHeight: 20,
   },
+  lockNotePanel: {
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  lockNoteIcon: {
+    marginTop: 1,
+  },
   lockNote: {
+    flex: 1,
     fontSize: 13,
-    lineHeight: 18,
-    marginTop: 2,
+    fontWeight: '500',
+    lineHeight: 19,
   },
   inlineError: {
     color: '#b3261e',
     fontSize: 13,
+    marginTop: 10,
+    paddingHorizontal: 6,
   },
   primaryButton: {
     alignItems: 'center',
-    borderRadius: 12,
+    backgroundColor: '#ff7b72',
+    borderRadius: 28,
+    flexDirection: 'row',
+    gap: 8,
     justifyContent: 'center',
-    minHeight: 48,
+    marginTop: 'auto',
+    minHeight: 56,
     paddingHorizontal: 16,
   },
   primaryButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  backButton: {
-    alignItems: 'center',
-    paddingVertical: 2,
-  },
-  buttonText: {
-    fontSize: 15,
-    fontWeight: '600',
   },
 });
