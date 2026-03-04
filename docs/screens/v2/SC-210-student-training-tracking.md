@@ -38,10 +38,14 @@
 - If assignment ends, assigned plan history remains accessible per retention policy.
 - If no plan exists, route to self-managed plan creation entry point.
 
-## Copy Draft (Initial)
-- Empty state title: `No workout scheduled yet`
-- Empty state helper: `No coach connected? You can still create your own training plan now.`
-- CTA: `Start my training plan`
+## Copy Draft (Current)
+- Screen title: `Today`
+- Calendar action: `Open calendar`
+- Assigned-plan summary title: `Today's guided plan`
+- Assigned-plan summary helper: `Your coach assigned a training structure. Track completion and request adjustments below.`
+- Empty state title: `Start your own journey`
+- Empty state helper: `You don't have a coach yet, but you can track your own workouts and stay active!`
+- Empty-state CTA: `Create a workout`
 
 ## Links
 - Functional requirement: FR-113, FR-116, FR-123, FR-135, FR-211, FR-214

@@ -39,6 +39,9 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 - Training no-assignment state: `No active plan`
 - Empty-state CTA: `Start on my own`
 - Dashboard pending status: `Pending Connection`
+- Training self-guided title: `Start your own journey`
+- Training self-guided helper: `You don't have a coach yet, but you can track your own workouts and stay active!`
+- Training self-guided CTA: `Create a workout`
 - Hydration title: `Hydration`
 - Hydration nutritionist helper: `Goal set by Nutritionist`
 - Active nutrition title/CTA: `Nutrition Plan` / `View Plan`
