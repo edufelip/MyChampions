@@ -11,6 +11,12 @@
 - Emphasize fast logging from already-saved meals.
 - Keep the grams-to-nutrients outcome clear before confirmation.
 
+## Design Structure (D-134)
+- Route uses `DsScreen` shell with shared background and semantic DS color tokens.
+- Offline communication uses `DsOfflineBanner` while preserving BL-008 write-lock behavior.
+- Primary action hierarchy follows DS pill-button patterns and shared spacing/typography tokens.
+- AI/paywall and quick-log/builder sections keep existing business logic and localization keys, with DS visual structure.
+
 ## User Actions
 - Primary:
   - View saved custom meal list.
