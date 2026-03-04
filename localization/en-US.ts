@@ -16,7 +16,7 @@ export const enUS = {
     'Use at least 8 characters with uppercase, number, and an ASCII symbol (e.g., ! @ #). Emoji are not allowed.',
   'auth.validation.password_confirmation_mismatch':
     'Password confirmation must match your password.',
-  'auth.signin.title': 'Welcome back',
+  'auth.signin.title': 'Welcome',
   'auth.signin.subtitle': 'Ready to crush your goals today?',
   'auth.signin.field.email': 'Email Address',
   'auth.signin.placeholder.email': 'hello@fitness.app',

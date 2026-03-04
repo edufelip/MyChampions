@@ -205,24 +205,6 @@ export default function SignInScreen() {
       />
 
       <View style={styles.content}>
-        <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-                return;
-              }
-
-              router.replace('/');
-            }}
-            style={[styles.backButton, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}
-            testID="auth.signIn.backButton">
-            <MaterialIcons color={palette.text} name="arrow-back" size={22} />
-          </Pressable>
-          <View style={styles.headerSpacer} />
-        </View>
-
         <View style={styles.titleArea}>
           <View style={[styles.brandBadge, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}>
             <MaterialIcons color="#ff7b72" name="fitness-center" size={34} />
@@ -262,7 +244,7 @@ export default function SignInScreen() {
 
           <View style={styles.formSection}>
             <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.password')}</Text>
-            <View style={styles.passwordRow}>
+            <View style={styles.passwordField}>
               <TextInput
                 accessibilityLabel={t('auth.field.password')}
                 autoCapitalize="none"
@@ -290,10 +272,12 @@ export default function SignInScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPassword((current) => !current)}
                 testID="auth.signIn.passwordToggle"
-                style={[styles.passwordToggle, { backgroundColor: isDark ? '#352a25' : '#f8f1ed' }]}>
-                <Text style={[styles.passwordToggleText, { color: palette.text }]}>
-                  {showPassword ? t('auth.password.toggle_hide_short') : t('auth.password.toggle_show_short')}
-                </Text>
+                style={[styles.passwordIconButton, { backgroundColor: isDark ? '#352a25' : '#f8f1ed' }]}>
+                <MaterialIcons
+                  color={palette.text}
+                  name={showPassword ? 'visibility-off' : 'visibility'}
+                  size={20}
+                />
               </Pressable>
             </View>
             <Pressable
@@ -413,28 +397,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    paddingTop: 14,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    alignItems: 'center',
-    borderRadius: 24,
-    elevation: 1,
-    height: 48,
-    justifyContent: 'center',
-    width: 48,
-  },
-  headerSpacer: {
-    width: 48,
+    paddingTop: 20,
   },
   titleArea: {
     alignItems: 'center',
     marginBottom: 24,
-    marginTop: 30,
+    marginTop: 24,
   },
   brandBadge: {
     alignItems: 'center',
@@ -477,26 +445,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
-  passwordRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
+  passwordField: {
+    justifyContent: 'center',
+    position: 'relative',
   },
   passwordInput: {
-    flex: 1,
-    paddingRight: 12,
+    paddingRight: 58,
   },
-  passwordToggle: {
+  passwordIconButton: {
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 18,
     justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 68,
-    paddingHorizontal: 14,
-  },
-  passwordToggleText: {
-    fontSize: 14,
-    fontWeight: '600',
+    minHeight: 36,
+    minWidth: 36,
+    position: 'absolute',
+    right: 10,
   },
   inlineError: {
     color: '#b3261e',
@@ -550,10 +513,12 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: 'center',
+    alignSelf: 'center',
     flexDirection: 'row',
     gap: 6,
+    justifyContent: 'center',
     marginTop: 'auto',
-    paddingBottom: 8,
+    paddingBottom: 16,
     paddingTop: 24,
   },
   secondaryButtonHint: {

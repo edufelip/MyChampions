@@ -18,7 +18,7 @@ export const ptBR: Record<TranslationKey, string> = {
     'Use pelo menos 8 caracteres com letra maiúscula, número e símbolo ASCII (ex.: ! @ #). Emoji não é permitido.',
   'auth.validation.password_confirmation_mismatch':
     'A confirmação de senha deve ser igual à senha.',
-  'auth.signin.title': 'Que bom ter você de volta',
+  'auth.signin.title': 'Boas-vindas',
   'auth.signin.subtitle': 'Pronto para superar suas metas hoje?',
   'auth.signin.field.email': 'Endereço de e-mail',
   'auth.signin.placeholder.email': 'hello@fitness.app',

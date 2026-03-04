@@ -19,7 +19,7 @@ export const esES: Record<TranslationKey, string> = {
     'Usa al menos 8 caracteres con mayúscula, número y símbolo ASCII (ej.: ! @ #). No se permiten emojis.',
   'auth.validation.password_confirmation_mismatch':
     'La confirmación debe coincidir con tu contraseña.',
-  'auth.signin.title': 'Bienvenido de nuevo',
+  'auth.signin.title': 'Bienvenido',
   'auth.signin.subtitle': '¿Listo para superar tus metas hoy?',
   'auth.signin.field.email': 'Correo electrónico',
   'auth.signin.placeholder.email': 'hello@fitness.app',
