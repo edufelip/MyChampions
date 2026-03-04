@@ -9,6 +9,12 @@
 ## Objective
 Let fitness coaches create and edit fully customizable named predefined training plans stored in their private library. Plans consist of sessions; each session holds custom exercise items (name, quantity/sets-reps, optional notes). Plans can be assigned to individual students or bulk-assigned. Starter templates are available to clone-then-customize.
 
+## Design Structure (D-134)
+- Library route (`/professional/training`) uses `DsScreen` shell, DS card surfaces, and DS typography/spacing tokens.
+- Empty and error states are presented inside `DsCard` containers with consistent semantics.
+- Primary create/retry actions use DS pill buttons and localization-key copy only.
+- Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
+
 ## User Actions
 
 ### Plan Library (`/professional/training`)
