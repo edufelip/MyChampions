@@ -9,59 +9,44 @@
  * Active student count is still stubbed at 0 pending Data Connect roster endpoint.
  *
  * Docs: docs/screens/v2/SC-212-professional-subscription-gate.md
- * Refs: D-009–D-011, D-024, D-043, D-075, D-128, FR-126–129, FR-156, FR-185, FR-215, FR-217
+ * Refs: D-009–D-011, D-024, D-043, D-075, D-128, D-134, FR-126–129, FR-156, FR-185, FR-215, FR-217
  *       BR-218–221, BR-228, BR-247, BR-273, BR-275
  */
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { Stack } from 'expo-router';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { DsCard } from '@/components/ds/primitives/DsCard';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import {
-  resolveSubscriptionState,
-  isPlanUpdateLocked,
-  FREE_STUDENT_CAP,
-} from '@/features/subscription/subscription.logic';
-import { useSubscription } from '@/features/subscription/use-subscription';
-import {
-  resolveOfflineDisplayState,
   type OfflineDisplayState,
+  resolveOfflineDisplayState,
 } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import {
+  FREE_STUDENT_CAP,
+  isPlanUpdateLocked,
+  resolveSubscriptionState,
+} from '@/features/subscription/subscription.logic';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 export default function ProfessionalSubscriptionScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
 
-  // Live entitlement from RevenueCat (D-128).
-  // activeStudentCount stays 0 until Data Connect roster is wired (pending-wiring-checklist-v1.md).
-  const {
-    entitlementStatus,
-    activeStudentCount,
-    isLoading,
-    purchase,
-    restore,
-    refresh,
-  } = useSubscription(Boolean(currentUser));
+  const { entitlementStatus, activeStudentCount, isLoading, purchase, restore, refresh } =
+    useSubscription(Boolean(currentUser));
 
-  const subState = resolveSubscriptionState({
-    activeStudentCount,
-    entitlementStatus,
-  });
-
+  const subState = resolveSubscriptionState({ activeStudentCount, entitlementStatus });
   const isLocked = isPlanUpdateLocked(subState);
 
   const networkStatus = useNetworkStatus();
@@ -75,50 +60,40 @@ export default function ProfessionalSubscriptionScreen() {
     entitlementStatus === 'active'
       ? t('pro.subscription.status.active')
       : entitlementStatus === 'lapsed'
-        ? t('pro.subscription.status.inactive')
-        : t('pro.subscription.status.unknown');
+      ? t('pro.subscription.status.inactive')
+      : t('pro.subscription.status.unknown');
 
   const statusColor =
     entitlementStatus === 'active'
       ? '#16a34a'
       : entitlementStatus === 'lapsed'
-        ? '#b3261e'
-        : palette.icon;
+      ? theme.color.danger
+      : theme.color.textSecondary;
 
   const capLabel = (t('pro.subscription.cap_usage') as string)
     .replace('{count}', String(activeStudentCount))
     .replace('{limit}', String(FREE_STUDENT_CAP));
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: palette.background }]}
-      contentContainerStyle={styles.content}
-      testID="pro.subscription.screen">
+    <DsScreen scheme={scheme} testID="pro.subscription.screen" contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.subscription.title'), headerShown: true }} />
 
-      {/* Offline banner (BL-008) */}
       {offlineDisplay.showOfflineBanner ? (
-        <View
-          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
-          testID="pro.subscription.offlineBanner">
-          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
-            {t('offline.banner')}
-          </Text>
-        </View>
+        <DsOfflineBanner
+          scheme={scheme}
+          text={t('offline.banner') as string}
+          testID="pro.subscription.offlineBanner"
+        />
       ) : null}
 
-      {/* Status card */}
-      <View
-        style={[styles.card, { borderColor: palette.tint + '66' }]}
-        testID="pro.subscription.statusCard">
-        <Text style={[styles.cardTitle, { color: palette.text }]}>
-          {t('pro.subscription.title')}
-        </Text>
+      <DsCard scheme={scheme} testID="pro.subscription.statusCard" style={styles.statusCard}>
+        <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{t('pro.subscription.title')}</Text>
 
         {isLoading ? (
           <ActivityIndicator
             testID="pro.subscription.loading"
             accessibilityLabel={t('a11y.loading.default') as string}
+            color={theme.color.accentPrimary}
           />
         ) : (
           <Text
@@ -128,157 +103,141 @@ export default function ProfessionalSubscriptionScreen() {
           </Text>
         )}
 
-        <Text style={[styles.meta, { color: palette.icon }]}>{capLabel}</Text>
-        <Text style={[styles.meta, { color: palette.icon }]}>{t('pro.subscription.free_tier')}</Text>
-      </View>
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>{capLabel}</Text>
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>{t('pro.subscription.free_tier')}</Text>
+      </DsCard>
 
-      {/* Pre-lapse warning (BL-009) */}
       {subState.isPreLapseWarningVisible ? (
-        <View
-          style={[styles.warningBanner, { borderColor: '#f59e0b' }]}
+        <DsCard
+          scheme={scheme}
+          variant="warning"
           testID="pro.subscription.warning"
-          accessibilityRole="alert">
-          <Text style={[styles.warningTitle, { color: palette.text }]}>
+          style={styles.warningCard}>
+          <Text style={[styles.warningTitle, { color: theme.color.textPrimary }]}>
             {t('pro.subscription.pre_lapse.title')}
           </Text>
-          <Text style={[styles.warningText, { color: palette.text }]}>
+          <Text style={[styles.warningText, { color: theme.color.textPrimary }]}>
             {t('pro.subscription.pre_lapse.body')}
           </Text>
           <Pressable
             accessibilityRole="button"
             disabled={isWriteLocked}
             onPress={() => void refresh()}
-            style={[styles.renewButton, { borderColor: '#f59e0b', opacity: isWriteLocked ? 0.4 : 1 }]}
+            style={[
+              styles.renewButton,
+              {
+                borderColor: '#f59e0b',
+                opacity: isWriteLocked ? 0.4 : 1,
+                backgroundColor: theme.color.surface,
+              },
+            ]}
             testID="pro.subscription.renewCta">
             <Text style={[styles.renewButtonText, { color: '#b45309' }]}>
               {t('pro.subscription.pre_lapse.cta_renew')}
             </Text>
           </Pressable>
-        </View>
+        </DsCard>
       ) : null}
 
-      {/* Locked notice */}
       {isLocked ? (
-        <View
-          style={[styles.lockBanner, { borderColor: '#b3261e' }]}
-          testID="pro.subscription.locked"
-          accessibilityRole="alert">
-          <Text style={[styles.errorText, { color: '#b3261e' }]}>
-            {t('pro.subscription.locked')}
-          </Text>
-        </View>
+        <DsCard scheme={scheme} variant="warning" testID="pro.subscription.locked" accessibilityRole="alert">
+          <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('pro.subscription.locked')}</Text>
+        </DsCard>
       ) : null}
 
-      {/* Purchase note */}
-      <Text style={[styles.purchaseNote, { color: palette.icon }]}>
+      <Text style={[styles.purchaseNote, { color: theme.color.textSecondary }]}>
         {t('pro.subscription.purchase_note')}
       </Text>
 
-      {/* CTAs */}
-      <Pressable
-        accessibilityRole="button"
+      <DsPillButton
+        scheme={scheme}
         disabled={isWriteLocked}
         onPress={() => {
-          // Package selection UI deferred; purchase called with undefined package for now
-          // (full paywall UI is out of MVP scope — D-075)
           void purchase(undefined);
         }}
-        style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
-        testID="pro.subscription.purchaseCta">
-        <Text style={styles.primaryButtonText}>{t('pro.subscription.cta_purchase')}</Text>
-      </Pressable>
+        label={t('pro.subscription.cta_purchase') as string}
+        testID="pro.subscription.purchaseCta"
+      />
 
-      <Pressable
-        accessibilityRole="button"
+      <DsPillButton
+        scheme={scheme}
+        variant="secondary"
         disabled={isWriteLocked}
         onPress={() => void restore()}
-        style={[styles.outlineButton, { borderColor: palette.icon, opacity: isWriteLocked ? 0.4 : 1 }]}
-        testID="pro.subscription.restoreCta">
-        <Text style={[styles.outlineButtonText, { color: palette.icon }]}>
-          {t('pro.subscription.cta_restore')}
-        </Text>
-      </Pressable>
+        label={t('pro.subscription.cta_restore') as string}
+        testID="pro.subscription.restoreCta"
+      />
 
       <Pressable
         accessibilityRole="button"
         onPress={() => void refresh()}
-        style={[styles.ghostButton]}
+        style={styles.ghostButton}
         testID="pro.subscription.refreshCta">
-        <Text style={[styles.ghostButtonText, { color: palette.tint }]}>
+        <Text style={[styles.ghostButtonText, { color: theme.color.accentPrimary }]}>
           {t('pro.subscription.cta_refresh')}
         </Text>
       </Pressable>
-    </ScrollView>
+    </DsScreen>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 16 },
-  card: { borderRadius: 12, borderWidth: 1.5, gap: 8, padding: 16 },
+  content: {
+    flexGrow: 1,
+    gap: DsSpace.lg,
+    padding: DsSpace.lg,
+    paddingBottom: DsSpace.xxl,
+  },
+  statusCard: {
+    gap: DsSpace.xs,
+  },
   cardTitle: {
+    ...DsTypography.cardTitle,
     fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 16,
+  },
+  statusBadge: {
+    fontSize: 20,
     fontWeight: '700',
   },
-  statusBadge: { fontSize: 20, fontWeight: '700' },
-  meta: { fontSize: 13, lineHeight: 18 },
-  warningBanner: {
-    backgroundColor: '#f59e0b22',
-    borderRadius: 10,
-    borderWidth: 1,
-    gap: 8,
-    padding: 12,
+  meta: {
+    ...DsTypography.caption,
   },
-  warningTitle: { fontSize: 14, fontWeight: '700', lineHeight: 18 },
-  warningText: { fontSize: 13, lineHeight: 18 },
+  warningCard: {
+    gap: DsSpace.xs,
+  },
+  warningTitle: {
+    ...DsTypography.body,
+    fontWeight: '700',
+  },
+  warningText: {
+    ...DsTypography.caption,
+  },
   renewButton: {
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1.5,
     justifyContent: 'center',
     minHeight: 40,
     marginTop: 4,
   },
-  renewButtonText: { fontSize: 14, fontWeight: '700' },
-  lockBanner: {
-    backgroundColor: '#b3261e11',
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
+  renewButtonText: {
+    ...DsTypography.body,
+    fontWeight: '700',
   },
-  errorText: { fontSize: 13 },
-  purchaseNote: { fontSize: 12, textAlign: 'center' },
-  primaryButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    justifyContent: 'center',
-    minHeight: 52,
+  errorText: {
+    ...DsTypography.caption,
   },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  outlineButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    minHeight: 48,
+  purchaseNote: {
+    ...DsTypography.caption,
+    textAlign: 'center',
   },
-  outlineButtonText: { fontSize: 15, fontWeight: '600' },
   ghostButton: {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
   },
-  ghostButtonText: { fontSize: 14, fontWeight: '600' },
-  offlineBanner: {
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 10,
-  },
-  offlineBannerText: {
-    fontSize: 13,
-    lineHeight: 18,
+  ghostButtonText: {
+    ...DsTypography.body,
+    fontWeight: '700',
   },
 });
