@@ -198,6 +198,7 @@
   - Pattern layer: `components/ds/patterns/*` (`WeekStrip`, `ReadOnlyNoticeCard`, `HeroEmptyState`, `PlanChangeRequestCard`).
   - First adoption surfaces: `app/student/nutrition.tsx` and `app/student/training.tsx`.
   - Architectural rule: business hooks and data logic remain in screens/features; DS components remain presentation-only and localization-key driven (no hardcoded user copy).
+- `D-135`: Shell/auxiliary routes (`/`, `/modal`, `/(tabs)/explore` and tab wrapper routes) remain behavior-stable but adopt DS shell structure where they render standalone UI. Tab wrapper routes are documented as pure role-based delegates to screen specs (SC-203/204/207/208/209/210/213/215), with no duplicated business logic in wrapper files.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
