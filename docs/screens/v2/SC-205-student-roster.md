@@ -11,6 +11,7 @@
 - Search/filter controls are grouped in a top `DsCard` with pill-style filter chips.
 - Roster rows are rendered inside a dedicated `DsCard` list container using DS spacing/radius/typography tokens.
 - Offline state uses `DsOfflineBanner`; all copy remains localization-key driven.
+- `/professional/pending` queue follows the same shell, card, and pill-action structure for search, selection, and bulk deny flows.
 
 ## User Actions
 - Primary:
