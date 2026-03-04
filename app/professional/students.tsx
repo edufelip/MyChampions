@@ -12,10 +12,10 @@
  * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
  *
  * Docs: docs/screens/v2/SC-205-student-roster.md
- * Refs: D-100, FR-105, FR-122, FR-210, FR-224, FR-225
+ * Refs: D-100, D-134, FR-105, FR-122, FR-210, FR-224, FR-225
  *       BR-206, BR-214, BR-268, BR-283
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -27,7 +27,17 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { DsCard } from '@/components/ds/primitives/DsCard';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import {
+  DsRadius,
+  DsSpace,
+  DsTypography,
+  getDsTheme,
+  type DsTheme,
+} from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -35,8 +45,6 @@ import {
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type AssignmentStatus = 'active' | 'pending';
 
@@ -48,18 +56,14 @@ type StudentRow = {
 };
 
 type FilterKind = 'all' | 'active' | 'pending';
-
-type Palette = (typeof Colors)['light'];
 type TFn = ReturnType<typeof useTranslation>['t'];
 
-// Stub: real data comes from professional-source once Data Connect endpoint is wired
 const STUB_STUDENTS: StudentRow[] = [];
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfessionalStudentsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -72,104 +76,106 @@ export default function ProfessionalStudentsScreen() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKind>('all');
 
-  // Apply search + filter to stub list
-  const visible = STUB_STUDENTS.filter((s) => {
-    const matchesFilter =
-      filter === 'all' ||
-      (filter === 'active' && s.assignmentStatus === 'active') ||
-      (filter === 'pending' && s.assignmentStatus === 'pending');
+  const visible = useMemo(
+    () =>
+      STUB_STUDENTS.filter((s) => {
+        const matchesFilter =
+          filter === 'all' ||
+          (filter === 'active' && s.assignmentStatus === 'active') ||
+          (filter === 'pending' && s.assignmentStatus === 'pending');
 
-    const matchesSearch =
-      !search.trim() ||
-      s.displayName.toLowerCase().includes(search.trim().toLowerCase());
+        const query = search.trim().toLowerCase();
+        const matchesSearch = !query || s.displayName.toLowerCase().includes(query);
 
-    return matchesFilter && matchesSearch;
-  });
+        return matchesFilter && matchesSearch;
+      }),
+    [filter, search]
+  );
 
-  const isLoading = false; // replaced by real hook state when wired
+  const isLoading = false;
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: palette.background }]}
-      testID="pro.students.screen">
+    <DsScreen scheme={scheme} testID="pro.students.screen" contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.students.title'), headerShown: true }} />
 
-      {/* Offline banner (BL-008) */}
       {offlineDisplay.showOfflineBanner ? (
-        <View
-          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
-          testID="pro.students.offlineBanner">
-          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
-            {t('offline.banner')}
-          </Text>
-        </View>
+        <DsOfflineBanner
+          scheme={scheme}
+          text={t('offline.banner') as string}
+          testID="pro.students.offlineBanner"
+        />
       ) : null}
 
-      {/* Search bar */}
-      <View style={[styles.searchBar, { borderColor: palette.icon + '66' }]}>
+      <DsCard scheme={scheme} style={styles.searchCard} testID="pro.students.searchCard">
         <TextInput
-          style={[styles.searchInput, { color: palette.text }]}
+          style={[
+            styles.searchInput,
+            {
+              borderColor: theme.color.border,
+              color: theme.color.textPrimary,
+              backgroundColor: theme.color.surfaceMuted,
+            },
+          ]}
           placeholder={t('pro.students.search.placeholder') as string}
-          placeholderTextColor={palette.icon}
+          placeholderTextColor={theme.color.textSecondary}
           value={search}
           onChangeText={setSearch}
           testID="pro.students.search"
           accessibilityLabel={t('pro.students.search.placeholder') as string}
         />
-      </View>
 
-      {/* Filter chips */}
-      <FilterChips filter={filter} onFilter={setFilter} palette={palette} t={t} />
+        <FilterChips filter={filter} onFilter={setFilter} theme={theme} t={t} />
+      </DsCard>
 
-      {/* List */}
-      {isLoading ? (
-        <ActivityIndicator
-          style={styles.centered}
-          testID="pro.students.loading"
-          accessibilityLabel={t('a11y.loading.default') as string}
-        />
-      ) : (
-        <FlatList
-          data={visible}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <StudentRowItem
-              student={item}
-              palette={palette}
-              t={t}
-              onPress={() =>
-                router.push({
-                  pathname: '/professional/student-profile',
-                  params: { studentId: item.id },
-                })
-              }
-            />
-          )}
-          ListEmptyComponent={
-            <Text
-              style={[styles.emptyText, { color: palette.icon }]}
-              testID="pro.students.empty">
-              {t('pro.students.empty')}
-            </Text>
-          }
-          contentContainerStyle={styles.listContent}
-        />
-      )}
-    </View>
+      <DsCard scheme={scheme} style={styles.listCard} testID="pro.students.listCard">
+        {isLoading ? (
+          <ActivityIndicator
+            style={styles.centered}
+            testID="pro.students.loading"
+            accessibilityLabel={t('a11y.loading.default') as string}
+            color={theme.color.accentPrimary}
+          />
+        ) : (
+          <FlatList
+            data={visible}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <StudentRowItem
+                student={item}
+                theme={theme}
+                t={t}
+                onPress={() =>
+                  router.push({
+                    pathname: '/professional/student-profile',
+                    params: { studentId: item.id },
+                  })
+                }
+              />
+            )}
+            ListEmptyComponent={
+              <Text
+                style={[styles.emptyText, { color: theme.color.textSecondary }]}
+                testID="pro.students.empty">
+                {t('pro.students.empty')}
+              </Text>
+            }
+            contentContainerStyle={styles.listContent}
+          />
+        )}
+      </DsCard>
+    </DsScreen>
   );
 }
-
-// ─── Filter Chips ─────────────────────────────────────────────────────────────
 
 function FilterChips({
   filter,
   onFilter,
-  palette,
+  theme,
   t,
 }: {
   filter: FilterKind;
   onFilter: (f: FilterKind) => void;
-  palette: Palette;
+  theme: DsTheme;
   t: TFn;
 }) {
   const chips: { kind: FilterKind; label: string }[] = [
@@ -191,15 +197,15 @@ function FilterChips({
             style={[
               styles.chip,
               {
-                backgroundColor: isSelected ? palette.tint : 'transparent',
-                borderColor: palette.tint,
+                backgroundColor: isSelected ? theme.color.accentPrimary : theme.color.surface,
+                borderColor: isSelected ? theme.color.accentPrimary : theme.color.border,
               },
             ]}
             testID={`pro.students.filter.${chip.kind}`}>
             <Text
               style={[
                 styles.chipText,
-                { color: isSelected ? '#fff' : palette.tint },
+                { color: isSelected ? '#ffffff' : theme.color.textPrimary },
               ]}>
               {chip.label}
             </Text>
@@ -210,16 +216,14 @@ function FilterChips({
   );
 }
 
-// ─── Student Row ──────────────────────────────────────────────────────────────
-
 function StudentRowItem({
   student,
-  palette,
+  theme,
   t,
   onPress,
 }: {
   student: StudentRow;
-  palette: Palette;
+  theme: DsTheme;
   t: TFn;
   onPress: () => void;
 }) {
@@ -233,81 +237,101 @@ function StudentRowItem({
       ? t('pro.student_profile.assignment.active')
       : t('pro.student_profile.assignment.pending');
 
-  const statusColor = student.assignmentStatus === 'active' ? '#16a34a' : palette.icon;
+  const statusColor =
+    student.assignmentStatus === 'active' ? '#16a34a' : theme.color.textSecondary;
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={
-        (t('a11y.student_row') as string)
-          .replace('{name}', student.displayName)
-          .replace('{specialty}', specialtyLabel as string)
-          .replace('{status}', statusLabel as string)
-      }
+      accessibilityLabel={(t('a11y.student_row') as string)
+        .replace('{name}', student.displayName)
+        .replace('{specialty}', specialtyLabel as string)
+        .replace('{status}', statusLabel as string)}
       onPress={onPress}
-      style={[styles.row, { borderColor: palette.icon + '33' }]}
+      style={[styles.row, { borderColor: theme.color.border }]}
       testID={`pro.students.row.${student.id}`}>
       <View style={styles.rowMain}>
-        <Text style={[styles.studentName, { color: palette.text }]}>
+        <Text style={[styles.studentName, { color: theme.color.textPrimary }]}>
           {student.displayName}
         </Text>
-        <Text style={[styles.rowMeta, { color: palette.icon }]}>{specialtyLabel}</Text>
+        <Text style={[styles.rowMeta, { color: theme.color.textSecondary }]}>{specialtyLabel}</Text>
       </View>
       <Text style={[styles.badge, { color: statusColor }]}>{statusLabel}</Text>
     </Pressable>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  searchBar: {
-    borderRadius: 10,
-    borderWidth: 1,
-    margin: 16,
-    marginBottom: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  content: {
+    flexGrow: 1,
+    gap: DsSpace.lg,
+    padding: DsSpace.lg,
+    paddingBottom: DsSpace.xxl,
   },
-  searchInput: { fontSize: 15, minHeight: 36 },
+  searchCard: {
+    gap: DsSpace.md,
+  },
+  searchInput: {
+    borderRadius: DsRadius.lg,
+    borderWidth: 1,
+    fontSize: 15,
+    minHeight: 44,
+    paddingHorizontal: DsSpace.md,
+    paddingVertical: DsSpace.sm,
+  },
   chipRow: {
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: DsSpace.sm,
   },
   chip: {
-    borderRadius: 20,
-    borderWidth: 1.5,
+    borderRadius: DsRadius.pill,
+    borderWidth: 1,
+    minHeight: 38,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    justifyContent: 'center',
   },
-  chipText: { fontSize: 13, fontWeight: '600' },
-  listContent: { paddingHorizontal: 16, paddingBottom: 40 },
+  chipText: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
+  listCard: {
+    flex: 1,
+    padding: DsSpace.md,
+  },
+  listContent: {
+    paddingBottom: DsSpace.sm,
+  },
   row: {
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
+    gap: DsSpace.md,
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingHorizontal: DsSpace.xs,
+    paddingVertical: DsSpace.md,
   },
-  rowMain: { flex: 1, gap: 2 },
+  rowMain: {
+    flex: 1,
+    gap: 2,
+  },
   studentName: {
     fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
-  rowMeta: { fontSize: 13 },
-  badge: { fontSize: 12, fontWeight: '600' },
-  emptyText: { fontSize: 14, padding: 32, textAlign: 'center' },
-  centered: { marginTop: 32 },
-  offlineBanner: {
-    borderRadius: 8,
-    borderWidth: 1,
-    margin: 16,
-    marginBottom: 0,
-    padding: 10,
+  rowMeta: {
+    ...DsTypography.caption,
   },
-  offlineBannerText: { fontSize: 13, lineHeight: 18 },
+  badge: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
+  emptyText: {
+    ...DsTypography.body,
+    padding: DsSpace.xxl,
+    textAlign: 'center',
+  },
+  centered: {
+    marginVertical: DsSpace.xxl,
+  },
 });
