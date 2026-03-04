@@ -1,7 +1,5 @@
 /**
- * Tab: account (both roles)
- * SC-213 Account & Privacy Settings
- *
- * The account tab is the same for both professional and student roles.
+ * Tab route: /(tabs)/account
+ * Both roles -> SC-213 Account & Privacy Settings
  */
 export { default } from '@/app/settings/account';

@@ -1,32 +1,59 @@
-import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { StyleSheet, Text } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { DsCard } from '@/components/ds/primitives/DsCard';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
 export default function ModalScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
+  const colorScheme = useColorScheme() ?? 'light';
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">{t('shell.modal.body_title')}</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">{t('shell.modal.link_home')}</ThemedText>
-      </Link>
-    </ThemedView>
+    <DsScreen scheme={scheme} contentContainerStyle={styles.content}>
+      <DsCard scheme={scheme} style={styles.card}>
+        <Text style={[styles.title, { color: theme.color.textPrimary }]}>
+          {t('shell.modal.body_title')}
+        </Text>
+
+        <Text style={[styles.body, { color: theme.color.textSecondary }]}>
+          {t('shell.explore.description')}
+        </Text>
+
+        <DsPillButton
+          scheme={scheme}
+          label={t('shell.modal.link_home') as string}
+          onPress={() => router.replace('/')}
+          testID="shell.modal.home"
+        />
+      </DsCard>
+    </DsScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  content: {
     alignItems: 'center',
+    flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: DsSpace.lg,
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+  card: {
+    gap: DsSpace.md,
+    maxWidth: 520,
+    width: '100%',
+  },
+  title: {
+    ...DsTypography.title,
+    fontSize: 28,
+  },
+  body: {
+    ...DsTypography.body,
   },
 });

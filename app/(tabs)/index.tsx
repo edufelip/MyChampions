@@ -1,10 +1,7 @@
 /**
- * Tab: index
- * Pro  → Dashboard (SC-204 professional home)
- * Student → Home (SC-203 student home)
- *
- * Delegates to the role-specific product screen component.
- * The root auth guard ensures only authenticated, role-locked users reach here.
+ * Tab route: /(tabs)/index
+ * Pro  -> SC-204 Professional Home
+ * Student -> SC-203 Student Home
  */
 import { useAuthSession } from '@/features/auth/auth-session';
 import ProfessionalHomeScreen from '@/app/professional/home';
