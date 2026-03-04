@@ -9,6 +9,12 @@
 ## Objective
 Let nutritionists create and edit named predefined nutrition plans (calorie/macro targets + food item list) stored in their private library. Plans can be assigned to individual students or bulk-assigned. Starter templates are available to clone-then-customize.
 
+## Design Structure (D-134)
+- Library route (`/professional/nutrition`) uses `DsScreen` as shell with DS spacing/typography tokens.
+- Empty, error, and plan-list framing use `DsCard` surfaces with shared radius and border semantics.
+- Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
+- Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
+
 ## User Actions
 
 ### Plan Library (`/professional/nutrition`)
