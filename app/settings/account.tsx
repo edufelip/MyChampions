@@ -17,7 +17,6 @@ import {
   Alert,
   Linking,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -25,7 +24,10 @@ import {
 import { Stack } from 'expo-router';
 import { signOut } from 'firebase/auth';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { getDsTheme } from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { deleteProfileFromSource } from '@/features/auth/profile-source';
 import { getFirebaseAuth } from '@/features/auth/firebase';
 import {
@@ -48,7 +50,14 @@ type DeleteRequestState =
 
 export default function AccountSettingsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
+  const palette = {
+    background: theme.color.canvas,
+    text: theme.color.textPrimary,
+    icon: theme.color.textSecondary,
+    tint: theme.color.accentPrimary,
+  };
   const { t } = useTranslation();
 
   const [deleteState, setDeleteState] = useState<DeleteRequestState>({ kind: 'idle' });
@@ -109,21 +118,18 @@ export default function AccountSettingsScreen() {
   const isDeleteLocked = isSubmitting || isWriteLocked;
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: palette.background }]}
+    <DsScreen
+      scheme={scheme}
       contentContainerStyle={styles.content}
       testID="settings.account.screen">
       <Stack.Screen options={{ title: t('settings.account.title'), headerShown: true }} />
 
-      {/* Offline banner (BL-008) */}
       {offlineDisplay.showOfflineBanner ? (
-        <View
-          style={[styles.offlineBanner, { backgroundColor: '#b3261e22', borderColor: '#b3261e' }]}
-          testID="settings.account.offlineBanner">
-          <Text style={[styles.offlineBannerText, { color: palette.text }]}>
-            {t('offline.banner')}
-          </Text>
-        </View>
+        <DsOfflineBanner
+          scheme={scheme}
+          text={t('offline.banner') as string}
+          testID="settings.account.offlineBanner"
+        />
       ) : null}
 
       {/* Privacy policy */}
@@ -191,7 +197,7 @@ export default function AccountSettingsScreen() {
           </>
         )}
       </View>
-    </ScrollView>
+    </DsScreen>
   );
 }
 
