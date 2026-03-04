@@ -7,6 +7,12 @@
 ## Objective
 - Capture and manage professional specialty profile and optional per-specialty registry credentials.
 
+## Design Structure (D-134)
+- Screen shell uses `DsScreen` with shared blob background and DS semantic color tokens.
+- Specialty rows, credential form, and removal-assist state are rendered as stacked `DsCard` containers.
+- Primary and secondary specialty actions use DS pill-button treatment, with destructive intent preserved.
+- Offline communication uses `DsOfflineBanner` while keeping existing BL-008 write-lock behavior.
+
 ## User Actions
 - Primary:
   - Choose specialty: Nutritionist, Fitness Coach, or Both.
