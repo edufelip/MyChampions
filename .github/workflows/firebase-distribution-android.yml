@@ -43,6 +43,7 @@ jobs:
       - name: Set Expo environment
         run: |
           echo "EXPO_PUBLIC_ENV=dev" >> "$GITHUB_ENV"
+          echo "APP_VARIANT=dev" >> "$GITHUB_ENV"
         working-directory: .
 
       - name: Validate Expo environment
@@ -52,6 +53,13 @@ jobs:
             exit 1
           fi
           echo "EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
+        working-directory: .
+      - name: Validate Data Connect runtime config
+        run: |
+          set -a
+          source .env
+          set +a
+          node scripts/check-dataconnect-runtime-config.mjs
         working-directory: .
 
       - name: Validate Firebase secrets

@@ -130,10 +130,12 @@ Define the implementation contract for moving app domain persistence to Firebase
   3. Route by `locked_role`.
 
 ## Environment Strategy
-- Data Connect endpoints/config must be environment-scoped:
-  - `dev` (package/bundle `.dev`)
-  - `prod` (release package/bundle)
-- CI must inject environment-specific Data Connect config (same pattern used for Firebase service config).
+- Firebase project baseline remains single-project (`mychampions-fb928`) for Auth, Storage, Functions, and app registration.
+- Data Connect must be environment-scoped via **service separation inside the same Firebase project**:
+  - `dev` app variant (`APP_VARIANT=dev`) -> `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_DEV` + `EXPO_PUBLIC_DATA_CONNECT_LOCATION_DEV`
+  - `prod` app variant (`APP_VARIANT=prod`) -> `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_PROD` + `EXPO_PUBLIC_DATA_CONNECT_LOCATION_PROD`
+  - Shared connector id: `EXPO_PUBLIC_DATA_CONNECT_CONNECTOR_ID` (currently `mychampions`)
+- CI must inject environment-specific Data Connect runtime config and enforce variant-to-service consistency.
 - Live operation validation command:
   - `npm run validate:data-connect:profile`
   - Requires `EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT` and `DATA_CONNECT_ID_TOKEN`.

@@ -147,6 +147,11 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Wire fatsecret food lookup to nutrition plan builder and tracking search surfaces.
 - `Pending`: Wire predefined plan library persistence and bulk-assignment orchestration APIs.
 - `Pending`: Wire water-goal ownership precedence from live assignment + nutritionist override data.
+- `Done`: Runtime Data Connect environment selection is wired by `APP_VARIANT` in `app.config.ts` + `features/dataconnect.ts` using environment-specific service/location vars:
+  - `EXPO_PUBLIC_DATA_CONNECT_CONNECTOR_ID`
+  - `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_DEV`, `EXPO_PUBLIC_DATA_CONNECT_LOCATION_DEV`
+  - `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_PROD`, `EXPO_PUBLIC_DATA_CONNECT_LOCATION_PROD`
+  CI workflows set `APP_VARIANT` explicitly and validate config with `scripts/check-dataconnect-runtime-config.mjs` before build/distribution.
 
 ## Bottom Navigation Shell (Phase 7)
 - `Done`: `app/(tabs)/_layout.tsx` replaced with role-aware tab layout (D-045):

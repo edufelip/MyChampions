@@ -186,5 +186,11 @@
   - **Screens**: SC-214 (`[mealId].tsx`) and SC-215 (`index.tsx`) both call `useSubscription` and thread `hasAiAccess`, `isSubscriptionLoading`, and `onOpenPaywall` into their respective analysis components.
   - **Native wiring**: React Native autolinking handles iOS/Android automatically after `npm install react-native-purchases-ui`; `pod install` + Gradle sync are required build steps before running on device/simulator.
 
+- `D-133`: Environment model clarified as **one Firebase project + two Data Connect services** (dev/prod) within that same project. Runtime service selection is now variant-driven:
+  - `APP_VARIANT=dev` -> `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_DEV` + `EXPO_PUBLIC_DATA_CONNECT_LOCATION_DEV`
+  - `APP_VARIANT=prod` -> `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_PROD` + `EXPO_PUBLIC_DATA_CONNECT_LOCATION_PROD`
+  - Shared connector id: `EXPO_PUBLIC_DATA_CONNECT_CONNECTOR_ID` (current value `mychampions`)
+  `features/dataconnect.ts` now builds `getDataConnect(app, { connector, service, location })` from `Constants.expoConfig.extra.dataConnect` rather than importing a single hardcoded generated `connectorConfig`. CI workflows now set `APP_VARIANT` explicitly per lane and run `scripts/check-dataconnect-runtime-config.mjs` before build/distribution.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

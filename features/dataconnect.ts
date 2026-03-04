@@ -8,8 +8,6 @@ import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getDataConnect, type DataConnect } from 'firebase/data-connect';
 import Constants from 'expo-constants';
 
-import { connectorConfig } from '@mychampions/dataconnect-generated';
-
 type FirebaseExtraConfig = {
   apiKey?: string;
   authDomain?: string;
@@ -19,9 +17,27 @@ type FirebaseExtraConfig = {
   appId?: string;
 };
 
+type DataConnectExtraConfig = {
+  connector?: string;
+  service?: string;
+  location?: string;
+};
+
+type AppVariant = 'dev' | 'prod';
+
 function resolveFirebaseConfig(): FirebaseExtraConfig {
   const extra = (Constants.expoConfig?.extra ?? {}) as { firebase?: FirebaseExtraConfig };
   return extra.firebase ?? {};
+}
+
+function resolveDataConnectConfig(): DataConnectExtraConfig {
+  const extra = (Constants.expoConfig?.extra ?? {}) as { dataConnect?: DataConnectExtraConfig };
+  return extra.dataConnect ?? {};
+}
+
+function resolveAppVariant(): AppVariant {
+  const extra = (Constants.expoConfig?.extra ?? {}) as { appVariant?: unknown };
+  return extra.appVariant === 'prod' ? 'prod' : 'dev';
 }
 
 let dcInstance: DataConnect | null = null;
@@ -34,7 +50,25 @@ export function getDataConnectInstance(): DataConnect {
   if (dcInstance) return dcInstance;
 
   const firebaseConfig = resolveFirebaseConfig();
+  const dataConnectConfig = resolveDataConnectConfig();
+  const appVariant = resolveAppVariant();
   const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  dcInstance = getDataConnect(app, connectorConfig);
+  dcInstance = getDataConnect(app, {
+    connector: dataConnectConfig.connector ?? 'mychampions',
+    service: dataConnectConfig.service ?? 'mychampions-fb928-service',
+    location: dataConnectConfig.location ?? 'us-east4',
+  });
+
+  if (__DEV__) {
+    // Helpful during env troubleshooting: confirms which Data Connect service is selected per APP_VARIANT.
+    // eslint-disable-next-line no-console
+    console.log('[dataconnect] runtime config', {
+      variant: appVariant,
+      connector: dataConnectConfig.connector ?? 'mychampions',
+      service: dataConnectConfig.service ?? 'mychampions-fb928-service',
+      location: dataConnectConfig.location ?? 'us-east4',
+    });
+  }
+
   return dcInstance;
 }

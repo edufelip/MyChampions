@@ -16,11 +16,20 @@ type FirebaseConfig = {
   androidAppId: string;
 };
 
+type DataConnectRuntimeConfig = {
+  connector: string;
+  service: string;
+  location: string;
+  graphqlEndpoint: string;
+  apiKey: string;
+};
+
 type VariantConfig = {
   name: string;
   iosBundleId: string;
   androidPackage: string;
   firebase: FirebaseConfig;
+  dataConnect: DataConnectRuntimeConfig;
 };
 
 function requireEnv(key: string): string {
@@ -49,7 +58,24 @@ function resolveFirebaseConfig(prefix: 'FIREBASE_DEV' | 'FIREBASE_PROD'): Fireba
   };
 }
 
-const VARIANT_IDENTIFIERS: Record<AppVariant, Omit<VariantConfig, 'firebase'>> = {
+function resolveDataConnectConfig(variant: AppVariant): DataConnectRuntimeConfig {
+  const isProd = variant === 'prod';
+
+  return {
+    connector: process.env.EXPO_PUBLIC_DATA_CONNECT_CONNECTOR_ID ?? 'mychampions',
+    service: isProd
+      ? process.env.EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_PROD ?? 'mychampions-fb928-service'
+      : process.env.EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_DEV ?? 'mychampions-fb928-service',
+    location: isProd
+      ? process.env.EXPO_PUBLIC_DATA_CONNECT_LOCATION_PROD ?? 'us-east4'
+      : process.env.EXPO_PUBLIC_DATA_CONNECT_LOCATION_DEV ?? 'us-east4',
+    // Kept for contract-validation script and ops troubleshooting.
+    graphqlEndpoint: process.env.EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT ?? '',
+    apiKey: process.env.EXPO_PUBLIC_DATA_CONNECT_API_KEY ?? '',
+  };
+}
+
+const VARIANT_IDENTIFIERS: Record<AppVariant, Omit<VariantConfig, 'firebase' | 'dataConnect'>> = {
   dev: {
     name: 'my-champions-dev',
     iosBundleId: 'com.edufelip.mychampions.dev',
@@ -67,6 +93,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const prefix = variant === 'prod' ? 'FIREBASE_PROD' : 'FIREBASE_DEV';
   const { name, iosBundleId, androidPackage } = VARIANT_IDENTIFIERS[variant];
   const firebase = resolveFirebaseConfig(prefix);
+  const dataConnect = resolveDataConnectConfig(variant);
 
   return {
     ...config,
@@ -131,10 +158,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       appVariant: variant,
       firebase,
-      dataConnect: {
-        graphqlEndpoint: process.env.EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT ?? '',
-        apiKey: process.env.EXPO_PUBLIC_DATA_CONNECT_API_KEY ?? '',
-      },
+      dataConnect,
       // RevenueCat SDK API key — read by subscription-source.ts via Constants.expoConfig.extra
       // Key is public (client-side SDK key, not secret). D-128.
       revenueCatApiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? '',
