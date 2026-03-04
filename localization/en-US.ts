@@ -17,9 +17,14 @@ export const enUS = {
   'auth.validation.password_confirmation_mismatch':
     'Password confirmation must match your password.',
   'auth.signin.title': 'Welcome back',
-  'auth.signin.cta_primary': 'Sign in',
-  'auth.signin.cta_create': 'Create account',
-  'auth.signin.or_continue': 'or continue with',
+  'auth.signin.subtitle': 'Ready to crush your goals today?',
+  'auth.signin.field.email': 'Email Address',
+  'auth.signin.placeholder.email': 'hello@fitness.app',
+  'auth.signin.placeholder.password': '••••••••',
+  'auth.signin.cta_primary': 'Sign In',
+  'auth.signin.new_here': 'New here?',
+  'auth.signin.cta_create': 'Create an account',
+  'auth.signin.or_continue': 'Or continue with',
   'auth.signin.error.invalid_credentials':
     'Email or password is incorrect. Try again or reset your password.',
   'auth.signin.error.network': "Couldn't connect right now. Check your connection and try again.",
@@ -46,6 +51,7 @@ export const enUS = {
     'Authentication is not configured yet. Set Firebase keys and try again.',
   'auth.signup.placeholder.body':
     'Create-account form implementation starts in the next screen slice.',
+  'auth.signup.already_have': 'Already have an account?',
   'auth.signup.cta_back_signin': 'Back to sign in',
   'auth.role.title': 'How do you want to use the app?',
   'auth.role.intro': 'You can start on your own now and connect with a professional later.',

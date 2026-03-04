@@ -3,6 +3,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -51,6 +52,7 @@ function createNonce(length = 32) {
 export default function CreateAccountScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const router = useRouter();
   const { t } = useTranslation();
   const { emitEvent } = useAnalytics();
@@ -184,198 +186,281 @@ export default function CreateAccountScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: palette.background }]}
+      style={[styles.container, { backgroundColor: isDark ? '#221410' : '#fff5f0' }]}
       behavior={Platform.select({ ios: 'padding', default: undefined })}
       testID="auth.createAccount.screen">
       <Stack.Screen options={{ title: t('auth.signup.title'), headerShown: false }} />
 
+      <View
+        pointerEvents="none"
+        style={[
+          styles.blob,
+          styles.blobTopLeft,
+          { backgroundColor: isDark ? '#5f4f29' : '#ffeca1' },
+        ]}
+      />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.blob,
+          styles.blobBottomRight,
+          { backgroundColor: isDark ? '#2e5b4a' : '#a1e8cc' },
+        ]}
+      />
+
       <View style={styles.content}>
-        <Text style={[styles.title, { color: palette.text }]} testID="auth.createAccount.title">
-          {t('auth.signup.title')}
-        </Text>
-
-        <View style={styles.formSection}>
-          <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.name')}</Text>
-          <TextInput
-            accessibilityLabel={t('auth.field.name')}
-            autoCapitalize="words"
-            autoComplete="name"
-            onChangeText={setName}
-            placeholder={t('auth.placeholder.name')}
-            placeholderTextColor={palette.icon}
-            style={[styles.input, { borderColor: palette.icon, color: palette.text }]}
-            testID="auth.createAccount.nameInput"
-            value={name}
-          />
-          <View accessibilityLiveRegion="polite">
-            {errors.name ? (
-              <Text style={styles.inlineError} testID="auth.createAccount.error.nameRequired">
-                {t(errors.name)}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.email')}</Text>
-          <TextInput
-            accessibilityLabel={t('auth.field.email')}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            onChangeText={setEmail}
-            placeholder={t('auth.placeholder.email')}
-            placeholderTextColor={palette.icon}
-            style={[styles.input, { borderColor: palette.icon, color: palette.text }]}
-            testID="auth.createAccount.emailInput"
-            value={email}
-          />
-          <View accessibilityLiveRegion="polite">
-            {errors.email ? (
-              <Text style={styles.inlineError} testID="auth.createAccount.error.emailRequired">
-                {t(errors.email)}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.password')}</Text>
-          <View style={styles.passwordRow}>
-            <TextInput
-              accessibilityLabel={t('auth.field.password')}
-              autoCapitalize="none"
-              autoComplete="password-new"
-              onChangeText={setPassword}
-              placeholder={t('auth.placeholder.password')}
-              placeholderTextColor={palette.icon}
-              secureTextEntry={!showPassword}
-              style={[styles.input, styles.passwordInput, { borderColor: palette.icon, color: palette.text }]}
-              testID="auth.createAccount.passwordInput"
-              value={password}
-            />
-            <Pressable
-              accessibilityLabel={
-                showPassword ? t('auth.password.toggle_hide') : t('auth.password.toggle_show')
-              }
-              accessibilityRole="button"
-              onPress={() => setShowPassword((current) => !current)}
-              style={[styles.passwordToggle, { borderColor: palette.icon }]}
-              testID="auth.createAccount.passwordToggle">
-              <Text style={[styles.passwordToggleText, { color: palette.text }]}>
-                {showPassword ? t('auth.password.toggle_hide_short') : t('auth.password.toggle_show_short')}
-              </Text>
-            </Pressable>
-          </View>
-          <Text style={[styles.helperText, { color: palette.icon }]}>{t('auth.signup.password_helper')}</Text>
-          <View accessibilityLiveRegion="polite">
-            {errors.password ? (
-              <Text style={styles.inlineError} testID="auth.createAccount.error.password">
-                {t(errors.password)}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={[styles.fieldLabel, { color: palette.text }]}>
-            {t('auth.field.password_confirmation')}
-          </Text>
-          <View style={styles.passwordRow}>
-            <TextInput
-              accessibilityLabel={t('auth.field.password_confirmation')}
-              autoCapitalize="none"
-              autoComplete="password-new"
-              onChangeText={setPasswordConfirmation}
-              placeholder={t('auth.placeholder.password_confirmation')}
-              placeholderTextColor={palette.icon}
-              secureTextEntry={!showPasswordConfirmation}
-              style={[styles.input, styles.passwordInput, { borderColor: palette.icon, color: palette.text }]}
-              testID="auth.createAccount.passwordConfirmationInput"
-              value={passwordConfirmation}
-            />
-            <Pressable
-              accessibilityLabel={
-                showPasswordConfirmation
-                  ? t('auth.password.toggle_hide')
-                  : t('auth.password.toggle_show')
-              }
-              accessibilityRole="button"
-              onPress={() => setShowPasswordConfirmation((current) => !current)}
-              style={[styles.passwordToggle, { borderColor: palette.icon }]}
-              testID="auth.createAccount.passwordConfirmationToggle">
-              <Text style={[styles.passwordToggleText, { color: palette.text }]}>
-                {showPasswordConfirmation
-                  ? t('auth.password.toggle_hide_short')
-                  : t('auth.password.toggle_show_short')}
-              </Text>
-            </Pressable>
-          </View>
-          <View accessibilityLiveRegion="polite">
-            {errors.passwordConfirmation ? (
-              <Text style={styles.inlineError} testID="auth.createAccount.error.passwordConfirmation">
-                {t(errors.passwordConfirmation)}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        <View accessibilityRole="alert">
-          {submitError ? (
-            <Text style={styles.submitError} testID="auth.createAccount.error.submit">
-              {t(submitError)}
-            </Text>
-          ) : null}
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          disabled={submitting}
-          onPress={onCreateAccount}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            {
-              backgroundColor: palette.tint,
-              opacity: submitting ? 0.7 : pressed ? 0.85 : 1,
-            },
-          ]}
-          testID="auth.createAccount.submitButton">
-          {submitting ? (
-            <ActivityIndicator
-              accessibilityLabel={t('a11y.loading.submitting')}
-              color={colorScheme === 'dark' ? '#11181C' : '#ffffff'}
-            />
-          ) : (
-            <Text style={styles.primaryButtonText}>{t('auth.signup.cta_primary')}</Text>
-          )}
-        </Pressable>
-
-        <Text style={[styles.dividerText, { color: palette.icon }]}>{t('auth.signup.or_continue')}</Text>
-
-        <View style={styles.socialRow}>
+        <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            disabled={submitting || !googleRequest}
-            onPress={onGoogleCreateAccount}
-            style={[styles.socialButton, { borderColor: palette.icon }]}
-            testID="auth.createAccount.googleButton">
-            <Text style={[styles.socialButtonText, { color: palette.text }]}>{t('auth.social.google')}</Text>
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+                return;
+              }
+
+              router.replace('/auth/sign-in');
+            }}
+            style={[styles.backButton, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}
+            testID="auth.createAccount.backButton">
+            <MaterialIcons color={palette.text} name="arrow-back" size={22} />
           </Pressable>
+          <View style={styles.headerSpacer} />
+        </View>
+
+        <View style={styles.titleArea}>
+          <View style={[styles.brandBadge, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}>
+            <MaterialIcons color="#ff7b72" name="fitness-center" size={32} />
+          </View>
+          <Text style={[styles.title, { color: palette.text }]} testID="auth.createAccount.title">
+            {t('auth.signup.title')}
+          </Text>
+        </View>
+
+        <View style={styles.formWrapper}>
+          <View style={styles.formSection}>
+            <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.name')}</Text>
+            <TextInput
+              accessibilityLabel={t('auth.field.name')}
+              autoCapitalize="words"
+              autoComplete="name"
+              onChangeText={setName}
+              placeholder={t('auth.placeholder.name')}
+              placeholderTextColor={palette.icon}
+              style={[
+                styles.input,
+                { backgroundColor: isDark ? '#2a1f1b' : '#ffffff', borderColor: 'transparent', color: palette.text },
+              ]}
+              testID="auth.createAccount.nameInput"
+              value={name}
+            />
+            <View accessibilityLiveRegion="polite">
+              {errors.name ? (
+                <Text style={styles.inlineError} testID="auth.createAccount.error.nameRequired">
+                  {t(errors.name)}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.email')}</Text>
+            <TextInput
+              accessibilityLabel={t('auth.field.email')}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder={t('auth.placeholder.email')}
+              placeholderTextColor={palette.icon}
+              style={[
+                styles.input,
+                { backgroundColor: isDark ? '#2a1f1b' : '#ffffff', borderColor: 'transparent', color: palette.text },
+              ]}
+              testID="auth.createAccount.emailInput"
+              value={email}
+            />
+            <View accessibilityLiveRegion="polite">
+              {errors.email ? (
+                <Text style={styles.inlineError} testID="auth.createAccount.error.emailRequired">
+                  {t(errors.email)}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.password')}</Text>
+            <View style={styles.passwordRow}>
+              <TextInput
+                accessibilityLabel={t('auth.field.password')}
+                autoCapitalize="none"
+                autoComplete="password-new"
+                onChangeText={setPassword}
+                placeholder={t('auth.placeholder.password')}
+                placeholderTextColor={palette.icon}
+                secureTextEntry={!showPassword}
+                style={[
+                  styles.input,
+                  styles.passwordInput,
+                  {
+                    backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                    borderColor: 'transparent',
+                    color: palette.text,
+                  },
+                ]}
+                testID="auth.createAccount.passwordInput"
+                value={password}
+              />
+              <Pressable
+                accessibilityLabel={
+                  showPassword ? t('auth.password.toggle_hide') : t('auth.password.toggle_show')
+                }
+                accessibilityRole="button"
+                onPress={() => setShowPassword((current) => !current)}
+                testID="auth.createAccount.passwordToggle"
+                style={[styles.passwordToggle, { backgroundColor: isDark ? '#352a25' : '#f8f1ed' }]}>
+                <Text style={[styles.passwordToggleText, { color: palette.text }]}>
+                  {showPassword ? t('auth.password.toggle_hide_short') : t('auth.password.toggle_show_short')}
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={[styles.helperText, { color: palette.icon }]}>{t('auth.signup.password_helper')}</Text>
+            <View accessibilityLiveRegion="polite">
+              {errors.password ? (
+                <Text style={styles.inlineError} testID="auth.createAccount.error.password">
+                  {t(errors.password)}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={[styles.fieldLabel, { color: palette.text }]}>
+              {t('auth.field.password_confirmation')}
+            </Text>
+            <View style={styles.passwordRow}>
+              <TextInput
+                accessibilityLabel={t('auth.field.password_confirmation')}
+                autoCapitalize="none"
+                autoComplete="password-new"
+                onChangeText={setPasswordConfirmation}
+                placeholder={t('auth.placeholder.password_confirmation')}
+                placeholderTextColor={palette.icon}
+                secureTextEntry={!showPasswordConfirmation}
+                style={[
+                  styles.input,
+                  styles.passwordInput,
+                  {
+                    backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                    borderColor: 'transparent',
+                    color: palette.text,
+                  },
+                ]}
+                testID="auth.createAccount.passwordConfirmationInput"
+                value={passwordConfirmation}
+              />
+              <Pressable
+                accessibilityLabel={
+                  showPasswordConfirmation
+                    ? t('auth.password.toggle_hide')
+                    : t('auth.password.toggle_show')
+                }
+                accessibilityRole="button"
+                onPress={() => setShowPasswordConfirmation((current) => !current)}
+                testID="auth.createAccount.passwordConfirmationToggle"
+                style={[styles.passwordToggle, { backgroundColor: isDark ? '#352a25' : '#f8f1ed' }]}>
+                <Text style={[styles.passwordToggleText, { color: palette.text }]}>
+                  {showPasswordConfirmation
+                    ? t('auth.password.toggle_hide_short')
+                    : t('auth.password.toggle_show_short')}
+                </Text>
+              </Pressable>
+            </View>
+            <View accessibilityLiveRegion="polite">
+              {errors.passwordConfirmation ? (
+                <Text style={styles.inlineError} testID="auth.createAccount.error.passwordConfirmation">
+                  {t(errors.passwordConfirmation)}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View accessibilityRole="alert">
+            {submitError ? (
+              <Text style={styles.submitError} testID="auth.createAccount.error.submit">
+                {t(submitError)}
+              </Text>
+            ) : null}
+          </View>
+
           <Pressable
             accessibilityRole="button"
             disabled={submitting}
-            onPress={onAppleCreateAccount}
-            style={[styles.socialButton, { borderColor: palette.icon }]}
-            testID="auth.createAccount.appleButton">
-            <Text style={[styles.socialButtonText, { color: palette.text }]}>{t('auth.social.apple')}</Text>
+            onPress={onCreateAccount}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              {
+                opacity: submitting ? 0.7 : 1,
+                transform: [{ scale: pressed ? 0.96 : 1 }],
+              },
+            ]}
+            testID="auth.createAccount.submitButton">
+            {submitting ? (
+              <ActivityIndicator
+                accessibilityLabel={t('a11y.loading.submitting')}
+                color="#ffffff"
+              />
+            ) : (
+              <>
+                <Text style={styles.primaryButtonText}>{t('auth.signup.cta_primary')}</Text>
+                <MaterialIcons color="#ffffff" name="arrow-forward" size={20} />
+              </>
+            )}
           </Pressable>
+
+          <Text style={[styles.dividerText, { color: palette.icon }]}>{t('auth.signup.or_continue')}</Text>
+
+          <View style={styles.socialRow}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={submitting || !googleRequest}
+              onPress={onGoogleCreateAccount}
+              style={[
+                styles.socialButton,
+                {
+                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                  opacity: submitting || !googleRequest ? 0.5 : 1,
+                },
+              ]}
+              testID="auth.createAccount.googleButton">
+              <Text style={[styles.socialButtonText, { color: '#ea4335' }]}>{t('auth.social.google')}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={submitting}
+              onPress={onAppleCreateAccount}
+              style={[
+                styles.socialButton,
+                {
+                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                  opacity: submitting ? 0.5 : 1,
+                },
+              ]}
+              testID="auth.createAccount.appleButton">
+              <Text style={[styles.socialButtonText, { color: palette.text }]}>{t('auth.social.apple')}</Text>
+            </Pressable>
+          </View>
         </View>
 
         <Pressable
           accessibilityRole="button"
           onPress={() => router.replace('/auth/sign-in')}
           style={styles.secondaryButton}
-          testID="auth.createAccount.backToSignInButton">
+          testID="auth.createAccount.backToSignInButton"
+          disabled={submitting}>
+          <Text style={[styles.secondaryButtonHint, { color: palette.icon }]}>
+            {t('auth.signup.already_have')}
+          </Text>
           <Text style={[styles.secondaryButtonText, { color: palette.tint }]}>
             {t('auth.signup.cta_back_signin')}
           </Text>
@@ -388,18 +473,70 @@ export default function CreateAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+  },
+  blob: {
+    borderRadius: 999,
+    opacity: 0.6,
+    position: 'absolute',
+  },
+  blobTopLeft: {
+    height: 300,
+    left: -110,
+    top: -80,
+    width: 300,
+  },
+  blobBottomRight: {
+    bottom: -100,
+    height: 340,
+    right: -130,
+    width: 340,
   },
   content: {
-    gap: 16,
-    marginBottom: 20,
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 14,
+  },
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    alignItems: 'center',
+    borderRadius: 24,
+    elevation: 1,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  headerSpacer: {
+    width: 48,
+  },
+  titleArea: {
+    alignItems: 'center',
+    marginBottom: 18,
+    marginTop: 20,
+  },
+  brandBadge: {
+    alignItems: 'center',
+    borderColor: 'rgba(255,123,114,0.25)',
+    borderRadius: 44,
+    borderWidth: 4,
+    elevation: 2,
+    height: 88,
+    justifyContent: 'center',
+    marginBottom: 12,
+    width: 88,
+  },
+  formWrapper: {
+    gap: 12,
   },
   title: {
     fontFamily: Fonts.rounded,
-    fontSize: 30,
+    fontSize: 34,
     fontWeight: '700',
-    marginBottom: 8,
+    textAlign: 'center',
   },
   formSection: {
     gap: 8,
@@ -407,50 +544,64 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
+    marginLeft: 12,
   },
   input: {
-    borderRadius: 10,
-    borderWidth: 1,
-    fontSize: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderRadius: 28,
+    borderWidth: 2,
+    fontSize: 16,
+    minHeight: 56,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
   },
   passwordRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   passwordInput: {
     flex: 1,
+    paddingRight: 12,
   },
   passwordToggle: {
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    alignItems: 'center',
+    borderRadius: 20,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 68,
+    paddingHorizontal: 14,
   },
   passwordToggleText: {
     fontSize: 14,
     fontWeight: '600',
   },
   helperText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: -2,
+    paddingHorizontal: 12,
   },
   inlineError: {
     color: '#b3261e',
     fontSize: 13,
+    paddingHorizontal: 12,
   },
   submitError: {
     color: '#b3261e',
     fontSize: 14,
     fontWeight: '500',
+    lineHeight: 20,
+    paddingHorizontal: 12,
   },
   primaryButton: {
     alignItems: 'center',
-    borderRadius: 12,
+    backgroundColor: '#ff7b72',
+    borderRadius: 28,
+    flexDirection: 'row',
+    gap: 8,
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 56,
+    marginTop: 2,
     paddingHorizontal: 16,
   },
   primaryButtonText: {
@@ -461,19 +612,19 @@ const styles = StyleSheet.create({
   dividerText: {
     alignSelf: 'center',
     fontSize: 14,
-    marginTop: 6,
+    marginTop: 4,
   },
   socialRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
+    justifyContent: 'center',
   },
   socialButton: {
     alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 28,
     flex: 1,
-    minHeight: 44,
     justifyContent: 'center',
+    minHeight: 56,
   },
   socialButtonText: {
     fontSize: 15,
@@ -481,11 +632,19 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: 'center',
-    paddingVertical: 8,
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 'auto',
+    paddingBottom: 8,
+    paddingTop: 20,
+  },
+  secondaryButtonHint: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

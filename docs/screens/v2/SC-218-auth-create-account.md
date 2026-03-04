@@ -53,7 +53,7 @@
 - Password helper: `Use at least 8 characters, including uppercase, number, and a symbol (e.g., ! @ #).`
 - Duplicate email error: `This email is already in use. Sign in to continue.`
 
-## Implementation Snapshot (2026-02-28)
+## Implementation Snapshot (2026-03-04)
 - Implemented in code:
   - `app/auth/create-account.tsx`
   - `features/auth/create-account.logic.ts`
@@ -66,6 +66,14 @@
   - Email/password sign-up is wired to Firebase Auth.
   - Google and Apple social auth are wired to Firebase Auth credentials.
   - Successful sign-up is driven by Firebase Auth session state for route-guard enforcement.
+  - Visual layout is aligned with Stitch reference `Playful Sign In Variant 1` using the same playful auth system used by SC-217:
+    - Soft peach background with decorative blobs.
+    - Rounded hero badge and rounded-full field/button controls.
+    - Footer helper + CTA pair (`Already have an account?` + `Back to sign in`).
+
+## Design Reference Assets
+- `docs/design-assets/stitch/13906080126528974652/da61e892eaf34516b83086d64e163b23.html`
+- `docs/design-assets/stitch/13906080126528974652/da61e892eaf34516b83086d64e163b23.png`
 
 ## Links
 - Functional requirement: FR-101, FR-163, FR-164, FR-165, FR-166, FR-167, FR-168, FR-169, FR-171, FR-172, FR-182, FR-190, FR-205, FR-206, FR-207, FR-208, FR-217

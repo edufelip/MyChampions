@@ -33,21 +33,26 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.role.validation.required` | SC-201 | Required validation message | Choose how you want to use the app to continue. | Escolha como quer usar o app para continuar. | Elige cómo quieres usar la app para continuar. | |
 | `auth.role.error.save_failed` | SC-201 | Role save failure message | Could not save your role right now. Try again. | Não foi possível salvar seu perfil agora. Tente novamente. | No se pudo guardar tu perfil ahora. Inténtalo de nuevo. | Data Connect profile write failure |
 | `auth.signin.title` | SC-217 | Sign-in header | Welcome back | Que bom ter você de volta | Bienvenido de nuevo | |
-| `auth.signin.cta_primary` | SC-217 | Primary CTA | Sign in | Entrar | Iniciar sesión | |
-| `auth.signin.cta_create` | SC-217 | Secondary CTA | Create account | Criar conta | Crear cuenta | |
-| `auth.signin.or_continue` | SC-217 | Social auth divider | or continue with | ou continue com | o continuar con | |
+| `auth.signin.subtitle` | SC-217 | Sign-in subtitle | Ready to crush your goals today? | Pronto para superar suas metas hoje? | ¿Listo para superar tus metas hoy? | Design-aligned supporting copy |
+| `auth.signin.field.email` | SC-217 | Sign-in email label | Email Address | Endereço de e-mail | Correo electrónico | Sign-in specific label |
+| `auth.signin.placeholder.email` | SC-217 | Sign-in email placeholder | hello@fitness.app | hello@fitness.app | hello@fitness.app | Design reference placeholder |
+| `auth.signin.placeholder.password` | SC-217 | Sign-in password placeholder | •••••••• | •••••••• | •••••••• | Visual placeholder only |
+| `auth.signin.cta_primary` | SC-217 | Primary CTA | Sign In | Entrar | Iniciar sesión | |
+| `auth.signin.new_here` | SC-217 | Create-account helper | New here? | Novo por aqui? | ¿Nuevo por aquí? | Shown before create-account CTA |
+| `auth.signin.cta_create` | SC-217 | Secondary CTA | Create an account | Criar uma conta | Crear una cuenta | |
+| `auth.signin.or_continue` | SC-217 | Social auth divider | Or continue with | Ou continue com | O continuar con | |
 | `auth.signin.error.invalid_credentials` | SC-217 | Sign-in error message | Email or password is incorrect. Try again or reset your password. | E-mail ou senha incorretos. Tente novamente ou redefina sua senha. | El correo o la contraseña son incorrectos. Inténtalo de nuevo o restablece tu contraseña. | BL-010 |
 | `auth.signin.error.network` | SC-217 | Sign-in error message | Couldn't connect right now. Check your connection and try again. | Não foi possível conectar agora. Verifique sua conexão e tente novamente. | No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo. | BL-010 |
 | `auth.signin.error.provider_conflict` | SC-217 | Sign-in provider conflict | This email is already linked to another sign-in method. Sign in with your existing method first. | Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado. | Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método. | BL-010 |
 | `auth.signin.error.configuration` | SC-217 | Sign-in configuration error | Authentication is not configured yet. Set Firebase keys and try again. | A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente. | La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo. | |
 | `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | Crea tu cuenta | |
 | `auth.field.name` | SC-218 | Name label | Name | Nome | Nombre | Shared auth field label |
-| `auth.field.email` | SC-217/SC-218 | Email label | Email | E-mail | Correo electrónico | Shared auth field label |
+| `auth.field.email` | SC-218 | Email label | Email | E-mail | Correo electrónico | Shared create-account field label |
 | `auth.field.password` | SC-217/SC-218 | Password label | Password | Senha | Contraseña | Shared auth field label |
 | `auth.field.password_confirmation` | SC-218 | Password confirm label | Confirm password | Confirmar senha | Confirmar contraseña | |
 | `auth.placeholder.name` | SC-218 | Name placeholder | Full name | Nome completo | Nombre completo | |
-| `auth.placeholder.email` | SC-217/SC-218 | Email placeholder | Email | E-mail | Correo electrónico | Shared auth placeholder |
-| `auth.placeholder.password` | SC-217/SC-218 | Password placeholder | Password | Senha | Contraseña | Shared auth placeholder |
+| `auth.placeholder.email` | SC-218 | Email placeholder | Email | E-mail | Correo electrónico | Shared create-account placeholder |
+| `auth.placeholder.password` | SC-218 | Password placeholder | Password | Senha | Contraseña | Shared create-account placeholder |
 | `auth.placeholder.password_confirmation` | SC-218 | Password confirmation placeholder | Confirm password | Confirmar senha | Confirmar contraseña | |
 | `auth.signup.cta_primary` | SC-218 | Primary CTA | Create account | Criar conta | Crear cuenta | |
 | `auth.signup.or_continue` | SC-218 | Social auth divider | or continue with | ou continue com | o continuar con | |
@@ -62,6 +67,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.signup.error.network` | SC-218 | Sign-up network error message | Couldn't connect right now. Check your connection and try again. | Não foi possível conectar agora. Verifique sua conexão e tente novamente. | No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo. | BL-010 |
 | `auth.signup.error.provider_conflict` | SC-218 | Sign-up provider conflict | This email is already linked to another sign-in method. Sign in with your existing method first. | Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado. | Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método. | BL-010 |
 | `auth.signup.error.configuration` | SC-218 | Sign-up configuration error | Authentication is not configured yet. Set Firebase keys and try again. | A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente. | La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo. | |
+| `auth.signup.already_have` | SC-218 | Existing-account helper | Already have an account? | Já tem uma conta? | ¿Ya tienes una cuenta? | Stitch-aligned create-account footer helper |
 | `auth.signup.cta_back_signin` | SC-218 | Back-to-sign-in CTA | Back to sign in | Voltar para entrar | Volver a iniciar sesión | |
 | `auth.password.toggle_show` | SC-217/SC-218 | Password visibility toggle | Show password | Mostrar senha | Mostrar contraseña | Accessibility and clarity |
 | `auth.password.toggle_hide` | SC-217/SC-218 | Password visibility toggle | Hide password | Ocultar senha | Ocultar contraseña | Accessibility and clarity |

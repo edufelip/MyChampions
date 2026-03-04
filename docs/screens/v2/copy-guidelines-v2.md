@@ -20,8 +20,14 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 
 ## Recommended Auth Copy (SC-217 / SC-218)
 - Sign-in title: `Welcome back`
-- Sign-in divider: `or continue with`
+- Sign-in subtitle: `Ready to crush your goals today?`
+- Sign-in email label: `Email Address`
+- Sign-in email placeholder: `hello@fitness.app`
+- Sign-in password placeholder: `••••••••`
+- Sign-in divider: `Or continue with`
+- Sign-in create-account helper: `New here?`
 - Create-account title: `Create your account`
+- Create-account existing-account helper: `Already have an account?`
 - Password helper: `Use at least 8 characters, including uppercase, number, and a symbol (e.g., ! @ #).`
 - Password toggle labels: `Show password` / `Hide password`
 - Invalid credentials helper: `Email or password is incorrect. Try again or reset your password.`

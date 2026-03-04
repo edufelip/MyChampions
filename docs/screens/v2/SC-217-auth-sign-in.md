@@ -44,9 +44,14 @@
 
 ## Copy Draft (Initial)
 - Title: `Welcome back`
-- CTA email sign-in: `Sign in`
-- CTA create account: `Create account`
-- Divider text: `or continue with`
+- Subtitle: `Ready to crush your goals today?`
+- Email label: `Email Address`
+- Email placeholder: `hello@fitness.app`
+- Password placeholder: `••••••••`
+- CTA email sign-in: `Sign In`
+- CTA create account: `Create an account`
+- Divider text: `Or continue with`
+- New-account helper: `New here?`
 - Invalid credentials error: `Email or password is incorrect. Try again or reset your password.`
 - Network error: `Couldn't connect right now. Check your connection and try again.`
 
@@ -61,6 +66,8 @@
   - Google and Apple social sign-in are wired to Firebase Auth credentials.
   - Successful sign-in is driven by Firebase Auth session state for route-guard enforcement.
   - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes.
+  - Visual treatment follows a playful rounded layout with decorative background blobs, circular brand icon badge, pill-shaped inputs/buttons, and a compact social sign-in row while preserving documented copy/validation rules.
+  - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
 
 ## Links
 - Functional requirement: FR-101, FR-163, FR-164, FR-169, FR-171, FR-172, FR-173, FR-182, FR-205, FR-206, FR-207, FR-208, FR-217

@@ -20,9 +20,14 @@ export const esES: Record<TranslationKey, string> = {
   'auth.validation.password_confirmation_mismatch':
     'La confirmación debe coincidir con tu contraseña.',
   'auth.signin.title': 'Bienvenido de nuevo',
+  'auth.signin.subtitle': '¿Listo para superar tus metas hoy?',
+  'auth.signin.field.email': 'Correo electrónico',
+  'auth.signin.placeholder.email': 'hello@fitness.app',
+  'auth.signin.placeholder.password': '••••••••',
   'auth.signin.cta_primary': 'Iniciar sesión',
-  'auth.signin.cta_create': 'Crear cuenta',
-  'auth.signin.or_continue': 'o continuar con',
+  'auth.signin.new_here': '¿Nuevo por aquí?',
+  'auth.signin.cta_create': 'Crear una cuenta',
+  'auth.signin.or_continue': 'O continuar con',
   'auth.signin.error.invalid_credentials':
     'El correo o la contraseña son incorrectos. Inténtalo de nuevo o restablece tu contraseña.',
   'auth.signin.error.network':
@@ -52,6 +57,7 @@ export const esES: Record<TranslationKey, string> = {
     'La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo.',
   'auth.signup.placeholder.body':
     'La implementación del formulario de creación de cuenta comienza en el siguiente bloque.',
+  'auth.signup.already_have': '¿Ya tienes una cuenta?',
   'auth.signup.cta_back_signin': 'Volver a iniciar sesión',
   'auth.role.title': '¿Cómo quieres usar la app?',
   'auth.role.intro': 'Puedes empezar por tu cuenta ahora y conectarte con un profesional después.',
