@@ -10,6 +10,7 @@ Initial shell navigation with Home, Explore, and Modal flows.
 - `AC-004`: On Modal, user can dismiss back to Home.
 - `AC-005`: Bottom tab bar remains visible on tab screens and hidden during modal presentation.
 - `AC-006`: App theme provider switches between light/dark tokens based on device color scheme.
+- `AC-007`: Bottom tab shell and stack navigation colors are derived from DS semantic tokens (`canvas`, `surface`, `text`, `border`, accent).
 
 ## Gherkin Scenarios
 ```gherkin

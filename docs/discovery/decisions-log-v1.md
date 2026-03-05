@@ -221,6 +221,11 @@
 - `D-139`: Role-lock save failure in SC-201 was traced to Data Connect key-type mismatch: `UserProfile` previously had implicit UUID key while connector mutations keyed by `id_expr: "auth.uid"`. This could not persist Firebase Auth UIDs reliably. Fix: `UserProfile.id` is now explicit `String` in schema and keyed to `auth.uid`; auth_profile connector now sets `authUid_expr: "auth.uid"` (no client-supplied `authUid` variable). Dev service `mychampions-fb928-2-service` was migrated and deployed on 2026-03-04 with regenerated SDK.
 - `D-140`: Root auth-route guard normalizes pathname inputs (`//`, missing leading slash, trailing slash) and root layout de-duplicates in-flight redirects. Additionally, `app/index.tsx` now redirects to `/(tabs)` (not `/auth/sign-in`) so root auth guard remains the single owner of auth routing decisions. This removes `/` <-> `/auth/sign-in` churn and prevents React maximum-update-depth crashes.
 - `D-141`: App display names are bundle/package-specific: `com.edufelip.mychampions` uses `MyChampions`, and `com.edufelip.mychampions.dev` uses `MyChampions Dev`. Android source-of-truth is flavor resource overrides; iOS source-of-truth is `APP_DISPLAY_NAME` build setting consumed by `CFBundleDisplayName`.
+- `D-142`: Design-system tokens are realigned to the dashboard reference visual DNA:
+  - Core palette: `accentPrimary=#13ec49`, `accentBlue=#0A2463`, `canvas(light)=#f6f8f6`, `canvas(dark)=#102215`.
+  - Navigation shell now consumes DS semantic tokens for background/card/text/border/accent.
+  - DS primitives/patterns remove fixed coral palette literals and rely on semantic token mapping (`onAccent`, status tones, border tiers).
+  - Typography family intent is Manrope-style geometric sans; current native runtime keeps fallback families where custom font assets are not yet bundled.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

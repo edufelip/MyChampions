@@ -59,6 +59,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 ## Localization
 - `Done`: All `pro.home.*`, `pro.specialty.*`, `pro.students.*`, `pro.student_profile.*`, `pro.subscription.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts`.
 - `Done`: All `settings.account.*`, `meal.builder.*`, `meal.library.*`, `shared_recipe.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts` (Phase 6).
+- `Pending`: Bundle and load Manrope font assets natively (Android/iOS) so DS typography intent is guaranteed beyond platform fallback font resolution.
 
 - `Pending`: Wire RevenueCat entitlement checks to professional cap-sensitive actions.
 - `Done`: BL-009 pre-lapse warning UI implemented in `app/professional/subscription.tsx` — `pre_lapse.title`, `pre_lapse.body`, `pre_lapse.cta_renew` locale keys; renew CTA Pressable gated with `isWriteLocked`; purchase/restore CTAs also gated. Live entitlement state now wired to RevenueCat via `useSubscription()` (tracked in Professional Screen Wiring section above).

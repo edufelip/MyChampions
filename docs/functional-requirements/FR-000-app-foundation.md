@@ -11,6 +11,7 @@ Define the baseline functional requirements for the initial app shell.
 - `FR-005`: The app shall allow navigation from Home to Modal and back to Home.
 - `FR-006`: The app shall adapt theme provider values to device light/dark mode.
 - `FR-007`: The app shall run on Android, iOS, and web through Expo workflows.
+- `FR-008`: The app shall centralize color, typography, spacing, radius, and elevation tokens in `constants/design-system.ts` and consume those tokens in shell/navigation primitives.
 
 ## Out Of Scope For This Baseline
 - Authentication.
