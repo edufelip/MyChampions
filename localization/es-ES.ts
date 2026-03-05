@@ -19,10 +19,10 @@ export const esES: Record<TranslationKey, string> = {
     'Usa al menos 8 caracteres con mayúscula, número y símbolo ASCII (ej.: ! @ #). No se permiten emojis.',
   'auth.validation.password_confirmation_mismatch':
     'La confirmación debe coincidir con tu contraseña.',
-  'auth.signin.title': 'Bienvenido',
+  'auth.signin.title': 'Bienvenido, Campeón',
   'auth.signin.subtitle': '¿Listo para superar tus metas hoy?',
   'auth.signin.field.email': 'Correo electrónico',
-  'auth.signin.placeholder.email': 'hello@fitness.app',
+  'auth.signin.placeholder.email': 'champion@example.com',
   'auth.signin.placeholder.password': '••••••••',
   'auth.signin.cta_primary': 'Iniciar sesión',
   'auth.signin.new_here': '¿Nuevo por aquí?',
@@ -36,6 +36,16 @@ export const esES: Record<TranslationKey, string> = {
     'Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método.',
   'auth.signin.error.configuration':
     'La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo.',
+  'auth.terms.title': 'Términos y Privacidad',
+  'auth.terms.description':
+    'Antes de continuar, revisa y acepta los términos más recientes de My Champions.',
+  'auth.terms.open_link': 'Abrir términos y política de privacidad',
+  'auth.terms.checkbox': 'He leído y acepto los términos y la política de privacidad.',
+  'auth.terms.accept_button': 'Aceptar y continuar',
+  'auth.terms.offline_hint': 'Necesitas internet para abrir el enlace legal.',
+  'auth.terms.version': 'Versión obligatoria: {version}',
+  'auth.terms.error.link_unavailable':
+    'No se pudo abrir el enlace de términos ahora. Inténtalo de nuevo.',
   'auth.social.google': 'Google',
   'auth.social.apple': 'Apple',
   'auth.password.toggle_show': 'Mostrar contraseña',
@@ -68,7 +78,6 @@ export const esES: Record<TranslationKey, string> = {
   'auth.role.lock_note': 'El tipo de cuenta no se puede cambiar después. Elige cuidadosamente según tus necesidades.',
   'auth.role.cta_continue': 'Continuar',
   'auth.role.cta_back': 'Volver',
-  'auth.role.cta_start_self_guided': 'Empezar por mi cuenta ahora',
   'auth.role.validation.required': 'Elige cómo quieres usar la app para continuar.',
   'auth.role.error.save_failed': 'No se pudo guardar tu perfil ahora. Inténtalo de nuevo.',
   'auth.role.placeholder.title': 'Selección de rol',

@@ -3,7 +3,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
-import { MaterialIcons } from '@expo/vector-icons';
+import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -87,7 +87,6 @@ export default function SignInScreen() {
     setSubmitting(true);
     try {
       await signInWithEmailPassword({ email, password });
-      router.replace('/auth/role-selection');
     } catch (error: unknown) {
       const reason = normalizeSignInReason(error);
       emitEvent(buildSignInFailed('email_password', reason));
@@ -137,7 +136,6 @@ export default function SignInScreen() {
         rawNonce: nonce,
       });
       await signInOrLinkWithCredential(firebaseCredential);
-      router.replace('/auth/role-selection');
     } catch (error: unknown) {
       const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       if (code.includes('ERR_REQUEST_CANCELED')) {
@@ -168,9 +166,7 @@ export default function SignInScreen() {
 
     setSubmitting(true);
     void signInOrLinkWithCredential(GoogleAuthProvider.credential(idToken))
-      .then(() => {
-        router.replace('/auth/role-selection');
-      })
+      .then(() => {})
       .catch((error: unknown) => {
         const reason = normalizeSignInReason(error);
         emitEvent(buildSignInFailed('google', reason));
@@ -217,7 +213,9 @@ export default function SignInScreen() {
 
         <View style={styles.formWrapper}>
           <View style={styles.formSection}>
-            <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.signin.field.email')}</Text>
+            <Text style={[styles.fieldLabel, styles.emailFieldLabel, { color: palette.text }]}>
+              {t('auth.signin.field.email')}
+            </Text>
             <TextInput
               accessibilityLabel={t('auth.signin.field.email')}
               autoCapitalize="none"
@@ -337,7 +335,8 @@ export default function SignInScreen() {
                 },
               ]}
               testID="auth.signIn.googleButton">
-              <Text style={[styles.socialButtonText, { color: '#ea4335' }]}>
+              <AntDesign name="google" size={20} color="#4285F4" />
+              <Text style={[styles.socialButtonText, { color: palette.text }]}>
                 {t('auth.social.google')}
               </Text>
             </Pressable>
@@ -353,6 +352,7 @@ export default function SignInScreen() {
                 },
               ]}
               testID="auth.signIn.appleButton">
+              <Ionicons name="logo-apple" size={20} color={palette.text} />
               <Text style={[styles.socialButtonText, { color: palette.text }]}>{t('auth.social.apple')}</Text>
             </Pressable>
           </View>
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   titleArea: {
     alignItems: 'center',
     marginBottom: 24,
-    marginTop: 24,
+    marginTop: 64,
   },
   brandBadge: {
     alignItems: 'center',
@@ -436,6 +436,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 12,
+  },
+  emailFieldLabel: {
+    marginTop: 16,
   },
   input: {
     borderRadius: 28,
@@ -502,10 +505,13 @@ const styles = StyleSheet.create({
   },
   socialButton: {
     alignItems: 'center',
-    borderRadius: 28,
+    borderRadius: 10,
     flex: 1,
+    flexDirection: 'row',
+    gap: 10,
     justifyContent: 'center',
-    minHeight: 56,
+    minHeight: 48,
+    paddingHorizontal: 16,
   },
   socialButtonText: {
     fontSize: 15,

@@ -1,14 +1,17 @@
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   ActivityIndicator,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Fonts } from '@/constants/theme';
 import {
@@ -32,6 +35,7 @@ export default function RoleSelectionScreen() {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { lockRole } = useAuthSession();
   const { emitEvent } = useAnalytics();
   const [selectedRole, setSelectedRole] = useState<RoleIntent | null>(null);
@@ -39,6 +43,8 @@ export default function RoleSelectionScreen() {
   const [roleError, setRoleError] = useState<'auth.role.validation.required' | 'auth.role.error.save_failed' | null>(
     null
   );
+  const studentCardSelectionAnim = useRef(new Animated.Value(0)).current;
+  const professionalCardSelectionAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     emitEvent(buildAuthEntryViewed('role_selection'));
@@ -55,6 +61,9 @@ export default function RoleSelectionScreen() {
     setRoleError(null);
     const role = selectedRole as RoleIntent;
     emitEvent(buildRoleSelected(role));
+    if (role === 'student') {
+      emitEvent(buildSelfGuidedStartClicked());
+    }
     setIsSubmitting(true);
     try {
       await lockRole(role);
@@ -66,23 +75,26 @@ export default function RoleSelectionScreen() {
     }
   };
 
-  const onQuickSelfGuided = async () => {
-    setRoleError(null);
-    emitEvent(buildSelfGuidedStartClicked());
-    setIsSubmitting(true);
-    try {
-      setSelectedRole('student');
-      await lockRole('student');
-      router.replace(resolvePostRoleRoute('student'));
-    } catch {
-      setRoleError('auth.role.error.save_failed');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const isStudentSelected = selectedRole === 'student';
   const isProfessionalSelected = selectedRole === 'professional';
+
+  useEffect(() => {
+    Animated.timing(studentCardSelectionAnim, {
+      toValue: isStudentSelected ? 1 : 0,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [isStudentSelected, studentCardSelectionAnim]);
+
+  useEffect(() => {
+    Animated.timing(professionalCardSelectionAnim, {
+      toValue: isProfessionalSelected ? 1 : 0,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [isProfessionalSelected, professionalCardSelectionAnim]);
 
   return (
     <ScrollView
@@ -108,30 +120,7 @@ export default function RoleSelectionScreen() {
         ]}
       />
 
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.replace('/auth/sign-in')}
-            style={[styles.backButton, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}
-            testID="auth.roleSelection.backButton">
-            <MaterialIcons color={palette.text} name="arrow-back" size={22} />
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting}
-            onPress={() => {
-              void onQuickSelfGuided();
-            }}
-            style={[styles.quickStartButton, { backgroundColor: isDark ? '#2a1f1b' : 'rgba(255,255,255,0.7)' }]}
-            testID="auth.roleSelection.quickSelfGuidedButton">
-            <Text style={[styles.quickStartButtonText, { color: palette.icon }]}>
-              {t('auth.role.cta_start_self_guided')}
-            </Text>
-          </Pressable>
-        </View>
-
+      <View style={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.titleArea}>
           <Text style={[styles.title, { color: palette.text }]} testID="auth.roleSelection.title">
             {t('auth.role.title')}
@@ -140,63 +129,107 @@ export default function RoleSelectionScreen() {
         </View>
 
         <View style={styles.cardGroup}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: isStudentSelected }}
-            onPress={() => {
-              setSelectedRole('student');
-              setRoleError(null);
-            }}
+          <Animated.View
             style={[
-              styles.roleCard,
+              styles.roleCardOutline,
               {
-                backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
-                borderColor: isStudentSelected ? '#ff7b72' : 'transparent',
+                borderColor: studentCardSelectionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['rgba(255,123,114,0)', 'rgba(255,123,114,1)'],
+                }),
+                borderWidth: studentCardSelectionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [2, 3],
+                }),
+                transform: [
+                  {
+                    scale: studentCardSelectionAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.01],
+                    }),
+                  },
+                ],
               },
-            ]}
-            testID="auth.roleSelection.studentCard">
-            {isStudentSelected ? (
-              <View style={styles.selectedBadge}>
-                <MaterialIcons color="#ffffff" name="check" size={14} />
+            ]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: isStudentSelected }}
+              onPress={() => {
+                setSelectedRole('student');
+                setRoleError(null);
+              }}
+              style={[
+                styles.roleCard,
+                {
+                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                },
+              ]}
+              testID="auth.roleSelection.studentCard">
+              {isStudentSelected ? (
+                <View style={styles.selectedBadge}>
+                  <MaterialIcons color="#ffffff" name="check" size={14} />
+                </View>
+              ) : null}
+
+              <View style={[styles.cardIcon, { backgroundColor: isDark ? '#3b2f2a' : '#fff1ee' }]}>
+                <MaterialIcons color="#ff7b72" name="fitness-center" size={24} />
               </View>
-            ) : null}
 
-            <View style={[styles.cardIcon, { backgroundColor: isDark ? '#3b2f2a' : '#fff1ee' }]}>
-              <MaterialIcons color="#ff7b72" name="fitness-center" size={24} />
-            </View>
+              <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_self.title')}</Text>
+              <Text style={[styles.roleSubtitle, { color: palette.icon }]}>{t('auth.role.option_self.subtitle')}</Text>
+            </Pressable>
+          </Animated.View>
 
-            <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_self.title')}</Text>
-            <Text style={[styles.roleSubtitle, { color: palette.icon }]}>{t('auth.role.option_self.subtitle')}</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: isProfessionalSelected }}
-            onPress={() => {
-              setSelectedRole('professional');
-              setRoleError(null);
-            }}
+          <Animated.View
             style={[
-              styles.roleCard,
+              styles.roleCardOutline,
               {
-                backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
-                borderColor: isProfessionalSelected ? '#ff7b72' : 'transparent',
+                borderColor: professionalCardSelectionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['rgba(255,123,114,0)', 'rgba(255,123,114,1)'],
+                }),
+                borderWidth: professionalCardSelectionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [2, 3],
+                }),
+                transform: [
+                  {
+                    scale: professionalCardSelectionAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.01],
+                    }),
+                  },
+                ],
               },
-            ]}
-            testID="auth.roleSelection.professionalCard">
-            {isProfessionalSelected ? (
-              <View style={styles.selectedBadge}>
-                <MaterialIcons color="#ffffff" name="check" size={14} />
+            ]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: isProfessionalSelected }}
+              onPress={() => {
+                setSelectedRole('professional');
+                setRoleError(null);
+              }}
+              style={[
+                styles.roleCard,
+                {
+                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                },
+              ]}
+              testID="auth.roleSelection.professionalCard">
+              {isProfessionalSelected ? (
+                <View style={styles.selectedBadge}>
+                  <MaterialIcons color="#ffffff" name="check" size={14} />
+                </View>
+              ) : null}
+
+              <View style={[styles.cardIcon, { backgroundColor: isDark ? '#3b2f2a' : '#f5f5f5' }]}>
+                <MaterialIcons color={palette.icon} name="assignment" size={24} />
               </View>
-            ) : null}
 
-            <View style={[styles.cardIcon, { backgroundColor: isDark ? '#3b2f2a' : '#f5f5f5' }]}>
-              <MaterialIcons color={palette.icon} name="assignment" size={24} />
-            </View>
-
-            <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_pro.title')}</Text>
-            <Text style={[styles.roleSubtitle, { color: palette.icon }]}>{t('auth.role.option_pro.subtitle')}</Text>
-          </Pressable>
+              <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_pro.title')}</Text>
+              <Text style={[styles.roleSubtitle, { color: palette.icon }]}>{t('auth.role.option_pro.subtitle')}</Text>
+            </Pressable>
+          </Animated.View>
         </View>
 
         <View style={[styles.lockNotePanel, { backgroundColor: isDark ? '#33261f' : '#fff0e5', borderColor: isDark ? '#4a372e' : '#f8dece' }]}>
@@ -268,34 +301,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 24,
-    paddingTop: 14,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    alignItems: 'center',
-    borderRadius: 24,
-    elevation: 1,
-    height: 48,
-    justifyContent: 'center',
-    width: 48,
-  },
-  quickStartButton: {
-    borderRadius: 20,
-    minHeight: 40,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-  quickStartButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
+    paddingTop: 0,
   },
   titleArea: {
     marginBottom: 16,
-    marginTop: 24,
+    marginTop: 16,
   },
   title: {
     fontFamily: Fonts.rounded,
@@ -316,13 +326,15 @@ const styles = StyleSheet.create({
   },
   roleCard: {
     borderRadius: 22,
-    borderWidth: 3,
     elevation: 1,
     gap: 10,
     minHeight: 150,
     paddingHorizontal: 16,
     paddingVertical: 18,
     position: 'relative',
+  },
+  roleCardOutline: {
+    borderRadius: 22,
   },
   selectedBadge: {
     alignItems: 'center',

@@ -90,7 +90,6 @@ export default function CreateAccountScreen() {
     setSubmitting(true);
     try {
       await createAccountWithEmailPassword({ name, email, password, passwordConfirmation });
-      router.replace('/auth/role-selection');
     } catch (error: unknown) {
       const reason = normalizeCreateAccountReason(error);
       emitEvent(buildSignUpFailed('email_password', reason));
@@ -140,7 +139,6 @@ export default function CreateAccountScreen() {
         rawNonce: nonce,
       });
       await signInOrLinkWithCredential(firebaseCredential);
-      router.replace('/auth/role-selection');
     } catch (error: unknown) {
       const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       if (code.includes('ERR_REQUEST_CANCELED')) {
@@ -171,9 +169,7 @@ export default function CreateAccountScreen() {
 
     setSubmitting(true);
     void signInOrLinkWithCredential(GoogleAuthProvider.credential(idToken))
-      .then(() => {
-        router.replace('/auth/role-selection');
-      })
+      .then(() => {})
       .catch((error: unknown) => {
         const reason = normalizeCreateAccountReason(error);
         emitEvent(buildSignUpFailed('google', reason));
