@@ -19,7 +19,7 @@ This folder contains the V2 screen specifications for the product model currentl
 - Recipe sharing by link with save-to-account ownership confirmation.
 - Compliance-required account/privacy settings.
 - Accessibility baseline coverage for core screens.
-- DS visual baseline aligned with electric-green + fitness-blue token set (`#13ec49`, `#0A2463`) and neutral layered surfaces.
+- DS visual baseline aligned with balanced-green + fitness-blue token set (`#1ea95a`, `#0A2463`) and neutral layered surfaces.
 
 ## Traceability Rule
 Each screen spec must link to:

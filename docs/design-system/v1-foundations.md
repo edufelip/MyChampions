@@ -1,17 +1,17 @@
 # V1 Design System Foundations
 
 ## Purpose
-Define and operationalize the mobile design language inspired by the provided dashboard reference: energetic fitness palette, clean cards, and high-contrast CTA hierarchy.
+Define and operationalize the mobile design language inspired by the provided dashboard reference: balanced fitness palette, clean cards, and clear CTA hierarchy.
 
 ## Source Aesthetic Extracted From Reference
-- Primary accent is energetic green (`#22c55e`) used for momentum actions and progress emphasis.
+- Primary accent is balanced green (`#1ea95a`) used for momentum actions and progress emphasis without visual glare.
 - Secondary anchor is fitness navy (`#0A2463`) used for contrast text on bright CTA surfaces and key navigation emphasis.
 - Background strategy is low-noise neutral canvas (`#f6f8f6` light / `#102215` dark) with elevated white/dark cards.
 - Card-first composition with strong rounded corners, soft borders, and restrained shadows.
-- Dense-but-readable mobile spacing rhythm with compact headers and strong primary CTAs.
+- Dense-but-readable mobile spacing rhythm with compact headers and clear (not heavy) primary CTAs.
 
 ## Subtle UI/UX Insights Captured
-- Bright accent should indicate commitment actions, not generic decoration.
+- Primary accent should indicate commitment actions, not generic decoration.
 - Progress widgets benefit from category hue support (green/blue/cyan) while keeping one global action accent.
 - Sticky navigation and sticky action areas need clear border contrast, not heavy shadows.
 - Visual confidence comes from fewer token families used consistently, not more decorative variants.
@@ -20,7 +20,7 @@ Define and operationalize the mobile design language inspired by the provided da
 ## Artistic Direction
 - Tone: athletic, optimistic, and focused.
 - Visual metaphor: "gym floor + dashboard instrumentation" rather than playful consumer pastel.
-- Typography intent: geometric sans cadence (Manrope-style) with bold section headers and compact supporting text.
+- Typography intent: geometric sans cadence (Manrope-style) with cleaner semibold hierarchy and compact supporting text.
 
 ## Scope
 - Semantic design tokens in `constants/design-system.ts`

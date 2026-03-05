@@ -5,7 +5,7 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 
 ## Visual Tone Pairing (DS Alignment)
 - Copy should match a confident, coach-like UI tone (energetic but direct).
-- Primary CTAs sit on electric green surfaces and use concise, action-first verbs.
+- Primary CTAs sit on balanced green surfaces and use concise, action-first verbs.
 - Supporting/helper copy should stay compact to preserve dense card layouts.
 
 ## Core Messaging Rules
