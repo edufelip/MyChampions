@@ -8,6 +8,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
@@ -49,6 +50,7 @@ export default function StudentHomeScreen() {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { currentUser } = useAuthSession();
 
   const networkStatus = useNetworkStatus();
@@ -102,7 +104,7 @@ export default function StudentHomeScreen() {
         ]}
       />
 
-      <View style={styles.shell}>
+      <View style={[styles.shell, { paddingTop: insets.top + 12 }]}>
         {offlineDisplay.showOfflineBanner ? (
           <OfflineBanner
             palette={palette}
@@ -132,8 +134,6 @@ export default function StudentHomeScreen() {
             <View style={styles.notificationDot} />
           </Pressable>
         </View>
-
-        <Text style={[styles.pageTitle, { color: palette.text }]}>{t('student.home.title')}</Text>
 
         {hasPendingConnection ? (
           <View
@@ -273,7 +273,13 @@ function HydrationCard({
 
       <View style={styles.hydrationBody}>
         <View style={styles.hydrationTextColumn}>
-          <Text style={[styles.hydrationValue, { color: palette.text }]} testID="student.home.hydrationCard.progress">
+          <Text
+            style={[
+              styles.hydrationValue,
+              !goal || consumed === null ? styles.hydrationValueNoGoal : null,
+              { color: palette.text },
+            ]}
+            testID="student.home.hydrationCard.progress">
             {progressLabel}
           </Text>
           <Text style={[styles.hydrationMeta, { color: palette.icon }]}>{goalOwnerLabel}</Text>
@@ -423,7 +429,6 @@ const styles = StyleSheet.create({
   shell: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 18,
     paddingBottom: 24,
   },
   headerRow: {
@@ -449,12 +454,6 @@ const styles = StyleSheet.create({
     right: 12,
     top: 12,
     width: 10,
-  },
-  pageTitle: {
-    fontFamily: Fonts.rounded,
-    fontSize: 34,
-    fontWeight: '700',
-    marginBottom: 12,
   },
   pendingPill: {
     alignItems: 'center',
@@ -547,6 +546,10 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     lineHeight: 38,
+  },
+  hydrationValueNoGoal: {
+    fontSize: 22,
+    lineHeight: 28,
   },
   hydrationMeta: {
     fontSize: 12,

@@ -55,6 +55,8 @@
   - `success`: active cards with hydration, nutrition plan, workout, and manage-professionals CTA.
   - `offline + no active plan`: red offline banner + read-only lock behavior with disabled self-guided CTA buttons.
   - `loading`: skeleton card stack + stale-data warning strip.
+- Header chrome now starts below the safe-area top inset and does not render a standalone `My Dashboard` title text.
+- Hydration no-goal helper copy (`Set a daily water goal to track progress`) uses compact typography so it does not dominate the card.
 - Existing behavior constraints are preserved:
   - Offline write-lock still gates write actions.
   - Pending connection state remains prominent.
