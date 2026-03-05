@@ -32,6 +32,11 @@ type VariantConfig = {
   dataConnect: DataConnectRuntimeConfig;
 };
 
+type TermsConfig = {
+  requiredVersion: string;
+  url: string;
+};
+
 function requireEnv(key: string): string {
   const value = process.env[key];
   if (!value) {
@@ -75,14 +80,24 @@ function resolveDataConnectConfig(variant: AppVariant): DataConnectRuntimeConfig
   };
 }
 
+function resolveTermsConfig(): TermsConfig {
+  const requiredVersion = process.env.EXPO_PUBLIC_TERMS_REQUIRED_VERSION?.trim() || 'v1';
+  const url = process.env.EXPO_PUBLIC_TERMS_URL?.trim() || 'https://google.com';
+
+  return {
+    requiredVersion,
+    url,
+  };
+}
+
 const VARIANT_IDENTIFIERS: Record<AppVariant, Omit<VariantConfig, 'firebase' | 'dataConnect'>> = {
   dev: {
-    name: 'my-champions-dev',
+    name: 'MyChampions Dev',
     iosBundleId: 'com.edufelip.mychampions.dev',
     androidPackage: 'com.edufelip.mychampions.dev',
   },
   prod: {
-    name: 'my-champions',
+    name: 'MyChampions',
     iosBundleId: 'com.edufelip.mychampions',
     androidPackage: 'com.edufelip.mychampions',
   },
@@ -94,6 +109,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const { name, iosBundleId, androidPackage } = VARIANT_IDENTIFIERS[variant];
   const firebase = resolveFirebaseConfig(prefix);
   const dataConnect = resolveDataConnectConfig(variant);
+  const terms = resolveTermsConfig();
 
   return {
     ...config,
@@ -159,6 +175,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       appVariant: variant,
       firebase,
       dataConnect,
+      terms,
       // RevenueCat SDK API key — read by subscription-source.ts via Constants.expoConfig.extra
       // Key is public (client-side SDK key, not secret). D-128.
       revenueCatApiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? '',
