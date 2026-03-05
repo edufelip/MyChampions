@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
 import Constants from 'expo-constants';
@@ -49,7 +50,8 @@ function getProductionDeps(): SubscriptionSourceDeps {
     restorePurchases: () => Purchases.restorePurchases() as Promise<RawCustomerInfo>,
     getApiKey: () => {
       const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, unknown>;
-      return resolveRevenueCatApiKey(extra);
+      const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+      return resolveRevenueCatApiKey(platform, extra);
     },
     presentPaywall: async (offeringIdentifier?: string) => {
       // RevenueCatUI.presentPaywall accepts an optional offering object (D-132).

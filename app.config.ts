@@ -176,9 +176,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       firebase,
       dataConnect,
       terms,
-      // RevenueCat SDK API key — read by subscription-source.ts via Constants.expoConfig.extra
-      // Key is public (client-side SDK key, not secret). D-128.
-      revenueCatApiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? '',
+      // RevenueCat SDK API keys — read by subscription-source.ts via Constants.expoConfig.extra.
+      // Must be public SDK keys (appl_*/goog_*), never secret keys (sk_*).
+      revenueCatApiKeyIos:
+        process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS ?? '',
+      revenueCatApiKeyAndroid:
+        process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID ?? '',
     },
   };
 };

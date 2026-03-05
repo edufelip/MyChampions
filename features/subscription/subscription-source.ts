@@ -75,6 +75,8 @@ export type SubscriptionSourceDeps = {
   presentPaywall: (offeringIdentifier?: string) => Promise<void>;
 };
 
+export type RevenueCatPlatform = 'ios' | 'android';
+
 /**
  * Identifies the entitlement key that grants unlimited professional students.
  * D-011, BR-219: more than FREE_STUDENT_CAP active students requires active entitlement.
@@ -96,7 +98,32 @@ export const AI_FEATURES_ENTITLEMENT_ID = 'premium_student';
  * available during Node test runs.
  * Throws SubscriptionSourceError('configuration') when key is absent.
  */
-export function resolveRevenueCatApiKey(extra?: Record<string, unknown>): string {
+function resolvePlatformRevenueCatKey(
+  source: Record<string, unknown>,
+  platform: RevenueCatPlatform
+): string {
+  if (platform === 'ios') {
+    const key = source['revenueCatApiKeyIos'];
+    return typeof key === 'string' ? key : '';
+  }
+  const key = source['revenueCatApiKeyAndroid'];
+  return typeof key === 'string' ? key : '';
+}
+
+function isSecretRevenueCatKey(key: string): boolean {
+  return key.toLowerCase().startsWith('sk_');
+}
+
+function isValidPublicRevenueCatKey(key: string, platform: RevenueCatPlatform): boolean {
+  const normalized = key.toLowerCase();
+  if (platform === 'ios') return normalized.startsWith('appl_');
+  return normalized.startsWith('goog_');
+}
+
+export function resolveRevenueCatApiKey(
+  platform: RevenueCatPlatform,
+  extra?: Record<string, unknown>
+): string {
   const source = extra ?? (() => {
     // Lazy import — only at runtime in RN context
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -106,11 +133,23 @@ export function resolveRevenueCatApiKey(extra?: Record<string, unknown>): string
     return Constants.expoConfig?.extra ?? {};
   })();
 
-  const key = typeof source['revenueCatApiKey'] === 'string' ? source['revenueCatApiKey'] : '';
+  const key = resolvePlatformRevenueCatKey(source, platform).trim();
   if (!key) {
     throw new SubscriptionSourceError(
       'configuration',
-      'RevenueCat API key is not configured. Set EXPO_PUBLIC_REVENUECAT_API_KEY in .env and expose via app.config.ts extra.revenueCatApiKey.'
+      `RevenueCat API key is not configured for ${platform}. Set EXPO_PUBLIC_REVENUECAT_API_KEY_${platform.toUpperCase()} in .env and expose via app.config.ts extra.revenueCatApiKey${platform === 'ios' ? 'Ios' : 'Android'}.`
+    );
+  }
+  if (isSecretRevenueCatKey(key)) {
+    throw new SubscriptionSourceError(
+      'configuration',
+      `RevenueCat secret key detected for ${platform}. Do not ship sk_* keys in mobile apps; use public SDK keys (appl_* for iOS, goog_* for Android).`
+    );
+  }
+  if (!isValidPublicRevenueCatKey(key, platform)) {
+    throw new SubscriptionSourceError(
+      'configuration',
+      `RevenueCat API key for ${platform} has an invalid prefix. Expected ${platform === 'ios' ? 'appl_*' : 'goog_*'}.`
     );
   }
   return key;
