@@ -4,7 +4,7 @@
 Define and operationalize the mobile design language inspired by the provided dashboard reference: energetic fitness palette, clean cards, and high-contrast CTA hierarchy.
 
 ## Source Aesthetic Extracted From Reference
-- Primary accent is electric green (`#13ec49`) used for momentum actions and progress emphasis.
+- Primary accent is energetic green (`#22c55e`) used for momentum actions and progress emphasis.
 - Secondary anchor is fitness navy (`#0A2463`) used for contrast text on bright CTA surfaces and key navigation emphasis.
 - Background strategy is low-noise neutral canvas (`#f6f8f6` light / `#102215` dark) with elevated white/dark cards.
 - Card-first composition with strong rounded corners, soft borders, and restrained shadows.
