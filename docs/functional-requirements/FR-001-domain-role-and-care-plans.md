@@ -112,7 +112,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-200`: MVP update delivery shall be store-only (App Store / Play Store binaries) with no OTA update channel.
 - `FR-201`: CI/CD signing shall use platform-native secret management for certificates, provisioning profiles, and signing keys.
 - `FR-202`: Post-compression image/media uploads shall enforce `<= 1.5 MB` file size and `<= 1600 px` longest-side dimension before upload.
-- `FR-203`: Onboarding shall provide a quick self-guided start action that commits `student` role and routes directly to self-managed tracking setup without requiring professional connection flows.
+- `FR-203`: Onboarding shall provide a self-guided student start path (Student selection + Continue) that commits `student` role and routes directly to self-managed tracking setup without requiring professional connection flows.
 - `FR-204`: Student-professional invite flow shall support QR-code scanning as an alternative to manual code entry and use the same validation/activation pipeline.
 - `FR-205`: Auth and invite flows shall present contextual, actionable error copy mapped to known failure reasons (for example invalid credentials, duplicate email, invalid invite code, pending cap reached, request canceled by code rotation).
 - `FR-206`: The app shall emit standardized analytics events for Milestone A funnels (auth entry, role selection, self-guided start, invite submit, invite confirmation outcomes).
@@ -158,6 +158,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-246`: Each custom session item shall have a name, optional quantity, and optional notes; no fixed domain workout fields are required beyond storage metadata.
 - `FR-247`: Both nutrition and training plan builders shall allow professionals to start from a starter template by cloning it into an editable draft; the original starter template must remain immutable (FR-212, BR-270).
 - `FR-248`: Both nutrition and training plan builders shall surface assign and bulk-assign CTAs wired to existing bulkAssignPredefinedPlan source operation (FR-223–FR-226, D-082).
+- `FR-249`: After successful authentication (sign-in or create-account), users shall pass through a required terms-acceptance gate before role-selection or role-home routing; acceptance must be versioned and re-prompted when required version changes.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

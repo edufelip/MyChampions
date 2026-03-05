@@ -53,7 +53,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
   - Student: home, nutrition, training, recipes, account/settings.
 - `AC-246`: Password special-character validation accepts only ASCII punctuation symbols; emoji and non-ASCII symbols are rejected.
 - `AC-247`: Cached data older than 24 hours is shown as stale with last-sync metadata while remaining readable and write-blocked until connectivity returns.
-- `AC-248`: Student onboarding includes a quick self-guided start action that commits `student` role and routes directly to self-managed tracking setup.
+- `AC-248`: Student onboarding includes a self-guided start path (Student selection + Continue) that commits `student` role and routes directly to self-managed tracking setup.
 - `AC-249`: Relationship flow supports QR invite scanning and produces the same validation outcomes as manual invite entry.
 - `AC-250`: Auth and invite failures render reason-specific actionable copy rather than generic error messaging.
 - `AC-251`: Milestone A analytics events are emitted for auth entry, role selection, self-guided start, invite submit, and invite outcome transitions.
@@ -71,6 +71,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-263`: Hydration tracker provides visible daily completion status and streak progression based on effective water goal.
 - `AC-264`: Professionals can create named predefined nutrition/training plans in a reusable private library.
 - `AC-265`: Professionals can bulk assign predefined plans to multiple students and fine-tune each student copy before finalization; assigned copies remain independent.
+- `AC-266`: After successful sign-in or create-account, users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted.
 - `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
 - `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.
 - `AC-515`: In SC-214, AI macro estimates pre-fill all form fields (calories, carbs, proteins, fats, totalGrams) for user review and editing before saving.
@@ -190,7 +191,7 @@ Feature: Role-based onboarding and care assignments
 
   Scenario: Quick self-guided start
     Given a user is in student role-selection context
-    When user taps quick self-guided start
+    When user selects Student and taps Continue
     Then app routes directly to self-managed tracking setup
     And professional connection is not required
 
@@ -268,6 +269,15 @@ Feature: Role-based onboarding and care assignments
     And fine-tunes each student draft before confirm
     Then each student receives an independent assigned copy
     And later edits to predefined source do not mutate assigned student copies
+
+  Scenario: Terms gate blocks onboarding continuation until acceptance
+    Given a user has just authenticated
+    And the required terms version has not been accepted by this user
+    When the user tries to access role-selection or role-home routes
+    Then the app redirects to the terms acceptance screen
+    When the user accepts the required terms version
+    Then the app continues to role-selection if role is unlocked
+    And the app continues to role-home if role is already locked
 
   Scenario: AI meal photo analysis — success path
     Given user opens SC-214 or SC-215 and camera permission is granted

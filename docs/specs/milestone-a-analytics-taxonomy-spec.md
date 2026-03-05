@@ -2,14 +2,14 @@
 
 ## Purpose
 Define implementation-ready analytics taxonomy for Milestone A flows:
-- BL-001 quick self-guided start
+- BL-001 self-guided student start path
 - BL-002 invite QR scan
 - BL-010 contextual error copy
 - BL-012 event taxonomy baseline
 
 ## Scope
 - Auth entry and outcomes.
-- Role selection and self-guided shortcut.
+- Role selection and self-guided student path.
 - Invite submission channels (manual vs QR) and outcomes.
 - Error reason instrumentation for auth and invite surfaces.
 
@@ -37,7 +37,7 @@ Define implementation-ready analytics taxonomy for Milestone A flows:
 | `auth.sign_up.submitted` | User submits create-account | `surface`, `step`, `channel`, `result` |
 | `auth.sign_up.failed` | Create-account fails | `surface`, `step`, `channel`, `result=failure`, `reason_code` |
 | `onboarding.role.selected` | User selects Student/Professional | `surface`, `step`, `role_context`, `result=success` |
-| `onboarding.self_guided_start.clicked` | User taps quick self-guided start | `surface`, `step`, `role_context=student`, `result=success` |
+| `onboarding.self_guided_start.clicked` | User selects Student and continues from role-selection | `surface`, `step`, `role_context=student`, `result=success` |
 | `invite.submit.requested` | Student submits invite code | `surface`, `step`, `channel`, `result` |
 | `invite.submit.failed` | Invite submission fails | `surface`, `step`, `channel`, `result=failure`, `reason_code` |
 | `invite.pending.created` | Invite accepted to pending state | `surface`, `step`, `channel`, `result=success` |

@@ -29,7 +29,7 @@ Define the implementation contract for moving app domain persistence to Firebase
 ## Domain Entity Model (MVP-Ready)
 
 ### `user_profiles`
-- `id` (UUIDv7, PK)
+- `id` (String PK, deterministic value = Firebase `auth_uid`)
 - `auth_uid` (unique)
 - `account_type` (`student` | `professional`)
 - `locked_role` (`student` | `professional`)
@@ -93,6 +93,7 @@ Define the implementation contract for moving app domain persistence to Firebase
 ### Auth/Profile
 - `upsertUserProfile(input)`:
   - Creates profile on first login.
+  - Must derive `id` and `auth_uid` from `auth.uid` on the backend expression side.
   - Enforces immutable `locked_role` after first set.
 - `getMyProfile()`:
   - Returns role-lock + account basics for routing.
@@ -151,7 +152,9 @@ Define the implementation contract for moving app domain persistence to Firebase
 - App-side profile source boundary exists in `features/auth/profile-source.ts`.
 - `AuthSessionProvider` now hydrates/locks role through this profile source boundary.
 - Current behavior is remote-only Data Connect role/profile sourcing (`getMyProfile`, `upsertUserProfile`, `setLockedRole` contract shape).
-- Pending finalization is connector schema/runtime compatibility in deployed Data Connect environments.
+- Dev environment is deployed and migrated on `mychampions-fb928-2-service` (`us-east4`) backed by `mychampions-fb928-2-instance` / `mychampions-fb928-2-database` (2026-03-04).
+- Connector contract was normalized to camelCase operation variables (Firebase CLI validation requirement) and SDK regenerated.
+- Pending finalization remains production environment endpoint/schema compatibility.
 - Repository validation utility exists at `scripts/validate-data-connect-profile-ops.mjs` for live endpoint contract checks.
 
 ### Connection Lifecycle (In Progress)
@@ -160,10 +163,10 @@ Define the implementation contract for moving app domain persistence to Firebase
   - Functions: `normalizeConnectionStatus`, `normalizeCanceledReason`, `normalizeConnectionSpecialty`, `resolveConnectionDisplayState`, `normalizeInviteSubmitError`, `normalizeConnectionActionError`.
   - `resolveConnectionDisplayState` maps `status + canceled_reason` to a discriminated `ConnectionDisplayState` union, including `canceled_code_rotated` display state for code-rotation auto-cancellations.
 - Data Connect source module at `features/connections/connection-source.ts`:
-  - `submitInviteCode(user, code)` → `{ connectionId, status: 'pending_confirmation' }`
-  - `confirmPendingConnection(user, connectionId)` → `{ connectionId, status: 'active' }`
-  - `endConnection(user, connectionId)` → `void`
-  - `getMyConnections(user)` → `ConnectionRecord[]` (exposes `canceled_reason` for `code_rotated` handling)
+  - `submitInviteCode(code)` → `{ connectionId, status: 'pending_confirmation' }`
+  - `confirmPendingConnection(connectionId)` → `{ connectionId, status: 'active' }`
+  - `endConnection(connectionId)` → `void`
+  - `getMyConnections()` → `ConnectionRecord[]` (exposes `canceled_reason` for `code_rotated` handling)
 - Done: connection-source wired into:
   - `app/student/professionals.tsx` (SC-211): invite entry, connection status list (`canceled_code_rotated` included), unbind.
   - `app/professional/pending.tsx` (SC-204/SC-205): pending queue with search, accept/deny, bulk deny.

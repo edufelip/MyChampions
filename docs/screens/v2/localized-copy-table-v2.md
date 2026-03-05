@@ -28,14 +28,13 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.role.option_pro.subtitle` | SC-201 | Professional role card subtitle | Professional account | Conta profissional | Cuenta profesional | Stitch compact card subtitle |
 | `auth.role.lock_note` | SC-201 | Role immutability helper | Account type can't be changed later. Please choose carefully based on your needs. | O tipo de conta não pode ser alterado depois. Escolha com cuidado de acordo com suas necessidades. | El tipo de cuenta no se puede cambiar después. Elige cuidadosamente según tus necesidades. | Stitch lock-note variant; role immutability preserved |
 | `auth.role.cta_continue` | SC-201 | Primary CTA | Continue | Continuar | Continuar | |
-| `auth.role.cta_back` | SC-201 | Secondary CTA | Back | Voltar | Volver | |
-| `auth.role.cta_start_self_guided` | SC-201 | Quick self-guided CTA | Start on my own now | Começar por conta própria agora | Empezar por mi cuenta ahora | BL-001 |
+| `auth.role.cta_back` | SC-209 | Generic back label (navigation a11y) | Back | Voltar | Volver | Shared key reused outside role selection |
 | `auth.role.validation.required` | SC-201 | Required validation message | Choose how you want to use the app to continue. | Escolha como quer usar o app para continuar. | Elige cómo quieres usar la app para continuar. | |
 | `auth.role.error.save_failed` | SC-201 | Role save failure message | Could not save your role right now. Try again. | Não foi possível salvar seu perfil agora. Tente novamente. | No se pudo guardar tu perfil ahora. Inténtalo de nuevo. | Data Connect profile write failure |
-| `auth.signin.title` | SC-217 | Sign-in header | Welcome | Boas-vindas | Bienvenido | |
+| `auth.signin.title` | SC-217 | Sign-in header | Welcome, Champion | Bem-vindo, Campeão | Bienvenido, Campeón | |
 | `auth.signin.subtitle` | SC-217 | Sign-in subtitle | Ready to crush your goals today? | Pronto para superar suas metas hoje? | ¿Listo para superar tus metas hoy? | Design-aligned supporting copy |
 | `auth.signin.field.email` | SC-217 | Sign-in email label | Email Address | Endereço de e-mail | Correo electrónico | Sign-in specific label |
-| `auth.signin.placeholder.email` | SC-217 | Sign-in email placeholder | hello@fitness.app | hello@fitness.app | hello@fitness.app | Design reference placeholder |
+| `auth.signin.placeholder.email` | SC-217 | Sign-in email placeholder | champion@example.com | champion@example.com | champion@example.com | Design reference placeholder |
 | `auth.signin.placeholder.password` | SC-217 | Sign-in password placeholder | •••••••• | •••••••• | •••••••• | Visual placeholder only |
 | `auth.signin.cta_primary` | SC-217 | Primary CTA | Sign In | Entrar | Iniciar sesión | |
 | `auth.signin.new_here` | SC-217 | Create-account helper | New here? | Novo por aqui? | ¿Nuevo por aquí? | Shown before create-account CTA |
@@ -45,6 +44,14 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.signin.error.network` | SC-217 | Sign-in error message | Couldn't connect right now. Check your connection and try again. | Não foi possível conectar agora. Verifique sua conexão e tente novamente. | No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo. | BL-010 |
 | `auth.signin.error.provider_conflict` | SC-217 | Sign-in provider conflict | This email is already linked to another sign-in method. Sign in with your existing method first. | Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado. | Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método. | BL-010 |
 | `auth.signin.error.configuration` | SC-217 | Sign-in configuration error | Authentication is not configured yet. Set Firebase keys and try again. | A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente. | La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo. | |
+| `auth.terms.title` | SC-221 | Terms gate header | Terms and Privacy | Termos e Privacidade | Términos y Privacidad | Post-auth gate |
+| `auth.terms.description` | SC-221 | Terms gate helper | Before continuing, review and accept the latest terms for My Champions. | Antes de continuar, revise e aceite os termos mais recentes do My Champions. | Antes de continuar, revisa y acepta los términos más recientes de My Champions. | Post-auth gate |
+| `auth.terms.open_link` | SC-221 | Legal link CTA | Open terms and privacy policy | Abrir termos e política de privacidade | Abrir términos y política de privacidad | Temporary URL fallback is config-driven |
+| `auth.terms.checkbox` | SC-221 | Acceptance checkbox label | I have read and agree with the terms and privacy policy. | Li e concordo com os termos e a política de privacidade. | He leído y acepto los términos y la política de privacidad. | Required before continue |
+| `auth.terms.accept_button` | SC-221 | Accept CTA | Accept and continue | Aceitar e continuar | Aceptar y continuar | |
+| `auth.terms.offline_hint` | SC-221 | Link/open hint | You need internet access to open the legal link. | Você precisa de internet para abrir o link legal. | Necesitas internet para abrir el enlace legal. | |
+| `auth.terms.version` | SC-221 | Required version label | Required version: {version} | Versão obrigatória: {version} | Versión obligatoria: {version} | |
+| `auth.terms.error.link_unavailable` | SC-221 | Terms link error | Could not open the terms link right now. Try again. | Não foi possível abrir o link dos termos agora. Tente novamente. | No se pudo abrir el enlace de términos ahora. Inténtalo de nuevo. | |
 | `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | Crea tu cuenta | |
 | `auth.field.name` | SC-218 | Name label | Name | Nome | Nombre | Shared auth field label |
 | `auth.field.email` | SC-218 | Email label | Email | E-mail | Correo electrónico | Shared create-account field label |

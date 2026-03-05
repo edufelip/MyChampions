@@ -35,7 +35,7 @@
 - Outputs:
   - Authenticated session.
   - Linked social identity (when matching existing account email).
-  - Redirect to role selection or role home depending on account state.
+  - Redirect to terms acceptance gate (`/auth/accept-terms`) before role selection/role home.
 
 ## Edge Cases
 - Existing email/password account + social login with same email links provider into existing account.
@@ -43,10 +43,10 @@
 - Wrong-role route attempts after sign-in are redirected to role home by route guard.
 
 ## Copy Draft (Initial)
-- Title: `Welcome`
+- Title: `Welcome, Champion`
 - Subtitle: `Ready to crush your goals today?`
 - Email label: `Email Address`
-- Email placeholder: `hello@fitness.app`
+- Email placeholder: `champion@example.com`
 - Password placeholder: `••••••••`
 - CTA email sign-in: `Sign In`
 - CTA create account: `Create an account`
@@ -66,15 +66,16 @@
   - Email/password sign-in is wired to Firebase Auth.
   - Google and Apple social sign-in are wired to Firebase Auth credentials.
   - Successful sign-in is driven by Firebase Auth session state for route-guard enforcement.
-  - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes.
+  - Successful sign-in routes to `/auth/accept-terms`; global guard then routes to role-selection or role home depending on terms + role state.
+  - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes after terms acceptance.
   - Visual treatment follows a playful rounded layout with decorative background blobs, circular brand icon badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.
   - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
 
 ## Links
-- Functional requirement: FR-101, FR-163, FR-164, FR-169, FR-171, FR-172, FR-173, FR-182, FR-205, FR-206, FR-207, FR-208, FR-217
-- Use case: UC-002.0, UC-002.1, UC-002.10, UC-002.11, UC-002.18
-- Acceptance criteria: AC-227, AC-231, AC-232, AC-233, AC-239, AC-244, AC-250, AC-251, AC-252, AC-512
-- Business rules: BR-232, BR-234, BR-235, BR-236, BR-244, BR-264, BR-265, BR-266, BR-275
-- Test cases: TC-228, TC-233, TC-234, TC-235, TC-242, TC-252, TC-254, TC-255, TC-512
+- Functional requirement: FR-101, FR-163, FR-164, FR-169, FR-171, FR-172, FR-173, FR-182, FR-205, FR-206, FR-207, FR-208, FR-217, FR-249
+- Use case: UC-002.0, UC-002.1, UC-002.10, UC-002.11, UC-002.18, UC-002.21
+- Acceptance criteria: AC-227, AC-231, AC-232, AC-233, AC-239, AC-244, AC-250, AC-251, AC-252, AC-266, AC-512
+- Business rules: BR-232, BR-234, BR-235, BR-236, BR-244, BR-264, BR-265, BR-266, BR-275, BR-297
+- Test cases: TC-228, TC-233, TC-234, TC-235, TC-242, TC-252, TC-254, TC-255, TC-288, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md

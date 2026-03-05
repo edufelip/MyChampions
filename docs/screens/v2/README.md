@@ -33,6 +33,7 @@ Each screen spec must link to:
 - `localized-copy-table-v2.md`
 - `SC-217-auth-sign-in.md`
 - `SC-218-auth-create-account.md`
+- `SC-221-auth-accept-terms.md`
 - `SC-201-auth-role-selection.md`
 - `SC-202-professional-specialty-setup.md`
 - `SC-203-student-home-dashboard.md`

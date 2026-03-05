@@ -124,10 +124,10 @@
 
 ## UC-002.8 Quick Self-Guided Start
 - Primary actor: New or returning student-context user.
-- Trigger: User chooses self-guided shortcut from onboarding/role-selection context.
+- Trigger: User chooses Student role in onboarding and proceeds.
 - Preconditions: User authenticated and role not yet locked.
 - Main flow:
-  1. User taps quick self-guided start CTA.
+  1. User selects Student role card and taps Continue.
   2. App commits `student` role for account.
   3. App routes user directly to self-managed tracking setup.
   4. User starts nutrition/training tracking without professional binding.
@@ -161,7 +161,7 @@
 - Trigger: User executes Milestone A funnel actions.
 - Preconditions: Analytics service enabled in environment.
 - Main flow:
-  1. System emits standardized events for auth entry, role selection, quick self-guided start, and invite submit/outcome.
+  1. System emits standardized events for auth entry, role selection, student self-guided start path, and invite submit/outcome.
   2. Events include required context properties (`surface`, `step`, `result`, optional `reason_code`).
   3. System redacts sensitive fields before transport/storage.
 - Expected result: Product team can analyze conversion and failure funnels without leaking sensitive data.
@@ -263,6 +263,20 @@
   4. Professional fine-tunes each student draft as needed.
   5. Professional confirms assignments.
 - Expected result: Multiple students receive independent assigned plan copies with optional per-student adjustments.
+
+## UC-002.21 Accept Terms Before Onboarding Continuation
+- Primary actor: New or returning authenticated user.
+- Trigger: User completes sign-in or create-account.
+- Preconditions: Firebase Auth session is active.
+- Main flow:
+  1. App routes user to terms acceptance screen.
+  2. User opens legal link and reviews terms.
+  3. User checks acceptance box and confirms.
+  4. System stores accepted terms version for this user.
+  5. Route guard continues user to role-selection (if role unlocked) or role home (if role locked).
+- Alternate flow:
+  - If required terms version changes, user is re-routed to terms gate until new version is accepted.
+- Expected result: Onboarding and role journeys only continue after required terms version acceptance.
 
 ## UC-003.9 Capture Meal Photo For AI Macronutrient Estimation
 - Primary actor: Student (or professional).

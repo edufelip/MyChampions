@@ -37,7 +37,7 @@ flowchart TD
   A[Open Role Selection] --> B{Role Already Locked?}
   B -->|Yes| C[Redirect Role Home]
   B -->|No| D[Show Student/Professional Options]
-  D --> D1[Quick Self-Guided Start CTA]
+  D --> D1[Select Student + Continue]
   D1 --> D2[Commit Student Role]
   D2 --> H
   D --> E[Save Role]

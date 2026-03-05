@@ -52,12 +52,12 @@
 | TC-246 | Role Bottom Navigation Model | Authenticated student and professional accounts | Open app shell in each role | Student and professional see their respective 5-tab navigation models |
 | TC-247 | Password Special Charset | Create-account form open | Enter password that satisfies length/uppercase/number but uses only non-ASCII symbols as special chars and submit | Submission is blocked with password-policy error; adding ASCII punctuation passes policy |
 | TC-248 | Offline Stale Cache Indicator | Cached data exists with last sync older than 24 hours and device offline | Open student home/dashboard | Stale indicator + last-sync timestamp are visible, cached content is readable, and write actions remain blocked |
-| TC-249 | Quick Self-Guided Start | Authenticated user with unlocked role | Tap quick self-guided start | Account is locked as student and user is routed to self-managed tracking setup without professional connection |
+| TC-249 | Quick Self-Guided Start | Authenticated user with unlocked role | Select Student role and tap Continue | Account is locked as student and user is routed to self-managed tracking setup without professional connection |
 | TC-250 | QR Invite Scan Success | Student has camera permission and valid invite QR | Scan QR in relationship flow and submit | Assignment enters pending_confirmation with same result as manual code entry |
 | TC-251 | QR Invite Scan Invalid Payload | Student opens QR scanner with malformed/unsupported code | Scan invalid QR | Actionable error is shown and user can retry or switch to manual entry |
 | TC-252 | Contextual Auth Error Copy | Sign-in or sign-up submission fails with known reason | Trigger failure (invalid credentials/duplicate email) | UI shows reason-specific copy with recommended next action |
 | TC-253 | Contextual Invite Error Copy | Invite submission fails with known reason | Trigger failure (invalid code/pending cap reached/canceled by code rotation) | UI shows reason-specific copy with recommended next action |
-| TC-254 | Milestone A Event Emission Coverage | Analytics enabled | Execute auth entry, role selection, quick self-guided start, invite submit/outcome | Expected events are emitted for all milestone steps |
+| TC-254 | Milestone A Event Emission Coverage | Analytics enabled | Execute auth entry, role selection, student self-guided start path, invite submit/outcome | Expected events are emitted for all milestone steps |
 | TC-255 | Milestone A Event Redaction | Analytics/observability enabled | Execute auth/invite flows and inspect payloads | Payloads include structured context fields and exclude raw credentials/tokens/full invite code/full email |
 | TC-256 | Pending Request Canceled Notification | Student has pending request created from invite code and professional regenerates invite code | Refresh relationship screen after code rotation | Pending request shows canceled reason and reconnect CTA |
 | TC-257 | Pending Queue Search/Filter | Professional has high-volume pending queue | Search by student identifier and filter by request state | Queue list narrows correctly and preserves valid actions |
@@ -84,6 +84,8 @@
 | TC-278 | SC-208 Create Named Training Plan With Session | Professional on training plan builder | Enter plan name, add session with one custom item, save | Plan appears in predefined training library |
 | TC-279 | SC-208 Validation — Name Required | Professional on training plan builder | Attempt save with empty name | Validation error shown; save blocked |
 | TC-280 | SC-207/SC-208 Starter Template Clone | Professional opens starter template | Begin editing | Editable cloned draft created; original starter unchanged |
+| TC-288 | Terms Gate Redirect Enforcement | Authenticated user without required terms acceptance | Attempt to access `/auth/role-selection` or role-home route | App redirects user to `/auth/accept-terms` |
+| TC-289 | Terms Gate Version Re-Prompt | User has accepted terms version `v1`; app required version changes to `v2` | Re-open app/authenticated session | Terms gate is shown again until `v2` is accepted |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.

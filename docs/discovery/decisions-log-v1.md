@@ -134,7 +134,7 @@
 
 - `D-117`: BL-002 QR invite scan is implemented using `expo-camera@~16.0.18` (`CameraView` + `useCameraPermissions`). The scanner is presented as a full-screen `Modal` (no new route) to keep the implementation KISS/YAGNI. QR and manual entry paths converge at the same `submitCode` hook method per BR-263 — `onSubmitCode(code, surface)` accepts `'manual' | 'qr'` and routes to the same analytics events and error branches. Payload parsing is isolated in `features/connections/qr-invite.logic.ts` (pure, no React/Firebase deps). Path-segment extraction requires the segment to immediately follow an `invite` path segment to avoid false-positive matches on generic URL paths. Camera permission denied shows an inline error in the main screen rather than opening the modal.
 
-- `D-118`: BL-001 quick self-guided start path is implemented in `app/auth/role-selection.tsx`. The "Start on my own now" CTA (`onQuickSelfGuided` function) commits student role via `lockRole('student')` and routes to student home (`'/'`). Analytics event `onboarding.self_guided_start.clicked` is emitted on tap. Student screens (`home.tsx`, `nutrition.tsx`, `training.tsx`) display self-guided empty states with localized CTAs when no professional is connected. Empty state copy explicitly communicates "No nutritionist connected? You can still..." / "No coach connected? You can still..." per BR-226. Data Connect endpoints for connections/plans/water are required for full self-guided functionality — tracked separately in pending-wiring-checklist-v1.md.
+- `D-118`: BL-001 quick self-guided start path is implemented in `app/auth/role-selection.tsx`. The self-guided path is executed when the user selects Student and taps Continue; this commits student role via `lockRole('student')` and routes to student home (`'/'`). Analytics event `onboarding.self_guided_start.clicked` is emitted on this Student+Continue path. Student screens (`home.tsx`, `nutrition.tsx`, `training.tsx`) display self-guided empty states with localized CTAs when no professional is connected. Empty state copy explicitly communicates "No nutritionist connected? You can still..." / "No coach connected? You can still..." per BR-226. Data Connect endpoints for connections/plans/water are required for full self-guided functionality — tracked separately in pending-wiring-checklist-v1.md.
 
 - `D-119`: BL-003 pending-canceled-by-code-rotation notification is implemented in `features/connections/connection.logic.ts` and `app/student/professionals.tsx` (SC-211). The `canceled_code_rotated` display state is resolved when a connection record has `status='ended'` and `canceledReason='code_rotated'`. ConnectionCard renders this state with red styling (red text + red border) and displays locale key `relationship.pending.canceled_code_rotated` with actionable reconnect CTA per AC-253. All 3 locales (en-US, pt-BR, es-ES) provide clear copy explaining the code rotation and prompting reconnection. Unit tests in `connection.logic.test.ts` cover canceled_code_rotated detection and display state preservation (TC-256).
 
@@ -199,6 +199,28 @@
   - First adoption surfaces: `app/student/nutrition.tsx` and `app/student/training.tsx`.
   - Architectural rule: business hooks and data logic remain in screens/features; DS components remain presentation-only and localization-key driven (no hardcoded user copy).
 - `D-135`: Shell/auxiliary routes (`/`, `/modal`, `/(tabs)/explore` and tab wrapper routes) remain behavior-stable but adopt DS shell structure where they render standalone UI. Tab wrapper routes are documented as pure role-based delegates to screen specs (SC-203/204/207/208/209/210/213/215), with no duplicated business logic in wrapper files.
+- `D-136`: Terms acceptance is enforced as a post-auth gate before role-selection/home routing:
+  - Route: `/auth/accept-terms` (SC-221).
+  - Sign-in/create-account success routes send users to `/auth/accept-terms`.
+  - Global guard blocks role-selection and role-home routes when required terms version is not accepted.
+  - Runtime terms config source is Expo `extra.terms` (`EXPO_PUBLIC_TERMS_REQUIRED_VERSION`, `EXPO_PUBLIC_TERMS_URL`) with fallbacks `v1` and `https://google.com`.
+  - Persistence is local fallback (`AsyncStorage`, per-user+version) until Data Connect profile fields/mutation for terms acceptance are added.
+
+- `D-137`: Data Connect dev service deployment baseline (2026-03-04):
+  - Local deployment source-of-truth is `dataconnect/sql/dataconnect.yaml` with:
+    - `serviceId: mychampions-fb928-2-service`
+    - Cloud SQL datasource `mychampions-fb928-2-instance` / `mychampions-fb928-2-database`
+  - Connector GraphQL variable names are camelCase (Firebase CLI validator rejects snake_case variable names).
+  - Keyed upserts include deterministic `id` values where required by generated key types:
+    - `UserProfile.id` is a String key bound to Firebase UID (not UUID), and `userProfile_upsert` uses `id_expr: "auth.uid"` plus `authUid_expr: "auth.uid"`
+    - `waterGoal_upsert` uses `id_expr: "auth.uid"` (student) and `id: $studentUid` (nutritionist override)
+    - `credential_upsert` uses `id: $specialtyId`
+  - `LogWaterIntake` now receives `dateKey` from client (no server-side `today()` expr).
+  - SQL migration (`firebase dataconnect:sql:migrate --service mychampions-fb928-2-service --location us-east4 --force`) and connector deploy completed successfully.
+- `D-138`: Firebase Auth initialization for React Native uses `initializeAuth(..., { persistence: getReactNativePersistence(AsyncStorage) })` in `features/auth/firebase.ts`, with fallback to `getAuth()` if already initialized. This removes in-memory-only session behavior and keeps auth state persisted across app relaunches on device/simulator.
+- `D-139`: Role-lock save failure in SC-201 was traced to Data Connect key-type mismatch: `UserProfile` previously had implicit UUID key while connector mutations keyed by `id_expr: "auth.uid"`. This could not persist Firebase Auth UIDs reliably. Fix: `UserProfile.id` is now explicit `String` in schema and keyed to `auth.uid`; auth_profile connector now sets `authUid_expr: "auth.uid"` (no client-supplied `authUid` variable). Dev service `mychampions-fb928-2-service` was migrated and deployed on 2026-03-04 with regenerated SDK.
+- `D-140`: Root auth-route guard normalizes pathname inputs (`//`, missing leading slash, trailing slash) and root layout de-duplicates in-flight redirects. Additionally, `app/index.tsx` now redirects to `/(tabs)` (not `/auth/sign-in`) so root auth guard remains the single owner of auth routing decisions. This removes `/` <-> `/auth/sign-in` churn and prevents React maximum-update-depth crashes.
+- `D-141`: App display names are bundle/package-specific: `com.edufelip.mychampions` uses `MyChampions`, and `com.edufelip.mychampions.dev` uses `MyChampions Dev`. Android source-of-truth is flavor resource overrides; iOS source-of-truth is `APP_DISPLAY_NAME` build setting consumed by `CFBundleDisplayName`.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

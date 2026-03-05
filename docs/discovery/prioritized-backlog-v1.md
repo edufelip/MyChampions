@@ -53,7 +53,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 ## Milestone A Spec Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
-| BL-001 Quick self-guided start path | Implemented — quick self-guided CTA in role-selection, role-lock + routing to student home, empty states with self-guided CTAs in all student screens | FR-203 | UC-002.8 | AC-248 | BR-262 | TC-249 |
+| BL-001 Quick self-guided start path | Implemented — self-guided path in role-selection via Student selection + Continue, role-lock + routing to student home, empty states with self-guided CTAs in all student screens | FR-203 | UC-002.8 | AC-248 | BR-262 | TC-249 |
 | BL-002 Invite code QR scan | Implemented — expo-camera wired, same submitCode pipeline as manual entry | FR-204 | UC-002.9 | AC-249 | BR-263 | TC-250, TC-251 |
 | BL-010 Auth/invite error copy hardening | Implemented — `mapInviteSubmitReasonToMessageKey` pure helper added to `connection.logic.ts`; all 7 `InviteSubmitErrorReason` values mapped to specific locale keys; 7 new unit tests in `connection.logic.test.ts`; 3 previously missing locale keys added to copy table and all 3 locale bundles; helper wired into `app/student/professionals.tsx` replacing inline switch (D-123) | FR-205 | UC-002.10 | AC-250 | BR-264 | TC-252, TC-253 |
 | BL-012 Product analytics event taxonomy | Spec-ready | FR-206, FR-207, FR-208 | UC-002.11 | AC-251, AC-252 | BR-265, BR-266 | TC-254, TC-255 |

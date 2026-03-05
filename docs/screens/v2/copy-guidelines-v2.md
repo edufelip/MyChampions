@@ -16,13 +16,13 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 - Professional card title: `I’m a nutritionist or fitness coach`
 - Professional card subtitle: `Professional account`
 - Role lock note: `Account type can’t be changed later. Please choose carefully based on your needs.`
-- Quick self-guided CTA: `Start on my own now`
+- Self-guided path: select `Student` and tap `Continue`
 
 ## Recommended Auth Copy (SC-217 / SC-218)
-- Sign-in title: `Welcome back`
+- Sign-in title: `Welcome, Champion`
 - Sign-in subtitle: `Ready to crush your goals today?`
 - Sign-in email label: `Email Address`
-- Sign-in email placeholder: `hello@fitness.app`
+- Sign-in email placeholder: `champion@example.com`
 - Sign-in password placeholder: `••••••••`
 - Sign-in divider: `Or continue with`
 - Sign-in create-account helper: `New here?`

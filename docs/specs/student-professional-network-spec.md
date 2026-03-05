@@ -76,7 +76,7 @@ Specify the target domain behavior for role-based journeys, professional assignm
   - Student: home, nutrition, training, recipes, account/settings.
 44. Student home prioritizes nutrition content above training and highlights pending connection status.
 45. Offline mode provides read-only cached content and blocks writes until connectivity is restored.
-46. Student role-selection surfaces quick self-guided start and routes directly to self-managed tracking setup.
+46. Student role-selection surfaces self-guided start via Student selection + Continue and routes directly to self-managed tracking setup.
 47. Relationship flow supports QR invite scan with same validation/outcome behavior as manual code entry.
 48. Auth and invite failures use reason-specific actionable copy (no generic fallback-only errors for known reasons).
 49. Milestone A analytics emits standardized funnel events for auth entry, role selection, self-guided start, invite submit, and invite outcomes.

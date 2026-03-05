@@ -4,11 +4,15 @@
 flowchart TD
   A[Auth Entry] --> A1{Sign In Or Create Account}
   A1 --> A2[Email/Password, Google, Apple]
-  A2 --> A3{Role Locked?}
+  A2 --> AT{Required Terms Accepted?}
+  AT -->|No| AT1[Accept Terms Screen]
+  AT1 --> A3
+  AT -->|Yes| A3{Role Locked?}
   A3 -->|No| B{Select Role}
   A3 -->|Yes| A4[Redirect To Role Home]
-  B --> B1[Quick Self-Guided Start + Commit Student Role]
-  B1 --> C
+  B --> B1[Select Student + Continue]
+  B1 --> B2[Commit Student Role]
+  B2 --> C
   B -->|Student| C[Student Journey]
   B -->|Professional| D[Professional Journey]
   B --> Q[Role Immutable Per Account]

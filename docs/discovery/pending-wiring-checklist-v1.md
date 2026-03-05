@@ -15,11 +15,18 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Apple Sign-In provider is wired to Firebase Auth in auth entry flows.
 - `In progress`: Replace local persisted auth session/role source with Firebase Auth session + Data Connect profile source of truth.
   - Done: Firebase Auth session state drives `isAuthenticated`.
+  - Done: Firebase Auth now initializes with React Native AsyncStorage persistence in `features/auth/firebase.ts` (no memory-only session warning on startup).
   - Done: Role-lock reads/writes pass through Data Connect profile-source boundary (`hydrateProfileFromSource`, `lockRoleInSource`) with remote-only persistence (no local fallback path).
 - `Done`: Full create-account form implemented in `app/auth/create-account.tsx` with documented password and duplicate-email validation rules.
-- `Done`: Full role-selection UX implemented in `app/auth/role-selection.tsx` with role cards, required-selection validation, and quick self-guided CTA.
+- `Done`: Full role-selection UX implemented in `app/auth/role-selection.tsx` with role cards, required-selection validation, and self-guided Student+Continue path (no standalone quick-start button).
 - `Done`: Persist and enforce role-lock flow using Data Connect-backed profile source in `features/auth/profile-source.ts`, `features/auth/auth-session.tsx`, and `app/auth/role-selection.tsx`.
 - `Done`: Session/route guard wiring implemented in `app/_layout.tsx` with auth-required routing and wrong-role redirects.
+- `In progress`: Terms acceptance gate wiring after authentication:
+  - Done: `/auth/accept-terms` route implemented; sign-in/create-account success now route to terms screen.
+  - Done: Global auth guard blocks role-selection/role-home when terms acceptance is pending.
+  - Done: Root auth guard path normalization + redirect de-duplication prevent replace-loop churn (fixes max update depth during terms transitions).
+  - Done: Runtime terms config is environment-driven (`EXPO_PUBLIC_TERMS_REQUIRED_VERSION`, `EXPO_PUBLIC_TERMS_URL`) with fallback (`v1`, `https://google.com`).
+  - Pending: Add Data Connect profile fields + mutation for accepted terms version and replace local AsyncStorage fallback.
 - `Pending`: Emit documented auth/onboarding analytics events in real runtime telemetry.
 
 ## Native Bootstrap
@@ -134,7 +141,10 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `In progress`: Implement Firebase Data Connect profile connector contract (`getMyProfile`, `upsertUserProfile`, `setLockedRole`) and switch auth route-guard profile source to Data Connect.
   - Done: App-side profile source abstraction created in `features/auth/profile-source.ts` and integrated into auth session provider.
   - Done: Live endpoint contract validator added at `scripts/validate-data-connect-profile-ops.mjs` (`npm run validate:data-connect:profile`).
-  - Pending: Finalize production Data Connect connector schema/operation compatibility and environment endpoint provisioning.
+  - Done: Dev Data Connect service (`mychampions-fb928-2-service`) schema + connector deployed and SQL migrated on 2026-03-04.
+  - Done: `UserProfile` key mismatch fixed on dev service — schema uses `id: String` keyed to `auth.uid`, and `UpsertUserProfile` now sets `authUid_expr: "auth.uid"` (removed client `authUid` var).
+  - Done: Connector variable names normalized to camelCase for Firebase CLI validation; generated SDK regenerated/reinstalled.
+  - In progress: Finalize production Data Connect connector schema/operation compatibility and environment endpoint provisioning.
 - `In progress`: Implement Data Connect connection lifecycle connectors for invite submit/confirm/end and code rotation cancellation semantics.
   - Done: Pure connection logic module created in `features/connections/connection.logic.ts` (status/reason normalization, display state resolution, error mapping).
   - Done: Data Connect source module created in `features/connections/connection-source.ts` (`submitInviteCode`, `confirmPendingConnection`, `endConnection`, `getMyConnections`).
@@ -152,6 +162,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
   - `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_DEV`, `EXPO_PUBLIC_DATA_CONNECT_LOCATION_DEV`
   - `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_PROD`, `EXPO_PUBLIC_DATA_CONNECT_LOCATION_PROD`
   CI workflows set `APP_VARIANT` explicitly and validate config with `scripts/check-dataconnect-runtime-config.mjs` before build/distribution.
+  - Dev service local deployment config (`dataconnect/sql/dataconnect.yaml`) points to `mychampions-fb928-2-service` on `mychampions-fb928-2-instance` / `mychampions-fb928-2-database`.
 
 ## Bottom Navigation Shell (Phase 7)
 - `Done`: `app/(tabs)/_layout.tsx` replaced with role-aware tab layout (D-045):
@@ -214,7 +225,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `features/analytics/use-analytics.ts` — React hook wrapping `transportEvent` stub (console.log in `__DEV__`, no-op otherwise). Real SDK transport deferred (tracked below).
 - `Done`: `app/auth/sign-in.tsx` — emits `auth.entry.viewed` on mount; `auth.sign_in.submitted` before each channel attempt; `auth.sign_in.failed` with `reason_code` on failure for email/password, Google, and Apple channels.
 - `Done`: `app/auth/create-account.tsx` — emits `auth.entry.viewed` on mount; `auth.sign_up.submitted`/`auth.sign_up.failed` for email/password, Google, and Apple channels.
-- `Done`: `app/auth/role-selection.tsx` — emits `auth.entry.viewed` on mount; `onboarding.role.selected` with `role_context` on continue; `onboarding.self_guided_start.clicked` on quick-start shortcut.
+- `Done`: `app/auth/role-selection.tsx` — emits `auth.entry.viewed` on mount; `onboarding.role.selected` with `role_context` on continue; `onboarding.self_guided_start.clicked` when Student is selected and Continue is tapped.
 - `Done`: `app/student/professionals.tsx` — emits `invite.submit.requested` on manual code submit; `invite.pending.created` on success; `invite.submit.failed` with `reason_code` on failure; `invite.pending.canceled` (once, via ref guard) when `canceled_code_rotated` connections surface.
 - `Pending`: Wire real analytics SDK transport (Firebase Analytics, Amplitude, or equivalent) in `features/analytics/use-analytics.ts` to replace `console.log` stub. Update `pending-wiring-checklist-v1.md` when complete.
 - `Pending`: Emit analytics events for professional-side Milestone A actions (pending queue confirm/deny) when SC-204/SC-205 Data Connect wiring is complete.

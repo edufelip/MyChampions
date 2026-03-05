@@ -102,6 +102,8 @@
 - `BR-294`: Training session items have no fixed mandatory domain fields beyond a non-empty name; quantity and notes are optional.
 - `BR-295`: Starter template cloning produces a new editable predefined plan draft; the original template record must not be modified by the clone operation.
 - `BR-296`: Plan builder screens are accessible only to professional role accounts; student route access to `/professional/nutrition/plans/*` and `/professional/training/plans/*` is blocked by the route guard.
+- `BR-297`: Terms acceptance is a required post-authentication gate; users must accept the currently required terms version before role-selection or role-home access.
+- `BR-298`: Terms acceptance persistence is versioned per user account; if required terms version changes, prior acceptance does not satisfy the new version and user must accept again.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

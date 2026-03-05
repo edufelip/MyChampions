@@ -39,7 +39,7 @@
 - Outputs:
   - Newly created account or linked existing account session.
   - Validation feedback map by field.
-  - Redirect to role selection for unlocked-role accounts.
+  - Redirect to terms acceptance gate (`/auth/accept-terms`) before role selection/role home routing.
 
 ## Edge Cases
 - Email already used by existing account blocks duplicate creation.
@@ -65,7 +65,7 @@
   - Contextual submit error mapping is implemented for `duplicate_email`, `network`, `provider_conflict`, and `configuration`.
   - Email/password sign-up is wired to Firebase Auth.
   - Google and Apple social auth are wired to Firebase Auth credentials.
-  - Successful sign-up is driven by Firebase Auth session state for route-guard enforcement.
+  - Successful sign-up routes to `/auth/accept-terms`; Firebase Auth session + guard then continue to role-selection or role home when terms are accepted.
   - Visual layout is aligned with Stitch reference `Playful Sign In Variant 1` using the same playful auth system used by SC-217:
     - Soft peach background with decorative blobs.
     - Rounded hero badge and rounded-full field/button controls.
@@ -76,10 +76,10 @@
 - `docs/design-assets/stitch/13906080126528974652/da61e892eaf34516b83086d64e163b23.png`
 
 ## Links
-- Functional requirement: FR-101, FR-163, FR-164, FR-165, FR-166, FR-167, FR-168, FR-169, FR-171, FR-172, FR-182, FR-190, FR-205, FR-206, FR-207, FR-208, FR-217
-- Use case: UC-002.0, UC-002.10, UC-002.11, UC-002.18
-- Acceptance criteria: AC-227, AC-228, AC-229, AC-230, AC-231, AC-232, AC-239, AC-244, AC-246, AC-250, AC-251, AC-252, AC-512
-- Business rules: BR-232, BR-233, BR-234, BR-235, BR-244, BR-251, BR-264, BR-265, BR-266, BR-275
-- Test cases: TC-228, TC-229, TC-230, TC-231, TC-232, TC-233, TC-234, TC-242, TC-247, TC-252, TC-254, TC-255, TC-512
+- Functional requirement: FR-101, FR-163, FR-164, FR-165, FR-166, FR-167, FR-168, FR-169, FR-171, FR-172, FR-182, FR-190, FR-205, FR-206, FR-207, FR-208, FR-217, FR-249
+- Use case: UC-002.0, UC-002.10, UC-002.11, UC-002.18, UC-002.21
+- Acceptance criteria: AC-227, AC-228, AC-229, AC-230, AC-231, AC-232, AC-239, AC-244, AC-246, AC-250, AC-251, AC-252, AC-266, AC-512
+- Business rules: BR-232, BR-233, BR-234, BR-235, BR-244, BR-251, BR-264, BR-265, BR-266, BR-275, BR-297
+- Test cases: TC-228, TC-229, TC-230, TC-231, TC-232, TC-233, TC-234, TC-242, TC-247, TC-252, TC-254, TC-255, TC-288, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md
