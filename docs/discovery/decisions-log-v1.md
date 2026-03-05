@@ -226,6 +226,10 @@
   - Navigation shell now consumes DS semantic tokens for background/card/text/border/accent.
   - DS primitives/patterns remove fixed coral palette literals and rely on semantic token mapping (`onAccent`, status tones, border tiers).
   - Typography family intent is Manrope-style geometric sans; current native runtime keeps fallback families where custom font assets are not yet bundled.
+- `D-143`: Tokenization completion pass for app surfaces:
+  - Hardcoded hex literals were removed from `app/` and `components/` presentation layers (excluding token source in `constants/design-system.ts`).
+  - Remaining UI color usage is routed through semantic DS tokens (`getDsTheme`) or DS primitives/patterns.
+  - Auth, student, professional, and settings surfaces now share the same semantic status/CTA color model.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

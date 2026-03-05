@@ -104,3 +104,4 @@ Define and operationalize the mobile design language inspired by the provided da
 - Existing testIDs are preserved for core interactions.
 - Offline/read-only and assigned/self-guided behavior remains unchanged.
 - No new user-facing strings are hardcoded.
+- No hardcoded hex literals in `app/` and `components/` UI layers (token source remains `constants/design-system.ts`).
