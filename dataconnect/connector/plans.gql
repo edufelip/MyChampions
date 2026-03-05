@@ -47,8 +47,8 @@ query GetMyPredefinedPlans @auth(level: USER) {
   }
 }
 
-query GetNutritionPlanDetail($plan_id: String!) @auth(level: USER) {
-  nutritionPlan(id: $plan_id) {
+query GetNutritionPlanDetail($planId: String!) @auth(level: USER) {
+  nutritionPlan(id: $planId) {
     id
     name
     isDraft
@@ -70,8 +70,8 @@ query GetNutritionPlanDetail($plan_id: String!) @auth(level: USER) {
   }
 }
 
-query GetTrainingPlanDetail($plan_id: String!) @auth(level: USER) {
-  trainingPlan(id: $plan_id) {
+query GetTrainingPlanDetail($planId: String!) @auth(level: USER) {
+  trainingPlan(id: $planId) {
     id
     name
     isDraft
@@ -94,9 +94,9 @@ query GetTrainingPlanDetail($plan_id: String!) @auth(level: USER) {
   }
 }
 
-query GetStudentPlanChangeRequests($student_uid: String!) @auth(level: USER) {
+query GetStudentPlanChangeRequests($studentUid: String!) @auth(level: USER) {
   planChangeRequests(
-    where: { studentAuthUid: { eq: $student_uid } }
+    where: { studentAuthUid: { eq: $studentUid } }
     orderBy: [{ createdAt: DESC }]
   ) {
     id
@@ -128,47 +128,47 @@ query GetMyPlanChangeRequests @auth(level: USER) {
 
 mutation CreateNutritionPlan(
   $name: String!
-  $calories_target: Int
-  $carbs_target: Int
-  $proteins_target: Int
-  $fats_target: Int
+  $caloriesTarget: Int
+  $carbsTarget: Int
+  $proteinsTarget: Int
+  $fatsTarget: Int
 ) @auth(level: USER) {
   nutritionPlan_insert(
     data: {
       professionalId_expr: "auth.uid"
       name: $name
       isDraft: false
-      caloriesTarget: $calories_target
-      carbsTarget: $carbs_target
-      proteinsTarget: $proteins_target
-      fatsTarget: $fats_target
+      caloriesTarget: $caloriesTarget
+      carbsTarget: $carbsTarget
+      proteinsTarget: $proteinsTarget
+      fatsTarget: $fatsTarget
     }
   )
 }
 
 mutation UpdateNutritionPlan(
-  $plan_id: UUID!
+  $planId: String!
   $name: String!
-  $calories_target: Int
-  $carbs_target: Int
-  $proteins_target: Int
-  $fats_target: Int
+  $caloriesTarget: Int
+  $carbsTarget: Int
+  $proteinsTarget: Int
+  $fatsTarget: Int
 ) @auth(level: USER) {
   nutritionPlan_update(
-    key: { id: $plan_id }
+    key: { id: $planId }
     data: {
       name: $name
-      caloriesTarget: $calories_target
-      carbsTarget: $carbs_target
-      proteinsTarget: $proteins_target
-      fatsTarget: $fats_target
+      caloriesTarget: $caloriesTarget
+      carbsTarget: $carbsTarget
+      proteinsTarget: $proteinsTarget
+      fatsTarget: $fatsTarget
     }
   )
 }
 
 mutation AddNutritionMealItem(
-  $plan_id: UUID!
-  $food_name: String!
+  $planId: String!
+  $foodName: String!
   $calories: Int
   $carbs: Int
   $proteins: Int
@@ -177,8 +177,8 @@ mutation AddNutritionMealItem(
 ) @auth(level: USER) {
   nutritionPlanMeal_insert(
     data: {
-      nutritionPlan: { id: $plan_id }
-      foodName: $food_name
+      nutritionPlan: { id: $planId }
+      foodName: $foodName
       calories: $calories
       carbs: $carbs
       proteins: $proteins
@@ -188,63 +188,63 @@ mutation AddNutritionMealItem(
   )
 }
 
-mutation RemoveNutritionMealItem($item_id: UUID!) @auth(level: USER) {
-  nutritionPlanMeal_delete(key: { id: $item_id })
+mutation RemoveNutritionMealItem($itemId: String!) @auth(level: USER) {
+  nutritionPlanMeal_delete(key: { id: $itemId })
 }
 
-mutation CreateTrainingPlan($name: String!, $focus_area: String) @auth(level: USER) {
+mutation CreateTrainingPlan($name: String!, $focusArea: String) @auth(level: USER) {
   trainingPlan_insert(
     data: {
       professionalId_expr: "auth.uid"
       name: $name
       isDraft: false
-      focusArea: $focus_area
+      focusArea: $focusArea
     }
   )
 }
 
 mutation UpdateTrainingPlan(
-  $plan_id: UUID!
+  $planId: String!
   $name: String!
-  $focus_area: String
+  $focusArea: String
 ) @auth(level: USER) {
   trainingPlan_update(
-    key: { id: $plan_id }
-    data: { name: $name, focusArea: $focus_area }
+    key: { id: $planId }
+    data: { name: $name, focusArea: $focusArea }
   )
 }
 
 mutation AddTrainingSession(
-  $plan_id: UUID!
-  $session_name: String!
-  $day_of_week: Int
-  $duration_minutes: Int
+  $planId: String!
+  $sessionName: String!
+  $dayOfWeek: Int
+  $durationMinutes: Int
 ) @auth(level: USER) {
   trainingPlanSession_insert(
     data: {
-      trainingPlan: { id: $plan_id }
-      sessionName: $session_name
-      dayOfWeek: $day_of_week
-      durationMinutes: $duration_minutes
+      trainingPlan: { id: $planId }
+      sessionName: $sessionName
+      dayOfWeek: $dayOfWeek
+      durationMinutes: $durationMinutes
     }
   )
 }
 
-mutation RemoveTrainingSession($session_id: UUID!) @auth(level: USER) {
-  trainingPlanSession_delete(key: { id: $session_id })
+mutation RemoveTrainingSession($sessionId: String!) @auth(level: USER) {
+  trainingPlanSession_delete(key: { id: $sessionId })
 }
 
 mutation AddTrainingSessionItem(
-  $session_id: UUID!
-  $exercise_name: String!
+  $sessionId: String!
+  $exerciseName: String!
   $sets: Int
   $reps: Int
   $weight: Float
 ) @auth(level: USER) {
   trainingSessionItem_insert(
     data: {
-      session: { id: $session_id }
-      exerciseName: $exercise_name
+      session: { id: $sessionId }
+      exerciseName: $exerciseName
       sets: $sets
       reps: $reps
       weight: $weight
@@ -252,45 +252,45 @@ mutation AddTrainingSessionItem(
   )
 }
 
-mutation RemoveTrainingSessionItem($item_id: UUID!) @auth(level: USER) {
-  trainingSessionItem_delete(key: { id: $item_id })
+mutation RemoveTrainingSessionItem($itemId: String!) @auth(level: USER) {
+  trainingSessionItem_delete(key: { id: $itemId })
 }
 
 mutation SubmitPlanChangeRequest(
-  $plan_id: String!
-  $plan_type: String!
-  $request_text: String!
+  $planId: String!
+  $planType: String!
+  $requestText: String!
 ) @auth(level: USER) {
   planChangeRequest_insert(
     data: {
-      planId: $plan_id
-      planType: $plan_type
+      planId: $planId
+      planType: $planType
       studentAuthUid_expr: "auth.uid"
-      requestText: $request_text
+      requestText: $requestText
       status: "pending"
     }
   )
 }
 
 mutation ReviewPlanChangeRequest(
-  $request_id: UUID!
+  $requestId: String!
   $status: String!
 ) @auth(level: USER) {
   planChangeRequest_update(
-    key: { id: $request_id }
+    key: { id: $requestId }
     data: { status: $status }
   )
 }
 
 mutation BulkAssignNutritionPlan(
-  $plan_id: String!
-  $student_uid: String!
+  $planId: String!
+  $studentUid: String!
 ) @auth(level: USER) {
   planAssignment_insert(
     data: {
-      planId: $plan_id
+      planId: $planId
       planType: "nutrition"
-      studentAuthUid: $student_uid
+      studentAuthUid: $studentUid
       professionalAuthUid_expr: "auth.uid"
       isActive: true
     }

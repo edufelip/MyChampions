@@ -46,8 +46,8 @@ query GetTrainingTemplates @auth(level: USER) {
   }
 }
 
-query GetTemplateStats($templateId: String!) @auth(level: USER) {
-  templateUsageStat(key: { templateId: $templateId }) {
+query GetTemplateStats($templateId: UUID!) @auth(level: USER) {
+  templateUsageStat(key: { id: $templateId }) {
     templateId
     cloneCount
     assignmentCount
@@ -117,16 +117,16 @@ mutation InitializeTemplateStats($templateId: String!) @auth(level: USER) {
   )
 }
 
-mutation IncrementTemplateCloneCount($templateId: String!) @auth(level: USER) {
+mutation IncrementTemplateCloneCount($templateId: UUID!, $cloneCount: Int!) @auth(level: USER) {
   templateUsageStat_update(
-    key: { templateId: $templateId }
-    data: { cloneCount_expr: "cloneCount + 1" }
+    key: { id: $templateId }
+    data: { cloneCount: $cloneCount }
   )
 }
 
-mutation IncrementTemplateAssignmentCount($templateId: String!) @auth(level: USER) {
+mutation IncrementTemplateAssignmentCount($templateId: UUID!, $assignmentCount: Int!) @auth(level: USER) {
   templateUsageStat_update(
-    key: { templateId: $templateId }
-    data: { assignmentCount_expr: "assignmentCount + 1" }
+    key: { id: $templateId }
+    data: { assignmentCount: $assignmentCount }
   )
 }

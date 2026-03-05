@@ -83,6 +83,8 @@ type TrainingSessionItem @table {
 # Ref: FR-103, D-097, D-050
 
 type UserProfile @table {
+  # Use Firebase Auth UID as deterministic key to avoid UUID casting on auth.uid expressions.
+  id: String! @col(name: "id")
   authUid: String! @col(name: "auth_uid")
   displayName: String! @col(name: "display_name")
   emailNormalized: String! @col(name: "email_normalized")

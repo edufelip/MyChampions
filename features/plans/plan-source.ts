@@ -7,9 +7,9 @@
  * SDK shape notes (breaking from old GraphQL stub):
  * - GetMyPlansData returns nutritionPlans[] (camelCase, nutrition only).
  * - GetMyPredefinedPlansData returns nutritionPlans[] (camelCase).
- * - SubmitPlanChangeRequest takes {plan_id, plan_type, request_text}; returns key only.
- * - ReviewPlanChangeRequest takes {request_id, status}; returns key only. Re-fetch not needed.
- * - BulkAssignNutritionPlan takes one {plan_id, student_uid} at a time.
+ * - SubmitPlanChangeRequest takes {planId, planType, requestText}; returns key only.
+ * - ReviewPlanChangeRequest takes {requestId, status}; returns key only. Re-fetch not needed.
+ * - BulkAssignNutritionPlan takes one {planId, studentUid} at a time.
  */
 
 import type { DataConnect } from 'firebase/data-connect';
@@ -189,10 +189,10 @@ export async function bulkAssignPredefinedPlan(
   const dc = deps.getDataConnectInstance();
 
   let assignedCount = 0;
-  for (const student_uid of studentUids) {
+  for (const studentUid of studentUids) {
     await deps.bulkAssignNutritionPlan(dc, {
-      plan_id: predefinedPlanId,
-      student_uid,
+      planId: predefinedPlanId,
+      studentUid,
     });
     assignedCount++;
   }
@@ -218,9 +218,9 @@ export async function submitPlanChangeRequest(
 ): Promise<PlanChangeRequest> {
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.submitPlanChangeRequest(dc, {
-    plan_id: planId,
-    plan_type: planType,
-    request_text: requestText,
+    planId: planId,
+    planType: planType,
+    requestText: requestText,
   });
 
   const id = data.planChangeRequest_insert?.id;
@@ -252,7 +252,7 @@ export async function getStudentPlanChangeRequests(
   deps = defaultDeps
 ): Promise<PlanChangeRequest[]> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getStudentPlanChangeRequests(dc, { student_uid: studentUid });
+  const { data } = await deps.getStudentPlanChangeRequests(dc, { studentUid: studentUid });
 
   return (data.planChangeRequests ?? []).flatMap((raw) => {
     const planType = normalizePlanType(raw.planType);
@@ -288,7 +288,7 @@ export async function reviewPlanChangeRequest(
 ): Promise<{ id: string; status: PlanChangeRequestStatus }> {
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.reviewPlanChangeRequest(dc, {
-    request_id: requestId,
+    requestId: requestId,
     status,
   });
 

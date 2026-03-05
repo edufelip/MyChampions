@@ -247,14 +247,14 @@ export async function createNutritionPlan(
   const dc = deps.getDataConnectInstance();
   const { data: createData } = await deps.createNutritionPlan(dc, {
     name: input.name.trim(),
-    calories_target: parseFloat(input.caloriesTarget) || 0,
-    carbs_target: parseFloat(input.carbsTarget) || 0,
-    proteins_target: parseFloat(input.proteinsTarget) || 0,
-    fats_target: parseFloat(input.fatsTarget) || 0,
+    caloriesTarget: parseFloat(input.caloriesTarget) || 0,
+    carbsTarget: parseFloat(input.carbsTarget) || 0,
+    proteinsTarget: parseFloat(input.proteinsTarget) || 0,
+    fatsTarget: parseFloat(input.fatsTarget) || 0,
   });
 
   const planId = createData.nutritionPlan_insert.id;
-  const { data: detailData } = await deps.getNutritionPlanDetail(dc, { plan_id: planId });
+  const { data: detailData } = await deps.getNutritionPlanDetail(dc, { planId: planId });
   return mapNutritionPlanDetail(detailData.nutritionPlan);
 }
 
@@ -268,12 +268,12 @@ export async function updateNutritionPlan(
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
   await deps.updateNutritionPlan(dc, {
-    plan_id: planId,
+    planId: planId,
     name: input.name.trim(),
-    calories_target: parseFloat(input.caloriesTarget) || 0,
-    carbs_target: parseFloat(input.carbsTarget) || 0,
-    proteins_target: parseFloat(input.proteinsTarget) || 0,
-    fats_target: parseFloat(input.fatsTarget) || 0,
+    caloriesTarget: parseFloat(input.caloriesTarget) || 0,
+    carbsTarget: parseFloat(input.carbsTarget) || 0,
+    proteinsTarget: parseFloat(input.proteinsTarget) || 0,
+    fatsTarget: parseFloat(input.fatsTarget) || 0,
   });
 }
 
@@ -285,13 +285,13 @@ export async function getNutritionPlanDetail(
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<NutritionPlanDetail> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getNutritionPlanDetail(dc, { plan_id: planId });
+  const { data } = await deps.getNutritionPlanDetail(dc, { planId: planId });
   return mapNutritionPlanDetail(data.nutritionPlan);
 }
 
 /**
  * Adds a food item to an existing nutrition plan.
- * SDK vars: food_name (maps from item.name), macros as numbers.
+ * SDK vars: foodName (maps from item.name), macros as numbers.
  * NutritionMealItem.quantity and .notes are preserved as empty strings since
  * the SDK schema no longer carries those fields.
  * Refs: FR-242
@@ -303,8 +303,8 @@ export async function addNutritionMealItem(
 ): Promise<NutritionMealItem> {
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.addNutritionMealItem(dc, {
-    plan_id: planId,
-    food_name: item.name.trim(),
+    planId: planId,
+    foodName: item.name.trim(),
   });
 
   const insertedId = data.nutritionPlanMeal_insert.id;
@@ -313,7 +313,7 @@ export async function addNutritionMealItem(
 
 /**
  * Removes a food item from a nutrition plan.
- * SDK only requires item_id (planId param dropped per SDK schema change).
+ * SDK only requires itemId (planId param dropped per SDK schema change).
  */
 export async function removeNutritionMealItem(
   _planId: string,
@@ -321,7 +321,7 @@ export async function removeNutritionMealItem(
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
-  await deps.removeNutritionMealItem(dc, { item_id: itemId });
+  await deps.removeNutritionMealItem(dc, { itemId: itemId });
 }
 
 // ─── Training plan CRUD ───────────────────────────────────────────────────────
@@ -340,7 +340,7 @@ export async function createTrainingPlan(
   });
 
   const planId = createData.trainingPlan_insert.id;
-  const { data: detailData } = await deps.getTrainingPlanDetail(dc, { plan_id: planId });
+  const { data: detailData } = await deps.getTrainingPlanDetail(dc, { planId: planId });
   return mapTrainingPlanDetail(detailData.trainingPlan);
 }
 
@@ -354,7 +354,7 @@ export async function updateTrainingPlan(
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
   await deps.updateTrainingPlan(dc, {
-    plan_id: planId,
+    planId: planId,
     name: input.name.trim(),
   });
 }
@@ -367,13 +367,13 @@ export async function getTrainingPlanDetail(
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<TrainingPlanDetail> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getTrainingPlanDetail(dc, { plan_id: planId });
+  const { data } = await deps.getTrainingPlanDetail(dc, { planId: planId });
   return mapTrainingPlanDetail(data.trainingPlan);
 }
 
 /**
  * Adds a session to a training plan.
- * SDK var: session_name (maps from session.name). notes field dropped per SDK schema.
+ * SDK var: sessionName (maps from session.name). notes field dropped per SDK schema.
  * Refs: FR-245
  */
 export async function addTrainingSession(
@@ -383,8 +383,8 @@ export async function addTrainingSession(
 ): Promise<TrainingSession> {
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.addTrainingSession(dc, {
-    plan_id: planId,
-    session_name: session.name.trim(),
+    planId: planId,
+    sessionName: session.name.trim(),
   });
 
   const insertedId = data.trainingPlanSession_insert.id;
@@ -393,7 +393,7 @@ export async function addTrainingSession(
 
 /**
  * Removes a session from a training plan.
- * SDK only requires session_id (planId param dropped per SDK schema change).
+ * SDK only requires sessionId (planId param dropped per SDK schema change).
  */
 export async function removeTrainingSession(
   _planId: string,
@@ -401,12 +401,12 @@ export async function removeTrainingSession(
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
-  await deps.removeTrainingSession(dc, { session_id: sessionId });
+  await deps.removeTrainingSession(dc, { sessionId: sessionId });
 }
 
 /**
  * Adds a custom item to a training session.
- * SDK var: exercise_name (maps from item.name). Sets/reps/weight are omitted
+ * SDK var: exerciseName (maps from item.name). Sets/reps/weight are omitted
  * since TrainingSessionItemInput uses name/quantity/notes for display.
  * Refs: FR-246, BR-294
  */
@@ -417,8 +417,8 @@ export async function addTrainingSessionItem(
 ): Promise<TrainingSessionItem> {
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.addTrainingSessionItem(dc, {
-    session_id: sessionId,
-    exercise_name: item.name.trim(),
+    sessionId: sessionId,
+    exerciseName: item.name.trim(),
   });
 
   const insertedId = data.trainingSessionItem_insert.id;
@@ -427,7 +427,7 @@ export async function addTrainingSessionItem(
 
 /**
  * Removes a custom item from a training session.
- * SDK only requires item_id (sessionId param dropped per SDK schema change).
+ * SDK only requires itemId (sessionId param dropped per SDK schema change).
  */
 export async function removeTrainingSessionItem(
   _sessionId: string,
@@ -435,7 +435,7 @@ export async function removeTrainingSessionItem(
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
-  await deps.removeTrainingSessionItem(dc, { item_id: itemId });
+  await deps.removeTrainingSessionItem(dc, { itemId: itemId });
 }
 
 // ─── Starter templates ────────────────────────────────────────────────────────

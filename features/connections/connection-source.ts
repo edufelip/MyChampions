@@ -94,7 +94,7 @@ export async function confirmPendingConnection(
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<{ connectionId: string; status: 'active' }> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.confirmPendingConnection(dc, { connection_id: connectionId });
+  const { data } = await deps.confirmPendingConnection(dc, { connectionId: connectionId });
 
   const id = data.connection_update?.id;
   if (!id) {
@@ -116,7 +116,7 @@ export async function endConnection(
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
-  await deps.endConnection(dc, { connection_id: connectionId });
+  await deps.endConnection(dc, { connectionId: connectionId });
 }
 
 /**

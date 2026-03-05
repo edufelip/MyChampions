@@ -152,13 +152,13 @@ export async function createCustomMeal(
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.createCustomMeal(dc, {
     name: input.name,
-    total_grams: input.totalGrams,
+    totalGrams: input.totalGrams,
     calories: input.calories,
     carbs: input.carbs,
     proteins: input.proteins,
     fats: input.fats,
-    ingredient_cost: input.ingredientCost ?? null,
-    image_url: input.imageUrl ?? null,
+    ingredientCost: input.ingredientCost ?? null,
+    imageUrl: input.imageUrl ?? null,
   });
 
   const insertedId = data.customMeal_insert.id;
@@ -194,13 +194,13 @@ export async function updateCustomMeal(
   await deps.updateCustomMeal(dc, {
     id,
     name: input.name,
-    total_grams: input.totalGrams,
+    totalGrams: input.totalGrams,
     calories: input.calories,
     carbs: input.carbs,
     proteins: input.proteins,
     fats: input.fats,
-    ingredient_cost: input.ingredientCost ?? null,
-    image_url: input.imageUrl ?? null,
+    ingredientCost: input.ingredientCost ?? null,
+    imageUrl: input.imageUrl ?? null,
   });
 
   // Re-fetch to get full updated meal data
@@ -231,7 +231,7 @@ export async function createMealShareLink(
   deps = defaultDeps
 ): Promise<{ shareLinkId: string }> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.createMealShareLink(dc, { meal_id: mealId });
+  const { data } = await deps.createMealShareLink(dc, { mealId: mealId });
   return { shareLinkId: data.mealShareLink_insert.id };
 }
 
@@ -247,7 +247,7 @@ export async function previewSharedMeal(
   deps = defaultDeps
 ): Promise<SharedMealSnapshot> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.previewSharedMeal(dc, { share_token: shareToken });
+  const { data } = await deps.previewSharedMeal(dc, { shareToken: shareToken });
 
   const link = data.mealShareLinks[0];
   if (!link) {
@@ -277,7 +277,7 @@ export async function importSharedMeal(
   deps = defaultDeps
 ): Promise<CustomMeal> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.importSharedMeal(dc, { share_token: shareToken });
+  const { data } = await deps.importSharedMeal(dc, { shareToken: shareToken });
 
   const insertedId = data.customMeal_insert.id;
 
@@ -302,5 +302,5 @@ export async function logPortionFromSource(
   deps = defaultDeps
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
-  await deps.logPortion(dc, { meal_id: mealId, grams });
+  await deps.logPortion(dc, { mealId: mealId, grams });
 }

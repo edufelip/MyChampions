@@ -1,12 +1,12 @@
 specVersion: v1
-serviceId: mychampions-fb928-service
+serviceId: mychampions-fb928-2-service
 location: us-east4
 schema:
   source: .
   datasource:
     postgresql:
-      database: mychampions-fb928-database
+      database: mychampions-fb928-2-database
       cloudSql:
-        instanceId: mychampions-fb928-instance
+        instanceId: mychampions-fb928-2-instance
 connectorDirs:
   - ../connector

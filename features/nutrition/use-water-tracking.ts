@@ -107,14 +107,14 @@ export function useWaterTracking(isAuthenticated: boolean, todayKey: string): Us
       if (!isAuthenticated) return 'unknown';
 
       try {
-        await logWaterIntake(amountMl);
+        await logWaterIntake(amountMl, todayKey);
         load();
         return null;
       } catch (err) {
         return normalizeWaterTrackingError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load, todayKey]
   );
 
   const setGoal = useCallback(

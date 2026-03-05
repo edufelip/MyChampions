@@ -72,16 +72,14 @@ function normalizeLockedRole(value: unknown): RoleIntent | null {
  * Ref: FR-101
  */
 async function upsertRemoteProfile(
-  authUid: string,
   displayName: string,
   emailNormalized: string,
   deps: ProfileSourceDeps
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.upsertUserProfile(dc, {
-    auth_uid: authUid,
-    display_name: displayName,
-    email_normalized: emailNormalized,
+    displayName: displayName,
+    emailNormalized: emailNormalized,
   });
 
   if (!data.userProfile_upsert?.id) {
@@ -114,7 +112,6 @@ export async function hydrateProfileFromSource(
   deps: ProfileSourceDeps = defaultProfileSourceDeps
 ): Promise<AuthProfile> {
   await upsertRemoteProfile(
-    user.uid,
     user.displayName ?? '',
     user.email?.toLowerCase() ?? '',
     deps

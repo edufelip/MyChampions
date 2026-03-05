@@ -59,17 +59,17 @@ mutation SubmitInviteCode($code: String!) @auth(level: USER) {
 }
 
 # Professional confirms a pending connection — transitions status to active.
-mutation ConfirmPendingConnection($connection_id: UUID!) @auth(level: USER) {
+mutation ConfirmPendingConnection($connectionId: String!) @auth(level: USER) {
   connection_update(
-    key: { id: $connection_id }
+    key: { id: $connectionId }
     data: { status: "active" }
   )
 }
 
 # Either party ends/denies a connection — transitions status to ended.
-mutation EndConnection($connection_id: UUID!) @auth(level: USER) {
+mutation EndConnection($connectionId: String!) @auth(level: USER) {
   connection_update(
-    key: { id: $connection_id }
+    key: { id: $connectionId }
     data: { status: "ended" }
   )
 }

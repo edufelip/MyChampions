@@ -206,7 +206,7 @@ export async function addProfessionalSpecialty(
  * Server enforces removal guard (active/pending students, last specialty).
  * Ref: FR-176, D-034, D-062, BR-234
  *
- * SDK note: removeProfessionalSpecialty takes specialty_id: UUIDString (record id),
+ * SDK note: removeProfessionalSpecialty takes specialtyId: UUIDString (record id),
  * NOT the specialty string enum. Breaking change from old GraphQL stub.
  */
 export async function removeProfessionalSpecialty(
@@ -214,14 +214,14 @@ export async function removeProfessionalSpecialty(
   deps = defaultDeps
 ): Promise<void> {
   const dc = deps.getDataConnectInstance();
-  await deps.removeProfessionalSpecialty(dc, { specialty_id: specialtyId });
+  await deps.removeProfessionalSpecialty(dc, { specialtyId: specialtyId });
 }
 
 /**
  * Upserts credential for a specialty (max 1 per specialty in MVP, D-035).
  * Ref: FR-177
  *
- * SDK note: upsertProfessionalCredential takes specialty_id: UUIDString (record id),
+ * SDK note: upsertProfessionalCredential takes specialtyId: UUIDString (record id),
  * NOT the specialty string enum. Breaking change from old GraphQL stub.
  */
 export async function upsertProfessionalCredential(
@@ -231,8 +231,8 @@ export async function upsertProfessionalCredential(
 ): Promise<{ id: string }> {
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.upsertProfessionalCredential(dc, {
-    specialty_id: specialtyId,
-    registry_id: input.registryId,
+    specialtyId: specialtyId,
+    registryId: input.registryId,
     authority: input.authority,
     country: input.country,
   });

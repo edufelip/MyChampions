@@ -26,9 +26,9 @@ query GetMyCustomMeals @auth(level: USER) {
 
 # Preview a shared meal by share token (does NOT create a copy — D-022).
 # PUBLIC so unauthenticated deep-link recipients can preview before login (D-022, SC-216).
-query PreviewSharedMeal($share_token: String!) @auth(level: PUBLIC) {
+query PreviewSharedMeal($shareToken: String!) @auth(level: PUBLIC) {
   mealShareLinks(
-    where: { shareToken: { eq: $share_token } }
+    where: { shareToken: { eq: $shareToken } }
     limit: 1
   ) {
     id
@@ -48,71 +48,71 @@ query PreviewSharedMeal($share_token: String!) @auth(level: PUBLIC) {
 
 mutation CreateCustomMeal(
   $name: String!
-  $total_grams: Float!
+  $totalGrams: Float!
   $calories: Float!
   $carbs: Float!
   $proteins: Float!
   $fats: Float!
-  $ingredient_cost: Float
-  $image_url: String
+  $ingredientCost: Float
+  $imageUrl: String
 ) @auth(level: USER) {
   customMeal_insert(
     data: {
       ownerAuthUid_expr: "auth.uid"
       name: $name
-      totalGrams: $total_grams
+      totalGrams: $totalGrams
       calories: $calories
       carbs: $carbs
       proteins: $proteins
       fats: $fats
-      ingredientCost: $ingredient_cost
-      imageUrl: $image_url
+      ingredientCost: $ingredientCost
+      imageUrl: $imageUrl
     }
   )
 }
 
 mutation UpdateCustomMeal(
-  $id: UUID!
+  $id: String!
   $name: String!
-  $total_grams: Float!
+  $totalGrams: Float!
   $calories: Float!
   $carbs: Float!
   $proteins: Float!
   $fats: Float!
-  $ingredient_cost: Float
-  $image_url: String
+  $ingredientCost: Float
+  $imageUrl: String
 ) @auth(level: USER) {
   customMeal_update(
     key: { id: $id }
     data: {
       name: $name
-      totalGrams: $total_grams
+      totalGrams: $totalGrams
       calories: $calories
       carbs: $carbs
       proteins: $proteins
       fats: $fats
-      ingredientCost: $ingredient_cost
-      imageUrl: $image_url
+      ingredientCost: $ingredientCost
+      imageUrl: $imageUrl
     }
   )
 }
 
-mutation DeleteCustomMeal($id: UUID!) @auth(level: USER) {
+mutation DeleteCustomMeal($id: String!) @auth(level: USER) {
   customMeal_delete(key: { id: $id })
 }
 
 # Creates a share token for a meal. Rate-limited server-side (D-028).
-mutation CreateMealShareLink($meal_id: UUID!) @auth(level: USER) {
+mutation CreateMealShareLink($mealId: String!) @auth(level: USER) {
   mealShareLink_insert(
     data: {
-      meal: { id: $meal_id }
+      meal: { id: $mealId }
       shareToken_expr: "uuidV4()"
     }
   )
 }
 
 # Imports a shared meal as a recipient-owned copy (D-018, D-021 idempotent).
-mutation ImportSharedMeal($share_token: String!) @auth(level: USER) {
+mutation ImportSharedMeal($shareToken: String!) @auth(level: USER) {
   customMeal_insert(
     data: {
       ownerAuthUid_expr: "auth.uid"
@@ -127,11 +127,11 @@ mutation ImportSharedMeal($share_token: String!) @auth(level: USER) {
 }
 
 # Logs a portion of a meal for the current student.
-mutation LogPortion($meal_id: UUID!, $grams: Float!) @auth(level: USER) {
+mutation LogPortion($mealId: String!, $grams: Float!) @auth(level: USER) {
   portionLog_insert(
     data: {
       studentAuthUid_expr: "auth.uid"
-      meal: { id: $meal_id }
+      meal: { id: $mealId }
       grams: $grams
     }
   )

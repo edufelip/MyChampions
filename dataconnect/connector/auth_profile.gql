@@ -19,26 +19,26 @@ query GetMyProfile @auth(level: USER) {
 # ─── Mutations ────────────────────────────────────────────────────────────────
 
 mutation UpsertUserProfile(
-  $auth_uid: String!
-  $display_name: String!
-  $email_normalized: String!
+  $displayName: String!
+  $emailNormalized: String!
 ) @auth(level: USER) {
   userProfile_upsert(
     data: {
-      authUid: $auth_uid
-      displayName: $display_name
-      emailNormalized: $email_normalized
+      id_expr: "auth.uid"
+      authUid_expr: "auth.uid"
+      displayName: $displayName
+      emailNormalized: $emailNormalized
     }
   )
 }
 
 mutation SetLockedRole($role: String!) @auth(level: USER) {
   userProfile_update(
-    key: { authUid_expr: "auth.uid" }
+    key: { id_expr: "auth.uid" }
     data: { lockedRole: $role }
   )
 }
 
 mutation DeleteProfile @auth(level: USER) {
-  userProfile_delete(key: { authUid_expr: "auth.uid" })
+  userProfile_delete(key: { id_expr: "auth.uid" })
 }

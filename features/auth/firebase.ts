@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
+import { getAuth, getReactNativePersistence, initializeAuth, type Auth } from 'firebase/auth';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 type FirebaseExtraConfig = {
@@ -23,7 +24,7 @@ function resolveFirebaseConfig(): FirebaseExtraConfig {
 function requireFirebaseConfig() {
   const config = resolveFirebaseConfig();
 
-  const requiredKeys: Array<keyof FirebaseExtraConfig> = [
+  const requiredKeys: (keyof FirebaseExtraConfig)[] = [
     'apiKey',
     'authDomain',
     'projectId',
@@ -54,7 +55,15 @@ export function getFirebaseAuth() {
 
   const firebaseConfig = requireFirebaseConfig();
   const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  firebaseAuthInstance = getAuth(firebaseApp);
+
+  try {
+    firebaseAuthInstance = initializeAuth(firebaseApp, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } catch {
+    // If Auth was already initialized elsewhere, reuse existing instance.
+    firebaseAuthInstance = getAuth(firebaseApp);
+  }
 
   return firebaseAuthInstance;
 }

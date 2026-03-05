@@ -24,9 +24,9 @@ query GetMyStudents @auth(level: USER) {
 }
 
 # Returns a specific student profile visible to the current professional.
-query GetStudentProfile($student_uid: String!) @auth(level: USER) {
+query GetStudentProfile($studentUid: String!) @auth(level: USER) {
   userProfiles(
-    where: { authUid: { eq: $student_uid } }
+    where: { authUid: { eq: $studentUid } }
     limit: 1
   ) {
     authUid
@@ -69,9 +69,9 @@ mutation GenerateInitialInviteCode @auth(level: USER) {
 }
 
 # Professional unbinds (ends) the connection with a student.
-mutation UnbindStudent($connection_id: UUID!) @auth(level: USER) {
+mutation UnbindStudent($connectionId: String!) @auth(level: USER) {
   connection_update(
-    key: { id: $connection_id }
+    key: { id: $connectionId }
     data: { status: "ended" }
   )
 }

@@ -34,24 +34,25 @@ mutation AddProfessionalSpecialty($specialty: String!) @auth(level: USER) {
   )
 }
 
-mutation RemoveProfessionalSpecialty($specialty_id: UUID!) @auth(level: USER) {
+mutation RemoveProfessionalSpecialty($specialtyId: String!) @auth(level: USER) {
   specialty_update(
-    key: { id: $specialty_id }
+    key: { id: $specialtyId }
     data: { isActive: false }
   )
 }
 
 mutation UpsertProfessionalCredential(
-  $specialty_id: UUID!
-  $registry_id: String!
+  $specialtyId: String!
+  $registryId: String!
   $authority: String!
   $country: String!
 ) @auth(level: USER) {
   credential_upsert(
     data: {
-      specialty: { id: $specialty_id }
+      id: $specialtyId
+      specialty: { id: $specialtyId }
       credentialType: "professional_registry"
-      registryId: $registry_id
+      registryId: $registryId
       authority: $authority
       country: $country
     }

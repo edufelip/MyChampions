@@ -32,36 +32,38 @@ query GetMyWaterGoalContext @auth(level: USER) {
 
 # ─── Mutations ────────────────────────────────────────────────────────────────
 
-# Accumulates intake for today's date key. Server resolves date to ISO YYYY-MM-DD.
-mutation LogWaterIntake($amount_ml: Float!) @auth(level: USER) {
+# Logs intake for a provided date key (YYYY-MM-DD) from client.
+mutation LogWaterIntake($amountMl: Float!, $dateKey: String!) @auth(level: USER) {
   waterLog_insert(
     data: {
       studentAuthUid_expr: "auth.uid"
-      dateKey_expr: "today()"
-      totalMl: $amount_ml
+      dateKey: $dateKey
+      totalMl: $amountMl
     }
   )
 }
 
 # Student sets personal daily water goal (D-079, FR-221, BR-278).
-mutation SetStudentWaterGoal($daily_ml: Float!) @auth(level: USER) {
+mutation SetStudentWaterGoal($dailyMl: Float!) @auth(level: USER) {
   waterGoal_upsert(
     data: {
+      id_expr: "auth.uid"
       studentAuthUid_expr: "auth.uid"
-      personalDailyMl: $daily_ml
+      personalDailyMl: $dailyMl
     }
   )
 }
 
 # Nutritionist sets override goal for an assigned student (D-081, FR-222, BR-279).
 mutation SetNutritionistWaterGoalForStudent(
-  $student_uid: String!
-  $daily_ml: Float!
+  $studentUid: String!
+  $dailyMl: Float!
 ) @auth(level: USER) {
   waterGoal_upsert(
     data: {
-      studentAuthUid: $student_uid
-      nutritionistDailyMl: $daily_ml
+      id: $studentUid
+      studentAuthUid: $studentUid
+      nutritionistDailyMl: $dailyMl
       nutritionistAuthUid_expr: "auth.uid"
     }
   )

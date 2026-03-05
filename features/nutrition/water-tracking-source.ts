@@ -95,9 +95,13 @@ export async function getMyWaterLogs(deps = defaultDeps): Promise<WaterIntakeLog
  * SDK returns only the inserted WaterLog_Key; returns the key id.
  * Ref: FR-218, BR-276
  */
-export async function logWaterIntake(amountMl: number, deps = defaultDeps): Promise<string> {
+export async function logWaterIntake(
+  amountMl: number,
+  dateKey: string,
+  deps = defaultDeps
+): Promise<string> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.logWaterIntake(dc, { amount_ml: amountMl });
+  const { data } = await deps.logWaterIntake(dc, { amountMl, dateKey });
   return data.waterLog_insert.id;
 }
 
@@ -110,7 +114,7 @@ export async function logWaterIntake(amountMl: number, deps = defaultDeps): Prom
  */
 export async function setStudentWaterGoal(dailyMl: number, deps = defaultDeps): Promise<string> {
   const dc = deps.getDataConnectInstance();
-  const { data } = await deps.setStudentWaterGoal(dc, { daily_ml: dailyMl });
+  const { data } = await deps.setStudentWaterGoal(dc, { dailyMl });
   return data.waterGoal_upsert.id;
 }
 
@@ -127,8 +131,8 @@ export async function setNutritionistWaterGoalForStudent(
 ): Promise<string> {
   const dc = deps.getDataConnectInstance();
   const { data } = await deps.setNutritionistWaterGoalForStudent(dc, {
-    student_uid: studentUid,
-    daily_ml: dailyMl,
+    studentUid,
+    dailyMl,
   });
   return data.waterGoal_upsert.id;
 }
