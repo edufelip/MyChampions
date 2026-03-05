@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import {
   resolvePostRoleRoute,
@@ -31,6 +32,7 @@ import { useTranslation } from '@/localization';
 
 export default function RoleSelectionScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const router = useRouter();
@@ -98,8 +100,8 @@ export default function RoleSelectionScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.container, { backgroundColor: isDark ? '#221410' : '#fff5f0' }]}
-      style={{ backgroundColor: isDark ? '#221410' : '#fff5f0' }}
+      contentContainerStyle={[styles.container, { backgroundColor: theme.color.canvas }]}
+      style={{ backgroundColor: theme.color.canvas }}
       testID="auth.roleSelection.screen">
       <Stack.Screen options={{ title: t('auth.role.title'), headerShown: false }} />
 
@@ -108,7 +110,7 @@ export default function RoleSelectionScreen() {
         style={[
           styles.blob,
           styles.blobTopLeft,
-          { backgroundColor: isDark ? '#5f4f29' : '#ffeca1' },
+          { backgroundColor: theme.blob.topLeft },
         ]}
       />
       <View
@@ -116,7 +118,7 @@ export default function RoleSelectionScreen() {
         style={[
           styles.blob,
           styles.blobBottomRight,
-          { backgroundColor: isDark ? '#2e5b4a' : '#a1e8cc' },
+          { backgroundColor: theme.blob.bottomRight },
         ]}
       />
 
@@ -135,7 +137,7 @@ export default function RoleSelectionScreen() {
               {
                 borderColor: studentCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ['rgba(255,123,114,0)', 'rgba(255,123,114,1)'],
+                  outputRange: ['rgba(19,236,73,0)', 'rgba(19,236,73,1)'],
                 }),
                 borderWidth: studentCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
@@ -161,7 +163,7 @@ export default function RoleSelectionScreen() {
               style={[
                 styles.roleCard,
                 {
-                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                  backgroundColor: theme.color.surface,
                 },
               ]}
               testID="auth.roleSelection.studentCard">
@@ -171,8 +173,8 @@ export default function RoleSelectionScreen() {
                 </View>
               ) : null}
 
-              <View style={[styles.cardIcon, { backgroundColor: isDark ? '#3b2f2a' : '#fff1ee' }]}>
-                <MaterialIcons color="#ff7b72" name="fitness-center" size={24} />
+              <View style={[styles.cardIcon, { backgroundColor: isDark ? '#21432b' : '#ecfdf3' }]}>
+                <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={24} />
               </View>
 
               <Text style={[styles.roleTitle, { color: palette.text }]}>{t('auth.role.option_self.title')}</Text>
@@ -186,7 +188,7 @@ export default function RoleSelectionScreen() {
               {
                 borderColor: professionalCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ['rgba(255,123,114,0)', 'rgba(255,123,114,1)'],
+                  outputRange: ['rgba(19,236,73,0)', 'rgba(19,236,73,1)'],
                 }),
                 borderWidth: professionalCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
@@ -212,7 +214,7 @@ export default function RoleSelectionScreen() {
               style={[
                 styles.roleCard,
                 {
-                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                  backgroundColor: theme.color.surface,
                 },
               ]}
               testID="auth.roleSelection.professionalCard">
@@ -222,7 +224,7 @@ export default function RoleSelectionScreen() {
                 </View>
               ) : null}
 
-              <View style={[styles.cardIcon, { backgroundColor: isDark ? '#3b2f2a' : '#f5f5f5' }]}>
+              <View style={[styles.cardIcon, { backgroundColor: isDark ? '#21432b' : '#f5f5f5' }]}>
                 <MaterialIcons color={palette.icon} name="assignment" size={24} />
               </View>
 
@@ -232,7 +234,7 @@ export default function RoleSelectionScreen() {
           </Animated.View>
         </View>
 
-        <View style={[styles.lockNotePanel, { backgroundColor: isDark ? '#33261f' : '#fff0e5', borderColor: isDark ? '#4a372e' : '#f8dece' }]}>
+        <View style={[styles.lockNotePanel, { backgroundColor: isDark ? '#33261f' : '#ecfdf3', borderColor: isDark ? '#4a372e' : '#bbf7d0' }]}>
           <MaterialIcons color={isDark ? '#fbbf8f' : '#fb923c'} name="info-outline" size={20} style={styles.lockNoteIcon} />
           <Text style={[styles.lockNote, { color: palette.icon }]}>{t('auth.role.lock_note')}</Text>
         </View>
@@ -267,7 +269,7 @@ export default function RoleSelectionScreen() {
           ) : (
             <>
               <Text style={styles.primaryButtonText}>{t('auth.role.cta_continue')}</Text>
-              <MaterialIcons color="#ffffff" name="arrow-forward" size={20} />
+              <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
             </>
           )}
         </Pressable>
@@ -338,7 +340,7 @@ const styles = StyleSheet.create({
   },
   selectedBadge: {
     alignItems: 'center',
-    backgroundColor: '#ff7b72',
+    backgroundColor: theme.color.accentPrimary,
     borderRadius: 12,
     height: 24,
     justifyContent: 'center',
@@ -382,14 +384,14 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   inlineError: {
-    color: '#b3261e',
+    color: theme.color.danger,
     fontSize: 13,
     marginTop: 10,
     paddingHorizontal: 6,
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: '#ff7b72',
+    backgroundColor: theme.color.accentPrimary,
     borderRadius: 28,
     flexDirection: 'row',
     gap: 8,
@@ -399,7 +401,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: theme.color.onAccent,
     fontSize: 17,
     fontWeight: '700',
   },

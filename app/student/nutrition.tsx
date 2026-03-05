@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   },
   emptyIconBlob: {
     alignItems: 'center',
-    backgroundColor: '#a1e8cc',
+    backgroundColor: '#dbeafe',
     borderRadius: 40,
     height: 112,
     justifyContent: 'center',

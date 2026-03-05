@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -17,6 +18,7 @@ import { useTranslation, type TranslationKey } from '@/localization';
 
 export default function AcceptTermsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
@@ -59,7 +61,7 @@ export default function AcceptTermsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#221410' : '#fff5f0' }]}>
+    <View style={[styles.container, { backgroundColor: theme.color.canvas }]}>
       <Stack.Screen options={{ title: t('auth.terms.title'), headerShown: false }} />
 
       <View
@@ -67,7 +69,7 @@ export default function AcceptTermsScreen() {
         style={[
           styles.blob,
           styles.blobTopLeft,
-          { backgroundColor: isDark ? '#5f4f29' : '#ffeca1' },
+          { backgroundColor: theme.blob.topLeft },
         ]}
       />
       <View
@@ -75,20 +77,20 @@ export default function AcceptTermsScreen() {
         style={[
           styles.blob,
           styles.blobBottomRight,
-          { backgroundColor: isDark ? '#2e5b4a' : '#a1e8cc' },
+          { backgroundColor: theme.blob.bottomRight },
         ]}
       />
 
       <View style={styles.content}>
         <View style={styles.titleArea}>
-          <View style={[styles.badge, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}>
-            <MaterialIcons color="#ff7b72" name="gavel" size={30} />
+          <View style={[styles.badge, { backgroundColor: theme.color.surface }]}>
+            <MaterialIcons color={theme.color.accentPrimary} name="gavel" size={30} />
           </View>
           <Text style={[styles.title, { color: palette.text }]}>{t('auth.terms.title')}</Text>
           <Text style={[styles.subtitle, { color: palette.icon }]}>{t('auth.terms.description')}</Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}>
+        <View style={[styles.card, { backgroundColor: theme.color.surface }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('auth.terms.open_link')}
@@ -97,10 +99,10 @@ export default function AcceptTermsScreen() {
               styles.linkButton,
               {
                 borderColor: isDark ? '#4a3a33' : '#ffd6d1',
-                backgroundColor: pressed ? 'rgba(255,123,114,0.1)' : 'transparent',
+                backgroundColor: pressed ? 'rgba(19,236,73,0.1)' : 'transparent',
               },
             ]}>
-            <MaterialIcons color="#ff7b72" name="open-in-new" size={20} />
+            <MaterialIcons color={theme.color.accentPrimary} name="open-in-new" size={20} />
             <Text style={styles.linkButtonText}>{t('auth.terms.open_link')}</Text>
           </Pressable>
 
@@ -113,8 +115,8 @@ export default function AcceptTermsScreen() {
               style={[
                 styles.checkbox,
                 {
-                  borderColor: isChecked ? '#ff7b72' : isDark ? '#6b5549' : '#e2d7d2',
-                  backgroundColor: isChecked ? '#ff7b72' : 'transparent',
+                  borderColor: isChecked ? '#13ec49' : isDark ? '#6b5549' : '#e2d7d2',
+                  backgroundColor: isChecked ? '#13ec49' : 'transparent',
                 },
               ]}>
               {isChecked ? <MaterialIcons color="#ffffff" name="check" size={15} /> : null}
@@ -144,7 +146,7 @@ export default function AcceptTermsScreen() {
               },
             ]}>
             {submitting ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={theme.color.onAccent} />
             ) : (
               <Text style={styles.acceptButtonText}>{t('auth.terms.accept_button')}</Text>
             )}
@@ -199,7 +201,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: 'rgba(255,123,114,0.25)',
+    borderColor: theme.color.accentPrimarySoft,
   },
   title: {
     fontFamily: Fonts.serif,
@@ -234,7 +236,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   linkButtonText: {
-    color: '#ff7b72',
+    color: '#13ec49',
     fontFamily: Fonts.sans,
     fontSize: 14,
     fontWeight: '700',
@@ -275,17 +277,17 @@ const styles = StyleSheet.create({
   acceptButton: {
     minHeight: 54,
     borderRadius: 27,
-    backgroundColor: '#ff7b72',
+    backgroundColor: theme.color.accentPrimary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#ff7b72',
+    shadowColor: theme.color.accentPrimary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 4,
   },
   acceptButtonText: {
-    color: '#ffffff',
+    color: theme.color.onAccent,
     fontFamily: Fonts.sans,
     fontSize: 17,
     fontWeight: '800',

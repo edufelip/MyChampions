@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { GoogleAuthProvider, OAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 
+import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import { signInOrLinkWithCredential } from '@/features/auth/firebase-social-auth';
 import { getFirebaseAuth, firebaseOAuthConfig } from '@/features/auth/firebase';
@@ -51,8 +52,8 @@ function createNonce(length = 32) {
 
 export default function SignInScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
-  const isDark = colorScheme === 'dark';
   const router = useRouter();
   const { t } = useTranslation();
   const { emitEvent } = useAnalytics();
@@ -179,7 +180,7 @@ export default function SignInScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: isDark ? '#221410' : '#fff5f0' }]}
+      style={[styles.container, { backgroundColor: theme.color.canvas }]}
       behavior={Platform.select({ ios: 'padding', default: undefined })}>
       <Stack.Screen options={{ title: t('auth.signin.cta_primary'), headerShown: false }} />
 
@@ -188,7 +189,7 @@ export default function SignInScreen() {
         style={[
           styles.blob,
           styles.blobTopLeft,
-          { backgroundColor: isDark ? '#5f4f29' : '#ffeca1' },
+          { backgroundColor: theme.blob.topLeft },
         ]}
       />
       <View
@@ -196,14 +197,14 @@ export default function SignInScreen() {
         style={[
           styles.blob,
           styles.blobBottomRight,
-          { backgroundColor: isDark ? '#2e5b4a' : '#a1e8cc' },
+          { backgroundColor: theme.blob.bottomRight },
         ]}
       />
 
       <View style={styles.content}>
         <View style={styles.titleArea}>
-          <View style={[styles.brandBadge, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}>
-            <MaterialIcons color="#ff7b72" name="fitness-center" size={34} />
+          <View style={[styles.brandBadge, { backgroundColor: theme.color.surface }]}>
+            <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={34} />
           </View>
           <Text testID="auth.signIn.title" style={[styles.title, { color: palette.text }]}>
             {t('auth.signin.title')}
@@ -226,7 +227,7 @@ export default function SignInScreen() {
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
-                { backgroundColor: isDark ? '#2a1f1b' : '#ffffff', borderColor: 'transparent', color: palette.text },
+                { backgroundColor: theme.color.surface, borderColor: 'transparent', color: palette.text },
               ]}
               testID="auth.signIn.emailInput"
               value={email}
@@ -255,7 +256,7 @@ export default function SignInScreen() {
                   styles.input,
                   styles.passwordInput,
                   {
-                    backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                    backgroundColor: theme.color.surface,
                     borderColor: 'transparent',
                     color: palette.text,
                   },
@@ -270,7 +271,7 @@ export default function SignInScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPassword((current) => !current)}
                 testID="auth.signIn.passwordToggle"
-                style={[styles.passwordIconButton, { backgroundColor: isDark ? '#352a25' : '#f8f1ed' }]}>
+                style={[styles.passwordIconButton, { backgroundColor: theme.color.surfaceMuted }]}>
                 <MaterialIcons
                   color={palette.text}
                   name={showPassword ? 'visibility-off' : 'visibility'}
@@ -298,7 +299,7 @@ export default function SignInScreen() {
               ) : (
                 <>
                   <Text style={styles.primaryButtonText}>{t('auth.signin.cta_primary')}</Text>
-                  <MaterialIcons color="#ffffff" name="arrow-forward" size={20} />
+                  <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
                 </>
               )}
             </Pressable>
@@ -330,7 +331,7 @@ export default function SignInScreen() {
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                  backgroundColor: theme.color.surface,
                   opacity: submitting || !googleRequest ? 0.5 : 1,
                 },
               ]}
@@ -347,7 +348,7 @@ export default function SignInScreen() {
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                  backgroundColor: theme.color.surface,
                   opacity: submitting ? 0.5 : 1,
                 },
               ]}
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
   },
   brandBadge: {
     alignItems: 'center',
-    borderColor: 'rgba(255,123,114,0.25)',
+    borderColor: theme.color.accentPrimarySoft,
     borderRadius: 50,
     borderWidth: 4,
     elevation: 2,
@@ -465,12 +466,12 @@ const styles = StyleSheet.create({
     right: 10,
   },
   inlineError: {
-    color: '#b3261e',
+    color: theme.color.danger,
     fontSize: 13,
     paddingHorizontal: 12,
   },
   submitError: {
-    color: '#b3261e',
+    color: theme.color.danger,
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
@@ -479,7 +480,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: '#ff7b72',
+    backgroundColor: theme.color.accentPrimary,
     borderRadius: 28,
     flexDirection: 'row',
     gap: 8,
@@ -489,7 +490,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: theme.color.onAccent,
     fontSize: 16,
     fontWeight: '700',
   },

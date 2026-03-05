@@ -74,9 +74,13 @@ import { useTranslation } from '@/localization';
 
 type Palette = {
   background: string;
+  surface: string;
   text: string;
   icon: string;
   tint: string;
+  danger: string;
+  success: string;
+  onAccent: string;
 };
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -88,9 +92,13 @@ export default function CustomMealBuilderScreen() {
   const theme = getDsTheme(scheme);
   const palette = {
     background: theme.color.canvas,
+    surface: theme.color.surface,
     text: theme.color.textPrimary,
     icon: theme.color.textSecondary,
     tint: theme.color.accentPrimary,
+    danger: theme.color.danger,
+    success: theme.color.success,
+    onAccent: theme.color.onAccent,
   };
   const { t } = useTranslation();
   const router = useRouter();
@@ -336,7 +344,7 @@ export default function CustomMealBuilderScreen() {
       {/* Save error */}
       {saveError ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.errorText, { color: '#b3261e' }]} testID="meal.builder.saveError">
+          <Text style={[styles.errorText, { color: palette.danger }]} testID="meal.builder.saveError">
             {saveError}
           </Text>
         </View>
@@ -355,7 +363,7 @@ export default function CustomMealBuilderScreen() {
           onPress={handleSave}
           style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID="meal.builder.cta.save">
-          <Text style={styles.primaryButtonText}>{t('meal.builder.cta_save')}</Text>
+          <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('meal.builder.cta_save')}</Text>
         </Pressable>
       )}
 
@@ -472,7 +480,7 @@ function MealPhotoAnalysisSection({
       {/* Error message (AC-516, BR-289) */}
       {errorMessage ? (
         <View accessibilityLiveRegion="polite" testID="meal.photoAnalysis.error">
-          <Text style={[styles.analysisMeta, { color: '#b3261e' }]}>{errorMessage}</Text>
+          <Text style={[styles.analysisMeta, { color: palette.danger }]}>{errorMessage}</Text>
         </View>
       ) : null}
 
@@ -491,7 +499,7 @@ function MealPhotoAnalysisSection({
           {/* Low-confidence warning (BR-289) */}
           {isLowConfidence ? (
             <Text
-              style={[styles.analysisMeta, { color: '#b3261e' }]}
+              style={[styles.analysisMeta, { color: palette.danger }]}
               testID="meal.photoAnalysis.lowConfidence">
               {t('meal.photo_analysis.confidence.low')}
             </Text>
@@ -614,7 +622,7 @@ function ImageUploadSection({
       {errorMessage ? (
         <View accessibilityLiveRegion="polite">
           <Text
-            style={[styles.imageUploadMeta, { color: '#b3261e' }]}
+            style={[styles.imageUploadMeta, { color: palette.danger }]}
             testID="meal.builder.imageUpload.error">
             {errorMessage}
           </Text>
@@ -664,7 +672,7 @@ function FormField({
         style={[
           styles.input,
           {
-            borderColor: error ? '#b3261e' : palette.icon + '66',
+            borderColor: error ? palette.danger : palette.icon + '66',
             color: palette.text,
           },
         ]}
@@ -678,7 +686,7 @@ function FormField({
       />
       {error ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.fieldError, { color: '#b3261e' }]} testID={`${testID}.error`}>
+          <Text style={[styles.fieldError, { color: palette.danger }]} testID={`${testID}.error`}>
             {error}
           </Text>
         </View>
@@ -765,7 +773,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 52,
   },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  primaryButtonText: { fontSize: 16, fontWeight: '700' },
   outlineButton: {
     alignItems: 'center',
     borderRadius: 10,

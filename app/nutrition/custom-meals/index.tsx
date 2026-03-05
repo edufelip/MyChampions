@@ -62,9 +62,13 @@ import { useTranslation } from '@/localization';
 
 type Palette = {
   background: string;
+  surface: string;
   text: string;
   icon: string;
   tint: string;
+  danger: string;
+  success: string;
+  onAccent: string;
 };
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -80,9 +84,13 @@ export default function CustomMealLibraryScreen() {
   const theme = getDsTheme(scheme);
   const palette = {
     background: theme.color.canvas,
+    surface: theme.color.surface,
     text: theme.color.textPrimary,
     icon: theme.color.textSecondary,
     tint: theme.color.accentPrimary,
+    danger: theme.color.danger,
+    success: theme.color.success,
+    onAccent: theme.color.onAccent,
   };
   const { t } = useTranslation();
   const router = useRouter();
@@ -288,7 +296,7 @@ function EmptyState({
         onPress={onCreate}
         style={[styles.primaryButton, { backgroundColor: palette.tint }]}
         testID="meal.library.empty.cta">
-        <Text style={styles.primaryButtonText}>{t('meal.library.cta_create')}</Text>
+        <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('meal.library.cta_create')}</Text>
       </Pressable>
     </View>
   );
@@ -334,7 +342,7 @@ function MealRow({
           onPress={onLog}
           style={[styles.smallButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID={`meal.library.row.${meal.id}.log`}>
-          <Text style={styles.smallButtonText}>{t('meal.library.quick_log.cta_log')}</Text>
+          <Text style={[styles.smallButtonText, { color: palette.onAccent }]}>{t('meal.library.quick_log.cta_log')}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -436,7 +444,7 @@ function QuickLogPanel({
         style={[
           styles.input,
           {
-            borderColor: error ? '#b3261e' : palette.icon + '66',
+            borderColor: error ? palette.danger : palette.icon + '66',
             color: palette.text,
           },
         ]}
@@ -451,7 +459,7 @@ function QuickLogPanel({
       />
       {error ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.fieldError, { color: '#b3261e' }]} testID="meal.library.quickLog.error">
+          <Text style={[styles.fieldError, { color: palette.danger }]} testID="meal.library.quickLog.error">
             {error}
           </Text>
         </View>
@@ -487,7 +495,7 @@ function QuickLogPanel({
             onPress={onConfirm}
             style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
             testID="meal.library.quickLog.cta.confirm">
-            <Text style={styles.primaryButtonText}>{t('meal.library.quick_log.cta_log')}</Text>
+            <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('meal.library.quick_log.cta_log')}</Text>
           </Pressable>
         )}
         <Pressable
@@ -587,7 +595,7 @@ function QuickLogAnalysisRow({
       {/* Error */}
       {analysisState.kind === 'error' ? (
         <View accessibilityLiveRegion="polite" testID="meal.library.quickLog.analysis.error">
-          <Text style={[styles.analysisMeta, { color: '#b3261e' }]}>
+          <Text style={[styles.analysisMeta, { color: palette.danger }]}>
             {resolveQuickLogAnalysisError(analysisState.reason, t)}
           </Text>
         </View>
@@ -600,7 +608,7 @@ function QuickLogAnalysisRow({
             {t('meal.photo_analysis.disclaimer')}
           </Text>
           {analysisState.estimate.confidence === 'low' ? (
-            <Text style={[styles.analysisMeta, { color: '#b3261e' }]}>{t('meal.photo_analysis.confidence.low')}</Text>
+            <Text style={[styles.analysisMeta, { color: palette.danger }]}>{t('meal.photo_analysis.confidence.low')}</Text>
           ) : null}
           <Pressable accessibilityRole="button" onPress={onResetAnalysis} testID="meal.library.quickLog.analysis.reset">
             <Text style={[styles.analysisMeta, { color: palette.tint }]}>{t('meal.photo_analysis.cta')}</Text>
@@ -654,7 +662,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  smallButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  smallButtonText: { fontSize: 13, fontWeight: '600' },
   ghostAction: { paddingVertical: 2 },
   ghostActionText: { fontSize: 13 },
   createButton: {
@@ -674,7 +682,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 48,
   },
-  primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  primaryButtonText: { fontSize: 15, fontWeight: '700' },
   quickLogPanel: {
     bottom: 0,
     borderTopLeftRadius: 20,

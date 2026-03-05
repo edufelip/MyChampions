@@ -54,9 +54,14 @@ import { useTranslation } from '@/localization';
 
 type Palette = {
   background: string;
+  surface: string;
   text: string;
   icon: string;
   tint: string;
+  danger: string;
+  success: string;
+  successSoft: string;
+  onAccent: string;
 };
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -74,9 +79,14 @@ export default function SharedRecipeSaveScreen() {
   const theme = getDsTheme(scheme);
   const palette = {
     background: theme.color.canvas,
+    surface: theme.color.surface,
     text: theme.color.textPrimary,
     icon: theme.color.textSecondary,
     tint: theme.color.accentPrimary,
+    danger: theme.color.danger,
+    success: theme.color.success,
+    successSoft: theme.color.successSoft,
+    onAccent: theme.color.onAccent,
   };
   const { t } = useTranslation();
   const router = useRouter();
@@ -207,7 +217,7 @@ function ErrorView({
 
   return (
     <View style={styles.center} testID="shared_recipe.error" accessibilityRole="alert">
-      <Text style={[styles.errorText, { color: '#b3261e' }]}>{message}</Text>
+      <Text style={[styles.errorText, { color: palette.danger }]}>{message}</Text>
     </View>
   );
 }
@@ -290,7 +300,7 @@ function PreviewView({
       {saveError ? (
         <View accessibilityLiveRegion="polite">
           <Text
-            style={[styles.saveErrorText, { color: '#b3261e' }]}
+            style={[styles.saveErrorText, { color: palette.danger }]}
             testID="shared_recipe.saveError">
             {saveError}
           </Text>
@@ -310,7 +320,7 @@ function PreviewView({
           onPress={onSave}
           style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID="shared_recipe.cta.save">
-          <Text style={styles.primaryButtonText}>{t('shared_recipe.cta_save')}</Text>
+          <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('shared_recipe.cta_save')}</Text>
         </Pressable>
       )}
 
@@ -344,9 +354,9 @@ function SavedView({
     <View style={[styles.center, styles.savedContainer]} testID="shared_recipe.saved">
       {/* Success banner */}
       <View
-        style={[styles.successBanner, { borderColor: '#16a34a' }]}
+        style={[styles.successBanner, { borderColor: palette.success, backgroundColor: palette.successSoft }]}
         accessibilityRole="alert">
-        <Text style={[styles.successText, { color: '#16a34a' }]}>
+        <Text style={[styles.successText, { color: palette.success }]}>
           {t('shared_recipe.success')}
         </Text>
       </View>
@@ -363,7 +373,7 @@ function SavedView({
         onPress={onNavigateBack}
         style={[styles.primaryButton, { backgroundColor: palette.tint }]}
         testID="shared_recipe.saved.cta">
-        <Text style={styles.primaryButtonText}>{t('shared_recipe.cta_cancel')}</Text>
+        <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('shared_recipe.cta_cancel')}</Text>
       </Pressable>
     </View>
   );
@@ -402,7 +412,6 @@ const styles = StyleSheet.create({
   saveErrorText: { fontSize: 13 },
 
   successBanner: {
-    backgroundColor: '#16a34a11',
     borderRadius: 8,
     borderWidth: 1,
     padding: 12,
@@ -417,7 +426,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     alignSelf: 'stretch',
   },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  primaryButtonText: { fontSize: 16, fontWeight: '700' },
 
   cancelButton: {
     alignItems: 'center',

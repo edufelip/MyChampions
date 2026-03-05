@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { createUserWithEmailAndPassword, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
 
+import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import {
   mapCreateAccountReasonToMessageKey,
@@ -51,8 +52,8 @@ function createNonce(length = 32) {
 
 export default function CreateAccountScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
-  const isDark = colorScheme === 'dark';
   const router = useRouter();
   const { t } = useTranslation();
   const { emitEvent } = useAnalytics();
@@ -182,7 +183,7 @@ export default function CreateAccountScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: isDark ? '#221410' : '#fff5f0' }]}
+      style={[styles.container, { backgroundColor: theme.color.canvas }]}
       behavior={Platform.select({ ios: 'padding', default: undefined })}
       testID="auth.createAccount.screen">
       <Stack.Screen options={{ title: t('auth.signup.title'), headerShown: false }} />
@@ -192,7 +193,7 @@ export default function CreateAccountScreen() {
         style={[
           styles.blob,
           styles.blobTopLeft,
-          { backgroundColor: isDark ? '#5f4f29' : '#ffeca1' },
+          { backgroundColor: theme.blob.topLeft },
         ]}
       />
       <View
@@ -200,7 +201,7 @@ export default function CreateAccountScreen() {
         style={[
           styles.blob,
           styles.blobBottomRight,
-          { backgroundColor: isDark ? '#2e5b4a' : '#a1e8cc' },
+          { backgroundColor: theme.blob.bottomRight },
         ]}
       />
 
@@ -216,7 +217,7 @@ export default function CreateAccountScreen() {
 
               router.replace('/auth/sign-in');
             }}
-            style={[styles.backButton, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}
+            style={[styles.backButton, { backgroundColor: theme.color.surface }]}
             testID="auth.createAccount.backButton">
             <MaterialIcons color={palette.text} name="arrow-back" size={22} />
           </Pressable>
@@ -224,8 +225,8 @@ export default function CreateAccountScreen() {
         </View>
 
         <View style={styles.titleArea}>
-          <View style={[styles.brandBadge, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}>
-            <MaterialIcons color="#ff7b72" name="fitness-center" size={32} />
+          <View style={[styles.brandBadge, { backgroundColor: theme.color.surface }]}>
+            <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={32} />
           </View>
           <Text style={[styles.title, { color: palette.text }]} testID="auth.createAccount.title">
             {t('auth.signup.title')}
@@ -244,7 +245,7 @@ export default function CreateAccountScreen() {
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
-                { backgroundColor: isDark ? '#2a1f1b' : '#ffffff', borderColor: 'transparent', color: palette.text },
+                { backgroundColor: theme.color.surface, borderColor: 'transparent', color: palette.text },
               ]}
               testID="auth.createAccount.nameInput"
               value={name}
@@ -270,7 +271,7 @@ export default function CreateAccountScreen() {
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
-                { backgroundColor: isDark ? '#2a1f1b' : '#ffffff', borderColor: 'transparent', color: palette.text },
+                { backgroundColor: theme.color.surface, borderColor: 'transparent', color: palette.text },
               ]}
               testID="auth.createAccount.emailInput"
               value={email}
@@ -299,7 +300,7 @@ export default function CreateAccountScreen() {
                   styles.input,
                   styles.passwordInput,
                   {
-                    backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                    backgroundColor: theme.color.surface,
                     borderColor: 'transparent',
                     color: palette.text,
                   },
@@ -314,7 +315,7 @@ export default function CreateAccountScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPassword((current) => !current)}
                 testID="auth.createAccount.passwordToggle"
-                style={[styles.passwordToggle, { backgroundColor: isDark ? '#352a25' : '#f8f1ed' }]}>
+                style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}>
                 <Text style={[styles.passwordToggleText, { color: palette.text }]}>
                   {showPassword ? t('auth.password.toggle_hide_short') : t('auth.password.toggle_show_short')}
                 </Text>
@@ -347,7 +348,7 @@ export default function CreateAccountScreen() {
                   styles.input,
                   styles.passwordInput,
                   {
-                    backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                    backgroundColor: theme.color.surface,
                     borderColor: 'transparent',
                     color: palette.text,
                   },
@@ -364,7 +365,7 @@ export default function CreateAccountScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPasswordConfirmation((current) => !current)}
                 testID="auth.createAccount.passwordConfirmationToggle"
-                style={[styles.passwordToggle, { backgroundColor: isDark ? '#352a25' : '#f8f1ed' }]}>
+                style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}>
                 <Text style={[styles.passwordToggleText, { color: palette.text }]}>
                   {showPasswordConfirmation
                     ? t('auth.password.toggle_hide_short')
@@ -409,7 +410,7 @@ export default function CreateAccountScreen() {
             ) : (
               <>
                 <Text style={styles.primaryButtonText}>{t('auth.signup.cta_primary')}</Text>
-                <MaterialIcons color="#ffffff" name="arrow-forward" size={20} />
+                <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
               </>
             )}
           </Pressable>
@@ -424,7 +425,7 @@ export default function CreateAccountScreen() {
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                  backgroundColor: theme.color.surface,
                   opacity: submitting || !googleRequest ? 0.5 : 1,
                 },
               ]}
@@ -438,7 +439,7 @@ export default function CreateAccountScreen() {
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: isDark ? '#2a1f1b' : '#ffffff',
+                  backgroundColor: theme.color.surface,
                   opacity: submitting ? 0.5 : 1,
                 },
               ]}
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
   },
   brandBadge: {
     alignItems: 'center',
-    borderColor: 'rgba(255,123,114,0.25)',
+    borderColor: theme.color.accentPrimarySoft,
     borderRadius: 44,
     borderWidth: 4,
     elevation: 2,
@@ -578,12 +579,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   inlineError: {
-    color: '#b3261e',
+    color: theme.color.danger,
     fontSize: 13,
     paddingHorizontal: 12,
   },
   submitError: {
-    color: '#b3261e',
+    color: theme.color.danger,
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
@@ -591,7 +592,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: '#ff7b72',
+    backgroundColor: theme.color.accentPrimary,
     borderRadius: 28,
     flexDirection: 'row',
     gap: 8,
@@ -601,7 +602,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: theme.color.onAccent,
     fontSize: 16,
     fontWeight: '700',
   },

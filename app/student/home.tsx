@@ -82,7 +82,7 @@ export default function StudentHomeScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: isDark ? '#221410' : '#fff5f0' }]}
+      style={[styles.container, { backgroundColor: isDark ? '#102215' : '#f6f8f6' }]}
       contentContainerStyle={styles.content}
       testID="student.home.screen">
       <Stack.Screen options={{ title: t('student.home.title'), headerShown: false }} />
@@ -92,7 +92,7 @@ export default function StudentHomeScreen() {
         style={[
           styles.blob,
           styles.blobTopLeft,
-          { backgroundColor: isDark ? '#5f4f29' : '#ffeca1' },
+          { backgroundColor: isDark ? '#1f3b28' : '#dcfce7' },
         ]}
       />
       <View
@@ -100,7 +100,7 @@ export default function StudentHomeScreen() {
         style={[
           styles.blob,
           styles.blobBottomRight,
-          { backgroundColor: isDark ? '#2e5b4a' : '#a1e8cc' },
+          { backgroundColor: isDark ? '#12315f' : '#dbeafe' },
         ]}
       />
 
@@ -119,7 +119,7 @@ export default function StudentHomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('student.home.cta_professionals')}
             onPress={() => router.push('/student/professionals')}
-            style={[styles.circleButton, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}
+            style={[styles.circleButton, { backgroundColor: isDark ? '#16301e' : '#ffffff' }]}
             testID="student.home.menuButton">
             <MaterialIcons color={palette.text} name="menu" size={22} />
           </Pressable>
@@ -128,7 +128,7 @@ export default function StudentHomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('shell.tabs.account')}
             onPress={() => router.push('/settings/account')}
-            style={[styles.circleButton, { backgroundColor: isDark ? '#2a1f1b' : '#ffffff' }]}
+            style={[styles.circleButton, { backgroundColor: isDark ? '#16301e' : '#ffffff' }]}
             testID="student.home.accountButton">
             <MaterialIcons color={palette.text} name="notifications-none" size={22} />
             <View style={styles.notificationDot} />
@@ -341,11 +341,11 @@ function PlanCard({
           hasActivePlan ? styles.primaryCardCta : styles.outlineCardCta,
           {
             backgroundColor: hasActivePlan
-              ? '#ff7b72'
+              ? '#13ec49'
               : palette.background === '#151718'
               ? '#111827'
               : '#ffffff',
-            borderColor: hasActivePlan ? '#ff7b72' : palette.background === '#151718' ? '#374151' : '#cbd5e1',
+            borderColor: hasActivePlan ? '#13ec49' : palette.background === '#151718' ? '#374151' : '#cbd5e1',
             opacity: disabled ? 0.6 : 1,
             transform: [{ scale: pressed ? 0.98 : 1 }],
           },
@@ -371,7 +371,7 @@ function LoadingStateCardStack({
   return (
     <View testID={testID} style={styles.sectionStack}>
       <View style={styles.loadingIconWrap}>
-        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color="#ff7b72" size="large" />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color="#13ec49" size="large" />
       </View>
 
       <View style={[styles.staleBanner, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]}>
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     width: 48,
   },
   notificationDot: {
-    backgroundColor: '#ff7b72',
+    backgroundColor: '#13ec49',
     borderRadius: 5,
     height: 10,
     position: 'absolute',
