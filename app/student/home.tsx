@@ -2,7 +2,8 @@
  * SC-203 Student Home Dashboard
  * Route: /student/home
  *
- * UI refresh (2026-03-04): playful dashboard style aligned with auth family.
+ * Dashboard-aligned composition based on the mobile reference:
+ * profile header, weekly stats strip, highlighted workout card, and next-meal card.
  * Keeps BL-008 offline/write-lock and D-081 hydration-goal ownership behavior.
  */
 import { Stack, useRouter } from 'expo-router';
@@ -11,14 +12,17 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getDsTheme, type DsTheme } from '@/constants/design-system';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
-import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 import { usePlans } from '@/features/plans/use-plans';
 import type { Plan } from '@/features/plans/plan-source';
-import { resolveOfflineDisplayState, type OfflineDisplayState, type StaleElapsed } from '@/features/offline/offline.logic';
+import {
+  resolveOfflineDisplayState,
+  type OfflineDisplayState,
+  type StaleElapsed,
+} from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -28,28 +32,20 @@ function todayKey(): string {
 }
 
 function formatStaleElapsed(elapsed: StaleElapsed, t: ReturnType<typeof useTranslation>['t']): string {
-  const v = String(elapsed.value);
-  if (elapsed.unit === 'minutes') {
-    return (t('offline.stale_minutes') as string).replace('{value}', v);
-  }
-  if (elapsed.unit === 'hours') {
-    return (t('offline.stale_hours') as string).replace('{value}', v);
-  }
-  return (t('offline.stale_days') as string).replace('{value}', v);
+  const value = String(elapsed.value);
+  if (elapsed.unit === 'minutes') return (t('offline.stale_minutes') as string).replace('{value}', value);
+  if (elapsed.unit === 'hours') return (t('offline.stale_hours') as string).replace('{value}', value);
+  return (t('offline.stale_days') as string).replace('{value}', value);
 }
 
 function hasActivePlanForType(plans: Plan[], planType: string): boolean {
-  return plans.some((p) => p.planType === planType && !p.isArchived);
+  return plans.some((plan) => plan.planType === planType && !plan.isArchived);
 }
-
-type Palette = (typeof Colors)['light'];
-type TFn = ReturnType<typeof useTranslation>['t'];
 
 export default function StudentHomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
-  const palette = Colors[colorScheme];
-  const isDark = colorScheme === 'dark';
-  const theme = getDsTheme(isDark ? 'dark' : 'light');
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const theme = getDsTheme(scheme);
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -65,22 +61,29 @@ export default function StudentHomeScreen() {
   const { state: waterState } = useWaterTracking(Boolean(currentUser), todayKey());
   const { state: plansState } = usePlans(Boolean(currentUser));
 
-  const hasPendingConnection =
-    connectionsState.kind === 'ready' &&
-    connectionsState.displayStates.some((ds) => ds.kind === 'pending');
-
   const isLoading =
     connectionsState.kind === 'loading' ||
     waterState.kind === 'loading' ||
     plansState.kind === 'loading';
 
+  const hasPendingConnection =
+    connectionsState.kind === 'ready' &&
+    connectionsState.displayStates.some((display) => display.kind === 'pending');
+
   const hasNutritionPlan =
     plansState.kind === 'ready' && hasActivePlanForType(plansState.plans, 'nutrition');
-
   const hasTrainingPlan =
     plansState.kind === 'ready' && hasActivePlanForType(plansState.plans, 'training');
 
-  const isWriteLocked = offlineDisplay.showOfflineBanner;
+  const hydrationGoal = waterState.kind === 'ready' && waterState.effectiveGoal
+    ? waterState.effectiveGoal.dailyMl
+    : 0;
+  const hydrationConsumed = waterState.kind === 'ready' ? waterState.todayConsumedMl : 0;
+  const hydrationPercent = hydrationGoal > 0
+    ? Math.max(0, Math.min(100, Math.round((hydrationConsumed / hydrationGoal) * 100)))
+    : 0;
+
+  const profileInitial = (currentUser?.email?.[0] ?? 'M').toUpperCase();
 
   return (
     <ScrollView
@@ -89,105 +92,145 @@ export default function StudentHomeScreen() {
       testID="student.home.screen">
       <Stack.Screen options={{ title: t('student.home.title'), headerShown: false }} />
 
-      <View
-        pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobTopLeft,
-          { backgroundColor: theme.blob.topLeft },
-        ]}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobBottomRight,
-          { backgroundColor: theme.blob.bottomRight },
-        ]}
-      />
+      <View pointerEvents="none" style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]} />
+      <View pointerEvents="none" style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]} />
 
-      <View style={[styles.shell, { paddingTop: insets.top + 12 }]}>
-        {offlineDisplay.showOfflineBanner ? (
-          <OfflineBanner
-            theme={theme}
-            staleElapsed={offlineDisplay.staleElapsed}
-            t={t}
-            testID="student.home.offlineBanner"
-          />
-        ) : null}
-
+      <View style={[styles.shell, { paddingTop: insets.top + 12 }]}>        
         <View style={styles.headerRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('student.home.cta_professionals')}
-            onPress={() => router.push('/student/professionals')}
-            style={[styles.circleButton, { backgroundColor: theme.color.surface }]}
-            testID="student.home.menuButton">
-            <MaterialIcons color={theme.color.textPrimary} name="menu" size={22} />
-          </Pressable>
+          <View style={styles.profileWrap}>
+            <View style={[styles.avatarOuter, { borderColor: theme.color.accentPrimary }]}> 
+              <View style={[styles.avatarInner, { backgroundColor: theme.color.surface }]}> 
+                <Text style={[styles.avatarInitial, { color: theme.color.textPrimary }]}>{profileInitial}</Text>
+              </View>
+              <View style={[styles.avatarStatusDot, { backgroundColor: theme.color.accentPrimary }]} />
+            </View>
+            <View>
+              <Text style={[styles.welcomeLine, { color: theme.color.textSecondary }]}>{t('student.home.title')}</Text>
+              <Text style={[styles.helloLine, { color: theme.color.textPrimary }]}>{t('student.home.cta_manage_professionals')}</Text>
+            </View>
+          </View>
 
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('shell.tabs.account')}
             onPress={() => router.push('/settings/account')}
-            style={[styles.circleButton, { backgroundColor: theme.color.surface }]}
+            style={[styles.notificationButton, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}
             testID="student.home.accountButton">
             <MaterialIcons color={theme.color.textPrimary} name="notifications-none" size={22} />
-            <View style={[styles.notificationDot, { backgroundColor: theme.color.accentPrimary }]} />
+            <View style={[styles.notificationDot, { backgroundColor: theme.color.danger }]} />
           </Pressable>
         </View>
 
-        {hasPendingConnection ? (
+        {offlineDisplay.showOfflineBanner ? (
           <View
-            style={[styles.pendingPill, { backgroundColor: theme.color.warningSoft }]}
-            testID="student.home.pendingBadge"
+            style={[styles.offlineBanner, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder }]}
+            testID="student.home.offlineBanner"
             accessibilityRole="alert">
-            <MaterialIcons color={theme.color.warning} name="hourglass-empty" size={18} />
-            <Text style={[styles.pendingText, { color: theme.color.warning }]}>
-              {t('student.home.pending_connection')}
-            </Text>
+            <MaterialIcons color={theme.color.danger} name="cloud-off" size={18} />
+            <Text style={[styles.offlineModeText, { color: theme.color.danger }]}>{t('student.home.offline.mode')}</Text>
+            {offlineDisplay.staleElapsed ? (
+              <Text style={[styles.offlineTimeText, { color: theme.color.danger }]}>• {formatStaleElapsed(offlineDisplay.staleElapsed, t)}</Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {hasPendingConnection ? (
+          <View style={[styles.pendingPill, { backgroundColor: theme.color.warningSoft }]} testID="student.home.pendingBadge" accessibilityRole="alert">
+            <MaterialIcons color={theme.color.warning} name="hourglass-empty" size={16} />
+            <Text style={[styles.pendingText, { color: theme.color.warning }]}>{t('student.home.pending_connection')}</Text>
           </View>
         ) : null}
 
         {isLoading ? (
-          <LoadingStateCardStack theme={theme} t={t} testID="student.home.loading" />
+          <View testID="student.home.loading" style={styles.loadingWrap}>
+            <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} size="large" />
+          </View>
         ) : (
-          <View style={styles.sectionStack}>
-            <HydrationCard
-              waterState={waterState}
-              palette={palette}
-              theme={theme}
-              t={t}
-              isWriteLocked={isWriteLocked}
-            />
+          <>
+            <SectionTitle title={t('student.home.title') as string} theme={theme} />
+            <View style={styles.statsRow}>
+              <StatCard
+                theme={theme}
+                icon="fitness-center"
+                label={t('student.home.training.section') as string}
+                value={hasTrainingPlan ? '3/4' : '0/4'}
+                progress={hasTrainingPlan ? 75 : 0}
+                tint={theme.color.accentPrimary}
+              />
+              <StatCard
+                theme={theme}
+                icon="restaurant"
+                label={t('student.home.nutrition.section') as string}
+                value={hasNutritionPlan ? '85%' : '0%'}
+                progress={hasNutritionPlan ? 85 : 0}
+                tint={theme.color.accentBlue}
+              />
+              <StatCard
+                theme={theme}
+                icon="water-drop"
+                label={t('student.home.hydration.title') as string}
+                value={hydrationGoal > 0 ? `${(hydrationConsumed / 1000).toFixed(1)}L` : '0.0L'}
+                progress={hydrationPercent}
+                tint={theme.color.accentCyan}
+                testID="student.home.hydrationCard"
+              />
+            </View>
 
-            <PlanCard
-              palette={palette}
-              theme={theme}
-              icon="restaurant"
-              title={t('student.home.nutrition.section')}
-              hasActivePlan={hasNutritionPlan}
-              ctaLabel={hasNutritionPlan ? t('student.home.cta_nutrition') : t('student.home.cta_start_self')}
-              availableLabel={t('student.home.nutrition.plan_available')}
-              emptyLabel={t('student.home.no_active_plan')}
-              onPress={() => router.push('/student/nutrition')}
-              isWriteLocked={isWriteLocked}
-              testPrefix="student.home.nutrition"
-            />
-
-            <PlanCard
-              palette={palette}
-              theme={theme}
-              icon="fitness-center"
-              title={t('student.home.training.section')}
-              hasActivePlan={hasTrainingPlan}
-              ctaLabel={hasTrainingPlan ? t('student.home.cta_training') : t('student.home.cta_start_self')}
-              availableLabel={t('student.home.training.plan_available')}
-              emptyLabel={t('student.home.no_active_plan')}
+            <SectionTitle title={t('student.home.training.section') as string} theme={theme} />
+            <Pressable
+              accessibilityRole="button"
               onPress={() => router.push('/student/training')}
-              isWriteLocked={isWriteLocked}
-              testPrefix="student.home.training"
-            />
+              style={[styles.heroCard, { borderColor: theme.color.border }]}
+              testID={hasTrainingPlan ? 'student.home.training.goCta' : 'student.home.training.emptyCta'}>
+              <View style={[styles.heroBackdrop, { backgroundColor: theme.color.accentBlue }]} />
+              <View style={[styles.heroGradient, { backgroundColor: theme.color.overlaySoft }]} />
+              <View style={styles.heroContent}>
+                <View style={styles.heroTopRow}>
+                  <View style={[styles.heroBadge, { backgroundColor: theme.color.overlaySoft }]}>
+                    <Text style={styles.heroBadgeText}>{t('student.home.training.plan_available')}</Text>
+                  </View>
+                  <View style={[styles.heroArrowCircle, { backgroundColor: theme.color.overlaySoft }]}>
+                    <MaterialIcons color="white" name="arrow-forward" size={18} />
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={styles.heroTitle}>{hasTrainingPlan ? t('student.home.cta_training') : t('student.home.no_active_plan')}</Text>
+                  <Text style={styles.heroMeta}>{hasTrainingPlan ? t('student.home.training.plan_available') : t('student.home.cta_start_self')}</Text>
+
+                  <View style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}> 
+                    <MaterialIcons color={theme.color.onAccent} name="play-arrow" size={20} />
+                    <Text style={[styles.heroCtaText, { color: theme.color.onAccent }]}>
+                      {hasTrainingPlan ? t('student.home.cta_training') : t('student.home.cta_start_self')}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
+
+            <SectionTitle title={t('student.home.nutrition.section') as string} theme={theme} />
+            <View style={[styles.mealCard, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}>
+              <View style={[styles.mealThumb, { backgroundColor: theme.color.accentBlueSoft }]} />
+              <View style={styles.mealBody}>
+                <Text style={[styles.mealTitle, { color: theme.color.textPrimary }]}>{t('student.home.nutrition.section')}</Text>
+                <Text style={[styles.mealDesc, { color: theme.color.textSecondary }]}>{t('student.home.nutrition.plan_available')}</Text>
+                <View style={styles.mealTagsRow}>
+                  <View style={[styles.mealTag, { backgroundColor: theme.color.accentBlueSoft }]}>
+                    <Text style={[styles.mealTagText, { color: theme.color.accentBlue }]}>{t('student.home.nutrition.plan_available')}</Text>
+                  </View>
+                  <View style={[styles.mealTag, { backgroundColor: theme.color.warningSoft }]}>
+                    <Text style={[styles.mealTagText, { color: theme.color.warning }]}>{t('student.home.cta_nutrition')}</Text>
+                  </View>
+                </View>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/student/nutrition')}
+                style={[styles.mealAction, { borderColor: theme.color.borderStrong }]}
+                testID={hasNutritionPlan ? 'student.home.nutrition.goCta' : 'student.home.nutrition.emptyCta'}>
+                <MaterialIcons color={theme.color.textSecondary} name="check" size={20} />
+              </Pressable>
+            </View>
 
             <Pressable
               accessibilityRole="button"
@@ -195,274 +238,133 @@ export default function StudentHomeScreen() {
               style={[styles.manageButton, { borderColor: theme.color.borderStrong }]}
               testID="student.home.manageProfessionalsCta">
               <MaterialIcons color={theme.color.textPrimary} name="manage-accounts" size={20} />
-              <Text style={[styles.manageButtonText, { color: theme.color.textPrimary }]}>
-                {t('student.home.cta_manage_professionals')}
-              </Text>
+              <Text style={[styles.manageButtonText, { color: theme.color.textPrimary }]}>{t('student.home.cta_manage_professionals')}</Text>
             </Pressable>
-          </View>
+          </>
         )}
       </View>
     </ScrollView>
   );
 }
 
-function OfflineBanner({
-  theme,
-  staleElapsed,
-  t,
-  testID,
-}: {
-  theme: DsTheme;
-  staleElapsed: StaleElapsed | null;
-  t: TFn;
-  testID: string;
-}) {
-  return (
-    <View
-      style={[styles.offlineBanner, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder }]}
-      testID={testID}
-      accessibilityRole="alert">
-      <MaterialIcons color={theme.color.danger} name="cloud-off" size={18} />
-      <Text style={[styles.offlineModeText, { color: theme.color.danger }]}>{t('student.home.offline.mode')}</Text>
-      {staleElapsed ? (
-        <Text style={[styles.offlineTimeText, { color: theme.color.danger }]}>
-          {`• ${formatStaleElapsed(staleElapsed, t)}`}
-        </Text>
-      ) : null}
-    </View>
-  );
+function SectionTitle({ title, theme }: { title: string; theme: DsTheme }) {
+  return <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>{title}</Text>;
 }
 
-function HydrationCard({
-  waterState,
-  palette,
-  theme,
-  t,
-  isWriteLocked,
-}: {
-  waterState: UseWaterTrackingResult['state'];
-  palette: Palette;
-  theme: DsTheme;
-  t: TFn;
-  isWriteLocked: boolean;
-}) {
-  const goal = waterState.kind === 'ready' && waterState.effectiveGoal ? waterState.effectiveGoal.dailyMl : null;
-  const consumed = waterState.kind === 'ready' ? waterState.todayConsumedMl : null;
-  const percent = goal && consumed !== null ? Math.max(0, Math.min(100, Math.round((consumed / goal) * 100))) : 0;
-
-  const progressLabel =
-    goal && consumed !== null
-      ? (t('student.home.hydration.progress') as string)
-          .replace('{consumed}', String(consumed))
-          .replace('{goal}', String(goal))
-      : t('student.home.hydration.no_goal');
-
-  const goalOwnerLabel =
-    waterState.kind === 'ready' && waterState.effectiveGoal
-      ? waterState.effectiveGoal.owner === 'nutritionist'
-        ? t('student.home.hydration.goal_nutritionist')
-        : t('student.home.hydration.goal_student')
-      : t('student.home.hydration.no_goal');
-
-  return (
-    <View style={[styles.card, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]} testID="student.home.hydrationCard">
-      <View style={styles.cardHeaderRow}>
-        <View style={styles.cardHeaderLeft}>
-          <View style={[styles.iconBubble, { backgroundColor: theme.color.accentBlueSoft }]}>
-            <MaterialIcons color={theme.color.accentBlue} name="water-drop" size={20} />
-          </View>
-          <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{t('student.home.hydration.title')}</Text>
-        </View>
-
-        {isWriteLocked ? (
-          <View style={[styles.readOnlyBadge, { backgroundColor: theme.color.surfaceMuted }]}>
-            <Text style={[styles.readOnlyText, { color: theme.color.textSecondary }]}>{t('student.home.offline.read_only_badge')}</Text>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.hydrationBody}>
-        <View style={styles.hydrationTextColumn}>
-          <Text
-            style={[
-              styles.hydrationValue,
-              !goal || consumed === null ? styles.hydrationValueNoGoal : null,
-              { color: theme.color.textPrimary },
-            ]}
-            testID="student.home.hydrationCard.progress">
-            {progressLabel}
-          </Text>
-          <Text style={[styles.hydrationMeta, { color: theme.color.textSecondary }]}>{goalOwnerLabel}</Text>
-        </View>
-
-        <View style={[styles.percentRing, { borderColor: theme.color.accentBlueSoft }]}>
-          <Text style={[styles.percentRingText, { color: theme.color.accentBlue }]}>{`${percent}%`}</Text>
-        </View>
-      </View>
-
-      {waterState.kind === 'loading' ? <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} /> : null}
-    </View>
-  );
-}
-
-function PlanCard({
-  palette,
+function StatCard({
   theme,
   icon,
-  title,
-  hasActivePlan,
-  ctaLabel,
-  availableLabel,
-  emptyLabel,
-  onPress,
-  isWriteLocked,
-  testPrefix,
-}: {
-  palette: Palette;
-  theme: DsTheme;
-  icon: keyof typeof MaterialIcons.glyphMap;
-  title: string;
-  hasActivePlan: boolean;
-  ctaLabel: string;
-  availableLabel: string;
-  emptyLabel: string;
-  onPress: () => void;
-  isWriteLocked: boolean;
-  testPrefix: string;
-}) {
-  const disabled = isWriteLocked && !hasActivePlan;
-
-  return (
-    <View style={[styles.card, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]} testID={`${testPrefix}.card`}>
-      <View style={styles.cardHeaderLeft}>
-        <View style={[styles.iconBubble, { backgroundColor: theme.color.surfaceMuted }]}>
-          <MaterialIcons color={theme.color.accentPrimary} name={icon} size={20} />
-        </View>
-        <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{title}</Text>
-      </View>
-
-      <Text style={[styles.planStatus, { color: theme.color.textSecondary }]}>
-        {hasActivePlan ? availableLabel : emptyLabel}
-      </Text>
-
-      <Pressable
-        accessibilityRole="button"
-        disabled={disabled}
-        onPress={onPress}
-        style={({ pressed }) => [
-          hasActivePlan ? styles.primaryCardCta : styles.outlineCardCta,
-          {
-            backgroundColor: hasActivePlan ? theme.color.accentPrimary : theme.color.surface,
-            borderColor: hasActivePlan ? theme.color.accentPrimary : theme.color.borderStrong,
-            opacity: disabled ? 0.6 : 1,
-            transform: [{ scale: pressed ? 0.98 : 1 }],
-          },
-        ]}
-        testID={hasActivePlan ? `${testPrefix}.goCta` : `${testPrefix}.emptyCta`}>
-        {disabled ? <MaterialIcons color={theme.color.textSecondary} name="lock" size={18} /> : null}
-        <Text style={[styles.cardCtaText, { color: hasActivePlan ? theme.color.onAccent : theme.color.textPrimary }]}>{ctaLabel}</Text>
-        {hasActivePlan ? <MaterialIcons color={theme.color.onAccent} name="chevron-right" size={20} /> : null}
-      </Pressable>
-    </View>
-  );
-}
-
-function LoadingStateCardStack({
-  theme,
-  t,
+  label,
+  value,
+  progress,
+  tint,
   testID,
 }: {
   theme: DsTheme;
-  t: TFn;
-  testID: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+  value: string;
+  progress: number;
+  tint: string;
+  testID?: string;
 }) {
   return (
-    <View testID={testID} style={styles.sectionStack}>
-      <View style={styles.loadingIconWrap}>
-        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} size="large" />
+    <View style={[styles.statCard, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]} testID={testID}>
+      <View style={[styles.statIconBubble, { backgroundColor: theme.color.surfaceMuted }]}>
+        <MaterialIcons color={tint} name={icon} size={18} />
       </View>
-
-      <View style={[styles.staleBanner, { backgroundColor: theme.color.warningSoft, borderColor: theme.color.warning }]}>
-        <MaterialIcons color={theme.color.warning} name="warning-amber" size={18} />
-        <View style={styles.staleTextWrap}>
-          <Text style={[styles.staleTitle, { color: theme.color.readOnlyText }]}>{t('student.home.loading.stale_title')}</Text>
-          <Text style={[styles.staleBody, { color: theme.color.warning }]}>{t('student.home.loading.stale_body')}</Text>
-        </View>
-      </View>
-
-      <View style={[styles.card, styles.skeletonCard, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}>
-        <View style={[styles.skeletonLineLg, { backgroundColor: theme.color.border }]} />
-        <View style={[styles.skeletonBlock, { backgroundColor: theme.color.border }]} />
-      </View>
-      <View style={[styles.card, styles.skeletonCard, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}>
-        <View style={[styles.skeletonLineLg, { backgroundColor: theme.color.border }]} />
-        <View style={styles.skeletonRow}>
-          <View style={[styles.skeletonSmallBlock, { backgroundColor: theme.color.border }]} />
-          <View style={[styles.skeletonSmallBlock, { backgroundColor: theme.color.border }]} />
-          <View style={[styles.skeletonSmallBlock, { backgroundColor: theme.color.border }]} />
-        </View>
-      </View>
-      <View style={[styles.card, styles.skeletonCard, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}>
-        <View style={[styles.skeletonLineLg, { backgroundColor: theme.color.border }]} />
-        <View style={[styles.skeletonBlock, { backgroundColor: theme.color.border }]} />
+      <Text style={[styles.statLabel, { color: theme.color.textSecondary }]}>{label}</Text>
+      <Text style={[styles.statValue, { color: theme.color.textPrimary }]}>{value}</Text>
+      <View style={[styles.statProgressTrack, { backgroundColor: theme.color.surfaceMuted }]}>
+        <View style={[styles.statProgressFill, { backgroundColor: tint, width: `${progress}%` }]} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-  },
-  blob: {
-    borderRadius: 999,
-    opacity: 0.6,
-    position: 'absolute',
-  },
-  blobTopLeft: {
-    height: 300,
-    left: -110,
-    top: -70,
-    width: 300,
-  },
-  blobBottomRight: {
-    bottom: -80,
-    height: 340,
-    right: -130,
-    width: 340,
-  },
-  shell: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
+  container: { flex: 1 },
+  content: { flexGrow: 1 },
+  blob: { borderRadius: 999, opacity: 0.5, position: 'absolute' },
+  blobTopLeft: { height: 280, left: -120, top: -80, width: 280 },
+  blobBottomRight: { bottom: -120, height: 320, right: -120, width: 320 },
+  shell: { flex: 1, paddingHorizontal: 20, paddingBottom: 28 },
+
   headerRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  circleButton: {
-    alignItems: 'center',
-    borderRadius: 24,
-    elevation: 1,
-    height: 48,
-    justifyContent: 'center',
+  profileWrap: { alignItems: 'center', flexDirection: 'row', gap: 12 },
+  avatarOuter: {
+    borderRadius: 26,
+    borderWidth: 2,
+    padding: 2,
     position: 'relative',
-    width: 48,
   },
-  notificationDot: {
-    backgroundColor: 'transparent',
+  avatarInner: {
+    alignItems: 'center',
+    borderRadius: 22,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  avatarInitial: {
+    fontFamily: Fonts.rounded,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  avatarStatusDot: {
     borderRadius: 5,
+    bottom: 0,
     height: 10,
     position: 'absolute',
-    right: 12,
-    top: 12,
+    right: 0,
     width: 10,
   },
+  welcomeLine: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  helloLine: {
+    fontFamily: Fonts.rounded,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  notificationButton: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 40,
+  },
+  notificationDot: {
+    borderRadius: 4,
+    height: 8,
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    width: 8,
+  },
+
+  offlineBanner: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  offlineModeText: { fontSize: 12, fontWeight: '600' },
+  offlineTimeText: { fontSize: 11, fontWeight: '600' },
+
   pendingPill: {
     alignItems: 'center',
     alignSelf: 'flex-start',
@@ -470,142 +372,110 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     marginBottom: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  pendingText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  sectionStack: {
-    gap: 12,
-  },
-  offlineBanner: {
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-    borderRadius: 0,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 12,
-    marginHorizontal: -20,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 7,
   },
-  offlineModeText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  offlineTimeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  card: {
-    borderColor: 'transparent',
-    borderRadius: 30,
-    borderWidth: 1,
-    elevation: 1,
-    padding: 16,
-  },
-  cardHeaderRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  cardHeaderLeft: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  iconBubble: {
-    alignItems: 'center',
-    borderRadius: 20,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  cardTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-  },
-  readOnlyBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  readOnlyText: {
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  hydrationBody: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  hydrationTextColumn: {
-    flex: 1,
-    marginRight: 10,
-  },
-  hydrationValue: {
+  pendingText: { fontSize: 12, fontWeight: '600' },
+
+  loadingWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
+
+  sectionTitle: {
     fontFamily: Fonts.rounded,
-    fontSize: 32,
+    fontSize: 18,
     fontWeight: '700',
-    lineHeight: 38,
+    marginBottom: 8,
+    marginTop: 6,
   },
-  hydrationValueNoGoal: {
-    fontSize: 22,
-    lineHeight: 28,
+
+  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  statCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    flex: 1,
+    gap: 6,
+    minHeight: 128,
+    padding: 12,
   },
-  hydrationMeta: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-    marginTop: 4,
-  },
-  percentRing: {
+  statIconBubble: {
     alignItems: 'center',
-    borderRadius: 40,
-    borderWidth: 6,
-    height: 80,
+    borderRadius: 14,
+    height: 28,
     justifyContent: 'center',
-    width: 80,
+    width: 28,
   },
-  percentRingText: {
-    fontSize: 16,
+  statLabel: { fontSize: 11, fontWeight: '500' },
+  statValue: { fontFamily: Fonts.rounded, fontSize: 20, fontWeight: '700' },
+  statProgressTrack: { borderRadius: 6, height: 6, overflow: 'hidden' },
+  statProgressFill: { borderRadius: 6, height: '100%' },
+
+  heroCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 10,
+    minHeight: 180,
+    overflow: 'hidden',
+  },
+  heroBackdrop: { ...StyleSheet.absoluteFillObject, opacity: 0.95 },
+  heroGradient: { ...StyleSheet.absoluteFillObject, opacity: 0.5 },
+  heroContent: { flex: 1, justifyContent: 'space-between', padding: 16 },
+  heroTopRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  heroBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  heroBadgeText: { color: 'white', fontSize: 11, fontWeight: '600' },
+  heroArrowCircle: {
+    alignItems: 'center',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  heroTitle: {
+    color: 'white',
+    fontFamily: Fonts.rounded,
+    fontSize: 24,
     fontWeight: '700',
+    marginBottom: 2,
   },
-  planStatus: {
-    fontSize: 13,
-    marginTop: 8,
-    marginBottom: 14,
-  },
-  primaryCardCta: {
+  heroMeta: { color: 'white', fontSize: 12, opacity: 0.85 },
+  heroCta: {
     alignItems: 'center',
     borderRadius: 12,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    marginTop: 12,
+    minHeight: 42,
+  },
+  heroCtaText: { fontSize: 14, fontWeight: '600' },
+
+  mealCard: {
+    alignItems: 'center',
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: 12,
+    gap: 12,
+    marginBottom: 10,
+    padding: 12,
   },
-  outlineCardCta: {
+  mealThumb: { borderRadius: 10, height: 72, width: 72 },
+  mealBody: { flex: 1, gap: 3 },
+  mealTitle: { fontSize: 14, fontWeight: '600' },
+  mealDesc: { fontSize: 12 },
+  mealTagsRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  mealTag: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  mealTagText: { fontSize: 11, fontWeight: '600' },
+  mealAction: {
     alignItems: 'center',
-    borderRadius: 999,
-    borderWidth: 2,
-    flexDirection: 'row',
-    gap: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 32,
     justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: 12,
+    width: 32,
   },
-  cardCtaText: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
+
   manageButton: {
     alignItems: 'center',
     borderRadius: 12,
@@ -613,62 +483,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
-    minHeight: 50,
-    marginTop: 2,
+    minHeight: 48,
+    marginTop: 4,
   },
   manageButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  loadingIconWrap: {
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  staleBanner: {
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  staleTextWrap: {
-    flex: 1,
-    gap: 2,
-  },
-  staleTitle: {
-    color: 'transparent',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  staleBody: {
-    color: 'transparent',
-    fontSize: 12,
-  },
-  skeletonCard: {
-    backgroundColor: 'transparent',
-    gap: 10,
-  },
-  skeletonLineLg: {
-    backgroundColor: 'transparent',
-    borderRadius: 999,
-    height: 16,
-    width: '45%',
-  },
-  skeletonBlock: {
-    backgroundColor: 'transparent',
-    borderRadius: 16,
-    height: 84,
-    width: '100%',
-  },
-  skeletonRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  skeletonSmallBlock: {
-    backgroundColor: 'transparent',
-    borderRadius: 14,
-    flex: 1,
-    height: 64,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

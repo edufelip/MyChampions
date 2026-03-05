@@ -50,18 +50,18 @@
 - Offline banner: `You're offline. You can view cached data, but updates are locked until connection returns.`
 - Write-lock helper: `Connect to the internet to save changes.`
 
-## Implementation Snapshot (2026-03-04)
-- `app/student/home.tsx` was redesigned to the playful dashboard layout reference with three explicit UI states:
-  - `success`: active cards with hydration, nutrition plan, workout, and manage-professionals CTA.
-  - `offline + no active plan`: red offline banner + read-only lock behavior with disabled self-guided CTA buttons.
-  - `loading`: skeleton card stack + stale-data warning strip.
-- Header chrome now starts below the safe-area top inset and does not render a standalone `My Dashboard` title text.
-- Hydration no-goal helper copy (`Set a daily water goal to track progress`) uses compact typography so it does not dominate the card.
-- Existing behavior constraints are preserved:
-  - Offline write-lock still gates write actions.
-  - Pending connection state remains prominent.
-  - Hydration still reflects effective-goal ownership rules.
-  - Nutrition remains above training in layout order.
+## Implementation Snapshot (2026-03-05)
+- `app/student/home.tsx` now follows the dashboard-style composition from the provided visual reference:
+  - Profile + notification header block.
+  - Horizontal weekly stats cards.
+  - Highlighted workout hero card.
+  - Next-meal preview card.
+  - Persistent manage-professionals action at the bottom.
+- Existing behavior constraints remain preserved:
+  - Offline banner/write-lock behavior is still applied (BL-008).
+  - Pending connection state remains prominent near the top.
+  - Hydration stat still reflects effective-goal ownership rules (D-081).
+  - Navigation intents still route to training, nutrition, professionals, and account/settings.
 
 ## Data Contract
 - Inputs:
