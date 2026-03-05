@@ -2,23 +2,23 @@
  * SC-210 Student Training Tracking
  * Route: /student/training
  *
- * Visual refresh (2026-03-04): playful training dashboard style aligned with auth/home/nutrition family.
- * Keeps BL-008 offline/write-lock and D-071 assigned-plan change-request behavior.
+ * Visual refresh (2026-03-05): empty state matches the acquisition-focused
+ * training art direction while keeping BL-008 offline/write-lock and D-071
+ * assigned-plan change-request behavior.
  */
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HeroEmptyState } from '@/components/ds/patterns/HeroEmptyState';
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
 import { ReadOnlyNoticeCard } from '@/components/ds/patterns/ReadOnlyNoticeCard';
 import { WeekStrip, type WeekStripItem } from '@/components/ds/patterns/WeekStrip';
 import { DsCard } from '@/components/ds/primitives/DsCard';
-import { DsIconButton } from '@/components/ds/primitives/DsIconButton';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import { DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
+import { DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
@@ -56,6 +56,7 @@ export default function StudentTrainingScreen() {
   const theme = getDsTheme(scheme);
   const { t, locale } = useTranslation();
   const { currentUser } = useAuthSession();
+  const router = useRouter();
 
   const networkStatus = useNetworkStatus();
   const offlineDisplay = resolveOfflineDisplayState({
@@ -80,27 +81,14 @@ export default function StudentTrainingScreen() {
     <DsScreen scheme={scheme} testID="student.training.screen">
       <Stack.Screen options={{ title: t('student.training.title'), headerShown: false }} />
 
-      <View style={[styles.shell, { backgroundColor: theme.color.shell }]}> 
-        <View style={styles.headerRow}>
-          <Text style={[styles.pageTitle, { color: theme.color.textPrimary }]}>{t('student.training.title')}</Text>
-
-          <DsIconButton
-            scheme={scheme}
-            icon="calendar-today"
-            onPress={() => {
-              void 0;
-            }}
-            accessibilityLabel={t('student.training.calendar.cta')}
-            testID="student.training.calendarButton"
-            size={40}
-          />
-        </View>
+      <View style={[styles.shell, { backgroundColor: theme.color.shell }]}>
+        
 
         {offlineDisplay.showOfflineBanner ? (
           <DsOfflineBanner scheme={scheme} text={t('offline.banner')} testID="student.training.offlineBanner" />
         ) : null}
 
-        <WeekStrip scheme={scheme} items={weekStrip} />
+        {hasActiveTrainingAssignment ? <WeekStrip scheme={scheme} items={weekStrip} /> : null}
 
         {plansState.kind === 'loading' ? (
           <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.plansLoading">
@@ -149,17 +137,69 @@ export default function StudentTrainingScreen() {
             />
           </View>
         ) : (
-          <HeroEmptyState
-            scheme={scheme}
-            icon="directions-run"
-            title={t('student.training.empty.title')}
-            body={t('student.training.empty.body')}
-            ctaLabel={t('student.training.empty.cta')}
-            onPressCta={() => Alert.alert(t('student.training.empty.cta'))}
-            ctaTestID="student.training.emptyCta"
-            disabled={isWriteLocked}
-            testID="student.training.emptyState"
-          />
+          <View style={styles.emptyStateWrap} testID="student.training.emptyState">
+            <View style={styles.emptyHero}>
+              <View
+                style={[
+                  styles.emptyGlow,
+                  {
+                    backgroundColor:
+                      scheme === 'dark' ? 'rgba(30, 169, 90, 0.10)' : 'rgba(19, 236, 73, 0.12)',
+                  },
+                ]}
+              />
+
+              <View
+                style={[
+                  styles.emptyMainTile,
+                  DsShadow.floating,
+                  {
+                    backgroundColor: theme.color.surface,
+                    shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                  },
+                ]}>
+                <MaterialIcons color="#13ec49" name="fitness-center" size={58} />
+              </View>
+
+              <View style={[styles.emptyAccentTile, DsShadow.soft, { backgroundColor: '#13ec49' }]}>
+                <MaterialIcons color="#102215" name="assignment" size={34} />
+              </View>
+            </View>
+
+            <View style={styles.emptyCopyBlock}>
+              <Text style={[styles.emptyTitle, { color: theme.color.textPrimary }]}>
+                {t('student.training.empty.title')}
+              </Text>
+              <Text style={[styles.emptyBody, { color: theme.color.textSecondary }]}>
+                {t('student.training.empty.body')}
+              </Text>
+            </View>
+
+            <DsPillButton
+              scheme={scheme}
+              label={t('student.training.empty.cta')}
+              onPress={() => router.push('/student/professionals')}
+              disabled={isWriteLocked}
+              contentColor="#f8fafc"
+              testID="student.training.emptyCta"
+              style={styles.emptyPrimaryCta}
+              leftIcon={<MaterialIcons color="#f8fafc" name="person-add" size={20} />}
+            />
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isWriteLocked}
+              onPress={() => router.push('/student/home')}
+              style={({ pressed }) => [
+                styles.emptySecondaryCta,
+                { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
+              ]}
+              testID="student.training.emptySelfGuidedCta">
+              <Text style={[styles.emptySecondaryCtaText, { color: theme.color.textSecondary }]}>
+                {t('relationship.empty.cta_continue_self')}
+              </Text>
+            </Pressable>
+          </View>
         )}
       </View>
     </DsScreen>
@@ -193,6 +233,79 @@ const styles = StyleSheet.create({
   },
   sectionStack: {
     gap: DsSpace.md,
+  },
+  emptyStateWrap: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: DsSpace.xxl,
+    paddingHorizontal: DsSpace.sm,
+    paddingTop: DsSpace.md,
+  },
+  emptyHero: {
+    alignItems: 'center',
+    height: 260,
+    justifyContent: 'center',
+    marginBottom: DsSpace.xl,
+    position: 'relative',
+    width: 260,
+  },
+  emptyGlow: {
+    borderRadius: 999,
+    height: 220,
+    position: 'absolute',
+    width: 220,
+  },
+  emptyMainTile: {
+    alignItems: 'center',
+    borderRadius: 30,
+    height: 128,
+    justifyContent: 'center',
+    transform: [{ rotate: '-8deg' }],
+    width: 128,
+  },
+  emptyAccentTile: {
+    alignItems: 'center',
+    borderRadius: 22,
+    height: 80,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 24,
+    top: 70,
+    transform: [{ rotate: '12deg' }],
+    width: 80,
+  },
+  emptyCopyBlock: {
+    gap: DsSpace.sm,
+    marginBottom: DsSpace.xl,
+    maxWidth: 320,
+  },
+  emptyTitle: {
+    ...DsTypography.title,
+    fontFamily: Fonts.rounded,
+    fontSize: 30,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    ...DsTypography.body,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  emptyPrimaryCta: {
+    borderRadius: 16,
+    maxWidth: 280,
+    minHeight: 56,
+    width: '100%',
+  },
+  emptySecondaryCta: {
+    marginTop: DsSpace.md,
+    paddingHorizontal: DsSpace.md,
+    paddingVertical: DsSpace.xs,
+  },
+  emptySecondaryCtaText: {
+    ...DsTypography.button,
+    fontSize: 14,
   },
   sessionCard: {
     alignItems: 'center',

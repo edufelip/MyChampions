@@ -45,9 +45,9 @@
 - `D-042`: MVP error handling uses mixed strategy (inline + full-screen + toast).
 - `D-043`: If entitlement lapses while above cap, professional new activations and student-plan updates are locked until entitlement is restored.
 - `D-044`: Student home prioritizes nutrition above training and highlights pending connection status.
-- `D-045`: Bottom navigation model:
-  - Professional: dashboard, students, nutrition, training, account.
-  - Student: home, nutrition, training, recipes, account.
+ - `D-045`: Bottom navigation model:
+   - Professional: dashboard, students, nutrition, training, account.
+   - Student: home, nutrition, exercise, recipes, profile.
 - `D-046`: Password special-character policy uses ASCII punctuation symbols only; emoji and non-ASCII symbols do not satisfy the special-character requirement.
 - `D-047`: Offline cached content stale policy uses 24-hour TTL with stale indicator + last-sync timestamp while preserving read-only access.
 - `D-048`: Mobile client stack is React Native with Expo.

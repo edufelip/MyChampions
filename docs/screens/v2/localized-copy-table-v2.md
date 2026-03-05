@@ -87,7 +87,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.home.offline.last_sync` | SC-203 | Offline stale metadata | Last updated: {datetime} | Última atualização: {datetime} | Última actualización: {datetime} | Timestamp format localized |
 | `student.home.offline.banner_read_only` | SC-203 | Offline persistent banner | You're offline. You can view cached data, but updates are locked until connection returns. | Você está offline. Você pode ver dados em cache, mas as atualizações ficam bloqueadas até a conexão voltar. | Estás sin conexión. Puedes ver los datos en caché, pero las actualizaciones están bloqueadas hasta que vuelva la conexión. | BL-008 |
 | `student.home.offline.write_lock` | SC-203 | Offline blocked-write helper | Connect to the internet to save changes. | Conecte-se à internet para salvar alterações. | Conéctate a internet para guardar los cambios. | BL-008 |
-| `student.home.title` | SC-203 | Dashboard title | My Dashboard | Meu Painel | Mi Panel | Stitch-aligned heading |
+| `student.home.title` | SC-203 | Screen title | Home | Início | Inicio | |
 | `student.home.pending_connection` | SC-203 | Pending pill label | Pending Connection | Conexão Pendente | Conexión Pendiente | Stitch compact status pill |
 | `student.home.hydration.title` | SC-203 | Hydration card title | Hydration | Hidratação | Hidratación | Stitch card title |
 | `student.home.hydration.progress` | SC-203 | Hydration progress value | {consumed} / {goal} ml | {consumed} / {goal} ml | {consumed} / {goal} ml | |
@@ -138,10 +138,11 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `relationship.credential.registry_id` | SC-211 | Credential field label | Registry ID | Registro profissional | ID de registro | Visible only for assigned professional |
 | `relationship.credential.authority` | SC-211 | Credential field label | Authority | Órgão | Organismo | Visible only for assigned professional |
 | `relationship.credential.country` | SC-211 | Credential field label | Country | País | País | Visible only for assigned professional |
-| `student.nutrition.title` | SC-209 | Screen title | Nutrition Today | Nutrição de Hoje | Nutrición de Hoy | |
-| `student.nutrition.empty.title` | SC-209 | Tracking empty state | No active plan yet | Nenhum plano ativo ainda | Aún no hay un plan activo | |
-| `student.nutrition.empty.body` | SC-209 | Tracking empty helper | You can track your own meals or wait for a professional to assign you a personalized plan. | Você pode acompanhar suas próprias refeições ou esperar um profissional atribuir um plano personalizado. | Puedes seguir tus propias comidas o esperar a que un profesional te asigne un plan personalizado. | Must preserve self-guided optionality |
-| `student.nutrition.empty.cta` | SC-209 | Tracking empty CTA | Start tracking meals | Começar a acompanhar refeições | Empezar a registrar comidas | |
+| `student.nutrition.title` | SC-209 | Screen title | Nutrition | Nutrição | Nutrición | |
+| `student.nutrition.empty.title` | SC-209 | Tracking empty state | Meal plan unavailable | Plano alimentar não disponível | Plan alimentario no disponible | Secondary self-guided action remains available on screen |
+| `student.nutrition.empty.body` | SC-209 | Tracking empty helper | To receive a personalized meal plan and reach your goals, you need support from a qualified professional. | Para receber um plano alimentar personalizado e atingir seus objetivos, você precisa do acompanhamento de um profissional qualificado. | Para recibir un plan alimentario personalizado y alcanzar tus objetivos, necesitas el acompañamiento de un profesional cualificado. | Primary copy favors nutritionist acquisition; self-guided optionality preserved via secondary CTA |
+| `student.nutrition.empty.cta` | SC-209 | Tracking empty CTA | Hire a nutritionist | Contratar nutricionista | Contratar nutricionista | Routes to relationship management screen |
+| `student.nutrition.empty.secondary` | SC-209 | Supporting program link | Learn more about the program | Saber mais sobre o programa | Saber más sobre el programa | Routes to student home until dedicated explainer exists |
 | `student.nutrition.water.title` | SC-209 | Hydration card title | Water intake | Ingestão de água | Ingesta de agua | BL-104 |
 | `student.nutrition.water.personal_goal` | SC-209 | Goal ownership badge | Personal Goal | Meta Pessoal | Objetivo Personal | BL-104 |
 | `student.nutrition.water.nutritionist_goal` | SC-209 | Goal ownership badge | Goal set by Nutritionist | Meta definida pelo Nutricionista | Objetivo definido por tu Nutricionista | BL-104 |
@@ -238,13 +239,13 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `shared_recipe.success.saved` | SC-216 | Save success feedback | Recipe saved to your account | Receita salva na sua conta | Receta guardada en tu cuenta | |
 | `shared_recipe.auth.required` | SC-216 | Login-required helper | Sign in to save this recipe. We'll bring you back here right after login. | Entre para salvar esta receita. Vamos trazer você de volta para cá logo após o login. | Inicia sesión para guardar esta receta. Te traeremos de vuelta aquí justo después del login. | |
 | `shared_recipe.info.already_saved` | SC-216 | Idempotent import helper | You already saved this recipe in your account. | Você já salvou esta receita na sua conta. | Ya guardaste esta receta en tu cuenta. | |
-| `student.training.title` | SC-210 | Screen title | Today | Hoje | Hoy | |
+| `student.training.title` | SC-210 | Screen title | Workouts | Treinos | Entrenamientos | |
 | `student.training.calendar.cta` | SC-210 | Calendar action | Open calendar | Abrir calendário | Abrir calendario | |
 | `student.training.session.title` | SC-210 | Assigned-plan summary title | Today's guided plan | Plano guiado de hoje | Plan guiado de hoy | |
 | `student.training.session.body` | SC-210 | Assigned-plan summary helper | Your coach assigned a training structure. Track completion and request adjustments below. | Seu treinador atribuiu uma estrutura de treino. Registre sua execução e solicite ajustes abaixo. | Tu entrenador asignó una estructura de entrenamiento. Registra tu ejecución y solicita ajustes abajo. | |
-| `student.training.empty.title` | SC-210 | Tracking empty state | Start your own journey | Comece sua própria jornada | Empieza tu propio camino | |
-| `student.training.empty.body` | SC-210 | Tracking empty helper | You don't have a coach yet, but you can track your own workouts and stay active! | Você ainda não tem treinador, mas pode registrar seus próprios treinos e manter-se ativo! | Aún no tienes entrenador, pero puedes registrar tus propios entrenamientos y mantenerte activo. | Must preserve self-guided optionality |
-| `student.training.empty.cta` | SC-210 | Tracking empty CTA | Create a workout | Criar treino | Crear entrenamiento | |
+| `student.training.empty.title` | SC-210 | Tracking empty state | No workouts found | Nenhum treino encontrado | No se encontraron entrenamientos | Secondary self-guided action remains available on screen |
+| `student.training.empty.body` | SC-210 | Tracking empty helper | You don't have a personalized workout plan yet. Hire a personal trainer to receive a routine tailored to your goals. | Você ainda não possui um plano de treino personalizado. Contrate um personal trainer para receber uma rotina feita sob medida para seus objetivos. | Aún no tienes un plan de entrenamiento personalizado. Contrata a un entrenador personal para recibir una rutina adaptada a tus objetivos. | Primary copy favors coach acquisition; self-guided optionality preserved via secondary CTA |
+| `student.training.empty.cta` | SC-210 | Tracking empty CTA | Hire a trainer | Contratar personal | Contratar entrenador | Routes to relationship management screen |
 | `pro.subscription.limit_title` | SC-212 | Cap gate title | Unlock more than 10 active students | Desbloqueie mais de 10 alunos ativos | Desbloquea más de 10 alumnos activos | Professional-only monetization |
 | `pro.subscription.limit_body` | SC-212 | Cap gate helper | Upgrade your professional plan to manage more than 10 active students. | Faça upgrade do seu plano profissional para gerenciar mais de 10 alunos ativos. | Actualiza tu plan profesional para gestionar más de 10 alumnos activos. | |
 | `pro.subscription.cta_subscribe` | SC-212 | Purchase CTA | Upgrade now | Fazer upgrade agora | Actualizar ahora | |
@@ -355,6 +356,20 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.item.field.quantity.placeholder` | SC-208 | Item quantity placeholder | e.g. 3 sets × 10 reps | ex.: 3 séries × 10 reps | p.ej. 3 series × 10 reps | |
 | `pro.plan.item.field.notes.label` | SC-208 | Item notes label | Notes (optional) | Observações (opcional) | Notas (opcional) | |
 | `pro.plan.predefined.label` | SC-207/208 | Plan kind badge | Predefined plan | Plano predefinido | Plan predefinido | BR-281 |
+
+## Shell — Bottom Tab Navigator
+
+| Key | Screen | Usage | en-US | pt-BR | es-ES | Notes |
+|---|---|---|---|---|---|---|
+| `shell.tabs.home` | All (Student) | Home tab label | Home | Início | Inicio | Student first tab |
+| `shell.tabs.dashboard` | All (Pro) | Dashboard tab label | Dashboard | Painel | Panel | Pro first tab |
+| `shell.tabs.students` | All (Pro) | Students tab label | Students | Alunos | Alumnos | Pro only |
+| `shell.tabs.nutrition` | All | Nutrition tab label | Nutrition | Nutrição | Nutrición | Both roles |
+| `shell.tabs.training` | All (Pro) | Training tab label | Training | Treino | Entrenamiento | Pro only; students see Exercise |
+| `shell.tabs.exercise` | All (Student) | Exercise tab label | Exercise | Exercício | Ejercicio | Student label for the training tab |
+| `shell.tabs.recipes` | All (Student) | Recipes tab label | Recipes | Receitas | Recetas | Student only |
+| `shell.tabs.account` | All (Pro) | Account tab label | Account | Conta | Cuenta | Pro only; students see Profile |
+| `shell.tabs.profile` | All (Student) | Profile tab label | Profile | Perfil | Perfil | Student label for the account tab |
 
 ## Notes
 - All es-ES translations have been filled. Review with a native Spanish speaker before release.

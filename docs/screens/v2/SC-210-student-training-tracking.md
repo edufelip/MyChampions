@@ -16,7 +16,7 @@
 
 ## States
 - Loading: fetch training plan context and today progress data.
-- Empty: no session scheduled for today; include self-guided starter prompt when no active coach.
+- Empty: no active training assignment; show illustrated acquisition empty state with direct coach-hiring CTA and secondary self-guided continuation action.
 - Error: tracking update failure.
 - Success: completion state and progress summary updated.
 
@@ -36,16 +36,17 @@
 
 ## Edge Cases
 - If assignment ends, assigned plan history remains accessible per retention policy.
-- If no plan exists, route to self-managed plan creation entry point.
+- If no plan exists, primary CTA routes to professional connection management and secondary CTA preserves self-guided continuation.
 
 ## Copy Draft (Current)
-- Screen title: `Today`
+- Screen title: `Workouts`
 - Calendar action: `Open calendar`
 - Assigned-plan summary title: `Today's guided plan`
 - Assigned-plan summary helper: `Your coach assigned a training structure. Track completion and request adjustments below.`
-- Empty state title: `Start your own journey`
-- Empty state helper: `You don't have a coach yet, but you can track your own workouts and stay active!`
-- Empty-state CTA: `Create a workout`
+- Empty state title: `No workouts found`
+- Empty state helper: `You don't have a personalized workout plan yet. Hire a personal trainer to receive a routine tailored to your goals.`
+- Empty-state CTA: `Hire a trainer`
+- Secondary empty-state CTA: `Continue self-guided`
 
 ## Links
 - Functional requirement: FR-113, FR-116, FR-123, FR-135, FR-211, FR-214

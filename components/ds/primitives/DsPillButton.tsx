@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { DsRadius, DsTypography, type DsColorScheme, getDsTheme } from '@/constants/design-system';
 
@@ -17,6 +17,7 @@ type DsPillButtonProps = {
   testID?: string;
   style?: StyleProp<ViewStyle>;
   fullWidth?: boolean;
+  contentColor?: ColorValue;
 };
 
 export function DsPillButton({
@@ -31,9 +32,11 @@ export function DsPillButton({
   testID,
   style,
   fullWidth = true,
+  contentColor,
 }: DsPillButtonProps) {
   const theme = getDsTheme(scheme);
   const isPrimary = variant === 'primary';
+  const resolvedContentColor = contentColor ?? (isPrimary ? theme.color.onAccent : theme.color.accentBlue);
 
   return (
     <Pressable
@@ -55,11 +58,11 @@ export function DsPillButton({
       ]}
       testID={testID}>
       {loading ? (
-        <ActivityIndicator color={isPrimary ? theme.color.onAccent : theme.color.accentBlue} />
+        <ActivityIndicator color={resolvedContentColor} />
       ) : (
         <>
           {leftIcon}
-          <Text style={[styles.text, { color: isPrimary ? theme.color.onAccent : theme.color.accentBlue }]}>{label}</Text>
+          <Text style={[styles.text, { color: resolvedContentColor }]}>{label}</Text>
           {rightIcon}
         </>
       )}

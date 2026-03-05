@@ -168,7 +168,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 ## Bottom Navigation Shell (Phase 7)
 - `Done`: `app/(tabs)/_layout.tsx` replaced with role-aware tab layout (D-045):
   - Professional: Dashboard / Students / Nutrition / Training / Account
-  - Student: Home / Nutrition / Training / Recipes / Account
+   - Student: Home / Nutrition / Exercise / Recipes / Profile
   - Tabs not belonging to the current role are hidden via `href: null`.
 - `Done`: `IconSymbol` MAPPING expanded with tab bar icon pairs (SF Symbols + Material Icons).
 - `Done`: `shell.tabs.*` and `shell.placeholder.coming_soon` localization keys added to en-US, pt-BR, es-ES.

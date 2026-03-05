@@ -1,7 +1,7 @@
 /**
  * Role-aware bottom tab navigator shell.
  * D-045: Professional tabs — Dashboard / Students / Nutrition / Training / Account
- *        Student tabs     — Home / Nutrition / Training / Recipes / Account
+ *        Student tabs     — Home / Nutrition / Exercise / Recipes / Profile
  *
  * Tabs not belonging to the current role are hidden via `href: null`; they
  * remain registered so expo-router's file-system layout is satisfied.
@@ -82,11 +82,11 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ── training: both roles ─────────────────────────────────────────── */}
+      {/* ── training: Pro = Training / Student = Exercise ───────────────── */}
       <Tabs.Screen
         name="training"
         options={{
-          title: t('shell.tabs.training'),
+          title: isStudent ? t('shell.tabs.exercise') : t('shell.tabs.training'),
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="figure.run" color={color} />
           ),
@@ -106,11 +106,11 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ── account: both roles ──────────────────────────────────────────── */}
+      {/* ── account: Pro = Account / Student = Profile ───────────────────── */}
       <Tabs.Screen
         name="account"
         options={{
-          title: t('shell.tabs.account'),
+          title: isStudent ? t('shell.tabs.profile') : t('shell.tabs.account'),
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.crop.circle.fill" color={color} />
           ),
