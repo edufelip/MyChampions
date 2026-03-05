@@ -11,6 +11,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 
 ## Design Structure (D-134)
 - Library route (`/professional/nutrition`) uses `DsScreen` as shell with DS spacing/typography tokens.
+- Library list rendering uses `FlatList`; route uses `DsScreen scrollable={false}` to avoid nested VirtualizedList containers.
 - Empty, error, and plan-list framing use `DsCard` surfaces with shared radius and border semantics.
 - Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.

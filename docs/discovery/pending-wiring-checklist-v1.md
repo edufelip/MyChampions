@@ -50,6 +50,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: SC-202 Specialty screen (`app/professional/specialty.tsx`) implemented — add/remove specialties and upsert credentials via `useSpecialties` hook stub; Data Connect endpoint wiring deferred.
 - `Done`: SC-204 Professional Home (`app/professional/home.tsx`) implemented — invite code display via `useInviteCode`, subscription state via `resolveSubscriptionState`; RevenueCat entitlement wired as stub `'unknown'`.
 - `Done`: SC-205 Student Roster (`app/professional/students.tsx`) implemented — search + filter chip UI, FlatList with stub empty data; Data Connect student-roster endpoint wiring deferred.
+- `Done`: DS shell virtualization fix for list screens — `DsScreen` now supports `scrollable={false}` (non-ScrollView mode) and is applied to FlatList-backed routes (`SC-205`, `/professional/nutrition`, `/professional/training`, `SC-215`) to avoid nested VirtualizedList warnings in runtime logs.
 - `Done`: SC-206 Student Profile Professional View (`app/professional/student-profile.tsx`) implemented — assignment status cards, unbind CTA, plan-change requests, water goal form; Data Connect endpoint wiring deferred.
 - `Done`: SC-212 Professional Subscription Gate (`app/professional/subscription.tsx`) implemented — entitlement status display, cap usage, purchase/restore/refresh CTAs; RevenueCat SDK wiring deferred.
 - `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 5 new professional screens.
@@ -173,6 +174,8 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `IconSymbol` MAPPING expanded with tab bar icon pairs (SF Symbols + Material Icons).
 - `Done`: `shell.tabs.*` and `shell.placeholder.coming_soon` localization keys added to en-US, pt-BR, es-ES.
 - `Done`: Tab screens created: `(tabs)/index.tsx`, `(tabs)/students.tsx`, `(tabs)/nutrition.tsx`, `(tabs)/training.tsx`, `(tabs)/recipes.tsx`, `(tabs)/account.tsx`.
+- `Done`: Tab switching animation enabled globally with cross-fade transition (`animation: 'fade'`) in `app/(tabs)/_layout.tsx`.
+- `Done`: White-screen mitigation on tab switching applied in `app/(tabs)/_layout.tsx` by stabilizing tab scene rendering (`lazy: false`, `detachInactiveScreens: false`, `sceneStyle.backgroundColor = theme.color.canvas`).
 - `Done`: Professional nutrition placeholder (`app/professional/nutrition.tsx`) and training placeholder (`app/professional/training.tsx`) created for SC-207/SC-208 (not yet implemented).
 - `Done`: SC-207 Nutrition Plan Builder implemented at `app/professional/nutrition/plans/[planId].tsx`; `app/professional/nutrition.tsx` converted to predefined plan library list screen.
 - `Done`: SC-208 Training Plan Builder implemented at `app/professional/training/plans/[planId].tsx`; `app/professional/training.tsx` converted to predefined plan library list screen.
@@ -207,6 +210,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.
 - `Done`: SC-214 Custom Meal Builder (`app/nutrition/custom-meals/[mealId].tsx`) implemented — create/edit form with all 7 fields, image upload stub, share CTA; Data Connect and Cloud Storage wiring deferred.
 - `Done`: SC-215 Custom Meal Library & Quick Log (`app/nutrition/custom-meals/index.tsx`) implemented — FlatList of meals, quick-log grams input with nutrition preview; Data Connect and portion-log persistence deferred.
+- `Done`: SC-215 empty state upgraded to illustrated hero pattern — warm amber/orange `menu-book` + `restaurant` icon tiles replacing the minimal text stub; `DsPillButton` CTA with add icon; offline write-lock notice; matches production quality of student nutrition and training empty states.
 - `Done`: SC-216 Shared Recipe Save Confirmation (`app/shared/recipes/[shareToken].tsx`) implemented — token preview, ownership note, import; Data Connect share endpoint wiring deferred.
 - `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 4 new Phase 6 screens.
 - `Done`: Wire Data Connect profile-delete operation into SC-213 account deletion flow. `deleteProfileFromSource()` called in `submitDeletionRequest`; Firebase `signOut` follows immediately so `onAuthStateChanged` clears session state. Stub `await Promise.resolve()` removed.
@@ -289,6 +293,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `decisions-log-v1.md` — D-132 added.
 - `Pending`: Configure `ai_features` offering in RevenueCat dashboard (required before `RevenueCatUI.presentPaywall` can display the paywall to end users).
 - `Pending`: Configure `premium_student` product and entitlement in RevenueCat dashboard (required for entitlement gate to activate for student users).
+- `Pending`: Register App Store / Google Play products into RevenueCat offerings so `getOfferings` and `presentPaywall` do not emit SDK configuration warnings (for example OfferingsManager empty-products errors in simulator/dev logs).
 
 ## Validation Gate Before Release
 - Every item in this checklist must be either `Done` or explicitly deferred in a release decision note.

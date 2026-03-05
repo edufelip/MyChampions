@@ -11,6 +11,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 
 ## Design Structure (D-134)
 - Library route (`/professional/training`) uses `DsScreen` shell, DS card surfaces, and DS typography/spacing tokens.
+- Library list rendering uses `FlatList`; route uses `DsScreen scrollable={false}` to avoid nested VirtualizedList containers.
 - Empty and error states are presented inside `DsCard` containers with consistent semantics.
 - Primary create/retry actions use DS pill buttons and localization-key copy only.
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
