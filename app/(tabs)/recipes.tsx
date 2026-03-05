@@ -2,4 +2,8 @@
  * Tab route: /(tabs)/recipes
  * Student only -> SC-215 Custom Meal Library & Quick Log
  */
-export { default } from '@/app/nutrition/custom-meals/index';
+import CustomMealLibraryScreen from '@/app/nutrition/custom-meals/index';
+
+export default function RecipesTabRoute() {
+  return <CustomMealLibraryScreen hideHeader />;
+}
