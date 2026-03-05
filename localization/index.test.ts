@@ -17,7 +17,7 @@ test('resolveLocale falls back to en-US', () => {
 });
 
 test('t returns localized value for key', () => {
-  assert.equal(t('en-US', 'auth.signin.cta_primary'), 'Sign in');
+  assert.equal(t('en-US', 'auth.signin.cta_primary'), 'Sign In');
   assert.equal(t('pt-BR', 'auth.signin.cta_primary'), 'Entrar');
   assert.equal(t('es-ES', 'auth.signin.cta_primary'), 'Iniciar sesión');
 });
