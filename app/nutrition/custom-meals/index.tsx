@@ -36,9 +36,12 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
+import { MaterialIcons } from '@expo/vector-icons';
+
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import { getDsTheme } from '@/constants/design-system';
+import { DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
@@ -78,7 +81,13 @@ type QuickLogPanelState =
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-export default function CustomMealLibraryScreen() {
+type CustomMealLibraryScreenProps = {
+  hideHeader?: boolean;
+};
+
+export default function CustomMealLibraryScreen({
+  hideHeader = false,
+}: CustomMealLibraryScreenProps = {}) {
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
@@ -191,8 +200,8 @@ export default function CustomMealLibraryScreen() {
       : null;
 
   return (
-    <DsScreen scheme={scheme} testID="meal.library.screen">
-      <Stack.Screen options={{ title: t('meal.library.title'), headerShown: true }} />
+    <DsScreen scheme={scheme} scrollable={false} testID="meal.library.screen">
+      <Stack.Screen options={{ title: t('meal.library.title'), headerShown: !hideHeader }} />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -214,7 +223,7 @@ export default function CustomMealLibraryScreen() {
           <Text style={[styles.meta, { color: palette.icon }]}>{t('meal.library.error')}</Text>
         </View>
       ) : state.kind === 'ready' && state.meals.length === 0 ? (
-        <EmptyState palette={palette} t={t} onCreate={() => router.push('/nutrition/custom-meals/new')} />
+        <EmptyState palette={palette} scheme={scheme} t={t} onCreate={() => router.push('/nutrition/custom-meals/new')} isWriteLocked={isWriteLocked} />
       ) : state.kind === 'ready' ? (
         <FlatList
           data={state.meals}
@@ -276,28 +285,79 @@ export default function CustomMealLibraryScreen() {
 
 function EmptyState({
   palette,
+  scheme,
   t,
   onCreate,
+  isWriteLocked,
 }: {
   palette: Palette;
+  scheme: 'light' | 'dark';
   t: TFn;
   onCreate: () => void;
+  isWriteLocked: boolean;
 }) {
+  const theme = getDsTheme(scheme);
+
+  // Warm amber/orange tones — differentiate from the green professional-gated screens
+  const amber = {
+    glow: scheme === 'dark' ? 'rgba(217, 119, 6, 0.14)' : 'rgba(245, 158, 11, 0.16)',
+    accent: '#f59e0b',
+    accentDark: '#92400e',
+    surface: scheme === 'dark' ? '#2d1f08' : '#fef3c7',
+    border: scheme === 'dark' ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.18)',
+    shadow: scheme === 'dark' ? '#000000' : '#d97706',
+    trackBg: scheme === 'dark' ? 'rgba(245, 158, 11, 0.18)' : 'rgba(245, 158, 11, 0.16)',
+  };
+
   return (
-    <View style={[styles.center, styles.emptyContainer]} testID="meal.library.empty">
-      <Text style={[styles.emptyTitle, { color: palette.text }]}>
-        {t('meal.library.empty.title')}
-      </Text>
-      <Text style={[styles.meta, { color: palette.icon }]}>
-        {t('meal.library.empty.body')}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
+    <View style={emptyStyles.emptyStateWrap} testID="meal.library.empty">
+      <View style={emptyStyles.emptyHero}>
+        <View style={[emptyStyles.emptyGlow, { backgroundColor: amber.glow }]} />
+
+        {/* Main card — cookbook with recipe lines */}
+        <View
+          style={[
+            emptyStyles.emptyMainTile,
+            DsShadow.floating,
+            {
+              backgroundColor: theme.color.surface,
+              shadowColor: amber.shadow,
+            },
+          ]}>
+          <MaterialIcons color={amber.accent} name="menu-book" size={58} />
+        </View>
+
+        {/* Accent tile — utensils */}
+        <View style={[emptyStyles.emptyAccentTile, DsShadow.soft, { backgroundColor: amber.accent }]}>
+          <MaterialIcons color={amber.accentDark} name="restaurant" size={34} />
+        </View>
+      </View>
+
+      <View style={emptyStyles.emptyCopyBlock}>
+        <Text style={[emptyStyles.emptyTitle, { color: theme.color.textPrimary }]}>
+          {t('meal.library.empty.title')}
+        </Text>
+        <Text style={[emptyStyles.emptyBody, { color: theme.color.textSecondary }]}>
+          {t('meal.library.empty.body')}
+        </Text>
+      </View>
+
+      <DsPillButton
+        scheme={scheme}
+        disabled={isWriteLocked}
+        label={t('meal.library.cta_create') as string}
         onPress={onCreate}
-        style={[styles.primaryButton, { backgroundColor: palette.tint }]}
-        testID="meal.library.empty.cta">
-        <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('meal.library.cta_create')}</Text>
-      </Pressable>
+        contentColor="#f8fafc"
+        testID="meal.library.empty.cta"
+        style={emptyStyles.emptyPrimaryCta}
+        leftIcon={<MaterialIcons color="#f8fafc" name="add" size={20} />}
+      />
+
+      {isWriteLocked ? (
+        <Text style={[emptyStyles.writeLockText, { color: theme.color.danger }]}>
+          {t('offline.write_lock')}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -632,19 +692,85 @@ function resolveQuickLogAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn):
   }
 }
 
+// ─── Empty State Styles ───────────────────────────────────────────────────────
+
+const emptyStyles = StyleSheet.create({
+  emptyStateWrap: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: DsSpace.xxl,
+    paddingHorizontal: DsSpace.sm,
+    paddingTop: DsSpace.md,
+  },
+  emptyHero: {
+    alignItems: 'center',
+    height: 260,
+    justifyContent: 'center',
+    marginBottom: DsSpace.xl,
+    position: 'relative',
+    width: 260,
+  },
+  emptyGlow: {
+    borderRadius: 999,
+    height: 220,
+    position: 'absolute',
+    width: 220,
+  },
+  emptyMainTile: {
+    alignItems: 'center',
+    borderRadius: 30,
+    height: 128,
+    justifyContent: 'center',
+    transform: [{ rotate: '-8deg' }],
+    width: 128,
+  },
+  emptyAccentTile: {
+    alignItems: 'center',
+    borderRadius: 22,
+    height: 80,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 24,
+    top: 70,
+    transform: [{ rotate: '12deg' }],
+    width: 80,
+  },
+  emptyCopyBlock: {
+    gap: DsSpace.sm,
+    marginBottom: DsSpace.xl,
+    maxWidth: 320,
+  },
+  emptyTitle: {
+    ...DsTypography.title,
+    fontFamily: Fonts.rounded,
+    fontSize: 30,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    ...DsTypography.body,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  emptyPrimaryCta: {
+    borderRadius: 16,
+    maxWidth: 280,
+    minHeight: 56,
+    width: '100%',
+  },
+  writeLockText: {
+    ...DsTypography.caption,
+    marginTop: DsSpace.sm,
+  },
+});
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   list: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100, gap: 12 },
-  emptyContainer: { gap: 12 },
-  emptyTitle: {
-    fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
   meta: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
   mealRow: {
     borderRadius: 12,

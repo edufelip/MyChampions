@@ -56,7 +56,7 @@ export default function ProTrainingLibraryScreen() {
   );
 
   return (
-    <DsScreen scheme={scheme} contentContainerStyle={styles.content}>
+    <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.library.training.title'), headerShown: true }} />
 
       {state.kind === 'loading' ? (

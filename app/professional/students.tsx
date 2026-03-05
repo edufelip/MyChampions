@@ -95,7 +95,11 @@ export default function ProfessionalStudentsScreen() {
   const isLoading = false;
 
   return (
-    <DsScreen scheme={scheme} testID="pro.students.screen" contentContainerStyle={styles.content}>
+    <DsScreen
+      scheme={scheme}
+      scrollable={false}
+      testID="pro.students.screen"
+      contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.students.title'), headerShown: true }} />
 
       {offlineDisplay.showOfflineBanner ? (
