@@ -132,7 +132,7 @@ export function PlanChangeRequestCard({
 
           {successMsg ? (
             <View accessibilityLiveRegion="polite">
-              <Text style={styles.successText} testID={`${testID}.success`}>
+              <Text style={[styles.successText, { color: theme.color.success }]} testID={`${testID}.success`}>
                 {successMsg}
               </Text>
             </View>
@@ -147,7 +147,9 @@ export function PlanChangeRequestCard({
             loading={isSubmitting}
             testID={`${testID}.submitButton`}
             rightIcon={
-              isSubmitting ? <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color="#ffffff" /> : undefined
+              isSubmitting ? (
+                <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color={theme.color.onAccent} />
+              ) : undefined
             }
           />
         </>
@@ -179,7 +181,6 @@ const styles = StyleSheet.create({
     ...DsTypography.caption,
   },
   successText: {
-    color: '#16a34a',
     ...DsTypography.caption,
     fontWeight: '700',
   },

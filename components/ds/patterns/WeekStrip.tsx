@@ -4,6 +4,7 @@ import {
   DsRadius,
   DsShadow,
   DsSpace,
+  DsTypography,
   type DsColorScheme,
   getDsTheme,
 } from '@/constants/design-system';
@@ -26,9 +27,20 @@ export function WeekStrip({ scheme, items }: WeekStripProps) {
   return (
     <View style={[styles.wrap, DsShadow.soft, { backgroundColor: theme.color.surface }]}> 
       {items.map((item) => (
-        <View key={item.id} style={item.isActive ? styles.itemActive : styles.item}>
-          <Text style={item.isActive ? styles.dayLabelActive : styles.dayLabel}>{item.dayLabel}</Text>
-          <Text style={item.isActive ? styles.dayNumberActive : styles.dayNumber}>{item.dayNumber}</Text>
+        <View
+          key={item.id}
+          style={[
+            styles.item,
+            item.isActive
+              ? { backgroundColor: theme.color.accentPrimary, width: 52, height: 64 }
+              : { width: 44, height: 56 },
+          ]}>
+          <Text style={[styles.dayLabel, { color: item.isActive ? theme.color.onAccent : theme.color.textSecondary }]}>
+            {item.dayLabel}
+          </Text>
+          <Text style={[styles.dayNumber, { color: item.isActive ? theme.color.onAccent : theme.color.textPrimary }]}>
+            {item.dayNumber}
+          </Text>
         </View>
       ))}
     </View>
@@ -46,36 +58,14 @@ const styles = StyleSheet.create({
   item: {
     alignItems: 'center',
     borderRadius: DsRadius.pill,
-    height: 56,
     justifyContent: 'center',
-    width: 44,
-  },
-  itemActive: {
-    alignItems: 'center',
-    backgroundColor: '#ff7b72',
-    borderRadius: DsRadius.pill,
-    height: 64,
-    justifyContent: 'center',
-    width: 52,
   },
   dayLabel: {
-    color: '#64748b',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  dayLabelActive: {
-    color: '#ffffffcc',
-    fontSize: 11,
+    ...DsTypography.caption,
     fontWeight: '600',
   },
   dayNumber: {
-    color: '#334155',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  dayNumberActive: {
-    color: '#ffffff',
-    fontSize: 16,
+    ...DsTypography.body,
     fontWeight: '700',
   },
 });

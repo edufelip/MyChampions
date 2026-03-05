@@ -40,9 +40,9 @@ export function HeroEmptyState({
   return (
     <DsCard scheme={scheme} style={styles.card} testID={testID}>
       <View style={styles.heroWrap}>
-        <View style={[styles.heroBlob, { backgroundColor: theme.color.surface }]}> 
-          <View style={[styles.innerBlob, { backgroundColor: theme.color.accentMint + '66' }]} />
-          <MaterialIcons color={theme.color.accentPrimary} name={icon} size={76} />
+        <View style={[styles.heroBlob, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}> 
+          <View style={[styles.innerBlob, { backgroundColor: theme.color.accentCyanSoft }]} />
+          <MaterialIcons color={theme.color.accentPrimary} name={icon} size={72} />
         </View>
 
         <Text style={[styles.title, { color: theme.color.textPrimary }]}>{title}</Text>
@@ -54,7 +54,7 @@ export function HeroEmptyState({
           onPress={onPressCta}
           disabled={disabled}
           testID={ctaTestID}
-          leftIcon={<MaterialIcons color="#ffffff" name="add-circle" size={20} />}
+          leftIcon={<MaterialIcons color={theme.color.onAccent} name="add-circle" size={20} />}
         />
       </View>
     </DsCard>
@@ -73,7 +73,6 @@ const styles = StyleSheet.create({
   },
   heroBlob: {
     alignItems: 'center',
-    borderColor: '#fff5f0',
     borderRadius: 96,
     borderWidth: 8,
     height: 192,

@@ -46,8 +46,8 @@ export function DsPillButton({
           ? { backgroundColor: theme.color.accentPrimary, borderColor: theme.color.accentPrimary }
           : {
               backgroundColor: theme.color.surface,
-              borderColor: theme.color.accentPrimarySoft,
-              borderWidth: 2,
+              borderColor: theme.color.borderStrong,
+              borderWidth: 1,
             },
         { width: fullWidth ? '100%' : undefined },
         { opacity: disabled || loading ? 0.6 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
@@ -55,11 +55,11 @@ export function DsPillButton({
       ]}
       testID={testID}>
       {loading ? (
-        <ActivityIndicator color={isPrimary ? '#ffffff' : theme.color.accentPrimary} />
+        <ActivityIndicator color={isPrimary ? theme.color.onAccent : theme.color.accentBlue} />
       ) : (
         <>
           {leftIcon}
-          <Text style={[styles.text, { color: isPrimary ? '#ffffff' : theme.color.accentPrimary }]}>{label}</Text>
+          <Text style={[styles.text, { color: isPrimary ? theme.color.onAccent : theme.color.accentBlue }]}>{label}</Text>
           {rightIcon}
         </>
       )}
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    minHeight: 54,
+    minHeight: 52,
     paddingHorizontal: 18,
   },
   text: {

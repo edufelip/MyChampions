@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
+import { getDsTheme } from '@/constants/design-system';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import { normalizeGuardPathname, resolveAuthGuardRedirect } from '@/features/auth/auth-route-guard.logic';
@@ -24,6 +25,8 @@ export default function RootLayout() {
 
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const ds = getDsTheme(scheme);
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
@@ -61,14 +64,27 @@ function RootLayoutContent() {
 
   if (!isHydrated) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ds.color.canvas }}>
+        <ActivityIndicator color={ds.color.accentPrimary} />
       </View>
     );
   }
 
+  const navTheme = {
+    ...(scheme === 'dark' ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(scheme === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
+      primary: ds.color.accentBlue,
+      background: ds.color.canvas,
+      card: ds.color.surface,
+      text: ds.color.textPrimary,
+      border: ds.color.border,
+      notification: ds.color.accentPrimary,
+    },
+  };
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
@@ -96,7 +112,7 @@ function RootLayoutContent() {
           options={{ presentation: 'modal', title: t('shell.modal.title') }}
         />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }

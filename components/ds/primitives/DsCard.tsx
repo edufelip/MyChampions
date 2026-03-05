@@ -18,7 +18,7 @@ export function DsCard({ scheme, children, variant = 'default', style, testID }:
 
   const cardStyle =
     variant === 'warning'
-      ? { backgroundColor: theme.color.surfaceWarning, borderColor: '#fed7aa' }
+      ? { backgroundColor: theme.color.surfaceWarning, borderColor: theme.color.warning }
       : variant === 'muted'
       ? { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }
       : { backgroundColor: theme.color.surface, borderColor: theme.color.border };
@@ -32,7 +32,7 @@ export function DsCard({ scheme, children, variant = 'default', style, testID }:
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: DsRadius.xl,
+    borderRadius: DsRadius.lg,
     borderWidth: 1,
     padding: DsSpace.lg,
   },

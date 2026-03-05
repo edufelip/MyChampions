@@ -15,16 +15,16 @@ import { Tabs } from 'expo-router';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { getDsTheme } from '@/constants/design-system';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const colorScheme = useColorScheme() ?? 'light';
   const { t } = useTranslation();
   const { lockedRole } = useAuthSession();
-  const tint = Colors[colorScheme ?? 'light'].tint;
+  const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
 
   const isPro = lockedRole === 'professional';
   const isStudent = lockedRole === 'student';
@@ -32,7 +32,12 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: tint,
+        tabBarActiveTintColor: theme.color.accentBlue,
+        tabBarInactiveTintColor: theme.color.textTertiary,
+        tabBarStyle: {
+          backgroundColor: theme.color.surface,
+          borderTopColor: theme.color.border,
+        },
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
