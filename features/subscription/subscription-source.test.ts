@@ -43,7 +43,7 @@ function makeDeps(overrides: Partial<SubscriptionSourceDeps> = {}): Subscription
     getCustomerInfo: async () => ({ entitlements: { active: {} } }),
     purchasePackage: async () => ({ customerInfo: { entitlements: { active: {} } } }),
     restorePurchases: async () => ({ entitlements: { active: {} } }),
-    getApiKey: () => 'sk_test_key',
+    getApiKey: () => 'appl_test_key',
     ...overrides,
   };
 }
@@ -71,7 +71,7 @@ function makeLapsedCustomerInfo(): RawCustomerInfo {
 describe('resolveRevenueCatApiKey', () => {
   it('throws configuration error when key is absent', () => {
     assert.throws(
-      () => resolveRevenueCatApiKey({}),
+      () => resolveRevenueCatApiKey('ios', {}),
       (err: unknown) => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
@@ -82,7 +82,7 @@ describe('resolveRevenueCatApiKey', () => {
 
   it('throws configuration error when key is empty string', () => {
     assert.throws(
-      () => resolveRevenueCatApiKey({ revenueCatApiKey: '' }),
+      () => resolveRevenueCatApiKey('ios', { revenueCatApiKeyIos: '' }),
       (err: unknown) => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
@@ -91,14 +91,41 @@ describe('resolveRevenueCatApiKey', () => {
     );
   });
 
-  it('returns API key when present', () => {
-    const key = resolveRevenueCatApiKey({ revenueCatApiKey: 'sk_live_abc123' });
-    assert.equal(key, 'sk_live_abc123');
+  it('returns iOS public API key when present', () => {
+    const key = resolveRevenueCatApiKey('ios', { revenueCatApiKeyIos: 'appl_live_abc123' });
+    assert.equal(key, 'appl_live_abc123');
+  });
+
+  it('returns Android public API key when present', () => {
+    const key = resolveRevenueCatApiKey('android', { revenueCatApiKeyAndroid: 'goog_live_abc123' });
+    assert.equal(key, 'goog_live_abc123');
+  });
+
+  it('throws configuration error when secret sk_* key is provided', () => {
+    assert.throws(
+      () => resolveRevenueCatApiKey('ios', { revenueCatApiKeyIos: 'sk_live_abc123' }),
+      (err: unknown) => {
+        assert.ok(err instanceof SubscriptionSourceError);
+        assert.equal(err.code, 'configuration');
+        return true;
+      }
+    );
+  });
+
+  it('throws configuration error when key prefix does not match platform', () => {
+    assert.throws(
+      () => resolveRevenueCatApiKey('android', { revenueCatApiKeyAndroid: 'appl_live_abc123' }),
+      (err: unknown) => {
+        assert.ok(err instanceof SubscriptionSourceError);
+        assert.equal(err.code, 'configuration');
+        return true;
+      }
+    );
   });
 
   it('ignores non-string values and throws', () => {
     assert.throws(
-      () => resolveRevenueCatApiKey({ revenueCatApiKey: 42 }),
+      () => resolveRevenueCatApiKey('ios', { revenueCatApiKeyIos: 42 }),
       (err: unknown) => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
@@ -226,10 +253,10 @@ describe('configureRevenueCat', () => {
     const calls: string[] = [];
     const deps = makeDeps({
       configure: (key) => { calls.push(key); },
-      getApiKey: () => 'sk_live_test',
+      getApiKey: () => 'appl_live_test',
     });
     configureRevenueCat(deps);
-    assert.deepEqual(calls, ['sk_live_test']);
+    assert.deepEqual(calls, ['appl_live_test']);
   });
 
   it('throws configuration error when getApiKey throws', () => {
