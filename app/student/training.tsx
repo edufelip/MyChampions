@@ -115,7 +115,7 @@ export default function StudentTrainingScreen() {
             />
 
             <DsCard scheme={scheme} style={styles.sessionCard} testID="student.training.sessionSummary">
-              <View style={styles.sessionIconBubble}>
+              <View style={[styles.sessionIconBubble, { backgroundColor: theme.color.warningSoft }]}>
                 <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={34} />
               </View>
               <Text style={[styles.sessionTitle, { color: theme.color.textPrimary }]}>
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   sessionIconBubble: {
     alignItems: 'center',
-    backgroundColor: '#ffe4e1',
+    backgroundColor: 'transparent',
     borderRadius: 38,
     height: 76,
     justifyContent: 'center',

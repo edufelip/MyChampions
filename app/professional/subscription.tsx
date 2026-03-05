@@ -65,7 +65,7 @@ export default function ProfessionalSubscriptionScreen() {
 
   const statusColor =
     entitlementStatus === 'active'
-      ? '#16a34a'
+      ? theme.color.success
       : entitlementStatus === 'lapsed'
       ? theme.color.danger
       : theme.color.textSecondary;
@@ -126,13 +126,13 @@ export default function ProfessionalSubscriptionScreen() {
             style={[
               styles.renewButton,
               {
-                borderColor: '#f59e0b',
+                borderColor: theme.color.warning,
                 opacity: isWriteLocked ? 0.4 : 1,
                 backgroundColor: theme.color.surface,
               },
             ]}
             testID="pro.subscription.renewCta">
-            <Text style={[styles.renewButtonText, { color: '#b45309' }]}>
+            <Text style={[styles.renewButtonText, { color: theme.color.warning }]}>
               {t('pro.subscription.pre_lapse.cta_renew')}
             </Text>
           </Pressable>

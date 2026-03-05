@@ -203,7 +203,7 @@ export default function SignInScreen() {
 
       <View style={styles.content}>
         <View style={styles.titleArea}>
-          <View style={[styles.brandBadge, { backgroundColor: theme.color.surface }]}>
+          <View style={[styles.brandBadge, { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft }]}>
             <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={34} />
           </View>
           <Text testID="auth.signIn.title" style={[styles.title, { color: palette.text }]}>
@@ -234,7 +234,7 @@ export default function SignInScreen() {
             />
             <View accessibilityLiveRegion="polite">
               {errors.email ? (
-                <Text style={styles.inlineError} testID="auth.signIn.error.emailRequired">
+                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.signIn.error.emailRequired">
                   {t(errors.email)}
                 </Text>
               ) : null}
@@ -286,6 +286,7 @@ export default function SignInScreen() {
               style={({ pressed }) => [
                 styles.primaryButton,
                 {
+                  backgroundColor: theme.color.accentPrimary,
                   opacity: submitting ? 0.7 : 1,
                   transform: [{ scale: pressed ? 0.96 : 1 }],
                 },
@@ -294,11 +295,11 @@ export default function SignInScreen() {
               {submitting ? (
                 <ActivityIndicator
                   accessibilityLabel={t('a11y.loading.submitting')}
-                  color="#ffffff"
+                  color={theme.color.onAccent}
                 />
               ) : (
                 <>
-                  <Text style={styles.primaryButtonText}>{t('auth.signin.cta_primary')}</Text>
+                  <Text style={[styles.primaryButtonText, { color: theme.color.onAccent }]}>{t('auth.signin.cta_primary')}</Text>
                   <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
                 </>
               )}
@@ -306,7 +307,7 @@ export default function SignInScreen() {
 
             <View accessibilityLiveRegion="polite">
               {errors.password ? (
-                <Text style={styles.inlineError} testID="auth.signIn.error.passwordRequired">
+                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.signIn.error.passwordRequired">
                   {t(errors.password)}
                 </Text>
               ) : null}
@@ -314,7 +315,7 @@ export default function SignInScreen() {
 
             <View accessibilityRole="alert">
               {submitError ? (
-                <Text style={styles.submitError} testID="auth.signIn.error.submit">
+                <Text style={[styles.submitError, { color: theme.color.danger }]} testID="auth.signIn.error.submit">
                   {t(submitError)}
                 </Text>
               ) : null}
@@ -336,7 +337,7 @@ export default function SignInScreen() {
                 },
               ]}
               testID="auth.signIn.googleButton">
-              <AntDesign name="google" size={20} color="#4285F4" />
+              <AntDesign name="google" size={20} color={theme.color.accentBlue} />
               <Text style={[styles.socialButtonText, { color: palette.text }]}>
                 {t('auth.social.google')}
               </Text>
@@ -407,7 +408,6 @@ const styles = StyleSheet.create({
   },
   brandBadge: {
     alignItems: 'center',
-    borderColor: theme.color.accentPrimarySoft,
     borderRadius: 50,
     borderWidth: 4,
     elevation: 2,
@@ -466,12 +466,10 @@ const styles = StyleSheet.create({
     right: 10,
   },
   inlineError: {
-    color: theme.color.danger,
     fontSize: 13,
     paddingHorizontal: 12,
   },
   submitError: {
-    color: theme.color.danger,
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
@@ -480,7 +478,6 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: theme.color.accentPrimary,
     borderRadius: 28,
     flexDirection: 'row',
     gap: 8,
@@ -490,7 +487,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: theme.color.onAccent,
     fontSize: 16,
     fontWeight: '700',
   },

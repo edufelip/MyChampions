@@ -205,7 +205,7 @@ function FilterChips({
             <Text
               style={[
                 styles.chipText,
-                { color: isSelected ? '#ffffff' : theme.color.textPrimary },
+                { color: isSelected ? theme.color.onAccent : theme.color.textPrimary },
               ]}>
               {chip.label}
             </Text>
@@ -238,7 +238,7 @@ function StudentRowItem({
       : t('pro.student_profile.assignment.pending');
 
   const statusColor =
-    student.assignmentStatus === 'active' ? '#16a34a' : theme.color.textSecondary;
+    student.assignmentStatus === 'active' ? theme.color.success : theme.color.textSecondary;
 
   return (
     <Pressable

@@ -133,7 +133,7 @@ export default function StudentNutritionScreen() {
             </>
           ) : (
             <DsCard scheme={scheme} style={styles.emptyCard} testID="student.nutrition.emptyState">
-              <View style={styles.emptyIconBlob}>
+              <View style={[styles.emptyIconBlob, { backgroundColor: theme.color.accentBlueSoft }]}>
                 <MaterialIcons color={theme.color.textPrimary} name="set-meal" size={42} />
                 <View style={[styles.emptyIconDot, { backgroundColor: theme.color.accentYellow }]} />
               </View>
@@ -147,7 +147,7 @@ export default function StudentNutritionScreen() {
                 label={t('student.nutrition.empty.cta')}
                 onPress={() => router.push('/nutrition/custom-meals')}
                 testID="student.nutrition.emptyCta"
-                rightIcon={<MaterialIcons color="#ffffff" name="restaurant-menu" size={20} />}
+                rightIcon={<MaterialIcons color={theme.color.onAccent} name="restaurant-menu" size={20} />}
               />
 
               {isWriteLocked ? (
@@ -266,7 +266,7 @@ function WaterWidget({
             </View>
 
             <View style={[styles.waterIconWrap, { backgroundColor: theme.color.accentBlueSoft }]}> 
-              <MaterialIcons color="#38bdf8" name="water-drop" size={32} />
+              <MaterialIcons color={theme.color.accentCyan} name="water-drop" size={32} />
             </View>
           </View>
 
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   },
   emptyIconBlob: {
     alignItems: 'center',
-    backgroundColor: '#dbeafe',
+    backgroundColor: 'transparent',
     borderRadius: 40,
     height: 112,
     justifyContent: 'center',

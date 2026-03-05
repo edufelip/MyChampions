@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   },
   qrContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: 'black',
   },
   qrErrorBanner: {
     backgroundColor: 'rgba(179,38,30,0.9)',
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   qrErrorText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',

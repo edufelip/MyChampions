@@ -83,7 +83,7 @@ export default function AcceptTermsScreen() {
 
       <View style={styles.content}>
         <View style={styles.titleArea}>
-          <View style={[styles.badge, { backgroundColor: theme.color.surface }]}>
+          <View style={[styles.badge, { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft }]}>
             <MaterialIcons color={theme.color.accentPrimary} name="gavel" size={30} />
           </View>
           <Text style={[styles.title, { color: palette.text }]}>{t('auth.terms.title')}</Text>
@@ -98,12 +98,12 @@ export default function AcceptTermsScreen() {
             style={({ pressed }) => [
               styles.linkButton,
               {
-                borderColor: isDark ? '#4a3a33' : '#ffd6d1',
-                backgroundColor: pressed ? 'rgba(19,236,73,0.1)' : 'transparent',
+                borderColor: isDark ? theme.color.borderStrong : theme.color.border,
+                backgroundColor: pressed ? theme.color.accentPrimarySoft : 'transparent',
               },
             ]}>
             <MaterialIcons color={theme.color.accentPrimary} name="open-in-new" size={20} />
-            <Text style={styles.linkButtonText}>{t('auth.terms.open_link')}</Text>
+            <Text style={[styles.linkButtonText, { color: theme.color.accentPrimary }]}>{t('auth.terms.open_link')}</Text>
           </Pressable>
 
           <Pressable
@@ -115,11 +115,11 @@ export default function AcceptTermsScreen() {
               style={[
                 styles.checkbox,
                 {
-                  borderColor: isChecked ? '#13ec49' : isDark ? '#6b5549' : '#e2d7d2',
-                  backgroundColor: isChecked ? '#13ec49' : 'transparent',
+                  borderColor: isChecked ? theme.color.accentPrimary : isDark ? theme.color.borderStrong : theme.color.border,
+                  backgroundColor: isChecked ? theme.color.accentPrimary : 'transparent',
                 },
               ]}>
-              {isChecked ? <MaterialIcons color="#ffffff" name="check" size={15} /> : null}
+              {isChecked ? <MaterialIcons color={theme.color.onAccent} name="check" size={15} /> : null}
             </View>
             <Text style={[styles.checkboxLabel, { color: palette.text }]}> {t('auth.terms.checkbox')}</Text>
           </Pressable>
@@ -130,7 +130,7 @@ export default function AcceptTermsScreen() {
 
           {errorKey ? (
             <View accessibilityLiveRegion="polite">
-              <Text style={styles.errorText}>{t(errorKey)}</Text>
+              <Text style={[styles.errorText, { color: theme.color.danger }]}>{t(errorKey)}</Text>
             </View>
           ) : null}
 
@@ -142,13 +142,15 @@ export default function AcceptTermsScreen() {
             style={({ pressed }) => [
               styles.acceptButton,
               {
+                backgroundColor: theme.color.accentPrimary,
+                shadowColor: theme.color.accentPrimary,
                 opacity: !isChecked || submitting ? 0.6 : pressed ? 0.92 : 1,
               },
             ]}>
             {submitting ? (
               <ActivityIndicator color={theme.color.onAccent} />
             ) : (
-              <Text style={styles.acceptButtonText}>{t('auth.terms.accept_button')}</Text>
+              <Text style={[styles.acceptButtonText, { color: theme.color.onAccent }]}>{t('auth.terms.accept_button')}</Text>
             )}
           </Pressable>
 
@@ -201,7 +203,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: theme.color.accentPrimarySoft,
   },
   title: {
     fontFamily: Fonts.serif,
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     padding: 20,
     gap: 16,
-    shadowColor: '#000000',
+    shadowColor: 'black',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.06,
     shadowRadius: 20,
@@ -236,7 +237,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   linkButtonText: {
-    color: '#13ec49',
     fontFamily: Fonts.sans,
     fontSize: 14,
     fontWeight: '700',
@@ -268,7 +268,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   errorText: {
-    color: '#ef4444',
     fontFamily: Fonts.sans,
     fontSize: 13,
     lineHeight: 18,
@@ -277,17 +276,14 @@ const styles = StyleSheet.create({
   acceptButton: {
     minHeight: 54,
     borderRadius: 27,
-    backgroundColor: theme.color.accentPrimary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: theme.color.accentPrimary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 4,
   },
   acceptButtonText: {
-    color: theme.color.onAccent,
     fontFamily: Fonts.sans,
     fontSize: 17,
     fontWeight: '800',

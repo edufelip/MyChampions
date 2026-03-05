@@ -225,7 +225,7 @@ export default function CreateAccountScreen() {
         </View>
 
         <View style={styles.titleArea}>
-          <View style={[styles.brandBadge, { backgroundColor: theme.color.surface }]}>
+          <View style={[styles.brandBadge, { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft }]}>
             <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={32} />
           </View>
           <Text style={[styles.title, { color: palette.text }]} testID="auth.createAccount.title">
@@ -252,7 +252,7 @@ export default function CreateAccountScreen() {
             />
             <View accessibilityLiveRegion="polite">
               {errors.name ? (
-                <Text style={styles.inlineError} testID="auth.createAccount.error.nameRequired">
+                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.createAccount.error.nameRequired">
                   {t(errors.name)}
                 </Text>
               ) : null}
@@ -278,7 +278,7 @@ export default function CreateAccountScreen() {
             />
             <View accessibilityLiveRegion="polite">
               {errors.email ? (
-                <Text style={styles.inlineError} testID="auth.createAccount.error.emailRequired">
+                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.createAccount.error.emailRequired">
                   {t(errors.email)}
                 </Text>
               ) : null}
@@ -324,7 +324,7 @@ export default function CreateAccountScreen() {
             <Text style={[styles.helperText, { color: palette.icon }]}>{t('auth.signup.password_helper')}</Text>
             <View accessibilityLiveRegion="polite">
               {errors.password ? (
-                <Text style={styles.inlineError} testID="auth.createAccount.error.password">
+                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.createAccount.error.password">
                   {t(errors.password)}
                 </Text>
               ) : null}
@@ -375,7 +375,7 @@ export default function CreateAccountScreen() {
             </View>
             <View accessibilityLiveRegion="polite">
               {errors.passwordConfirmation ? (
-                <Text style={styles.inlineError} testID="auth.createAccount.error.passwordConfirmation">
+                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.createAccount.error.passwordConfirmation">
                   {t(errors.passwordConfirmation)}
                 </Text>
               ) : null}
@@ -384,7 +384,7 @@ export default function CreateAccountScreen() {
 
           <View accessibilityRole="alert">
             {submitError ? (
-              <Text style={styles.submitError} testID="auth.createAccount.error.submit">
+              <Text style={[styles.submitError, { color: theme.color.danger }]} testID="auth.createAccount.error.submit">
                 {t(submitError)}
               </Text>
             ) : null}
@@ -397,6 +397,7 @@ export default function CreateAccountScreen() {
             style={({ pressed }) => [
               styles.primaryButton,
               {
+                backgroundColor: theme.color.accentPrimary,
                 opacity: submitting ? 0.7 : 1,
                 transform: [{ scale: pressed ? 0.96 : 1 }],
               },
@@ -405,11 +406,11 @@ export default function CreateAccountScreen() {
             {submitting ? (
               <ActivityIndicator
                 accessibilityLabel={t('a11y.loading.submitting')}
-                color="#ffffff"
+                color={theme.color.onAccent}
               />
             ) : (
               <>
-                <Text style={styles.primaryButtonText}>{t('auth.signup.cta_primary')}</Text>
+                <Text style={[styles.primaryButtonText, { color: theme.color.onAccent }]}>{t('auth.signup.cta_primary')}</Text>
                 <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
               </>
             )}
@@ -430,7 +431,7 @@ export default function CreateAccountScreen() {
                 },
               ]}
               testID="auth.createAccount.googleButton">
-              <Text style={[styles.socialButtonText, { color: '#ea4335' }]}>{t('auth.social.google')}</Text>
+              <Text style={[styles.socialButtonText, { color: theme.color.accentBlue }]}>{t('auth.social.google')}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -517,7 +518,6 @@ const styles = StyleSheet.create({
   },
   brandBadge: {
     alignItems: 'center',
-    borderColor: theme.color.accentPrimarySoft,
     borderRadius: 44,
     borderWidth: 4,
     elevation: 2,
@@ -579,12 +579,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   inlineError: {
-    color: theme.color.danger,
     fontSize: 13,
     paddingHorizontal: 12,
   },
   submitError: {
-    color: theme.color.danger,
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
@@ -592,7 +590,6 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: theme.color.accentPrimary,
     borderRadius: 28,
     flexDirection: 'row',
     gap: 8,
@@ -602,7 +599,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: theme.color.onAccent,
     fontSize: 16,
     fontWeight: '700',
   },

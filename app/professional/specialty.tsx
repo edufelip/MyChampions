@@ -68,6 +68,8 @@ export default function ProfessionalSpecialtyScreen() {
     text: theme.color.textPrimary,
     icon: theme.color.textSecondary,
     tint: theme.color.accentPrimary,
+    danger: theme.color.danger,
+    onAccent: theme.color.onAccent,
   };
 
   const { t } = useTranslation();
@@ -281,7 +283,7 @@ function RemovalAssistCard({
   specialty: Specialty;
   assistState: RemovalAssistState;
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string };
+  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
   t: TFn;
   onAction: (navigationTarget: string | undefined) => void;
   onDismiss: () => void;
@@ -293,7 +295,7 @@ function RemovalAssistCard({
 
   return (
     <DsCard scheme={scheme} variant="warning" accessibilityRole="alert" testID="pro.specialty.removalAssist">
-      <Text style={[styles.assistTitle, { color: '#b3261e' }]}>{t(titleKey)}</Text>
+      <Text style={[styles.assistTitle, { color: palette.danger }]}>{t(titleKey)}</Text>
       <Text style={[styles.assistBody, { color: palette.text }]}>{t(bodyKey)}</Text>
 
       {actions.map((meta) => (
@@ -312,14 +314,14 @@ function RemovalAssistCard({
           <Text
             style={[
               styles.assistActionText,
-              meta.priority === 'primary' ? { color: '#fff' } : { color: palette.tint },
+              meta.priority === 'primary' ? { color: palette.onAccent } : { color: palette.tint },
             ]}>
             {t(meta.label)}
           </Text>
           <Text
             style={[
               styles.assistActionDesc,
-              { color: meta.priority === 'primary' ? '#ffffffbb' : palette.icon },
+              { color: meta.priority === 'primary' ? `${palette.onAccent}bb` : palette.icon },
             ]}>
             {t(meta.description)}
           </Text>
@@ -349,7 +351,7 @@ function SpecialtyList({
 }: {
   specialties: SpecialtyRecord[];
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string };
+  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
   t: TFn;
   onRemove: (s: Specialty) => void;
   onOpenCredential: (s: Specialty) => void;
@@ -381,7 +383,7 @@ function SpecialtyList({
               onPress={() => onRemove(record.specialty)}
               disabled={isWriteLocked}
               testID={`pro.specialty.remove.${record.specialty}`}>
-              <Text style={[styles.link, { color: isWriteLocked ? palette.icon : '#b3261e' }]}>
+              <Text style={[styles.link, { color: isWriteLocked ? palette.icon : palette.danger }]}>
                 {t('pro.specialty.remove')}
               </Text>
             </Pressable>
@@ -401,7 +403,7 @@ function AddSpecialtyButtons({
 }: {
   specialties: SpecialtyRecord[];
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string };
+  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
   t: TFn;
   onAdd: (s: Specialty) => void;
   isWriteLocked: boolean;
@@ -454,7 +456,7 @@ function CredentialForm({
   error: string | null;
   isSaving: boolean;
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string };
+  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
   t: TFn;
   onChange: (field: keyof CredentialFormData, value: string) => void;
   onSave: () => void;
@@ -499,7 +501,7 @@ function CredentialForm({
 
       {error ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.errorText, { color: '#b3261e' }]}>{error}</Text>
+          <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
         </View>
       ) : null}
 
@@ -537,7 +539,7 @@ function LabeledInput({
   placeholder: string;
   value: string;
   onChangeText: (v: string) => void;
-  palette: { text: string; icon: string; tint: string };
+  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
   testID: string;
 }) {
   return (

@@ -47,6 +47,7 @@ type Palette = {
   text: string;
   tint: string;
   icon: string;
+  danger: string;
 };
 
 type AddSessionFormState =
@@ -68,6 +69,7 @@ export default function TrainingPlanBuilderScreen() {
     text: theme.color.textPrimary,
     tint: theme.color.accentPrimary,
     icon: theme.color.textSecondary,
+    danger: theme.color.danger,
   };
   const { t } = useTranslation();
   const router = useRouter();
@@ -226,7 +228,7 @@ export default function TrainingPlanBuilderScreen() {
         <TextInput
           style={[
             styles.textInput,
-            { color: palette.text, borderColor: formErrors.name ? '#c00' : palette.icon },
+            { color: palette.text, borderColor: formErrors.name ? palette.danger : palette.icon },
           ]}
           placeholder={t('pro.plan.field.name.placeholder')}
           placeholderTextColor={palette.icon}
@@ -236,7 +238,7 @@ export default function TrainingPlanBuilderScreen() {
         />
         {formErrors.name && (
           <View accessibilityLiveRegion="polite">
-            <Text style={styles.fieldError}>
+            <Text style={[styles.fieldError, { color: palette.danger }]}>
               {formErrors.name === 'required'
                 ? t('pro.plan.validation.name_required')
                 : t('pro.plan.validation.name_too_short')}
@@ -536,7 +538,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   fieldLabel: { fontSize: 13, fontWeight: '600', marginTop: 8 },
-  fieldError: { color: '#c00', fontSize: 12, marginTop: 2 },
+  fieldError: { fontSize: 12, marginTop: 2 },
   textInput: { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 15 },
   emptyText: { fontSize: 14, textAlign: 'center', marginVertical: 8 },
   sessionCard: {

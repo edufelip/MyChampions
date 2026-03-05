@@ -268,7 +268,7 @@ function AssignmentCard({
 
   const statusColor =
     status === 'active'
-      ? '#16a34a'
+      ? theme.color.success
       : status === 'pending'
       ? theme.color.textSecondary
       : `${theme.color.textSecondary}99`;

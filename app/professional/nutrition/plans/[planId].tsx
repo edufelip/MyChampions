@@ -47,6 +47,7 @@ type Palette = {
   text: string;
   tint: string;
   icon: string;
+  danger: string;
 };
 
 type AddItemFormState =
@@ -64,6 +65,7 @@ export default function NutritionPlanBuilderScreen() {
     text: theme.color.textPrimary,
     tint: theme.color.accentPrimary,
     icon: theme.color.textSecondary,
+    danger: theme.color.danger,
   };
   const { t } = useTranslation();
   const router = useRouter();
@@ -361,7 +363,7 @@ function PlanMetadataForm({
         {t('pro.plan.field.name.label')}
       </Text>
       <TextInput
-        style={[styles.textInput, { color: palette.text, borderColor: errors.name ? '#c00' : palette.icon }]}
+        style={[styles.textInput, { color: palette.text, borderColor: errors.name ? palette.danger : palette.icon }]}
         placeholder={t('pro.plan.field.name.placeholder')}
         placeholderTextColor={palette.icon}
         value={name}
@@ -370,7 +372,7 @@ function PlanMetadataForm({
       />
       {errors.name && (
         <View accessibilityLiveRegion="polite">
-          <Text style={styles.fieldError}>
+          <Text style={[styles.fieldError, { color: palette.danger }]}>
             {errors.name === 'required'
               ? t('pro.plan.validation.name_required')
               : t('pro.plan.validation.name_too_short')}
@@ -383,7 +385,7 @@ function PlanMetadataForm({
         {t('pro.plan.field.calories_target.label')}
       </Text>
       <TextInput
-        style={[styles.textInput, { color: palette.text, borderColor: errors.caloriesTarget ? '#c00' : palette.icon }]}
+        style={[styles.textInput, { color: palette.text, borderColor: errors.caloriesTarget ? palette.danger : palette.icon }]}
         placeholder={t('pro.plan.field.calories_target.placeholder')}
         placeholderTextColor={palette.icon}
         value={caloriesTarget}
@@ -393,7 +395,7 @@ function PlanMetadataForm({
       />
       {errors.caloriesTarget && (
         <View accessibilityLiveRegion="polite">
-          <Text style={styles.fieldError}>{t('pro.plan.validation.calories_non_negative')}</Text>
+          <Text style={[styles.fieldError, { color: palette.danger }]}>{t('pro.plan.validation.calories_non_negative')}</Text>
         </View>
       )}
 
@@ -423,7 +425,7 @@ function PlanMetadataForm({
       </View>
       {(errors.carbsTarget || errors.proteinsTarget || errors.fatsTarget) && (
         <View accessibilityLiveRegion="polite">
-          <Text style={styles.fieldError}>{t('pro.plan.validation.macros_non_negative')}</Text>
+          <Text style={[styles.fieldError, { color: palette.danger }]}>{t('pro.plan.validation.macros_non_negative')}</Text>
         </View>
       )}
     </View>
@@ -447,7 +449,7 @@ function MacroField({ label, value, hasError, palette, onChange }: MacroFieldPro
       <TextInput
         style={[
           styles.macroInput,
-          { color: palette.text, borderColor: hasError ? '#c00' : palette.icon },
+          { color: palette.text, borderColor: hasError ? palette.danger : palette.icon },
         ]}
         value={value}
         onChangeText={onChange}
@@ -590,7 +592,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   fieldLabel: { fontSize: 13, fontWeight: '600', marginTop: 8 },
-  fieldError: { color: '#c00', fontSize: 12, marginTop: 2 },
+  fieldError: { fontSize: 12, marginTop: 2 },
   textInput: {
     borderWidth: 1,
     borderRadius: 8,

@@ -137,7 +137,7 @@ export default function RoleSelectionScreen() {
               {
                 borderColor: studentCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ['rgba(19,236,73,0)', 'rgba(19,236,73,1)'],
+                  outputRange: ['transparent', theme.color.accentPrimary],
                 }),
                 borderWidth: studentCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
@@ -168,12 +168,12 @@ export default function RoleSelectionScreen() {
               ]}
               testID="auth.roleSelection.studentCard">
               {isStudentSelected ? (
-                <View style={styles.selectedBadge}>
-                  <MaterialIcons color="#ffffff" name="check" size={14} />
+                <View style={[styles.selectedBadge, { backgroundColor: theme.color.accentPrimary }]}>
+                  <MaterialIcons color={theme.color.onAccent} name="check" size={14} />
                 </View>
               ) : null}
 
-              <View style={[styles.cardIcon, { backgroundColor: isDark ? '#21432b' : '#ecfdf3' }]}>
+              <View style={[styles.cardIcon, { backgroundColor: isDark ? theme.color.successSoft : theme.color.accentPrimarySoft }]}>
                 <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={24} />
               </View>
 
@@ -188,7 +188,7 @@ export default function RoleSelectionScreen() {
               {
                 borderColor: professionalCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ['rgba(19,236,73,0)', 'rgba(19,236,73,1)'],
+                  outputRange: ['transparent', theme.color.accentPrimary],
                 }),
                 borderWidth: professionalCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
@@ -219,12 +219,12 @@ export default function RoleSelectionScreen() {
               ]}
               testID="auth.roleSelection.professionalCard">
               {isProfessionalSelected ? (
-                <View style={styles.selectedBadge}>
-                  <MaterialIcons color="#ffffff" name="check" size={14} />
+                <View style={[styles.selectedBadge, { backgroundColor: theme.color.accentPrimary }]}>
+                  <MaterialIcons color={theme.color.onAccent} name="check" size={14} />
                 </View>
               ) : null}
 
-              <View style={[styles.cardIcon, { backgroundColor: isDark ? '#21432b' : '#f5f5f5' }]}>
+              <View style={[styles.cardIcon, { backgroundColor: isDark ? theme.color.successSoft : theme.color.surfaceMuted }]}>
                 <MaterialIcons color={palette.icon} name="assignment" size={24} />
               </View>
 
@@ -234,14 +234,14 @@ export default function RoleSelectionScreen() {
           </Animated.View>
         </View>
 
-        <View style={[styles.lockNotePanel, { backgroundColor: isDark ? '#33261f' : '#ecfdf3', borderColor: isDark ? '#4a372e' : '#bbf7d0' }]}>
-          <MaterialIcons color={isDark ? '#fbbf8f' : '#fb923c'} name="info-outline" size={20} style={styles.lockNoteIcon} />
+        <View style={[styles.lockNotePanel, { backgroundColor: isDark ? theme.color.warningSoft : theme.color.accentPrimarySoft, borderColor: isDark ? theme.color.borderStrong : theme.color.successSoft }]}>
+          <MaterialIcons color={theme.color.warning} name="info-outline" size={20} style={styles.lockNoteIcon} />
           <Text style={[styles.lockNote, { color: palette.icon }]}>{t('auth.role.lock_note')}</Text>
         </View>
 
         <View accessibilityLiveRegion="polite">
           {roleError ? (
-            <Text style={styles.inlineError} testID="auth.roleSelection.error.roleRequired">
+            <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.roleSelection.error.roleRequired">
               {t(roleError)}
             </Text>
           ) : null}
@@ -256,6 +256,7 @@ export default function RoleSelectionScreen() {
           style={({ pressed }) => [
             styles.primaryButton,
             {
+              backgroundColor: theme.color.accentPrimary,
               opacity: isSubmitting ? 0.7 : 1,
               transform: [{ scale: pressed ? 0.96 : 1 }],
             },
@@ -264,11 +265,11 @@ export default function RoleSelectionScreen() {
           {isSubmitting ? (
             <ActivityIndicator
               accessibilityLabel={t('a11y.loading.submitting')}
-              color="#ffffff"
+              color={theme.color.onAccent}
             />
           ) : (
             <>
-              <Text style={styles.primaryButtonText}>{t('auth.role.cta_continue')}</Text>
+              <Text style={[styles.primaryButtonText, { color: theme.color.onAccent }]}>{t('auth.role.cta_continue')}</Text>
               <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
             </>
           )}
@@ -340,7 +341,6 @@ const styles = StyleSheet.create({
   },
   selectedBadge: {
     alignItems: 'center',
-    backgroundColor: theme.color.accentPrimary,
     borderRadius: 12,
     height: 24,
     justifyContent: 'center',
@@ -384,14 +384,12 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   inlineError: {
-    color: theme.color.danger,
     fontSize: 13,
     marginTop: 10,
     paddingHorizontal: 6,
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: theme.color.accentPrimary,
     borderRadius: 28,
     flexDirection: 'row',
     gap: 8,
@@ -401,7 +399,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: theme.color.onAccent,
     fontSize: 17,
     fontWeight: '700',
   },

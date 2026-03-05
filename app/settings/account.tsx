@@ -163,10 +163,10 @@ export default function AccountSettingsScreen() {
 
         {deleteState.kind === 'success' ? (
           <View
-            style={[styles.successBanner, { borderColor: '#16a34a' }]}
+            style={[styles.successBanner, { borderColor: theme.color.success, backgroundColor: theme.color.successSoft }]}
             testID="settings.account.deleteSuccess"
             accessibilityRole="alert">
-            <Text style={[styles.successText, { color: '#16a34a' }]}>
+            <Text style={[styles.successText, { color: theme.color.success }]}>
               {t('settings.account.delete.success')}
             </Text>
           </View>
@@ -175,7 +175,7 @@ export default function AccountSettingsScreen() {
             {errorMessage ? (
               <View accessibilityLiveRegion="polite">
                 <Text
-                  style={[styles.errorText, { color: '#b3261e' }]}
+                  style={[styles.errorText, { color: theme.color.danger }]}
                   testID="settings.account.deleteError">
                   {errorMessage}
                 </Text>
@@ -187,10 +187,10 @@ export default function AccountSettingsScreen() {
               disabled={isDeleteLocked}
               style={[
                 styles.destructiveButton,
-                { borderColor: '#b3261e', opacity: isDeleteLocked ? 0.5 : 1 },
+                { borderColor: theme.color.danger, opacity: isDeleteLocked ? 0.5 : 1 },
               ]}
               testID="settings.account.deleteCta">
-              <Text style={[styles.destructiveButtonText, { color: '#b3261e' }]}>
+              <Text style={[styles.destructiveButtonText, { color: theme.color.danger }]}>
                 {t('settings.account.delete.cta')}
               </Text>
             </Pressable>
@@ -227,7 +227,6 @@ const styles = StyleSheet.create({
   },
   linkButtonText: { fontSize: 14, fontWeight: '600' },
   successBanner: {
-    backgroundColor: '#16a34a11',
     borderRadius: 8,
     borderWidth: 1,
     padding: 12,

@@ -10,6 +10,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { getDsTheme, type DsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
@@ -48,6 +49,7 @@ export default function StudentHomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
+  const theme = getDsTheme(isDark ? 'dark' : 'light');
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -82,7 +84,7 @@ export default function StudentHomeScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: isDark ? '#102215' : '#f6f8f6' }]}
+      style={[styles.container, { backgroundColor: theme.color.canvas }]}
       contentContainerStyle={styles.content}
       testID="student.home.screen">
       <Stack.Screen options={{ title: t('student.home.title'), headerShown: false }} />
@@ -92,7 +94,7 @@ export default function StudentHomeScreen() {
         style={[
           styles.blob,
           styles.blobTopLeft,
-          { backgroundColor: isDark ? '#1f3b28' : '#dcfce7' },
+          { backgroundColor: theme.blob.topLeft },
         ]}
       />
       <View
@@ -100,14 +102,14 @@ export default function StudentHomeScreen() {
         style={[
           styles.blob,
           styles.blobBottomRight,
-          { backgroundColor: isDark ? '#12315f' : '#dbeafe' },
+          { backgroundColor: theme.blob.bottomRight },
         ]}
       />
 
       <View style={[styles.shell, { paddingTop: insets.top + 12 }]}>
         {offlineDisplay.showOfflineBanner ? (
           <OfflineBanner
-            palette={palette}
+            theme={theme}
             staleElapsed={offlineDisplay.staleElapsed}
             t={t}
             testID="student.home.offlineBanner"
@@ -119,47 +121,49 @@ export default function StudentHomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('student.home.cta_professionals')}
             onPress={() => router.push('/student/professionals')}
-            style={[styles.circleButton, { backgroundColor: isDark ? '#16301e' : '#ffffff' }]}
+            style={[styles.circleButton, { backgroundColor: theme.color.surface }]}
             testID="student.home.menuButton">
-            <MaterialIcons color={palette.text} name="menu" size={22} />
+            <MaterialIcons color={theme.color.textPrimary} name="menu" size={22} />
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('shell.tabs.account')}
             onPress={() => router.push('/settings/account')}
-            style={[styles.circleButton, { backgroundColor: isDark ? '#16301e' : '#ffffff' }]}
+            style={[styles.circleButton, { backgroundColor: theme.color.surface }]}
             testID="student.home.accountButton">
-            <MaterialIcons color={palette.text} name="notifications-none" size={22} />
-            <View style={styles.notificationDot} />
+            <MaterialIcons color={theme.color.textPrimary} name="notifications-none" size={22} />
+            <View style={[styles.notificationDot, { backgroundColor: theme.color.accentPrimary }]} />
           </Pressable>
         </View>
 
         {hasPendingConnection ? (
           <View
-            style={[styles.pendingPill, { backgroundColor: isDark ? '#4a2e1f' : '#ffe8d8' }]}
+            style={[styles.pendingPill, { backgroundColor: theme.color.warningSoft }]}
             testID="student.home.pendingBadge"
             accessibilityRole="alert">
-            <MaterialIcons color={isDark ? '#fbbf8f' : '#d97706'} name="hourglass-empty" size={18} />
-            <Text style={[styles.pendingText, { color: isDark ? '#fbbf8f' : '#b45309' }]}>
+            <MaterialIcons color={theme.color.warning} name="hourglass-empty" size={18} />
+            <Text style={[styles.pendingText, { color: theme.color.warning }]}>
               {t('student.home.pending_connection')}
             </Text>
           </View>
         ) : null}
 
         {isLoading ? (
-          <LoadingStateCardStack palette={palette} t={t} testID="student.home.loading" />
+          <LoadingStateCardStack theme={theme} t={t} testID="student.home.loading" />
         ) : (
           <View style={styles.sectionStack}>
             <HydrationCard
               waterState={waterState}
               palette={palette}
+              theme={theme}
               t={t}
               isWriteLocked={isWriteLocked}
             />
 
             <PlanCard
               palette={palette}
+              theme={theme}
               icon="restaurant"
               title={t('student.home.nutrition.section')}
               hasActivePlan={hasNutritionPlan}
@@ -173,6 +177,7 @@ export default function StudentHomeScreen() {
 
             <PlanCard
               palette={palette}
+              theme={theme}
               icon="fitness-center"
               title={t('student.home.training.section')}
               hasActivePlan={hasTrainingPlan}
@@ -187,10 +192,10 @@ export default function StudentHomeScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/student/professionals')}
-              style={[styles.manageButton, { borderColor: isDark ? '#4b5563' : '#cbd5e1' }]}
+              style={[styles.manageButton, { borderColor: theme.color.borderStrong }]}
               testID="student.home.manageProfessionalsCta">
-              <MaterialIcons color={palette.text} name="manage-accounts" size={20} />
-              <Text style={[styles.manageButtonText, { color: palette.text }]}>
+              <MaterialIcons color={theme.color.textPrimary} name="manage-accounts" size={20} />
+              <Text style={[styles.manageButtonText, { color: theme.color.textPrimary }]}>
                 {t('student.home.cta_manage_professionals')}
               </Text>
             </Pressable>
@@ -202,22 +207,25 @@ export default function StudentHomeScreen() {
 }
 
 function OfflineBanner({
-  palette,
+  theme,
   staleElapsed,
   t,
   testID,
 }: {
-  palette: Palette;
+  theme: DsTheme;
   staleElapsed: StaleElapsed | null;
   t: TFn;
   testID: string;
 }) {
   return (
-    <View style={styles.offlineBanner} testID={testID} accessibilityRole="alert">
-      <MaterialIcons color="#ef4444" name="cloud-off" size={18} />
-      <Text style={[styles.offlineModeText, { color: '#b91c1c' }]}>{t('student.home.offline.mode')}</Text>
+    <View
+      style={[styles.offlineBanner, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder }]}
+      testID={testID}
+      accessibilityRole="alert">
+      <MaterialIcons color={theme.color.danger} name="cloud-off" size={18} />
+      <Text style={[styles.offlineModeText, { color: theme.color.danger }]}>{t('student.home.offline.mode')}</Text>
       {staleElapsed ? (
-        <Text style={[styles.offlineTimeText, { color: '#dc2626' }]}>
+        <Text style={[styles.offlineTimeText, { color: theme.color.danger }]}>
           {`• ${formatStaleElapsed(staleElapsed, t)}`}
         </Text>
       ) : null}
@@ -228,11 +236,13 @@ function OfflineBanner({
 function HydrationCard({
   waterState,
   palette,
+  theme,
   t,
   isWriteLocked,
 }: {
   waterState: UseWaterTrackingResult['state'];
   palette: Palette;
+  theme: DsTheme;
   t: TFn;
   isWriteLocked: boolean;
 }) {
@@ -255,18 +265,18 @@ function HydrationCard({
       : t('student.home.hydration.no_goal');
 
   return (
-    <View style={[styles.card, { backgroundColor: palette.background === '#151718' ? '#1f2937' : '#ffffff' }]} testID="student.home.hydrationCard">
+    <View style={[styles.card, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]} testID="student.home.hydrationCard">
       <View style={styles.cardHeaderRow}>
         <View style={styles.cardHeaderLeft}>
-          <View style={[styles.iconBubble, { backgroundColor: '#dbeafe' }]}>
-            <MaterialIcons color="#3b82f6" name="water-drop" size={20} />
+          <View style={[styles.iconBubble, { backgroundColor: theme.color.accentBlueSoft }]}>
+            <MaterialIcons color={theme.color.accentBlue} name="water-drop" size={20} />
           </View>
-          <Text style={[styles.cardTitle, { color: palette.text }]}>{t('student.home.hydration.title')}</Text>
+          <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{t('student.home.hydration.title')}</Text>
         </View>
 
         {isWriteLocked ? (
-          <View style={[styles.readOnlyBadge, { backgroundColor: palette.background === '#151718' ? '#334155' : '#f1f5f9' }]}>
-            <Text style={[styles.readOnlyText, { color: palette.icon }]}>{t('student.home.offline.read_only_badge')}</Text>
+          <View style={[styles.readOnlyBadge, { backgroundColor: theme.color.surfaceMuted }]}>
+            <Text style={[styles.readOnlyText, { color: theme.color.textSecondary }]}>{t('student.home.offline.read_only_badge')}</Text>
           </View>
         ) : null}
       </View>
@@ -277,16 +287,16 @@ function HydrationCard({
             style={[
               styles.hydrationValue,
               !goal || consumed === null ? styles.hydrationValueNoGoal : null,
-              { color: palette.text },
+              { color: theme.color.textPrimary },
             ]}
             testID="student.home.hydrationCard.progress">
             {progressLabel}
           </Text>
-          <Text style={[styles.hydrationMeta, { color: palette.icon }]}>{goalOwnerLabel}</Text>
+          <Text style={[styles.hydrationMeta, { color: theme.color.textSecondary }]}>{goalOwnerLabel}</Text>
         </View>
 
-        <View style={[styles.percentRing, { borderColor: '#bfdbfe' }]}>
-          <Text style={styles.percentRingText}>{`${percent}%`}</Text>
+        <View style={[styles.percentRing, { borderColor: theme.color.accentBlueSoft }]}>
+          <Text style={[styles.percentRingText, { color: theme.color.accentBlue }]}>{`${percent}%`}</Text>
         </View>
       </View>
 
@@ -297,6 +307,7 @@ function HydrationCard({
 
 function PlanCard({
   palette,
+  theme,
   icon,
   title,
   hasActivePlan,
@@ -308,6 +319,7 @@ function PlanCard({
   testPrefix,
 }: {
   palette: Palette;
+  theme: DsTheme;
   icon: keyof typeof MaterialIcons.glyphMap;
   title: string;
   hasActivePlan: boolean;
@@ -321,15 +333,15 @@ function PlanCard({
   const disabled = isWriteLocked && !hasActivePlan;
 
   return (
-    <View style={[styles.card, { backgroundColor: palette.background === '#151718' ? '#1f2937' : '#ffffff' }]} testID={`${testPrefix}.card`}>
+    <View style={[styles.card, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]} testID={`${testPrefix}.card`}>
       <View style={styles.cardHeaderLeft}>
-        <View style={[styles.iconBubble, { backgroundColor: '#f1f5f9' }]}>
-          <MaterialIcons color={palette.tint} name={icon} size={20} />
+        <View style={[styles.iconBubble, { backgroundColor: theme.color.surfaceMuted }]}>
+          <MaterialIcons color={theme.color.accentPrimary} name={icon} size={20} />
         </View>
-        <Text style={[styles.cardTitle, { color: palette.text }]}>{title}</Text>
+        <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{title}</Text>
       </View>
 
-      <Text style={[styles.planStatus, { color: palette.icon }]}>
+      <Text style={[styles.planStatus, { color: theme.color.textSecondary }]}>
         {hasActivePlan ? availableLabel : emptyLabel}
       </Text>
 
@@ -340,63 +352,59 @@ function PlanCard({
         style={({ pressed }) => [
           hasActivePlan ? styles.primaryCardCta : styles.outlineCardCta,
           {
-            backgroundColor: hasActivePlan
-              ? '#13ec49'
-              : palette.background === '#151718'
-              ? '#111827'
-              : '#ffffff',
-            borderColor: hasActivePlan ? '#13ec49' : palette.background === '#151718' ? '#374151' : '#cbd5e1',
+            backgroundColor: hasActivePlan ? theme.color.accentPrimary : theme.color.surface,
+            borderColor: hasActivePlan ? theme.color.accentPrimary : theme.color.borderStrong,
             opacity: disabled ? 0.6 : 1,
             transform: [{ scale: pressed ? 0.98 : 1 }],
           },
         ]}
         testID={hasActivePlan ? `${testPrefix}.goCta` : `${testPrefix}.emptyCta`}>
-        {disabled ? <MaterialIcons color={palette.icon} name="lock" size={18} /> : null}
-        <Text style={[styles.cardCtaText, { color: hasActivePlan ? '#ffffff' : palette.text }]}>{ctaLabel}</Text>
-        {hasActivePlan ? <MaterialIcons color="#ffffff" name="chevron-right" size={20} /> : null}
+        {disabled ? <MaterialIcons color={theme.color.textSecondary} name="lock" size={18} /> : null}
+        <Text style={[styles.cardCtaText, { color: hasActivePlan ? theme.color.onAccent : theme.color.textPrimary }]}>{ctaLabel}</Text>
+        {hasActivePlan ? <MaterialIcons color={theme.color.onAccent} name="chevron-right" size={20} /> : null}
       </Pressable>
     </View>
   );
 }
 
 function LoadingStateCardStack({
-  palette,
+  theme,
   t,
   testID,
 }: {
-  palette: Palette;
+  theme: DsTheme;
   t: TFn;
   testID: string;
 }) {
   return (
     <View testID={testID} style={styles.sectionStack}>
       <View style={styles.loadingIconWrap}>
-        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color="#13ec49" size="large" />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} size="large" />
       </View>
 
-      <View style={[styles.staleBanner, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]}>
-        <MaterialIcons color="#d97706" name="warning-amber" size={18} />
+      <View style={[styles.staleBanner, { backgroundColor: theme.color.warningSoft, borderColor: theme.color.warning }]}>
+        <MaterialIcons color={theme.color.warning} name="warning-amber" size={18} />
         <View style={styles.staleTextWrap}>
-          <Text style={styles.staleTitle}>{t('student.home.loading.stale_title')}</Text>
-          <Text style={styles.staleBody}>{t('student.home.loading.stale_body')}</Text>
+          <Text style={[styles.staleTitle, { color: theme.color.readOnlyText }]}>{t('student.home.loading.stale_title')}</Text>
+          <Text style={[styles.staleBody, { color: theme.color.warning }]}>{t('student.home.loading.stale_body')}</Text>
         </View>
       </View>
 
-      <View style={[styles.card, styles.skeletonCard]}>
-        <View style={styles.skeletonLineLg} />
-        <View style={styles.skeletonBlock} />
+      <View style={[styles.card, styles.skeletonCard, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}>
+        <View style={[styles.skeletonLineLg, { backgroundColor: theme.color.border }]} />
+        <View style={[styles.skeletonBlock, { backgroundColor: theme.color.border }]} />
       </View>
-      <View style={[styles.card, styles.skeletonCard]}>
-        <View style={styles.skeletonLineLg} />
+      <View style={[styles.card, styles.skeletonCard, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}>
+        <View style={[styles.skeletonLineLg, { backgroundColor: theme.color.border }]} />
         <View style={styles.skeletonRow}>
-          <View style={styles.skeletonSmallBlock} />
-          <View style={styles.skeletonSmallBlock} />
-          <View style={styles.skeletonSmallBlock} />
+          <View style={[styles.skeletonSmallBlock, { backgroundColor: theme.color.border }]} />
+          <View style={[styles.skeletonSmallBlock, { backgroundColor: theme.color.border }]} />
+          <View style={[styles.skeletonSmallBlock, { backgroundColor: theme.color.border }]} />
         </View>
       </View>
-      <View style={[styles.card, styles.skeletonCard]}>
-        <View style={styles.skeletonLineLg} />
-        <View style={styles.skeletonBlock} />
+      <View style={[styles.card, styles.skeletonCard, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}>
+        <View style={[styles.skeletonLineLg, { backgroundColor: theme.color.border }]} />
+        <View style={[styles.skeletonBlock, { backgroundColor: theme.color.border }]} />
       </View>
     </View>
   );
@@ -447,7 +455,7 @@ const styles = StyleSheet.create({
     width: 48,
   },
   notificationDot: {
-    backgroundColor: '#13ec49',
+    backgroundColor: 'transparent',
     borderRadius: 5,
     height: 10,
     position: 'absolute',
@@ -474,8 +482,8 @@ const styles = StyleSheet.create({
   },
   offlineBanner: {
     alignItems: 'center',
-    backgroundColor: '#fee2e2',
-    borderColor: '#fecaca',
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
     borderRadius: 0,
     borderWidth: 1,
     flexDirection: 'row',
@@ -494,7 +502,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   card: {
-    borderColor: '#f1f5f9',
+    borderColor: 'transparent',
     borderRadius: 30,
     borderWidth: 1,
     elevation: 1,
@@ -566,7 +574,6 @@ const styles = StyleSheet.create({
     width: 80,
   },
   percentRingText: {
-    color: '#3b82f6',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -630,26 +637,26 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   staleTitle: {
-    color: '#92400e',
+    color: 'transparent',
     fontSize: 13,
     fontWeight: '700',
   },
   staleBody: {
-    color: '#b45309',
+    color: 'transparent',
     fontSize: 12,
   },
   skeletonCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'transparent',
     gap: 10,
   },
   skeletonLineLg: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: 'transparent',
     borderRadius: 999,
     height: 16,
     width: '45%',
   },
   skeletonBlock: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: 'transparent',
     borderRadius: 16,
     height: 84,
     width: '100%',
@@ -659,7 +666,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   skeletonSmallBlock: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: 'transparent',
     borderRadius: 14,
     flex: 1,
     height: 64,
