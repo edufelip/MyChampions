@@ -38,13 +38,17 @@ export default function RoleSelectionScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { lockRole } = useAuthSession();
+  const { isHydrated, currentUser, lockRole } = useAuthSession();
   const { emitEvent } = useAnalytics();
   const [selectedRole, setSelectedRole] = useState<RoleIntent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [roleError, setRoleError] = useState<'auth.role.validation.required' | 'auth.role.error.save_failed' | null>(
-    null
-  );
+  const [roleError, setRoleError] = useState<
+    | 'auth.role.validation.required'
+    | 'auth.role.error.save_failed'
+    | 'auth.role.error.navigation_failed'
+    | 'auth.role.error.auth_required'
+    | null
+  >(null);
   const studentCardSelectionAnim = useRef(new Animated.Value(0)).current;
   const professionalCardSelectionAnim = useRef(new Animated.Value(0)).current;
 
@@ -61,17 +65,31 @@ export default function RoleSelectionScreen() {
     }
 
     setRoleError(null);
+    if (!isHydrated || !currentUser) {
+      setRoleError('auth.role.error.auth_required');
+      router.replace('/auth/sign-in');
+      return;
+    }
+
     const role = selectedRole as RoleIntent;
     emitEvent(buildRoleSelected(role));
     if (role === 'student') {
       emitEvent(buildSelfGuidedStartClicked());
     }
     setIsSubmitting(true);
+    let didPersistRole = false;
     try {
       await lockRole(role);
+      didPersistRole = true;
       router.replace(resolvePostRoleRoute(role) as never);
-    } catch {
-      setRoleError('auth.role.error.save_failed');
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[auth][role-selection] continue failed', {
+          phase: didPersistRole ? 'navigation' : 'role_persist',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+      setRoleError(didPersistRole ? 'auth.role.error.navigation_failed' : 'auth.role.error.save_failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -249,7 +267,7 @@ export default function RoleSelectionScreen() {
 
         <Pressable
           accessibilityRole="button"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !isHydrated || !currentUser}
           onPress={() => {
             void onContinue();
           }}
@@ -257,7 +275,7 @@ export default function RoleSelectionScreen() {
             styles.primaryButton,
             {
               backgroundColor: theme.color.accentPrimary,
-              opacity: isSubmitting ? 0.7 : 1,
+              opacity: isSubmitting || !isHydrated || !currentUser ? 0.7 : 1,
               transform: [{ scale: pressed ? 0.96 : 1 }],
             },
           ]}

@@ -76,6 +76,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.role.cta_back': 'Voltar',
   'auth.role.validation.required': 'Escolha como quer usar o app para continuar.',
   'auth.role.error.save_failed': 'Não foi possível salvar seu perfil agora. Tente novamente.',
+  'auth.role.error.navigation_failed': 'Não foi possível continuar agora. Tente novamente.',
+  'auth.role.error.auth_required': 'Sua sessão expirou. Faça login novamente.',
   'auth.role.placeholder.title': 'Seleção de perfil',
   'auth.role.placeholder.body':
     'O fluxo de login já está ligado. A implementação da seleção de perfil é a próxima etapa.',

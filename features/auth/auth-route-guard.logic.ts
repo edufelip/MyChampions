@@ -34,9 +34,10 @@ export function roleHomePath(role: RoleIntent): string {
 export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   const path = normalizeGuardPathname(input.pathname);
   const isAuthRoute = path.startsWith('/auth/');
+  const isPublicAuthEntry = path === '/auth/sign-in' || path === '/auth/create-account';
 
   if (!input.isAuthenticated) {
-    if (isAuthRoute) {
+    if (isPublicAuthEntry) {
       return null;
     }
 

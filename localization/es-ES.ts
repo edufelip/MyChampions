@@ -80,6 +80,8 @@ export const esES: Record<TranslationKey, string> = {
   'auth.role.cta_back': 'Volver',
   'auth.role.validation.required': 'Elige cómo quieres usar la app para continuar.',
   'auth.role.error.save_failed': 'No se pudo guardar tu perfil ahora. Inténtalo de nuevo.',
+  'auth.role.error.navigation_failed': 'No se pudo continuar ahora. Inténtalo de nuevo.',
+  'auth.role.error.auth_required': 'Tu sesión expiró. Inicia sesión de nuevo.',
   'auth.role.placeholder.title': 'Selección de rol',
   'auth.role.placeholder.body':
     'El flujo de inicio de sesión ya está conectado. La implementación de selección de rol es el siguiente bloque.',

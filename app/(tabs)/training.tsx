@@ -9,5 +9,13 @@ import StudentTrainingScreen from '@/app/student/training';
 
 export default function TrainingTab() {
   const { lockedRole } = useAuthSession();
-  return lockedRole === 'professional' ? <ProTrainingScreen /> : <StudentTrainingScreen />;
+  if (lockedRole === 'professional') {
+    return <ProTrainingScreen />;
+  }
+
+  if (lockedRole === 'student') {
+    return <StudentTrainingScreen />;
+  }
+
+  return null;
 }

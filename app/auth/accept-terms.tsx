@@ -20,6 +20,7 @@ export default function AcceptTermsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
+  const primaryButtonForeground = '#F7FBFF';
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   const { acceptTerms, termsUrl, termsRequiredVersion } = useAuthSession();
@@ -148,9 +149,9 @@ export default function AcceptTermsScreen() {
               },
             ]}>
             {submitting ? (
-              <ActivityIndicator color={theme.color.onAccent} />
+              <ActivityIndicator color={primaryButtonForeground} />
             ) : (
-              <Text style={[styles.acceptButtonText, { color: theme.color.onAccent }]}>{t('auth.terms.accept_button')}</Text>
+              <Text style={[styles.acceptButtonText, { color: primaryButtonForeground }]}>{t('auth.terms.accept_button')}</Text>
             )}
           </Pressable>
 

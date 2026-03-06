@@ -41,8 +41,8 @@ test('resolvePostRoleRoute routes student to home (/)', () => {
   assert.equal(resolvePostRoleRoute('student'), '/');
 });
 
-test('resolvePostRoleRoute routes professional to explore (/explore)', () => {
-  assert.equal(resolvePostRoleRoute('professional'), '/explore');
+test('resolvePostRoleRoute routes professional to specialty setup (/professional/specialty)', () => {
+  assert.equal(resolvePostRoleRoute('professional'), '/professional/specialty');
 });
 
 test('resolvePostRoleRoute handles all role types correctly', () => {

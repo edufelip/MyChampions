@@ -29,7 +29,7 @@ test('guard redirects unauthenticated user from app routes to sign-in', () => {
   assert.equal(redirect, '/auth/sign-in');
 });
 
-test('guard allows unauthenticated user on auth routes', () => {
+test('guard allows unauthenticated user on sign-in route', () => {
   const redirect = resolveAuthGuardRedirect({
     isAuthenticated: false,
     lockedRole: null,
@@ -40,12 +40,34 @@ test('guard allows unauthenticated user on auth routes', () => {
   assert.equal(redirect, null);
 });
 
+test('guard redirects unauthenticated user from role-selection to sign-in', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: false,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/role-selection',
+  });
+
+  assert.equal(redirect, '/auth/sign-in');
+});
+
 test('guard sends authenticated unlocked user to role-selection', () => {
   const redirect = resolveAuthGuardRedirect({
     isAuthenticated: true,
     lockedRole: null,
     needsTermsAcceptance: false,
     pathname: '/',
+  });
+
+  assert.equal(redirect, '/auth/role-selection');
+});
+
+test('guard keeps authenticated unlocked user locked on role-selection after relaunch to tab shell', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/(tabs)',
   });
 
   assert.equal(redirect, '/auth/role-selection');

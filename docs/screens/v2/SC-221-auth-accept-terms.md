@@ -53,6 +53,7 @@
   - Sign-in and create-account success paths now route to `/auth/accept-terms`.
   - Terms acceptance persistence is local fallback while Data Connect profile terms fields are pending.
   - Route guard enforces terms gate globally for authenticated sessions.
+  - Primary accept pill button uses light foreground for label/loading contrast over the accent background.
 
 ## Links
 - Functional requirement: FR-101, FR-164, FR-249

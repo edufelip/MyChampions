@@ -29,12 +29,13 @@
  *       TC-401–403, TC-407–409, TC-412, TC-413, TC-415, TC-420, TC-422, TC-425–427,
  *       TC-271–TC-274, TC-286, TC-287
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useImageUpload } from '@/features/nutrition/use-image-upload';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   Share,
   StyleSheet,
@@ -107,7 +108,7 @@ export default function CustomMealBuilderScreen() {
   const { mealId } = useLocalSearchParams<{ mealId: string }>();
 
   const isCreateMode = !mealId || mealId === 'new';
-  const { create, update, shareLink } = useCustomMeals(Boolean(currentUser));
+  const { state: customMealsState, create, update, shareLink } = useCustomMeals(Boolean(currentUser));
 
   // ── Subscription / AI paywall (D-132) ─────────────────────────────────────
   const {
@@ -161,7 +162,21 @@ export default function CustomMealBuilderScreen() {
     uploadState: imageUpload,
     pickAndUpload,
     retry: retryUpload,
+    hydrateExisting,
   } = useImageUpload(currentUser);
+
+  const didHydrateExistingImageRef = useRef(false);
+
+  useEffect(() => {
+    if (isCreateMode || didHydrateExistingImageRef.current) return;
+    if (customMealsState.kind !== 'ready') return;
+
+    const meal = customMealsState.meals.find((entry) => entry.id === mealId);
+    if (!meal) return;
+
+    hydrateExisting(meal.imageUrl);
+    didHydrateExistingImageRef.current = true;
+  }, [customMealsState, hydrateExisting, isCreateMode, mealId]);
 
   const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
@@ -188,9 +203,10 @@ export default function CustomMealBuilderScreen() {
     }
 
     setIsSaving(true);
+    const uploadedImageUrl = imageUpload.kind === 'done' ? imageUpload.url : undefined;
     const err = isCreateMode
-      ? await create(form)
-      : await update(savedMealId ?? mealId ?? '', form);
+      ? await create(form, { imageUrl: uploadedImageUrl })
+      : await update(savedMealId ?? mealId ?? '', form, { imageUrl: uploadedImageUrl });
     setIsSaving(false);
 
     if (err) {
@@ -607,8 +623,19 @@ function ImageUploadSection({
     ? (t(display.errorMessageKey as Parameters<TFn>[0]) as string)
     : null;
 
+  const imagePreviewUrl = uploadState.kind === 'done' ? uploadState.url : null;
+
   return (
     <View testID="meal.builder.imageUpload.section">
+      {imagePreviewUrl ? (
+        <Image
+          source={{ uri: imagePreviewUrl }}
+          style={styles.imagePreview}
+          resizeMode="cover"
+          testID="meal.builder.imageUpload.preview"
+        />
+      ) : null}
+
       {/* Tap area: upload / change photo */}
       <Pressable
         accessibilityRole="button"
@@ -780,6 +807,12 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: 'center',
     minHeight: 72,
+  },
+  imagePreview: {
+    borderRadius: 10,
+    height: 160,
+    marginBottom: 8,
+    width: '100%',
   },
   imageUploadLabel: { fontSize: 14 },
   imageUploadMeta: { fontSize: 12, marginTop: 4 },

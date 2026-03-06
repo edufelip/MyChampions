@@ -49,8 +49,15 @@ export type UseCustomMealsResult = {
   validatePortion: (input: PortionLogInput) => PortionLogValidationErrors;
   computePortion: (meal: CustomMeal, consumedGrams: number) => NutritionSnapshot;
   getShareSnapshot: (meal: CustomMeal) => SharedMealSnapshot;
-  create: (input: CustomMealInput) => Promise<MealActionErrorReason | null>;
-  update: (id: string, input: CustomMealInput) => Promise<MealActionErrorReason | null>;
+  create: (
+    input: CustomMealInput,
+    options?: { imageUrl?: string | null }
+  ) => Promise<MealActionErrorReason | null>;
+  update: (
+    id: string,
+    input: CustomMealInput,
+    options?: { imageUrl?: string | null }
+  ) => Promise<MealActionErrorReason | null>;
   remove: (id: string) => Promise<MealActionErrorReason | null>;
   shareLink: (mealId: string) => Promise<{ shareLinkId: string } | MealActionErrorReason>;
   previewImport: (shareToken: string) => Promise<SharedMealSnapshot | MealActionErrorReason>;
@@ -100,7 +107,10 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
   );
 
   const create = useCallback(
-    async (input: CustomMealInput): Promise<MealActionErrorReason | null> => {
+    async (
+      input: CustomMealInput,
+      options?: { imageUrl?: string | null }
+    ): Promise<MealActionErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
       const errors = validateCustomMealInput(input);
@@ -115,6 +125,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
           proteins: parseFloat(input.proteins),
           fats: parseFloat(input.fats),
           ingredientCost: input.ingredientCost ? parseFloat(input.ingredientCost) : null,
+          imageUrl: options?.imageUrl ?? null,
         });
         load();
         return null;
@@ -126,13 +137,28 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
   );
 
   const update = useCallback(
-    async (id: string, input: CustomMealInput): Promise<MealActionErrorReason | null> => {
+    async (
+      id: string,
+      input: CustomMealInput,
+      options?: { imageUrl?: string | null }
+    ): Promise<MealActionErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
       const errors = validateCustomMealInput(input);
       if (Object.keys(errors).length > 0) return 'validation';
 
       try {
+        let resolvedImageUrl = options?.imageUrl;
+
+        if (resolvedImageUrl === undefined) {
+          if (state.kind === 'ready') {
+            resolvedImageUrl = state.meals.find((meal) => meal.id === id)?.imageUrl ?? null;
+          } else {
+            const meals = await getMyCustomMeals();
+            resolvedImageUrl = meals.find((meal) => meal.id === id)?.imageUrl ?? null;
+          }
+        }
+
         await updateCustomMeal(id, {
           name: input.name.trim(),
           totalGrams: parseFloat(input.totalGrams),
@@ -141,6 +167,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
           proteins: parseFloat(input.proteins),
           fats: parseFloat(input.fats),
           ingredientCost: input.ingredientCost ? parseFloat(input.ingredientCost) : null,
+          imageUrl: resolvedImageUrl,
         });
         load();
         return null;
@@ -148,7 +175,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load, state]
   );
 
   const remove = useCallback(

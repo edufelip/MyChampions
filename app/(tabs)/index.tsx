@@ -9,5 +9,13 @@ import StudentHomeScreen from '@/app/student/home';
 
 export default function IndexTab() {
   const { lockedRole } = useAuthSession();
-  return lockedRole === 'professional' ? <ProfessionalHomeScreen /> : <StudentHomeScreen />;
+  if (lockedRole === 'professional') {
+    return <ProfessionalHomeScreen />;
+  }
+
+  if (lockedRole === 'student') {
+    return <StudentHomeScreen />;
+  }
+
+  return null;
 }

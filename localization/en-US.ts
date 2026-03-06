@@ -72,6 +72,8 @@ export const enUS = {
   'auth.role.cta_back': 'Back',
   'auth.role.validation.required': 'Choose how you want to use the app to continue.',
   'auth.role.error.save_failed': 'Could not save your role right now. Try again.',
+  'auth.role.error.navigation_failed': 'Could not continue right now. Try again.',
+  'auth.role.error.auth_required': 'Your session expired. Please sign in again.',
   'auth.role.placeholder.title': 'Role selection',
   'auth.role.placeholder.body':
     'Sign-in flow is wired. Role-selection implementation is the next screen slice.',

@@ -13,6 +13,7 @@
 
 ## Design Structure (D-134)
 - Route uses `DsScreen` shell with shared background and semantic DS color tokens.
+- Route runs inside the Nutrition tab stack so bottom tab navigation remains visible.
 - Because meal library rows use `FlatList`, route uses `DsScreen scrollable={false}` to avoid nested VirtualizedList containers.
 - Offline communication uses `DsOfflineBanner` while preserving BL-008 write-lock behavior.
 - Primary action hierarchy follows DS pill-button patterns and shared spacing/typography tokens.

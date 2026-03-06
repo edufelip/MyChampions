@@ -11,7 +11,7 @@
  * in the root _layout.tsx will redirect to sign-in or role-selection before
  * this component has a chance to show any tab UI.
  */
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -23,8 +23,20 @@ import { useTranslation } from '@/localization';
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? 'light';
   const { t } = useTranslation();
-  const { lockedRole } = useAuthSession();
+  const { isHydrated, lockedRole, needsTermsAcceptance } = useAuthSession();
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
+
+  if (!isHydrated) {
+    return null;
+  }
+
+  if (needsTermsAcceptance) {
+    return <Redirect href="/auth/accept-terms" />;
+  }
+
+  if (!lockedRole) {
+    return <Redirect href="/auth/role-selection" />;
+  }
 
   const isPro = lockedRole === 'professional';
   const isStudent = lockedRole === 'student';

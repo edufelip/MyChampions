@@ -2,8 +2,8 @@
 
 ## Route
 - No standalone route. SC-219 is a modal/inline surface embedded in:
-  - SC-214 Custom Meal Builder (`app/nutrition/custom-meals/[mealId].tsx`) — camera icon adjacent to image upload stub; analysis pre-fills the meal creation form.
-  - SC-215 Custom Meal Library Quick Log (`app/nutrition/custom-meals/index.tsx`) — camera icon in the quick-log panel header; analysis pre-fills the nutrition preview panel.
+  - SC-214 Custom Meal Builder (`app/(tabs)/nutrition/custom-meals/[mealId].tsx`) — camera icon adjacent to image upload stub; analysis pre-fills the meal creation form.
+  - SC-215 Custom Meal Library Quick Log (`app/(tabs)/nutrition/custom-meals/index.tsx`) — camera icon in the quick-log panel header; analysis pre-fills the nutrition preview panel.
 
 ## Objective
 Allow users to capture or select a photo of their meal and receive AI-estimated macronutrients (calories, carbs, proteins, fats, totalGrams) that pre-fill the meal form or quick-log panel for review and confirmation before saving.
@@ -113,8 +113,8 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | `features/subscription/subscription.logic.ts` | Pure entitlement logic — `AI_ENTITLEMENT_ID = 'premium_student'`, `hasAiAnalysisAccess()` (D-132) |
 | `features/subscription/subscription-source.ts` | RevenueCat source layer — `AI_FEATURES_ENTITLEMENT_ID`, `mapCustomerInfoToAiEntitlementStatus`, `presentAiPaywall` (D-132) |
 | `features/subscription/use-subscription.ts` | React hook — exposes `aiEntitlementStatus`, `hasAiAccess`, `openAiPaywall`; single `getCustomerInfo()` call maps both entitlements (D-132) |
-| `app/nutrition/custom-meals/[mealId].tsx` | SC-214 entry point — camera CTA gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill, attach-photo toggle |
-| `app/nutrition/custom-meals/index.tsx` | SC-215 entry point — camera CTA in quick-log panel gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill |
+| `app/(tabs)/nutrition/custom-meals/[mealId].tsx` | SC-214 entry point — camera CTA gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill, attach-photo toggle |
+| `app/(tabs)/nutrition/custom-meals/index.tsx` | SC-215 entry point — camera CTA in quick-log panel gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill |
 
 ## Edge Cases
 - Camera/picker cancellation: state returns to `idle`; no form field changes.

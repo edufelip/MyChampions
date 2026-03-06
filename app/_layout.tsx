@@ -32,7 +32,8 @@ function RootLayoutContent() {
   const pathname = usePathname();
   const normalizedPathname = normalizeGuardPathname(pathname);
   const lastRedirectAttemptRef = useRef<string | null>(null);
-  const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance } = useAuthSession();
+  const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance, currentUser } = useAuthSession();
+  const currentUserUid = currentUser?.uid ?? null;
 
   useEffect(() => {
     if (!isHydrated) {
@@ -45,6 +46,18 @@ function RootLayoutContent() {
       needsTermsAcceptance,
       pathname: normalizedPathname,
     });
+
+    if (__DEV__) {
+      console.info('[auth][guard] evaluated', {
+        uid: currentUserUid,
+        isHydrated,
+        isAuthenticated,
+        lockedRole,
+        needsTermsAcceptance,
+        pathname: normalizedPathname,
+        redirect,
+      });
+    }
 
     if (!redirect || redirect === normalizedPathname) {
       lastRedirectAttemptRef.current = null;
@@ -60,7 +73,7 @@ function RootLayoutContent() {
     if (redirect !== normalizedPathname) {
       router.replace(redirect as never);
     }
-  }, [isAuthenticated, isHydrated, lockedRole, needsTermsAcceptance, normalizedPathname, router]);
+  }, [currentUserUid, isAuthenticated, isHydrated, lockedRole, needsTermsAcceptance, normalizedPathname, router]);
 
   if (!isHydrated) {
     return (
@@ -106,8 +119,6 @@ function RootLayoutContent() {
         <Stack.Screen name="professional/nutrition/plans/[planId]" options={{ headerShown: false }} />
         <Stack.Screen name="professional/training/plans/[planId]" options={{ headerShown: false }} />
         <Stack.Screen name="settings/account" options={{ headerShown: false }} />
-        <Stack.Screen name="nutrition/custom-meals/index" options={{ headerShown: false }} />
-        <Stack.Screen name="nutrition/custom-meals/[mealId]" options={{ headerShown: false }} />
         <Stack.Screen name="shared/recipes/[shareToken]" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"

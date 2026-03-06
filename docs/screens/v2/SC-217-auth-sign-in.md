@@ -69,6 +69,7 @@
   - Successful sign-in routes to `/auth/accept-terms`; global guard then routes to role-selection or role home depending on terms + role state.
   - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes after terms acceptance.
   - Visual treatment follows a playful rounded layout with decorative background blobs, circular brand icon badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.
+  - Primary email sign-in pill button uses light foreground (label, icon, and loading spinner) for contrast against the accent background.
   - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
 
 ## Links

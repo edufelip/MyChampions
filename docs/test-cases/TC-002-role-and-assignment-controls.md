@@ -86,6 +86,10 @@
 | TC-280 | SC-207/SC-208 Starter Template Clone | Professional opens starter template | Begin editing | Editable cloned draft created; original starter unchanged |
 | TC-288 | Terms Gate Redirect Enforcement | Authenticated user without required terms acceptance | Attempt to access `/auth/role-selection` or role-home route | App redirects user to `/auth/accept-terms` |
 | TC-289 | Terms Gate Version Re-Prompt | User has accepted terms version `v1`; app required version changes to `v2` | Re-open app/authenticated session | Terms gate is shown again until `v2` is accepted |
+| TC-290 | Role Selection Relaunch Lock | Authenticated user with unlocked role (no persisted role lock) | Close and reopen app while route resolves to `/(tabs)` or home shell | App redirects to `/auth/role-selection` and blocks tab/home access until role is selected and continued |
+| TC-291 | Role Selection Auth Gate | Unauthenticated user attempts to access `/auth/role-selection` directly | Navigate to role-selection route without active Firebase auth session | App redirects to `/auth/sign-in`; role-selection continue action stays blocked until a valid authenticated session exists |
+| TC-292 | Cross-Account Role-State Reset | Account A has locked role and signs out; Account B is newly created with no role lock | Sign in as Account B immediately after Account A | Session clears prior role state before hydration; Account B is routed to `/auth/role-selection` until role is selected |
+| TC-293 | Profile UID Mismatch Guard | Active Firebase UID differs from `GetMyProfile.authUid` payload | Hydrate profile for newly authenticated account while backend returns mismatched profile row | App ignores mismatched `lockedRole`, treats account as unlocked, and keeps user on `/auth/role-selection` |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.

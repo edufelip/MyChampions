@@ -9,5 +9,13 @@ import StudentNutritionScreen from '@/app/student/nutrition';
 
 export default function NutritionTab() {
   const { lockedRole } = useAuthSession();
-  return lockedRole === 'professional' ? <ProNutritionScreen /> : <StudentNutritionScreen />;
+  if (lockedRole === 'professional') {
+    return <ProNutritionScreen />;
+  }
+
+  if (lockedRole === 'student') {
+    return <StudentNutritionScreen />;
+  }
+
+  return null;
 }

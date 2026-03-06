@@ -72,6 +72,7 @@ Define and operationalize the mobile design language inspired by the provided da
   - `primary`
   - `secondary`
 - Supports loading, icon slots, and full-width/compact mode.
+- Label/icon/loading foreground uses the light on-accent token across pill variants for consistent contrast.
 
 ### `DsOfflineBanner`
 - Reusable offline alert banner pattern for BL-008 compliance.

@@ -1,8 +1,8 @@
 # SC-202 Professional Specialty Setup (V2)
 
 ## Route
-- `/onboarding/professional-specialty`
-- `/professional/settings/specialties` (post-onboarding edit entry)
+- `/professional/specialty`
+- Legacy/alias route intent (documentation only): `/onboarding/professional-specialty`, `/professional/settings/specialties`
 
 ## Objective
 - Capture and manage professional specialty profile and optional per-specialty registry credentials.

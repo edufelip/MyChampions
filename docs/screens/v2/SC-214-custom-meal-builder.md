@@ -16,7 +16,7 @@
 - Offline communication uses `DsOfflineBanner` while preserving BL-008 write-lock behavior.
 - Primary action hierarchy follows DS pill-button patterns and shared spacing/typography tokens.
 - AI/paywall and quick-log/builder sections keep existing business logic and localization keys, with DS visual structure.
-- Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
+- Native toolbar is disabled; this route runs inside the Nutrition tab stack so bottom tab navigation remains visible, while in-content back affordance is preserved.
 
 ## User Actions
 - Primary:
@@ -34,6 +34,8 @@
 ## States
 - Loading: fetch existing meal definition (edit mode).
 - Empty: new meal form with no values.
+- Edit hydrated: when existing meal has `imageUrl`, upload section starts in `completed/change photo` state before selecting a new image.
+- Image preview: when upload state is `completed`, show a thumbnail preview above the upload/change action area.
 - Uploading: image upload in progress with visible percentage/progress indicator.
 - Error: validation, save failure, or recoverable image-upload failure.
 - Success: meal saved and available in custom meal library.

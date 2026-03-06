@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 
 import type { RoleIntent } from './role-selection.logic';
@@ -27,6 +27,7 @@ const AuthSessionContext = createContext<AuthSessionContextValue | undefined>(un
 export function AuthSessionProvider({ children }: { children: ReactNode }) {
   const termsConfig = resolveTermsConfigFromExpo();
   const termsRequiredVersion = termsConfig.requiredVersion;
+  const lastAuthUidRef = useRef<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lockedRole, setLockedRole] = useState<RoleIntent | null>(null);
@@ -41,9 +42,30 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     try {
       const auth = getFirebaseAuth();
       unsubscribe = onAuthStateChanged(auth, (user) => {
+        const nextUid = user?.uid ?? null;
+        const authUidChanged = lastAuthUidRef.current !== nextUid;
+        lastAuthUidRef.current = nextUid;
+
         setIsHydrated(false);
         setCurrentUser(user);
         setIsAuthenticated(Boolean(user));
+
+        // Always reset role/terms state before profile hydration so account switching
+        // never reuses stale role-lock information from a previous session.
+        if (authUidChanged) {
+          setLockedRole(null);
+          setAcceptedTermsVersion(null);
+          setRequiresTermsAcceptance(false);
+        }
+
+        if (__DEV__) {
+          console.info('[auth][session] auth state changed', {
+            uid: nextUid,
+            authUidChanged,
+            isAuthenticated: Boolean(user),
+          });
+        }
+
         if (!user) {
           setLockedRole(null);
           setAcceptedTermsVersion(null);
@@ -61,8 +83,15 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
                 needsTermsAcceptance({
                   requiredVersion: termsRequiredVersion,
                   acceptedVersion,
-                })
+                  })
               );
+              if (__DEV__) {
+                console.info('[auth][session] profile hydrated', {
+                  uid: user.uid,
+                  lockedRole: profile.lockedRole,
+                  acceptedTermsVersion: acceptedVersion,
+                });
+              }
             }
           })
           .catch(() => {
@@ -100,7 +129,8 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       termsUrl: termsConfig.termsUrl,
       needsTermsAcceptance: requiresTermsAcceptance,
       lockRole: async (role: RoleIntent) => {
-        if (!currentUser) {
+        const activeUser = currentUser ?? getFirebaseAuth().currentUser;
+        if (!activeUser) {
           throw new Error('No authenticated user found.');
         }
 
@@ -108,11 +138,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setLockedRole(profile.lockedRole);
       },
       acceptTerms: async () => {
-        if (!currentUser) {
+        const activeUser = currentUser ?? getFirebaseAuth().currentUser;
+        if (!activeUser) {
           throw new Error('No authenticated user found.');
         }
 
-        await persistAcceptedTermsVersion(currentUser.uid, termsConfig.requiredVersion);
+        await persistAcceptedTermsVersion(activeUser.uid, termsConfig.requiredVersion);
         setAcceptedTermsVersion(termsConfig.requiredVersion);
         setRequiresTermsAcceptance(false);
       },

@@ -36,7 +36,8 @@ export function DsPillButton({
 }: DsPillButtonProps) {
   const theme = getDsTheme(scheme);
   const isPrimary = variant === 'primary';
-  const resolvedContentColor = contentColor ?? (isPrimary ? theme.color.onAccent : theme.color.accentBlue);
+  const secondaryBackgroundColor = scheme === 'dark' ? theme.color.overlayStrong : theme.color.accentBlue;
+  const resolvedContentColor = contentColor ?? theme.color.onAccent;
 
   return (
     <Pressable
@@ -48,8 +49,8 @@ export function DsPillButton({
         isPrimary
           ? { backgroundColor: theme.color.accentPrimary, borderColor: theme.color.accentPrimary }
           : {
-              backgroundColor: theme.color.surface,
-              borderColor: theme.color.borderStrong,
+              backgroundColor: secondaryBackgroundColor,
+              borderColor: secondaryBackgroundColor,
               borderWidth: 1,
             },
         { width: fullWidth ? '100%' : undefined },

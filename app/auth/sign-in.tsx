@@ -54,6 +54,7 @@ export default function SignInScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
+  const primaryButtonForeground = '#F7FBFF';
   const router = useRouter();
   const { t } = useTranslation();
   const { emitEvent } = useAnalytics();
@@ -295,12 +296,12 @@ export default function SignInScreen() {
               {submitting ? (
                 <ActivityIndicator
                   accessibilityLabel={t('a11y.loading.submitting')}
-                  color={theme.color.onAccent}
+                  color={primaryButtonForeground}
                 />
               ) : (
                 <>
-                  <Text style={[styles.primaryButtonText, { color: theme.color.onAccent }]}>{t('auth.signin.cta_primary')}</Text>
-                  <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
+                  <Text style={[styles.primaryButtonText, { color: primaryButtonForeground }]}>{t('auth.signin.cta_primary')}</Text>
+                  <MaterialIcons color={primaryButtonForeground} name="arrow-forward" size={20} />
                 </>
               )}
             </Pressable>

@@ -211,6 +211,11 @@ export type UseImageUploadResult = {
    * Resets upload state back to idle (removes photo).
    */
   clear: () => void;
+  /**
+   * Hydrates upload state from an already persisted remote image URL.
+   * Used by edit flows so image UI reflects existing meal image.
+   */
+  hydrateExisting: (url: string | null | undefined) => void;
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -279,5 +284,14 @@ export function useImageUpload(
     lastMealIdRef.current = null;
   }, []);
 
-  return { uploadState, pickAndUpload, retry, clear };
+  const hydrateExisting = useCallback((url: string | null | undefined) => {
+    if (typeof url !== 'string' || url.trim().length === 0) {
+      setUploadState({ kind: 'idle' });
+      return;
+    }
+
+    setUploadState({ kind: 'done', url });
+  }, []);
+
+  return { uploadState, pickAndUpload, retry, clear, hydrateExisting };
 }

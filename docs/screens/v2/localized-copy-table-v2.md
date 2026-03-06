@@ -31,6 +31,8 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.role.cta_back` | SC-209 | Generic back label (navigation a11y) | Back | Voltar | Volver | Shared key reused outside role selection |
 | `auth.role.validation.required` | SC-201 | Required validation message | Choose how you want to use the app to continue. | Escolha como quer usar o app para continuar. | Elige cómo quieres usar la app para continuar. | |
 | `auth.role.error.save_failed` | SC-201 | Role save failure message | Could not save your role right now. Try again. | Não foi possível salvar seu perfil agora. Tente novamente. | No se pudo guardar tu perfil ahora. Inténtalo de nuevo. | Data Connect profile write failure |
+| `auth.role.error.navigation_failed` | SC-201 | Post-save navigation failure message | Could not continue right now. Try again. | Não foi possível continuar agora. Tente novamente. | No se pudo continuar ahora. Inténtalo de nuevo. | Save succeeded but route transition failed |
+| `auth.role.error.auth_required` | SC-201 | Session-required message | Your session expired. Please sign in again. | Sua sessão expirou. Faça login novamente. | Tu sesión expiró. Inicia sesión de nuevo. | Continue pressed while user is no longer authenticated |
 | `auth.signin.title` | SC-217 | Sign-in header | Welcome, Champion | Bem-vindo, Campeão | Bienvenido, Campeón | |
 | `auth.signin.subtitle` | SC-217 | Sign-in subtitle | Ready to crush your goals today? | Pronto para superar suas metas hoje? | ¿Listo para superar tus metas hoy? | Design-aligned supporting copy |
 | `auth.signin.field.email` | SC-217 | Sign-in email label | Email Address | Endereço de e-mail | Correo electrónico | Sign-in specific label |

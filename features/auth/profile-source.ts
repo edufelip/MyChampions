@@ -18,6 +18,7 @@ import {
   type SetLockedRoleVariables,
 } from '@mychampions/dataconnect-generated';
 import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
+import { getFirebaseAuth } from './firebase';
 
 import type { RoleIntent } from './role-selection.logic';
 
@@ -59,10 +60,56 @@ type AuthProfile = {
   lockedRole: RoleIntent | null;
 };
 
+type RemoteProfileSnapshot = {
+  exists: boolean;
+  authUid: string | null;
+  lockedRole: RoleIntent | null;
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function normalizeLockedRole(value: unknown): RoleIntent | null {
   return value === 'student' || value === 'professional' ? value : null;
+}
+
+function isObjectLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeProfileSourceError(error: unknown): ProfileSourceError {
+  if (error instanceof ProfileSourceError) {
+    return error;
+  }
+
+  if (isObjectLike(error)) {
+    const message = typeof error.message === 'string' ? error.message : 'Unknown profile source error.';
+    const code = typeof error.code === 'string' ? error.code : '';
+    const lowered = `${code} ${message}`.toLowerCase();
+
+    if (lowered.includes('network') || lowered.includes('fetch') || lowered.includes('timeout')) {
+      return new ProfileSourceError('network', message);
+    }
+
+    if (
+      lowered.includes('permission') ||
+      lowered.includes('unauth') ||
+      lowered.includes('graphql') ||
+      lowered.includes('failed precondition') ||
+      lowered.includes('already set')
+    ) {
+      return new ProfileSourceError('graphql', message);
+    }
+
+    return new ProfileSourceError('configuration', message);
+  }
+
+  return new ProfileSourceError('configuration', 'Unknown profile source error.');
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 // ─── Operations ───────────────────────────────────────────────────────────────
@@ -76,17 +123,21 @@ async function upsertRemoteProfile(
   emailNormalized: string,
   deps: ProfileSourceDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.upsertUserProfile(dc, {
-    displayName: displayName,
-    emailNormalized: emailNormalized,
-  });
+  try {
+    const dc = deps.getDataConnectInstance();
+    const { data } = await deps.upsertUserProfile(dc, {
+      displayName: displayName,
+      emailNormalized: emailNormalized,
+    });
 
-  if (!data.userProfile_upsert?.id) {
-    throw new ProfileSourceError(
-      'invalid_response',
-      'Data Connect did not return upserted profile identity.'
-    );
+    if (!data.userProfile_upsert?.id) {
+      throw new ProfileSourceError(
+        'invalid_response',
+        'Data Connect did not return upserted profile identity.'
+      );
+    }
+  } catch (error) {
+    throw normalizeProfileSourceError(error);
   }
 }
 
@@ -94,12 +145,46 @@ async function upsertRemoteProfile(
  * Reads the current locked role from the remote profile.
  * Returns null if no profile exists or role is not set.
  */
-async function getRemoteLockedRole(deps: ProfileSourceDeps): Promise<RoleIntent | null> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getMyProfile(dc);
+async function getRemoteLockedRole(
+  deps: ProfileSourceDeps,
+  expectedAuthUid?: string
+): Promise<RoleIntent | null> {
+  const snapshot = await getRemoteProfileSnapshot(deps, expectedAuthUid);
+  return snapshot.lockedRole;
+}
 
-  const profile = data.userProfiles[0];
-  return normalizeLockedRole(profile?.lockedRole ?? null);
+async function getRemoteProfileSnapshot(
+  deps: ProfileSourceDeps,
+  expectedAuthUid?: string
+): Promise<RemoteProfileSnapshot> {
+  const dc = deps.getDataConnectInstance();
+  try {
+    const { data } = await deps.getMyProfile(dc);
+
+    const profile = data.userProfiles[0];
+    const authUid = typeof profile?.authUid === 'string' ? profile.authUid : null;
+    if (expectedAuthUid && authUid && authUid !== expectedAuthUid) {
+      if (__DEV__) {
+        console.warn('[auth][profile-source] profile uid mismatch', {
+          expectedAuthUid,
+          receivedAuthUid: authUid,
+        });
+      }
+      return {
+        exists: false,
+        authUid,
+        lockedRole: null,
+      };
+    }
+
+    return {
+      exists: Boolean(profile),
+      authUid,
+      lockedRole: normalizeLockedRole(profile?.lockedRole ?? null),
+    };
+  } catch (error) {
+    throw normalizeProfileSourceError(error);
+  }
 }
 
 /**
@@ -116,7 +201,15 @@ export async function hydrateProfileFromSource(
     user.email?.toLowerCase() ?? '',
     deps
   );
-  return { lockedRole: await getRemoteLockedRole(deps) };
+  const lockedRole = await getRemoteLockedRole(deps, user.uid);
+  if (__DEV__) {
+    console.info('[auth][profile-source] hydrate snapshot', {
+      uid: user.uid,
+      lockedRole,
+    });
+  }
+
+  return { lockedRole };
 }
 
 /**
@@ -129,10 +222,30 @@ export async function lockRoleInSource(
   deps: ProfileSourceDeps = defaultProfileSourceDeps
 ): Promise<AuthProfile> {
   const dc = deps.getDataConnectInstance();
-  await deps.setLockedRole(dc, { role });
+  const currentAuthUid = getFirebaseAuth().currentUser?.uid;
+
+  const beforeLock = await getRemoteProfileSnapshot(deps, currentAuthUid);
+  if (!beforeLock.exists) {
+    await upsertRemoteProfile('', '', deps);
+  }
+
+  try {
+    await deps.setLockedRole(dc, { role });
+  } catch (error) {
+    const current = await getRemoteProfileSnapshot(deps, currentAuthUid);
+    if (current.lockedRole === role) {
+      return { lockedRole: current.lockedRole };
+    }
+    throw normalizeProfileSourceError(error);
+  }
 
   // Re-read to get confirmed server-side value
-  const confirmedRole = await getRemoteLockedRole(deps);
+  let confirmedRole = await getRemoteLockedRole(deps, currentAuthUid);
+  if (!confirmedRole) {
+    await delay(120);
+    confirmedRole = await getRemoteLockedRole(deps, currentAuthUid);
+  }
+
   if (!confirmedRole) {
     throw new ProfileSourceError(
       'invalid_response',

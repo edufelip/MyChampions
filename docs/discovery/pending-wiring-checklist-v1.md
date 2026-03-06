@@ -80,8 +80,8 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `app/professional/pending.tsx` (SC-204/SC-205) — offline banner + write-lock wired; Accept/Deny Pressables gated.
 - `Done`: `app/professional/subscription.tsx` (SC-212) — offline banner + write-lock wired; purchase/restore/renew CTAs gated.
 - `Done`: `app/settings/account.tsx` (SC-213) — offline banner + write-lock wired; delete CTA gated.
-- `Done`: `app/nutrition/custom-meals/index.tsx` (SC-215) — offline banner + write-lock wired; MealRow log+share and QuickLogPanel confirm gated.
-- `Done`: `app/nutrition/custom-meals/[mealId].tsx` (SC-214) — offline banner + write-lock wired; Save+Share CTAs gated.
+- `Done`: `app/(tabs)/nutrition/custom-meals/index.tsx` (SC-215) — offline banner + write-lock wired; MealRow log+share and QuickLogPanel confirm gated.
+- `Done`: `app/(tabs)/nutrition/custom-meals/[mealId].tsx` (SC-214) — offline banner + write-lock wired; Save+Share CTAs gated.
 - `Done`: `app/shared/recipes/[shareToken].tsx` (SC-216) — offline banner + write-lock wired; Save CTA in PreviewView gated.
 - `Pending`: Wire `lastSyncedAtIso` from real data-layer sync timestamps (currently `null` — stale indicator never shown). Deferred until Data Connect cache layer is implemented.
 
@@ -210,8 +210,8 @@ Track intentionally deferred implementation wiring so it is completed before rel
 
 ## Account Settings & Custom Meal Screens (Phase 6)
 - `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.
-- `Done`: SC-214 Custom Meal Builder (`app/nutrition/custom-meals/[mealId].tsx`) implemented — create/edit form with all 7 fields, image upload stub, share CTA; Data Connect and Cloud Storage wiring deferred.
-- `Done`: SC-215 Custom Meal Library & Quick Log (`app/nutrition/custom-meals/index.tsx`) implemented — FlatList of meals, quick-log grams input with nutrition preview; Data Connect and portion-log persistence deferred.
+- `Done`: SC-214 Custom Meal Builder (`app/(tabs)/nutrition/custom-meals/[mealId].tsx`) implemented — create/edit form with all 7 fields, image upload stub, share CTA; Data Connect and Cloud Storage wiring deferred.
+- `Done`: SC-215 Custom Meal Library & Quick Log (`app/(tabs)/nutrition/custom-meals/index.tsx`) implemented — FlatList of meals, quick-log grams input with nutrition preview; Data Connect and portion-log persistence deferred.
 - `Done`: SC-215 empty state upgraded to illustrated hero pattern — warm amber/orange `menu-book` + `restaurant` icon tiles replacing the minimal text stub; `DsPillButton` CTA with add icon; offline write-lock notice; matches production quality of student nutrition and training empty states.
 - `Done`: SC-216 Shared Recipe Save Confirmation (`app/shared/recipes/[shareToken].tsx`) implemented — token preview, ownership note, import; Data Connect share endpoint wiring deferred.
 - `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 4 new Phase 6 screens.
@@ -219,6 +219,9 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Wire Data Connect custom-meal CRUD operations into SC-214 and SC-215 (D-126 batch — `custom-meal-source.ts` rewritten with SDK; `useCustomMeals` updated to `isAuthenticated: boolean`).
 - `Done`: Wire Data Connect share-link generation (`createMealShareLink`) and import (`importSharedMeal`, `previewSharedMeal`) endpoints into SC-214, SC-215, SC-216 (D-126 batch — `shareLinkId` return pattern; callers updated).
 - `Done`: Wire Firebase Cloud Storage image upload pipeline into SC-214 image upload stub. `features/nutrition/image-upload-source.ts` source layer with full injectable deps + 20 unit tests (TC-287); `features/nutrition/use-image-upload.ts` hook wires expo-image-picker (Alert action sheet), expo-image-manipulator compression, and `uploadBytesResumable` with progress tracking; SC-214 stub replaced with real `useImageUpload(currentUser)` call; `ImageUploadSection` `onPickAndUpload`/`onRetry` callbacks wired (D-131).
+- `Done`: Persist uploaded SC-214 recipe image download URL to Data Connect custom-meal records on save/update. `handleSave` now passes `uploadState.url` when upload succeeds, and `useCustomMeals` forwards `imageUrl` to `createCustomMeal`/`updateCustomMeal` (with edit fallback to existing `imageUrl` when no new upload is selected).
+- `Done`: Hydrate SC-214 edit mode image upload UI from persisted `imageUrl`. When opening an existing meal, `useImageUpload.hydrateExisting()` seeds `uploadState` to `done` so the image section starts in `change photo` state even before a new upload.
+- `Done`: Move SC-214/SC-215 routes under the Nutrition tab stack (`app/(tabs)/nutrition/custom-meals/*`) so bottom tab icons remain visible while navigating custom meal library/builder. Added `app/(tabs)/nutrition/_layout.tsx` stack shell and removed root-stack explicit screen registration for old standalone route files.
 - `Done`: Wire portion-log persistence (Data Connect) into SC-215 quick-log confirm action. `logPortionFromSource` added to `custom-meal-source.ts`; `logPortion` callback added to `use-custom-meals.ts`; `handleConfirmLog` in SC-215 calls `logPortion(meal.id, grams)` and surfaces error via `meal.library.quick_log.error` locale key. Stub `await Promise.resolve()` removed.
 - `Pending`: Wire deep-link resume (post-auth redirect back to `/shared/recipes/:shareToken`) for unauthenticated share link recipients in SC-216.
 
@@ -280,7 +283,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Wire `EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL` in `.env.example` (blank template) and `.env` (dev URL set).
 - `Done`: Wire real camera capture / image picker (`expo-image-picker@~16.0.6`) into `use-meal-photo-analysis.ts`. `startCapture()` presents an action sheet ("Take Photo" / "Choose from Library" / "Cancel"), requests the relevant permission (`requestCameraPermissionsAsync` or `requestMediaLibraryPermissionsAsync`), and launches the native picker. Cancellation returns to `idle`.
 - `Done`: Wire `expo-image-manipulator@~13.0.6` for client-side JPEG compression in the `compressing` state of `use-meal-photo-analysis.ts`. Images are resized to ≤ 1600 px longest side and compressed at 0.75 JPEG quality before being sent to the Cloud Function (FR-230, BR-287, Q-022).
-- `Done`: Wire SC-214 photo attachment toggle into existing Cloud Storage image upload pipeline (D-109). The `attachPhoto` toggle is preserved; when `uploadState.kind === 'done'`, `uploadState.url` holds the Firebase Storage download URL, ready to be persisted with the meal record when Data Connect meal CRUD wiring is completed.
+- `Done`: Wire SC-214 photo attachment toggle into existing Cloud Storage image upload pipeline (D-109). The `attachPhoto` toggle is preserved; when `uploadState.kind === 'done'`, `uploadState.url` is persisted with the custom meal record on save/update via Data Connect custom meal create/update operations.
 
 ## AI Meal Photo Analysis Paywall Gate (BL-108, D-132)
 - `Done`: `react-native-purchases-ui@9.10.5` installed. React Native autolinking handles iOS/Android; `pod install` + Gradle sync required before running on device/simulator.

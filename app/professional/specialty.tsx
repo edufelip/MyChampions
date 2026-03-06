@@ -1,7 +1,8 @@
 /**
  * SC-202 Professional Specialty Setup
- * Routes: /onboarding/professional-specialty  (also reachable post-onboarding)
- *         /professional/settings/specialties
+ * Route: /professional/specialty
+ * Legacy route intent (documentation aliases): /onboarding/professional-specialty,
+ * /professional/settings/specialties
  *
  * Allows professionals to:
  *  - Add / remove Nutritionist or Fitness Coach specialty

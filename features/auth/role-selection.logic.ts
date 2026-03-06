@@ -23,5 +23,5 @@ export function resolvePostRoleRoute(role: RoleIntent): string {
     return '/';
   }
 
-  return '/explore';
+  return '/professional/specialty';
 }
