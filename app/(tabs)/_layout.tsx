@@ -99,7 +99,6 @@ export default function TabLayout() {
           backgroundColor: theme.color.canvas,
         },
         lazy: false,
-        detachInactiveScreens: false,
         animation: 'fade',
         headerShown: false,
         tabBarButton: HapticTab,

@@ -49,6 +49,9 @@ export type TrainingSessionItemInput = {
   name: string;
   quantity: string; // optional, e.g. "3 sets x 10 reps"
   notes: string;
+  ymoveId?: string;
+  thumbnailUrl?: string;
+  videoUrl?: string;
 };
 
 export type TrainingSessionItem = TrainingSessionItemInput & {

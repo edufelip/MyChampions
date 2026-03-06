@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -24,17 +25,21 @@ import {
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { TemplatePickerModal } from '@/components/ds/patterns/TemplatePickerModal';
 import { StudentPickerModal } from '@/components/ds/patterns/StudentPickerModal';
+import { ExerciseSearchModal } from '@/components/ds/patterns/ExerciseSearchModal';
 import { DsRadius, DsSpace, DsTypography, getDsTheme, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
 import { usePlans } from '@/features/plans/use-plans';
+import { useYMoveSearch } from '@/features/plans/use-ymove-search';
+import type { YMoveExercise } from '@/features/plans/ymove-source';
 import {
   validateTrainingPlanInput,
   isStarterTemplate,
@@ -61,7 +66,16 @@ type AddSessionFormState =
 
 type AddItemFormState =
   | { kind: 'closed' }
-  | { kind: 'open'; sessionId: string; name: string; quantity: string; notes: string };
+  | {
+      kind: 'open';
+      sessionId: string;
+      name: string;
+      quantity: string;
+      notes: string;
+      ymoveId?: string;
+      thumbnailUrl?: string;
+      videoUrl?: string;
+    };
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -114,7 +128,6 @@ export default function TrainingPlanBuilderScreen() {
   const [name, setName] = useState('');
   const [formErrors, setFormErrors] = useState<ReturnType<typeof validateTrainingPlanInput>>({});
   const [addSessionForm, setAddSessionForm] = useState<AddSessionFormState>({ kind: 'closed' });
-  const [addItemForm, setAddItemForm] = useState<AddItemFormState>({ kind: 'closed' });
   const [isSaving, setIsSaving] = useState(false);
   const [isTemplatePickerVisible, setIsTemplatePickerVisible] = useState(false);
   
@@ -123,7 +136,13 @@ export default function TrainingPlanBuilderScreen() {
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
+  const { state: ymoveSearchState, search: searchYMove, clear: clearYMoveSearch } = useYMoveSearch();
+  const [isExerciseSearchVisible, setIsExerciseSearchVisible] = useState(false);
+  const [activeSessionIdForSearch, setActiveSessionIdForSearch] = useState<string | null>(null);
+
+  const [isDirty, setIsDirty] = useState(false);
   const isMounted = useRef(true);
+  const sessionNotesRef = useRef<TextInput>(null);
 
   useEffect(() => {
     return () => {
@@ -142,6 +161,7 @@ export default function TrainingPlanBuilderScreen() {
   useEffect(() => {
     if (state.kind === 'ready') {
       setName(state.plan.name);
+      setIsDirty(false);
     }
   }, [state]);
 
@@ -162,6 +182,7 @@ export default function TrainingPlanBuilderScreen() {
       if ('error' in result) {
         Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
       } else {
+        setIsDirty(false);
         router.replace(
           `${isStudentBuilder ? '/student/training/plans' : '/professional/training/plans'}/${result.id}` as never
         );
@@ -169,7 +190,11 @@ export default function TrainingPlanBuilderScreen() {
     } else {
       const err = await savePlan(planId!, input);
       if (isMounted.current) setIsSaving(false);
-      if (err) Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
+      if (err) {
+        Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
+      } else {
+        setIsDirty(false);
+      }
     }
   }, [name, validateInput, isNew, isStarterClone, createPlan, savePlan, planId, router, tr, isStudentBuilder]);
 
@@ -245,20 +270,33 @@ export default function TrainingPlanBuilderScreen() {
     [state, removeSession]
   );
 
-  // ── Add session item ───────────────────────────────────────────────────────
-  const handleAddSessionItem = useCallback(async () => {
-    if (addItemForm.kind !== 'open') return;
-    const { sessionId, name: itemName, quantity, notes } = addItemForm;
-    const itemErrors = validateSessionItem({ name: itemName, quantity, notes });
-    if (Object.keys(itemErrors).length > 0) return;
+  // ── YMove Search Handlers ──────────────────────────────────────────────────
+  const handleOpenExerciseSearch = (sessionId: string) => {
+    setActiveSessionIdForSearch(sessionId);
+    setIsExerciseSearchVisible(true);
+  };
 
-    const err = await addSessionItem(sessionId, { name: itemName, quantity, notes });
+  const handleConfirmExercise = async (exercise: YMoveExercise, quantity: string, notes: string) => {
+    if (!activeSessionIdForSearch) return;
+    
+    setIsExerciseSearchVisible(false);
+    const sessionId = activeSessionIdForSearch;
+    setActiveSessionIdForSearch(null);
+    clearYMoveSearch();
+
+    const err = await addSessionItem(sessionId, {
+      name: exercise.title,
+      quantity,
+      notes,
+      ymoveId: exercise.id,
+      thumbnailUrl: exercise.thumbnailUrl,
+      videoUrl: exercise.videoUrl,
+    });
+
     if (err) {
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
-    } else {
-      setAddItemForm({ kind: 'closed' });
     }
-  }, [addItemForm, validateSessionItem, addSessionItem, tr]);
+  };
 
   // ── Remove session item ────────────────────────────────────────────────────
   const handleRemoveSessionItem = useCallback(
@@ -267,6 +305,10 @@ export default function TrainingPlanBuilderScreen() {
     },
     [removeSessionItem]
   );
+
+  const screenTitle = isNew || isStarterClone
+    ? tr('pro.plan.training.title.create', 'student.plan.training.title.create')
+    : tr('pro.plan.training.title.edit', 'student.plan.training.title.edit');
 
   const sessions: TrainingSession[] = state.kind === 'ready' ? state.plan.sessions : [];
 
@@ -282,12 +324,26 @@ export default function TrainingPlanBuilderScreen() {
         <DsBackButton
           scheme={scheme}
           onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-              return;
-            }
+            const goBack = () => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/');
+              }
+            };
 
-            router.replace('/');
+            if (isDirty) {
+              Alert.alert(
+                t('pro.plan.discard.title') as string,
+                t('pro.plan.discard.body') as string,
+                [
+                  { text: t('pro.plan.discard.no') as string, style: 'cancel' },
+                  { text: t('pro.plan.discard.yes') as string, style: 'destructive', onPress: goBack },
+                ]
+              );
+            } else {
+              goBack();
+            }
           }}
           accessibilityLabel={t('auth.role.cta_back') as string}
           style={styles.backButton}
@@ -341,7 +397,10 @@ export default function TrainingPlanBuilderScreen() {
           placeholder={t('pro.plan.field.name.placeholder')}
           placeholderTextColor={palette.icon}
           value={name}
-          onChangeText={setName}
+          onChangeText={(val) => {
+            setName(val);
+            setIsDirty(true);
+          }}
           accessibilityLabel={t('pro.plan.field.name.label')}
         />
         {formErrors.name && (
@@ -373,28 +432,8 @@ export default function TrainingPlanBuilderScreen() {
           palette={palette}
           t={t}
           onRemoveSession={() => handleRemoveSession(session.id)}
-          onAddItem={() =>
-            setAddItemForm({ kind: 'open', sessionId: session.id, name: '', quantity: '', notes: '' })
-          }
+          onAddItem={() => handleOpenExerciseSearch(session.id)}
           onRemoveItem={(itemId) => handleRemoveSessionItem(session.id, itemId)}
-          addItemForm={addItemForm}
-          onAddItemFormNameChange={(v) =>
-            setAddItemForm((prev) =>
-              prev.kind === 'open' && prev.sessionId === session.id ? { ...prev, name: v } : prev
-            )
-          }
-          onAddItemFormQuantityChange={(v) =>
-            setAddItemForm((prev) =>
-              prev.kind === 'open' && prev.sessionId === session.id ? { ...prev, quantity: v } : prev
-            )
-          }
-          onAddItemFormNotesChange={(v) =>
-            setAddItemForm((prev) =>
-              prev.kind === 'open' && prev.sessionId === session.id ? { ...prev, notes: v } : prev
-            )
-          }
-          onConfirmAddItem={handleAddSessionItem}
-          onCancelAddItem={() => setAddItemForm({ kind: 'closed' })}
         />
       ))}
 
@@ -411,9 +450,13 @@ export default function TrainingPlanBuilderScreen() {
                 prev.kind === 'open' ? { ...prev, name: v } : prev
               )
             }
+            autoFocus
+            returnKeyType="next"
+            onSubmitEditing={() => sessionNotesRef.current?.focus()}
             accessibilityLabel={t('pro.plan.session.field.name.label')}
           />
           <TextInput
+            ref={sessionNotesRef}
             style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
             placeholder={t('pro.plan.session.field.notes.label')}
             placeholderTextColor={palette.icon}
@@ -423,6 +466,8 @@ export default function TrainingPlanBuilderScreen() {
                 prev.kind === 'open' ? { ...prev, notes: v } : prev
               )
             }
+            returnKeyType="done"
+            onSubmitEditing={handleAddSession}
             accessibilityLabel={t('pro.plan.session.field.notes.label')}
           />
           <View style={styles.rowActions}>
@@ -516,6 +561,21 @@ export default function TrainingPlanBuilderScreen() {
         theme={theme}
         t={t}
       />
+
+      <ExerciseSearchModal
+        isVisible={isExerciseSearchVisible}
+        onClose={() => {
+          setIsExerciseSearchVisible(false);
+          setActiveSessionIdForSearch(null);
+        }}
+        onConfirm={handleConfirmExercise}
+        searchState={ymoveSearchState}
+        onSearch={searchYMove}
+        onClear={clearYMoveSearch}
+        scheme={scheme}
+        theme={theme}
+        t={t}
+      />
     </DsScreen>
   );
 }
@@ -526,34 +586,19 @@ type SessionCardProps = {
   session: TrainingSession;
   palette: Palette;
   t: TFn;
-  addItemForm: AddItemFormState;
   onRemoveSession: () => void;
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => void;
-  onAddItemFormNameChange: (v: string) => void;
-  onAddItemFormQuantityChange: (v: string) => void;
-  onAddItemFormNotesChange: (v: string) => void;
-  onConfirmAddItem: () => void;
-  onCancelAddItem: () => void;
 };
 
 function SessionCard({
   session,
   palette,
   t,
-  addItemForm,
   onRemoveSession,
   onAddItem,
   onRemoveItem,
-  onAddItemFormNameChange,
-  onAddItemFormQuantityChange,
-  onAddItemFormNotesChange,
-  onConfirmAddItem,
-  onCancelAddItem,
 }: SessionCardProps) {
-  const isAddingItem =
-    addItemForm.kind === 'open' && addItemForm.sessionId === session.id;
-
   return (
     <View style={[styles.sessionCard, { borderColor: palette.icon }]}>
       {/* Session header */}
@@ -564,8 +609,9 @@ function SessionCard({
           accessibilityRole="button"
           accessibilityLabel={`Remove session ${session.name}`}
           hitSlop={8}
+          style={styles.removeBtnWrapper}
         >
-          <Text style={[styles.removeBtn, { color: palette.icon }]}>✕</Text>
+          <MaterialIcons name="remove-circle-outline" size={24} color={palette.icon} />
         </Pressable>
       </View>
       {session.notes ? (
@@ -575,6 +621,13 @@ function SessionCard({
       {/* Items */}
       {session.items.map((item) => (
         <View key={item.id} style={[styles.itemRow, { borderColor: palette.icon }]}>
+          {item.thumbnailUrl ? (
+            <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} />
+          ) : (
+            <View style={[styles.thumbnailPlaceholder, { backgroundColor: palette.icon }]}>
+              <Text style={{ color: palette.background, fontSize: 16 }}>🏃</Text>
+            </View>
+          )}
           <View style={styles.itemInfo}>
             <Text style={[styles.itemName, { color: palette.text }]}>{item.name}</Text>
             {item.quantity ? (
@@ -589,75 +642,23 @@ function SessionCard({
             accessibilityRole="button"
             accessibilityLabel={`Remove ${item.name}`}
             hitSlop={8}
+            style={styles.removeBtnWrapper}
           >
-            <Text style={[styles.removeBtn, { color: palette.icon }]}>✕</Text>
+            <MaterialIcons name="remove-circle-outline" size={22} color={palette.icon} />
           </Pressable>
         </View>
       ))}
 
-      {/* Add item inline form */}
-      {isAddingItem && (
-        <View style={styles.addItemInline}>
-          <TextInput
-            style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
-            placeholder={t('pro.plan.item.field.name.placeholder')}
-            placeholderTextColor={palette.icon}
-            value={addItemForm.name}
-            onChangeText={onAddItemFormNameChange}
-            accessibilityLabel={t('pro.plan.item.field.name.label')}
-          />
-          <TextInput
-            style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
-            placeholder={t('pro.plan.item.field.quantity.placeholder')}
-            placeholderTextColor={palette.icon}
-            value={addItemForm.quantity}
-            onChangeText={onAddItemFormQuantityChange}
-            accessibilityLabel={t('pro.plan.item.field.quantity.label')}
-          />
-          <TextInput
-            style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
-            placeholder={t('pro.plan.item.field.notes.label')}
-            placeholderTextColor={palette.icon}
-            value={addItemForm.notes}
-            onChangeText={onAddItemFormNotesChange}
-            accessibilityLabel={t('pro.plan.item.field.notes.label')}
-          />
-          <View style={styles.rowActions}>
-            <Pressable
-              style={[styles.primaryBtn, { backgroundColor: palette.tint, flex: 1 }]}
-              onPress={onConfirmAddItem}
-              accessibilityRole="button"
-              accessibilityLabel={t('pro.plan.cta.add_item')}
-            >
-              <Text style={[styles.primaryBtnText, { color: palette.background }]}>
-                {t('pro.plan.cta.add_item')}
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.secondaryBtn, { borderColor: palette.icon, flex: 1 }]}
-              onPress={onCancelAddItem}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.secondaryBtnText, { color: palette.icon }]}>
-                {t('meal.library.quick_log.cta_cancel')}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-
-      {!isAddingItem && (
-        <Pressable
-          style={[styles.secondaryBtn, { borderColor: palette.tint, marginTop: 8 }]}
-          onPress={onAddItem}
-          accessibilityRole="button"
-          accessibilityLabel={t('pro.plan.cta.add_item')}
-        >
-          <Text style={[styles.secondaryBtnText, { color: palette.tint }]}>
-            {t('pro.plan.cta.add_item')}
-          </Text>
-        </Pressable>
-      )}
+      <Pressable
+        style={[styles.secondaryBtn, { borderColor: palette.tint, marginTop: 8 }]}
+        onPress={onAddItem}
+        accessibilityRole="button"
+        accessibilityLabel={t('pro.plan.cta.add_item')}
+      >
+        <Text style={[styles.secondaryBtnText, { color: palette.tint }]}>
+          {t('pro.plan.cta.add_item')}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -711,7 +712,19 @@ const styles = StyleSheet.create({
   itemInfo: { flex: 1, gap: 2 },
   itemName: { fontSize: 14, fontWeight: '600' },
   itemMeta: { fontSize: 12 },
-  removeBtn: { fontSize: 16, fontWeight: '700', paddingHorizontal: 4 },
+  removeBtnWrapper: { padding: DsSpace.sm, justifyContent: 'center', alignItems: 'center' },
+  thumbnail: {
+    width: 44,
+    height: 44,
+    borderRadius: DsRadius.md,
+  },
+  thumbnailPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: DsRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addItemInline: { gap: 8, marginTop: 4 },
   addCard: { borderWidth: 1, borderRadius: 8, padding: 12, gap: 8 },
   rowActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
