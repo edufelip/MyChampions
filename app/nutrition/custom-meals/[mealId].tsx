@@ -44,6 +44,7 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
+import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { getDsTheme } from '@/constants/design-system';
@@ -230,7 +231,22 @@ export default function CustomMealBuilderScreen() {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
       testID="meal.builder.screen">
-      <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
+      <Stack.Screen options={{ title: screenTitle, headerShown: false }} />
+
+      <DsBackButton
+        scheme={scheme}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+
+          router.replace('/');
+        }}
+        accessibilityLabel={t('auth.role.cta_back') as string}
+        style={styles.backButton}
+        testID="meal.builder.backButton"
+      />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -741,6 +757,7 @@ function resolveFieldError(
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 16 },
+  backButton: { marginBottom: -2 },
   helper: { fontSize: 13, lineHeight: 20 },
   fieldGroup: { gap: 4 },
   fieldLabel: { fontSize: 13, fontWeight: '600' },

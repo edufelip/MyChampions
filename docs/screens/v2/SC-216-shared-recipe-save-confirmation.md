@@ -11,6 +11,7 @@
 - Offline state in preview mode uses `DsOfflineBanner` with BL-008 write-lock semantics.
 - Preview, error, and success sections follow DS spacing/typography hierarchy with localization-key copy only.
 - Primary/secondary confirmation actions keep existing business flow while matching DS action styling.
+- Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
 
 ## UX Copy Intent
 - Make ownership outcome explicit: saving creates a personal copy.

@@ -25,8 +25,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 
+import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -69,8 +70,16 @@ export default function NutritionPlanBuilderScreen() {
   };
   const { t } = useTranslation();
   const router = useRouter();
+  const pathname = usePathname();
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const { currentUser } = useAuthSession();
+  const isStudentBuilder = pathname.startsWith('/student/');
+
+  const tr = useCallback(
+    (proKey: Parameters<typeof t>[0], studentKey: Parameters<typeof t>[0]) =>
+      t(isStudentBuilder ? studentKey : proKey),
+    [isStudentBuilder, t]
+  );
 
   const {
     state,
@@ -131,16 +140,18 @@ export default function NutritionPlanBuilderScreen() {
       const result = await createPlan(input);
       setIsSaving(false);
       if ('error' in result) {
-        Alert.alert(t('pro.plan.error.save'));
+        Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
       } else {
-        router.replace(`/professional/nutrition/plans/${result.id}`);
+        router.replace(
+          `${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${result.id}` as never
+        );
       }
     } else {
       const err = await savePlan(planId!, input);
       setIsSaving(false);
-      if (err) Alert.alert(t('pro.plan.error.save'));
+      if (err) Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
     }
-  }, [name, caloriesTarget, carbsTarget, proteinsTarget, fatsTarget, validateInput, isNew, isStarterClone, createPlan, savePlan, planId, router, t]);
+  }, [name, caloriesTarget, carbsTarget, proteinsTarget, fatsTarget, validateInput, isNew, isStarterClone, createPlan, savePlan, planId, router, tr, isStudentBuilder]);
 
   // ── Add item ───────────────────────────────────────────────────────────────
   const handleAddItem = useCallback(async () => {
@@ -151,11 +162,11 @@ export default function NutritionPlanBuilderScreen() {
     const currentPlanId = state.plan.id;
     const err = await addItem(currentPlanId, { name: itemName, quantity, notes });
     if (err) {
-      Alert.alert(t('pro.plan.error.save'));
+      Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
     } else {
       setAddItemForm({ kind: 'closed' });
     }
-  }, [addItemForm, state, addItem, t]);
+  }, [addItemForm, state, addItem, tr]);
 
   // ── Remove item ────────────────────────────────────────────────────────────
   const handleRemoveItem = useCallback(
@@ -172,8 +183,8 @@ export default function NutritionPlanBuilderScreen() {
   }, [foodQuery, searchFoods]);
 
   const screenTitle = isNew || isStarterClone
-    ? t('pro.plan.nutrition.title.create')
-    : t('pro.plan.nutrition.title.edit');
+    ? tr('pro.plan.nutrition.title.create', 'student.plan.nutrition.title.create')
+    : tr('pro.plan.nutrition.title.edit', 'student.plan.nutrition.title.edit');
 
   return (
     <DsScreen
@@ -181,7 +192,22 @@ export default function NutritionPlanBuilderScreen() {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
+      <Stack.Screen options={{ title: screenTitle, headerShown: false }} />
+
+      <DsBackButton
+        scheme={scheme}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+
+          router.replace('/');
+        }}
+        accessibilityLabel={t('auth.role.cta_back') as string}
+        style={styles.backButton}
+        testID={isStudentBuilder ? 'student.plan.nutrition.backButton' : 'pro.plan.nutrition.backButton'}
+      />
 
       {/* ── Error state ───────────────────────────────────────────────────── */}
       {state.kind === 'error' && (
@@ -191,7 +217,7 @@ export default function NutritionPlanBuilderScreen() {
           style={[styles.errorBanner, { backgroundColor: palette.icon }]}
         >
           <Text style={[styles.errorBannerText, { color: palette.background }]}>
-            {t('pro.plan.error.load')}
+            {tr('pro.plan.error.load', 'student.plan.error.load')}
           </Text>
         </View>
       )}
@@ -223,12 +249,12 @@ export default function NutritionPlanBuilderScreen() {
 
       {/* ── Food items list ───────────────────────────────────────────────── */}
       <Text style={[styles.sectionHeader, { color: palette.text }]}>
-        {t('pro.plan.section.meals')}
+        {tr('pro.plan.section.meals', 'student.plan.section.meals')}
       </Text>
 
       {state.kind === 'ready' && state.plan.items.length === 0 && (
         <Text style={[styles.emptyText, { color: palette.icon }]}>
-          {t('pro.plan.food_search.stub_notice')}
+          {tr('pro.plan.food_search.stub_notice', 'student.plan.food_search.stub_notice')}
         </Text>
       )}
 
@@ -272,10 +298,10 @@ export default function NutritionPlanBuilderScreen() {
           style={[styles.secondaryBtn, { borderColor: palette.tint }]}
           onPress={() => setAddItemForm({ kind: 'open', name: '', quantity: '', notes: '' })}
           accessibilityRole="button"
-          accessibilityLabel={t('pro.plan.cta.add_meal')}
+          accessibilityLabel={tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
         >
           <Text style={[styles.secondaryBtnText, { color: palette.tint }]}>
-            {t('pro.plan.cta.add_meal')}
+            {tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
           </Text>
         </Pressable>
       )}
@@ -308,14 +334,14 @@ export default function NutritionPlanBuilderScreen() {
         onPress={handleSave}
         disabled={isSaving}
         accessibilityRole="button"
-        accessibilityLabel={t('pro.plan.cta.save')}
+        accessibilityLabel={tr('pro.plan.cta.save', 'student.plan.cta.save')}
         accessibilityState={{ disabled: isSaving, busy: isSaving }}
       >
         {isSaving ? (
           <ActivityIndicator color={palette.background} accessibilityLabel={t('a11y.loading.saving')} />
         ) : (
           <Text style={[styles.primaryBtnText, { color: palette.background }]}>
-            {t('pro.plan.cta.save')}
+            {tr('pro.plan.cta.save', 'student.plan.cta.save')}
           </Text>
         )}
       </Pressable>
@@ -359,7 +385,7 @@ function PlanMetadataForm({
   return (
     <View style={styles.formSection}>
       {/* Name */}
-      <Text style={[styles.fieldLabel, { color: palette.text }]}>
+      <Text style={[styles.fieldLabel, { color: palette.text }]}> 
         {t('pro.plan.field.name.label')}
       </Text>
       <TextInput
@@ -553,7 +579,7 @@ function AddItemForm({
           accessibilityRole="button"
           accessibilityLabel={t('pro.plan.cta.add_meal')}
         >
-          <Text style={[styles.primaryBtnText, { color: palette.background }]}>
+          <Text style={[styles.primaryBtnText, { color: palette.background }]}> 
             {t('pro.plan.cta.add_meal')}
           </Text>
         </Pressable>
@@ -576,6 +602,7 @@ function AddItemForm({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 20, gap: 12, paddingBottom: 40 },
+  backButton: { marginBottom: 2 },
   loader: { marginVertical: 24 },
   errorBanner: {
     borderRadius: 8,

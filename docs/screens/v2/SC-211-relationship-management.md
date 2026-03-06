@@ -21,9 +21,14 @@
 
 ## States
 - Loading: fetch relationship records and assignment status.
-- Empty: no relationship history yet; show self-guided continuation message.
+- Empty: no relationship history yet; keep invite entry and helper copy visible without an extra empty-state card.
 - Error: invite submission or unbind failure.
 - Success: relationship status updated, including canceled-pending states with reconnect guidance.
+
+## Implementation Snapshot (2026-03-05)
+- Native navigation toolbar is disabled.
+- The screen renders an in-content back button (icon-only) at the top, while keeping the rest of the SC-211 flow unchanged.
+- Top safe-area spacing is applied in-screen to keep the back control and content clear of device notches/status bars.
 
 ## Design Structure (D-134)
 - Screen shell uses design-system primitives (`DsScreen`) with shared playful background structure.
@@ -53,7 +58,6 @@
 - Pending-cap error: `This professional has too many pending requests right now. Try again later.`
 - Pending status text: `Waiting for professional confirmation to activate this connection.`
 - Rotated-code canceled text: `This request was canceled because the professional regenerated their invite code. Ask for the new code to reconnect.`
-- Empty-state CTA: `Continue self-guided`
 
 ## Data Contract
 - Inputs:

@@ -57,7 +57,7 @@ export default function ProNutritionLibraryScreen() {
 
   return (
     <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('pro.library.nutrition.title'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('pro.library.nutrition.title'), headerShown: false }} />
 
       {state.kind === 'loading' ? (
         <ActivityIndicator

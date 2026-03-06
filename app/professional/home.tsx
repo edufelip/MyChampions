@@ -100,7 +100,7 @@ export default function ProfessionalHomeScreen() {
 
   return (
     <DsScreen scheme={scheme} testID="pro.home.screen" contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('pro.home.title'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('pro.home.title'), headerShown: false }} />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner scheme={scheme} text={buildOfflineText(offlineDisplay.staleElapsed, t)} testID="pro.home.offlineBanner" />

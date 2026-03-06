@@ -35,6 +35,7 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
+import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { getDsTheme } from '@/constants/design-system';
@@ -159,7 +160,22 @@ export default function SharedRecipeSaveScreen() {
       contentContainerStyle={styles.content}
       testID="shared_recipe.screen">
       <Stack.Screen
-        options={{ title: t('shared_recipe.title'), headerShown: true }}
+        options={{ title: t('shared_recipe.title'), headerShown: false }}
+      />
+
+      <DsBackButton
+        scheme={scheme}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+
+          router.replace('/');
+        }}
+        accessibilityLabel={t('auth.role.cta_back') as string}
+        style={styles.backButton}
+        testID="shared_recipe.backButton"
       />
 
       {screenState.kind === 'loading' ? (
@@ -384,6 +400,7 @@ function SavedView({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 },
+  backButton: { marginBottom: 12 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
 
   previewContainer: { gap: 16 },

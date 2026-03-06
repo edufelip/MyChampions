@@ -11,6 +11,7 @@
 - Entitlement status, warning, and lock states are rendered with stacked `DsCard` blocks.
 - Purchase/restore actions use DS pill buttons; refresh stays as a lightweight text action.
 - Offline messaging uses `DsOfflineBanner` and keeps BL-008 write-lock gating.
+- Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
 
 ## User Actions
 - Primary:

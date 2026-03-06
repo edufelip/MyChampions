@@ -16,7 +16,7 @@
 
 ## States
 - Loading: fetch training plan context and today progress data.
-- Empty: no active training assignment; show illustrated acquisition empty state with direct coach-hiring CTA and secondary self-guided continuation action.
+- Empty: no active training assignment; show illustrated acquisition empty state with direct coach-hiring CTA and secondary self-guided action that opens student self-managed training plan creation.
 - Error: tracking update failure.
 - Success: completion state and progress summary updated.
 
@@ -36,7 +36,9 @@
 
 ## Edge Cases
 - If assignment ends, assigned plan history remains accessible per retention policy.
-- If no plan exists, primary CTA routes to professional connection management and secondary CTA preserves self-guided continuation.
+- If no plan exists, primary CTA routes to professional connection management and secondary CTA routes to self-guided plan creation.
+- Empty-state self-guided CTA routes to `/student/training/plans/new` so students can start a personal workout plan without a coach.
+- Student self-guided builder entry uses student-branded titles/actions (for example, `Create my workout plan`, `Save my plan`).
 
 ## Copy Draft (Current)
 - Screen title: `Workouts`
@@ -46,7 +48,7 @@
 - Empty state title: `No workouts found`
 - Empty state helper: `You don't have a personalized workout plan yet. Hire a personal trainer to receive a routine tailored to your goals.`
 - Empty-state CTA: `Hire a trainer`
-- Secondary empty-state CTA: `Continue self-guided`
+- Secondary empty-state CTA: `Create my workout plan`
 
 ## Links
 - Functional requirement: FR-113, FR-116, FR-123, FR-135, FR-211, FR-214

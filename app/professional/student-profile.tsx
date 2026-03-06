@@ -26,8 +26,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
+import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -66,6 +67,7 @@ export default function ProfessionalStudentProfileScreen() {
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
   const { t } = useTranslation();
+  const router = useRouter();
   const { currentUser } = useAuthSession();
   const { studentId } = useLocalSearchParams<{ studentId: string }>();
 
@@ -162,7 +164,22 @@ export default function ProfessionalStudentProfileScreen() {
 
   return (
     <DsScreen scheme={scheme} testID="pro.student_profile.screen" contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('pro.student_profile.title'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('pro.student_profile.title'), headerShown: false }} />
+
+      <DsBackButton
+        scheme={scheme}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+
+          router.replace('/');
+        }}
+        accessibilityLabel={t('auth.role.cta_back') as string}
+        style={styles.backButton}
+        testID="pro.student_profile.backButton"
+      />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -423,8 +440,8 @@ function WaterGoalCard({
       />
 
       {waterState.kind === 'ready' ? (
-        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
-          {String(waterState.todayTotalMl)} / {String(waterState.goalMl)} ml
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+          {String(waterState.todayConsumedMl)} / {String(waterState.effectiveGoal?.dailyMl ?? 0)} ml
         </Text>
       ) : null}
 
@@ -457,6 +474,7 @@ const styles = StyleSheet.create({
     padding: DsSpace.lg,
     paddingBottom: DsSpace.xxl,
   },
+  backButton: { marginBottom: -4 },
   cardWithGap: {
     gap: DsSpace.sm,
   },

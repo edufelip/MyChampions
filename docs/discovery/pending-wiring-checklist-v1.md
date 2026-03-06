@@ -180,6 +180,8 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: SC-207 Nutrition Plan Builder implemented at `app/professional/nutrition/plans/[planId].tsx`; `app/professional/nutrition.tsx` converted to predefined plan library list screen.
 - `Done`: SC-208 Training Plan Builder implemented at `app/professional/training/plans/[planId].tsx`; `app/professional/training.tsx` converted to predefined plan library list screen.
 - `Done`: Routes `professional/nutrition/plans/[planId]` and `professional/training/plans/[planId]` registered in `app/_layout.tsx`.
+- `Done`: Student self-guided empty-state CTAs in SC-209/SC-210 now route to direct creation flows: `/student/nutrition/plans/new` and `/student/training/plans/new`.
+- `In progress`: Student-specific self-managed plan builder shell for SC-209/SC-210 currently reuses shared builder screens (`app/professional/nutrition/plans/[planId].tsx`, `app/professional/training/plans/[planId].tsx`) via student route aliases. Student-branded titles/actions are applied on student-prefixed routes; follow-up required for fully dedicated student-only layout treatment.
 
 ## Plan Builder (BL-106 — SC-207, SC-208)
 - `Done`: `features/plans/plan-builder.logic.ts` — pure functions: `validateNutritionPlanInput`, `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError`, plus fatsecret normalization helpers `normalizeFoodArray`, `normalizeFoodSearchResult` and associated raw types `RawFatsecretFood`, `RawFatsecretServing`, `FoodSearchResult` (D-127, TC-281).

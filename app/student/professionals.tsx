@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 
 import { DsCard } from '@/components/ds/primitives/DsCard';
+import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
@@ -144,7 +145,22 @@ export default function StudentProfessionalsScreen() {
   return (
     <>
       <DsScreen scheme={scheme} testID="student.professionals.screen" contentContainerStyle={styles.content}>
-        <Stack.Screen options={{ title: t('relationship.title'), headerShown: true }} />
+        <Stack.Screen options={{ title: t('relationship.title'), headerShown: false }} />
+
+        <DsBackButton
+          scheme={scheme}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+              return;
+            }
+
+            router.replace('/');
+          }}
+          accessibilityLabel={t('auth.role.cta_back') as string}
+          style={styles.backButton}
+          testID="student.professionals.backButton"
+        />
 
         <Text style={[styles.intro, { color: theme.color.textPrimary }]}>{t('relationship.intro')}</Text>
         <Text style={[styles.helper, { color: theme.color.textSecondary }]}>
@@ -223,20 +239,6 @@ export default function StudentProfessionalsScreen() {
             </Text>
             <Pressable accessibilityRole="button" onPress={reload} testID="student.professionals.retryButton">
               <Text style={[styles.link, { color: theme.color.accentPrimary }]}>{t('common.error.retry')}</Text>
-            </Pressable>
-          </View>
-        ) : state.kind === 'ready' && state.displayStates.length === 0 ? (
-          <View style={styles.centered}>
-            <Text style={[styles.emptyText, { color: theme.color.textSecondary }]}>
-              {t('common.empty.no_data')}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.back()}
-              testID="student.professionals.selfGuidedCta">
-              <Text style={[styles.link, { color: theme.color.accentPrimary }]}> 
-                {t('relationship.empty.cta_continue_self')}
-              </Text>
             </Pressable>
           </View>
         ) : state.kind === 'ready' ? (
@@ -397,6 +399,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 16,
   },
+  backButton: { marginBottom: 4 },
   intro: {
     fontFamily: Fonts.rounded,
     fontSize: 26,
@@ -441,9 +444,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: DsSpace.md,
     paddingVertical: 32,
-  },
-  emptyText: {
-    fontSize: 15,
   },
   errorText: {
     fontSize: 15,

@@ -3,6 +3,7 @@
 ## Route
 - `/professional/training/plans/:planId` — builder/editor for a specific plan.
 - `/professional/training` (tab) — plan library list with create and open CTAs.
+- Shared student self-guided alias: `/student/training/plans/:planId` (same builder engine with student-branded titles/actions).
 
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
@@ -15,6 +16,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 - Empty and error states are presented inside `DsCard` containers with consistent semantics.
 - Primary create/retry actions use DS pill buttons and localization-key copy only.
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
+- Builder route native toolbar is disabled and uses an in-content icon-only back button.
 
 ## User Actions
 

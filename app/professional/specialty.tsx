@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
+import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -170,7 +171,22 @@ export default function ProfessionalSpecialtyScreen() {
 
   return (
     <DsScreen scheme={scheme} testID="pro.specialty.screen" contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('pro.specialty.title'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('pro.specialty.title'), headerShown: false }} />
+
+      <DsBackButton
+        scheme={scheme}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+
+          router.replace('/');
+        }}
+        accessibilityLabel={t('auth.role.cta_back') as string}
+        style={styles.backButton}
+        testID="pro.specialty.backButton"
+      />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -294,7 +310,7 @@ function RemovalAssistCard({
   const actions = assistState.availableActions.map((a) => buildActionMetadata(a, specialty));
 
   return (
-    <DsCard scheme={scheme} variant="warning" accessibilityRole="alert" testID="pro.specialty.removalAssist">
+    <DsCard scheme={scheme} variant="warning" testID="pro.specialty.removalAssist">
       <Text style={[styles.assistTitle, { color: palette.danger }]}>{t(titleKey)}</Text>
       <Text style={[styles.assistBody, { color: palette.text }]}>{t(bodyKey)}</Text>
 
@@ -565,6 +581,7 @@ const styles = StyleSheet.create({
     padding: DsSpace.lg,
     paddingBottom: DsSpace.xxl,
   },
+  backButton: { marginBottom: -4 },
   centered: { alignSelf: 'center', marginVertical: DsSpace.md },
   cardTitle: {
     ...DsTypography.cardTitle,

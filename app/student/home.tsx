@@ -8,7 +8,7 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getDsTheme, type DsTheme } from '@/constants/design-system';
@@ -42,6 +42,10 @@ function hasActivePlanForType(plans: Plan[], planType: string): boolean {
   return plans.some((plan) => plan.planType === planType && !plan.isArchived);
 }
 
+function countActivePlansForType(plans: Plan[], planType: string): number {
+  return plans.filter((plan) => plan.planType === planType && !plan.isArchived).length;
+}
+
 export default function StudentHomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
@@ -57,9 +61,9 @@ export default function StudentHomeScreen() {
     lastSyncedAtIso: null,
   });
 
-  const { state: connectionsState } = useConnections(Boolean(currentUser));
-  const { state: waterState } = useWaterTracking(Boolean(currentUser), todayKey());
-  const { state: plansState } = usePlans(Boolean(currentUser));
+  const { state: connectionsState, reload: reloadConnections } = useConnections(Boolean(currentUser));
+  const { state: waterState, reload: reloadWater } = useWaterTracking(Boolean(currentUser), todayKey());
+  const { state: plansState, reload: reloadPlans } = usePlans(Boolean(currentUser));
 
   const isLoading =
     connectionsState.kind === 'loading' ||
@@ -74,14 +78,27 @@ export default function StudentHomeScreen() {
     plansState.kind === 'ready' && hasActivePlanForType(plansState.plans, 'nutrition');
   const hasTrainingPlan =
     plansState.kind === 'ready' && hasActivePlanForType(plansState.plans, 'training');
+  const nutritionPlanCount =
+    plansState.kind === 'ready' ? countActivePlansForType(plansState.plans, 'nutrition') : 0;
+  const trainingPlanCount =
+    plansState.kind === 'ready' ? countActivePlansForType(plansState.plans, 'training') : 0;
 
-  const hydrationGoal = waterState.kind === 'ready' && waterState.effectiveGoal
-    ? waterState.effectiveGoal.dailyMl
-    : 0;
+  const hydrationGoal =
+    waterState.kind === 'ready' && waterState.effectiveGoal ? waterState.effectiveGoal.dailyMl : 0;
   const hydrationConsumed = waterState.kind === 'ready' ? waterState.todayConsumedMl : 0;
-  const hydrationPercent = hydrationGoal > 0
-    ? Math.max(0, Math.min(100, Math.round((hydrationConsumed / hydrationGoal) * 100)))
-    : 0;
+  const hydrationPercent =
+    hydrationGoal > 0
+      ? Math.max(0, Math.min(100, Math.round((hydrationConsumed / hydrationGoal) * 100)))
+      : 0;
+  const hydrationValue =
+    hydrationGoal > 0
+      ? `${Math.round((hydrationConsumed / 1000) * 10) / 10}L`
+      : '0L';
+
+  const isError =
+    connectionsState.kind === 'error' ||
+    plansState.kind === 'error' ||
+    waterState.kind === 'error';
 
   const profileInitial = (currentUser?.email?.[0] ?? 'M').toUpperCase();
 
@@ -112,8 +129,8 @@ export default function StudentHomeScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('shell.tabs.account')}
-            onPress={() => router.push('/settings/account')}
+            accessibilityLabel={t('student.home.cta_professionals')}
+            onPress={() => router.push('/student/professionals')}
             style={[styles.notificationButton, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}
             testID="student.home.accountButton">
             <MaterialIcons color={theme.color.textPrimary} name="notifications-none" size={22} />
@@ -145,6 +162,20 @@ export default function StudentHomeScreen() {
           <View testID="student.home.loading" style={styles.loadingWrap}>
             <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} size="large" />
           </View>
+        ) : isError ? (
+          <View style={styles.loadingWrap} testID="student.home.error">
+            <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                reloadConnections();
+                reloadPlans();
+                reloadWater();
+              }}
+              style={[styles.retryButton, { borderColor: theme.color.borderStrong }]}>
+              <Text style={[styles.retryText, { color: theme.color.textPrimary }]}>{t('common.error.retry')}</Text>
+            </Pressable>
+          </View>
         ) : (
           <>
             <SectionTitle title={t('student.home.title') as string} theme={theme} />
@@ -153,23 +184,23 @@ export default function StudentHomeScreen() {
                 theme={theme}
                 icon="fitness-center"
                 label={t('student.home.training.section') as string}
-                value={hasTrainingPlan ? '3/4' : '0/4'}
-                progress={hasTrainingPlan ? 75 : 0}
+                value={String(trainingPlanCount)}
+                progress={hasTrainingPlan ? 100 : 0}
                 tint={theme.color.accentPrimary}
               />
               <StatCard
                 theme={theme}
                 icon="restaurant"
                 label={t('student.home.nutrition.section') as string}
-                value={hasNutritionPlan ? '85%' : '0%'}
-                progress={hasNutritionPlan ? 85 : 0}
+                value={String(nutritionPlanCount)}
+                progress={hasNutritionPlan ? 100 : 0}
                 tint={theme.color.accentBlue}
               />
               <StatCard
                 theme={theme}
                 icon="water-drop"
                 label={t('student.home.hydration.title') as string}
-                value={hydrationGoal > 0 ? `${(hydrationConsumed / 1000).toFixed(1)}L` : '0.0L'}
+                value={hydrationValue}
                 progress={hydrationPercent}
                 tint={theme.color.accentCyan}
                 testID="student.home.hydrationCard"
@@ -179,17 +210,24 @@ export default function StudentHomeScreen() {
             <SectionTitle title={t('student.home.training.section') as string} theme={theme} />
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push('/student/training')}
+              onPress={() => router.navigate('/(tabs)/training')}
               style={[styles.heroCard, { borderColor: theme.color.border }]}
               testID={hasTrainingPlan ? 'student.home.training.goCta' : 'student.home.training.emptyCta'}>
-              <View style={[styles.heroBackdrop, { backgroundColor: theme.color.accentBlue }]} />
-              <View style={[styles.heroGradient, { backgroundColor: theme.color.overlaySoft }]} />
+              <ImageBackground
+                source={require('@/assets/images/hero-workout.jpg')}
+                style={StyleSheet.absoluteFillObject}
+                resizeMode="cover"
+              />
+              <View style={styles.heroGradientTop} />
+              <View style={styles.heroGradientBottom} />
               <View style={styles.heroContent}>
                 <View style={styles.heroTopRow}>
-                  <View style={[styles.heroBadge, { backgroundColor: theme.color.overlaySoft }]}>
-                    <Text style={styles.heroBadgeText}>{t('student.home.training.plan_available')}</Text>
+                  <View style={[styles.heroBadge, { backgroundColor: 'rgba(10, 36, 99, 0.52)' }]}>
+                    <Text style={styles.heroBadgeText}>
+                      {hasTrainingPlan ? t('student.home.training.plan_available') : t('student.home.no_active_plan')}
+                    </Text>
                   </View>
-                  <View style={[styles.heroArrowCircle, { backgroundColor: theme.color.overlaySoft }]}>
+                  <View style={[styles.heroArrowCircle, { backgroundColor: 'rgba(10, 36, 99, 0.52)' }]}>
                     <MaterialIcons color="white" name="arrow-forward" size={18} />
                   </View>
                 </View>
@@ -209,37 +247,47 @@ export default function StudentHomeScreen() {
             </Pressable>
 
             <SectionTitle title={t('student.home.nutrition.section') as string} theme={theme} />
-            <View style={[styles.mealCard, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}>
-              <View style={[styles.mealThumb, { backgroundColor: theme.color.accentBlueSoft }]} />
-              <View style={styles.mealBody}>
-                <Text style={[styles.mealTitle, { color: theme.color.textPrimary }]}>{t('student.home.nutrition.section')}</Text>
-                <Text style={[styles.mealDesc, { color: theme.color.textSecondary }]}>{t('student.home.nutrition.plan_available')}</Text>
-                <View style={styles.mealTagsRow}>
-                  <View style={[styles.mealTag, { backgroundColor: theme.color.accentBlueSoft }]}>
-                    <Text style={[styles.mealTagText, { color: theme.color.accentBlue }]}>{t('student.home.nutrition.plan_available')}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.navigate('/(tabs)/nutrition')}
+              style={[styles.heroCard, { borderColor: theme.color.border }]}
+              testID={hasNutritionPlan ? 'student.home.nutrition.goCta' : 'student.home.nutrition.emptyCta'}>
+              <ImageBackground
+                source={require('@/assets/images/hero-meal.jpg')}
+                style={StyleSheet.absoluteFillObject}
+                resizeMode="cover"
+              />
+              <View style={styles.mealGradientTop} />
+              <View style={styles.mealGradientBottom} />
+              <View style={styles.heroContent}>
+                <View style={styles.heroTopRow}>
+                  <View style={[styles.heroBadge, { backgroundColor: 'rgba(146, 64, 14, 0.52)' }]}>
+                    <Text style={styles.heroBadgeText}>
+                      {hasNutritionPlan ? t('student.home.nutrition.plan_available') : t('student.home.no_active_plan')}
+                    </Text>
                   </View>
-                  <View style={[styles.mealTag, { backgroundColor: theme.color.warningSoft }]}>
-                    <Text style={[styles.mealTagText, { color: theme.color.warning }]}>{t('student.home.cta_nutrition')}</Text>
+                  <View style={[styles.heroArrowCircle, { backgroundColor: 'rgba(146, 64, 14, 0.52)' }]}>
+                    <MaterialIcons color="white" name="arrow-forward" size={18} />
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={styles.heroTitle}>{t('student.home.nutrition.section')}</Text>
+                  <Text style={styles.heroMeta}>
+                    {hasNutritionPlan ? t('student.home.nutrition.plan_available') : t('student.home.no_active_plan')}
+                  </Text>
+
+                  <View style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}>
+                    <MaterialIcons color="white" name="restaurant" size={20} />
+                    <Text style={[styles.heroCtaText, { color: 'white' }]}>
+                      {hasNutritionPlan ? t('student.home.cta_nutrition') : t('student.home.cta_start_nutrition')}
+                    </Text>
                   </View>
                 </View>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push('/student/nutrition')}
-                style={[styles.mealAction, { borderColor: theme.color.borderStrong }]}
-                testID={hasNutritionPlan ? 'student.home.nutrition.goCta' : 'student.home.nutrition.emptyCta'}>
-                <MaterialIcons color={theme.color.textSecondary} name="check" size={20} />
-              </Pressable>
-            </View>
-
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/student/professionals')}
-              style={[styles.manageButton, { borderColor: theme.color.borderStrong }]}
-              testID="student.home.manageProfessionalsCta">
-              <MaterialIcons color={theme.color.textPrimary} name="manage-accounts" size={20} />
-              <Text style={[styles.manageButtonText, { color: theme.color.textPrimary }]}>{t('student.home.cta_manage_professionals')}</Text>
             </Pressable>
+
+
           </>
         )}
       </View>
@@ -378,7 +426,22 @@ const styles = StyleSheet.create({
   pendingText: { fontSize: 12, fontWeight: '600' },
 
   loadingWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-
+  errorText: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  retryButton: {
+    borderRadius: 10,
+    borderWidth: 1,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+  },
+  retryText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   sectionTitle: {
     fontFamily: Fonts.rounded,
     fontSize: 18,
@@ -415,8 +478,14 @@ const styles = StyleSheet.create({
     minHeight: 180,
     overflow: 'hidden',
   },
-  heroBackdrop: { ...StyleSheet.absoluteFillObject, opacity: 0.95 },
-  heroGradient: { ...StyleSheet.absoluteFillObject, opacity: 0.5 },
+  heroGradientTop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10, 36, 99, 0.18)',
+  },
+  heroGradientBottom: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10, 36, 99, 0.52)',
+  },
   heroContent: { flex: 1, justifyContent: 'space-between', padding: 16 },
   heroTopRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   heroBadge: {
@@ -451,43 +520,14 @@ const styles = StyleSheet.create({
   },
   heroCtaText: { fontSize: 14, fontWeight: '600' },
 
-  mealCard: {
-    alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 10,
-    padding: 12,
+  mealGradientTop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(146, 64, 14, 0.18)',
   },
-  mealThumb: { borderRadius: 10, height: 72, width: 72 },
-  mealBody: { flex: 1, gap: 3 },
-  mealTitle: { fontSize: 14, fontWeight: '600' },
-  mealDesc: { fontSize: 12 },
-  mealTagsRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  mealTag: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  mealTagText: { fontSize: 11, fontWeight: '600' },
-  mealAction: {
-    alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
+  mealGradientBottom: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(146, 64, 14, 0.52)',
   },
 
-  manageButton: {
-    alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 2,
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'center',
-    minHeight: 48,
-    marginTop: 4,
-  },
-  manageButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
+
 });

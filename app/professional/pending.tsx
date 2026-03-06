@@ -5,7 +5,7 @@
  * Surfaces: pending connection list, confirm (accept), deny (endConnection),
  * search/filter (BL-004 / D-070), bulk deny.
  */
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 import { DsCard } from '@/components/ds/primitives/DsCard';
+import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
@@ -44,6 +45,7 @@ export default function ProfessionalPendingScreen() {
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
   const { t } = useTranslation();
+  const router = useRouter();
   const { currentUser } = useAuthSession();
 
   const networkStatus = useNetworkStatus();
@@ -134,7 +136,22 @@ export default function ProfessionalPendingScreen() {
 
   return (
     <DsScreen scheme={scheme} testID="pro.pending.screen" contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('pro.pending.filter.label'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('pro.pending.filter.label'), headerShown: false }} />
+
+      <DsBackButton
+        scheme={scheme}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+
+          router.replace('/');
+        }}
+        accessibilityLabel={t('auth.role.cta_back') as string}
+        style={styles.backButton}
+        testID="pro.pending.backButton"
+      />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -315,6 +332,7 @@ const styles = StyleSheet.create({
     padding: DsSpace.lg,
     paddingBottom: DsSpace.xxl,
   },
+  backButton: { marginBottom: -4 },
   searchCard: {
     gap: DsSpace.sm,
   },

@@ -16,6 +16,7 @@
 - Offline communication uses `DsOfflineBanner` while preserving BL-008 write-lock behavior.
 - Primary action hierarchy follows DS pill-button patterns and shared spacing/typography tokens.
 - AI/paywall and quick-log/builder sections keep existing business logic and localization keys, with DS visual structure.
+- Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
 
 ## User Actions
 - Primary:

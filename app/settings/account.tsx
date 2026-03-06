@@ -1,42 +1,71 @@
 /**
  * SC-213 Account & Privacy Settings
- * Route: /settings/account
+ * Route: /settings/account  (re-exported from app/(tabs)/account.tsx for both roles)
  *
- * Provides compliance-critical controls: privacy policy link and account
- * deletion initiation (FR-133, FR-157, BR-225, BR-231).
+ * Production-ready settings screen covering:
+ *   — Profile header (avatar initials, display name, email, role badge)
+ *   — Account section: email display, change password, language switcher
+ *   — Legal & Privacy section: privacy policy, terms of service
+ *   — Support section: contact support (mailto)
+ *   — Sign out
+ *   — Danger zone: account deletion (FR-133, FR-157, BR-225, BR-231)
  *
- * Account deletion is wired to the Data Connect profile-delete operation via
- * deleteProfileFromSource, followed by Firebase Auth sign-out.
+ * Change-password flow:
+ *   - Email/password accounts → sendPasswordResetEmail → inline success/error
+ *   - OAuth accounts (Google/Apple) → informational notice (no reset email)
+ *
+ * Language switcher:
+ *   - Persisted to AsyncStorage via features/auth/language-storage.ts
+ *   - Takes effect on next app launch (standard RN pattern)
  *
  * Docs: docs/screens/v2/SC-213-account-privacy-settings.md
  * Refs: FR-133, FR-157, UC-002.5, AC-305–308, AC-310, BR-225, BR-231
  *       TC-304–307, TC-309
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  ActionSheetIOS,
   Alert,
   Linking,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Stack } from 'expo-router';
-import { signOut } from 'firebase/auth';
+import { sendPasswordResetEmail, signOut } from 'firebase/auth';
+import Constants from 'expo-constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
-import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import { useAuthSession } from '@/features/auth/auth-session';
 import { deleteProfileFromSource } from '@/features/auth/profile-source';
 import { getFirebaseAuth } from '@/features/auth/firebase';
+import {
+  getLanguageOverride,
+  setLanguageOverride,
+} from '@/features/auth/language-storage';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useTranslation } from '@/localization';
+import { SUPPORTED_LOCALES, type SupportedLocale, useTranslation } from '@/localization';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+// Deferred: replace with env-based legal config link before release (D-103)
+const PRIVACY_POLICY_URL = 'https://example.com/privacy';
+const TERMS_URL = 'https://example.com/terms';
+const SUPPORT_EMAIL = 'support@mychampions.app';
+
+const APP_VERSION: string =
+  (Constants.expoConfig?.version as string | undefined) ?? '—';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,22 +75,50 @@ type DeleteRequestState =
   | { kind: 'success' }
   | { kind: 'error'; reason: 'network' | 'already_requested' | 'unknown' };
 
+type PasswordResetState =
+  | { kind: 'idle' }
+  | { kind: 'pending' }
+  | { kind: 'success' }
+  | { kind: 'error' };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function resolveDisplayName(displayName: string | null, email: string | null): string {
+  if (displayName && displayName.trim().length > 0) return displayName.trim();
+  if (email) {
+    const prefix = email.split('@')[0];
+    if (prefix) return prefix;
+  }
+  return '—';
+}
+
+function resolveAvatarInitial(displayName: string | null, email: string | null): string {
+  const name = resolveDisplayName(displayName, email);
+  return (name[0] ?? '?').toUpperCase();
+}
+
+function isEmailPasswordAccount(providerData: { providerId: string }[]): boolean {
+  return providerData.some((p) => p.providerId === 'password');
+}
+
+function resolveOAuthProviderLabel(providerData: { providerId: string }[]): string {
+  if (providerData.some((p) => p.providerId === 'google.com')) return 'Google';
+  if (providerData.some((p) => p.providerId === 'apple.com')) return 'Apple';
+  return 'your sign-in provider';
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function AccountSettingsScreen() {
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
-  const palette = {
-    background: theme.color.canvas,
-    text: theme.color.textPrimary,
-    icon: theme.color.textSecondary,
-    tint: theme.color.accentPrimary,
-  };
   const { t } = useTranslation();
 
-  const [deleteState, setDeleteState] = useState<DeleteRequestState>({ kind: 'idle' });
+  const { currentUser, lockedRole, clearSession } = useAuthSession();
 
+  // ── Offline state ──────────────────────────────────────────────────────────
   const networkStatus = useNetworkStatus();
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
     networkStatus,
@@ -69,11 +126,153 @@ export default function AccountSettingsScreen() {
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
-  // Privacy policy URL — deferred: replace with env-based legal config link
-  const PRIVACY_POLICY_URL = 'https://example.com/privacy';
+  // ── Feature state ──────────────────────────────────────────────────────────
+  const [deleteState, setDeleteState] = useState<DeleteRequestState>({ kind: 'idle' });
+  const [passwordState, setPasswordState] = useState<PasswordResetState>({ kind: 'idle' });
+  const [currentLanguage, setCurrentLanguage] = useState<SupportedLocale | null>(null);
+
+  // Load persisted language override on mount
+  useEffect(() => {
+    void getLanguageOverride().then((override) => {
+      setCurrentLanguage(override);
+    });
+  }, []);
+
+  // ── Derived ────────────────────────────────────────────────────────────────
+  const email = currentUser?.email ?? null;
+  const displayName = resolveDisplayName(currentUser?.displayName ?? null, email);
+  const avatarInitial = resolveAvatarInitial(currentUser?.displayName ?? null, email);
+  const providerData = currentUser?.providerData ?? [];
+  const isEmailUser = isEmailPasswordAccount(providerData);
+  const oauthProvider = resolveOAuthProviderLabel(providerData);
+  const isStudent = lockedRole === 'student';
+  const roleBadgeLabel = isStudent
+    ? t('settings.account.role.student')
+    : t('settings.account.role.professional');
+  const topInsetPadding = isStudent ? insets.top : insets.top / 2;
+
+  const isSubmittingDelete = deleteState.kind === 'pending';
+  const isDeleteLocked = isSubmittingDelete || isWriteLocked;
+  const isPasswordPending = passwordState.kind === 'pending';
+
+  const deleteErrorMessage =
+    deleteState.kind === 'error'
+      ? deleteState.reason === 'network'
+        ? t('settings.account.delete.error.network')
+        : deleteState.reason === 'already_requested'
+          ? t('settings.account.delete.error.already_requested')
+          : t('settings.account.delete.error.unknown')
+      : null;
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   function handleOpenPrivacyPolicy() {
     void Linking.openURL(PRIVACY_POLICY_URL);
+  }
+
+  function handleOpenTerms() {
+    void Linking.openURL(TERMS_URL);
+  }
+
+  function handleContactSupport() {
+    void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+  }
+
+  function handleChangePassword() {
+    if (!isEmailUser) {
+      Alert.alert(
+        '',
+        t('settings.account.change_password.oauth_notice', { provider: oauthProvider }) as string,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    Alert.alert(
+      t('settings.account.change_password.confirm_title') as string,
+      t('settings.account.change_password.confirm_body', { email: email ?? '' }) as string,
+      [
+        { text: t('settings.account.change_password.confirm_no') as string, style: 'cancel' },
+        {
+          text: t('settings.account.change_password.confirm_yes') as string,
+          onPress: submitPasswordReset,
+        },
+      ]
+    );
+  }
+
+  async function submitPasswordReset() {
+    if (!email) return;
+    setPasswordState({ kind: 'pending' });
+    try {
+      await sendPasswordResetEmail(getFirebaseAuth(), email);
+      setPasswordState({ kind: 'success' });
+    } catch {
+      setPasswordState({ kind: 'error' });
+    }
+  }
+
+  function handleLanguagePicker() {
+    const localeLabels: Record<SupportedLocale, string> = {
+      'en-US': t('settings.account.language.en_us') as string,
+      'pt-BR': t('settings.account.language.pt_br') as string,
+      'es-ES': t('settings.account.language.es_es') as string,
+    };
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: t('settings.account.language.picker_title') as string,
+          options: [
+            ...SUPPORTED_LOCALES.map((l) => localeLabels[l]),
+            'Cancel',
+          ],
+          cancelButtonIndex: SUPPORTED_LOCALES.length,
+        },
+        (index) => {
+          const chosen = SUPPORTED_LOCALES[index];
+          if (chosen) void applyLanguage(chosen);
+        }
+      );
+    } else {
+      // Android: use Alert with buttons for the three options
+      Alert.alert(
+        t('settings.account.language.picker_title') as string,
+        undefined,
+        [
+          ...SUPPORTED_LOCALES.map((locale) => ({
+            text: localeLabels[locale],
+            onPress: () => void applyLanguage(locale),
+          })),
+          { text: 'Cancel', style: 'cancel' as const },
+        ]
+      );
+    }
+  }
+
+  async function applyLanguage(locale: SupportedLocale) {
+    await setLanguageOverride(locale);
+    setCurrentLanguage(locale);
+  }
+
+  function handleSignOut() {
+    Alert.alert(
+      t('settings.account.sign_out.confirm_title') as string,
+      t('settings.account.sign_out.confirm_body') as string,
+      [
+        { text: t('settings.account.sign_out.confirm_no') as string, style: 'cancel' },
+        {
+          text: t('settings.account.sign_out.confirm_yes') as string,
+          style: 'destructive',
+          onPress: submitSignOut,
+        },
+      ]
+    );
+  }
+
+  function submitSignOut() {
+    clearSession();
+    void signOut(getFirebaseAuth());
   }
 
   function handleRequestDeletion() {
@@ -81,10 +280,7 @@ export default function AccountSettingsScreen() {
       t('settings.account.delete.confirm_title') as string,
       t('settings.account.delete.confirm_body') as string,
       [
-        {
-          text: t('settings.account.delete.confirm_no') as string,
-          style: 'cancel',
-        },
+        { text: t('settings.account.delete.confirm_no') as string, style: 'cancel' },
         {
           text: t('settings.account.delete.confirm_yes') as string,
           style: 'destructive',
@@ -105,24 +301,22 @@ export default function AccountSettingsScreen() {
     }
   }
 
-  const errorMessage =
-    deleteState.kind === 'error'
-      ? deleteState.reason === 'network'
-        ? t('settings.account.delete.error.network')
-        : deleteState.reason === 'already_requested'
-          ? t('settings.account.delete.error.already_requested')
-          : t('settings.account.delete.error.unknown')
-      : null;
+  // ── Locale label for current language ─────────────────────────────────────
+  const languageLabel =
+    currentLanguage === 'pt-BR'
+      ? (t('settings.account.language.pt_br') as string)
+      : currentLanguage === 'es-ES'
+        ? (t('settings.account.language.es_es') as string)
+        : (t('settings.account.language.en_us') as string);
 
-  const isSubmitting = deleteState.kind === 'pending';
-  const isDeleteLocked = isSubmitting || isWriteLocked;
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <DsScreen
-      scheme={scheme}
-      contentContainerStyle={styles.content}
+    <ScrollView
+      style={[styles.root, { backgroundColor: theme.color.canvas }]}
+      contentContainerStyle={[styles.content, { paddingTop: 16 + topInsetPadding }]}
       testID="settings.account.screen">
-      <Stack.Screen options={{ title: t('settings.account.title'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('settings.account.title') as string, headerShown: false }} />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -132,52 +326,138 @@ export default function AccountSettingsScreen() {
         />
       ) : null}
 
-      {/* Privacy policy */}
+      {/* ── Profile header ─────────────────────────────────────────────── */}
       <View
-        style={[styles.section, { borderColor: palette.icon + '33' }]}
-        testID="settings.account.privacySection">
-        <Text style={[styles.sectionTitle, { color: palette.text }]}>
-          {t('settings.account.privacy_policy.label')}
-        </Text>
-        <Pressable
-          accessibilityRole="link"
-          onPress={handleOpenPrivacyPolicy}
-          style={[styles.linkButton, { borderColor: palette.tint }]}
-          testID="settings.account.privacyPolicy.cta">
-          <Text style={[styles.linkButtonText, { color: palette.tint }]}>
-            {t('settings.account.privacy_policy.cta')}
+        style={[styles.profileCard, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}
+        testID="settings.account.profileCard">
+        <View style={[styles.avatar, { backgroundColor: theme.color.accentPrimarySoft, borderColor: theme.color.accentPrimary }]}>
+          <Text style={[styles.avatarInitial, { color: theme.color.accentPrimary }]}>
+            {avatarInitial}
           </Text>
-        </Pressable>
+        </View>
+        <View style={styles.profileInfo}>
+          <Text style={[styles.profileName, { color: theme.color.textPrimary }]} numberOfLines={1}>
+            {displayName}
+          </Text>
+          {email ? (
+            <Text style={[styles.profileEmail, { color: theme.color.textSecondary }]} numberOfLines={1}>
+              {email}
+            </Text>
+          ) : null}
+          <View style={[styles.rolePill, { backgroundColor: theme.color.accentBlueSoft }]}>
+            <Text style={[styles.rolePillText, { color: theme.color.accentBlue }]}>
+              {roleBadgeLabel}
+            </Text>
+          </View>
+        </View>
       </View>
 
-      {/* Account deletion */}
-      <View
-        style={[styles.section, { borderColor: palette.icon + '33' }]}
-        testID="settings.account.deleteSection">
-        <Text style={[styles.sectionTitle, { color: palette.text }]}>
-          {t('settings.account.delete.title')}
+      {/* ── Account section ────────────────────────────────────────────── */}
+      <SectionHeader label={t('settings.account.section.account') as string} theme={theme} />
+      <View style={[styles.group, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}>
+        <SettingsRow
+          label={t('settings.account.email.label') as string}
+          value={email ?? '—'}
+          theme={theme}
+          testID="settings.account.emailRow"
+        />
+        <RowDivider color={theme.color.border} />
+
+        {/* Change password */}
+        {passwordState.kind === 'success' ? (
+          <View style={[styles.inlineBanner, { backgroundColor: theme.color.successSoft, borderColor: theme.color.success }]} testID="settings.account.passwordSuccess">
+            <Text style={[styles.inlineBannerText, { color: theme.color.success }]}>
+              {t('settings.account.change_password.success')}
+            </Text>
+          </View>
+        ) : (
+          <SettingsRow
+            label={t('settings.account.change_password.label') as string}
+            onPress={handleChangePassword}
+            loading={isPasswordPending}
+            theme={theme}
+            testID="settings.account.changePasswordRow"
+          />
+        )}
+        {passwordState.kind === 'error' ? (
+          <Text style={[styles.rowError, { color: theme.color.danger }]} testID="settings.account.passwordError">
+            {t('settings.account.change_password.error')}
+          </Text>
+        ) : null}
+
+        <RowDivider color={theme.color.border} />
+        <SettingsRow
+          label={t('settings.account.language.label') as string}
+          value={languageLabel}
+          onPress={handleLanguagePicker}
+          theme={theme}
+          testID="settings.account.languageRow"
+        />
+      </View>
+
+      {/* ── Legal & Privacy section ─────────────────────────────────────── */}
+      <SectionHeader label={t('settings.account.section.legal') as string} theme={theme} />
+      <View style={[styles.group, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}>
+        <SettingsRow
+          label={t('settings.account.privacy_policy.label') as string}
+          onPress={handleOpenPrivacyPolicy}
+          theme={theme}
+          testID="settings.account.privacyPolicyRow"
+        />
+        <RowDivider color={theme.color.border} />
+        <SettingsRow
+          label={t('settings.account.terms.label') as string}
+          onPress={handleOpenTerms}
+          theme={theme}
+          testID="settings.account.termsRow"
+        />
+      </View>
+
+      {/* ── Support section ────────────────────────────────────────────── */}
+      <SectionHeader label={t('settings.account.section.support') as string} theme={theme} />
+      <View style={[styles.group, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}>
+        <SettingsRow
+          label={t('settings.account.contact.label') as string}
+          onPress={handleContactSupport}
+          theme={theme}
+          testID="settings.account.contactRow"
+        />
+      </View>
+
+      {/* ── Sign out ───────────────────────────────────────────────────── */}
+      <Pressable
+        onPress={handleSignOut}
+        style={[styles.signOutButton, { borderColor: theme.color.warning }]}
+        testID="settings.account.signOutCta">
+        <Text style={[styles.signOutText, { color: theme.color.warning }]}>
+          {t('settings.account.sign_out.cta')}
         </Text>
-        <Text style={[styles.body, { color: palette.icon }]}>
+      </Pressable>
+
+      {/* ── Danger zone ────────────────────────────────────────────────── */}
+      <SectionHeader label={t('settings.account.section.danger') as string} theme={theme} danger />
+      <View style={[styles.group, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder }]}>
+        <Text style={[styles.dangerBody, { color: theme.color.textSecondary }]}>
           {t('settings.account.delete.body')}
         </Text>
 
         {deleteState.kind === 'success' ? (
           <View
-            style={[styles.successBanner, { borderColor: theme.color.success, backgroundColor: theme.color.successSoft }]}
+            style={[styles.inlineBanner, { backgroundColor: theme.color.successSoft, borderColor: theme.color.success }]}
             testID="settings.account.deleteSuccess"
             accessibilityRole="alert">
-            <Text style={[styles.successText, { color: theme.color.success }]}>
+            <Text style={[styles.inlineBannerText, { color: theme.color.success }]}>
               {t('settings.account.delete.success')}
             </Text>
           </View>
         ) : (
           <>
-            {errorMessage ? (
+            {deleteErrorMessage ? (
               <View accessibilityLiveRegion="polite">
                 <Text
-                  style={[styles.errorText, { color: theme.color.danger }]}
+                  style={[styles.rowError, { color: theme.color.danger }]}
                   testID="settings.account.deleteError">
-                  {errorMessage}
+                  {deleteErrorMessage}
                 </Text>
               </View>
             ) : null}
@@ -197,57 +477,201 @@ export default function AccountSettingsScreen() {
           </>
         )}
       </View>
-    </DsScreen>
+
+      {/* ── App version footer ────────────────────────────────────────── */}
+      <Text style={[styles.versionFooter, { color: theme.color.textTertiary }]} testID="settings.account.version">
+        {t('settings.account.app_version.label')} {APP_VERSION}
+      </Text>
+    </ScrollView>
   );
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+type DsThemeShape = ReturnType<typeof getDsTheme>;
+
+function SectionHeader({
+  label,
+  theme,
+  danger = false,
+}: {
+  label: string;
+  theme: DsThemeShape;
+  danger?: boolean;
+}) {
+  return (
+    <Text
+      style={[
+        styles.sectionHeader,
+        { color: danger ? theme.color.danger : theme.color.textTertiary },
+      ]}>
+      {label.toUpperCase()}
+    </Text>
+  );
+}
+
+function SettingsRow({
+  label,
+  value,
+  onPress,
+  loading = false,
+  theme,
+  testID,
+}: {
+  label: string;
+  value?: string;
+  onPress?: () => void;
+  loading?: boolean;
+  theme: DsThemeShape;
+  testID?: string;
+}) {
+  const isInteractive = Boolean(onPress) && !loading;
+  return (
+    <Pressable
+      onPress={isInteractive ? onPress : undefined}
+      disabled={!isInteractive}
+      style={({ pressed }) => [
+        styles.settingsRow,
+        pressed && isInteractive && { opacity: 0.6 },
+      ]}
+      testID={testID}
+      accessibilityRole={isInteractive ? 'button' : 'none'}>
+      <Text style={[styles.rowLabel, { color: theme.color.textPrimary }]}>{label}</Text>
+      <View style={styles.rowRight}>
+        {value ? (
+          <Text style={[styles.rowValue, { color: theme.color.textSecondary }]} numberOfLines={1}>
+            {value}
+          </Text>
+        ) : null}
+        {isInteractive ? (
+          <Text style={[styles.chevron, { color: theme.color.textTertiary }]}>›</Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
+function RowDivider({ color }: { color: string }) {
+  return <View style={[styles.divider, { backgroundColor: color }]} />;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 20 },
-  section: {
-    borderRadius: 12,
+  root: { flex: 1 },
+  content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 48, gap: 4 },
+
+  // Profile card
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 14,
     borderWidth: 1,
-    gap: 12,
     padding: 16,
+    marginBottom: 8,
   },
-  sectionTitle: {
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    fontFamily: Fonts?.rounded ?? 'normal',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  profileInfo: { flex: 1, gap: 3 },
+  profileName: {
     fontFamily: Fonts?.rounded ?? 'normal',
     fontSize: 16,
     fontWeight: '700',
   },
-  body: { fontSize: 13, lineHeight: 20 },
-  linkButton: {
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    minHeight: 44,
+  profileEmail: { fontSize: 13 },
+  rolePill: {
+    alignSelf: 'flex-start',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 4,
   },
-  linkButtonText: { fontSize: 14, fontWeight: '600' },
-  successBanner: {
+  rolePillText: { fontSize: 11, fontWeight: '600' },
+
+  // Section header
+  sectionHeader: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    marginTop: 16,
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+
+  // Settings group
+  group: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+
+  // Settings row
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 48,
+  },
+  rowLabel: { fontSize: 15, flex: 1 },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '50%' },
+  rowValue: { fontSize: 14, textAlign: 'right', flexShrink: 1 },
+  chevron: { fontSize: 20, lineHeight: 22, fontWeight: '300' },
+  divider: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
+
+  // Inline banners
+  inlineBanner: {
     borderRadius: 8,
     borderWidth: 1,
+    margin: 12,
     padding: 12,
   },
-  successText: { fontSize: 13 },
-  errorText: { fontSize: 13 },
+  inlineBannerText: { fontSize: 13, lineHeight: 18 },
+  rowError: { fontSize: 13, paddingHorizontal: 16, paddingBottom: 10 },
+
+  // Danger zone
+  dangerBody: { fontSize: 13, lineHeight: 20, padding: 16, paddingBottom: 8 },
   destructiveButton: {
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1.5,
     justifyContent: 'center',
+    margin: 12,
+    marginTop: 4,
     minHeight: 48,
   },
   destructiveButtonText: { fontSize: 15, fontWeight: '600' },
-  offlineBanner: {
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 10,
+
+  // Sign out
+  signOutButton: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 4,
+    minHeight: 48,
   },
-  offlineBannerText: {
-    fontSize: 13,
-    lineHeight: 18,
+  signOutText: { fontSize: 15, fontWeight: '600' },
+
+  // Footer
+  versionFooter: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 24,
+    marginBottom: 8,
   },
 });

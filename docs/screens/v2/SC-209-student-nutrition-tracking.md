@@ -21,7 +21,7 @@
 
 ## States
 - Loading: fetch current-day plan targets and existing logs.
-- Empty: no active nutrition assignment; show illustrated acquisition empty state with direct nutritionist-hiring CTA, supporting-program link, and secondary self-guided continuation action.
+- Empty: no active nutrition assignment; show illustrated acquisition empty state with direct nutritionist-hiring CTA and secondary self-guided action that opens student self-managed nutrition plan creation.
 - Error: log write/read failure.
 - Success: totals update and adherence status visible.
 
@@ -50,15 +50,16 @@
 - If no active nutritionist, self-managed plan flow remains available.
 - If consumed grams from custom meal exceed meal total grams, proportional scaling still applies.
 - If nutritionist override goal is removed or assignment ends, hydration target falls back to stored student personal goal.
-- In empty state, acquisition CTA can be primary as long as self-guided continuation remains directly available on screen.
+- In empty state, acquisition CTA can be primary as long as self-guided creation remains directly available on screen.
+- Empty-state self-guided CTA routes to `/student/nutrition/plans/new` so students can start a personal nutrition plan without a professional.
+- Student self-guided builder entry uses student-branded titles/actions (for example, `Create my nutrition plan`, `Save my plan`).
 
 ## Copy Draft (Current)
 - Screen title: `Nutrition`
 - Empty state title: `Meal plan unavailable`
 - Empty state helper: `To receive a personalized meal plan and reach your goals, you need support from a qualified professional.`
 - Empty-state CTA: `Hire a nutritionist`
-- Empty-state secondary link: `Learn more about the program`
-- Empty-state self-guided CTA: `Continue self-guided`
+- Empty-state self-guided CTA: `Create my meal plan`
 - Hydration widget title: `Water intake`
 - Hydration goal badge (personal): `Personal Goal`
 - Hydration goal badge (nutritionist): `Goal set by Nutritionist`

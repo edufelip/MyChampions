@@ -58,7 +58,7 @@ function RootLayoutContent() {
 
     lastRedirectAttemptRef.current = redirectAttemptKey;
     if (redirect !== normalizedPathname) {
-      router.replace(redirect);
+      router.replace(redirect as never);
     }
   }, [isAuthenticated, isHydrated, lockedRole, needsTermsAcceptance, normalizedPathname, router]);
 
@@ -85,31 +85,33 @@ function RootLayoutContent() {
 
   return (
     <ThemeProvider value={navTheme}>
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
         <Stack.Screen name="auth/create-account" options={{ headerShown: false }} />
         <Stack.Screen name="auth/accept-terms" options={{ headerShown: false }} />
         <Stack.Screen name="auth/role-selection" options={{ headerShown: false }} />
-        <Stack.Screen name="student/home" options={{ headerShown: true }} />
-        <Stack.Screen name="student/nutrition" options={{ headerShown: true }} />
-        <Stack.Screen name="student/training" options={{ headerShown: true }} />
-        <Stack.Screen name="student/professionals" options={{ headerShown: true }} />
-        <Stack.Screen name="professional/pending" options={{ headerShown: true }} />
-        <Stack.Screen name="professional/home" options={{ headerShown: true }} />
-        <Stack.Screen name="professional/specialty" options={{ headerShown: true }} />
-        <Stack.Screen name="professional/students" options={{ headerShown: true }} />
-        <Stack.Screen name="professional/student-profile" options={{ headerShown: true }} />
-        <Stack.Screen name="professional/subscription" options={{ headerShown: true }} />
-        <Stack.Screen name="professional/nutrition/plans/[planId]" options={{ headerShown: true }} />
-        <Stack.Screen name="professional/training/plans/[planId]" options={{ headerShown: true }} />
-        <Stack.Screen name="settings/account" options={{ headerShown: true }} />
-        <Stack.Screen name="nutrition/custom-meals/index" options={{ headerShown: true }} />
-        <Stack.Screen name="nutrition/custom-meals/[mealId]" options={{ headerShown: true }} />
-        <Stack.Screen name="shared/recipes/[shareToken]" options={{ headerShown: true }} />
+        <Stack.Screen name="student/home" options={{ headerShown: false }} />
+        <Stack.Screen name="student/nutrition" options={{ headerShown: false }} />
+        <Stack.Screen name="student/nutrition/plans/[planId]" options={{ headerShown: false }} />
+        <Stack.Screen name="student/training" options={{ headerShown: false }} />
+        <Stack.Screen name="student/training/plans/[planId]" options={{ headerShown: false }} />
+        <Stack.Screen name="student/professionals" options={{ headerShown: false }} />
+        <Stack.Screen name="professional/pending" options={{ headerShown: false }} />
+        <Stack.Screen name="professional/home" options={{ headerShown: false }} />
+        <Stack.Screen name="professional/specialty" options={{ headerShown: false }} />
+        <Stack.Screen name="professional/students" options={{ headerShown: false }} />
+        <Stack.Screen name="professional/student-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="professional/subscription" options={{ headerShown: false }} />
+        <Stack.Screen name="professional/nutrition/plans/[planId]" options={{ headerShown: false }} />
+        <Stack.Screen name="professional/training/plans/[planId]" options={{ headerShown: false }} />
+        <Stack.Screen name="settings/account" options={{ headerShown: false }} />
+        <Stack.Screen name="nutrition/custom-meals/index" options={{ headerShown: false }} />
+        <Stack.Screen name="nutrition/custom-meals/[mealId]" options={{ headerShown: false }} />
+        <Stack.Screen name="shared/recipes/[shareToken]" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"
-          options={{ presentation: 'modal', title: t('shell.modal.title') }}
+          options={{ presentation: 'modal', title: t('shell.modal.title'), headerShown: false }}
         />
       </Stack>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

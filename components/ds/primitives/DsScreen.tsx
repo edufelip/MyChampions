@@ -7,6 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { type DsColorScheme, getDsTheme } from '@/constants/design-system';
 
@@ -19,6 +20,7 @@ type DsScreenProps = {
   contentContainerStyle?: StyleProp<ViewStyle>;
   withBlobs?: boolean;
   scrollable?: boolean;
+  withTopInset?: boolean;
 } & Omit<ScrollViewProps, 'style' | 'contentContainerStyle' | 'children'>;
 
 export function DsScreen({
@@ -28,9 +30,11 @@ export function DsScreen({
   contentContainerStyle,
   withBlobs = true,
   scrollable = true,
+  withTopInset = true,
   ...scrollViewProps
 }: DsScreenProps) {
   const theme = getDsTheme(scheme);
+  const insets = useSafeAreaInsets();
 
   if (!scrollable) {
     return (
@@ -38,7 +42,10 @@ export function DsScreen({
         style={[styles.container, { backgroundColor: theme.color.canvas }]}
         testID={testID}>
         {withBlobs ? <DsBlobBackground scheme={scheme} /> : null}
-        <View style={[styles.content, contentContainerStyle]}>{children}</View>
+        <View style={[styles.content, contentContainerStyle]}>
+          {withTopInset ? <View style={[styles.safeAreaSpacer, { height: insets.top / 2 }]} /> : null}
+          {children}
+        </View>
       </View>
     );
   }
@@ -50,6 +57,7 @@ export function DsScreen({
       testID={testID}
       {...scrollViewProps}>
       {withBlobs ? <DsBlobBackground scheme={scheme} /> : null}
+      {withTopInset ? <View style={[styles.safeAreaSpacer, { height: insets.top / 2 }]} /> : null}
       {children}
     </ScrollView>
   );
@@ -61,5 +69,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
+  },
+  safeAreaSpacer: {
+    width: '100%',
   },
 });

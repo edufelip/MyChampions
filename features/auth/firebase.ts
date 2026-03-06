@@ -1,7 +1,6 @@
 import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, getReactNativePersistence, initializeAuth, type Auth } from 'firebase/auth';
+import { getAuth, type Auth } from 'firebase/auth';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 type FirebaseExtraConfig = {
@@ -56,14 +55,7 @@ export function getFirebaseAuth() {
   const firebaseConfig = requireFirebaseConfig();
   const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-  try {
-    firebaseAuthInstance = initializeAuth(firebaseApp, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
-  } catch {
-    // If Auth was already initialized elsewhere, reuse existing instance.
-    firebaseAuthInstance = getAuth(firebaseApp);
-  }
+  firebaseAuthInstance = getAuth(firebaseApp);
 
   return firebaseAuthInstance;
 }

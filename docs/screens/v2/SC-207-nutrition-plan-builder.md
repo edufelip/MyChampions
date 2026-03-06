@@ -3,6 +3,7 @@
 ## Route
 - `/professional/nutrition/plans/:planId` — builder/editor for a specific plan.
 - `/professional/nutrition` (tab) — plan library list with create and open CTAs.
+- Shared student self-guided alias: `/student/nutrition/plans/:planId` (same builder engine with student-branded titles/actions).
 
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
@@ -15,6 +16,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Empty, error, and plan-list framing use `DsCard` surfaces with shared radius and border semantics.
 - Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
+- Builder route native toolbar is disabled and uses an in-content icon-only back button.
 
 ## User Actions
 

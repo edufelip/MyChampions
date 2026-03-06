@@ -142,7 +142,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.nutrition.empty.title` | SC-209 | Tracking empty state | Meal plan unavailable | Plano alimentar não disponível | Plan alimentario no disponible | Secondary self-guided action remains available on screen |
 | `student.nutrition.empty.body` | SC-209 | Tracking empty helper | To receive a personalized meal plan and reach your goals, you need support from a qualified professional. | Para receber um plano alimentar personalizado e atingir seus objetivos, você precisa do acompanhamento de um profissional qualificado. | Para recibir un plan alimentario personalizado y alcanzar tus objetivos, necesitas el acompañamiento de un profesional cualificado. | Primary copy favors nutritionist acquisition; self-guided optionality preserved via secondary CTA |
 | `student.nutrition.empty.cta` | SC-209 | Tracking empty CTA | Hire a nutritionist | Contratar nutricionista | Contratar nutricionista | Routes to relationship management screen |
-| `student.nutrition.empty.secondary` | SC-209 | Supporting program link | Learn more about the program | Saber mais sobre o programa | Saber más sobre el programa | Routes to student home until dedicated explainer exists |
+| `student.nutrition.empty.self_guided_cta` | SC-209 | Self-guided CTA | Create my meal plan | Criar meu plano alimentar | Crear mi plan de alimentación | Routes to `/student/nutrition/plans/new` |
 | `student.nutrition.water.title` | SC-209 | Hydration card title | Water intake | Ingestão de água | Ingesta de agua | BL-104 |
 | `student.nutrition.water.personal_goal` | SC-209 | Goal ownership badge | Personal Goal | Meta Pessoal | Objetivo Personal | BL-104 |
 | `student.nutrition.water.nutritionist_goal` | SC-209 | Goal ownership badge | Goal set by Nutritionist | Meta definida pelo Nutricionista | Objetivo definido por tu Nutricionista | BL-104 |
@@ -246,6 +246,20 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.training.empty.title` | SC-210 | Tracking empty state | No workouts found | Nenhum treino encontrado | No se encontraron entrenamientos | Secondary self-guided action remains available on screen |
 | `student.training.empty.body` | SC-210 | Tracking empty helper | You don't have a personalized workout plan yet. Hire a personal trainer to receive a routine tailored to your goals. | Você ainda não possui um plano de treino personalizado. Contrate um personal trainer para receber uma rotina feita sob medida para seus objetivos. | Aún no tienes un plan de entrenamiento personalizado. Contrata a un entrenador personal para recibir una rutina adaptada a tus objetivos. | Primary copy favors coach acquisition; self-guided optionality preserved via secondary CTA |
 | `student.training.empty.cta` | SC-210 | Tracking empty CTA | Hire a trainer | Contratar personal | Contratar entrenador | Routes to relationship management screen |
+| `student.training.empty.self_guided_cta` | SC-210 | Self-guided CTA | Create my workout plan | Criar meu plano de treino | Crear mi plan de entrenamiento | Routes to `/student/training/plans/new` |
+| `student.plan.error.save` | SC-209/SC-210 | Plan builder error | Could not save your plan. Try again. | Não foi possível salvar seu plano. Tente novamente. | No se pudo guardar tu plan. Inténtalo de nuevo. | Student-branded builder copy |
+| `student.plan.error.load` | SC-209/SC-210 | Plan builder error | Could not load your plan. Try again. | Não foi possível carregar seu plano. Tente novamente. | No se pudo cargar tu plan. Inténtalo de nuevo. | Student-branded builder copy |
+| `student.plan.nutrition.title.create` | SC-209 | Plan builder title | Create my nutrition plan | Criar meu plano alimentar | Crear mi plan de alimentación | Student self-guided create route |
+| `student.plan.nutrition.title.edit` | SC-209 | Plan builder title | Edit my nutrition plan | Editar meu plano alimentar | Editar mi plan de alimentación | Student self-guided edit route |
+| `student.plan.training.title.create` | SC-210 | Plan builder title | Create my workout plan | Criar meu plano de treino | Crear mi plan de entrenamiento | Student self-guided create route |
+| `student.plan.training.title.edit` | SC-210 | Plan builder title | Edit my workout plan | Editar meu plano de treino | Editar mi plan de entrenamiento | Student self-guided edit route |
+| `student.plan.section.meals` | SC-209 | Plan builder section | Meals in my plan | Refeições do meu plano | Comidas de mi plan | Student-branded section label |
+| `student.plan.section.sessions` | SC-210 | Plan builder section | Workout sessions | Sessões de treino | Sesiones de entrenamiento | Student-branded section label |
+| `student.plan.food_search.stub_notice` | SC-209 | Plan builder helper | Add meal items to start your self-guided plan. | Adicione itens de refeição para começar seu plano por conta própria. | Añade comidas para comenzar tu plan autoguiado. | Student self-guided helper |
+| `student.plan.cta.add_meal` | SC-209 | Plan builder action | Add meal item | Adicionar item de refeição | Añadir comida | Student-branded action label |
+| `student.plan.cta.add_session` | SC-210 | Plan builder action | Add workout session | Adicionar sessão de treino | Añadir sesión de entrenamiento | Student-branded action label |
+| `student.plan.cta.save` | SC-209/SC-210 | Plan builder action | Save my plan | Salvar meu plano | Guardar mi plan | Student-branded action label |
+| `student.plan.training.empty_sessions` | SC-210 | Plan builder empty state | No sessions yet. Add one to begin your plan. | Sem sessões ainda. Adicione uma para começar seu plano. | Aún no hay sesiones. Añade una para empezar tu plan. | Student-branded empty state copy |
 | `pro.subscription.limit_title` | SC-212 | Cap gate title | Unlock more than 10 active students | Desbloqueie mais de 10 alunos ativos | Desbloquea más de 10 alumnos activos | Professional-only monetization |
 | `pro.subscription.limit_body` | SC-212 | Cap gate helper | Upgrade your professional plan to manage more than 10 active students. | Faça upgrade do seu plano profissional para gerenciar mais de 10 alunos ativos. | Actualiza tu plan profesional para gestionar más de 10 alumnos activos. | |
 | `pro.subscription.cta_subscribe` | SC-212 | Purchase CTA | Upgrade now | Fazer upgrade agora | Actualizar ahora | |
@@ -271,13 +285,48 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.specialty.removal_assist.bulk_deny_desc` | SC-202 | Assist action description | Bulk deny pending requests to clear blockers | Negar em massa solicitações pendentes para liberar bloqueios | Rechace en masa las solicitudes pendientes para limpiar bloqueos | BL-011 D-124 |
 | `pro.specialty.removal_assist.add_specialty` | SC-202 | Assist action label | Add another specialty | Adicionar outra especialidade | Añadir otra especialidad | BL-011 D-124 |
 | `pro.specialty.removal_assist.add_specialty_desc` | SC-202 | Assist action description | Add Nutritionist or Fitness Coach to enable removal | Adicione Nutricionista ou Personal Trainer para permitir remoção | Añada Nutricionista o Entrenador Personal para permitir la eliminación | BL-011 D-124 |
-| `settings.account.title` | SC-213 | Settings header | Account and privacy | Conta e privacidade | Cuenta y privacidad | |
-| `settings.account.cta_privacy_policy` | SC-213 | Legal link CTA | View privacy policy | Ver política de privacidade | Ver política de privacidad | |
-| `settings.account.cta_delete_account` | SC-213 | Deletion CTA | Delete account | Excluir conta | Eliminar cuenta | Store compliance critical |
-| `settings.account.delete.confirm_title` | SC-213 | Deletion confirmation | Delete your account? | Excluir sua conta? | ¿Eliminar tu cuenta? | |
-| `settings.account.delete.confirm_body` | SC-213 | Deletion warning | This starts your account deletion request. Some data may be retained when legally required. | Isso inicia sua solicitação de exclusão de conta. Alguns dados podem ser retidos quando exigidos por lei. | Esto inicia tu solicitud de eliminación de cuenta. Algunos datos pueden conservarse cuando lo exija la ley. | Compliance-sensitive text |
-| `settings.account.delete.confirm_yes` | SC-213 | Confirm deletion CTA | Request deletion | Solicitar exclusão | Solicitar eliminación | |
-| `settings.account.delete.confirm_no` | SC-213 | Cancel CTA | Cancel | Cancelar | Cancelar | |
+| `settings.account.title` | SC-213 | Screen title | Account & Privacy | Conta e Privacidade | Cuenta y Privacidad | |
+| `settings.account.section.account` | SC-213 | Section header | Account | Conta | Cuenta | |
+| `settings.account.section.legal` | SC-213 | Section header | Legal & Privacy | Legal e Privacidade | Legal y Privacidad | |
+| `settings.account.section.support` | SC-213 | Section header | Support | Suporte | Soporte | |
+| `settings.account.section.danger` | SC-213 | Section header | Danger Zone | Zona de Perigo | Zona de peligro | |
+| `settings.account.role.student` | SC-213 | Role badge | Student | Aluno | Estudiante | |
+| `settings.account.role.professional` | SC-213 | Role badge | Professional | Profissional | Profesional | |
+| `settings.account.email.label` | SC-213 | Row label | Email | E-mail | Correo electrónico | Display-only |
+| `settings.account.change_password.label` | SC-213 | Row label | Change password | Alterar senha | Cambiar contraseña | Email/password accounts only (OAuth sees notice) |
+| `settings.account.change_password.confirm_title` | SC-213 | Alert title | Reset password? | Redefinir senha? | ¿Restablecer contraseña? | |
+| `settings.account.change_password.confirm_body` | SC-213 | Alert body | We'll send a password reset link to {email}. | Enviaremos um link de redefinição de senha para {email}. | Te enviaremos un enlace para restablecer tu contraseña a {email}. | {email} param |
+| `settings.account.change_password.confirm_yes` | SC-213 | Alert confirm | Send reset link | Enviar link | Enviar enlace | |
+| `settings.account.change_password.confirm_no` | SC-213 | Alert cancel | Cancel | Cancelar | Cancelar | |
+| `settings.account.change_password.success` | SC-213 | Inline success | Password reset email sent. Check your inbox. | E-mail de redefinição enviado. Verifique sua caixa de entrada. | Correo de restablecimiento enviado. Revisa tu bandeja de entrada. | |
+| `settings.account.change_password.error` | SC-213 | Inline error | Could not send reset email. Try again. | Não foi possível enviar o e-mail de redefinição. Tente novamente. | No se pudo enviar el correo de restablecimiento. Inténtalo de nuevo. | |
+| `settings.account.change_password.oauth_notice` | SC-213 | OAuth notice | Your password is managed by {provider}. | Sua senha é gerenciada pelo {provider}. | Tu contraseña está gestionada por {provider}. | {provider} param |
+| `settings.account.language.label` | SC-213 | Row label | Language | Idioma | Idioma | |
+| `settings.account.language.en_us` | SC-213 | Locale option | English | English | English | Intentionally not translated |
+| `settings.account.language.pt_br` | SC-213 | Locale option | Português | Português | Português | Intentionally not translated |
+| `settings.account.language.es_es` | SC-213 | Locale option | Español | Español | Español | Intentionally not translated |
+| `settings.account.language.picker_title` | SC-213 | Picker title | Choose language | Escolher idioma | Elegir idioma | |
+| `settings.account.privacy_policy.label` | SC-213 | Row label | Privacy Policy | Política de Privacidade | Política de Privacidad | |
+| `settings.account.privacy_policy.cta` | SC-213 | Legacy CTA (unused) | View Privacy Policy | Ver Política de Privacidade | Ver Política de Privacidad | Kept for backwards compat |
+| `settings.account.terms.label` | SC-213 | Row label | Terms of Service | Termos de Uso | Términos de servicio | |
+| `settings.account.contact.label` | SC-213 | Row label | Contact support | Falar com o suporte | Contactar soporte | Opens mailto: |
+| `settings.account.app_version.label` | SC-213 | Footer label | Version | Versão | Versión | Followed by app version string |
+| `settings.account.sign_out.cta` | SC-213 | CTA | Sign out | Sair | Cerrar sesión | |
+| `settings.account.sign_out.confirm_title` | SC-213 | Alert title | Sign out? | Sair da conta? | ¿Cerrar sesión? | |
+| `settings.account.sign_out.confirm_body` | SC-213 | Alert body | You will be returned to the sign-in screen. | Você será redirecionado para a tela de login. | Volverás a la pantalla de inicio de sesión. | |
+| `settings.account.sign_out.confirm_yes` | SC-213 | Alert confirm | Sign out | Sair | Cerrar sesión | |
+| `settings.account.sign_out.confirm_no` | SC-213 | Alert cancel | Cancel | Cancelar | Cancelar | |
+| `settings.account.delete.title` | SC-213 | Danger section title | Delete account | Excluir conta | Eliminar cuenta | |
+| `settings.account.delete.body` | SC-213 | Danger section body | Deleting your account removes your personal data. Some anonymized records may be retained as required by policy. | Excluir sua conta remove seus dados pessoais. Alguns registros anonimizados podem ser retidos conforme exigido pela política. | Eliminar tu cuenta elimina tus datos personales. Algunos registros anonimizados pueden conservarse según lo exija la política. | Compliance-sensitive; AC-310, BR-231 |
+| `settings.account.delete.cta` | SC-213 | Deletion CTA | Request account deletion | Solicitar exclusão de conta | Solicitar eliminación de cuenta | AC-306; store compliance critical |
+| `settings.account.delete.confirm_title` | SC-213 | Alert title | Delete your account? | Excluir sua conta? | ¿Eliminar tu cuenta? | |
+| `settings.account.delete.confirm_body` | SC-213 | Alert body | This action is irreversible. Your personal information will be removed. Anonymized history may be retained for legal, billing, and continuity requirements. | Esta ação é irreversível. Suas informações pessoais serão removidas. Histórico anonimizado pode ser retido por requisitos legais, financeiros e de continuidade. | Esta acción es irreversible. Tu información personal será eliminada. El historial anonimizado puede conservarse por requisitos legales, financieros y de continuidad. | Compliance-sensitive |
+| `settings.account.delete.confirm_yes` | SC-213 | Alert confirm | Delete account | Excluir conta | Eliminar cuenta | |
+| `settings.account.delete.confirm_no` | SC-213 | Alert cancel | Cancel | Cancelar | Cancelar | |
+| `settings.account.delete.success` | SC-213 | Inline success | Your account deletion request has been submitted. | Sua solicitação de exclusão de conta foi enviada. | Tu solicitud de eliminación de cuenta ha sido enviada. | |
+| `settings.account.delete.error.network` | SC-213 | Inline error | Couldn't connect. Check your connection and try again. | Não foi possível conectar. Verifique sua conexão e tente novamente. | No se pudo conectar. Comprueba tu conexión e inténtalo de nuevo. | |
+| `settings.account.delete.error.unknown` | SC-213 | Inline error | Something went wrong. Try again. | Algo deu errado. Tente novamente. | Algo salió mal. Inténtalo de nuevo. | |
+| `settings.account.delete.error.already_requested` | SC-213 | Inline error | A deletion request is already in progress. | Uma solicitação de exclusão já está em andamento. | Ya hay una solicitud de eliminación en curso. | |
 | `common.error.retry` | Common | Generic error action | Try again | Tentar novamente | Intentar de nuevo | Shared utility string |
 | `common.loading.default` | Common | Generic loading text | Loading... | Carregando... | Cargando... | Shared utility string |
 | `common.empty.no_data` | Common | Generic empty text | Nothing here yet. | Ainda não há nada aqui. | Aún no hay nada aquí. | Use only when screen-specific copy is unavailable |

@@ -189,14 +189,14 @@ export default function StudentTrainingScreen() {
             <Pressable
               accessibilityRole="button"
               disabled={isWriteLocked}
-              onPress={() => router.push('/student/home')}
+              onPress={() => router.push('/student/training/plans/new' as never)}
               style={({ pressed }) => [
                 styles.emptySecondaryCta,
                 { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
               ]}
               testID="student.training.emptySelfGuidedCta">
-              <Text style={[styles.emptySecondaryCtaText, { color: theme.color.textSecondary }]}>
-                {t('relationship.empty.cta_continue_self')}
+              <Text style={[styles.emptySecondaryCtaText, { color: theme.color.textSecondary }]}> 
+                {t('student.training.empty.self_guided_cta')}
               </Text>
             </Pressable>
           </View>

@@ -38,6 +38,11 @@ export default function TabLayout() {
           backgroundColor: theme.color.surface,
           borderTopColor: theme.color.border,
         },
+        sceneStyle: {
+          backgroundColor: theme.color.canvas,
+        },
+        lazy: false,
+        animation: 'fade',
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
@@ -99,6 +104,7 @@ export default function TabLayout() {
         name="recipes"
         options={{
           title: t('shell.tabs.recipes'),
+          tabBarLabel: t('shell.tabs.recipes'),
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="book.closed.fill" color={color} />
           ),
@@ -111,6 +117,7 @@ export default function TabLayout() {
         name="account"
         options={{
           title: isStudent ? t('shell.tabs.profile') : t('shell.tabs.account'),
+          tabBarLabel: isStudent ? t('shell.tabs.profile') : t('shell.tabs.account'),
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.crop.circle.fill" color={color} />
           ),

@@ -54,13 +54,10 @@ function getProductionDeps(): SubscriptionSourceDeps {
       return resolveRevenueCatApiKey(platform, extra);
     },
     presentPaywall: async (offeringIdentifier?: string) => {
-      // RevenueCatUI.presentPaywall accepts an optional offering object (D-132).
-      // When offeringIdentifier is provided, it targets the specific offering.
-      await RevenueCatUI.presentPaywall(
-        offeringIdentifier
-          ? { offering: { identifier: offeringIdentifier, serverDescription: '', metadata: {}, availablePackages: [], lifetime: null, annual: null, sixMonth: null, threeMonth: null, twoMonth: null, monthly: null, weekly: null } }
-          : undefined
-      );
+      // RevenueCatUI PresentPaywallParams requires a full PurchasesOffering object.
+      // We use the dashboard default offering here and keep identifier routing in source logic.
+      void offeringIdentifier;
+      await RevenueCatUI.presentPaywall();
     },
   };
 }

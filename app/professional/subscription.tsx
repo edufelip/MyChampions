@@ -13,8 +13,9 @@
  *       BR-218–221, BR-228, BR-247, BR-273, BR-275
  */
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 
+import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -41,6 +42,7 @@ export default function ProfessionalSubscriptionScreen() {
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
   const { t } = useTranslation();
+  const router = useRouter();
   const { currentUser } = useAuthSession();
 
   const { entitlementStatus, activeStudentCount, isLoading, purchase, restore, refresh } =
@@ -76,7 +78,22 @@ export default function ProfessionalSubscriptionScreen() {
 
   return (
     <DsScreen scheme={scheme} testID="pro.subscription.screen" contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('pro.subscription.title'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('pro.subscription.title'), headerShown: false }} />
+
+      <DsBackButton
+        scheme={scheme}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+
+          router.replace('/');
+        }}
+        accessibilityLabel={t('auth.role.cta_back') as string}
+        style={styles.backButton}
+        testID="pro.subscription.backButton"
+      />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -140,7 +157,7 @@ export default function ProfessionalSubscriptionScreen() {
       ) : null}
 
       {isLocked ? (
-        <DsCard scheme={scheme} variant="warning" testID="pro.subscription.locked" accessibilityRole="alert">
+        <DsCard scheme={scheme} variant="warning" testID="pro.subscription.locked">
           <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('pro.subscription.locked')}</Text>
         </DsCard>
       ) : null}
@@ -188,6 +205,7 @@ const styles = StyleSheet.create({
     padding: DsSpace.lg,
     paddingBottom: DsSpace.xxl,
   },
+  backButton: { marginBottom: -4 },
   statusCard: {
     gap: DsSpace.xs,
   },

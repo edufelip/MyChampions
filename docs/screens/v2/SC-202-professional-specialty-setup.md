@@ -12,6 +12,7 @@
 - Specialty rows, credential form, and removal-assist state are rendered as stacked `DsCard` containers.
 - Primary and secondary specialty actions use DS pill-button treatment, with destructive intent preserved.
 - Offline communication uses `DsOfflineBanner` while keeping existing BL-008 write-lock behavior.
+- Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
 
 ## User Actions
 - Primary:

@@ -57,10 +57,17 @@
   - Highlighted workout hero card.
   - Next-meal preview card.
   - Persistent manage-professionals action at the bottom.
+- Mocked dashboard values were removed:
+  - Stats cards now derive from live hook state (`usePlans`, `useWaterTracking`) instead of fixed placeholders.
+  - Training and nutrition cards now render helper/tag copy conditionally based on actual active-plan availability.
+  - A consolidated error state with retry action is rendered when any core home data source fails.
+  - A no-professional empty-state card is rendered when no active professional connection exists.
 - Existing behavior constraints remain preserved:
   - Offline banner/write-lock behavior is still applied (BL-008).
   - Pending connection state remains prominent near the top.
   - Hydration stat still reflects effective-goal ownership rules (D-081).
+  - Workout and nutrition hero-card taps switch to their bottom-tab routes (`/(tabs)/training`, `/(tabs)/nutrition`) so the tab shell remains visible.
+  - Header notification icon routes to Relationship Management (`/student/professionals`) for invite/pending updates.
   - Navigation intents still route to training, nutrition, professionals, and account/settings.
 
 ## Data Contract

@@ -243,5 +243,9 @@
 
 - `D-146`: Tab wrapper route `/(tabs)/recipes` renders `SC-215` (`/nutrition/custom-meals`) with `hideHeader=true` so the recipes tab does not show an extra local toolbar/header inside the tabs shell. Direct route `/nutrition/custom-meals` keeps its screen header for non-tab navigation contexts.
 
+- `D-147`: Native navigation toolbar is disabled app-wide (`headerShown: false`) so navigation chrome is fully controlled by screen UI. For pushed routes that need return navigation, screens must provide explicit in-content back controls. Screen content must also respect top safe area insets when toolbar is absent. SC-211 (`/student/professionals`) now uses an icon-only back button.
+
+- `D-148`: Student empty-state self-guided actions in SC-209 and SC-210 now route to direct self-managed plan creation flows (`/student/nutrition/plans/new`, `/student/training/plans/new`) instead of returning to Home. Current implementation reuses shared plan builder screens to keep plan authoring behavior consistent and applies student-branded titles/actions on student-prefixed routes while broader student-only shell refinements remain pending.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

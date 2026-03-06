@@ -100,7 +100,7 @@ export default function ProfessionalStudentsScreen() {
       scrollable={false}
       testID="pro.students.screen"
       contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('pro.students.title'), headerShown: true }} />
+      <Stack.Screen options={{ title: t('pro.students.title'), headerShown: false }} />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner

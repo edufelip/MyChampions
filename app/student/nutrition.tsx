@@ -59,38 +59,11 @@ export default function StudentNutritionScreen() {
 
   const hasActiveNutritionAssignment = assignedNutritionPlan !== null;
 
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.push('/student/home');
-  };
-
   return (
     <DsScreen scheme={scheme} testID="student.nutrition.screen">
       <Stack.Screen options={{ title: t('student.nutrition.title'), headerShown: false }} />
 
       <View style={styles.shell}>
-        <View style={styles.headerRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('auth.role.cta_back')}
-            onPress={handleBack}
-            style={({ pressed }) => [
-              styles.circleButton,
-              {
-                backgroundColor: theme.color.surface,
-                transform: [{ scale: pressed ? 0.96 : 1 }],
-              },
-            ]}>
-            <MaterialIcons color={theme.color.textPrimary} name="arrow-back" size={22} />
-          </Pressable>
-
-          <Text style={[styles.pageTitle, { color: theme.color.textPrimary }]}>{t('student.nutrition.title')}</Text>
-          <View style={styles.circleButtonSpacer} />
-        </View>
-
         {offlineDisplay.showOfflineBanner ? (
           <DsOfflineBanner scheme={scheme} text={t('offline.banner')} testID="student.nutrition.offlineBanner" />
         ) : null}
@@ -210,28 +183,14 @@ export default function StudentNutritionScreen() {
               <Pressable
                 accessibilityRole="button"
                 disabled={isWriteLocked}
-                onPress={() => router.push('/student/home')}
-                style={({ pressed }) => [
-                  styles.emptySecondaryCta,
-                  { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
-                ]}
-                testID="student.nutrition.emptySecondaryCta">
-                <Text style={[styles.emptySecondaryText, { color: theme.color.accentPrimary }]}>
-                  {t('student.nutrition.empty.secondary')}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                accessibilityRole="button"
-                disabled={isWriteLocked}
-                onPress={() => router.push('/student/home')}
+                onPress={() => router.push('/student/nutrition/plans/new' as never)}
                 style={({ pressed }) => [
                   styles.emptyTertiaryCta,
                   { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
                 ]}
                 testID="student.nutrition.emptySelfGuidedCta">
-                <Text style={[styles.emptyTertiaryText, { color: theme.color.textSecondary }]}>
-                  {t('relationship.empty.cta_continue_self')}
+                <Text style={[styles.emptyTertiaryText, { color: theme.color.textSecondary }]}> 
+                  {t('student.nutrition.empty.self_guided_cta')}
                 </Text>
               </Pressable>
 
@@ -463,30 +422,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 18,
   },
-  headerRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  circleButton: {
-    alignItems: 'center',
-    borderRadius: DsRadius.pill,
-    elevation: 1,
-    height: 48,
-    justifyContent: 'center',
-    width: 48,
-  },
-  circleButtonSpacer: {
-    height: 48,
-    width: 48,
-  },
-  pageTitle: {
-    fontFamily: Fonts.rounded,
-    fontSize: 22,
-    fontWeight: '700',
-  },
   sectionStack: {
+    flex: 1,
     gap: DsSpace.md,
   },
   loadingCard: {

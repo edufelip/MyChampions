@@ -69,7 +69,7 @@ export default function RoleSelectionScreen() {
     setIsSubmitting(true);
     try {
       await lockRole(role);
-      router.replace(resolvePostRoleRoute(role));
+      router.replace(resolvePostRoleRoute(role) as never);
     } catch {
       setRoleError('auth.role.error.save_failed');
     } finally {

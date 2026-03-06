@@ -11,6 +11,7 @@
 - Assignment, plan-change triage, and water-goal sections are presented as stacked `DsCard` blocks with consistent spacing/radius.
 - Primary/secondary actions use DS pill button treatment; destructive action keeps warning color semantics.
 - Offline/write-lock communication uses DS warning/offline surfaces while preserving existing business gating logic.
+- Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
 
 ## User Actions
 - Primary:
