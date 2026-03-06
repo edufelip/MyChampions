@@ -1,7 +1,7 @@
 /**
  * React hook for plan and plan change request operations.
  * Wraps plan-source for UI consumption.
- * No Firebase/Data Connect concerns in screen components.
+ * No Firebase/Firestore concerns in screen components.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -58,7 +58,10 @@ export type UsePlansResult = {
   ) => Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }>;
 };
 
-export function usePlans(isAuthenticated: boolean): UsePlansResult {
+export function usePlans(
+  isAuthenticated: boolean,
+  options: { fetchOnMount?: boolean } = { fetchOnMount: true }
+): UsePlansResult {
   const [state, setState] = useState<PlansLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
@@ -77,8 +80,10 @@ export function usePlans(isAuthenticated: boolean): UsePlansResult {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (options.fetchOnMount) {
+      load();
+    }
+  }, [load, options.fetchOnMount]);
 
   const validateChangeRequest = useCallback(
     (input: PlanChangeRequestInput) => validatePlanChangeRequestInput(input),

@@ -5,7 +5,7 @@
 
 ## Objective
 - Let any authenticated user browse saved custom meals and log consumed grams quickly.
-- The AI meal photo analysis CTA (SC-219) is embedded in the quick-log panel (`QuickLogAnalysisRow`) and is gated behind a RevenueCat paywall (D-132): only users with an active `professional_unlimited` OR `premium_student` entitlement can access the AI feature. Users without an active entitlement see a locked paywall banner with an "Upgrade to unlock" CTA.
+- The AI meal photo analysis CTA (SC-219) is embedded in the quick-log panel (`QuickLogAnalysisRow`) and is gated behind a RevenueCat paywall (D-132): only users with an active `professional_pro` OR `student_pro` entitlement can access the AI feature. Users without an active entitlement see a locked paywall banner with an "Upgrade to unlock" CTA.
 
 ## UX Copy Intent
 - Emphasize fast logging from already-saved meals.

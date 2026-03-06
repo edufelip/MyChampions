@@ -1,0 +1,150 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isUid(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isConnectionParticipant() {
+      return signedIn() && (
+        resource.data.studentAuthUid == request.auth.uid ||
+        resource.data.professionalAuthUid == request.auth.uid
+      );
+    }
+
+    function roleLockUnchanged() {
+      return !("lockedRole" in resource.data) ||
+        resource.data.lockedRole == null ||
+        request.resource.data.lockedRole == resource.data.lockedRole;
+    }
+
+    function ownsPlan(planId) {
+      return (
+        exists(/databases/$(database)/documents/nutritionPlans/$(planId)) &&
+        get(/databases/$(database)/documents/nutritionPlans/$(planId)).data.ownerProfessionalUid == request.auth.uid
+      ) || (
+        exists(/databases/$(database)/documents/trainingPlans/$(planId)) &&
+        get(/databases/$(database)/documents/trainingPlans/$(planId)).data.ownerProfessionalUid == request.auth.uid
+      );
+    }
+
+    match /userProfiles/{userId} {
+      allow read, delete: if isUid(userId);
+      allow create: if isUid(userId) && request.resource.data.authUid == request.auth.uid;
+      allow update: if isUid(userId) && roleLockUnchanged();
+    }
+
+    match /inviteCodes/{professionalUid} {
+      allow read: if signedIn() && (professionalUid == request.auth.uid || resource.data.status == 'active');
+      allow create, update: if isUid(professionalUid) && request.resource.data.professionalAuthUid == request.auth.uid;
+      allow delete: if isUid(professionalUid);
+    }
+
+    match /connections/{connectionId} {
+      allow read: if isConnectionParticipant();
+      allow create: if signedIn() && request.resource.data.studentAuthUid == request.auth.uid;
+      allow update, delete: if isConnectionParticipant();
+    }
+
+    match /specialties/{specialtyId} {
+      allow read, update, delete: if signedIn() && resource.data.professionalAuthUid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.professionalAuthUid == request.auth.uid;
+    }
+
+    match /credentials/{credentialId} {
+      allow read, update, delete: if signedIn() && resource.data.professionalAuthUid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.professionalAuthUid == request.auth.uid;
+    }
+
+    match /nutritionPlans/{planId} {
+      allow read: if signedIn() && (
+        resource.data.studentAuthUid == request.auth.uid ||
+        resource.data.ownerProfessionalUid == request.auth.uid
+      );
+      allow create: if signedIn() && (
+        request.resource.data.studentAuthUid == request.auth.uid ||
+        request.resource.data.ownerProfessionalUid == request.auth.uid
+      );
+      allow update, delete: if signedIn() && (
+        resource.data.studentAuthUid == request.auth.uid ||
+        resource.data.ownerProfessionalUid == request.auth.uid
+      );
+    }
+
+    match /trainingPlans/{planId} {
+      allow read: if signedIn() && (
+        resource.data.studentAuthUid == request.auth.uid ||
+        resource.data.ownerProfessionalUid == request.auth.uid
+      );
+      allow create: if signedIn() && (
+        request.resource.data.studentAuthUid == request.auth.uid ||
+        request.resource.data.ownerProfessionalUid == request.auth.uid
+      );
+      allow update, delete: if signedIn() && (
+        resource.data.studentAuthUid == request.auth.uid ||
+        resource.data.ownerProfessionalUid == request.auth.uid
+      );
+    }
+
+    match /planChangeRequests/{requestId} {
+      allow read: if signedIn() && (
+        resource.data.studentAuthUid == request.auth.uid ||
+        ownsPlan(resource.data.planId)
+      );
+      allow create: if signedIn() && request.resource.data.studentAuthUid == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        resource.data.studentAuthUid == request.auth.uid ||
+        ownsPlan(resource.data.planId)
+      );
+    }
+
+    match /waterLogs/{logId} {
+      allow read, update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /waterGoals/{goalId} {
+      allow read: if signedIn() && (
+        resource.data.ownerUid == request.auth.uid ||
+        resource.data.nutritionistAuthUid == request.auth.uid
+      );
+      allow create: if signedIn() && (
+        request.resource.data.ownerUid == request.auth.uid ||
+        request.resource.data.nutritionistAuthUid == request.auth.uid
+      );
+      allow update, delete: if signedIn() && (
+        resource.data.ownerUid == request.auth.uid ||
+        resource.data.nutritionistAuthUid == request.auth.uid
+      );
+    }
+
+    match /customMeals/{mealId} {
+      allow read, update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /mealShareLinks/{shareToken} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /portionLogs/{logId} {
+      allow read, update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /starterTemplates/{templateId} {
+      allow read: if signedIn();
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

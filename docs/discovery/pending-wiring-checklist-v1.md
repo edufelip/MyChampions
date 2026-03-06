@@ -13,20 +13,20 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Create-account submit uses Firebase Auth email/password sign-up with backend reason mapping in `app/auth/create-account.tsx`.
 - `Done`: Google Sign-In provider is wired to Firebase Auth in auth entry flows.
 - `Done`: Apple Sign-In provider is wired to Firebase Auth in auth entry flows.
-- `In progress`: Replace local persisted auth session/role source with Firebase Auth session + Data Connect profile source of truth.
+- `In progress`: Replace local persisted auth session/role source with Firebase Auth session + Firestore profile source of truth.
   - Done: Firebase Auth session state drives `isAuthenticated`.
   - Done: Firebase Auth now initializes with React Native AsyncStorage persistence in `features/auth/firebase.ts` (no memory-only session warning on startup).
-  - Done: Role-lock reads/writes pass through Data Connect profile-source boundary (`hydrateProfileFromSource`, `lockRoleInSource`) with remote-only persistence (no local fallback path).
+  - Done: Role-lock reads/writes pass through Firestore profile-source boundary (`hydrateProfileFromSource`, `lockRoleInSource`) with remote-only persistence (no local fallback path).
 - `Done`: Full create-account form implemented in `app/auth/create-account.tsx` with documented password and duplicate-email validation rules.
 - `Done`: Full role-selection UX implemented in `app/auth/role-selection.tsx` with role cards, required-selection validation, and self-guided Student+Continue path (no standalone quick-start button).
-- `Done`: Persist and enforce role-lock flow using Data Connect-backed profile source in `features/auth/profile-source.ts`, `features/auth/auth-session.tsx`, and `app/auth/role-selection.tsx`.
+- `Done`: Persist and enforce role-lock flow using Firestore-backed profile source in `features/auth/profile-source.ts`, `features/auth/auth-session.tsx`, and `app/auth/role-selection.tsx`.
 - `Done`: Session/route guard wiring implemented in `app/_layout.tsx` with auth-required routing and wrong-role redirects.
 - `In progress`: Terms acceptance gate wiring after authentication:
   - Done: `/auth/accept-terms` route implemented; sign-in/create-account success now route to terms screen.
   - Done: Global auth guard blocks role-selection/role-home when terms acceptance is pending.
   - Done: Root auth guard path normalization + redirect de-duplication prevent replace-loop churn (fixes max update depth during terms transitions).
   - Done: Runtime terms config is environment-driven (`EXPO_PUBLIC_TERMS_REQUIRED_VERSION`, `EXPO_PUBLIC_TERMS_URL`) with fallback (`v1`, `https://google.com`).
-  - Pending: Add Data Connect profile fields + mutation for accepted terms version and replace local AsyncStorage fallback.
+  - Done: Accepted terms version is persisted in Firestore profile (`userProfiles/{uid}.acceptedTermsVersion`) via `setAcceptedTermsVersionInSource`; AsyncStorage fallback removed from auth-session terms flow.
 - `Pending`: Emit documented auth/onboarding analytics events in real runtime telemetry.
 
 ## Native Bootstrap
@@ -47,19 +47,21 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: CI secret inventory documented in `docs/discovery/ci-secrets-matrix-v1.md` with required/optional scope per workflow.
 
 ## Professional Screen Wiring (Phase 5)
-- `Done`: SC-202 Specialty screen (`app/professional/specialty.tsx`) implemented — add/remove specialties and upsert credentials via `useSpecialties` hook stub; Data Connect endpoint wiring deferred.
+- `Done`: SC-202 Specialty screen (`app/professional/specialty.tsx`) implemented — add/remove specialties and upsert credentials via `useSpecialties` hook stub; Firestore endpoint wiring deferred.
 - `Done`: SC-204 Professional Home (`app/professional/home.tsx`) implemented — invite code display via `useInviteCode`, subscription state via `resolveSubscriptionState`; RevenueCat entitlement wired as stub `'unknown'`.
-- `Done`: SC-205 Student Roster (`app/professional/students.tsx`) implemented — search + filter chip UI, FlatList with stub empty data; Data Connect student-roster endpoint wiring deferred.
+- `Done`: SC-205 Student Roster (`app/professional/students.tsx`) implemented — search + filter chip UI, FlatList with stub empty data; Firestore student-roster endpoint wiring deferred.
 - `Done`: DS shell virtualization fix for list screens — `DsScreen` now supports `scrollable={false}` (non-ScrollView mode) and is applied to FlatList-backed routes (`SC-205`, `/professional/nutrition`, `/professional/training`, `SC-215`) to avoid nested VirtualizedList warnings in runtime logs.
-- `Done`: SC-206 Student Profile Professional View (`app/professional/student-profile.tsx`) implemented — assignment status cards, unbind CTA, plan-change requests, water goal form; Data Connect endpoint wiring deferred.
+- `Done`: SC-206 Student Profile Professional View (`app/professional/student-profile.tsx`) implemented — assignment status cards, unbind CTA, plan-change requests, water goal form; Firestore endpoint wiring deferred.
 - `Done`: SC-212 Professional Subscription Gate (`app/professional/subscription.tsx`) implemented — entitlement status display, cap usage, purchase/restore/refresh CTAs; RevenueCat SDK wiring deferred.
 - `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 5 new professional screens.
-- `Pending`: Wire professional-source Data Connect endpoints for student roster, assignment status, and unbind operations into SC-205, SC-206.
+- `Done`: SC-205/SC-206 now consume professional-source Firestore reads/mutations for student roster, assignment-status hydration, and unbind (`getProfessionalStudentRoster`, `getProfessionalStudentAssignmentSnapshot`, `unbindStudentConnections`).
+- `Done`: SC-205 roster state arbitration hardened — initial loading and empty hero are mutually exclusive, preventing loading/empty flicker overlap.
 - `Done`: Wire RevenueCat entitlement live state into SC-204, SC-206, SC-212 (replaced `useState<EntitlementStatus>('unknown')` stubs with `useSubscription()` hook; `features/subscription/subscription-source.ts` source layer with full injectable deps + 35 unit tests (TC-286); `features/subscription/use-subscription.ts` hook with lazy SDK configuration via module-level singleton guard (D-130)).
 
 ## Localization
 - `Done`: All `pro.home.*`, `pro.specialty.*`, `pro.students.*`, `pro.student_profile.*`, `pro.subscription.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts`.
 - `Done`: All `settings.account.*`, `meal.builder.*`, `meal.library.*`, `shared_recipe.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts` (Phase 6).
+- `Done`: `useTranslation()` returns a locale-stable `t` function reference, reducing effect-churn re-fetch loops tied to translation callback identity.
 - `Pending`: Bundle and load Manrope font assets natively (Android/iOS) so DS typography intent is guaranteed beyond platform fallback font resolution.
 
 - `Pending`: Wire RevenueCat entitlement checks to professional cap-sensitive actions.
@@ -83,7 +85,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `app/(tabs)/nutrition/custom-meals/index.tsx` (SC-215) — offline banner + write-lock wired; MealRow log+share and QuickLogPanel confirm gated.
 - `Done`: `app/(tabs)/nutrition/custom-meals/[mealId].tsx` (SC-214) — offline banner + write-lock wired; Save+Share CTAs gated.
 - `Done`: `app/shared/recipes/[shareToken].tsx` (SC-216) — offline banner + write-lock wired; Save CTA in PreviewView gated.
-- `Pending`: Wire `lastSyncedAtIso` from real data-layer sync timestamps (currently `null` — stale indicator never shown). Deferred until Data Connect cache layer is implemented.
+- `Pending`: Wire `lastSyncedAtIso` from real data-layer sync timestamps (currently `null` — stale indicator never shown). Deferred until Firestore cache layer is implemented.
 
 ## Professional Pending Queue Tools (BL-004)
 - `Done`: `features/connections/pending-queue.logic.ts` — pure functions: `filterPendingQueue`, `canBulkDeny`, `validateBulkDeny`, `buildBulkDenyConfirmationMessage`, `formatSearchResultsSummary`. Supports search by student UID, specialty filtering, and bulk deny validation.
@@ -97,7 +99,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
   * Error handling with retry CTA
   * Empty state and loading indicators
 - `Done`: All `pro.pending.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (`search.placeholder`, `filter.label`, `bulk_deny.cta`, `bulk_deny.confirm_title`, `bulk_deny.confirm_body`, `bulk_deny.success`, `confirm.cta`, `deny.cta`, `empty`, `error`).
-- `Pending`: Wire `confirmConnection` and `unbindConnection` source methods to real Data Connect connector endpoints (currently using connection-source stubs).
+- `Done`: `confirmPendingConnection` and `endConnection` are wired to Firestore in `features/connections/connection-source.ts` and consumed by `useConnections` in `app/professional/pending.tsx`.
 
 ## Professional Specialty Removal Assist (BL-011)
 - `Done`: `features/professional/specialty-removal-assist.logic.ts` — pure functions: `resolveRemovalAssistState`, `buildActionMetadata`, `filterBlockersBySpecialty`, `countBlockers`, `canRemovalProceedNow`, `formatRemovalBlockedMessage`, `shouldShowBlockers`. Provides direct navigation/actions to resolve blocking conditions (active/pending students, last specialty).
@@ -112,61 +114,68 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `app/professional/specialty.tsx` (SC-202) — Specialty removal flow with blocking reason display (already implemented, awaiting assist action wiring).
 - `Done`: All `pro.specialty.removal_assist.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (8 keys: view_active, view_active_desc, view_pending, view_pending_desc, bulk_deny, bulk_deny_desc, add_specialty, add_specialty_desc).
 - `Done`: Wire assist actions into SC-202 removal blocked state — `RemovalAssistCard` renders inline with title/body from `getRemovalBlockedMessageKeys`, action buttons from `buildActionMetadata`, and `useRouter.push` navigation to students roster, pending queue, or specialty setup; dismiss CTA clears blocked state. `pro.specialty.remove_blocked.dismiss` key added to all 3 locale bundles (D-124).
-- `Pending`: Wire activeStudentCount and pendingStudentCount from real Data Connect endpoint into specialty removal check (currently stubbed at 0 in SC-202).
+- `Done`: SC-202 specialty removal now resolves active/pending blocker counts from Firestore (`getSpecialtyBlockerCounts`) before calling `checkRemoval`; remove CTA shows assist flow from real blocker state instead of stubbed `0/0` counts.
 
 ## Plan Change Request Flow (BL-005)
 - `Done`: `features/plans/plan-change-request.logic.ts` — pure functions: `validatePlanChangeRequestInput`, `normalizePlanChangeRequestStatus`, `normalizePlanType`, `normalizePlanChangeRequestError`. Unit tests in `plan-change-request.logic.test.ts` (11 tests, TC-259).
-- `Done`: `features/plans/plan-source.ts` — Data Connect stub surface: `submitPlanChangeRequest`, `reviewPlanChangeRequest`, `getStudentPlanChangeRequests`.
+- `Done`: `features/plans/plan-source.ts` — Firestore stub surface: `submitPlanChangeRequest`, `reviewPlanChangeRequest`, `getStudentPlanChangeRequests`.
 - `Done`: `features/plans/use-plans.ts` — React hook `usePlans` with `submitChangeRequest`, `validateChangeRequest`, `reviewChangeRequest`, `getChangeRequestsForStudent`.
 - `Done`: `app/student/nutrition.tsx` (SC-209) — `PlanChangeRequestForm` wired to `usePlans`; full validation + error handling with all error branches and write-lock guard.
 - `Done`: `app/student/training.tsx` (SC-210) — `PlanChangeRequestForm` wired to `usePlans`; full validation + error handling with improved error branches (plan_not_found, no_active_assignment, network) and write-lock guard.
 - `Done`: `app/professional/student-profile.tsx` (SC-206) — `PlanChangeRequestsCard` wired to `usePlans.getChangeRequestsForStudent`; lists pending requests from specific student with review/dismiss actions via `reviewChangeRequest`; loads change requests on mount, shows load/action errors, optimistically removes reviewed/dismissed requests.
 - `Done`: All `student.nutrition.plan_change.*`, `student.training.plan_change.*`, and `pro.student_profile.plan_change_requests.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
 - `Done`: All plan-change keys tracked in `localized-copy-table-v2.md` with correct screen-specific key names.
-- `Done`: Wire `submitPlanChangeRequest`, `reviewPlanChangeRequest`, and `getStudentPlanChangeRequests` to real Data Connect connector endpoints replacing GraphQL stubs in `plan-source.ts` (D-126 batch).
+- `Done`: Wire `submitPlanChangeRequest`, `reviewPlanChangeRequest`, and `getStudentPlanChangeRequests` to real Firestore connector endpoints replacing GraphQL stubs in `plan-source.ts` (D-126 batch).
 - `Pending`: Professional notification surface when student submits a change request (UC-002.13 step 3 — system notifies professional). Deferred until push notification infrastructure is provisioned.
 
 ## Water Tracking (BL-104)
 - `Done`: `features/nutrition/water-tracking.logic.ts` — pure functions: `resolveEffectiveWaterGoal`, `resolveWaterDayStatus`, `calculateWaterStreak`, `validateWaterGoalInput`, `validateWaterIntakeInput`, `normalizeWaterTrackingError`.
 - `Done`: `features/nutrition/water-tracking.logic.test.ts` — unit tests included in 301-test suite (TC-264–TC-267).
-- `Done`: `features/nutrition/water-tracking-source.ts` — Data Connect stub surface: `getMyWaterLogs`, `logWaterIntake`, `setStudentWaterGoal`, `getMyWaterGoalContext`, `setNutritionistWaterGoalForStudent`.
+- `Done`: `features/nutrition/water-tracking-source.ts` — Firestore source surface: `getMyWaterLogs`, `logWaterIntake`, `setStudentWaterGoal`, `getMyWaterGoalContext`, `setNutritionistWaterGoalForStudent`.
 - `Done`: `features/nutrition/use-water-tracking.ts` — React hook with `idle/loading/ready/error` state machine, `logIntake`, `setGoal`, `validateGoal`, `validateIntake`.
 - `Done`: `HydrationCard` in `app/student/home.tsx` (SC-203) — wired to `useWaterTracking`; shows progress, streak, goal ownership label.
 - `Done`: `WaterWidget` in `app/student/nutrition.tsx` (SC-209) — intake log form + personal goal form wired to `useWaterTracking`.
 - `Done`: Nutritionist water goal form in `app/professional/student-profile.tsx` (SC-206) — `setNutritionistWaterGoalForStudent` wired via `useWaterTracking.setGoal`.
 - `Done`: All localization keys present in `en-US`, `pt-BR`, and `es-ES` (`student.hydration.*`, `student.home.hydration.*`, `student.nutrition.water.*`, `pro.student_profile.water_goal.*`).
 - `Done`: Screen spec created at `docs/screens/v2/SC-220-water-tracker.md`.
-- `Done`: Wire Data Connect endpoints for water tracking (`getMyWaterLogs`, `logWaterIntake`, `setStudentWaterGoal`, `getMyWaterGoalContext`, `setNutritionistWaterGoalForStudent`) replacing stubs in `water-tracking-source.ts` (D-126 batch).
-- `Pending`: Wire water-goal ownership precedence from live assignment + nutritionist override data (tracked in Food/Plan/Data Wiring section below).
+- `Done`: Wire Firestore endpoints for water tracking (`getMyWaterLogs`, `logWaterIntake`, `setStudentWaterGoal`, `getMyWaterGoalContext`, `setNutritionistWaterGoalForStudent`) replacing stubs in `water-tracking-source.ts` (D-126 batch).
 
 ## Food/Plan/Data Wiring
-- `In progress`: Implement Firebase Data Connect profile connector contract (`getMyProfile`, `upsertUserProfile`, `setLockedRole`) and switch auth route-guard profile source to Data Connect.
+- `In progress`: Implement Firebase Firestore profile connector contract (`getMyProfile`, `upsertUserProfile`, `setLockedRole`) and switch auth route-guard profile source to Firestore.
   - Done: App-side profile source abstraction created in `features/auth/profile-source.ts` and integrated into auth session provider.
-  - Done: Live endpoint contract validator added at `scripts/validate-data-connect-profile-ops.mjs` (`npm run validate:data-connect:profile`).
-  - Done: Dev Data Connect service (`mychampions-fb928-2-service`) schema + connector deployed and SQL migrated on 2026-03-04.
-  - Done: `UserProfile` key mismatch fixed on dev service — schema uses `id: String` keyed to `auth.uid`, and `UpsertUserProfile` now sets `authUid_expr: "auth.uid"` (removed client `authUid` var).
-  - Done: Connector variable names normalized to camelCase for Firebase CLI validation; generated SDK regenerated/reinstalled.
-  - Done: Client role-lock confirmation hardened against eventual consistency lag with mutation-ack fallback + multi-read retry window in `features/auth/profile-source.ts`.
-  - In progress: `GetMyProfile` connector query switched from list filter (`userProfiles where authUid`) to key lookup (`userProfile key id_expr: "auth.uid"`) in `dataconnect/connector/auth_profile.gql`; pending Data Connect deploy + generated SDK refresh to fully eliminate cross-UID mismatch reads observed in dev logs.
-  - In progress: Finalize production Data Connect connector schema/operation compatibility and environment endpoint provisioning.
-- `In progress`: Implement Data Connect connection lifecycle connectors for invite submit/confirm/end and code rotation cancellation semantics.
+  - Done: Firestore smoke validator added at `scripts/validate-firestore-smoke.mjs` (`npm run validate:firestore:smoke`).
+  - Done: `userProfiles/{uid}` role-lock/profile hydration wiring is active with Firebase JS SDK and source-layer dependency injection.
+  - Done: Client role-lock confirmation is strict-confirm only with multi-read server-only retries in `features/auth/profile-source.ts`; unconfirmed writes now throw typed diagnostics (`role_update_not_persisted`, `profile_row_not_found_after_upsert`) and do not route forward.
+  - Done: TC-301 unit tests added in `features/auth/profile-source.test.ts` (Firestore-backed deps fakes).
+  - In progress: Validate production Firebase project Firestore security rules and indexes.
+- `In progress`: Implement Firestore connection lifecycle connectors for invite submit/confirm/end and code rotation cancellation semantics.
   - Done: Pure connection logic module created in `features/connections/connection.logic.ts` (status/reason normalization, display state resolution, error mapping).
-  - Done: Data Connect source module created in `features/connections/connection-source.ts` (`submitInviteCode`, `confirmPendingConnection`, `endConnection`, `getMyConnections`).
+  - Done: Firestore source module created in `features/connections/connection-source.ts` (`submitInviteCode`, `confirmPendingConnection`, `endConnection`, `getMyConnections`).
   - Done: Wire connection-source operations into app screens:
     - `app/student/professionals.tsx` (SC-211): invite code entry → `submitInviteCode`, connection list → `getMyConnections` + `resolveConnectionDisplayState`, unbind → `endConnection`. Surfaces `canceled_code_rotated` state (BL-003 / D-069).
     - `app/professional/pending.tsx` (SC-204/SC-205 subset): pending queue → `getMyConnections` (pending_confirmation filter), accept → `confirmPendingConnection`, deny/bulk deny → `endConnection`.
     - `features/connections/use-connections.ts`: React hook wrapping connection-source for UI consumption.
     - Route guard extended to block student from `/professional/*` and professional from `/student/*`.
+  - Done: `scripts/validate-firestore-smoke.mjs` now validates connection lifecycle transitions (`pending_confirmation` → `active` → `ended`) and includes plan collection read/write checks under authenticated Firestore REST access.
   - Pending: Live endpoint compatibility validation for connection operations against deployed connector.
-- `Pending`: Wire fatsecret food lookup to nutrition plan builder and tracking search surfaces.
-- `Pending`: Wire predefined plan library persistence and bulk-assignment orchestration APIs.
-- `Pending`: Wire water-goal ownership precedence from live assignment + nutritionist override data.
-- `Done`: Runtime Data Connect environment selection is wired by `APP_VARIANT` in `app.config.ts` + `features/dataconnect.ts` using environment-specific service/location vars:
-  - `EXPO_PUBLIC_DATA_CONNECT_CONNECTOR_ID`
-  - `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_DEV`, `EXPO_PUBLIC_DATA_CONNECT_LOCATION_DEV`
-  - `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_PROD`, `EXPO_PUBLIC_DATA_CONNECT_LOCATION_PROD`
-  CI workflows set `APP_VARIANT` explicitly and validate config with `scripts/check-dataconnect-runtime-config.mjs` before build/distribution.
-  - Dev service local deployment config (`dataconnect/sql/dataconnect.yaml`) points to `mychampions-fb928-2-service` on `mychampions-fb928-2-instance` / `mychampions-fb928-2-database`.
+- `Done`: fatsecret food lookup is wired to nutrition plan builder search via Cloud Function proxy (`searchFoodsFromSource` in `features/nutrition/food-search-source.ts` and `searchFoods` in `features/plans/plan-builder-source.ts`).
+- `Done`: Wire predefined plan library persistence and bulk-assignment orchestration APIs.
+  - `Done`: `features/plans/plan-source.ts#getMyPredefinedPlans` now reads both `nutritionPlans` and `trainingPlans` predefined records for the authenticated professional.
+  - `Done`: `features/plans/plan-source.ts#bulkAssignPredefinedPlan` now resolves source plan collection (`nutritionPlans` or `trainingPlans`) and clones independent per-student assigned copies into the matching collection with owner/source-kind guards.
+- `Done`: Wire water-goal ownership precedence from live assignment + nutritionist override data.
+  - `Done`: `features/nutrition/water-tracking-source.ts#getMyWaterGoalContext` now validates active nutrition assignment against live `connections` (`professionalAuthUid + studentAuthUid + specialty=nutritionist + status=active`) before applying nutritionist-goal precedence.
+- `Done`: Runtime Firestore environment selection is wired by `APP_VARIANT` in `app.config.ts` with:
+  - `FIREBASE_DEV_*`
+  - `FIREBASE_PROD_*`
+  CI workflows set `APP_VARIANT` explicitly per lane and inject matching Firebase native config files/secrets.
+- `Done`: Firestore project-id mapping is pinned in env contract:
+  - `FIREBASE_DEV_PROJECT_ID=mychampions-fb928` for `com.edufelip.mychampions.dev` (`APP_VARIANT=dev`).
+  - `FIREBASE_PROD_PROJECT_ID=mychampions-fb928` for `com.edufelip.mychampions` (`APP_VARIANT=prod`).
+  - Firebase CLI aliases added in `.firebaserc` (`dev`, `prod`) for explicit project targeting.
+- `Done`: Firestore infrastructure baseline is provisioned in project `mychampions-fb928`:
+  - Firestore API enabled.
+  - Default Firestore database created in `us-east4`.
+  - Source-controlled rules/index config added (`firestore.rules`, `firestore.indexes.json`) and deployed via `firebase deploy --only firestore:rules,firestore:indexes`.
 
 ## Bottom Navigation Shell (Phase 7)
 - `Done`: `app/(tabs)/_layout.tsx` replaced with role-aware tab layout (D-045):
@@ -178,6 +187,8 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Tab screens created: `(tabs)/index.tsx`, `(tabs)/students.tsx`, `(tabs)/nutrition.tsx`, `(tabs)/training.tsx`, `(tabs)/recipes.tsx`, `(tabs)/account.tsx`.
 - `Done`: Tab switching animation enabled globally with cross-fade transition (`animation: 'fade'`) in `app/(tabs)/_layout.tsx`.
 - `Done`: White-screen mitigation on tab switching applied in `app/(tabs)/_layout.tsx` by stabilizing tab scene rendering (`lazy: false`, `detachInactiveScreens: false`, `sceneStyle.backgroundColor = theme.color.canvas`).
+- `Done`: Tab-wrapper fallback hardening in `(tabs)/index`, `(tabs)/nutrition`, and `(tabs)/training` — transient unavailable `lockedRole` no longer returns `null`; wrappers now redirect to `/auth/role-selection` to avoid blank tab scenes.
+- `Done`: Tab-shell persistence guard for same authenticated UID — transient auth/profile re-hydration no longer unmounts the established tabs shell.
 - `Done`: Professional nutrition placeholder (`app/professional/nutrition.tsx`) and training placeholder (`app/professional/training.tsx`) created for SC-207/SC-208 (not yet implemented).
 - `Done`: SC-207 Nutrition Plan Builder implemented at `app/professional/nutrition/plans/[planId].tsx`; `app/professional/nutrition.tsx` converted to predefined plan library list screen.
 - `Done`: SC-208 Training Plan Builder implemented at `app/professional/training/plans/[planId].tsx`; `app/professional/training.tsx` converted to predefined plan library list screen.
@@ -188,7 +199,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 ## Plan Builder (BL-106 — SC-207, SC-208)
 - `Done`: `features/plans/plan-builder.logic.ts` — pure functions: `validateNutritionPlanInput`, `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError`, plus fatsecret normalization helpers `normalizeFoodArray`, `normalizeFoodSearchResult` and associated raw types `RawFatsecretFood`, `RawFatsecretServing`, `FoodSearchResult` (D-127, TC-281).
 - `Done`: `features/plans/plan-builder.logic.test.ts` — 24 unit tests for `normalizeFoodArray` and `normalizeFoodSearchResult` covering per-100g scaling, single/array serving normalization, missing fields, unsupported units, rounding, empty serving array, negative serving amount, negative macro fields (TC-281). App test suite at 691 pass, 0 fail.
-- `Done`: `features/plans/plan-builder-source.ts` — Data Connect stub surface for nutrition CRUD (`createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`) and training CRUD (`createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`), plus `getStarterTemplates`, `cloneStarterTemplate`, `searchFoods`.
+- `Done`: `features/plans/plan-builder-source.ts` — Firestore stub surface for nutrition CRUD (`createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`) and training CRUD (`createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`), plus `getStarterTemplates`, `cloneStarterTemplate`, `searchFoods`.
 - `Done`: `features/plans/use-plan-builder.ts` — `useNutritionPlanBuilder` and `useTrainingPlanBuilder` hooks with `idle/loading/ready/saving/error` state machines.
 - `Done`: `app/professional/nutrition.tsx` — plan library list screen (SC-207 lib).
 - `Done`: `app/professional/nutrition/plans/[planId].tsx` — nutrition plan builder screen (SC-207).
@@ -196,7 +207,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `app/professional/training/plans/[planId].tsx` — training plan builder screen (SC-208).
 - `Done`: All `pro.plan.*`, `pro.library.*`, `pro.predefined_plan.*`, `pro.template_library.*`, `pro.template.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
 - `Done`: SC-207 and SC-208 screen specs updated to reflect actual implementation.
-- `Done`: D-126 — Wire Data Connect generated SDK for all plan CRUD operations replacing raw `gql<T>()` HTTP transport stubs in `plan-builder-source.ts`. Functions now use `PlanBuilderSourceDeps` injectable pattern: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`. All `user: User` first params dropped; hooks updated to `isAuthenticated: boolean`; screens updated to `Boolean(currentUser)` pattern. Breaking API changes handled: `food_name` vs `name`, `exercise_name` vs `name`, `session_name` vs `name`, key-only returns with re-fetch where needed, `item_id`/`session_id` only (no plan_id on removes).
+- `Done`: D-126 — Wire Firestore generated SDK for all plan CRUD operations replacing raw `gql<T>()` HTTP transport stubs in `plan-builder-source.ts`. Functions now use `PlanBuilderSourceDeps` injectable pattern: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`. All `user: User` first params dropped; hooks updated to `isAuthenticated: boolean`; screens updated to `Boolean(currentUser)` pattern. Breaking API changes handled: `food_name` vs `name`, `exercise_name` vs `name`, `session_name` vs `name`, key-only returns with re-fetch where needed, `item_id`/`session_id` only (no plan_id on removes).
 - `Done`: Wire fatsecret food lookup into `searchFoods` in `plan-builder-source.ts`; requires fatsecret API key provisioned server-side (D-113, D-127).
   - `Done`: `features/nutrition/food-search-source.ts` created — HTTP source calling `EXPO_PUBLIC_FOOD_SEARCH_FUNCTION_URL` with Firebase Auth ID token; delegates response normalization to `plan-builder.logic.ts` pure helpers; injectable deps for testability. Pattern matches `meal-photo-analysis-source.ts` (BL-108).
   - `Done`: `searchFoods` in `plan-builder-source.ts` wired to `searchFoodsFromSource`; no longer returns empty array stub. Gets current Firebase Auth user from `getFirebaseAuth().currentUser`.
@@ -207,24 +218,24 @@ Track intentionally deferred implementation wiring so it is completed before rel
   - `Done`: `functions/src/fatsecret-helpers.ts` — pure fatsecret HTTP helpers extracted from `index.ts` for testability: `getFatsecretToken` (cache hit/miss/expiry, HTTP failure, Basic auth encoding) and `searchFatsecret` (array/single-result normalization, empty results, HTTP failure, API error field, Bearer token header, URL params). `functions/src/fatsecret-helpers.test.ts` — 14 unit tests run via `node --test --require ts-node/register` (TC-283). 0 failures.
   - `Pending`: Deploy equivalent Cloud Function to production Firebase project when prod environment is provisioned.
 - `Done`: `features/plans/starter-template.logic.ts` — pure logic layer with 11 functions and 88 comprehensive unit tests (BL-006, FR-212, AC-256, TC-260).
-- `Done`: D-114 — `getStarterTemplates` and `cloneStarterTemplate` wired to Data Connect generated SDK. `features/dataconnect.ts` initialises singleton. `getNutritionTemplates` / `getTrainingTemplates` / `cloneAsNutritionPlan` / `cloneAsTrainingPlan` from `@mychampions/dataconnect-generated` replace hardcoded stubs in `plan-builder-source.ts`.
+- `Done`: D-114 — `getStarterTemplates` and `cloneStarterTemplate` now run on Firestore collections through source-layer operations (no generated Data Connect SDK/runtime dependency).
 - `Done`: D-114 test coverage — `deriveStarterTemplatePlanType` and `coalesceTemplateDescription` extracted as pure helpers into `plan-builder.logic.ts`. `features/plans/plan-builder-source.test.ts` added with 29 tests (TC-280) covering prefix routing, null coalescing, edge cases, boundaries, and case-sensitivity. `StarterTemplateDeps` injection type exported for future integration test expansion. Test suite at 569 pass, 0 fail.
 
 ## Account Settings & Custom Meal Screens (Phase 6)
-- `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Data Connect profile-delete wiring deferred.
-- `Done`: SC-214 Custom Meal Builder (`app/(tabs)/nutrition/custom-meals/[mealId].tsx`) implemented — create/edit form with all 7 fields, image upload stub, share CTA; Data Connect and Cloud Storage wiring deferred.
-- `Done`: SC-215 Custom Meal Library & Quick Log (`app/(tabs)/nutrition/custom-meals/index.tsx`) implemented — FlatList of meals, quick-log grams input with nutrition preview; Data Connect and portion-log persistence deferred.
+- `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; Firestore profile-delete wiring deferred.
+- `Done`: SC-214 Custom Meal Builder (`app/(tabs)/nutrition/custom-meals/[mealId].tsx`) implemented — create/edit form with all 7 fields, image upload stub, share CTA; Firestore and Cloud Storage wiring deferred.
+- `Done`: SC-215 Custom Meal Library & Quick Log (`app/(tabs)/nutrition/custom-meals/index.tsx`) implemented — FlatList of meals, quick-log grams input with nutrition preview; Firestore and portion-log persistence deferred.
 - `Done`: SC-215 empty state upgraded to illustrated hero pattern — warm amber/orange `menu-book` + `restaurant` icon tiles replacing the minimal text stub; `DsPillButton` CTA with add icon; offline write-lock notice; matches production quality of student nutrition and training empty states.
-- `Done`: SC-216 Shared Recipe Save Confirmation (`app/shared/recipes/[shareToken].tsx`) implemented — token preview, ownership note, import; Data Connect share endpoint wiring deferred.
+- `Done`: SC-216 Shared Recipe Save Confirmation (`app/shared/recipes/[shareToken].tsx`) implemented — token preview, ownership note, import; Firestore share endpoint wiring deferred.
 - `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 4 new Phase 6 screens.
-- `Done`: Wire Data Connect profile-delete operation into SC-213 account deletion flow. `deleteProfileFromSource()` called in `submitDeletionRequest`; Firebase `signOut` follows immediately so `onAuthStateChanged` clears session state. Stub `await Promise.resolve()` removed.
-- `Done`: Wire Data Connect custom-meal CRUD operations into SC-214 and SC-215 (D-126 batch — `custom-meal-source.ts` rewritten with SDK; `useCustomMeals` updated to `isAuthenticated: boolean`).
-- `Done`: Wire Data Connect share-link generation (`createMealShareLink`) and import (`importSharedMeal`, `previewSharedMeal`) endpoints into SC-214, SC-215, SC-216 (D-126 batch — `shareLinkId` return pattern; callers updated).
+- `Done`: Wire Firestore profile-delete operation into SC-213 account deletion flow. `deleteProfileFromSource()` called in `submitDeletionRequest`; Firebase `signOut` follows immediately so `onAuthStateChanged` clears session state. Stub `await Promise.resolve()` removed.
+- `Done`: Wire Firestore custom-meal CRUD operations into SC-214 and SC-215 (D-126 batch — `custom-meal-source.ts` rewritten with SDK; `useCustomMeals` updated to `isAuthenticated: boolean`).
+- `Done`: Wire Firestore share-link generation (`createMealShareLink`) and import (`importSharedMeal`, `previewSharedMeal`) endpoints into SC-214, SC-215, SC-216 (D-126 batch — `shareLinkId` return pattern; callers updated).
 - `Done`: Wire Firebase Cloud Storage image upload pipeline into SC-214 image upload stub. `features/nutrition/image-upload-source.ts` source layer with full injectable deps + 20 unit tests (TC-287); `features/nutrition/use-image-upload.ts` hook wires expo-image-picker (Alert action sheet), expo-image-manipulator compression, and `uploadBytesResumable` with progress tracking; SC-214 stub replaced with real `useImageUpload(currentUser)` call; `ImageUploadSection` `onPickAndUpload`/`onRetry` callbacks wired (D-131).
-- `Done`: Persist uploaded SC-214 recipe image download URL to Data Connect custom-meal records on save/update. `handleSave` now passes `uploadState.url` when upload succeeds, and `useCustomMeals` forwards `imageUrl` to `createCustomMeal`/`updateCustomMeal` (with edit fallback to existing `imageUrl` when no new upload is selected).
+- `Done`: Persist uploaded SC-214 recipe image download URL to Firestore custom-meal records on save/update. `handleSave` now passes `uploadState.url` when upload succeeds, and `useCustomMeals` forwards `imageUrl` to `createCustomMeal`/`updateCustomMeal` (with edit fallback to existing `imageUrl` when no new upload is selected).
 - `Done`: Hydrate SC-214 edit mode image upload UI from persisted `imageUrl`. When opening an existing meal, `useImageUpload.hydrateExisting()` seeds `uploadState` to `done` so the image section starts in `change photo` state even before a new upload.
 - `Done`: Move SC-214/SC-215 routes under the Nutrition tab stack (`app/(tabs)/nutrition/custom-meals/*`) so bottom tab icons remain visible while navigating custom meal library/builder. Added `app/(tabs)/nutrition/_layout.tsx` stack shell and removed root-stack explicit screen registration for old standalone route files.
-- `Done`: Wire portion-log persistence (Data Connect) into SC-215 quick-log confirm action. `logPortionFromSource` added to `custom-meal-source.ts`; `logPortion` callback added to `use-custom-meals.ts`; `handleConfirmLog` in SC-215 calls `logPortion(meal.id, grams)` and surfaces error via `meal.library.quick_log.error` locale key. Stub `await Promise.resolve()` removed.
+- `Done`: Wire portion-log persistence (Firestore) into SC-215 quick-log confirm action. `logPortionFromSource` added to `custom-meal-source.ts`; `logPortion` callback added to `use-custom-meals.ts`; `handleConfirmLog` in SC-215 calls `logPortion(meal.id, grams)` and surfaces error via `meal.library.quick_log.error` locale key. Stub `await Promise.resolve()` removed.
 - `Pending`: Wire deep-link resume (post-auth redirect back to `/shared/recipes/:shareToken`) for unauthenticated share link recipients in SC-216.
 
 ## Auth/Invite Error Copy Hardening (BL-010)
@@ -240,7 +251,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `app/auth/role-selection.tsx` — emits `auth.entry.viewed` on mount; `onboarding.role.selected` with `role_context` on continue; `onboarding.self_guided_start.clicked` when Student is selected and Continue is tapped.
 - `Done`: `app/student/professionals.tsx` — emits `invite.submit.requested` on manual code submit; `invite.pending.created` on success; `invite.submit.failed` with `reason_code` on failure; `invite.pending.canceled` (once, via ref guard) when `canceled_code_rotated` connections surface.
 - `Pending`: Wire real analytics SDK transport (Firebase Analytics, Amplitude, or equivalent) in `features/analytics/use-analytics.ts` to replace `console.log` stub. Update `pending-wiring-checklist-v1.md` when complete.
-- `Pending`: Emit analytics events for professional-side Milestone A actions (pending queue confirm/deny) when SC-204/SC-205 Data Connect wiring is complete.
+- `Pending`: Emit analytics events for professional-side Milestone A actions (pending queue confirm/deny) when SC-204/SC-205 Firestore wiring is complete.
 
 ## Accessibility Baseline (Phase 8 — BL-013)
 - `Done`: All auth screens (`sign-in.tsx`, `create-account.tsx`, `role-selection.tsx`) annotated with `accessibilityLabel`, `accessibilityRole`, `accessibilityState`, and live-region wrappers on error messages.
@@ -285,11 +296,11 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Wire `EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL` in `.env.example` (blank template) and `.env` (dev URL set).
 - `Done`: Wire real camera capture / image picker (`expo-image-picker@~16.0.6`) into `use-meal-photo-analysis.ts`. `startCapture()` presents an action sheet ("Take Photo" / "Choose from Library" / "Cancel"), requests the relevant permission (`requestCameraPermissionsAsync` or `requestMediaLibraryPermissionsAsync`), and launches the native picker. Cancellation returns to `idle`.
 - `Done`: Wire `expo-image-manipulator@~13.0.6` for client-side JPEG compression in the `compressing` state of `use-meal-photo-analysis.ts`. Images are resized to ≤ 1600 px longest side and compressed at 0.75 JPEG quality before being sent to the Cloud Function (FR-230, BR-287, Q-022).
-- `Done`: Wire SC-214 photo attachment toggle into existing Cloud Storage image upload pipeline (D-109). The `attachPhoto` toggle is preserved; when `uploadState.kind === 'done'`, `uploadState.url` is persisted with the custom meal record on save/update via Data Connect custom meal create/update operations.
+- `Done`: Wire SC-214 photo attachment toggle into existing Cloud Storage image upload pipeline (D-109). The `attachPhoto` toggle is preserved; when `uploadState.kind === 'done'`, `uploadState.url` is persisted with the custom meal record on save/update via Firestore custom meal create/update operations.
 
 ## AI Meal Photo Analysis Paywall Gate (BL-108, D-132)
 - `Done`: `react-native-purchases-ui@9.10.5` installed. React Native autolinking handles iOS/Android; `pod install` + Gradle sync required before running on device/simulator.
-- `Done`: `subscription.logic.ts` — `AI_ENTITLEMENT_ID = 'premium_student'` constant added; `hasAiAnalysisAccess(professionalEntitlement, aiEntitlement)` pure function added. 8 unit tests cover all entitlement combinations.
+- `Done`: `subscription.logic.ts` — `AI_ENTITLEMENT_ID = 'student_pro'` constant added; `hasAiAnalysisAccess(professionalEntitlement, aiEntitlement)` pure function added. 8 unit tests cover all entitlement combinations.
 - `Done`: `subscription-source.ts` — `AI_FEATURES_ENTITLEMENT_ID`, `mapCustomerInfoToAiEntitlementStatus`, `presentPaywall` dep in `SubscriptionSourceDeps`, `presentAiPaywall()` function. `makeDeps()` in `subscription-source.test.ts` updated with `presentPaywall: async () => {}`; 6 + 3 new unit tests.
 - `Done`: `use-subscription.ts` — `aiEntitlementStatus` state, `hasAiAccess` derived bool, `openAiPaywall` action; single `getCustomerInfo()` call maps both entitlements; `RevenueCatUI.presentPaywall` wired as production dep.
 - `Done`: SC-214 (`[mealId].tsx`) — `useSubscription` call added; `hasAiAccess`, `isSubscriptionLoading`, `onOpenPaywall` passed to `MealPhotoAnalysisSection`; paywall banner + `ActivityIndicator` loading state rendered; `paywallBanner` StyleSheet entry added.
@@ -298,9 +309,13 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `localized-copy-table-v2.md` — 3 new rows added for paywall keys.
 - `Done`: SC-219, SC-214, SC-215 screen specs updated to document paywall gate, new states, user actions, accessibility notes, and implementation files.
 - `Done`: `decisions-log-v1.md` — D-132 added.
-- `Pending`: Configure `ai_features` offering in RevenueCat dashboard (required before `RevenueCatUI.presentPaywall` can display the paywall to end users).
-- `Pending`: Configure `premium_student` product and entitlement in RevenueCat dashboard (required for entitlement gate to activate for student users).
-- `Pending`: Register App Store / Google Play products into RevenueCat offerings so `getOfferings` and `presentPaywall` do not emit SDK configuration warnings (for example OfferingsManager empty-products errors in simulator/dev logs).
+- `Done`: RevenueCat dashboard products registered (D-152): `mychampions_professional_anuual` (Professional Annual), `mychampions_professional_monthly` (Professional Monthly), `student_annual` (Student Annual), `student_monthly` (Student Monthly).
+- `Done`: RevenueCat entitlement `professional_pro` configured in dashboard with professional products; `student_pro` entitlement configured with student products.
+- `Done`: RevenueCat offering `default_student` (`AI_OFFERING_ID`) configured in dashboard with student products for `openAiPaywall` (SC-214/SC-215); offering `default_professional` (`PRO_OFFERING_ID`) configured with professional products for `openProPaywall` (SC-212).
+- `Done`: RevenueCat SDK key config in `app.config.ts` is variant-aware (D-156): `APP_VARIANT=dev` uses `EXPO_PUBLIC_REVENUECAT_API_KEY_*_DEV`, `APP_VARIANT=prod` uses `EXPO_PUBLIC_REVENUECAT_API_KEY_*_PROD`, with temporary legacy fallback to `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS/ANDROID`.
+- `Done`: `presentAiPaywall` uses `AI_OFFERING_ID` (`'default_student'`); `presentProPaywall` uses `PRO_OFFERING_ID` (`'default_professional'`). Production `presentPaywall` dep in `use-subscription.ts` always resolves offering object via `Purchases.getOfferings().all[offeringIdentifier]` — symmetric path for both paywalls (D-152).
+- `Done`: SC-212 Purchase CTA replaced `purchase(undefined)` (broken) with `openProPaywall()` — presents native RevenueCat paywall for professional subscription (D-152).
+- `Done`: `openProPaywall` action added to `UseSubscriptionResult` and `useSubscription` hook; 3 unit tests added to `subscription-source.test.ts` covering `presentProPaywall` (TC-286 extended).
 
 ## Validation Gate Before Release
 - Every item in this checklist must be either `Done` or explicitly deferred in a release decision note.

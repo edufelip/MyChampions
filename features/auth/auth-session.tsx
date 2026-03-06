@@ -3,9 +3,12 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 
 import type { RoleIntent } from './role-selection.logic';
 import { getFirebaseAuth } from './firebase';
-import { hydrateProfileFromSource, lockRoleInSource } from './profile-source';
+import {
+  hydrateProfileFromSource,
+  lockRoleInSource,
+  setAcceptedTermsVersionInSource,
+} from './profile-source';
 import { resolveTermsConfigFromExpo } from './terms-config';
-import { getAcceptedTermsVersion, setAcceptedTermsVersion as persistAcceptedTermsVersion } from './terms-storage';
 import { needsTermsAcceptance } from './terms.logic';
 
 type AuthSessionContextValue = {
@@ -74,22 +77,22 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        void Promise.all([hydrateProfileFromSource(user), getAcceptedTermsVersion(user.uid)])
-          .then(([profile, acceptedVersion]) => {
+        void hydrateProfileFromSource(user)
+          .then((profile) => {
             if (!cancelled) {
               setLockedRole(profile.lockedRole);
-              setAcceptedTermsVersion(acceptedVersion);
+              setAcceptedTermsVersion(profile.acceptedTermsVersion);
               setRequiresTermsAcceptance(
                 needsTermsAcceptance({
                   requiredVersion: termsRequiredVersion,
-                  acceptedVersion,
-                  })
+                  acceptedVersion: profile.acceptedTermsVersion,
+                })
               );
               if (__DEV__) {
                 console.info('[auth][session] profile hydrated', {
                   uid: user.uid,
                   lockedRole: profile.lockedRole,
-                  acceptedTermsVersion: acceptedVersion,
+                  acceptedTermsVersion: profile.acceptedTermsVersion,
                 });
               }
             }
@@ -143,7 +146,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           throw new Error('No authenticated user found.');
         }
 
-        await persistAcceptedTermsVersion(activeUser.uid, termsConfig.requiredVersion);
+        await setAcceptedTermsVersionInSource(termsConfig.requiredVersion);
         setAcceptedTermsVersion(termsConfig.requiredVersion);
         setRequiresTermsAcceptance(false);
       },

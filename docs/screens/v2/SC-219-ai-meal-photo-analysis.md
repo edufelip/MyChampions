@@ -10,11 +10,11 @@ Allow users to capture or select a photo of their meal and receive AI-estimated 
 
 AI estimates are always advisory — all fields remain editable after pre-fill (BR-286, D-108).
 
-**Paywall gate (D-132):** The AI analysis CTA is only accessible to users with an active `professional_unlimited` OR `premium_student` RevenueCat entitlement. When neither entitlement is `'active'`, the CTA is replaced by a locked paywall banner with an "Upgrade to unlock" CTA that presents the native RevenueCat paywall (`ai_features` offering). Status `'unknown'` (loading/error) is treated as locked (strict policy).
+**Paywall gate (D-132):** The AI analysis CTA is only accessible to users with an active `professional_pro` OR `student_pro` RevenueCat entitlement. When neither entitlement is `'active'`, the CTA is replaced by a locked paywall banner with an "Upgrade to unlock" CTA that presents the native RevenueCat paywall (`default_student` offering, `AI_OFFERING_ID`). Status `'unknown'` (loading/error) is treated as locked (strict policy).
 
 ## User Actions
 - When entitlement is active: tap "Analyze with AI" CTA to initiate capture.
-- When entitlement is not active: tap "Upgrade to unlock" CTA to open the native RevenueCat paywall for the `ai_features` offering; after purchase/dismissal, entitlement status is refreshed.
+- When entitlement is not active: tap "Upgrade to unlock" CTA to open the native RevenueCat paywall for the `default_student` offering (`AI_OFFERING_ID`); after purchase/dismissal, entitlement status is refreshed.
 - Action sheet presents "Take Photo" / "Choose from Library" / "Cancel".
 - On capture: image is compressed client-side via `expo-image-manipulator`, then sent to Cloud Function.
 - Review AI-estimated macros pre-filled into form fields.
@@ -110,7 +110,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | `features/nutrition/meal-photo-analysis-source.ts` | HTTP source: `analyzeMealPhoto` with `MealPhotoAnalysisSourceDeps` injectable pattern; typed `PhotoAnalysisSourceError` with `PhotoAnalysisErrorReason` union |
 | `features/nutrition/meal-photo-analysis-source.test.ts` | 21 unit tests (TC-285) |
 | `features/nutrition/use-meal-photo-analysis.ts` | React hook `useMealPhotoAnalysis` — full pipeline: `startCapture` (expo-image-picker action sheet → expo-image-manipulator compress → Cloud Function), `analyze` (direct injection), `reset`, `preFillMealInput` |
-| `features/subscription/subscription.logic.ts` | Pure entitlement logic — `AI_ENTITLEMENT_ID = 'premium_student'`, `hasAiAnalysisAccess()` (D-132) |
+| `features/subscription/subscription.logic.ts` | Pure entitlement logic — `AI_ENTITLEMENT_ID = 'student_pro'`, `hasAiAnalysisAccess()` (D-132) |
 | `features/subscription/subscription-source.ts` | RevenueCat source layer — `AI_FEATURES_ENTITLEMENT_ID`, `mapCustomerInfoToAiEntitlementStatus`, `presentAiPaywall` (D-132) |
 | `features/subscription/use-subscription.ts` | React hook — exposes `aiEntitlementStatus`, `hasAiAccess`, `openAiPaywall`; single `getCustomerInfo()` call maps both entitlements (D-132) |
 | `app/(tabs)/nutrition/custom-meals/[mealId].tsx` | SC-214 entry point — camera CTA gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill, attach-photo toggle |

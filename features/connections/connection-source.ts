@@ -1,25 +1,20 @@
 /**
- * Connection Data Connect source — invite submit, confirm, end, list.
- * Uses generated SDK (D-114 pattern) instead of raw GraphQL fetch.
- * Refs: D-069, D-072, FR-106–FR-110, BR-220–BR-232
+ * Connection Firestore source — invite submit, confirm, end, list.
  */
 
-import type { DataConnect } from 'firebase/data-connect';
 import {
-  getMyConnections as _getMyConnections,
-  submitInviteCode as _submitInviteCode,
-  confirmPendingConnection as _confirmPendingConnection,
-  endConnection as _endConnection,
-  type GetMyConnectionsData,
-  type SubmitInviteCodeData,
-  type SubmitInviteCodeVariables,
-  type ConfirmPendingConnectionData,
-  type ConfirmPendingConnectionVariables,
-  type EndConnectionData,
-  type EndConnectionVariables,
-} from '@mychampions/dataconnect-generated';
-import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
+  collection,
+  doc,
+  getDocs,
+  limit,
+  query,
+  runTransaction,
+  where,
+  type Firestore,
+} from 'firebase/firestore';
 
+import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso, generateId } from '../firestore';
+import { classifyFirestoreError } from '../firestore-error';
 import {
   normalizeConnectionStatus,
   normalizeCanceledReason,
@@ -41,112 +36,231 @@ export class ConnectionSourceError extends Error {
   }
 }
 
-// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
+type FirestoreConnection = {
+  id: string;
+  status: string;
+  canceledReason?: string | null;
+  specialty: string;
+  professionalAuthUid: string;
+  studentAuthUid: string;
+  sourceInviteCodeId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  endedAt?: string | null;
+};
+
+type FirestoreInviteCode = {
+  professionalAuthUid: string;
+  codeValue: string;
+  status: 'active' | 'rotated' | 'revoked';
+  createdAt: string;
+  updatedAt: string;
+  rotatedAt?: string | null;
+};
 
 export type ConnectionSourceDeps = {
-  getMyConnections: (dc: DataConnect) => Promise<{ data: GetMyConnectionsData }>;
-  submitInviteCode: (dc: DataConnect, vars: SubmitInviteCodeVariables) => Promise<{ data: SubmitInviteCodeData }>;
-  confirmPendingConnection: (dc: DataConnect, vars: ConfirmPendingConnectionVariables) => Promise<{ data: ConfirmPendingConnectionData }>;
-  endConnection: (dc: DataConnect, vars: EndConnectionVariables) => Promise<{ data: EndConnectionData }>;
-  getDataConnectInstance: () => DataConnect;
+  getFirestoreInstance: () => Firestore;
+  getCurrentAuthUid: () => string;
 };
 
 const defaultConnectionSourceDeps: ConnectionSourceDeps = {
-  getMyConnections: _getMyConnections,
-  submitInviteCode: _submitInviteCode,
-  confirmPendingConnection: _confirmPendingConnection,
-  endConnection: _endConnection,
-  getDataConnectInstance: _getDataConnectInstance,
+  getFirestoreInstance: _getFirestoreInstance,
+  getCurrentAuthUid: _getCurrentAuthUid,
 };
 
-// ─── Operations ───────────────────────────────────────────────────────────────
+function normalizeConnectionSourceError(error: unknown): ConnectionSourceError {
+  if (error instanceof ConnectionSourceError) return error;
 
-/**
- * Submits an invite code, creating a new pending_confirmation connection.
- * Returns the created connection id.
- * Ref: FR-106, BR-220
- */
+  switch (classifyFirestoreError(error)) {
+    case 'network':
+      return new ConnectionSourceError('network', (error as Error)?.message ?? 'Network error.');
+    case 'configuration':
+      return new ConnectionSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
+    default:
+      return new ConnectionSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected connection source error.');
+  }
+}
+
 export async function submitInviteCode(
   code: string,
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<{ connectionId: string; status: 'pending_confirmation' }> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.submitInviteCode(dc, { code });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const studentUid = deps.getCurrentAuthUid();
 
-  const id = data.connection_insert?.id;
-  if (!id) {
-    throw new ConnectionSourceError(
-      'invalid_response',
-      'submitInviteCode returned no connection id.'
+    const inviteSnapshot = await getDocs(
+      query(
+        collection(firestore, 'inviteCodes'),
+        where('codeValue', '==', code.trim()),
+        where('status', '==', 'active'),
+        limit(1)
+      )
     );
-  }
 
-  return { connectionId: id, status: 'pending_confirmation' };
+    if (inviteSnapshot.empty) {
+      throw new ConnectionSourceError('graphql', 'Invite code not found.');
+    }
+
+    const inviteDoc = inviteSnapshot.docs[0];
+    const invite = inviteDoc.data() as FirestoreInviteCode;
+    const professionalUid = invite.professionalAuthUid;
+
+    if (!professionalUid) {
+      throw new ConnectionSourceError('invalid_response', 'Invite code has no professional owner.');
+    }
+
+    const existing = await getDocs(
+      query(
+        collection(firestore, 'connections'),
+        where('studentAuthUid', '==', studentUid),
+        where('professionalAuthUid', '==', professionalUid),
+        where('specialty', '==', 'nutritionist')
+      )
+    );
+
+    const hasActive = existing.docs.some((d) => (d.data() as FirestoreConnection).status === 'active');
+    if (hasActive) {
+      throw new ConnectionSourceError('graphql', 'Already connected.');
+    }
+
+    const pendingCount = (await getDocs(
+      query(
+        collection(firestore, 'connections'),
+        where('professionalAuthUid', '==', professionalUid),
+        where('status', '==', 'pending_confirmation')
+      )
+    )).size;
+
+    if (pendingCount >= 10) {
+      throw new ConnectionSourceError('graphql', 'Pending cap reached.');
+    }
+
+    const connectionId = generateId('conn');
+    const timestamp = nowIso();
+
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'connections', connectionId), {
+        id: connectionId,
+        studentAuthUid: studentUid,
+        professionalAuthUid: professionalUid,
+        specialty: 'nutritionist',
+        status: 'pending_confirmation',
+        canceledReason: null,
+        sourceInviteCodeId: inviteDoc.id,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        endedAt: null,
+      } satisfies FirestoreConnection);
+    });
+
+    return { connectionId, status: 'pending_confirmation' };
+  } catch (error) {
+    throw normalizeConnectionSourceError(error);
+  }
 }
 
-/**
- * Professional confirms a pending connection request.
- * Returns the confirmed connection id.
- * Ref: FR-107, BR-221
- */
 export async function confirmPendingConnection(
   connectionId: string,
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<{ connectionId: string; status: 'active' }> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.confirmPendingConnection(dc, { connectionId: connectionId });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
 
-  const id = data.connection_update?.id;
-  if (!id) {
-    throw new ConnectionSourceError(
-      'invalid_response',
-      'confirmPendingConnection returned no connection id.'
-    );
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'connections', connectionId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new ConnectionSourceError('graphql', 'Connection not found.');
+      }
+
+      const data = snap.data() as FirestoreConnection;
+      if (data.professionalAuthUid !== professionalUid) {
+        throw new ConnectionSourceError('graphql', 'Permission denied for connection confirmation.');
+      }
+      if (data.status !== 'pending_confirmation') {
+        throw new ConnectionSourceError('graphql', 'Invalid connection transition.');
+      }
+
+      tx.update(ref, {
+        status: 'active',
+        canceledReason: null,
+        endedAt: null,
+        updatedAt: nowIso(),
+      });
+    });
+
+    return { connectionId, status: 'active' };
+  } catch (error) {
+    throw normalizeConnectionSourceError(error);
   }
-
-  return { connectionId: id, status: 'active' };
 }
 
-/**
- * Ends (cancels/denies) a connection.
- * Ref: FR-108, D-064
- */
 export async function endConnection(
   connectionId: string,
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.endConnection(dc, { connectionId: connectionId });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const currentUid = deps.getCurrentAuthUid();
+
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'connections', connectionId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new ConnectionSourceError('graphql', 'Connection not found.');
+      }
+
+      const data = snap.data() as FirestoreConnection;
+      if (data.professionalAuthUid !== currentUid && data.studentAuthUid !== currentUid) {
+        throw new ConnectionSourceError('graphql', 'Permission denied for connection end.');
+      }
+
+      tx.update(ref, {
+        status: 'ended',
+        endedAt: nowIso(),
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizeConnectionSourceError(error);
+  }
 }
 
-/**
- * Returns all connections for the current user (student: their connections;
- * professional: connections where they are the professional).
- * Ref: FR-109
- */
 export async function getMyConnections(
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<ConnectionRecord[]> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getMyConnections(dc);
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
 
-  return data.connections.flatMap((item) => {
-    const id = item.id;
-    const status = normalizeConnectionStatus(item.status);
-    const specialty = normalizeConnectionSpecialty(item.specialty);
+    const [studentSide, professionalSide] = await Promise.all([
+      getDocs(query(collection(firestore, 'connections'), where('studentAuthUid', '==', uid))),
+      getDocs(query(collection(firestore, 'connections'), where('professionalAuthUid', '==', uid))),
+    ]);
 
-    if (!id || !status || !specialty) {
-      return [];
-    }
+    const map = new Map<string, ConnectionRecord>();
 
-    return [
-      {
+    for (const snap of [...studentSide.docs, ...professionalSide.docs]) {
+      const data = snap.data() as Partial<FirestoreConnection>;
+      const id = typeof data.id === 'string' ? data.id : snap.id;
+      const status = normalizeConnectionStatus(data.status);
+      const specialty = normalizeConnectionSpecialty(data.specialty);
+
+      if (!id || !status || !specialty) continue;
+
+      map.set(id, {
         id,
         status,
-        canceledReason: normalizeCanceledReason(item.canceledReason ?? null),
+        canceledReason: normalizeCanceledReason(data.canceledReason ?? null),
         specialty,
-        professionalAuthUid: item.professionalAuthUid ?? '',
-      } satisfies ConnectionRecord,
-    ];
-  });
+        professionalAuthUid: String(data.professionalAuthUid ?? ''),
+      });
+    }
+
+    return [...map.values()];
+  } catch (error) {
+    throw normalizeConnectionSourceError(error);
+  }
 }

@@ -1,39 +1,22 @@
 /**
- * Plan Data Connect source — plan CRUD, predefined library, bulk assign.
- * Uses Firebase Data Connect generated SDK (D-114 injectable deps pattern).
- * No business logic; normalization delegates to plan-change-request.logic.
- * Refs: D-072, D-080, D-082, FR-211–FR-214, BR-269–BR-272
- *
- * SDK shape notes (breaking from old GraphQL stub):
- * - GetMyPlansData returns nutritionPlans[] (camelCase, nutrition only).
- * - GetMyPredefinedPlansData returns nutritionPlans[] (camelCase).
- * - SubmitPlanChangeRequest takes {planId, planType, requestText}; returns key only.
- * - ReviewPlanChangeRequest takes {requestId, status}; returns key only. Re-fetch not needed.
- * - BulkAssignNutritionPlan takes one {planId, studentUid} at a time.
+ * Plan Firestore source — plan CRUD, predefined library, bulk assign,
+ * and plan-change request operations.
  */
 
-import type { DataConnect } from 'firebase/data-connect';
-
-import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
 import {
-  getMyPlans as _getMyPlans,
-  getMyPredefinedPlans as _getMyPredefinedPlans,
-  submitPlanChangeRequest as _submitPlanChangeRequest,
-  getStudentPlanChangeRequests as _getStudentPlanChangeRequests,
-  reviewPlanChangeRequest as _reviewPlanChangeRequest,
-  bulkAssignNutritionPlan as _bulkAssignNutritionPlan,
-  type GetMyPlansData,
-  type GetMyPredefinedPlansData,
-  type SubmitPlanChangeRequestData,
-  type SubmitPlanChangeRequestVariables,
-  type GetStudentPlanChangeRequestsData,
-  type GetStudentPlanChangeRequestsVariables,
-  type ReviewPlanChangeRequestData,
-  type ReviewPlanChangeRequestVariables,
-  type BulkAssignNutritionPlanData,
-  type BulkAssignNutritionPlanVariables,
-} from '@mychampions/dataconnect-generated';
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  runTransaction,
+  where,
+  writeBatch,
+  type Firestore,
+} from 'firebase/firestore';
 
+import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso, generateId } from '../firestore';
+import { classifyFirestoreError } from '../firestore-error';
 import {
   normalizePlanChangeRequestStatus,
   normalizePlanType,
@@ -42,17 +25,8 @@ import {
   type PlanChangeRequestStatus,
 } from './plan-change-request.logic';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type PlanSourceKind = 'predefined' | 'assigned' | 'self_managed';
 
-/**
- * Domain plan type. Used by logic, hooks, and screens.
- * SDK only returns nutrition plans; planType is therefore always 'nutrition'
- * for SDK-sourced plans. isArchived is derived from isDraft flag.
- * sourceKind, ownerProfessionalUid, and studentUid are not in the SDK response
- * for GetMyPlans — defaults are applied.
- */
 export type Plan = {
   id: string;
   planType: PlanType;
@@ -74,7 +48,6 @@ export type PredefinedPlan = {
   updatedAt: string;
 };
 
-/** Extended nutrition plan shape with SDK-specific fields. */
 export type NutritionPlan = Plan & {
   isDraft: boolean;
   caloriesTarget: number | null;
@@ -83,7 +56,45 @@ export type NutritionPlan = Plan & {
   fatsTarget: number | null;
 };
 
-// ─── Error class ──────────────────────────────────────────────────────────────
+type FirestoreNutritionPlan = {
+  id: string;
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  sourceKind: PlanSourceKind;
+  isArchived: boolean;
+  isDraft: boolean;
+  name: string;
+  caloriesTarget: number;
+  carbsTarget: number;
+  proteinsTarget: number;
+  fatsTarget: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FirestoreTrainingPlan = {
+  id: string;
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  sourceKind: PlanSourceKind;
+  isArchived: boolean;
+  isDraft: boolean;
+  name: string;
+  sessions: Array<{ id: string; sessionName: string; items: Array<{ id: string; exerciseName: string }> }>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FirestorePlanChangeRequest = {
+  id: string;
+  planId: string;
+  planType: PlanType;
+  studentAuthUid: string;
+  requestText: string;
+  status: PlanChangeRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+};
 
 type PlanSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
@@ -97,55 +108,38 @@ export class PlanSourceError extends Error {
   }
 }
 
-// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
-
 export type PlanSourceDeps = {
-  getMyPlans: (dc: DataConnect) => Promise<{ data: GetMyPlansData }>;
-  getMyPredefinedPlans: (dc: DataConnect) => Promise<{ data: GetMyPredefinedPlansData }>;
-  submitPlanChangeRequest: (
-    dc: DataConnect,
-    vars: SubmitPlanChangeRequestVariables
-  ) => Promise<{ data: SubmitPlanChangeRequestData }>;
-  getStudentPlanChangeRequests: (
-    dc: DataConnect,
-    vars: GetStudentPlanChangeRequestsVariables
-  ) => Promise<{ data: GetStudentPlanChangeRequestsData }>;
-  reviewPlanChangeRequest: (
-    dc: DataConnect,
-    vars: ReviewPlanChangeRequestVariables
-  ) => Promise<{ data: ReviewPlanChangeRequestData }>;
-  bulkAssignNutritionPlan: (
-    dc: DataConnect,
-    vars: BulkAssignNutritionPlanVariables
-  ) => Promise<{ data: BulkAssignNutritionPlanData }>;
-  getDataConnectInstance: () => DataConnect;
+  getFirestoreInstance: () => Firestore;
+  getCurrentAuthUid: () => string;
 };
 
 const defaultDeps: PlanSourceDeps = {
-  getMyPlans: _getMyPlans,
-  getMyPredefinedPlans: _getMyPredefinedPlans,
-  submitPlanChangeRequest: _submitPlanChangeRequest,
-  getStudentPlanChangeRequests: _getStudentPlanChangeRequests,
-  reviewPlanChangeRequest: _reviewPlanChangeRequest,
-  bulkAssignNutritionPlan: _bulkAssignNutritionPlan,
-  getDataConnectInstance: _getDataConnectInstance,
+  getFirestoreInstance: _getFirestoreInstance,
+  getCurrentAuthUid: _getCurrentAuthUid,
 };
 
-// ─── Plan CRUD ────────────────────────────────────────────────────────────────
+function normalizePlanSourceError(error: unknown): PlanSourceError {
+  if (error instanceof PlanSourceError) return error;
 
-/** Returns all nutrition plans for the current user. */
-export async function getMyPlans(deps = defaultDeps): Promise<NutritionPlan[]> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getMyPlans(dc);
+  switch (classifyFirestoreError(error)) {
+    case 'network':
+      return new PlanSourceError('network', (error as Error)?.message ?? 'Network error.');
+    case 'configuration':
+      return new PlanSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
+    default:
+      return new PlanSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected plan source error.');
+  }
+}
 
-  return (data.nutritionPlans ?? []).map((raw) => ({
+function toNutritionPlan(raw: FirestoreNutritionPlan): NutritionPlan {
+  return {
     id: raw.id,
-    name: raw.name,
-    planType: 'nutrition' as PlanType,
-    sourceKind: 'assigned' as PlanSourceKind,
-    ownerProfessionalUid: null,
-    studentUid: '',
-    isArchived: false,
+    name: raw.name ?? null,
+    planType: 'nutrition',
+    sourceKind: raw.sourceKind ?? 'assigned',
+    ownerProfessionalUid: raw.ownerProfessionalUid ?? null,
+    studentUid: raw.studentAuthUid,
+    isArchived: raw.isArchived,
     isDraft: raw.isDraft,
     caloriesTarget: raw.caloriesTarget ?? null,
     carbsTarget: raw.carbsTarget ?? null,
@@ -153,115 +147,245 @@ export async function getMyPlans(deps = defaultDeps): Promise<NutritionPlan[]> {
     fatsTarget: raw.fatsTarget ?? null,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
-  }));
+  };
 }
 
-// ─── Predefined plan library ──────────────────────────────────────────────────
-
-/**
- * Returns all predefined (non-draft) nutrition plans for the current professional.
- * Ref: D-072, D-080
- */
-export async function getMyPredefinedPlans(deps = defaultDeps): Promise<PredefinedPlan[]> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getMyPredefinedPlans(dc);
-
-  return (data.nutritionPlans ?? []).map((raw) => ({
+function toPlanFromTraining(raw: FirestoreTrainingPlan): Plan {
+  return {
     id: raw.id,
-    name: raw.name,
-    planType: 'nutrition' as PlanType,
-    ownerProfessionalUid: '',
+    name: raw.name ?? null,
+    planType: 'training',
+    sourceKind: raw.sourceKind ?? 'assigned',
+    ownerProfessionalUid: raw.ownerProfessionalUid ?? null,
+    studentUid: raw.studentAuthUid,
+    isArchived: raw.isArchived,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
-  }));
+  };
 }
 
-/**
- * Assigns a predefined nutrition plan to students.
- * SDK takes one student at a time — calls are serialized per studentUid.
- * Ref: D-080, D-082, FR-214
- */
+export async function getMyPlans(deps = defaultDeps): Promise<Plan[]> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+
+    const [asStudentNutrition, asOwnerNutrition, asStudentTraining, asOwnerTraining] = await Promise.all([
+      getDocs(query(collection(firestore, 'nutritionPlans'), where('studentAuthUid', '==', uid))),
+      getDocs(query(collection(firestore, 'nutritionPlans'), where('ownerProfessionalUid', '==', uid))),
+      getDocs(query(collection(firestore, 'trainingPlans'), where('studentAuthUid', '==', uid))),
+      getDocs(query(collection(firestore, 'trainingPlans'), where('ownerProfessionalUid', '==', uid))),
+    ]);
+
+    const unique = new Map<string, Plan>();
+    for (const snap of [...asStudentNutrition.docs, ...asOwnerNutrition.docs]) {
+      const raw = snap.data() as FirestoreNutritionPlan;
+      unique.set(`nutrition:${snap.id}`, toNutritionPlan(raw));
+    }
+    for (const snap of [...asStudentTraining.docs, ...asOwnerTraining.docs]) {
+      const raw = snap.data() as FirestoreTrainingPlan;
+      unique.set(`training:${snap.id}`, toPlanFromTraining(raw));
+    }
+
+    return [...unique.values()];
+  } catch (error) {
+    throw normalizePlanSourceError(error);
+  }
+}
+
+export async function getMyPredefinedPlans(deps = defaultDeps): Promise<PredefinedPlan[]> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+
+    const [nutritionPlans, trainingPlans] = await Promise.all([
+      getDocs(query(
+        collection(firestore, 'nutritionPlans'),
+        where('ownerProfessionalUid', '==', uid),
+        where('sourceKind', '==', 'predefined')
+      )),
+      getDocs(query(
+        collection(firestore, 'trainingPlans'),
+        where('ownerProfessionalUid', '==', uid),
+        where('sourceKind', '==', 'predefined')
+      )),
+    ]);
+
+    const nutritionPredefined = nutritionPlans.docs.map((snap) => {
+      const raw = snap.data() as FirestoreNutritionPlan;
+      return {
+        id: raw.id ?? snap.id,
+        name: raw.name,
+        planType: 'nutrition' as PlanType,
+        ownerProfessionalUid: uid,
+        createdAt: raw.createdAt,
+        updatedAt: raw.updatedAt,
+      };
+    });
+    const trainingPredefined = trainingPlans.docs.map((snap) => {
+      const raw = snap.data() as FirestoreTrainingPlan;
+      return {
+        id: raw.id ?? snap.id,
+        name: raw.name,
+        planType: 'training' as PlanType,
+        ownerProfessionalUid: uid,
+        createdAt: raw.createdAt,
+        updatedAt: raw.updatedAt,
+      };
+    });
+
+    return [...nutritionPredefined, ...trainingPredefined].sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt)
+    );
+  } catch (error) {
+    throw normalizePlanSourceError(error);
+  }
+}
+
 export async function bulkAssignPredefinedPlan(
   predefinedPlanId: string,
   studentUids: string[],
   deps = defaultDeps
 ): Promise<{ assignedCount: number }> {
-  const dc = deps.getDataConnectInstance();
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
 
-  let assignedCount = 0;
-  for (const studentUid of studentUids) {
-    await deps.bulkAssignNutritionPlan(dc, {
-      planId: predefinedPlanId,
-      studentUid,
-    });
-    assignedCount++;
+    const [nutritionSourceSnap, trainingSourceSnap] = await Promise.all([
+      getDoc(doc(firestore, 'nutritionPlans', predefinedPlanId)),
+      getDoc(doc(firestore, 'trainingPlans', predefinedPlanId)),
+    ]);
+    if (!nutritionSourceSnap.exists() && !trainingSourceSnap.exists()) {
+      throw new PlanSourceError('graphql', 'Predefined plan not found.');
+    }
+    const sourceKind = (nutritionSourceSnap.exists()
+      ? (nutritionSourceSnap.data() as FirestoreNutritionPlan).sourceKind
+      : (trainingSourceSnap.data() as FirestoreTrainingPlan).sourceKind);
+    if (sourceKind !== 'predefined') {
+      throw new PlanSourceError('invalid_response', 'Only predefined plans can be bulk-assigned.');
+    }
+
+    const ownerProfessionalUid = (nutritionSourceSnap.exists()
+      ? (nutritionSourceSnap.data() as FirestoreNutritionPlan).ownerProfessionalUid
+      : (trainingSourceSnap.data() as FirestoreTrainingPlan).ownerProfessionalUid);
+    if (ownerProfessionalUid !== professionalUid) {
+      throw new PlanSourceError('configuration', 'Cannot bulk-assign a plan owned by another professional.');
+    }
+
+    const uniqueStudentUids = [...new Set(studentUids)].filter((uid) => Boolean(uid));
+    const timestamp = nowIso();
+    let batch = writeBatch(firestore);
+    let writesInBatch = 0;
+    let assignedCount = 0;
+
+    const flushBatch = async () => {
+      if (writesInBatch === 0) return;
+      await batch.commit();
+      batch = writeBatch(firestore);
+      writesInBatch = 0;
+    };
+
+    for (const studentUid of uniqueStudentUids) {
+      if (nutritionSourceSnap.exists()) {
+        const source = nutritionSourceSnap.data() as FirestoreNutritionPlan;
+        const id = generateId('nutrition_plan');
+        batch.set(doc(firestore, 'nutritionPlans', id), {
+          ...source,
+          id,
+          ownerProfessionalUid: professionalUid,
+          studentAuthUid: studentUid,
+          sourceKind: 'assigned',
+          isArchived: false,
+          isDraft: false,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        } satisfies FirestoreNutritionPlan);
+      } else {
+        const source = trainingSourceSnap.data() as FirestoreTrainingPlan;
+        const id = generateId('training_plan');
+        batch.set(doc(firestore, 'trainingPlans', id), {
+          ...source,
+          id,
+          ownerProfessionalUid: professionalUid,
+          studentAuthUid: studentUid,
+          sourceKind: 'assigned',
+          isArchived: false,
+          isDraft: false,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        } satisfies FirestoreTrainingPlan);
+      }
+      writesInBatch += 1;
+      assignedCount += 1;
+
+      if (writesInBatch >= 450) {
+        await flushBatch();
+      }
+    }
+
+    await flushBatch();
+    return { assignedCount };
+  } catch (error) {
+    throw normalizePlanSourceError(error);
   }
-
-  return { assignedCount };
 }
 
-// ─── Plan change requests ─────────────────────────────────────────────────────
-
-/**
- * Student submits an advisory plan change request on their assigned plan.
- * Does not mutate the plan (D-071).
- * Ref: FR-211, BR-269, AC-255
- *
- * SDK note: returns planChangeRequest_insert key only — no full data back.
- * Returns a constructed PlanChangeRequest using caller inputs + returned id.
- */
 export async function submitPlanChangeRequest(
   planId: string,
   planType: PlanType,
   requestText: string,
   deps = defaultDeps
 ): Promise<PlanChangeRequest> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.submitPlanChangeRequest(dc, {
-    planId: planId,
-    planType: planType,
-    requestText: requestText,
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const studentUid = deps.getCurrentAuthUid();
+    const id = generateId('plan_change_request');
+    const timestamp = nowIso();
 
-  const id = data.planChangeRequest_insert?.id;
-  if (!id) {
-    throw new PlanSourceError(
-      'invalid_response',
-      'submitPlanChangeRequest returned no id.'
-    );
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'planChangeRequests', id), {
+        id,
+        planId,
+        planType,
+        studentAuthUid: studentUid,
+        requestText,
+        status: 'pending',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      } satisfies FirestorePlanChangeRequest);
+    });
+
+    return {
+      id,
+      planId,
+      planType,
+      studentUid,
+      requestText,
+      status: 'pending',
+      createdAt: timestamp,
+    };
+  } catch (error) {
+    throw normalizePlanSourceError(error);
   }
-
-  return {
-    id,
-    planId,
-    planType,
-    studentUid: '',          // not returned by SDK — caller context knows the uid
-    requestText,
-    status: 'pending',       // newly submitted requests are always pending
-    createdAt: new Date().toISOString(),
-  };
 }
 
-/**
- * Returns all plan change requests submitted by a given student.
- * Called from professional context to triage requests in SC-206.
- * Advisory only — does not grant plan-edit rights (D-071, BR-269).
- */
 export async function getStudentPlanChangeRequests(
   studentUid: string,
   deps = defaultDeps
 ): Promise<PlanChangeRequest[]> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getStudentPlanChangeRequests(dc, { studentUid: studentUid });
+  try {
+    const firestore = deps.getFirestoreInstance();
 
-  return (data.planChangeRequests ?? []).flatMap((raw) => {
-    const planType = normalizePlanType(raw.planType);
-    const status = normalizePlanChangeRequestStatus(raw.status);
-    if (!raw.id || !raw.planId || !planType || !raw.studentAuthUid || !raw.requestText || !status || !raw.createdAt) {
-      return [];
-    }
-    return [
-      {
+    const requests = await getDocs(query(
+      collection(firestore, 'planChangeRequests'),
+      where('studentAuthUid', '==', studentUid)
+    ));
+
+    return requests.docs.flatMap((snap) => {
+      const raw = snap.data() as FirestorePlanChangeRequest;
+      const planType = normalizePlanType(raw.planType);
+      const status = normalizePlanChangeRequestStatus(raw.status);
+      if (!planType || !status) return [];
+      return [{
         id: raw.id,
         planId: raw.planId,
         planType,
@@ -269,36 +393,34 @@ export async function getStudentPlanChangeRequests(
         requestText: raw.requestText,
         status,
         createdAt: raw.createdAt,
-      } satisfies PlanChangeRequest,
-    ];
-  });
+      } satisfies PlanChangeRequest];
+    });
+  } catch (error) {
+    throw normalizePlanSourceError(error);
+  }
 }
 
-/**
- * Professional reviews (or dismisses) a plan change request.
- * Advisory only — does not modify the plan (D-071).
- *
- * SDK note: takes status: string (not action); returns key only.
- * Returns the input status echoed back since SDK does not return full data.
- */
 export async function reviewPlanChangeRequest(
   requestId: string,
   status: 'reviewed' | 'dismissed',
   deps = defaultDeps
 ): Promise<{ id: string; status: PlanChangeRequestStatus }> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.reviewPlanChangeRequest(dc, {
-    requestId: requestId,
-    status,
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'planChangeRequests', requestId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanSourceError('graphql', 'Plan change request not found.');
+      }
+      tx.update(ref, {
+        status,
+        updatedAt: nowIso(),
+      });
+    });
 
-  const id = data.planChangeRequest_update?.id;
-  if (!id) {
-    throw new PlanSourceError(
-      'invalid_response',
-      'reviewPlanChangeRequest returned no id.'
-    );
+    return { id: requestId, status };
+  } catch (error) {
+    throw normalizePlanSourceError(error);
   }
-
-  return { id, status };
 }

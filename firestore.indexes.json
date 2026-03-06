@@ -1,0 +1,64 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "inviteCodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "codeValue", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "connections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studentAuthUid", "order": "ASCENDING" },
+        { "fieldPath": "professionalAuthUid", "order": "ASCENDING" },
+        { "fieldPath": "specialty", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "connections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "professionalAuthUid", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "connections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "professionalAuthUid", "order": "ASCENDING" },
+        { "fieldPath": "studentAuthUid", "order": "ASCENDING" },
+        { "fieldPath": "specialty", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "specialties",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "professionalAuthUid", "order": "ASCENDING" },
+        { "fieldPath": "specialty", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "customMeals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "importedFromShareToken", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "nutritionPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerProfessionalUid", "order": "ASCENDING" },
+        { "fieldPath": "sourceKind", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

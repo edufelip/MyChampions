@@ -6,22 +6,21 @@
  * Tapping a plan navigates to /professional/nutrition/plans/:planId.
  * Creating a new plan navigates to /professional/nutrition/plans/new.
  *
- * Data Connect predefined plan library wiring is deferred (stub returns empty
- * until endpoint is live via usePlans hook).
- * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Data wiring is Firestore-backed via usePlans hook.
  *
  * Docs: docs/screens/v2/SC-207-nutrition-plan-builder.md
  * Refs: D-080, D-111, D-134, FR-109, FR-110, FR-223, FR-240,
  *       BR-281, TC-268, TC-275
  */
 import { useCallback } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import { DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
+import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import type { PredefinedPlan } from '@/features/plans/plan-source';
@@ -59,6 +58,29 @@ export default function ProNutritionLibraryScreen() {
     <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.library.nutrition.title'), headerShown: false }} />
 
+      <DsCard scheme={scheme} style={styles.heroCard}>
+        <View style={styles.heroHeader}>
+          <View
+            style={[
+              styles.heroIconWrap,
+              {
+                backgroundColor: theme.color.accentPrimarySoft,
+                borderColor: theme.color.accentPrimary,
+              },
+            ]}>
+            <MaterialIcons name="restaurant-menu" size={20} color={theme.color.accentPrimary} />
+          </View>
+          <View style={styles.heroCopy}>
+            <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
+              {t('pro.library.nutrition.title')}
+            </Text>
+            <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
+              {t('pro.predefined_plan.copy_independent_note')}
+            </Text>
+          </View>
+        </View>
+      </DsCard>
+
       {state.kind === 'loading' ? (
         <ActivityIndicator
           style={styles.loader}
@@ -82,21 +104,26 @@ export default function ProNutritionLibraryScreen() {
       ) : null}
 
       {state.kind === 'ready' ? (
-        <FlatList
-          data={nutritionPlans}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<EmptyState theme={theme} t={t} scheme={scheme} />}
-          renderItem={renderItem}
-          ListFooterComponent={
-            <DsPillButton
-              scheme={scheme}
-              label={t('pro.library.nutrition.cta_create') as string}
-              onPress={() => router.push('/professional/nutrition/plans/new')}
-              testID="pro.library.nutrition.create"
-            />
-          }
-        />
+        <DsCard scheme={scheme} style={styles.listCard}>
+          <FlatList
+            data={nutritionPlans}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={[
+              styles.listContent,
+              nutritionPlans.length === 0 && { flexGrow: 1, justifyContent: 'center' },
+            ]}
+            ListEmptyComponent={<EmptyState theme={theme} t={t} scheme={scheme} />}
+            renderItem={renderItem}
+            ListFooterComponent={
+              <DsPillButton
+                scheme={scheme}
+                label={t('pro.library.nutrition.cta_create') as string}
+                onPress={() => router.push('/professional/nutrition/plans/new')}
+                testID="pro.library.nutrition.create"
+              />
+            }
+          />
+        </DsCard>
       ) : null}
     </DsScreen>
   );
@@ -113,7 +140,32 @@ function EmptyState({
 }) {
   return (
     <DsCard scheme={scheme} variant="muted" style={styles.emptyState}>
-      <Text style={[styles.emptyText, { color: theme.color.textSecondary }]}>{t('pro.library.nutrition.empty')}</Text>
+      <View style={styles.emptyHeroWrap}>
+        <View
+          style={[
+            styles.emptyHeroGlow,
+            { backgroundColor: theme.color.accentPrimarySoft, borderColor: theme.color.accentPrimarySoft },
+          ]}
+        />
+        <View
+          style={[
+            styles.emptyIconWrap,
+            {
+              backgroundColor: theme.color.surface,
+              borderColor: theme.color.border,
+            },
+          ]}>
+          <MaterialIcons name="restaurant-menu" size={34} color={theme.color.accentPrimary} />
+          <View style={styles.emptyHeroDots}>
+            <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
+            <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimary }]} />
+            <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentBlueSoft }]} />
+          </View>
+        </View>
+      </View>
+      <Text style={[styles.emptyText, { color: theme.color.textSecondary }]}>
+        {t('pro.library.nutrition.empty')}
+      </Text>
     </DsCard>
   );
 }
@@ -132,11 +184,17 @@ function PlanRow({ plan, theme, t, onPress }: PlanRowProps) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${plan.name}, ${t('pro.plan.predefined.label')}`}>
+      <View style={[styles.rowIconWrap, { backgroundColor: theme.color.accentBlueSoft }]}>
+        <MaterialIcons name="restaurant" size={18} color={theme.color.accentPrimary} />
+      </View>
       <View style={styles.planInfo}>
         <Text style={[styles.planName, { color: theme.color.textPrimary }]}>{plan.name}</Text>
         <Text style={[styles.planMeta, { color: theme.color.textSecondary }]}>{t('pro.plan.predefined.label')}</Text>
       </View>
-      <Text style={[styles.openCta, { color: theme.color.accentPrimary }]}>{t('pro.library.cta_open')}</Text>
+      <View style={[styles.openPill, { backgroundColor: theme.color.accentPrimarySoft }]}>
+        <Text style={[styles.openCta, { color: theme.color.accentPrimary }]}>{t('pro.library.cta_open')}</Text>
+      </View>
+      <MaterialIcons name="chevron-right" size={20} color={theme.color.textSecondary} />
     </Pressable>
   );
 }
@@ -144,8 +202,40 @@ function PlanRow({ plan, theme, t, onPress }: PlanRowProps) {
 const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
-    padding: DsSpace.lg,
+    gap: DsSpace.md,
     paddingBottom: DsSpace.xxl,
+    paddingHorizontal: DsSpace.lg,
+    paddingTop: DsSpace.lg,
+  },
+  heroCard: {
+    borderRadius: DsRadius.xl,
+    padding: DsSpace.md,
+  },
+  heroHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+  },
+  heroIconWrap: {
+    alignItems: 'center',
+    borderRadius: DsRadius.lg,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  heroCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  screenTitle: {
+    ...DsTypography.title,
+    fontFamily: Fonts?.rounded ?? 'normal',
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  screenSubtitle: {
+    ...DsTypography.caption,
   },
   loader: {
     marginVertical: 32,
@@ -160,13 +250,52 @@ const styles = StyleSheet.create({
     ...DsTypography.body,
     textAlign: 'center',
   },
+  listCard: {
+    borderRadius: DsRadius.xl,
+    flex: 1,
+    padding: DsSpace.md,
+  },
   listContent: {
     gap: DsSpace.sm,
     paddingBottom: DsSpace.xl,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 32,
+    borderRadius: DsRadius.xl,
+    gap: DsSpace.sm,
+    paddingVertical: DsSpace.xl,
+  },
+  emptyHeroWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: DsSpace.xs,
+    position: 'relative',
+  },
+  emptyHeroGlow: {
+    borderRadius: DsRadius.pill,
+    borderWidth: 1,
+    height: 144,
+    opacity: 0.9,
+    position: 'absolute',
+    width: 144,
+  },
+  emptyIconWrap: {
+    alignItems: 'center',
+    borderRadius: DsRadius.pill,
+    borderWidth: 1,
+    height: 112,
+    justifyContent: 'center',
+    width: 112,
+  },
+  emptyHeroDots: {
+    flexDirection: 'row',
+    gap: DsSpace.xs,
+    marginTop: DsSpace.xs,
+  },
+  emptyHeroDot: {
+    borderRadius: DsRadius.pill,
+    height: 6,
+    width: 6,
   },
   emptyText: {
     ...DsTypography.body,
@@ -174,11 +303,18 @@ const styles = StyleSheet.create({
   },
   planRow: {
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: DsRadius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     gap: DsSpace.sm,
     padding: 14,
+  },
+  rowIconWrap: {
+    alignItems: 'center',
+    borderRadius: DsRadius.pill,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
   },
   planInfo: { flex: 1, gap: 2 },
   planName: {
@@ -187,5 +323,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   planMeta: { ...DsTypography.caption },
+  openPill: {
+    borderRadius: DsRadius.pill,
+    paddingHorizontal: DsSpace.sm,
+    paddingVertical: 4,
+  },
   openCta: { ...DsTypography.caption, fontWeight: '700' },
 });

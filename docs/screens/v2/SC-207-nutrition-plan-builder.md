@@ -11,9 +11,12 @@
 Let nutritionists create and edit named predefined nutrition plans (calorie/macro targets + food item list) stored in their private library. Plans can be assigned to individual students or bulk-assigned. Starter templates are available to clone-then-customize.
 
 ## Design Structure (D-134)
-- Library route (`/professional/nutrition`) uses `DsScreen` as shell with DS spacing/typography tokens.
+- Library route (`/professional/nutrition`) uses `DsScreen` as shell with DS spacing/typography tokens and the SC-204 professional surface baseline (hero header + contextual helper).
+- Library header is rendered as an elevated hero card with contextual nutrition icon and compact helper copy.
 - Library list rendering uses `FlatList`; route uses `DsScreen scrollable={false}` to avoid nested VirtualizedList containers.
 - Empty, error, and plan-list framing use `DsCard` surfaces with shared radius and border semantics.
+- Empty state uses a centered hero treatment (soft glow + icon circle) and localized copy.
+- Plan rows include icon-leading visual treatment, open-status pill, and trailing chevron for faster scanability.
 - Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
@@ -31,8 +34,8 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Enter or edit carbs/proteins/fats targets (optional, must be ≥ 0).
 - Add food items (name, quantity, optional notes).
 - Remove food items.
-- Search foods via fatsecret (stub — shows "coming soon" notice; D-113).
-- Pick and clone a starter template (2 hardcoded stubs; D-114).
+- Search foods via fatsecret Cloud Function proxy integration.
+- Pick and clone a starter template.
 - Save plan (create or update).
 - Assign plan to a student.
 - Bulk-assign plan to multiple students with per-student fine-tune step.
@@ -47,10 +50,10 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | Ready | Plan loaded or created successfully | Full form with item list, CTAs |
 | Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
 | Template picker loading | `loadTemplates` called | Template picker loading indicator |
-| Template picker ready | Templates fetched | Picker list with 2 stub templates |
+| Template picker ready | Templates fetched | Picker list with available starter templates |
 | Food search idle | No query | Placeholder shown |
 | Food search searching | Query in flight | Search loading indicator |
-| Food search done | Results returned | Result list (empty → stub notice shown) |
+| Food search done | Results returned | Result list (empty state helper shown) |
 
 ## Validation Rules
 - Plan name is required and must be at least 2 characters (BR-291).
@@ -80,8 +83,8 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `NutritionPlanDetail` | Full plan with id, name, macro targets, items list, timestamps |
 | `NutritionMealItem` | Individual food item with id, name, quantity, notes |
 | `NutritionTotals` | Parsed numeric totals from raw string inputs |
-| `StarterTemplate[]` | 2 hardcoded stub templates (D-114) |
-| `FoodSearchResult[]` | Empty array (D-113 stub) |
+| `StarterTemplate[]` | Starter template records from Firestore with local fallback entries |
+| `FoodSearchResult[]` | Normalized food search results from Cloud Function source integration |
 
 ### Source Operations
 | Operation | Description |
@@ -91,11 +94,11 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `getNutritionPlanDetail` | Load plan with items |
 | `addNutritionMealItem` | Add food item to plan |
 | `removeNutritionMealItem` | Remove food item from plan |
-| `getStarterTemplates('nutrition')` | Fetch starter template list (stub) |
-| `cloneStarterTemplate` | Clone starter into editable draft (stub) |
-| `searchFoods` | fatsecret food search (always returns `[]`; D-113) |
+| `getStarterTemplates('nutrition')` | Fetch starter template list |
+| `cloneStarterTemplate` | Clone starter into editable draft |
+| `searchFoods` | fatsecret food search via Cloud Function proxy source |
 
-All Data Connect operations are stubs in `features/plans/plan-builder-source.ts`. Real endpoint wiring is deferred (pending-wiring-checklist-v1.md).
+Plan library and builder persistence are Firestore-backed via `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`.
 
 ## Localization Keys
 
@@ -125,7 +128,7 @@ All Data Connect operations are stubs in `features/plans/plan-builder-source.ts`
 | `pro.plan.template.cta_use` | Use template CTA |
 | `pro.plan.food_search.placeholder` | Food search input placeholder |
 | `pro.plan.food_search.empty` | Empty food search result |
-| `pro.plan.food_search.stub_notice` | Stub notice for deferred fatsecret wiring |
+| `pro.plan.food_search.stub_notice` | Empty meal helper text |
 | `pro.plan.validation.name_required` | Name required error |
 | `pro.plan.validation.name_too_short` | Name too short error |
 | `pro.plan.validation.calories_non_negative` | Negative calories error |
@@ -147,8 +150,8 @@ All Data Connect operations are stubs in `features/plans/plan-builder-source.ts`
 All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Edge Cases
-- fatsecret unavailable: `searchFoods` always returns `[]`; stub notice shown to user (D-113).
-- Starter template cloning is stubbed; `cloneStarterTemplate` calls the Data Connect endpoint (deferred wiring); editing the source template does not mutate existing clones (BR-295).
+- fatsecret unavailable: source call returns typed error and UI surfaces fallback copy.
+- Starter template cloning follows immutable-template semantics; editing the source template does not mutate existing clones (BR-295).
 - If assignment becomes inactive mid-edit: block assign action; plan save remains available.
 - Editing a predefined plan after it has been bulk-assigned does not mutate already assigned student copies (D-082, BR-283).
 
@@ -157,7 +160,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | `features/plans/plan-builder.logic.ts` | Pure functions: `validateNutritionPlanInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError` |
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/plans/plan-builder-source.ts` | Data Connect stubs: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `getStarterTemplates`, `cloneStarterTemplate`, `searchFoods` |
+| `features/plans/plan-builder-source.ts` | Firestore source ops: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `getStarterTemplates`, `cloneStarterTemplate`, `searchFoods` |
 | `features/plans/use-plan-builder.ts` | React hook `useNutritionPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
 | `app/professional/nutrition.tsx` | Plan library list screen |
 | `app/professional/nutrition/plans/[planId].tsx` | Plan builder screen |

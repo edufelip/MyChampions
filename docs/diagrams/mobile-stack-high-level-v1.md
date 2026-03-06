@@ -5,7 +5,7 @@ flowchart LR
   U[Student / Professional User] --> A[Expo React Native App]
 
   A --> B[Firebase Auth]
-  A --> C[Firebase Data Connect + Cloud SQL]
+  A --> C[Firebase Cloud Firestore]
   A --> D[Firebase Cloud Storage]
   A --> E[fatsecret API]
   A --> F[RevenueCat]

@@ -33,16 +33,17 @@
 - Selecting `student` then tapping Continue commits `student` role and routes directly to self-managed setup.
 - Accessibility baseline applies for text scaling, focus order, contrast, and screen-reader labels.
 
-## Copy Draft (Initial)
-- Screen title: `How do you want to use the app?`
-- Intro: `You can start on your own now and connect with a professional later.`
+## Copy Draft (V2 — updated 2026-03-06)
+- Screen title: `Choose your path`
+- Intro: `Are you here to track your own fitness journey, or to guide others as a professional?`
 - Option A title: `I want to track my own progress`
-- Option A subtitle: `Student account`
-- Option B title: `I’m a nutritionist or fitness coach`
-- Option B subtitle: `Professional account`
-- Role lock helper: `Account type can’t be changed later. Please choose carefully based on your needs.`
-
-## Implementation Snapshot (2026-03-04)
+- Option A tag (subtitle): `Student account`
+- Option A description: `Log meals, track workouts, and hit your goals — on your own or with a coach.`
+- Option B title: `I'm a nutritionist or fitness coach`
+- Option B tag (subtitle): `Professional account`
+- Option B description: `Create plans, manage your students, and track their progress in one place.`
+- Role lock helper: `This can't be changed later — each role has a separate account.`
+## Implementation Snapshot (2026-03-06)
 - Implemented in code:
   - `app/auth/role-selection.tsx`
   - `features/auth/role-selection.logic.ts`
@@ -55,18 +56,21 @@
     - Professional -> `/professional/specialty` (SC-202 onboarding specialty setup).
   - Error handling distinguishes role persistence failure (`auth.role.error.save_failed`) from post-save navigation failure (`auth.role.error.navigation_failed`).
   - Continue action is blocked when no authenticated session is available and routes to sign-in with `auth.role.error.auth_required`.
-  - Profile hydration parser is backward-compatible with both legacy list payload (`userProfiles[]`) and deterministic key payload (`userProfile`) while Data Connect connector rollout completes.
-  - Role-lock persistence includes defensive profile upsert fallback, multi-step read-after-write retries, and mutation-acknowledged fallback confirmation when Data Connect read-after-write lag persists.
+  - Profile hydration contract is read-first and upsert-only-if-missing: auth bootstrap reads existing Firestore profile first, skips upsert when profile exists, and only upserts/re-reads when profile is absent. This preserves persisted `lockedRole` across app relaunch.
+  - Role-lock persistence includes defensive profile upsert fallback and multi-step read-after-write retries with server-only confirmation reads; role-selection continues only after persisted role is confirmed by `getMyProfile` (no mutation-ack fallback on unconfirmed reads).
+  - Dev diagnostics emit deterministic pre-lock and per-retry confirmation snapshot logs (`exists`, `lockedRole`, `uid mismatch`) to isolate connector-side non-persistence.
   - Route auto-bypass for locked-role accounts is enforced by global auth guard in `app/_layout.tsx`.
-  - Authentication session source is Firebase Auth; role-lock profile source is now Data Connect-backed via `features/auth/profile-source.ts` (remote-only reads/writes).
+  - Authentication session source is Firebase Auth; role-lock profile source is now Firestore-backed via `features/auth/profile-source.ts` (remote-only reads/writes).
   - Visual layout is aligned with Stitch role-selection reference (`0e872419a1ff45b39fbc89d7c3592c44`) using the same playful auth system as SC-217/SC-218:
-    - Soft peach background with decorative blobs.
-    - No back control.
+    - Soft canvas background with decorative blobs.
+    - Hero area: circular brand badge matching SC-217/SC-218 treatment.
     - Top content respects device safe area inset to avoid status-bar overlap.
     - Bottom safe-area padding applied to prevent CTA overlap.
-    - Elevated rounded role cards with selected badge and icon treatment.
-    - Selected role outline transition is animated on pick/unpick.
-    - Highlighted lock-note panel and rounded primary CTA.
+    - Horizontal role cards with icon, role tag (colored label), title, and two-line description per card.
+    - Student card accent: `accentPrimary` (green); Professional card accent: `accentBlue` (blue). Each card glow/border uses its own accent color.
+    - Selected role outline + shadow glow transition is animated on pick/unpick.
+    - Lock icon + terse lock-note panel; rounded primary CTA with green shadow lift.
+    - New locale keys: `auth.role.option_self.description`, `auth.role.option_pro.description`.
 
 ## Design Reference Assets
 - `docs/design-assets/stitch/13906080126528974652/0e872419a1ff45b39fbc89d7c3592c44.html`
@@ -94,7 +98,7 @@
 - Use case: UC-002.1, UC-002.8, UC-002.11, UC-002.18
 - Acceptance criteria: AC-201, AC-211, AC-224, AC-233, AC-248, AC-251, AC-252, AC-512
 - Business rules: BR-201, BR-211, BR-226, BR-227, BR-236, BR-262, BR-265, BR-266, BR-275
-- Test cases: TC-201, TC-211, TC-225, TC-235, TC-249, TC-254, TC-255, TC-290, TC-291, TC-292, TC-293, TC-294, TC-512
+- Test cases: TC-201, TC-211, TC-225, TC-235, TC-249, TC-254, TC-255, TC-290, TC-291, TC-292, TC-293, TC-294, TC-295, TC-296, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md
 - Copy guidance: docs/screens/v2/copy-guidelines-v2.md

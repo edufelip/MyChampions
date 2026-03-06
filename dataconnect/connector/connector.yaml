@@ -1,8 +1,0 @@
-connectorId: mychampions
-authMode: PUBLIC
-generate:
-  javascriptSdk:
-    outputDir: ../../features/dataconnect-generated
-    package: "@mychampions/dataconnect-generated"
-    packageJsonDir: ../..
-

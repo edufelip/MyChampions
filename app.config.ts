@@ -16,25 +16,21 @@ type FirebaseConfig = {
   androidAppId: string;
 };
 
-type DataConnectRuntimeConfig = {
-  connector: string;
-  service: string;
-  location: string;
-  graphqlEndpoint: string;
-  apiKey: string;
-};
-
 type VariantConfig = {
   name: string;
   iosBundleId: string;
   androidPackage: string;
   firebase: FirebaseConfig;
-  dataConnect: DataConnectRuntimeConfig;
 };
 
 type TermsConfig = {
   requiredVersion: string;
   url: string;
+};
+
+type RevenueCatConfig = {
+  revenueCatApiKeyIos: string;
+  revenueCatApiKeyAndroid: string;
 };
 
 function requireEnv(key: string): string {
@@ -63,23 +59,6 @@ function resolveFirebaseConfig(prefix: 'FIREBASE_DEV' | 'FIREBASE_PROD'): Fireba
   };
 }
 
-function resolveDataConnectConfig(variant: AppVariant): DataConnectRuntimeConfig {
-  const isProd = variant === 'prod';
-
-  return {
-    connector: process.env.EXPO_PUBLIC_DATA_CONNECT_CONNECTOR_ID ?? 'mychampions',
-    service: isProd
-      ? process.env.EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_PROD ?? 'mychampions-fb928-service'
-      : process.env.EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_DEV ?? 'mychampions-fb928-service',
-    location: isProd
-      ? process.env.EXPO_PUBLIC_DATA_CONNECT_LOCATION_PROD ?? 'us-east4'
-      : process.env.EXPO_PUBLIC_DATA_CONNECT_LOCATION_DEV ?? 'us-east4',
-    // Kept for contract-validation script and ops troubleshooting.
-    graphqlEndpoint: process.env.EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT ?? '',
-    apiKey: process.env.EXPO_PUBLIC_DATA_CONNECT_API_KEY ?? '',
-  };
-}
-
 function resolveTermsConfig(): TermsConfig {
   const requiredVersion = process.env.EXPO_PUBLIC_TERMS_REQUIRED_VERSION?.trim() || 'v1';
   const url = process.env.EXPO_PUBLIC_TERMS_URL?.trim() || 'https://google.com';
@@ -87,6 +66,26 @@ function resolveTermsConfig(): TermsConfig {
   return {
     requiredVersion,
     url,
+  };
+}
+
+function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
+  const iosVariantKey =
+    variant === 'prod'
+      ? process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_PROD
+      : process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV;
+  const androidVariantKey =
+    variant === 'prod'
+      ? process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_PROD
+      : process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV;
+
+  // Backward-compatible fallback for existing CI/local setups.
+  const legacyIosKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS;
+  const legacyAndroidKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID;
+
+  return {
+    revenueCatApiKeyIos: iosVariantKey ?? legacyIosKey ?? '',
+    revenueCatApiKeyAndroid: androidVariantKey ?? legacyAndroidKey ?? '',
   };
 }
 
@@ -108,8 +107,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const prefix = variant === 'prod' ? 'FIREBASE_PROD' : 'FIREBASE_DEV';
   const { name, iosBundleId, androidPackage } = VARIANT_IDENTIFIERS[variant];
   const firebase = resolveFirebaseConfig(prefix);
-  const dataConnect = resolveDataConnectConfig(variant);
   const terms = resolveTermsConfig();
+  const revenueCat = resolveRevenueCatConfig(variant);
 
   return {
     ...config,
@@ -174,14 +173,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       appVariant: variant,
       firebase,
-      dataConnect,
       terms,
       // RevenueCat SDK API keys — read by subscription-source.ts via Constants.expoConfig.extra.
       // Must be public SDK keys (appl_*/goog_*), never secret keys (sk_*).
-      revenueCatApiKeyIos:
-        process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS ?? '',
-      revenueCatApiKeyAndroid:
-        process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID ?? '',
+      // Variant-aware keys:
+      //  - APP_VARIANT=dev  -> EXPO_PUBLIC_REVENUECAT_API_KEY_*_DEV
+      //  - APP_VARIANT=prod -> EXPO_PUBLIC_REVENUECAT_API_KEY_*_PROD
+      // Legacy fallback retained temporarily: EXPO_PUBLIC_REVENUECAT_API_KEY_IOS/ANDROID.
+      revenueCatApiKeyIos: revenueCat.revenueCatApiKeyIos,
+      revenueCatApiKeyAndroid: revenueCat.revenueCatApiKeyAndroid,
     },
   };
 };

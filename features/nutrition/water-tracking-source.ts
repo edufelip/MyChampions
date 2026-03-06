@@ -1,33 +1,21 @@
 /**
- * Water tracking Data Connect source — log intake, set goals.
- * Uses Firebase Data Connect generated SDK (D-114, D-126).
- * Auth handled internally by SDK via Firebase Auth current user.
- * No business logic; normalization delegates to water-tracking.logic.
- * Refs: D-078–D-081, FR-218–FR-222, BR-276–BR-280
+ * Water tracking Firestore source — log intake, set goals.
  */
 
-import { type DataConnect } from 'firebase/data-connect';
-
-import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
 import {
-  getMyWaterLogs as _getMyWaterLogs,
-  getMyWaterGoalContext as _getMyWaterGoalContext,
-  logWaterIntake as _logWaterIntake,
-  setStudentWaterGoal as _setStudentWaterGoal,
-  setNutritionistWaterGoalForStudent as _setNutritionistWaterGoalForStudent,
-  type GetMyWaterLogsData,
-  type GetMyWaterGoalContextData,
-  type LogWaterIntakeData,
-  type LogWaterIntakeVariables,
-  type SetStudentWaterGoalData,
-  type SetStudentWaterGoalVariables,
-  type SetNutritionistWaterGoalForStudentData,
-  type SetNutritionistWaterGoalForStudentVariables,
-} from '@mychampions/dataconnect-generated';
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  runTransaction,
+  where,
+  type Firestore,
+} from 'firebase/firestore';
 
+import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso } from '../firestore';
+import { classifyFirestoreError } from '../firestore-error';
 import type { WaterIntakeLog } from './water-tracking.logic';
-
-// ─── Error class ──────────────────────────────────────────────────────────────
 
 type WaterSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
@@ -41,121 +29,180 @@ export class WaterTrackingSourceError extends Error {
   }
 }
 
-// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
+type FirestoreWaterLog = {
+  id: string;
+  ownerUid: string;
+  dateKey: string;
+  totalMl: number;
+  loggedAt: string;
+};
+
+type FirestoreWaterGoal = {
+  ownerUid: string;
+  personalDailyMl: number | null;
+  nutritionistDailyMl: number | null;
+  nutritionistAuthUid: string | null;
+  updatedAt: string;
+};
 
 export type WaterTrackingSourceDeps = {
-  getDataConnectInstance: () => DataConnect;
-  getMyWaterLogs: (dc: DataConnect) => Promise<{ data: GetMyWaterLogsData }>;
-  getMyWaterGoalContext: (dc: DataConnect) => Promise<{ data: GetMyWaterGoalContextData }>;
-  logWaterIntake: (
-    dc: DataConnect,
-    vars: LogWaterIntakeVariables
-  ) => Promise<{ data: LogWaterIntakeData }>;
-  setStudentWaterGoal: (
-    dc: DataConnect,
-    vars: SetStudentWaterGoalVariables
-  ) => Promise<{ data: SetStudentWaterGoalData }>;
-  setNutritionistWaterGoalForStudent: (
-    dc: DataConnect,
-    vars: SetNutritionistWaterGoalForStudentVariables
-  ) => Promise<{ data: SetNutritionistWaterGoalForStudentData }>;
+  getFirestoreInstance: () => Firestore;
+  getCurrentAuthUid: () => string;
 };
 
 const defaultDeps: WaterTrackingSourceDeps = {
-  getDataConnectInstance: _getDataConnectInstance,
-  getMyWaterLogs: _getMyWaterLogs,
-  getMyWaterGoalContext: _getMyWaterGoalContext,
-  logWaterIntake: _logWaterIntake,
-  setStudentWaterGoal: _setStudentWaterGoal,
-  setNutritionistWaterGoalForStudent: _setNutritionistWaterGoalForStudent,
+  getFirestoreInstance: _getFirestoreInstance,
+  getCurrentAuthUid: _getCurrentAuthUid,
 };
 
-// ─── Intake log operations ────────────────────────────────────────────────────
+function normalizeWaterSourceError(error: unknown): WaterTrackingSourceError {
+  if (error instanceof WaterTrackingSourceError) return error;
 
-/**
- * Returns all daily water intake logs for the current user.
- * Sorted descending by dateKey on the server.
- * Refs: FR-218, BR-276
- */
-export async function getMyWaterLogs(deps = defaultDeps): Promise<WaterIntakeLog[]> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getMyWaterLogs(dc);
-
-  return data.waterLogs.map((raw) => ({
-    id: raw.id,
-    dateKey: raw.dateKey,
-    totalMl: raw.totalMl,
-    loggedAt: raw.loggedAt,
-  }));
+  switch (classifyFirestoreError(error)) {
+    case 'network':
+      return new WaterTrackingSourceError('network', (error as Error)?.message ?? 'Network error.');
+    case 'configuration':
+      return new WaterTrackingSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
+    default:
+      return new WaterTrackingSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected water source error.');
+  }
 }
 
-/**
- * Logs a water intake amount for the current day.
- * Server accumulates into the daily total for dateKey (today).
- * SDK returns only the inserted WaterLog_Key; returns the key id.
- * Ref: FR-218, BR-276
- */
+export async function getMyWaterLogs(deps = defaultDeps): Promise<WaterIntakeLog[]> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+
+    const snapshots = await getDocs(query(collection(firestore, 'waterLogs'), where('ownerUid', '==', uid)));
+
+    return snapshots.docs
+      .map((snap) => snap.data() as FirestoreWaterLog)
+      .sort((a, b) => b.dateKey.localeCompare(a.dateKey))
+      .map((raw) => ({
+        id: raw.id,
+        dateKey: raw.dateKey,
+        totalMl: raw.totalMl,
+        loggedAt: raw.loggedAt,
+      }));
+  } catch (error) {
+    throw normalizeWaterSourceError(error);
+  }
+}
+
 export async function logWaterIntake(
   amountMl: number,
   dateKey: string,
   deps = defaultDeps
 ): Promise<string> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.logWaterIntake(dc, { amountMl, dateKey });
-  return data.waterLog_insert.id;
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+    const id = `${uid}_${dateKey}`;
+
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'waterLogs', id);
+      const snap = await tx.get(ref);
+      const current = snap.exists() ? (snap.data() as FirestoreWaterLog).totalMl : 0;
+      tx.set(ref, {
+        id,
+        ownerUid: uid,
+        dateKey,
+        totalMl: current + amountMl,
+        loggedAt: nowIso(),
+      } satisfies FirestoreWaterLog, { merge: true });
+    });
+
+    return id;
+  } catch (error) {
+    throw normalizeWaterSourceError(error);
+  }
 }
 
-// ─── Goal operations ──────────────────────────────────────────────────────────
-
-/**
- * Sets the student's personal daily water goal in ml.
- * SDK returns WaterGoal_Key only; returns key id.
- * Ref: D-079, FR-221, BR-278
- */
 export async function setStudentWaterGoal(dailyMl: number, deps = defaultDeps): Promise<string> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.setStudentWaterGoal(dc, { dailyMl });
-  return data.waterGoal_upsert.id;
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'waterGoals', uid), {
+        ownerUid: uid,
+        personalDailyMl: dailyMl,
+        updatedAt: nowIso(),
+      } satisfies Partial<FirestoreWaterGoal>, { merge: true });
+    });
+
+    return uid;
+  } catch (error) {
+    throw normalizeWaterSourceError(error);
+  }
 }
 
-/**
- * Sets a nutritionist override water goal for an assigned student.
- * Only callable by a nutritionist actively assigned to the student.
- * SDK returns WaterGoal_Key only; returns key id.
- * Ref: D-079, D-081, FR-222, BR-279
- */
 export async function setNutritionistWaterGoalForStudent(
   studentUid: string,
   dailyMl: number,
   deps = defaultDeps
 ): Promise<string> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.setNutritionistWaterGoalForStudent(dc, {
-    studentUid,
-    dailyMl,
-  });
-  return data.waterGoal_upsert.id;
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const nutritionistUid = deps.getCurrentAuthUid();
+
+    const activeAssignments = await getDocs(query(
+      collection(firestore, 'connections'),
+      where('professionalAuthUid', '==', nutritionistUid),
+      where('studentAuthUid', '==', studentUid),
+      where('specialty', '==', 'nutritionist'),
+      where('status', '==', 'active')
+    ));
+
+    if (activeAssignments.empty) {
+      throw new WaterTrackingSourceError('graphql', 'No active nutrition assignment for this student.');
+    }
+
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'waterGoals', studentUid), {
+        ownerUid: studentUid,
+        nutritionistDailyMl: dailyMl,
+        nutritionistAuthUid: nutritionistUid,
+        updatedAt: nowIso(),
+      } satisfies Partial<FirestoreWaterGoal>, { merge: true });
+    });
+
+    return studentUid;
+  } catch (error) {
+    throw normalizeWaterSourceError(error);
+  }
 }
 
-/**
- * Returns the current water goal context for the authenticated user.
- * Includes both student goal and active nutritionist override if present.
- * hasActiveNutritionistAssignment derived from nutritionistAuthUid != null.
- * Ref: D-081, BR-279
- */
 export async function getMyWaterGoalContext(deps = defaultDeps): Promise<{
   studentGoalMl: number | null;
   nutritionistGoalMl: number | null;
   hasActiveNutritionistAssignment: boolean;
 }> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getMyWaterGoalContext(dc);
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
 
-  const raw = data.waterGoals[0] ?? null;
+    const snap = await getDoc(doc(firestore, 'waterGoals', uid));
+    const raw = (snap.exists() ? (snap.data() as FirestoreWaterGoal) : null);
 
-  return {
-    studentGoalMl: raw?.personalDailyMl ?? null,
-    nutritionistGoalMl: raw?.nutritionistDailyMl ?? null,
-    hasActiveNutritionistAssignment: raw?.nutritionistAuthUid != null,
-  };
+    let hasActiveNutritionistAssignment = false;
+    if (raw?.nutritionistAuthUid) {
+      const activeAssignments = await getDocs(query(
+        collection(firestore, 'connections'),
+        where('professionalAuthUid', '==', raw.nutritionistAuthUid),
+        where('studentAuthUid', '==', uid),
+        where('specialty', '==', 'nutritionist'),
+        where('status', '==', 'active')
+      ));
+      hasActiveNutritionistAssignment = !activeAssignments.empty;
+    }
+
+    return {
+      studentGoalMl: raw?.personalDailyMl ?? null,
+      nutritionistGoalMl: raw?.nutritionistDailyMl ?? null,
+      hasActiveNutritionistAssignment,
+    };
+  } catch (error) {
+    throw normalizeWaterSourceError(error);
+  }
 }

@@ -5,8 +5,7 @@
  * Allows fitness coaches to create and edit named predefined training plans with
  * fully customizable sessions and custom session items (no fixed workout fields).
  *
- * Starter template cloning and Data Connect plan CRUD are stubbed; wiring deferred.
- * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Starter template cloning supports local fallback templates and Firestore writes.
  *
  * Docs: docs/screens/v2/SC-208-training-plan-builder.md
  * Refs: D-013, D-111–D-114, FR-244–FR-248,
@@ -14,7 +13,7 @@
  *       AC-208, AC-223, AC-256, AC-264, AC-265,
  *       TC-278–TC-280
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -27,16 +26,21 @@ import {
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import { getDsTheme } from '@/constants/design-system';
+import { TemplatePickerModal } from '@/components/ds/patterns/TemplatePickerModal';
+import { StudentPickerModal } from '@/components/ds/patterns/StudentPickerModal';
+import { DsRadius, DsSpace, DsTypography, getDsTheme, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
+import { usePlans } from '@/features/plans/use-plans';
 import {
   validateTrainingPlanInput,
   isStarterTemplate,
   type TrainingSession,
 } from '@/features/plans/plan-builder.logic';
+import { getProfessionalStudentRoster, type ProfessionalStudentRosterItem } from '@/features/professional/professional-source';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -87,6 +91,7 @@ export default function TrainingPlanBuilderScreen() {
 
   const {
     state,
+    templatePickerState,
     loadPlan,
     createPlan,
     savePlan,
@@ -94,9 +99,13 @@ export default function TrainingPlanBuilderScreen() {
     removeSession,
     addSessionItem,
     removeSessionItem,
+    loadTemplates,
+    cloneTemplate,
     validateInput,
     validateSessionItem,
   } = useTrainingPlanBuilder(Boolean(currentUser));
+
+  const { bulkAssign } = usePlans(Boolean(currentUser), { fetchOnMount: false });
 
   // ── Local form state ───────────────────────────────────────────────────────
   const isNew = planId === 'new';
@@ -107,6 +116,20 @@ export default function TrainingPlanBuilderScreen() {
   const [addSessionForm, setAddSessionForm] = useState<AddSessionFormState>({ kind: 'closed' });
   const [addItemForm, setAddItemForm] = useState<AddItemFormState>({ kind: 'closed' });
   const [isSaving, setIsSaving] = useState(false);
+  const [isTemplatePickerVisible, setIsTemplatePickerVisible] = useState(false);
+  
+  const [isStudentPickerVisible, setIsStudentPickerVisible] = useState(false);
+  const [students, setStudents] = useState<ProfessionalStudentRosterItem[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -135,7 +158,7 @@ export default function TrainingPlanBuilderScreen() {
 
     if (isNew || isStarterClone) {
       const result = await createPlan(input);
-      setIsSaving(false);
+      if (isMounted.current) setIsSaving(false);
       if ('error' in result) {
         Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
       } else {
@@ -145,10 +168,59 @@ export default function TrainingPlanBuilderScreen() {
       }
     } else {
       const err = await savePlan(planId!, input);
-      setIsSaving(false);
+      if (isMounted.current) setIsSaving(false);
       if (err) Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
     }
   }, [name, validateInput, isNew, isStarterClone, createPlan, savePlan, planId, router, tr, isStudentBuilder]);
+
+  // ── Template Cloning ───────────────────────────────────────────────────────
+  const handleOpenTemplatePicker = () => {
+    loadTemplates();
+    setIsTemplatePickerVisible(true);
+  };
+
+  const handleSelectTemplate = async (templateId: string, templateName: string) => {
+    setIsTemplatePickerVisible(false);
+    setIsSaving(true);
+    const result = await cloneTemplate(templateId, `${templateName} (Copy)`);
+    if (isMounted.current) setIsSaving(false);
+
+    if ('error' in result) {
+      Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
+    } else {
+      router.replace(`/professional/training/plans/${result.id}` as never);
+    }
+  };
+
+  // ── Assignment ─────────────────────────────────────────────────────────────
+  const handleOpenStudentPicker = async () => {
+    setIsLoadingStudents(true);
+    setIsStudentPickerVisible(true);
+    try {
+      const roster = await getProfessionalStudentRoster();
+      // Filter for students whose training specialty matches
+      setStudents(roster.filter(s => s.specialty === 'fitness_coach'));
+    } catch {
+      Alert.alert(t('pro.students.error') as string);
+      setIsStudentPickerVisible(false);
+    } finally {
+      setIsLoadingStudents(false);
+    }
+  };
+
+  const handleAssignToStudent = async (studentUid: string) => {
+    if (!planId) return;
+    setIsStudentPickerVisible(false);
+    setIsAssigning(true);
+    const result = await bulkAssign(planId, [studentUid]);
+    setIsAssigning(false);
+
+    if ('error' in result) {
+      Alert.alert(t('pro.plan.assign.error') as string);
+    } else {
+      Alert.alert(t('pro.plan.assign.success') as string);
+    }
+  };
 
   // ── Add session ────────────────────────────────────────────────────────────
   const handleAddSession = useCallback(async () => {
@@ -196,10 +268,6 @@ export default function TrainingPlanBuilderScreen() {
     [removeSessionItem]
   );
 
-  const screenTitle = isNew || isStarterClone
-    ? tr('pro.plan.training.title.create', 'student.plan.training.title.create')
-    : tr('pro.plan.training.title.edit', 'student.plan.training.title.edit');
-
   const sessions: TrainingSession[] = state.kind === 'ready' ? state.plan.sessions : [];
 
   return (
@@ -210,20 +278,34 @@ export default function TrainingPlanBuilderScreen() {
     >
       <Stack.Screen options={{ title: screenTitle, headerShown: false }} />
 
-      <DsBackButton
-        scheme={scheme}
-        onPress={() => {
-          if (router.canGoBack()) {
-            router.back();
-            return;
-          }
+      <View style={styles.headerRow}>
+        <DsBackButton
+          scheme={scheme}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+              return;
+            }
 
-          router.replace('/');
-        }}
-        accessibilityLabel={t('auth.role.cta_back') as string}
-        style={styles.backButton}
-        testID={isStudentBuilder ? 'student.plan.training.backButton' : 'pro.plan.training.backButton'}
-      />
+            router.replace('/');
+          }}
+          accessibilityLabel={t('auth.role.cta_back') as string}
+          style={styles.backButton}
+          testID={isStudentBuilder ? 'student.plan.training.backButton' : 'pro.plan.training.backButton'}
+        />
+
+        {isNew && !isStudentBuilder && (
+          <DsPillButton
+            scheme={scheme}
+            variant="outline"
+            size="sm"
+            label={t('pro.plan.cta.clone_template')}
+            onPress={handleOpenTemplatePicker}
+            fullWidth={false}
+            style={styles.templateCta}
+          />
+        )}
+      </View>
 
       {/* ── Error state ───────────────────────────────────────────────────── */}
       {state.kind === 'error' && (
@@ -239,7 +321,7 @@ export default function TrainingPlanBuilderScreen() {
       )}
 
       {/* ── Loading state ─────────────────────────────────────────────────── */}
-      {state.kind === 'loading' && (
+      {(state.kind === 'loading' || isAssigning) && (
         <ActivityIndicator
           style={styles.loader}
           accessibilityLabel={t('a11y.loading.default')}
@@ -380,32 +462,65 @@ export default function TrainingPlanBuilderScreen() {
         </Pressable>
       )}
 
-      {/* ── Save CTA ──────────────────────────────────────────────────────── */}
-      <Pressable
-        style={[
-          styles.primaryBtn,
-          { backgroundColor: palette.tint },
-          isSaving && styles.btnDisabled,
-        ]}
-        onPress={handleSave}
-        disabled={isSaving}
-        accessibilityRole="button"
-        accessibilityLabel={tr('pro.plan.cta.save', 'student.plan.cta.save')}
-        accessibilityState={{ disabled: isSaving, busy: isSaving }}
-      >
-        {isSaving ? (
-          <ActivityIndicator color={palette.background} accessibilityLabel={t('a11y.loading.saving')} />
-        ) : (
-          <Text style={[styles.primaryBtnText, { color: palette.background }]}>
-            {tr('pro.plan.cta.save', 'student.plan.cta.save')}
-          </Text>
+      {/* ── Footer Actions ────────────────────────────────────────────────── */}
+      <View style={styles.footerActions}>
+        <Pressable
+          style={[
+            styles.primaryBtn,
+            { backgroundColor: palette.tint, flex: 1, marginTop: 0 },
+            isSaving && styles.btnDisabled,
+          ]}
+          onPress={handleSave}
+          disabled={isSaving}
+          accessibilityRole="button"
+          accessibilityLabel={tr('pro.plan.cta.save', 'student.plan.cta.save')}
+          accessibilityState={{ disabled: isSaving, busy: isSaving }}
+        >
+          {isSaving ? (
+            <ActivityIndicator color={palette.background} accessibilityLabel={t('a11y.loading.saving')} />
+          ) : (
+            <Text style={[styles.primaryBtnText, { color: palette.background }]}>
+              {tr('pro.plan.cta.save', 'student.plan.cta.save')}
+            </Text>
+          )}
+        </Pressable>
+
+        {!isNew && !isStudentBuilder && (
+          <DsPillButton
+            scheme={scheme}
+            variant="outline"
+            label={t('pro.plan.cta.assign')}
+            onPress={handleOpenStudentPicker}
+            style={{ flex: 1, minHeight: 48 }}
+          />
         )}
-      </Pressable>
+      </View>
+
+      <TemplatePickerModal
+        isVisible={isTemplatePickerVisible}
+        onClose={() => setIsTemplatePickerVisible(false)}
+        onSelect={handleSelectTemplate}
+        state={templatePickerState}
+        scheme={scheme}
+        theme={theme}
+        t={t}
+      />
+
+      <StudentPickerModal
+        isVisible={isStudentPickerVisible}
+        onClose={() => setIsStudentPickerVisible(false)}
+        onSelect={handleAssignToStudent}
+        students={students}
+        isLoading={isLoadingStudents}
+        scheme={scheme}
+        theme={theme}
+        t={t}
+      />
     </DsScreen>
   );
 }
 
-// ─── SessionCard ──────────────────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 type SessionCardProps = {
   session: TrainingSession;
@@ -552,7 +667,14 @@ function SessionCard({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 20, gap: 12, paddingBottom: 40 },
-  backButton: { marginBottom: 2 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  backButton: { marginBottom: 0 },
+  templateCta: { minHeight: 40 },
   loader: { marginVertical: 24 },
   errorBanner: { borderRadius: 8, padding: 12, marginBottom: 8 },
   errorBannerText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
@@ -611,4 +733,43 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   secondaryBtnText: { fontSize: 14, fontWeight: '600' },
+  footerActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: DsRadius.xl,
+    borderTopRightRadius: DsRadius.xl,
+    minHeight: '50%',
+    maxHeight: '85%',
+    padding: DsSpace.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: DsSpace.md,
+  },
+  modalTitle: {
+    ...DsTypography.cardTitle,
+    fontFamily: Fonts?.rounded ?? 'normal',
+  },
+  modalScroll: { gap: DsSpace.md, paddingBottom: 40 },
+  templateRow: {
+    borderWidth: 1,
+    borderRadius: DsRadius.lg,
+    padding: DsSpace.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DsSpace.sm,
+  },
+  templateName: { fontWeight: '700', fontSize: 15 },
+  templateDesc: { fontSize: 13, marginTop: 2 },
 });

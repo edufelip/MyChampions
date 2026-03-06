@@ -89,13 +89,14 @@
 - Offline mode allows cached read-only summary; write CTAs display connectivity-required messaging.
 - Cached data older than 24 hours must show stale indicator and last-sync timestamp.
 - If nutritionist goal override is removed, dashboard hydration card reverts to student personal goal baseline.
+- If a tab wrapper is rendered while role hydration is temporarily unavailable, shell fallback redirects to `/auth/role-selection` and avoids blank tab content.
 
 ## Links
 - Functional requirement: FR-113, FR-114, FR-115, FR-116, FR-123, FR-130, FR-135, FR-141, FR-183, FR-186, FR-187, FR-189, FR-191, FR-214, FR-217, FR-218, FR-219, FR-220, FR-221, FR-222
 - Use case: UC-002.3, UC-002.4, UC-002.5, UC-002.17, UC-002.18, UC-002.19
 - Acceptance criteria: AC-209, AC-210, AC-216, AC-222, AC-225, AC-242, AC-243, AC-245, AC-247, AC-257, AC-259, AC-260, AC-261, AC-262, AC-263, AC-405, AC-512
 - Business rules: BR-207, BR-208, BR-215, BR-222, BR-226, BR-245, BR-248, BR-250, BR-252, BR-272, BR-275, BR-276, BR-277, BR-278, BR-279, BR-280, BR-307
-- Test cases: TC-209, TC-210, TC-216, TC-223, TC-226, TC-244, TC-245, TC-246, TC-248, TC-261, TC-264, TC-265, TC-266, TC-267, TC-406, TC-512
+- Test cases: TC-209, TC-210, TC-216, TC-223, TC-226, TC-244, TC-245, TC-246, TC-248, TC-261, TC-264, TC-265, TC-266, TC-267, TC-300, TC-406, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md
 - Copy guidance: docs/screens/v2/copy-guidelines-v2.md

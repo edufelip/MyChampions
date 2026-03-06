@@ -19,6 +19,8 @@
   - Choose specialty: Nutritionist, Fitness Coach, or Both.
   - Submit optional per-specialty `professional_registry` credential.
   - Skip credential submission and continue.
+  - Continue to dashboard once at least one specialty is selected.
+  - Skip specialty setup entirely and proceed to dashboard (setup can be completed later from account settings).
 - Secondary:
   - Edit submitted credential info.
   - Add specialty post-onboarding.
@@ -32,10 +34,12 @@
 - Success: specialty changes persisted.
 
 ## Validation Rules
-- At least one specialty must be selected.
+- At least one specialty must be selected before the professional can use specialty-dependent features.
+- Specialty setup is skippable at onboarding; the professional can set specialties later from account settings.
 - Credential submission is optional and cannot block onboarding completion.
 - At most one `professional_registry` credential record is accepted per specialty in MVP.
 - Removing a specialty is blocked if that specialty has active or pending students.
+- Active/pending blocker counts are resolved from Firestore connection records scoped to the selected specialty.
 - Removing a specialty is blocked if it would leave account with zero specialties.
 - Blocked specialty-removal state must expose direct assist actions (view active/pending blockers and queue-management shortcuts).
 - Accessibility baseline applies for text scaling, focus order, contrast, and screen-reader labels.

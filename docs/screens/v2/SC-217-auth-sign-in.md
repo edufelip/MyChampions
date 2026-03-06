@@ -66,6 +66,7 @@
   - Email/password sign-in is wired to Firebase Auth.
   - Google and Apple social sign-in are wired to Firebase Auth credentials.
   - Successful sign-in is driven by Firebase Auth session state for route-guard enforcement.
+  - Firebase Auth initializes with React Native persistence (`AsyncStorage`) on device runtimes so authenticated sessions survive app relaunches.
   - Successful sign-in routes to `/auth/accept-terms`; global guard then routes to role-selection or role home depending on terms + role state.
   - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes after terms acceptance.
   - Visual treatment follows a playful rounded layout with decorative background blobs, circular brand icon badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.

@@ -1,30 +1,35 @@
 /**
- * Auth profile Data Connect source — profile hydration, role-lock, deletion.
- * Uses generated SDK (D-114 pattern) instead of raw GraphQL fetch.
- * Refs: D-114, D-072, FR-101, BR-201
+ * Auth profile Firestore source — profile hydration, role-lock, deletion.
+ * Firestore persistence source while preserving the public source contract.
  */
 
-import type { DataConnect } from 'firebase/data-connect';
 import {
-  getMyProfile as _getMyProfile,
-  upsertUserProfile as _upsertUserProfile,
-  setLockedRole as _setLockedRole,
-  deleteProfile as _deleteProfile,
-  type GetMyProfileData,
-  type UpsertUserProfileData,
-  type SetLockedRoleData,
-  type DeleteProfileData,
-  type UpsertUserProfileVariables,
-  type SetLockedRoleVariables,
-} from '@mychampions/dataconnect-generated';
-import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
-import { getFirebaseAuth } from './firebase';
+  deleteDoc,
+  doc,
+  getDoc,
+  runTransaction,
+  setDoc,
+  updateDoc,
+  type Firestore,
+} from 'firebase/firestore';
 
 import type { RoleIntent } from './role-selection.logic';
+import {
+  getCurrentAuthUid as _getCurrentAuthUid,
+  getFirestoreInstance as _getFirestoreInstance,
+  nowIso,
+} from '../firestore';
+import { classifyFirestoreError } from '../firestore-error';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
-type ProfileSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
+type ProfileSourceErrorCode =
+  | 'configuration'
+  | 'network'
+  | 'graphql'
+  | 'invalid_response'
+  | 'role_update_not_persisted'
+  | 'profile_row_not_found_after_upsert';
 
 export class ProfileSourceError extends Error {
   code: ProfileSourceErrorCode;
@@ -36,300 +41,307 @@ export class ProfileSourceError extends Error {
   }
 }
 
-// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
+// ─── Injectable deps ──────────────────────────────────────────────────────────
 
-export type ProfileSourceDeps = {
-  getMyProfile: (dc: DataConnect) => Promise<{ data: GetMyProfileData }>;
-  upsertUserProfile: (dc: DataConnect, vars: UpsertUserProfileVariables) => Promise<{ data: UpsertUserProfileData }>;
-  setLockedRole: (dc: DataConnect, vars: SetLockedRoleVariables) => Promise<{ data: SetLockedRoleData }>;
-  deleteProfile: (dc: DataConnect) => Promise<{ data: DeleteProfileData }>;
-  getDataConnectInstance: () => DataConnect;
+type FirestoreProfile = {
+  authUid: string;
+  displayName: string;
+  emailNormalized: string;
+  lockedRole: RoleIntent | null;
+  acceptedTermsVersion: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
+export type ProfileSourceDeps = {
+  getFirestoreInstance: () => Firestore;
+  getCurrentAuthUid: () => string | undefined;
+  readProfile: (firestore: Firestore, uid: string) => Promise<FirestoreProfile | null>;
+  upsertProfile: (
+    firestore: Firestore,
+    uid: string,
+    input: { displayName: string; emailNormalized: string }
+  ) => Promise<void>;
+  setLockedRole: (firestore: Firestore, uid: string, role: RoleIntent) => Promise<void>;
+  setAcceptedTermsVersion: (firestore: Firestore, uid: string, version: string) => Promise<void>;
+  deleteProfile: (firestore: Firestore, uid: string) => Promise<void>;
+  delay: (ms: number) => Promise<void>;
+};
+
+function profileDoc(firestore: Firestore, uid: string) {
+  return doc(firestore, 'userProfiles', uid);
+}
+
 const defaultProfileSourceDeps: ProfileSourceDeps = {
-  getMyProfile: _getMyProfile,
-  upsertUserProfile: _upsertUserProfile,
-  setLockedRole: _setLockedRole,
-  deleteProfile: _deleteProfile,
-  getDataConnectInstance: _getDataConnectInstance,
+  getFirestoreInstance: _getFirestoreInstance,
+  getCurrentAuthUid: () => {
+    try {
+      return _getCurrentAuthUid();
+    } catch {
+      return undefined;
+    }
+  },
+  readProfile: async (firestore, uid) => {
+    const snapshot = await getDoc(profileDoc(firestore, uid));
+    if (!snapshot.exists()) return null;
+    const data = snapshot.data() as Partial<FirestoreProfile>;
+    return {
+      authUid: String(data.authUid ?? uid),
+      displayName: String(data.displayName ?? ''),
+      emailNormalized: String(data.emailNormalized ?? ''),
+      lockedRole: data.lockedRole === 'student' || data.lockedRole === 'professional' ? data.lockedRole : null,
+      acceptedTermsVersion:
+        typeof data.acceptedTermsVersion === 'string' ? data.acceptedTermsVersion : null,
+      createdAt: String(data.createdAt ?? nowIso()),
+      updatedAt: String(data.updatedAt ?? nowIso()),
+    };
+  },
+  upsertProfile: async (firestore, uid, input) => {
+    const timestamp = nowIso();
+    await setDoc(
+      profileDoc(firestore, uid),
+      {
+        authUid: uid,
+        displayName: input.displayName,
+        emailNormalized: input.emailNormalized,
+        lockedRole: null,
+        acceptedTermsVersion: null,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      },
+      { merge: true }
+    );
+  },
+  setLockedRole: async (firestore, uid, role) => {
+    await runTransaction(firestore, async (tx) => {
+      const ref = profileDoc(firestore, uid);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new ProfileSourceError('profile_row_not_found_after_upsert', 'Profile row not found for role lock.');
+      }
+      const current = snap.data() as Partial<FirestoreProfile>;
+      const currentRole = current.lockedRole;
+      if (currentRole === 'student' || currentRole === 'professional') {
+        if (currentRole !== role) {
+          throw new ProfileSourceError('graphql', 'Role is already locked and cannot be changed.');
+        }
+        return;
+      }
+      tx.update(ref, {
+        lockedRole: role,
+        updatedAt: nowIso(),
+      });
+    });
+  },
+  deleteProfile: async (firestore, uid) => {
+    await deleteDoc(profileDoc(firestore, uid));
+  },
+  setAcceptedTermsVersion: async (firestore, uid, version) => {
+    await setDoc(
+      profileDoc(firestore, uid),
+      {
+        authUid: uid,
+        acceptedTermsVersion: version,
+        updatedAt: nowIso(),
+      },
+      { merge: true }
+    );
+  },
+  delay: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type AuthProfile = {
   lockedRole: RoleIntent | null;
+  acceptedTermsVersion: string | null;
 };
 
 type RemoteProfileSnapshot = {
   exists: boolean;
   authUid: string | null;
   lockedRole: RoleIntent | null;
+  acceptedTermsVersion: string | null;
   hasAuthUidMismatch: boolean;
 };
 
-let lastLoggedUidMismatchKey: string | null = null;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function normalizeLockedRole(value: unknown): RoleIntent | null {
-  return value === 'student' || value === 'professional' ? value : null;
-}
-
-function isObjectLike(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
+const ROLE_LOCK_CONFIRMATION_RETRY_DELAYS_MS = [120, 220, 350, 550, 800, 1100] as const;
 
 function normalizeProfileSourceError(error: unknown): ProfileSourceError {
-  if (error instanceof ProfileSourceError) {
-    return error;
+  if (error instanceof ProfileSourceError) return error;
+
+  switch (classifyFirestoreError(error)) {
+    case 'network':
+      return new ProfileSourceError('network', (error as Error)?.message ?? 'Network error.');
+    case 'configuration':
+      return new ProfileSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
+    case 'not_found':
+      return new ProfileSourceError('profile_row_not_found_after_upsert', (error as Error)?.message ?? 'Profile not found.');
+    default:
+      return new ProfileSourceError('invalid_response', (error as Error)?.message ?? 'Unknown profile source error.');
   }
-
-  if (isObjectLike(error)) {
-    const message = typeof error.message === 'string' ? error.message : 'Unknown profile source error.';
-    const code = typeof error.code === 'string' ? error.code : '';
-    const lowered = `${code} ${message}`.toLowerCase();
-
-    if (lowered.includes('network') || lowered.includes('fetch') || lowered.includes('timeout')) {
-      return new ProfileSourceError('network', message);
-    }
-
-    if (
-      lowered.includes('permission') ||
-      lowered.includes('unauth') ||
-      lowered.includes('graphql') ||
-      lowered.includes('failed precondition') ||
-      lowered.includes('already set')
-    ) {
-      return new ProfileSourceError('graphql', message);
-    }
-
-    return new ProfileSourceError('configuration', message);
-  }
-
-  return new ProfileSourceError('configuration', 'Unknown profile source error.');
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+async function getRemoteProfileSnapshot(
+  deps: ProfileSourceDeps,
+  uid: string
+): Promise<RemoteProfileSnapshot> {
+  const firestore = deps.getFirestoreInstance();
+  const profile = await deps.readProfile(firestore, uid);
+  if (!profile) {
+    return {
+      exists: false,
+      authUid: null,
+      lockedRole: null,
+      acceptedTermsVersion: null,
+      hasAuthUidMismatch: false,
+    };
+  }
+
+  if (profile.authUid !== uid) {
+    return {
+      exists: false,
+      authUid: profile.authUid,
+      lockedRole: null,
+      acceptedTermsVersion: null,
+      hasAuthUidMismatch: true,
+    };
+  }
+
+  return {
+    exists: true,
+    authUid: profile.authUid,
+    lockedRole: profile.lockedRole,
+    acceptedTermsVersion: profile.acceptedTermsVersion,
+    hasAuthUidMismatch: false,
+  };
 }
 
 async function confirmLockedRoleWithRetry(
   role: RoleIntent,
   deps: ProfileSourceDeps,
-  expectedAuthUid?: string
-): Promise<{ confirmedRole: RoleIntent | null; hadUidMismatch: boolean }> {
-  const retryDelaysMs = [120, 220, 350, 550, 800, 1100];
-  let hadUidMismatch = false;
-
-  for (const delayMs of retryDelaysMs) {
-    const snapshot = await getRemoteProfileSnapshot(deps, expectedAuthUid, {
-      logAuthUidMismatch: false,
-    });
-    if (snapshot.hasAuthUidMismatch) {
-      hadUidMismatch = true;
+  uid: string
+): Promise<{ confirmedRole: RoleIntent | null; allSnapshotsMissing: boolean }> {
+  let allSnapshotsMissing = true;
+  for (const delayMs of ROLE_LOCK_CONFIRMATION_RETRY_DELAYS_MS) {
+    const snapshot = await getRemoteProfileSnapshot(deps, uid);
+    if (snapshot.exists) {
+      allSnapshotsMissing = false;
     }
-
     if (snapshot.lockedRole === role) {
-      return {
-        confirmedRole: snapshot.lockedRole,
-        hadUidMismatch,
-      };
+      return { confirmedRole: snapshot.lockedRole, allSnapshotsMissing };
     }
-
-    await delay(delayMs);
+    await deps.delay(delayMs);
   }
-
-  return {
-    confirmedRole: null,
-    hadUidMismatch,
-  };
+  return { confirmedRole: null, allSnapshotsMissing };
 }
 
-// ─── Operations ───────────────────────────────────────────────────────────────
-
-/**
- * Upserts the user profile in Data Connect (creates if not exists, updates display name/email).
- * Ref: FR-101
- */
-async function upsertRemoteProfile(
-  displayName: string,
-  emailNormalized: string,
-  deps: ProfileSourceDeps
-): Promise<void> {
-  try {
-    const dc = deps.getDataConnectInstance();
-    const { data } = await deps.upsertUserProfile(dc, {
-      displayName: displayName,
-      emailNormalized: emailNormalized,
-    });
-
-    if (!data.userProfile_upsert?.id) {
-      throw new ProfileSourceError(
-        'invalid_response',
-        'Data Connect did not return upserted profile identity.'
-      );
-    }
-  } catch (error) {
-    throw normalizeProfileSourceError(error);
-  }
-}
-
-/**
- * Reads the current locked role from the remote profile.
- * Returns null if no profile exists or role is not set.
- */
-async function getRemoteLockedRole(
-  deps: ProfileSourceDeps,
-  expectedAuthUid?: string
-): Promise<RoleIntent | null> {
-  const snapshot = await getRemoteProfileSnapshot(deps, expectedAuthUid);
-  return snapshot.lockedRole;
-}
-
-async function getRemoteProfileSnapshot(
-  deps: ProfileSourceDeps,
-  expectedAuthUid?: string,
-  options: { logAuthUidMismatch?: boolean } = {}
-): Promise<RemoteProfileSnapshot> {
-  const dc = deps.getDataConnectInstance();
-  try {
-    const { data } = await deps.getMyProfile(dc);
-
-    const profileData = data as unknown as {
-      userProfile?: {
-        authUid?: string | null;
-        lockedRole?: string | null;
-      } | null;
-      userProfiles?: Array<{
-        authUid?: string | null;
-        lockedRole?: string | null;
-      }>;
-    };
-    const profile = profileData.userProfile ?? profileData.userProfiles?.[0] ?? null;
-    const authUid = typeof profile?.authUid === 'string' ? profile.authUid : null;
-    if (expectedAuthUid && authUid && authUid !== expectedAuthUid) {
-      const mismatchKey = `${expectedAuthUid}::${authUid}`;
-      if (__DEV__ && options.logAuthUidMismatch !== false && lastLoggedUidMismatchKey !== mismatchKey) {
-        lastLoggedUidMismatchKey = mismatchKey;
-        console.warn('[auth][profile-source] profile uid mismatch', {
-          expectedAuthUid,
-          receivedAuthUid: authUid,
-        });
-      }
-      return {
-        exists: false,
-        authUid,
-        lockedRole: null,
-        hasAuthUidMismatch: true,
-      };
-    }
-
-    lastLoggedUidMismatchKey = null;
-
-    return {
-      exists: Boolean(profile),
-      authUid,
-      lockedRole: normalizeLockedRole(profile?.lockedRole ?? null),
-      hasAuthUidMismatch: false,
-    };
-  } catch (error) {
-    throw normalizeProfileSourceError(error);
-  }
-}
-
-/**
- * Hydrates the user profile: upserts remote record and reads current locked role.
- * Called on every auth session start.
- * Ref: FR-101, D-072
- */
 export async function hydrateProfileFromSource(
   user: { uid: string; displayName: string | null; email: string | null },
   deps: ProfileSourceDeps = defaultProfileSourceDeps
 ): Promise<AuthProfile> {
-  await upsertRemoteProfile(
-    user.displayName ?? '',
-    user.email?.toLowerCase() ?? '',
-    deps
-  );
-  const lockedRole = await getRemoteLockedRole(deps, user.uid);
-  if (__DEV__) {
-    console.info('[auth][profile-source] hydrate snapshot', {
-      uid: user.uid,
-      lockedRole,
-    });
-  }
+  try {
+    const initialSnapshot = await getRemoteProfileSnapshot(deps, user.uid);
+    if (initialSnapshot.exists) {
+      return {
+        lockedRole: initialSnapshot.lockedRole,
+        acceptedTermsVersion: initialSnapshot.acceptedTermsVersion,
+      };
+    }
 
-  return { lockedRole };
+    const firestore = deps.getFirestoreInstance();
+    await deps.upsertProfile(firestore, user.uid, {
+      displayName: user.displayName ?? '',
+      emailNormalized: user.email?.toLowerCase() ?? '',
+    });
+
+    const hydratedSnapshot = await getRemoteProfileSnapshot(deps, user.uid);
+    return {
+      lockedRole: hydratedSnapshot.lockedRole,
+      acceptedTermsVersion: hydratedSnapshot.acceptedTermsVersion,
+    };
+  } catch (error) {
+    throw normalizeProfileSourceError(error);
+  }
 }
 
-/**
- * Locks the user's role in the remote profile.
- * Calls setLockedRole then re-reads via getMyProfile to confirm the persisted value.
- * Ref: FR-101, D-072
- */
 export async function lockRoleInSource(
   role: RoleIntent,
   deps: ProfileSourceDeps = defaultProfileSourceDeps
 ): Promise<AuthProfile> {
-  const dc = deps.getDataConnectInstance();
-  const currentAuthUid = getFirebaseAuth().currentUser?.uid;
-
-  const beforeLock = await getRemoteProfileSnapshot(deps, currentAuthUid);
-  if (!beforeLock.exists) {
-    await upsertRemoteProfile('', '', deps);
+  const uid = deps.getCurrentAuthUid();
+  if (!uid) {
+    throw new ProfileSourceError('configuration', 'No authenticated user found.');
   }
 
-  let mutationApplied = false;
   try {
-    const { data } = await deps.setLockedRole(dc, { role });
-    mutationApplied = Boolean(data.userProfile_update?.id);
-  } catch (error) {
-    const current = await getRemoteProfileSnapshot(deps, currentAuthUid);
-    if (current.lockedRole === role) {
-      return { lockedRole: current.lockedRole };
+    const beforeLock = await getRemoteProfileSnapshot(deps, uid);
+    if (!beforeLock.exists) {
+      const firestore = deps.getFirestoreInstance();
+      await deps.upsertProfile(firestore, uid, { displayName: '', emailNormalized: '' });
     }
+
+    const firestore = deps.getFirestoreInstance();
+    await deps.setLockedRole(firestore, uid, role);
+
+    const { confirmedRole, allSnapshotsMissing } = await confirmLockedRoleWithRetry(role, deps, uid);
+    if (confirmedRole) {
+      const confirmedSnapshot = await getRemoteProfileSnapshot(deps, uid);
+      return {
+        lockedRole: confirmedRole,
+        acceptedTermsVersion: confirmedSnapshot.acceptedTermsVersion,
+      };
+    }
+
+    if (allSnapshotsMissing) {
+      throw new ProfileSourceError(
+        'profile_row_not_found_after_upsert',
+        'Firestore did not return user profile after role lock attempts.'
+      );
+    }
+
+    throw new ProfileSourceError(
+      'role_update_not_persisted',
+      'Firestore accepted role lock but role was not confirmed in follow-up reads.'
+    );
+  } catch (error) {
     throw normalizeProfileSourceError(error);
   }
-
-  if (!mutationApplied) {
-    await upsertRemoteProfile('', '', deps);
-    const { data } = await deps.setLockedRole(dc, { role });
-    mutationApplied = Boolean(data.userProfile_update?.id);
-  }
-
-  const { confirmedRole, hadUidMismatch } = await confirmLockedRoleWithRetry(role, deps, currentAuthUid);
-  if (confirmedRole) {
-    return { lockedRole: confirmedRole };
-  }
-
-  if (mutationApplied) {
-    if (__DEV__) {
-      console.warn('[auth][profile-source] lock role confirmed by mutation fallback', {
-        role,
-        uid: currentAuthUid ?? null,
-        reason: hadUidMismatch ? 'uid_mismatch' : 'read_after_write_stale',
-      });
-    }
-
-    return { lockedRole: role };
-  }
-
-  throw new ProfileSourceError(
-    'invalid_response',
-    'Data Connect did not return a locked role after setLockedRole.'
-  );
 }
 
-/**
- * Deletes the user's profile from Data Connect.
- * Called from account deletion flow (SC-213).
- * Ref: D-072
- */
 export async function deleteProfileFromSource(
   deps: ProfileSourceDeps = defaultProfileSourceDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.deleteProfile(dc);
+  const uid = deps.getCurrentAuthUid();
+  if (!uid) {
+    throw new ProfileSourceError('configuration', 'No authenticated user found.');
+  }
+
+  try {
+    const firestore = deps.getFirestoreInstance();
+    await deps.deleteProfile(firestore, uid);
+  } catch (error) {
+    throw normalizeProfileSourceError(error);
+  }
+}
+
+export async function setAcceptedTermsVersionInSource(
+  version: string,
+  deps: ProfileSourceDeps = defaultProfileSourceDeps
+): Promise<void> {
+  const uid = deps.getCurrentAuthUid();
+  if (!uid) {
+    throw new ProfileSourceError('configuration', 'No authenticated user found.');
+  }
+
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const before = await getRemoteProfileSnapshot(deps, uid);
+    if (!before.exists) {
+      await deps.upsertProfile(firestore, uid, { displayName: '', emailNormalized: '' });
+    }
+    await deps.setAcceptedTermsVersion(firestore, uid, version);
+  } catch (error) {
+    throw normalizeProfileSourceError(error);
+  }
 }

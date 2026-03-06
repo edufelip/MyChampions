@@ -25,7 +25,7 @@ export function normalizeGuardPathname(pathname: string | null | undefined): str
 
 export function roleHomePath(role: RoleIntent): string {
   if (role === 'professional') {
-    return '/professional/specialty';
+    return '/(tabs)';
   }
 
   return '/';
@@ -87,7 +87,7 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
 
   if (input.lockedRole === 'professional') {
     if (path === '/' || path.startsWith('/student/')) {
-      return '/professional/specialty';
+      return '/(tabs)';
     }
   }
 

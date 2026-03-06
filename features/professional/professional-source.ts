@@ -1,31 +1,22 @@
 /**
- * Professional Data Connect source — invite code and specialty operations.
- * Uses Firebase Data Connect generated SDK (D-114 injectable deps pattern).
- * No business logic; all normalization delegates to logic modules.
- * Refs: FR-103, FR-174–FR-177, FR-179, FR-180, BR-234–BR-242
+ * Professional Firestore source — invite code and specialty operations.
  */
 
-import type { DataConnect } from 'firebase/data-connect';
-
-import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
 import {
-  getOrCreateActiveInviteCode as _getOrCreateActiveInviteCode,
-  rotateInviteCode as _rotateInviteCode,
-  getProfessionalSpecialties as _getProfessionalSpecialties,
-  addProfessionalSpecialty as _addProfessionalSpecialty,
-  removeProfessionalSpecialty as _removeProfessionalSpecialty,
-  upsertProfessionalCredential as _upsertProfessionalCredential,
-  type GetOrCreateActiveInviteCodeData,
-  type RotateInviteCodeData,
-  type GetProfessionalSpecialtiesData,
-  type AddProfessionalSpecialtyData,
-  type AddProfessionalSpecialtyVariables,
-  type RemoveProfessionalSpecialtyData,
-  type RemoveProfessionalSpecialtyVariables,
-  type UpsertProfessionalCredentialData,
-  type UpsertProfessionalCredentialVariables,
-} from '@mychampions/dataconnect-generated';
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  runTransaction,
+  updateDoc,
+  where,
+  type Firestore,
+} from 'firebase/firestore';
 
+import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso, generateId } from '../firestore';
+import { classifyFirestoreError } from '../firestore-error';
 import {
   normalizeInviteCodeStatus,
   type InviteCode,
@@ -36,6 +27,12 @@ import {
   type SpecialtyRecord,
   type Credential,
 } from './specialty.logic';
+import {
+  normalizeConnectionSpecialty,
+  normalizeConnectionStatus,
+  type ConnectionSpecialty,
+  type ConnectionStatus,
+} from '../connections/connection.logic';
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
@@ -55,195 +52,569 @@ export class ProfessionalSourceError extends Error {
   }
 }
 
-// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
+type FirestoreInviteCode = {
+  professionalAuthUid: string;
+  codeValue: string;
+  status: 'active' | 'rotated' | 'revoked';
+  rotatedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FirestoreSpecialty = {
+  id: string;
+  professionalAuthUid: string;
+  specialty: Specialty;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FirestoreCredential = {
+  id: string;
+  specialtyId: string;
+  professionalAuthUid: string;
+  specialty: Specialty;
+  credentialType: 'professional_registry';
+  registryId: string;
+  authority: string;
+  country: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FirestoreConnection = {
+  id: string;
+  status: string;
+  specialty: string;
+  professionalAuthUid: string;
+  studentAuthUid: string;
+};
+
+type FirestoreUserProfile = {
+  displayName: string;
+};
+
+export type ProfessionalStudentRosterItem = {
+  studentAuthUid: string;
+  displayName: string;
+  specialty: ConnectionSpecialty;
+  assignmentStatus: 'active' | 'pending';
+};
+
+export type ProfessionalStudentAssignmentSnapshot = {
+  studentAuthUid: string;
+  displayName: string;
+  nutritionStatus: 'active' | 'pending' | 'none';
+  trainingStatus: 'active' | 'pending' | 'none';
+  activeConnectionIds: string[];
+};
+
+export type SpecialtyBlockerCounts = {
+  activeCount: number;
+  pendingCount: number;
+};
 
 export type ProfessionalSourceDeps = {
-  getOrCreateActiveInviteCode: (dc: DataConnect) => Promise<{ data: GetOrCreateActiveInviteCodeData }>;
-  rotateInviteCode: (dc: DataConnect) => Promise<{ data: RotateInviteCodeData }>;
-  getProfessionalSpecialties: (dc: DataConnect) => Promise<{ data: GetProfessionalSpecialtiesData }>;
-  addProfessionalSpecialty: (
-    dc: DataConnect,
-    vars: AddProfessionalSpecialtyVariables
-  ) => Promise<{ data: AddProfessionalSpecialtyData }>;
-  removeProfessionalSpecialty: (
-    dc: DataConnect,
-    vars: RemoveProfessionalSpecialtyVariables
-  ) => Promise<{ data: RemoveProfessionalSpecialtyData }>;
-  upsertProfessionalCredential: (
-    dc: DataConnect,
-    vars: UpsertProfessionalCredentialVariables
-  ) => Promise<{ data: UpsertProfessionalCredentialData }>;
-  getDataConnectInstance: () => DataConnect;
+  getFirestoreInstance: () => Firestore;
+  getCurrentAuthUid: () => string;
+  generateInviteCode: () => string;
 };
 
 const defaultDeps: ProfessionalSourceDeps = {
-  getOrCreateActiveInviteCode: _getOrCreateActiveInviteCode,
-  rotateInviteCode: _rotateInviteCode,
-  getProfessionalSpecialties: _getProfessionalSpecialties,
-  addProfessionalSpecialty: _addProfessionalSpecialty,
-  removeProfessionalSpecialty: _removeProfessionalSpecialty,
-  upsertProfessionalCredential: _upsertProfessionalCredential,
-  getDataConnectInstance: _getDataConnectInstance,
+  getFirestoreInstance: _getFirestoreInstance,
+  getCurrentAuthUid: _getCurrentAuthUid,
+  generateInviteCode: () => Math.random().toString(36).slice(2, 8).toUpperCase(),
 };
 
-// ─── Invite code operations ───────────────────────────────────────────────────
+function summarizeStudentConnections(
+  rows: Array<{ status: ConnectionStatus; specialty: ConnectionSpecialty }>
+): {
+  assignmentStatus: 'active' | 'pending' | null;
+  representativeSpecialty: ConnectionSpecialty;
+  nutritionStatus: 'active' | 'pending' | 'none';
+  trainingStatus: 'active' | 'pending' | 'none';
+} {
+  let nutritionStatus: 'active' | 'pending' | 'none' = 'none';
+  let trainingStatus: 'active' | 'pending' | 'none' = 'none';
 
-/**
- * Fetches the professional's current active invite code, or creates one if
- * none exists (idempotent). Returns null if the server returns no code.
- * Ref: FR-179, D-037
- *
- * SDK note: returns inviteCodes[] array — use [0].
- */
+  for (const row of rows) {
+    const nextStatus = row.status === 'active' ? 'active' : row.status === 'pending_confirmation' ? 'pending' : 'none';
+    if (nextStatus === 'none') continue;
+
+    if (row.specialty === 'nutritionist') {
+      if (nutritionStatus !== 'active') nutritionStatus = nextStatus;
+      continue;
+    }
+
+    if (trainingStatus !== 'active') trainingStatus = nextStatus;
+  }
+
+  const assignmentStatus = nutritionStatus === 'active' || trainingStatus === 'active'
+    ? 'active'
+    : nutritionStatus === 'pending' || trainingStatus === 'pending'
+      ? 'pending'
+      : null;
+
+  const representativeSpecialty =
+    nutritionStatus !== 'none' ? 'nutritionist' : 'fitness_coach';
+
+  return { assignmentStatus, representativeSpecialty, nutritionStatus, trainingStatus };
+}
+
+function normalizeProfessionalSourceError(error: unknown): ProfessionalSourceError {
+  if (error instanceof ProfessionalSourceError) return error;
+
+  switch (classifyFirestoreError(error)) {
+    case 'network':
+      return new ProfessionalSourceError('network', (error as Error)?.message ?? 'Network error.');
+    case 'configuration':
+      return new ProfessionalSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
+    default:
+      return new ProfessionalSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected professional source error.');
+  }
+}
+
+function inviteRef(firestore: Firestore, professionalUid: string) {
+  return doc(firestore, 'inviteCodes', professionalUid);
+}
+
 export async function getOrCreateActiveInviteCode(
   deps = defaultDeps
 ): Promise<InviteCode | null> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getOrCreateActiveInviteCode(dc);
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
 
-  const raw = data.inviteCodes[0];
-  if (!raw?.id || !raw.codeValue || !raw.createdAt) return null;
+    const ref = inviteRef(firestore, professionalUid);
+    const snapshot = await getDoc(ref);
 
-  const status = normalizeInviteCodeStatus(raw.status);
-  if (!status) return null;
-
-  return {
-    id: raw.id,
-    codeValue: raw.codeValue,
-    status,
-    rotatedAt: raw.rotatedAt ?? null,
-    expiresAt: raw.expiresAt ?? null,
-    createdAt: raw.createdAt,
-  };
-}
-
-/**
- * Rotates the professional's active invite code.
- * Auto-cancels pending requests created from the old code (D-064, D-037).
- * Returns the new active invite code.
- *
- * SDK note: rotateInviteCode returns just InviteCode_Key (id only).
- * Must re-fetch getOrCreateActiveInviteCode to get full code data.
- */
-export async function rotateInviteCode(deps = defaultDeps): Promise<InviteCode> {
-  const dc = deps.getDataConnectInstance();
-  await deps.rotateInviteCode(dc);
-
-  // Re-fetch to get full code data (SDK only returns the key)
-  const code = await getOrCreateActiveInviteCode(deps);
-  if (!code) {
-    throw new ProfessionalSourceError(
-      'invalid_response',
-      'rotateInviteCode succeeded but subsequent fetch returned no code.'
-    );
-  }
-  return code;
-}
-
-// ─── Specialty operations ─────────────────────────────────────────────────────
-
-/**
- * Returns all professional specialties (active and inactive) for the current user.
- * Ref: FR-103, FR-174
- *
- * SDK note: returns specialties[] with camelCase fields; credential is an array.
- */
-export async function getProfessionalSpecialties(deps = defaultDeps): Promise<SpecialtyRecord[]> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getProfessionalSpecialties(dc);
-
-  return (data.specialties ?? []).flatMap((item) => {
-    const id = item.id;
-    const specialty = normalizeSpecialty(item.specialty);
-    if (!id || !specialty) return [];
-
-    // credential is an array in SDK — take first entry
-    let credential: Credential | null = null;
-    const credRaw = item.credential?.[0];
-    if (credRaw?.id && credRaw.registryId) {
-      credential = {
-        id: credRaw.id,
-        specialty,
-        credentialType: 'professional_registry',
-        registryId: credRaw.registryId,
-        authority: credRaw.authority ?? '',
-        country: credRaw.country ?? '',
+    if (!snapshot.exists()) {
+      const timestamp = nowIso();
+      const created: FirestoreInviteCode = {
+        professionalAuthUid: professionalUid,
+        codeValue: deps.generateInviteCode(),
+        status: 'active',
+        rotatedAt: null,
+        expiresAt: null,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      await runTransaction(firestore, async (tx) => {
+        tx.set(ref, created);
+      });
+      return {
+        id: professionalUid,
+        codeValue: created.codeValue,
+        status: 'active',
+        rotatedAt: null,
+        expiresAt: null,
+        createdAt: timestamp,
       };
     }
 
-    return [{ id, specialty, isActive: item.isActive ?? false, credential }];
-  });
+    const data = snapshot.data() as FirestoreInviteCode;
+    const status = normalizeInviteCodeStatus(data.status);
+    if (!status) return null;
+
+    return {
+      id: snapshot.id,
+      codeValue: data.codeValue,
+      status,
+      rotatedAt: data.rotatedAt ?? null,
+      expiresAt: data.expiresAt ?? null,
+      createdAt: data.createdAt,
+    };
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
 }
 
-/**
- * Adds a new specialty for the professional.
- * Server blocks duplicates.
- * Ref: FR-175, D-034
- *
- * SDK note: addProfessionalSpecialty returns Specialty_Key (id only).
- * Returns {id, specialty} using the caller-supplied specialty value.
- */
+export async function rotateInviteCode(deps = defaultDeps): Promise<InviteCode> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
+
+    const ref = inviteRef(firestore, professionalUid);
+    const now = nowIso();
+
+    await runTransaction(firestore, async (tx) => {
+      const currentSnap = await tx.get(ref);
+      if (!currentSnap.exists()) {
+        tx.set(ref, {
+          professionalAuthUid: professionalUid,
+          codeValue: deps.generateInviteCode(),
+          status: 'active',
+          rotatedAt: now,
+          expiresAt: null,
+          createdAt: now,
+          updatedAt: now,
+        } satisfies FirestoreInviteCode);
+      } else {
+        tx.update(ref, {
+          codeValue: deps.generateInviteCode(),
+          status: 'active',
+          rotatedAt: now,
+          updatedAt: now,
+        });
+      }
+
+      const pending = await getDocs(query(
+        collection(firestore, 'connections'),
+        where('professionalAuthUid', '==', professionalUid),
+        where('status', '==', 'pending_confirmation')
+      ));
+
+      for (const pendingDoc of pending.docs) {
+        tx.update(pendingDoc.ref, {
+          status: 'ended',
+          canceledReason: 'code_rotated',
+          endedAt: now,
+          updatedAt: now,
+        });
+      }
+    });
+
+    const code = await getOrCreateActiveInviteCode(deps);
+    if (!code) {
+      throw new ProfessionalSourceError('invalid_response', 'rotateInviteCode succeeded but fetch returned no code.');
+    }
+    return code;
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
+}
+
+export async function getProfessionalSpecialties(deps = defaultDeps): Promise<SpecialtyRecord[]> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
+
+    const [specialtyDocs, credentialDocs] = await Promise.all([
+      getDocs(query(collection(firestore, 'specialties'), where('professionalAuthUid', '==', professionalUid))),
+      getDocs(query(collection(firestore, 'credentials'), where('professionalAuthUid', '==', professionalUid))),
+    ]);
+
+    const credentialsBySpecialtyId = new Map<string, Credential>();
+    for (const docSnap of credentialDocs.docs) {
+      const raw = docSnap.data() as FirestoreCredential;
+      const specialty = normalizeSpecialty(raw.specialty);
+      if (!specialty) continue;
+      credentialsBySpecialtyId.set(raw.specialtyId, {
+        id: raw.id,
+        specialty,
+        credentialType: 'professional_registry',
+        registryId: raw.registryId,
+        authority: raw.authority,
+        country: raw.country,
+      });
+    }
+
+    return specialtyDocs.docs.flatMap((item) => {
+      const raw = item.data() as FirestoreSpecialty;
+      const specialty = normalizeSpecialty(raw.specialty);
+      if (!specialty) return [];
+      return [{
+        id: raw.id,
+        specialty,
+        isActive: raw.isActive,
+        credential: credentialsBySpecialtyId.get(raw.id) ?? null,
+      } satisfies SpecialtyRecord];
+    });
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
+}
+
 export async function addProfessionalSpecialty(
   specialty: Specialty,
   deps = defaultDeps
 ): Promise<{ id: string; specialty: Specialty }> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.addProfessionalSpecialty(dc, { specialty });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
 
-  const id = data.specialty_insert?.id;
-  if (!id) {
-    throw new ProfessionalSourceError(
-      'invalid_response',
-      'addProfessionalSpecialty returned no specialty id.'
-    );
+    const existing = await getDocs(query(
+      collection(firestore, 'specialties'),
+      where('professionalAuthUid', '==', professionalUid),
+      where('specialty', '==', specialty),
+      limit(1)
+    ));
+
+    if (!existing.empty) {
+      const docSnap = existing.docs[0];
+      const data = docSnap.data() as FirestoreSpecialty;
+      if (!data.isActive) {
+        await runTransaction(firestore, async (tx) => {
+          tx.update(docSnap.ref, { isActive: true, updatedAt: nowIso() });
+        });
+      }
+      return { id: docSnap.id, specialty };
+    }
+
+    const id = generateId('specialty');
+    const timestamp = nowIso();
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'specialties', id), {
+        id,
+        professionalAuthUid: professionalUid,
+        specialty,
+        isActive: true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      } satisfies FirestoreSpecialty);
+    });
+
+    return { id, specialty };
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
   }
-
-  return { id, specialty };
 }
 
-/**
- * Removes a specialty by its record id.
- * Server enforces removal guard (active/pending students, last specialty).
- * Ref: FR-176, D-034, D-062, BR-234
- *
- * SDK note: removeProfessionalSpecialty takes specialtyId: UUIDString (record id),
- * NOT the specialty string enum. Breaking change from old GraphQL stub.
- */
 export async function removeProfessionalSpecialty(
   specialtyId: string,
   deps = defaultDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.removeProfessionalSpecialty(dc, { specialtyId: specialtyId });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
+    const specialtySnapshot = await getDoc(doc(firestore, 'specialties', specialtyId));
+    if (!specialtySnapshot.exists()) {
+      throw new ProfessionalSourceError('graphql', 'Specialty not found.');
+    }
+    const specialtyDoc = specialtySnapshot.data() as FirestoreSpecialty;
+
+    const [active, pending] = await Promise.all([
+      getDocs(query(
+        collection(firestore, 'connections'),
+        where('professionalAuthUid', '==', professionalUid),
+        where('specialty', '==', specialtyDoc.specialty),
+        where('status', '==', 'active')
+      )),
+      getDocs(query(
+        collection(firestore, 'connections'),
+        where('professionalAuthUid', '==', professionalUid),
+        where('specialty', '==', specialtyDoc.specialty),
+        where('status', '==', 'pending_confirmation')
+      )),
+    ]);
+
+    if (active.size > 0 || pending.size > 0) {
+      throw new ProfessionalSourceError('graphql', 'Specialty removal blocked by active/pending students.');
+    }
+
+    await runTransaction(firestore, async (tx) => {
+      tx.delete(doc(firestore, 'specialties', specialtyId));
+    });
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
 }
 
-/**
- * Upserts credential for a specialty (max 1 per specialty in MVP, D-035).
- * Ref: FR-177
- *
- * SDK note: upsertProfessionalCredential takes specialtyId: UUIDString (record id),
- * NOT the specialty string enum. Breaking change from old GraphQL stub.
- */
+export async function getSpecialtyBlockerCounts(
+  specialty: Specialty,
+  deps = defaultDeps
+): Promise<SpecialtyBlockerCounts> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
+    const [active, pending] = await Promise.all([
+      getDocs(
+        query(
+          collection(firestore, 'connections'),
+          where('professionalAuthUid', '==', professionalUid),
+          where('specialty', '==', specialty),
+          where('status', '==', 'active')
+        )
+      ),
+      getDocs(
+        query(
+          collection(firestore, 'connections'),
+          where('professionalAuthUid', '==', professionalUid),
+          where('specialty', '==', specialty),
+          where('status', '==', 'pending_confirmation')
+        )
+      ),
+    ]);
+
+    return {
+      activeCount: active.size,
+      pendingCount: pending.size,
+    };
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
+}
+
 export async function upsertProfessionalCredential(
   specialtyId: string,
   input: { registryId: string; authority: string; country: string },
   deps = defaultDeps
 ): Promise<{ id: string }> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.upsertProfessionalCredential(dc, {
-    specialtyId: specialtyId,
-    registryId: input.registryId,
-    authority: input.authority,
-    country: input.country,
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
 
-  const id = data.credential_upsert?.id;
-  if (!id) {
-    throw new ProfessionalSourceError(
-      'invalid_response',
-      'upsertProfessionalCredential returned no credential id.'
-    );
+    const specialtySnap = await getDoc(doc(firestore, 'specialties', specialtyId));
+    if (!specialtySnap.exists()) {
+      throw new ProfessionalSourceError('graphql', 'Specialty not found for credential upsert.');
+    }
+    const specialtyRaw = specialtySnap.data() as FirestoreSpecialty;
+
+    const credentialId = specialtyId;
+    const timestamp = nowIso();
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'credentials', credentialId), {
+        id: credentialId,
+        specialtyId,
+        professionalAuthUid: professionalUid,
+        specialty: specialtyRaw.specialty,
+        credentialType: 'professional_registry',
+        registryId: input.registryId,
+        authority: input.authority,
+        country: input.country,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      } satisfies FirestoreCredential, { merge: true });
+    });
+
+    return { id: credentialId };
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
   }
+}
 
-  return { id };
+export async function getProfessionalStudentRoster(
+  deps = defaultDeps
+): Promise<ProfessionalStudentRosterItem[]> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
+    const snapshot = await getDocs(
+      query(collection(firestore, 'connections'), where('professionalAuthUid', '==', professionalUid))
+    );
+
+    const byStudent = new Map<string, Array<{ status: ConnectionStatus; specialty: ConnectionSpecialty }>>();
+    for (const item of snapshot.docs) {
+      const raw = item.data() as Partial<FirestoreConnection>;
+      const status = normalizeConnectionStatus(raw.status);
+      const specialty = normalizeConnectionSpecialty(raw.specialty);
+      const studentAuthUid = typeof raw.studentAuthUid === 'string' ? raw.studentAuthUid : '';
+      if (!status || !specialty || !studentAuthUid) continue;
+      if (status !== 'active' && status !== 'pending_confirmation') continue;
+      const current = byStudent.get(studentAuthUid) ?? [];
+      current.push({ status, specialty });
+      byStudent.set(studentAuthUid, current);
+    }
+
+    const entries = [...byStudent.entries()];
+    const rows = await Promise.all(
+      entries.map(async ([studentAuthUid, connections]) => {
+        const summary = summarizeStudentConnections(connections);
+        if (!summary.assignmentStatus) return null;
+
+        const profileSnap = await getDoc(doc(firestore, 'userProfiles', studentAuthUid));
+        const displayNameRaw = profileSnap.exists()
+          ? ((profileSnap.data() as Partial<FirestoreUserProfile>).displayName ?? '')
+          : '';
+        const displayName = String(displayNameRaw).trim() || studentAuthUid;
+
+        return {
+          studentAuthUid,
+          displayName,
+          specialty: summary.representativeSpecialty,
+          assignmentStatus: summary.assignmentStatus,
+        } satisfies ProfessionalStudentRosterItem;
+      })
+    );
+
+    return rows
+      .filter((item): item is ProfessionalStudentRosterItem => item !== null)
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
+}
+
+export async function getProfessionalStudentAssignmentSnapshot(
+  studentAuthUid: string,
+  deps = defaultDeps
+): Promise<ProfessionalStudentAssignmentSnapshot> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
+    const snapshot = await getDocs(
+      query(collection(firestore, 'connections'), where('professionalAuthUid', '==', professionalUid))
+    );
+
+    const relevantRows: Array<{
+      id: string;
+      status: ConnectionStatus;
+      specialty: ConnectionSpecialty;
+    }> = [];
+
+    for (const item of snapshot.docs) {
+      const raw = item.data() as Partial<FirestoreConnection>;
+      const status = normalizeConnectionStatus(raw.status);
+      const specialty = normalizeConnectionSpecialty(raw.specialty);
+      if (!status || !specialty) continue;
+      if (raw.studentAuthUid !== studentAuthUid) continue;
+      relevantRows.push({ id: item.id, status, specialty });
+    }
+
+    const summarized = summarizeStudentConnections(
+      relevantRows.map((row) => ({ status: row.status, specialty: row.specialty }))
+    );
+
+    const profileSnap = await getDoc(doc(firestore, 'userProfiles', studentAuthUid));
+    const displayNameRaw = profileSnap.exists()
+      ? ((profileSnap.data() as Partial<FirestoreUserProfile>).displayName ?? '')
+      : '';
+    const displayName = String(displayNameRaw).trim() || studentAuthUid;
+
+    return {
+      studentAuthUid,
+      displayName,
+      nutritionStatus: summarized.nutritionStatus,
+      trainingStatus: summarized.trainingStatus,
+      activeConnectionIds: relevantRows
+        .filter((row) => row.status === 'active')
+        .map((row) => row.id),
+    };
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
+}
+
+export async function unbindStudentConnections(
+  studentAuthUid: string,
+  deps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
+    const snapshot = await getDocs(
+      query(
+        collection(firestore, 'connections'),
+        where('professionalAuthUid', '==', professionalUid),
+        where('studentAuthUid', '==', studentAuthUid),
+        where('status', '==', 'active')
+      )
+    );
+
+    if (snapshot.empty) return;
+    const timestamp = nowIso();
+    await Promise.all(
+      snapshot.docs.map((item) =>
+        updateDoc(item.ref, {
+          status: 'ended',
+          endedAt: timestamp,
+          updatedAt: timestamp,
+        })
+      )
+    );
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
 }

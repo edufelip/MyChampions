@@ -1,7 +1,9 @@
 import Constants from 'expo-constants';
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
+import { getAuth, initializeAuth, type Auth, type Persistence } from 'firebase/auth';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 type FirebaseExtraConfig = {
   apiKey?: string;
@@ -47,6 +49,21 @@ function requireFirebaseConfig() {
 let firebaseAuthInstance: Auth | null = null;
 let firebaseStorageInstance: FirebaseStorage | null = null;
 
+function resolveReactNativePersistence() {
+  // Load lazily to preserve compatibility with web and tooling contexts.
+  try {
+    const module = require('firebase/auth') as {
+      getReactNativePersistence: (storage: typeof AsyncStorage) => Persistence;
+    };
+    return module.getReactNativePersistence(AsyncStorage);
+  } catch {
+    if (__DEV__) {
+      console.warn('[auth][firebase] RN persistence unavailable; falling back to in-memory auth state.');
+    }
+    return undefined;
+  }
+}
+
 export function getFirebaseAuth() {
   if (firebaseAuthInstance) {
     return firebaseAuthInstance;
@@ -55,7 +72,25 @@ export function getFirebaseAuth() {
   const firebaseConfig = requireFirebaseConfig();
   const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-  firebaseAuthInstance = getAuth(firebaseApp);
+  if (Platform.OS === 'web') {
+    firebaseAuthInstance = getAuth(firebaseApp);
+    return firebaseAuthInstance;
+  }
+
+  try {
+    const persistence = resolveReactNativePersistence();
+    if (!persistence) {
+      firebaseAuthInstance = getAuth(firebaseApp);
+      return firebaseAuthInstance;
+    }
+
+    firebaseAuthInstance = initializeAuth(firebaseApp, {
+      persistence,
+    });
+  } catch {
+    // Auth may already be initialized in another module/runtime path.
+    firebaseAuthInstance = getAuth(firebaseApp);
+  }
 
   return firebaseAuthInstance;
 }

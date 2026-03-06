@@ -36,8 +36,8 @@ export type UseConnectionsResult = {
 };
 
 /**
- * Wraps Data Connect connection-source operations for UI consumption.
- * Keeps Firebase / Data Connect concerns out of screen components.
+ * Wraps Firestore-backed connection-source operations for UI consumption.
+ * Keeps Firebase / Firestore concerns out of screen components.
  * Auth user is no longer passed — SDK uses the authenticated session internally.
  */
 export function useConnections(isAuthenticated: boolean): UseConnectionsResult {

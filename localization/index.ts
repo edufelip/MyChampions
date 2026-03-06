@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+
 import { enUS, type TranslationKey } from './en-US';
 
 export type { TranslationKey };
@@ -54,10 +56,28 @@ export function t(
   }, template);
 }
 
-export function useTranslation() {
-  const locale = resolveLocale(getDeviceLocale());
+export type TranslationBinding = {
+  locale: SupportedLocale;
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
+};
+
+export function buildTranslationBinding(
+  locale: SupportedLocale,
+  previous?: TranslationBinding | null
+): TranslationBinding {
+  if (previous && previous.locale === locale) {
+    return previous;
+  }
+
   return {
     locale,
     t: (key: TranslationKey, params?: Record<string, string | number>) => t(locale, key, params),
   };
+}
+
+export function useTranslation() {
+  const locale = resolveLocale(getDeviceLocale());
+  const bindingRef = useRef<TranslationBinding | null>(null);
+  bindingRef.current = buildTranslationBinding(locale, bindingRef.current);
+  return bindingRef.current;
 }

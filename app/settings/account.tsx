@@ -23,6 +23,7 @@
  *       TC-304–307, TC-309
  */
 import { useEffect, useState } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
 import {
   ActionSheetIOS,
   Alert,
@@ -40,7 +41,7 @@ import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
-import { getDsTheme } from '@/constants/design-system';
+import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { deleteProfileFromSource } from '@/features/auth/profile-source';
@@ -146,10 +147,11 @@ export default function AccountSettingsScreen() {
   const isEmailUser = isEmailPasswordAccount(providerData);
   const oauthProvider = resolveOAuthProviderLabel(providerData);
   const isStudent = lockedRole === 'student';
+  const isProfessional = lockedRole === 'professional';
   const roleBadgeLabel = isStudent
     ? t('settings.account.role.student')
     : t('settings.account.role.professional');
-  const topInsetPadding = isStudent ? insets.top : insets.top / 2;
+  const topInsetPadding = insets.top;
 
   const isSubmittingDelete = deleteState.kind === 'pending';
   const isDeleteLocked = isSubmittingDelete || isWriteLocked;
@@ -314,7 +316,7 @@ export default function AccountSettingsScreen() {
   return (
     <ScrollView
       style={[styles.root, { backgroundColor: theme.color.canvas }]}
-      contentContainerStyle={[styles.content, { paddingTop: 16 + topInsetPadding }]}
+      contentContainerStyle={[styles.content, { paddingTop: topInsetPadding + DsSpace.sm }]}
       testID="settings.account.screen">
       <Stack.Screen options={{ title: t('settings.account.title') as string, headerShown: false }} />
 
@@ -326,28 +328,69 @@ export default function AccountSettingsScreen() {
         />
       ) : null}
 
-      {/* ── Profile header ─────────────────────────────────────────────── */}
+      <View style={styles.heroWrap}>
+        <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
+          {t('settings.account.header_title')}
+        </Text>
+      </View>
+
       <View
-        style={[styles.profileCard, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}
+        style={[
+          styles.heroCard,
+          {
+            backgroundColor: isProfessional ? theme.color.accentPrimarySoft : theme.color.accentBlueSoft,
+            borderColor: isProfessional ? theme.color.accentPrimary : theme.color.accentBlue,
+            flexDirection: 'row',
+            alignItems: 'center',
+          },
+        ]}
         testID="settings.account.profileCard">
-        <View style={[styles.avatar, { backgroundColor: theme.color.accentPrimarySoft, borderColor: theme.color.accentPrimary }]}>
-          <Text style={[styles.avatarInitial, { color: theme.color.accentPrimary }]}>
+        <View
+          style={[
+            styles.avatar,
+            {
+              backgroundColor: theme.color.surface,
+              borderColor: isProfessional ? theme.color.accentPrimary : theme.color.accentBlue,
+            },
+          ]}>
+          <Text
+            style={[
+              styles.avatarInitial,
+              { color: isProfessional ? theme.color.accentPrimary : theme.color.accentBlue },
+            ]}>
             {avatarInitial}
           </Text>
         </View>
+
         <View style={styles.profileInfo}>
           <Text style={[styles.profileName, { color: theme.color.textPrimary }]} numberOfLines={1}>
             {displayName}
           </Text>
           {email ? (
-            <Text style={[styles.profileEmail, { color: theme.color.textSecondary }]} numberOfLines={1}>
+            <Text
+              style={[styles.profileEmail, { color: theme.color.textSecondary }]}
+              numberOfLines={1}>
               {email}
             </Text>
           ) : null}
-          <View style={[styles.rolePill, { backgroundColor: theme.color.accentBlueSoft }]}>
-            <Text style={[styles.rolePillText, { color: theme.color.accentBlue }]}>
-              {roleBadgeLabel}
-            </Text>
+
+          <View style={styles.roleRow}>
+            <View
+              style={[
+                styles.rolePill,
+                { backgroundColor: isProfessional ? theme.color.accentPrimary : theme.color.accentBlue },
+              ]}>
+              <Text style={[styles.rolePillText, { color: theme.color.surface }]}>
+                {roleBadgeLabel}
+              </Text>
+            </View>
+            {isProfessional ? (
+              <Text
+                style={[styles.freeTierText, { color: theme.color.textSecondary }]}
+                numberOfLines={1}>
+                {t('pro.subscription.free_tier')}
+              </Text>
+            ) : null}
           </View>
         </View>
       </View>
@@ -544,7 +587,12 @@ function SettingsRow({
           </Text>
         ) : null}
         {isInteractive ? (
-          <Text style={[styles.chevron, { color: theme.color.textTertiary }]}>›</Text>
+          <MaterialIcons
+            name="chevron-right"
+            size={18}
+            color={theme.color.textTertiary}
+            style={styles.chevronIcon}
+          />
         ) : null}
       </View>
     </Pressable>
@@ -559,60 +607,77 @@ function RowDivider({ color }: { color: string }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 48, gap: 4 },
+  content: { paddingBottom: 48, paddingHorizontal: DsSpace.lg, gap: DsSpace.sm },
 
-  // Profile card
-  profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 8,
+  heroWrap: {
+    gap: DsSpace.xs,
+    marginBottom: DsSpace.xs,
   },
+  screenTitle: {
+    ...DsTypography.title,
+    fontFamily: Fonts?.rounded ?? 'normal',
+    fontSize: 30,
+    lineHeight: 36,
+  },
+
+  heroCard: {
+    borderRadius: DsRadius.xl,
+    borderWidth: 1,
+    gap: 14,
+    marginBottom: DsSpace.sm,
+    padding: DsSpace.md,
+  },
+
+  // Profile
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitial: {
     fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '700',
   },
-  profileInfo: { flex: 1, gap: 3 },
+  profileInfo: { flex: 1, gap: 2 },
   profileName: {
     fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
   },
-  profileEmail: { fontSize: 13 },
+  profileEmail: { fontSize: 13, marginBottom: 4 },
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+    flexShrink: 1,
+  },
   rolePill: {
     alignSelf: 'flex-start',
     borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
-  rolePillText: { fontSize: 11, fontWeight: '600' },
+  rolePillText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  freeTierText: { fontSize: 11, fontWeight: '500', flexShrink: 1 },
 
   // Section header
   sectionHeader: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.6,
-    marginTop: 16,
+    ...DsTypography.caption,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    marginTop: DsSpace.md,
     marginBottom: 6,
     marginLeft: 4,
   },
 
   // Settings group
   group: {
-    borderRadius: 12,
+    borderRadius: DsRadius.xl,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -622,19 +687,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 48,
+    paddingHorizontal: DsSpace.md,
+    paddingVertical: DsSpace.sm,
+    minHeight: 50,
   },
   rowLabel: { fontSize: 15, flex: 1 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '50%' },
   rowValue: { fontSize: 14, textAlign: 'right', flexShrink: 1 },
-  chevron: { fontSize: 20, lineHeight: 22, fontWeight: '300' },
+  chevronIcon: { marginLeft: 2 },
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
 
   // Inline banners
   inlineBanner: {
-    borderRadius: 8,
+    borderRadius: DsRadius.md,
     borderWidth: 1,
     margin: 12,
     padding: 12,
@@ -646,7 +711,7 @@ const styles = StyleSheet.create({
   dangerBody: { fontSize: 13, lineHeight: 20, padding: 16, paddingBottom: 8 },
   destructiveButton: {
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: DsRadius.lg,
     borderWidth: 1.5,
     justifyContent: 'center',
     margin: 12,
@@ -658,10 +723,10 @@ const styles = StyleSheet.create({
   // Sign out
   signOutButton: {
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: DsRadius.lg,
     borderWidth: 1.5,
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: DsSpace.lg,
     marginBottom: 4,
     minHeight: 48,
   },

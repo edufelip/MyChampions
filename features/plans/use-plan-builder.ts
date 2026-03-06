@@ -1,7 +1,7 @@
 /**
  * React hook for plan builder operations — nutrition and training.
  * Wraps plan-builder-source for screen consumption.
- * No Firebase/Data Connect concerns in screen components.
+ * No Firebase/Firestore concerns in screen components.
  * Refs: D-111–D-114, D-126, FR-240–FR-248
  */
 

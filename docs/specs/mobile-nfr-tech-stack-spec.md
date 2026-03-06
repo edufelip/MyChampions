@@ -18,7 +18,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Android and iOS native packages/pipelines are managed independently.
 - Native directories (`ios/`, `android/`) are committed from day 1.
 - Native directory generation policy is one-time `expo prebuild`; ongoing native work is edited directly in committed native projects.
-- Backend platform is Firebase (Auth, Data Connect, Cloud Storage).
+- Backend platform is Firebase (Auth, Firestore, Cloud Storage).
 - Social auth is implemented through Firebase Auth.
 - Crash reporting is mandatory with Firebase Crashlytics.
 - Non-crash monitoring tooling (for example Sentry) is out of MVP scope.
@@ -41,7 +41,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.
 - React Native Firebase requires native code integration, so Expo Go is not enough for this setup.
 - Firebase Auth in React Native requires provider configuration for Apple/Google and deep-link handling where applicable.
-- Firebase Data Connect schema, connectors, and authorization strategy must be defined before production traffic.
+- Firebase Firestore collection schema, indexing, and security-rule authorization strategy must be defined before production traffic.
 - Firebase Cloud Storage upload flows must enforce client compression and storage rule constraints.
 
 ## Technology Options
@@ -86,7 +86,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: React Hook Form + Zod.
 
 ### 5) Local Persistence For Offline Read-Only
-- Option A: Data Connect query snapshots + SQLite (`expo-sqlite`) tables.
+- Option A: Firestore query snapshots + SQLite (`expo-sqlite`) tables.
   - Pros: Reliable structured offline reads, explicit TTL policies.
   - Cons: Additional sync layer complexity.
 - Option B: MMKV/AsyncStorage cache only.
@@ -109,14 +109,14 @@ Define non-functional architecture constraints and technology options for the mo
 ## High-Level Architecture (Target)
 1. Expo/React Native client handles UI, routing, and offline read models.
 2. Firebase Auth manages email/password and social identity.
-3. Firebase Data Connect (Cloud SQL-backed) enforces domain rules through typed schema and connector policies.
+3. Firebase Firestore enforces domain rules through collection structure and security rules.
 4. Firebase Cloud Storage stores recipe and profile images.
 5. fatsecret API serves nutrition lookup dataset.
 6. RevenueCat orchestrates professional subscription entitlements.
 7. Firebase Crashlytics captures runtime crashes and non-fatal exceptions.
 
 Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
-Data model and connector contract: `docs/specs/firebase-data-connect-integration-spec.md`.
+Data model and collection/security contract: `docs/specs/firebase-firestore-integration-spec.md`.
 
 ## Suggested Default NFR Targets For MVP
 - App cold start: <= 2.5s median on modern mid-tier devices.
@@ -143,7 +143,7 @@ Data model and connector contract: `docs/specs/firebase-data-connect-integration
 - React Native Firebase Crashlytics: https://rnfirebase.io/crashlytics/usage
 - Firebase Auth for Apple (iOS): https://firebase.google.com/docs/auth/ios/apple
 - Firebase Auth for Google (React Native via SDK/provider): https://firebase.google.com/docs/auth
-- Firebase Data Connect: https://firebase.google.com/docs/data-connect
+- Firebase Firestore: https://firebase.google.com/docs/firestore
 - Firebase Cloud Storage: https://firebase.google.com/docs/storage
 - Fastlane docs: https://docs.fastlane.tools/
 - GitHub Actions docs: https://docs.github.com/actions

@@ -80,15 +80,37 @@ export type RevenueCatPlatform = 'ios' | 'android';
 /**
  * Identifies the entitlement key that grants unlimited professional students.
  * D-011, BR-219: more than FREE_STUDENT_CAP active students requires active entitlement.
+ *
+ * RevenueCat dashboard entitlement identifier: `professional_pro`
+ * Products attached: mychampions_professional_anuual, mychampions_professional_monthly.
  */
-export const PRO_ENTITLEMENT_ID = 'professional_unlimited';
+export const PRO_ENTITLEMENT_ID = 'professional_pro';
 
 /**
  * Identifies the entitlement key that grants access to AI features (BL-108, D-132).
  * Purchasable by any role. Checked alongside PRO_ENTITLEMENT_ID for AI access.
  * Must match the entitlement identifier configured in the RevenueCat dashboard.
+ *
+ * RevenueCat dashboard entitlement identifier: `student_pro`
+ * Products attached: student_annual, student_monthly.
  */
-export const AI_FEATURES_ENTITLEMENT_ID = 'premium_student';
+export const AI_FEATURES_ENTITLEMENT_ID = 'student_pro';
+
+/**
+ * RevenueCat offering identifier for the professional subscription paywall (D-152).
+ * Must be configured in the RevenueCat dashboard under Offerings.
+ * Shown when openProPaywall() is triggered from SC-212.
+ * Contains professional products: mychampions_professional_anuual, mychampions_professional_monthly.
+ */
+export const PRO_OFFERING_ID = 'default_professional';
+
+/**
+ * RevenueCat offering identifier for the student AI features paywall (D-132, D-152).
+ * Must be configured in the RevenueCat dashboard under Offerings.
+ * Shown when openAiPaywall() is triggered from SC-214 / SC-215.
+ * Contains student products: student_annual, student_monthly.
+ */
+export const AI_OFFERING_ID = 'default_student';
 
 // ─── API key resolution ───────────────────────────────────────────────────────
 
@@ -181,7 +203,7 @@ export function mapCustomerInfoToEntitlementStatus(
 
 /**
  * Maps a RawCustomerInfo object to an EntitlementStatus for the AI features entitlement.
- * Checks whether AI_FEATURES_ENTITLEMENT_ID ('premium_student') is in active entitlements.
+ * Checks whether AI_FEATURES_ENTITLEMENT_ID ('student_pro') is in active entitlements.
  * Falls back to 'unknown' on any unexpected shape. Returns 'lapsed' when info is valid
  * but the entitlement is absent.
  * D-132: used alongside mapCustomerInfoToEntitlementStatus to derive hasAiAccess.
@@ -355,17 +377,37 @@ export async function restorePurchases(
 }
 
 /**
- * Presents the native RevenueCat paywall for the AI features offering (D-132).
- * The offering identifier 'ai_features' must be configured in the RevenueCat dashboard.
+ * Presents the native RevenueCat paywall for the AI features offering (D-132, D-152).
+ * Uses the AI_OFFERING_ID ('default_student') offering configured in the RevenueCat dashboard.
+ * The production dep resolves the offering via getOfferings() and passes the full
+ * PurchasesOffering object to RevenueCatUI.presentPaywall({ offering }).
  *
- * Throws SubscriptionSourceError('store_problem') on presentation failure.
+ * Throws SubscriptionSourceError on presentation failure.
  */
 export async function presentAiPaywall(deps: SubscriptionSourceDeps): Promise<void> {
   try {
-    await deps.presentPaywall('ai_features');
+    await deps.presentPaywall(AI_OFFERING_ID);
   } catch (err: unknown) {
     if (err instanceof SubscriptionSourceError) throw err;
     const reason = normalizeSubscriptionError(err);
-    throw new SubscriptionSourceError(reason, `RevenueCat presentPaywall failed: ${String(err)}`);
+    throw new SubscriptionSourceError(reason, `RevenueCat presentAiPaywall failed: ${String(err)}`);
+  }
+}
+
+/**
+ * Presents the native RevenueCat paywall for the professional subscription (D-152).
+ * Uses the PRO_OFFERING_ID ('default_professional') offering configured in the RevenueCat dashboard.
+ * The production dep resolves the offering via getOfferings() and passes the full
+ * PurchasesOffering object to RevenueCatUI.presentPaywall({ offering }).
+ *
+ * Throws SubscriptionSourceError on presentation failure.
+ */
+export async function presentProPaywall(deps: SubscriptionSourceDeps): Promise<void> {
+  try {
+    await deps.presentPaywall(PRO_OFFERING_ID);
+  } catch (err: unknown) {
+    if (err instanceof SubscriptionSourceError) throw err;
+    const reason = normalizeSubscriptionError(err);
+    throw new SubscriptionSourceError(reason, `RevenueCat presentProPaywall failed: ${String(err)}`);
   }
 }

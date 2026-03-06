@@ -8,15 +8,20 @@
 
 ## Design Structure (D-134)
 - Screen shell uses `DsScreen` with blob background and themed canvas.
+- SC-205 adopts the SC-204 professional surface baseline with a top hero header and stronger vertical hierarchy.
+- Hero header is rendered as an elevated card with contextual `groups` icon and compact helper copy.
 - Because roster rows use `FlatList`, SC-205 sets `DsScreen scrollable={false}` so VirtualizedList windowing remains valid (no nested ScrollView).
-- Search/filter controls are grouped in a top `DsCard` with pill-style filter chips.
-- Roster rows are rendered inside a dedicated `DsCard` list container using DS spacing/radius/typography tokens.
+- Empty roster state uses a centered hero illustration (soft glow + group-add icon), headline/body copy, and two stacked CTAs.
+- Search/filter controls are grouped in an elevated `DsCard` with search icon input and pill-style filter chips.
+- Roster rows are rendered inside a dedicated `DsCard` list container using DS spacing/radius/typography tokens, initial-avatar chips, status pills, and trailing chevrons.
 - Offline state uses `DsOfflineBanner`; all copy remains localization-key driven.
 - `/professional/pending` queue follows the same shell, card, and pill-action structure for search, selection, and bulk deny flows.
 
 ## User Actions
 - Primary:
   - Browse linked student list.
+  - In empty state, start the first-student flow via CTA to `/professional/home`.
+  - In empty state, share invite link directly from SC-205 when invite code is available.
   - Filter/search roster.
   - Filter/search pending requests queue.
   - Select multiple pending requests and run bulk deny.
@@ -26,8 +31,8 @@
   - View assignment state badges (pending/active/ended).
 
 ## States
-- Loading: fetch paginated roster data.
-- Empty: no students linked.
+- Loading: first roster fetch is in progress; list shell stays mounted with spinner.
+- Empty: shown only after first fetch settles with zero visible students (no loading overlap).
 - Error: fetch/search failure.
 - Success: roster list with actionable entries.
 
@@ -51,11 +56,13 @@
 ## Edge Cases
 - Large client list should support paging/virtualization.
 - Concurrent unbind can remove student from active list in-session.
+- If invite code is missing/loading/error in empty state, share CTA falls back to `/professional/home` (no modal error copy).
+- Transient auth/profile re-hydration must not remount the tab shell for the same authenticated UID.
 
 ## Links
 - Functional requirement: FR-105, FR-122, FR-210, FR-224, FR-225
 - Use case: UC-002.2, UC-002.5, UC-002.12, UC-002.20
 - Acceptance criteria: AC-206, AC-215, AC-254, AC-265
 - Business rules: BR-206, BR-214, BR-268, BR-283
-- Test cases: TC-206, TC-215, TC-257, TC-258, TC-269
+- Test cases: TC-206, TC-215, TC-257, TC-258, TC-269, TC-301, TC-302
 - Diagram: docs/diagrams/domain-relationships.md

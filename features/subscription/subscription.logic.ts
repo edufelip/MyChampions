@@ -30,9 +30,9 @@ export const FREE_STUDENT_CAP = 10;
 /**
  * RevenueCat entitlement identifier for the student AI features subscription.
  * Grants access to AI meal photo analysis (BL-108) and future AI-powered features.
- * D-132: separate from professional_unlimited; purchasable by any role.
+ * D-132: separate from professional_pro; purchasable by any role.
  */
-export const AI_ENTITLEMENT_ID = 'premium_student';
+export const AI_ENTITLEMENT_ID = 'student_pro';
 
 // ─── Cap enforcement ──────────────────────────────────────────────────────────
 
@@ -108,14 +108,14 @@ export function isPlanUpdateLocked(state: SubscriptionState): boolean {
  * Returns true when the user has access to AI meal photo analysis (BL-108, D-132).
  *
  * Access is granted when EITHER:
- *   - professionalStatus === 'active'  (professional_unlimited entitlement)
- *   - studentAiStatus   === 'active'   (premium_student entitlement)
+ *   - professionalStatus === 'active'  (professional_pro entitlement)
+ *   - studentAiStatus   === 'active'   (student_pro entitlement)
  *
  * 'unknown' is treated as locked (strict policy, D-132).
  * Only an explicitly 'active' entitlement on either channel unlocks the feature.
  *
- * @param professionalStatus - EntitlementStatus from professional_unlimited entitlement.
- * @param studentAiStatus    - EntitlementStatus from premium_student entitlement.
+ * @param professionalStatus - EntitlementStatus from professional_pro entitlement.
+ * @param studentAiStatus    - EntitlementStatus from student_pro entitlement.
  */
 export function hasAiAnalysisAccess(
   professionalStatus: EntitlementStatus,

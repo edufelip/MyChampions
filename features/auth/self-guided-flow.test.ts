@@ -29,6 +29,36 @@ test('BL-001 TC-249: Quick self-guided start commits student role and routes cor
   assert.equal(selectedRole, 'student', 'role must be locked as student');
 });
 
+async function simulateRoleSelectionContinue(params: {
+  role: RoleIntent;
+  lockRole: (role: RoleIntent) => Promise<void>;
+}) {
+  try {
+    await params.lockRole(params.role);
+    return {
+      route: resolvePostRoleRoute(params.role),
+      error: null as null | 'auth.role.error.save_failed',
+    };
+  } catch {
+    return {
+      route: null,
+      error: 'auth.role.error.save_failed' as const,
+    };
+  }
+}
+
+test('role-selection continue does not route when role lock fails', async () => {
+  const result = await simulateRoleSelectionContinue({
+    role: 'student',
+    lockRole: async () => {
+      throw new Error('Firestore did not confirm locked role');
+    },
+  });
+
+  assert.equal(result.route, null);
+  assert.equal(result.error, 'auth.role.error.save_failed');
+});
+
 /**
  * Simulates the empty-state logic that determines whether to show self-guided CTAs.
  */

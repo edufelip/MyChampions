@@ -85,10 +85,14 @@ export default function ProfessionalSpecialtyScreen() {
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
-  const { state, addSpecialty, removeSpecialty, checkRemoval, upsertCredential } =
+  const { state, addSpecialty, removeSpecialty, checkRemoval, getRemovalBlockerCounts, upsertCredential } =
     useSpecialties(Boolean(currentUser));
 
+  // credentialMode:
+  //   'add'  — dialog opened from the add button; specialty does not exist yet
+  //   'edit' — dialog opened from an existing specialty card
   const [credentialFor, setCredentialFor] = useState<Specialty | null>(null);
+  const [credentialMode, setCredentialMode] = useState<'add' | 'edit'>('edit');
   const [credentialForId, setCredentialForId] = useState<string | null>(null);
   const [credentialForm, setCredentialForm] = useState<CredentialFormData>({
     registryId: '',
@@ -99,6 +103,8 @@ export default function ProfessionalSpecialtyScreen() {
   const [isSavingCredential, setIsSavingCredential] = useState(false);
 
   const [actionError, setActionError] = useState<string | null>(null);
+  const [addingSpecialty, setAddingSpecialty] = useState<Specialty | null>(null);
+  const [isCheckingRemoval, setIsCheckingRemoval] = useState<Specialty | null>(null);
 
   const [blockedAssist, setBlockedAssist] = useState<{
     specialty: Specialty;
@@ -110,22 +116,22 @@ export default function ProfessionalSpecialtyScreen() {
     return state.specialties.find((s) => s.specialty === specialty);
   }
 
-  async function handleAdd(specialty: Specialty) {
-    setActionError(null);
-    const err = await addSpecialty(specialty);
-    if (err) {
-      setActionError(t('pro.specialty.add_error') as string);
-    }
-  }
-
   async function handleRemove(specialty: Specialty) {
     setActionError(null);
     setBlockedAssist(null);
     const record = findRecord(specialty);
     if (!record) return;
 
-    const activeStudentCount = 0;
-    const pendingStudentCount = 0;
+    setIsCheckingRemoval(specialty);
+    const blockerCounts = await getRemovalBlockerCounts(specialty);
+    setIsCheckingRemoval(null);
+    if (!blockerCounts) {
+      setActionError(t('pro.specialty.remove_error') as string);
+      return;
+    }
+
+    const activeStudentCount = blockerCounts.activeCount;
+    const pendingStudentCount = blockerCounts.pendingCount;
     const result = checkRemoval(specialty, activeStudentCount, pendingStudentCount);
     if (!result.allowed) {
       const totalSpecialties = state.kind === 'ready' ? state.specialties.length : 1;
@@ -145,18 +151,91 @@ export default function ProfessionalSpecialtyScreen() {
     }
   }
 
+  /** Opens the credential dialog in "add" mode (specialty not yet persisted). */
+  function openAddDialog(specialty: Specialty) {
+    setCredentialFor(specialty);
+    setCredentialMode('add');
+    setCredentialForId(null);
+    setCredentialForm({ registryId: '', authority: '', country: '' });
+    setCredentialError(null);
+    setActionError(null);
+  }
+
+  /** Opens the credential dialog in "edit" mode on an already-active specialty. */
   function openCredentialForm(specialty: Specialty) {
     const record = findRecord(specialty);
     setCredentialFor(specialty);
+    setCredentialMode('edit');
     setCredentialForId(record?.id ?? null);
     setCredentialForm({ registryId: '', authority: '', country: '' });
     setCredentialError(null);
   }
 
+  function closeCredentialDialog() {
+    setCredentialFor(null);
+    setCredentialForId(null);
+    setCredentialMode('edit');
+  }
+
+  /**
+   * Adds the specialty without a credential (used when user skips in add-mode
+   * dialog, or directly if no credential is needed).
+   */
+  async function handleAdd(specialty: Specialty) {
+    if (addingSpecialty) return;
+    setActionError(null);
+    setAddingSpecialty(specialty);
+    const err = await addSpecialty(specialty);
+    setAddingSpecialty(null);
+    if (err) {
+      setActionError(t('pro.specialty.add_error') as string);
+    }
+  }
+
+  /**
+   * Save handler for the credential dialog.
+   * - add mode: add specialty first, then upsert credential with the new record id.
+   * - edit mode: upsert credential on the existing specialty id.
+   */
   async function handleSaveCredential() {
-    if (!credentialFor || !credentialForId) return;
+    if (!credentialFor) return;
+
     setCredentialError(null);
     setIsSavingCredential(true);
+
+    if (credentialMode === 'add') {
+      // Step 1: add the specialty.
+      const addErr = await addSpecialty(credentialFor);
+      if (addErr) {
+        setIsSavingCredential(false);
+        setCredentialError(t('pro.specialty.add_error') as string);
+        return;
+      }
+
+      // Step 2: find the new record. useSpecialties reloads state after add.
+      // We re-read it from the hook's refreshed state via findRecord.
+      const newRecord = findRecord(credentialFor);
+      if (newRecord) {
+        const credErr = await upsertCredential(newRecord.id, credentialForm);
+        if (credErr) {
+          // Specialty was added successfully — only the credential upsert failed.
+          // Close dialog; user can edit credential later.
+          setIsSavingCredential(false);
+          closeCredentialDialog();
+          return;
+        }
+      }
+
+      setIsSavingCredential(false);
+      closeCredentialDialog();
+      return;
+    }
+
+    // edit mode: specialty already exists.
+    if (!credentialForId) {
+      setIsSavingCredential(false);
+      return;
+    }
 
     const err = await upsertCredential(credentialForId, credentialForm);
     setIsSavingCredential(false);
@@ -166,8 +245,7 @@ export default function ProfessionalSpecialtyScreen() {
       return;
     }
 
-    setCredentialFor(null);
-    setCredentialForId(null);
+    closeCredentialDialog();
   }
 
   return (
@@ -188,6 +266,15 @@ export default function ProfessionalSpecialtyScreen() {
         style={styles.backButton}
         testID="pro.specialty.backButton"
       />
+
+      <View style={styles.pageHeader}>
+        <Text style={[styles.pageTitle, { color: palette.text }]} testID="pro.specialty.pageTitle">
+          {t('pro.specialty.title')}
+        </Text>
+        <Text style={[styles.pageSubtitle, { color: palette.icon }]} testID="pro.specialty.pageSubtitle">
+          {t('pro.specialty.subtitle')}
+        </Text>
+      </View>
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -243,6 +330,12 @@ export default function ProfessionalSpecialtyScreen() {
         </DsCard>
       ) : null}
 
+      {state.kind === 'ready' && state.specialties.length > 0 ? (
+        <Text style={[styles.sectionLabel, { color: palette.icon }]}>
+          {t('pro.specialty.section.active')}
+        </Text>
+      ) : null}
+
       {state.kind === 'ready' ? (
         <SpecialtyList
           specialties={state.specialties}
@@ -252,21 +345,31 @@ export default function ProfessionalSpecialtyScreen() {
           onRemove={handleRemove}
           onOpenCredential={openCredentialForm}
           isWriteLocked={isWriteLocked}
+          checkingRemovalSpecialty={isCheckingRemoval}
         />
+      ) : null}
+
+      {state.kind === 'ready' &&
+      (state.specialties.length === 0 ||
+        state.specialties.length < 2) ? (
+        <Text style={[styles.sectionLabel, { color: palette.icon }]}>
+          {t('pro.specialty.section.add')}
+        </Text>
       ) : null}
 
       <AddSpecialtyButtons
         specialties={state.kind === 'ready' ? state.specialties : []}
         scheme={scheme}
-        palette={palette}
         t={t}
-        onAdd={handleAdd}
+        onAdd={openAddDialog}
         isWriteLocked={isWriteLocked}
+        addingSpecialty={addingSpecialty}
       />
 
       {credentialFor ? (
         <CredentialForm
           specialty={credentialFor}
+          mode={credentialMode}
           form={credentialForm}
           error={credentialError}
           isSaving={isSavingCredential}
@@ -278,11 +381,41 @@ export default function ProfessionalSpecialtyScreen() {
           }
           onSave={handleSaveCredential}
           onSkip={() => {
-            setCredentialFor(null);
-            setCredentialForId(null);
+            if (credentialMode === 'add') {
+              void handleAdd(credentialFor);
+            }
+            closeCredentialDialog();
           }}
           isWriteLocked={isWriteLocked}
         />
+      ) : null}
+
+      {!credentialFor && state.kind !== 'loading' ? (
+        <View style={styles.footer}>
+          {state.kind === 'ready' && state.specialties.length > 0 ? (
+            <DsPillButton
+              scheme={scheme}
+              label={t('pro.specialty.cta_continue') as string}
+              onPress={() => router.replace('/(tabs)')}
+              testID="pro.specialty.cta_continue"
+            />
+          ) : (
+            <>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.replace('/(tabs)')}
+                style={styles.skipButton}
+                testID="pro.specialty.cta_skip">
+                <Text style={[styles.skipText, { color: palette.tint }]}>
+                  {t('pro.specialty.cta_skip')}
+                </Text>
+              </Pressable>
+              <Text style={[styles.skipHint, { color: palette.icon }]}>
+                {t('pro.specialty.cta_skip_hint')}
+              </Text>
+            </>
+          )}
+        </View>
       ) : null}
     </DsScreen>
   );
@@ -365,6 +498,7 @@ function SpecialtyList({
   onRemove,
   onOpenCredential,
   isWriteLocked,
+  checkingRemovalSpecialty,
 }: {
   specialties: SpecialtyRecord[];
   scheme: 'light' | 'dark';
@@ -373,6 +507,7 @@ function SpecialtyList({
   onRemove: (s: Specialty) => void;
   onOpenCredential: (s: Specialty) => void;
   isWriteLocked: boolean;
+  checkingRemovalSpecialty: Specialty | null;
 }) {
   return (
     <>
@@ -398,7 +533,7 @@ function SpecialtyList({
             <Pressable
               accessibilityRole="button"
               onPress={() => onRemove(record.specialty)}
-              disabled={isWriteLocked}
+              disabled={isWriteLocked || checkingRemovalSpecialty === record.specialty}
               testID={`pro.specialty.remove.${record.specialty}`}>
               <Text style={[styles.link, { color: isWriteLocked ? palette.icon : palette.danger }]}>
                 {t('pro.specialty.remove')}
@@ -417,13 +552,14 @@ function AddSpecialtyButtons({
   t,
   onAdd,
   isWriteLocked,
+  addingSpecialty,
 }: {
   specialties: SpecialtyRecord[];
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
   t: TFn;
   onAdd: (s: Specialty) => void;
   isWriteLocked: boolean;
+  addingSpecialty: Specialty | null;
 }) {
   const hasNutritionist = specialties.some((s) => s.specialty === 'nutritionist');
   const hasFitnessCoach = specialties.some((s) => s.specialty === 'fitness_coach');
@@ -434,9 +570,10 @@ function AddSpecialtyButtons({
         <DsPillButton
           scheme={scheme}
           variant="secondary"
-          label={t('pro.specialty.add_nutritionist') as string}
+          label={t('pro.specialty.nutritionist') as string}
           onPress={() => onAdd('nutritionist')}
-          disabled={isWriteLocked}
+          disabled={isWriteLocked || addingSpecialty !== null}
+          loading={addingSpecialty === 'nutritionist'}
           testID="pro.specialty.add.nutritionist"
         />
       ) : null}
@@ -445,9 +582,10 @@ function AddSpecialtyButtons({
         <DsPillButton
           scheme={scheme}
           variant="secondary"
-          label={t('pro.specialty.add_fitness_coach') as string}
+          label={t('pro.specialty.fitness_coach') as string}
           onPress={() => onAdd('fitness_coach')}
-          disabled={isWriteLocked}
+          disabled={isWriteLocked || addingSpecialty !== null}
+          loading={addingSpecialty === 'fitness_coach'}
           testID="pro.specialty.add.fitness_coach"
         />
       ) : null}
@@ -457,6 +595,7 @@ function AddSpecialtyButtons({
 
 function CredentialForm({
   specialty,
+  mode,
   form,
   error,
   isSaving,
@@ -469,6 +608,7 @@ function CredentialForm({
   isWriteLocked,
 }: {
   specialty: Specialty;
+  mode: 'add' | 'edit';
   form: CredentialFormData;
   error: string | null;
   isSaving: boolean;
@@ -483,10 +623,23 @@ function CredentialForm({
   const specialtyLabel =
     specialty === 'nutritionist' ? t('pro.specialty.nutritionist') : t('pro.specialty.fitness_coach');
 
+  const title =
+    mode === 'add'
+      ? `${specialtyLabel} — ${t('pro.specialty.credential.title')}`
+      : `${t('pro.specialty.credential.title')} — ${specialtyLabel}`;
+
+  const skipLabel =
+    mode === 'add'
+      ? (t('pro.specialty.credential.skip_add') as string)
+      : (t('pro.specialty.credential.skip') as string);
+
   return (
     <DsCard scheme={scheme} testID="pro.specialty.credentialForm" style={styles.cardGap}>
       <Text style={[styles.cardTitle, { color: palette.text }]}>
-        {t('pro.specialty.credential.title')} - {specialtyLabel}
+        {title}
+      </Text>
+      <Text style={[styles.credentialIntro, { color: palette.icon }]} testID="pro.specialty.credentialForm.intro">
+        {t('pro.specialty.credential.intro')}
       </Text>
 
       <LabeledInput
@@ -537,7 +690,7 @@ function CredentialForm({
         )}
 
         <Pressable accessibilityRole="button" onPress={onSkip} testID="pro.specialty.credential.skip">
-          <Text style={[styles.link, { color: palette.icon }]}>{t('pro.specialty.credential.skip')}</Text>
+          <Text style={[styles.link, { color: palette.icon }]}>{skipLabel}</Text>
         </Pressable>
       </View>
     </DsCard>
@@ -583,6 +736,25 @@ const styles = StyleSheet.create({
     paddingBottom: DsSpace.xxl,
   },
   backButton: { marginBottom: -4 },
+  pageHeader: { gap: DsSpace.xs },
+  pageTitle: {
+    fontFamily: Fonts?.rounded ?? 'normal',
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  pageSubtitle: { ...DsTypography.body },
+  sectionLabel: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+    marginBottom: -DsSpace.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  credentialIntro: { ...DsTypography.caption },
+  footer: { gap: DsSpace.xs, marginTop: DsSpace.md },
+  skipButton: { alignItems: 'center', paddingVertical: DsSpace.sm },
+  skipText: { ...DsTypography.body, fontWeight: '700' },
+  skipHint: { ...DsTypography.caption, textAlign: 'center' },
   centered: { alignSelf: 'center', marginVertical: DsSpace.md },
   cardTitle: {
     ...DsTypography.cardTitle,

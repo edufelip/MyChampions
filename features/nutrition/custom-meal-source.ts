@@ -1,43 +1,23 @@
 /**
- * Custom meal Data Connect source — CRUD, share link, recipe import.
- * Uses Firebase Data Connect generated SDK (D-114, D-126).
- * Auth handled internally by SDK via Firebase Auth current user.
- * No business logic; normalization delegates to custom-meal.logic.
- * Refs: D-017–D-029, FR-137–FR-162, BR-301–BR-327
+ * Custom meal Firestore source — CRUD, share link, recipe import, portion log.
  */
 
-import { type DataConnect } from 'firebase/data-connect';
-
-import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
 import {
-  getMyCustomMeals as _getMyCustomMeals,
-  createCustomMeal as _createCustomMeal,
-  updateCustomMeal as _updateCustomMeal,
-  deleteCustomMeal as _deleteCustomMeal,
-  createMealShareLink as _createMealShareLink,
-  previewSharedMeal as _previewSharedMeal,
-  importSharedMeal as _importSharedMeal,
-  logPortion as _logPortion,
-  type GetMyCustomMealsData,
-  type CreateCustomMealData,
-  type CreateCustomMealVariables,
-  type UpdateCustomMealData,
-  type UpdateCustomMealVariables,
-  type DeleteCustomMealData,
-  type DeleteCustomMealVariables,
-  type CreateMealShareLinkData,
-  type CreateMealShareLinkVariables,
-  type PreviewSharedMealData,
-  type PreviewSharedMealVariables,
-  type ImportSharedMealData,
-  type ImportSharedMealVariables,
-  type LogPortionData,
-  type LogPortionVariables,
-} from '@mychampions/dataconnect-generated';
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  runTransaction,
+  where,
+  type Firestore,
+} from 'firebase/firestore';
+
+import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso, generateId } from '../firestore';
+import { classifyFirestoreError } from '../firestore-error';
 
 import type { CustomMeal, SharedMealSnapshot } from './custom-meal.logic';
-
-// ─── Error class ──────────────────────────────────────────────────────────────
+import { calculatePortionNutrition } from './custom-meal.logic';
 
 type CustomMealSourceErrorCode =
   | 'configuration'
@@ -55,58 +35,68 @@ export class CustomMealSourceError extends Error {
   }
 }
 
-// ─── Injectable deps (D-114 pattern) ─────────────────────────────────────────
+type FirestoreCustomMeal = {
+  id: string;
+  name: string;
+  totalGrams: number;
+  calories: number;
+  carbs: number;
+  proteins: number;
+  fats: number;
+  ingredientCost: number | null;
+  imageUrl: string | null;
+  ownerUid: string;
+  importedFromShareToken: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FirestoreMealShareLink = {
+  id: string;
+  ownerUid: string;
+  mealId: string;
+  snapshot: SharedMealSnapshot;
+  createdAt: string;
+};
+
+type FirestorePortionLog = {
+  id: string;
+  ownerUid: string;
+  mealId: string;
+  consumedGrams: number;
+  snapshot: {
+    calories: number;
+    carbs: number;
+    proteins: number;
+    fats: number;
+  };
+  loggedAt: string;
+};
 
 export type CustomMealSourceDeps = {
-  getDataConnectInstance: () => DataConnect;
-  getMyCustomMeals: (dc: DataConnect) => Promise<{ data: GetMyCustomMealsData }>;
-  createCustomMeal: (
-    dc: DataConnect,
-    vars: CreateCustomMealVariables
-  ) => Promise<{ data: CreateCustomMealData }>;
-  updateCustomMeal: (
-    dc: DataConnect,
-    vars: UpdateCustomMealVariables
-  ) => Promise<{ data: UpdateCustomMealData }>;
-  deleteCustomMeal: (
-    dc: DataConnect,
-    vars: DeleteCustomMealVariables
-  ) => Promise<{ data: DeleteCustomMealData }>;
-  createMealShareLink: (
-    dc: DataConnect,
-    vars: CreateMealShareLinkVariables
-  ) => Promise<{ data: CreateMealShareLinkData }>;
-  previewSharedMeal: (
-    dc: DataConnect,
-    vars: PreviewSharedMealVariables
-  ) => Promise<{ data: PreviewSharedMealData }>;
-  importSharedMeal: (
-    dc: DataConnect,
-    vars: ImportSharedMealVariables
-  ) => Promise<{ data: ImportSharedMealData }>;
-  logPortion: (
-    dc: DataConnect,
-    vars: LogPortionVariables
-  ) => Promise<{ data: LogPortionData }>;
+  getFirestoreInstance: () => Firestore;
+  getCurrentAuthUid: () => string;
 };
 
 const defaultDeps: CustomMealSourceDeps = {
-  getDataConnectInstance: _getDataConnectInstance,
-  getMyCustomMeals: _getMyCustomMeals,
-  createCustomMeal: _createCustomMeal,
-  updateCustomMeal: _updateCustomMeal,
-  deleteCustomMeal: _deleteCustomMeal,
-  createMealShareLink: _createMealShareLink,
-  previewSharedMeal: _previewSharedMeal,
-  importSharedMeal: _importSharedMeal,
-  logPortion: _logPortion,
+  getFirestoreInstance: _getFirestoreInstance,
+  getCurrentAuthUid: _getCurrentAuthUid,
 };
 
-// ─── Raw meal mapper ──────────────────────────────────────────────────────────
+function normalizeCustomMealSourceError(error: unknown): CustomMealSourceError {
+  if (error instanceof CustomMealSourceError) return error;
 
-function mapSdkMeal(
-  raw: GetMyCustomMealsData['customMeals'][number]
-): CustomMeal {
+  switch (classifyFirestoreError(error)) {
+    case 'network':
+      return new CustomMealSourceError('network', (error as Error)?.message ?? 'Network error.');
+    case 'configuration':
+      return new CustomMealSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
+    default:
+      return new CustomMealSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected custom meal source error.');
+  }
+}
+
+function mapMeal(raw: FirestoreCustomMeal): CustomMeal {
   return {
     id: raw.id,
     name: raw.name,
@@ -117,25 +107,27 @@ function mapSdkMeal(
     fats: raw.fats,
     ingredientCost: raw.ingredientCost ?? null,
     imageUrl: raw.imageUrl ?? null,
-    ownerUid: raw.ownerAuthUid,
+    ownerUid: raw.ownerUid,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
 }
 
-// ─── CRUD ─────────────────────────────────────────────────────────────────────
-
-/** Returns all custom meals owned by the current user. */
 export async function getMyCustomMeals(deps = defaultDeps): Promise<CustomMeal[]> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getMyCustomMeals(dc);
-  return data.customMeals.map(mapSdkMeal);
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+
+    const snapshots = await getDocs(query(collection(firestore, 'customMeals'), where('ownerUid', '==', uid)));
+
+    return snapshots.docs
+      .map((snap) => mapMeal(snap.data() as FirestoreCustomMeal))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
+  }
 }
 
-/**
- * Creates a new custom meal.
- * SDK returns only a key; re-fetches meals to return the created meal.
- */
 export async function createCustomMeal(
   input: {
     name: string;
@@ -149,33 +141,49 @@ export async function createCustomMeal(
   },
   deps = defaultDeps
 ): Promise<CustomMeal> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.createCustomMeal(dc, {
-    name: input.name,
-    totalGrams: input.totalGrams,
-    calories: input.calories,
-    carbs: input.carbs,
-    proteins: input.proteins,
-    fats: input.fats,
-    ingredientCost: input.ingredientCost ?? null,
-    imageUrl: input.imageUrl ?? null,
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+    const id = generateId('meal');
+    const timestamp = nowIso();
 
-  const insertedId = data.customMeal_insert.id;
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'customMeals', id), {
+        id,
+        name: input.name,
+        totalGrams: input.totalGrams,
+        calories: input.calories,
+        carbs: input.carbs,
+        proteins: input.proteins,
+        fats: input.fats,
+        ingredientCost: input.ingredientCost ?? null,
+        imageUrl: input.imageUrl ?? null,
+        ownerUid: uid,
+        importedFromShareToken: null,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      } satisfies FirestoreCustomMeal);
+    });
 
-  // Re-fetch to get full meal data
-  const { data: listData } = await deps.getMyCustomMeals(dc);
-  const found = listData.customMeals.find((m) => m.id === insertedId);
-  if (!found) {
-    throw new CustomMealSourceError('invalid_response', 'createCustomMeal: meal not found after insert.');
+    return {
+      id,
+      name: input.name,
+      totalGrams: input.totalGrams,
+      calories: input.calories,
+      carbs: input.carbs,
+      proteins: input.proteins,
+      fats: input.fats,
+      ingredientCost: input.ingredientCost ?? null,
+      imageUrl: input.imageUrl ?? null,
+      ownerUid: uid,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
   }
-  return mapSdkMeal(found);
 }
 
-/**
- * Updates an existing custom meal.
- * SDK returns only a key; re-fetches meals to return the updated meal.
- */
 export async function updateCustomMeal(
   id: string,
   input: {
@@ -190,117 +198,234 @@ export async function updateCustomMeal(
   },
   deps = defaultDeps
 ): Promise<CustomMeal> {
-  const dc = deps.getDataConnectInstance();
-  await deps.updateCustomMeal(dc, {
-    id,
-    name: input.name,
-    totalGrams: input.totalGrams,
-    calories: input.calories,
-    carbs: input.carbs,
-    proteins: input.proteins,
-    fats: input.fats,
-    ingredientCost: input.ingredientCost ?? null,
-    imageUrl: input.imageUrl ?? null,
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
 
-  // Re-fetch to get full updated meal data
-  const { data: listData } = await deps.getMyCustomMeals(dc);
-  const found = listData.customMeals.find((m) => m.id === id);
-  if (!found) {
-    throw new CustomMealSourceError('invalid_response', 'updateCustomMeal: meal not found after update.');
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'customMeals', id);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new CustomMealSourceError('graphql', 'Custom meal not found.');
+      }
+      const current = snap.data() as FirestoreCustomMeal;
+      if (current.ownerUid !== uid) {
+        throw new CustomMealSourceError('graphql', 'Permission denied for meal update.');
+      }
+
+      tx.update(ref, {
+        name: input.name,
+        totalGrams: input.totalGrams,
+        calories: input.calories,
+        carbs: input.carbs,
+        proteins: input.proteins,
+        fats: input.fats,
+        ingredientCost: input.ingredientCost ?? null,
+        imageUrl: input.imageUrl ?? null,
+        updatedAt: nowIso(),
+      });
+    });
+
+    const updated = await getDoc(doc(firestore, 'customMeals', id));
+    if (!updated.exists()) {
+      throw new CustomMealSourceError('invalid_response', 'updateCustomMeal: meal not found after update.');
+    }
+
+    return mapMeal(updated.data() as FirestoreCustomMeal);
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
   }
-  return mapSdkMeal(found);
 }
 
-/** Deletes a custom meal by id. */
 export async function deleteCustomMeal(id: string, deps = defaultDeps): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.deleteCustomMeal(dc, { id });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'customMeals', id);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new CustomMealSourceError('graphql', 'Custom meal not found.');
+      }
+      const current = snap.data() as FirestoreCustomMeal;
+      if (current.ownerUid !== uid) {
+        throw new CustomMealSourceError('graphql', 'Permission denied for meal delete.');
+      }
+      tx.delete(ref);
+    });
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
+  }
 }
 
-// ─── Share link ───────────────────────────────────────────────────────────────
-
-/**
- * Generates a share link for a custom meal.
- * SDK returns MealShareLink_Key only (no shareToken/shareUrl fields).
- * Returns the inserted record id; callers should construct deep-link from id.
- * Rate-limited server-side (D-028).
- */
 export async function createMealShareLink(
   mealId: string,
   deps = defaultDeps
 ): Promise<{ shareLinkId: string }> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.createMealShareLink(dc, { mealId: mealId });
-  return { shareLinkId: data.mealShareLink_insert.id };
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+
+    const mealSnap = await getDoc(doc(firestore, 'customMeals', mealId));
+    if (!mealSnap.exists()) {
+      throw new CustomMealSourceError('graphql', 'Custom meal not found for share link.');
+    }
+
+    const meal = mealSnap.data() as FirestoreCustomMeal;
+    if (meal.ownerUid !== uid) {
+      throw new CustomMealSourceError('graphql', 'Permission denied for share link generation.');
+    }
+
+    const shareLinkId = generateId('share');
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'mealShareLinks', shareLinkId), {
+        id: shareLinkId,
+        ownerUid: uid,
+        mealId,
+        snapshot: {
+          name: meal.name,
+          totalGrams: meal.totalGrams,
+          calories: meal.calories,
+          carbs: meal.carbs,
+          proteins: meal.proteins,
+          fats: meal.fats,
+        },
+        createdAt: nowIso(),
+      } satisfies FirestoreMealShareLink);
+    });
+
+    return { shareLinkId };
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
+  }
 }
 
-// ─── Recipe import ────────────────────────────────────────────────────────────
-
-/**
- * Previews the shared meal data for a given share token before importing.
- * Returns the SharedMealSnapshot without creating a local copy.
- * Ref: D-022, D-023
- */
 export async function previewSharedMeal(
   shareToken: string,
   deps = defaultDeps
 ): Promise<SharedMealSnapshot> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.previewSharedMeal(dc, { shareToken: shareToken });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const shareSnap = await getDoc(doc(firestore, 'mealShareLinks', shareToken));
 
-  const link = data.mealShareLinks[0];
-  if (!link) {
-    throw new CustomMealSourceError('invalid_response', 'previewSharedMeal: share link not found.');
+    if (!shareSnap.exists()) {
+      throw new CustomMealSourceError('graphql', 'previewSharedMeal: share link not found.');
+    }
+
+    const link = shareSnap.data() as FirestoreMealShareLink;
+    return link.snapshot;
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
   }
-
-  const meal = link.meal;
-
-  return {
-    name: meal.name,
-    totalGrams: meal.totalGrams,
-    calories: meal.calories,
-    carbs: meal.carbs,
-    proteins: meal.proteins,
-    fats: meal.fats,
-  };
 }
 
-/**
- * Imports a shared meal as a recipient-owned copy.
- * Idempotent: same token + same recipient returns existing copy (D-021).
- * SDK returns only a key; re-fetches meals to return the imported meal.
- * Ref: D-018, D-019, D-021, D-023
- */
 export async function importSharedMeal(
   shareToken: string,
   deps = defaultDeps
 ): Promise<CustomMeal> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.importSharedMeal(dc, { shareToken: shareToken });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
 
-  const insertedId = data.customMeal_insert.id;
+    const existing = await getDocs(query(
+      collection(firestore, 'customMeals'),
+      where('ownerUid', '==', uid),
+      where('importedFromShareToken', '==', shareToken)
+    ));
 
-  // Re-fetch to get full meal data
-  const { data: listData } = await deps.getMyCustomMeals(dc);
-  const found = listData.customMeals.find((m) => m.id === insertedId);
-  if (!found) {
-    throw new CustomMealSourceError('invalid_response', 'importSharedMeal: meal not found after import.');
+    if (!existing.empty) {
+      return mapMeal(existing.docs[0].data() as FirestoreCustomMeal);
+    }
+
+    const shareSnap = await getDoc(doc(firestore, 'mealShareLinks', shareToken));
+    if (!shareSnap.exists()) {
+      throw new CustomMealSourceError('graphql', 'importSharedMeal: share link not found.');
+    }
+
+    const share = shareSnap.data() as FirestoreMealShareLink;
+    const id = generateId('meal');
+    const timestamp = nowIso();
+
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'customMeals', id), {
+        id,
+        name: share.snapshot.name,
+        totalGrams: share.snapshot.totalGrams,
+        calories: share.snapshot.calories,
+        carbs: share.snapshot.carbs,
+        proteins: share.snapshot.proteins,
+        fats: share.snapshot.fats,
+        ingredientCost: null,
+        imageUrl: null,
+        ownerUid: uid,
+        importedFromShareToken: shareToken,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      } satisfies FirestoreCustomMeal);
+    });
+
+    return {
+      id,
+      name: share.snapshot.name,
+      totalGrams: share.snapshot.totalGrams,
+      calories: share.snapshot.calories,
+      carbs: share.snapshot.carbs,
+      proteins: share.snapshot.proteins,
+      fats: share.snapshot.fats,
+      ingredientCost: null,
+      imageUrl: null,
+      ownerUid: uid,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
   }
-  return mapSdkMeal(found);
 }
 
-// ─── Portion log ──────────────────────────────────────────────────────────────
-
-/**
- * Logs a consumed portion of a custom meal.
- * Ref: UC-003.3, FR-150, BR-316
- */
 export async function logPortionFromSource(
   mealId: string,
   grams: number,
   deps = defaultDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.logPortion(dc, { mealId: mealId, grams });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+
+    const mealSnap = await getDoc(doc(firestore, 'customMeals', mealId));
+    if (!mealSnap.exists()) {
+      throw new CustomMealSourceError('graphql', 'logPortion: meal not found.');
+    }
+
+    const meal = mealSnap.data() as FirestoreCustomMeal;
+    if (meal.ownerUid !== uid) {
+      throw new CustomMealSourceError('graphql', 'Permission denied for portion log.');
+    }
+
+    const snapshot = calculatePortionNutrition(
+      {
+        totalGrams: meal.totalGrams,
+        calories: meal.calories,
+        carbs: meal.carbs,
+        proteins: meal.proteins,
+        fats: meal.fats,
+      },
+      grams
+    );
+
+    const id = generateId('portion_log');
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'portionLogs', id), {
+        id,
+        ownerUid: uid,
+        mealId,
+        consumedGrams: grams,
+        snapshot,
+        loggedAt: nowIso(),
+      } satisfies FirestorePortionLog);
+    });
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
+  }
 }

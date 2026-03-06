@@ -11,35 +11,80 @@
  * in the root _layout.tsx will redirect to sign-in or role-selection before
  * this component has a chance to show any tab UI.
  */
-import { Redirect, Tabs } from 'expo-router';
+import { Redirect, Tabs, usePathname } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { getDsTheme } from '@/constants/design-system';
+import type { RoleIntent } from '@/features/auth/role-selection.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { resolveTabShellState } from '@/features/auth/tab-shell.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? 'light';
   const { t } = useTranslation();
-  const { isHydrated, lockedRole, needsTermsAcceptance } = useAuthSession();
+  const { isHydrated, lockedRole, needsTermsAcceptance, currentUser } = useAuthSession();
+  const pathname = usePathname();
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
+  const currentUid = currentUser?.uid ?? null;
+  const establishedUidRef = useRef<string | null>(null);
+  const [establishedRole, setEstablishedRole] = useState<RoleIntent | null>(null);
 
-  if (!isHydrated) {
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    if (!currentUid) {
+      establishedUidRef.current = null;
+      setEstablishedRole(null);
+      return;
+    }
+
+    if (needsTermsAcceptance || !lockedRole) {
+      if (establishedUidRef.current && establishedUidRef.current !== currentUid) {
+        establishedUidRef.current = null;
+        setEstablishedRole(null);
+      }
+      return;
+    }
+
+    establishedUidRef.current = currentUid;
+    setEstablishedRole(lockedRole);
+  }, [currentUid, isHydrated, lockedRole, needsTermsAcceptance]);
+
+  const { canUseEstablishedShell, effectiveRole } = resolveTabShellState({
+    isHydrated,
+    currentUid,
+    lockedRole,
+    needsTermsAcceptance,
+    establishedUid: establishedUidRef.current,
+    establishedRole,
+  });
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    if (!effectiveRole) return;
+    console.info('[tabs][transition]', { pathname, role: effectiveRole, isHydrated });
+  }, [effectiveRole, isHydrated, pathname]);
+
+  if (!isHydrated && !canUseEstablishedShell) {
     return null;
   }
 
-  if (needsTermsAcceptance) {
+  if (isHydrated && needsTermsAcceptance) {
     return <Redirect href="/auth/accept-terms" />;
   }
 
-  if (!lockedRole) {
+  if (!effectiveRole) {
     return <Redirect href="/auth/role-selection" />;
   }
 
-  const isPro = lockedRole === 'professional';
-  const isStudent = lockedRole === 'student';
+  const isPro = effectiveRole === 'professional';
+  const isStudent = effectiveRole === 'student';
 
   return (
     <Tabs
@@ -54,6 +99,7 @@ export default function TabLayout() {
           backgroundColor: theme.color.canvas,
         },
         lazy: false,
+        detachInactiveScreens: false,
         animation: 'fade',
         headerShown: false,
         tabBarButton: HapticTab,
@@ -71,7 +117,7 @@ export default function TabLayout() {
             />
           ),
           // Always visible — every role has a home/dashboard tab
-          href: lockedRole ? undefined : null,
+          href: effectiveRole ? undefined : null,
         }}
       />
 
@@ -95,7 +141,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="fork.knife" color={color} />
           ),
-          href: lockedRole ? undefined : null,
+          href: effectiveRole ? undefined : null,
         }}
       />
 
@@ -107,7 +153,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="figure.run" color={color} />
           ),
-          href: lockedRole ? undefined : null,
+          href: effectiveRole ? undefined : null,
         }}
       />
 
@@ -133,7 +179,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.crop.circle.fill" color={color} />
           ),
-          href: lockedRole ? undefined : null,
+          href: effectiveRole ? undefined : null,
         }}
       />
 

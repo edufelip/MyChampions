@@ -45,7 +45,7 @@ export default function ProfessionalSubscriptionScreen() {
   const router = useRouter();
   const { currentUser } = useAuthSession();
 
-  const { entitlementStatus, activeStudentCount, isLoading, purchase, restore, refresh } =
+  const { entitlementStatus, activeStudentCount, isLoading, restore, refresh, openProPaywall } =
     useSubscription(Boolean(currentUser));
 
   const subState = resolveSubscriptionState({ activeStudentCount, entitlementStatus });
@@ -170,7 +170,7 @@ export default function ProfessionalSubscriptionScreen() {
         scheme={scheme}
         disabled={isWriteLocked}
         onPress={() => {
-          void purchase(undefined);
+          void openProPaywall();
         }}
         label={t('pro.subscription.cta_purchase') as string}
         testID="pro.subscription.purchaseCta"

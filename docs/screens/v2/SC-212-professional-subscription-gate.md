@@ -16,9 +16,10 @@
 ## User Actions
 - Primary:
   - View current entitlement status.
-  - Purchase subscription.
+  - Purchase subscription — tapping "Purchase" opens the native RevenueCat paywall via `openProPaywall()`, which presents the `default_professional` offering (professional products). Plan selection (monthly vs annual) is handled within the native paywall UI (D-152).
   - Restore subscription.
 - Secondary:
+  - Refresh entitlement status.
   - Review feature unlock details.
 
 ## States
@@ -36,6 +37,16 @@
 - If entitlement is inactive while over cap, new activations and student-plan update actions remain locked.
 - Pre-lapse warning must appear before lock state with clear renew/restore path.
 - Accessibility baseline applies for readable warnings/CTAs with proper labels and focus order.
+
+## RevenueCat Wiring (D-152)
+- Entitlement ID: `professional_pro`
+- Products: `mychampions_professional_anuual` (Annual), `mychampions_professional_monthly` (Monthly)
+- Paywall: RevenueCat offering **`default_professional`** (`PRO_OFFERING_ID`) — presented via `openProPaywall()` → `Purchases.getOfferings().all['default_professional']` → `RevenueCatUI.presentPaywall({ offering })`.
+- Entitlement refresh happens automatically after the native paywall closes.
+- SDK key mapping is variant-aware (D-156):
+  - `APP_VARIANT=dev` -> `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV` / `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV`
+  - `APP_VARIANT=prod` -> `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_PROD` / `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_PROD`
+  - Legacy fallback remains temporarily available through `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS` / `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID`
 
 ## Data Contract
 - Inputs:

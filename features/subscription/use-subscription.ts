@@ -1,7 +1,7 @@
 /**
  * React hook for RevenueCat subscription entitlement state.
  * Configures the SDK on first call (if not already configured), fetches the
- * current EntitlementStatus for both professional_unlimited and premium_student
+ * current EntitlementStatus for both professional_pro and student_pro
  * entitlements, and exposes purchase/restore/refresh/paywall actions.
  *
  * This hook is the single consumer of subscription-source.ts in the UI layer.
@@ -23,6 +23,7 @@ import {
   purchasePackage,
   restorePurchases,
   presentAiPaywall,
+  presentProPaywall,
   resolveRevenueCatApiKey,
   mapCustomerInfoToEntitlementStatus,
   mapCustomerInfoToAiEntitlementStatus,
@@ -54,10 +55,12 @@ function getProductionDeps(): SubscriptionSourceDeps {
       return resolveRevenueCatApiKey(platform, extra);
     },
     presentPaywall: async (offeringIdentifier?: string) => {
-      // RevenueCatUI PresentPaywallParams requires a full PurchasesOffering object.
-      // We use the dashboard default offering here and keep identifier routing in source logic.
-      void offeringIdentifier;
-      await RevenueCatUI.presentPaywall();
+      // RevenueCatUI.presentPaywall requires a full PurchasesOffering object (not a string ID).
+      // Both pro (PRO_OFFERING_ID) and AI (AI_OFFERING_ID) paywalls always supply an identifier,
+      // so we always resolve via getOfferings() and pass the matching object. (D-152)
+      const offerings = await Purchases.getOfferings();
+      const offering = offeringIdentifier ? (offerings.all[offeringIdentifier] ?? undefined) : undefined;
+      await RevenueCatUI.presentPaywall({ offering });
     },
   };
 }
@@ -65,10 +68,10 @@ function getProductionDeps(): SubscriptionSourceDeps {
 // ─── Hook result ──────────────────────────────────────────────────────────────
 
 export type UseSubscriptionResult = {
-  /** Live entitlement status from RevenueCat professional_unlimited. 'unknown' while loading or on config error. */
+  /** Live entitlement status from RevenueCat professional_pro. 'unknown' while loading or on config error. */
   entitlementStatus: EntitlementStatus;
   /**
-   * Live entitlement status from RevenueCat premium_student (AI features).
+   * Live entitlement status from RevenueCat student_pro (AI features).
    * 'unknown' while loading or on config error. (D-132)
    */
   aiEntitlementStatus: EntitlementStatus;
@@ -80,7 +83,7 @@ export type UseSubscriptionResult = {
   hasAiAccess: boolean;
   /**
    * Active student count. Currently stubbed at 0 — will be sourced from
-   * Data Connect student roster when that endpoint is wired (pending-wiring-checklist-v1.md).
+   * Firestore student roster when that endpoint is wired (pending-wiring-checklist-v1.md).
    */
   activeStudentCount: number;
   /** True while the SDK is fetching initial entitlement status. */
@@ -98,6 +101,12 @@ export type UseSubscriptionResult = {
    * After the paywall is dismissed, both entitlement statuses are refreshed.
    */
   openAiPaywall: () => Promise<void>;
+  /**
+   * Presents the native RevenueCat paywall for the professional subscription (D-152).
+   * Uses the dashboard default offering (professional_pro entitlement products).
+   * After the paywall is dismissed, both entitlement statuses are refreshed.
+   */
+  openProPaywall: () => Promise<void>;
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -105,7 +114,7 @@ export type UseSubscriptionResult = {
 /**
  * @param isAuthenticated - Pass Boolean(currentUser) from useAuthSession.
  *   The hook only calls the SDK when the user is authenticated; returns 'unknown' otherwise.
- * @param activeStudentCount - Active student count from Data Connect (still 0 until wired).
+ * @param activeStudentCount - Active student count from Firestore (still 0 until wired).
  */
 export function useSubscription(
   isAuthenticated: boolean,
@@ -220,6 +229,19 @@ export function useSubscription(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchStatus]);
 
+  // Open pro paywall action (D-152): present native RevenueCat paywall for the professional
+  // subscription (default offering), then refresh both entitlement statuses.
+  const openProPaywall = useCallback(async () => {
+    try {
+      await presentProPaywall(deps);
+    } catch {
+      // Paywall dismissal (user cancels) may throw — treat as non-fatal
+    }
+    // Always refresh entitlements after paywall closes (user may have purchased)
+    await fetchStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchStatus]);
+
   return {
     entitlementStatus,
     aiEntitlementStatus,
@@ -231,5 +253,6 @@ export function useSubscription(
     restore,
     refresh,
     openAiPaywall,
+    openProPaywall,
   };
 }

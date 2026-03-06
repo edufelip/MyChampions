@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { resolveLocale, t } from './index';
+import { buildTranslationBinding, resolveLocale, t } from './index';
 
 test('resolveLocale maps exact supported locale', () => {
   assert.equal(resolveLocale('pt-BR'), 'pt-BR');
@@ -24,6 +24,18 @@ test('t returns localized value for key', () => {
 
 test('t interpolates params', () => {
   assert.equal(t('en-US', 'student.hydration.progress', { consumed: 500, goal: 2000 }), '500 / 2000 ml');
+});
+
+test('buildTranslationBinding keeps same t reference for same locale', () => {
+  const first = buildTranslationBinding('en-US');
+  const second = buildTranslationBinding('en-US', first);
+  assert.equal(first.t, second.t);
+});
+
+test('buildTranslationBinding creates new t reference when locale changes', () => {
+  const first = buildTranslationBinding('en-US');
+  const second = buildTranslationBinding('pt-BR', first);
+  assert.notEqual(first.t, second.t);
 });
 
 // ─── BL-011: dismiss key presence and correct copy in all locale bundles ───────

@@ -15,7 +15,6 @@
     "ios:dev": "EXPO_PUBLIC_ENV=dev APP_VARIANT=dev npm run check:ios-firebase && EXPO_PUBLIC_ENV=dev APP_VARIANT=dev expo run:ios --scheme mychampions",
     "ios:prod": "EXPO_PUBLIC_ENV=prod APP_VARIANT=prod npm run check:ios-firebase && EXPO_PUBLIC_ENV=prod APP_VARIANT=prod expo run:ios --scheme mychampions",
     "ios:release": "EXPO_PUBLIC_ENV=prod APP_VARIANT=prod EXPO_NO_DEV_CLIENT=1 npm run check:ios-firebase && EXPO_PUBLIC_ENV=prod APP_VARIANT=prod EXPO_NO_DEV_CLIENT=1 expo run:ios --scheme mychampions --configuration Release",
-    "check:dataconnect-runtime-config": "node scripts/check-dataconnect-runtime-config.mjs",
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "npm run test:unit",
@@ -29,11 +28,10 @@
     "test:e2e:build:android:debug": "detox build -c android.emu.debug",
     "test:e2e:android:debug": "detox test -c android.emu.debug",
     "test:e2e": "npm run test:e2e:ios",
-    "validate:data-connect:profile": "node scripts/validate-data-connect-profile-ops.mjs"
+    "validate:firestore:smoke": "node scripts/validate-firestore-smoke.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@mychampions/dataconnect-generated": "file:features/dataconnect-generated",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "11.4.1",
     "@react-navigation/bottom-tabs": "^7.4.0",

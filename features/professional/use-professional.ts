@@ -1,7 +1,7 @@
 /**
  * React hook for professional invite code and specialty operations.
  * Wraps professional-source for UI consumption.
- * No Firebase/Data Connect concerns in screen components.
+ * No Firebase/Firestore concerns in screen components.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -10,6 +10,7 @@ import {
   getOrCreateActiveInviteCode,
   rotateInviteCode,
   getProfessionalSpecialties,
+  getSpecialtyBlockerCounts,
   addProfessionalSpecialty,
   removeProfessionalSpecialty,
   upsertProfessionalCredential,
@@ -101,6 +102,9 @@ export type UseSpecialtiesResult = {
     activeCount: number,
     pendingCount: number
   ) => SpecialtyRemovalResult;
+  getRemovalBlockerCounts: (
+    specialty: Specialty
+  ) => Promise<{ activeCount: number; pendingCount: number } | null>;
   addSpecialty: (specialty: Specialty) => Promise<SpecialtyActionErrorReason | null>;
   removeSpecialty: (specialtyId: string) => Promise<SpecialtyActionErrorReason | null>;
   upsertCredential: (
@@ -152,6 +156,18 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
       });
     },
     [state]
+  );
+
+  const getRemovalBlockerCounts = useCallback(
+    async (specialty: Specialty): Promise<{ activeCount: number; pendingCount: number } | null> => {
+      if (!isAuthenticated) return null;
+      try {
+        return await getSpecialtyBlockerCounts(specialty);
+      } catch {
+        return null;
+      }
+    },
+    [isAuthenticated]
   );
 
   const addSpecialty = useCallback(
@@ -206,6 +222,7 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
     state,
     reload: load,
     checkRemoval,
+    getRemovalBlockerCounts,
     addSpecialty,
     removeSpecialty,
     upsertCredential,

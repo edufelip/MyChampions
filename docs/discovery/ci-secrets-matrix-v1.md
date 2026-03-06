@@ -12,9 +12,9 @@ Define all GitHub Actions secrets required by `.github/workflows/` so CI/CD setu
 
 ## Global Notes
 - Store all values in **GitHub repository secrets** (or environment-level secrets for stricter release controls).
-- `ENV_FILE` must contain **all** variables listed in `.env.example`: Firebase JS config (`FIREBASE_DEV_*`, `FIREBASE_PROD_*`), Data Connect runtime vars (`EXPO_PUBLIC_DATA_CONNECT_CONNECTOR_ID`, `EXPO_PUBLIC_DATA_CONNECT_SERVICE_ID_DEV|PROD`, `EXPO_PUBLIC_DATA_CONNECT_LOCATION_DEV|PROD`), Data Connect validation vars (`EXPO_PUBLIC_DATA_CONNECT_GRAPHQL_ENDPOINT`, `EXPO_PUBLIC_DATA_CONNECT_API_KEY`), and `APP_VARIANT`. Firebase config is no longer hardcoded in `app.config.ts` — it is read from env vars at build time.
+- `ENV_FILE` must contain **all** variables listed in `.env.example`: Firebase JS config (`FIREBASE_DEV_*`, `FIREBASE_PROD_*`), `APP_VARIANT`, optional Firestore smoke-validation token (`FIRESTORE_ID_TOKEN` for local/CI smoke runs), terms config, and optional Cloud Function URLs/RevenueCat keys used by the app.
 - Firebase config files (`google-services.json`, `GoogleService-Info*.plist`) are injected in CI from base64 secrets and must not be committed. These are the native Firebase configs; `ENV_FILE` carries the JS/Expo layer config separately.
-- Workflows run `scripts/check-dataconnect-runtime-config.mjs` and set `APP_VARIANT` explicitly (`dev` for PR/distribution, `prod` for release) to prevent accidental cross-environment Data Connect routing.
+- Workflows set `APP_VARIANT` explicitly (`dev` for PR/distribution, `prod` for release) to prevent accidental cross-environment Firebase/Firestore routing.
 - `.env.example` in the repository root lists all required variable names with empty values. Copy to `.env` locally and populate. `.env` is gitignored.
 - Use issue template `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` to track repository bootstrap and validation runs.
 

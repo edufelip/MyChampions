@@ -66,7 +66,7 @@ Effective goal precedence (D-081, BR-279): nutritionist-defined goal applies whe
 | `setStudentWaterGoal` | Student |
 | `setNutritionistWaterGoalForStudent` | Nutritionist |
 
-All operations are stubs in `features/nutrition/water-tracking-source.ts` following the `gql<T>()` + `WaterSourceError` pattern. Data Connect endpoint wiring is deferred (see pending-wiring-checklist-v1.md).
+All operations are Firestore-backed in `features/nutrition/water-tracking-source.ts` using the source-layer dependency boundary and normalized source errors.
 
 ## Localization Keys
 
@@ -101,7 +101,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | `features/nutrition/water-tracking.logic.ts` | Pure functions: `resolveEffectiveWaterGoal`, `resolveWaterDayStatus`, `calculateWaterStreak`, `validateWaterGoalInput`, `validateWaterIntakeInput`, `normalizeWaterTrackingError` |
 | `features/nutrition/water-tracking.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/nutrition/water-tracking-source.ts` | Data Connect stub surface |
+| `features/nutrition/water-tracking-source.ts` | Firestore stub surface |
 | `features/nutrition/use-water-tracking.ts` | React hook with `idle/loading/ready/error` state machine |
 | `app/student/home.tsx` | `HydrationCard` component |
 | `app/student/nutrition.tsx` | `WaterWidget` component |

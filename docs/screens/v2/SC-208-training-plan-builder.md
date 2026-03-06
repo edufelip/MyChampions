@@ -11,9 +11,12 @@
 Let fitness coaches create and edit fully customizable named predefined training plans stored in their private library. Plans consist of sessions; each session holds custom exercise items (name, quantity/sets-reps, optional notes). Plans can be assigned to individual students or bulk-assigned. Starter templates are available to clone-then-customize.
 
 ## Design Structure (D-134)
-- Library route (`/professional/training`) uses `DsScreen` shell, DS card surfaces, and DS typography/spacing tokens.
+- Library route (`/professional/training`) uses `DsScreen` shell, DS card surfaces, and DS typography/spacing tokens with the SC-204 professional surface baseline (hero header + contextual helper).
+- Library header is rendered as an elevated hero card with contextual training icon and compact helper copy.
 - Library list rendering uses `FlatList`; route uses `DsScreen scrollable={false}` to avoid nested VirtualizedList containers.
 - Empty and error states are presented inside `DsCard` containers with consistent semantics.
+- Empty state uses a centered hero treatment (soft glow + icon circle) and localized copy.
+- Plan rows use icon-leading card treatment aligned with the nutrition library, including open-status pill + trailing chevron.
 - Primary create/retry actions use DS pill buttons and localization-key copy only.
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
@@ -31,7 +34,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 - Remove sessions.
 - Add exercise items to a session (name required, quantity and notes optional).
 - Remove exercise items from a session.
-- Pick and clone a starter template (2 hardcoded stubs; D-114).
+- Pick and clone a starter template.
 - Save plan (create or update).
 - Assign plan to a student.
 - Bulk-assign plan to multiple students with per-student fine-tune step.
@@ -46,7 +49,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
 | Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
 | Template picker loading | `loadTemplates` called | Template picker loading indicator |
-| Template picker ready | Templates fetched | Picker list with 2 stub templates |
+| Template picker ready | Templates fetched | Picker list with available starter templates |
 
 ## Validation Rules
 - Plan name is required and must be at least 2 characters (BR-293).
@@ -75,7 +78,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 | `TrainingPlanDetail` | Full plan with id, name, sessions list, timestamps |
 | `TrainingSession` | Session with id, name, notes, items array |
 | `TrainingSessionItem` | Exercise item with id, name, quantity, notes |
-| `StarterTemplate[]` | 2 hardcoded stub templates (D-114) |
+| `StarterTemplate[]` | Starter template records from Firestore with local fallback entries |
 
 ### Source Operations
 | Operation | Description |
@@ -87,10 +90,10 @@ Let fitness coaches create and edit fully customizable named predefined training
 | `removeTrainingSession` | Remove session from plan |
 | `addTrainingSessionItem` | Add exercise item to session |
 | `removeTrainingSessionItem` | Remove exercise item from session |
-| `getStarterTemplates('training')` | Fetch starter template list (stub) |
-| `cloneStarterTemplate` | Clone starter into editable draft (stub) |
+| `getStarterTemplates('training')` | Fetch starter template list |
+| `cloneStarterTemplate` | Clone starter into editable draft |
 
-All Data Connect operations are stubs in `features/plans/plan-builder-source.ts`. Real endpoint wiring is deferred (pending-wiring-checklist-v1.md).
+Plan library and builder persistence are Firestore-backed via `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`.
 
 ## Localization Keys
 
@@ -142,7 +145,7 @@ All Data Connect operations are stubs in `features/plans/plan-builder-source.ts`
 All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Edge Cases
-- Starter template cloning is stubbed; `cloneStarterTemplate` calls the Data Connect endpoint (deferred wiring); editing the source template does not mutate existing clones (BR-295).
+- Starter template cloning follows immutable-template semantics; editing the source template does not mutate existing clones (BR-295).
 - If assignment ends while the builder is open: block assign action; plan save remains available.
 - Editing a predefined plan after bulk-assignment does not mutate already assigned student copies (D-082, BR-283).
 - Custom field evolution across template versions must preserve old records.
@@ -152,7 +155,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | `features/plans/plan-builder.logic.ts` | Pure functions: `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `isStarterTemplate`, `normalizePlanBuilderError` |
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/plans/plan-builder-source.ts` | Data Connect stubs: `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`, `getStarterTemplates`, `cloneStarterTemplate` |
+| `features/plans/plan-builder-source.ts` | Firestore source ops: `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem`, `getStarterTemplates`, `cloneStarterTemplate` |
 | `features/plans/use-plan-builder.ts` | React hook `useTrainingPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
 | `app/professional/training.tsx` | Plan library list screen |
 | `app/professional/training/plans/[planId].tsx` | Plan builder screen |

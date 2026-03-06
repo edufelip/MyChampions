@@ -12,10 +12,13 @@ in-app support access.
 
 ## Design Structure
 - `ScrollView` root with DS theme tokens and shared spacing rhythm.
+- Shared screen uses role-aware visual treatment: professional users see the SC-204-inspired hero summary styling while student users retain profile-oriented framing.
+- Hero summary card includes contextual account icon, concise helper copy, and role context pill for faster orientation.
 - Grouped `<View>` rows styled as iOS-native settings groups (rounded, bordered).
 - Offline communication uses `DsOfflineBanner` while preserving BL-008 write-lock restrictions.
-- Section headers use uppercase label pattern.
+- Section headers use compact uppercase DS caption pattern.
 - Top safe-area spacing is role-aware: Student Profile tab uses full top inset; Professional Account tab uses half inset.
+- Interactive settings rows use icon chevrons and refined row height/spacing while preserving existing behavior contracts.
 
 ## Screen Sections (top → bottom)
 

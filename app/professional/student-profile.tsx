@@ -9,8 +9,7 @@
  *  - Plan change request triage (review / dismiss)
  *  - Entitlement lock notice when write actions are blocked
  *
- * Data wiring deferred — stub state shown until professional-source endpoint wired.
- * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Data wiring is Firestore-backed via professional-source.
  *
  * Docs: docs/screens/v2/SC-206-student-profile-professional-view.md
  * Refs: D-043, D-100, D-134, FR-106–108, FR-121, FR-123–125, FR-130–131, FR-185, FR-211
@@ -20,7 +19,9 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -52,12 +53,18 @@ import { validateWaterGoalInput } from '@/features/nutrition/water-tracking.logi
 import type { PlanChangeRequest } from '@/features/plans/plan-change-request.logic';
 import { usePlans } from '@/features/plans/use-plans';
 import {
+  getProfessionalStudentAssignmentSnapshot,
+  unbindStudentConnections,
+} from '@/features/professional/professional-source';
+import {
   isPlanUpdateLocked,
   resolveSubscriptionState,
 } from '@/features/subscription/subscription.logic';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+
+import { PlanPickerModal } from '@/components/ds/patterns/PlanPickerModal';
 
 type AssignmentStatus = 'active' | 'pending' | 'none';
 type TFn = ReturnType<typeof useTranslation>['t'];
@@ -81,10 +88,14 @@ export default function ProfessionalStudentProfileScreen() {
   });
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
-  const { getChangeRequestsForStudent, reviewChangeRequest } = usePlans(Boolean(currentUser));
+  const { state: plansState, getChangeRequestsForStudent, reviewChangeRequest, bulkAssign } = usePlans(Boolean(currentUser));
   const [changeRequests, setChangeRequests] = useState<PlanChangeRequest[]>([]);
   const [changeRequestsLoadError, setChangeRequestsLoadError] = useState<string | null>(null);
   const [changeRequestsActionError, setChangeRequestsActionError] = useState<string | null>(null);
+
+  const [isPlanPickerVisible, setIsPlanPickerVisible] = useState(false);
+  const [pickerPlanType, setPickerPlanType] = useState<'nutrition' | 'training'>('training');
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const { state: waterState, setGoal } = useWaterTracking(Boolean(currentUser), today);
@@ -107,9 +118,45 @@ export default function ProfessionalStudentProfileScreen() {
   const [goalInput, setGoalInput] = useState('');
   const [goalError, setGoalError] = useState<string | null>(null);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
+  const [unbindError, setUnbindError] = useState<string | null>(null);
 
-  const [nutritionStatus] = useState<AssignmentStatus>('none');
-  const [trainingStatus] = useState<AssignmentStatus>('none');
+  const [nutritionStatus, setNutritionStatus] = useState<AssignmentStatus>('none');
+  const [trainingStatus, setTrainingStatus] = useState<AssignmentStatus>('none');
+
+  const loadAssignments = useCallback(async () => {
+    if (!currentUser || !studentId) {
+      setNutritionStatus('none');
+      setTrainingStatus('none');
+      setProfileLoadError(null);
+      setIsLoadingAssignments(false);
+      return;
+    }
+
+    setIsLoadingAssignments(true);
+    setProfileLoadError(null);
+    const snapshot = await getProfessionalStudentAssignmentSnapshot(studentId);
+    setNutritionStatus(snapshot.nutritionStatus);
+    setTrainingStatus(snapshot.trainingStatus);
+    setIsLoadingAssignments(false);
+  }, [currentUser, studentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadAssignments().catch(() => {
+      if (!cancelled) {
+        setNutritionStatus('none');
+        setTrainingStatus('none');
+        setProfileLoadError(t('pro.student_profile.error') as string);
+        setIsLoadingAssignments(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadAssignments, t]);
 
   async function handleReviewChangeRequest(requestId: string, action: 'reviewed' | 'dismissed') {
     setChangeRequestsActionError(null);
@@ -119,6 +166,17 @@ export default function ProfessionalStudentProfileScreen() {
       return;
     }
     setChangeRequests((prev) => prev.filter((r) => r.id !== requestId));
+  }
+
+  async function handleUnbind() {
+    if (!studentId) return;
+    setUnbindError(null);
+    try {
+      await unbindStudentConnections(studentId);
+      await loadAssignments();
+    } catch {
+      setUnbindError(t('pro.student_profile.unbind.error') as string);
+    }
   }
 
   function confirmUnbind() {
@@ -131,7 +189,7 @@ export default function ProfessionalStudentProfileScreen() {
           text: t('pro.student_profile.unbind.confirm_yes') as string,
           style: 'destructive',
           onPress: () => {
-            // Real unbind call deferred (pending-wiring-checklist-v1.md)
+            void handleUnbind();
           },
         },
       ]
@@ -161,6 +219,26 @@ export default function ProfessionalStudentProfileScreen() {
       setGoalInput('');
     }
   }
+
+  const handleOpenPicker = (type: 'nutrition' | 'training') => {
+    setPickerPlanType(type);
+    setIsPlanPickerVisible(true);
+  };
+
+  const handleAssignPlan = async (planId: string) => {
+    if (!studentId) return;
+    setIsPlanPickerVisible(false);
+    setIsAssigning(true);
+    const result = await bulkAssign(planId, [studentId]);
+    setIsAssigning(false);
+
+    if ('error' in result) {
+      Alert.alert(t('pro.plan.assign.error') as string);
+    } else {
+      Alert.alert(t('pro.plan.assign.success') as string);
+      void loadAssignments();
+    }
+  };
 
   return (
     <DsScreen scheme={scheme} testID="pro.student_profile.screen" contentContainerStyle={styles.content}>
@@ -197,6 +275,25 @@ export default function ProfessionalStudentProfileScreen() {
         </DsCard>
       ) : null}
 
+      {isLoadingAssignments || isAssigning ? (
+        <DsCard scheme={scheme} testID="pro.student_profile.loading">
+          <ActivityIndicator
+            accessibilityLabel={t('a11y.loading.default') as string}
+            color={theme.color.accentPrimary}
+          />
+        </DsCard>
+      ) : null}
+
+      {profileLoadError ? (
+        <DsCard scheme={scheme} variant="warning" testID="pro.student_profile.error">
+          <View accessibilityLiveRegion="polite">
+            <Text style={[styles.errorText, { color: theme.color.danger }]}>
+              {profileLoadError}
+            </Text>
+          </View>
+        </DsCard>
+      ) : null}
+
       <AssignmentCard
         specialtyLabel={t('pro.student_profile.specialty.nutritionist') as string}
         status={nutritionStatus}
@@ -204,6 +301,8 @@ export default function ProfessionalStudentProfileScreen() {
         theme={theme}
         t={t}
         testID="pro.student_profile.nutrition"
+        onAssign={() => handleOpenPicker('nutrition')}
+        isWriteLocked={isWriteLocked}
       />
 
       <AssignmentCard
@@ -213,6 +312,8 @@ export default function ProfessionalStudentProfileScreen() {
         theme={theme}
         t={t}
         testID="pro.student_profile.training"
+        onAssign={() => handleOpenPicker('training')}
+        isWriteLocked={isWriteLocked}
       />
 
       {(nutritionStatus === 'active' || trainingStatus === 'active') && !isWriteLocked ? (
@@ -225,6 +326,16 @@ export default function ProfessionalStudentProfileScreen() {
             {t('pro.student_profile.unbind.cta')}
           </Text>
         </Pressable>
+      ) : null}
+
+      {unbindError ? (
+        <View accessibilityLiveRegion="polite">
+          <Text
+            style={[styles.errorText, { color: theme.color.danger }]}
+            testID="pro.student_profile.unbind.error">
+            {unbindError}
+          </Text>
+        </View>
       ) : null}
 
       <PlanChangeRequestsCard
@@ -257,6 +368,17 @@ export default function ProfessionalStudentProfileScreen() {
           scheme={scheme}
         />
       ) : null}
+
+      <PlanPickerModal
+        isVisible={isPlanPickerVisible}
+        onClose={() => setIsPlanPickerVisible(false)}
+        onSelect={handleAssignPlan}
+        plansState={plansState}
+        planType={pickerPlanType}
+        scheme={scheme}
+        theme={theme}
+        t={t}
+      />
     </DsScreen>
   );
 }
@@ -268,6 +390,8 @@ function AssignmentCard({
   theme,
   t,
   testID,
+  onAssign,
+  isWriteLocked,
 }: {
   specialtyLabel: string;
   status: AssignmentStatus;
@@ -275,6 +399,8 @@ function AssignmentCard({
   theme: DsTheme;
   t: TFn;
   testID: string;
+  onAssign: () => void;
+  isWriteLocked: boolean;
 }) {
   const statusLabel =
     status === 'active'
@@ -292,9 +418,21 @@ function AssignmentCard({
 
   return (
     <DsCard scheme={scheme} testID={`${testID}.assignmentCard`}>
-      <View accessibilityLabel={`${specialtyLabel}: ${statusLabel as string}`}>
-        <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{specialtyLabel}</Text>
-        <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
+      <View style={styles.assignmentHeader}>
+        <View accessibilityLabel={`${specialtyLabel}: ${statusLabel as string}`} style={{ flex: 1 }}>
+          <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{specialtyLabel}</Text>
+          <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
+        </View>
+        {status === 'none' && !isWriteLocked && (
+          <DsPillButton
+            scheme={scheme}
+            variant="outline"
+            size="sm"
+            label={t('pro.student_profile.assignment.cta_assign')}
+            onPress={onAssign}
+            fullWidth={false}
+          />
+        )}
       </View>
     </DsCard>
   );
@@ -353,7 +491,8 @@ function PlanChangeRequestsCard({
               <View style={styles.requestActions}>
                 <DsPillButton
                   scheme={scheme}
-                  variant="secondary"
+                  variant="outline"
+                  size="sm"
                   label={t('pro.student_profile.plan_change_requests.review') as string}
                   onPress={() => onReview(req.id)}
                   fullWidth={false}
@@ -362,7 +501,8 @@ function PlanChangeRequestsCard({
                 />
                 <DsPillButton
                   scheme={scheme}
-                  variant="secondary"
+                  variant="outline"
+                  size="sm"
                   label={t('pro.student_profile.plan_change_requests.dismiss') as string}
                   onPress={() => onDismiss(req.id)}
                   fullWidth={false}
@@ -533,4 +673,41 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 42,
   },
+  assignmentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DsSpace.sm,
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: DsRadius.xl,
+    borderTopRightRadius: DsRadius.xl,
+    minHeight: '50%',
+    maxHeight: '85%',
+    padding: DsSpace.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: DsSpace.md,
+  },
+  modalTitle: {
+    ...DsTypography.cardTitle,
+    fontFamily: Fonts?.rounded ?? 'normal',
+  },
+  modalScroll: { gap: DsSpace.md, paddingBottom: 40 },
+  planRow: {
+    borderWidth: 1,
+    borderRadius: DsRadius.lg,
+    padding: DsSpace.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DsSpace.sm,
+  },
+  planName: { fontWeight: '700', fontSize: 15 },
 });

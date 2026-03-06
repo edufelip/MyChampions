@@ -1,63 +1,21 @@
 /**
- * Plan builder Data Connect source — nutrition and training plan CRUD,
- * starter template library, and food search via Cloud Function proxy.
- *
- * All Data Connect operations use the Firebase Data Connect generated SDK (D-114, D-126).
- * Food search (fatsecret) is proxied through a Firebase Cloud Function (D-113, D-127).
- *
- * Refs: D-111–D-114, D-126, D-127, FR-240–FR-248, BR-291–BR-296
+ * Plan builder Firestore source — nutrition/training CRUD,
+ * starter templates, and food search proxy integration.
  */
 
 import {
-  getNutritionTemplates as _getNutritionTemplates,
-  getTrainingTemplates as _getTrainingTemplates,
-  cloneAsNutritionPlan as _cloneAsNutritionPlan,
-  cloneAsTrainingPlan as _cloneAsTrainingPlan,
-  createNutritionPlan as _createNutritionPlan,
-  updateNutritionPlan as _updateNutritionPlan,
-  getNutritionPlanDetail as _getNutritionPlanDetail,
-  addNutritionMealItem as _addNutritionMealItem,
-  removeNutritionMealItem as _removeNutritionMealItem,
-  createTrainingPlan as _createTrainingPlan,
-  updateTrainingPlan as _updateTrainingPlan,
-  getTrainingPlanDetail as _getTrainingPlanDetail,
-  addTrainingSession as _addTrainingSession,
-  removeTrainingSession as _removeTrainingSession,
-  addTrainingSessionItem as _addTrainingSessionItem,
-  removeTrainingSessionItem as _removeTrainingSessionItem,
-  type GetNutritionTemplatesData,
-  type GetTrainingTemplatesData,
-  type CloneAsNutritionPlanData,
-  type CloneAsNutritionPlanVariables,
-  type CloneAsTrainingPlanData,
-  type CloneAsTrainingPlanVariables,
-  type CreateNutritionPlanData,
-  type CreateNutritionPlanVariables,
-  type UpdateNutritionPlanData,
-  type UpdateNutritionPlanVariables,
-  type GetNutritionPlanDetailData,
-  type GetNutritionPlanDetailVariables,
-  type AddNutritionMealItemData,
-  type AddNutritionMealItemVariables,
-  type RemoveNutritionMealItemData,
-  type RemoveNutritionMealItemVariables,
-  type CreateTrainingPlanData,
-  type CreateTrainingPlanVariables,
-  type UpdateTrainingPlanData,
-  type UpdateTrainingPlanVariables,
-  type GetTrainingPlanDetailData,
-  type GetTrainingPlanDetailVariables,
-  type AddTrainingSessionData,
-  type AddTrainingSessionVariables,
-  type RemoveTrainingSessionData,
-  type RemoveTrainingSessionVariables,
-  type AddTrainingSessionItemData,
-  type AddTrainingSessionItemVariables,
-  type RemoveTrainingSessionItemData,
-  type RemoveTrainingSessionItemVariables,
-} from '@mychampions/dataconnect-generated';
-import type { DataConnect } from 'firebase/data-connect';
-import { getDataConnectInstance as _getDataConnectInstance } from '../dataconnect';
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  runTransaction,
+  where,
+  type Firestore,
+} from 'firebase/firestore';
+
+import { getCurrentAuthUid as _getCurrentAuthUid, getFirestoreInstance as _getFirestoreInstance, nowIso, generateId } from '../firestore';
+import { classifyFirestoreError } from '../firestore-error';
 import { getFirebaseAuth } from '../auth/firebase';
 import { searchFoodsFromSource } from '../nutrition/food-search-source';
 
@@ -97,8 +55,6 @@ export class PlanBuilderSourceError extends Error {
   }
 }
 
-// ─── Nutrition plan result types ──────────────────────────────────────────────
-
 export type NutritionPlanDetail = {
   id: string;
   name: string;
@@ -111,8 +67,6 @@ export type NutritionPlanDetail = {
   updatedAt: string;
 };
 
-// ─── Training plan result types ───────────────────────────────────────────────
-
 export type TrainingPlanDetail = {
   id: string;
   name: string;
@@ -121,76 +75,120 @@ export type TrainingPlanDetail = {
   updatedAt: string;
 };
 
-// ─── Food search types ────────────────────────────────────────────────────────
-
-// Re-exported from plan-builder.logic for backward-compatible consumer imports.
 export type { FoodSearchResult } from './plan-builder.logic';
 
-// ─── Injectable deps ──────────────────────────────────────────────────────────
-
-/**
- * Injectable dependencies for all plan builder operations.
- * Production code uses real SDK defaults; tests inject mocks.
- * Refs: D-114, D-126
- */
-export type PlanBuilderSourceDeps = {
-  // Nutrition plan CRUD
-  createNutritionPlan: (dc: DataConnect, vars: CreateNutritionPlanVariables) => Promise<{ data: CreateNutritionPlanData }>;
-  updateNutritionPlan: (dc: DataConnect, vars: UpdateNutritionPlanVariables) => Promise<{ data: UpdateNutritionPlanData }>;
-  getNutritionPlanDetail: (dc: DataConnect, vars: GetNutritionPlanDetailVariables) => Promise<{ data: GetNutritionPlanDetailData }>;
-  addNutritionMealItem: (dc: DataConnect, vars: AddNutritionMealItemVariables) => Promise<{ data: AddNutritionMealItemData }>;
-  removeNutritionMealItem: (dc: DataConnect, vars: RemoveNutritionMealItemVariables) => Promise<{ data: RemoveNutritionMealItemData }>;
-  // Training plan CRUD
-  createTrainingPlan: (dc: DataConnect, vars: CreateTrainingPlanVariables) => Promise<{ data: CreateTrainingPlanData }>;
-  updateTrainingPlan: (dc: DataConnect, vars: UpdateTrainingPlanVariables) => Promise<{ data: UpdateTrainingPlanData }>;
-  getTrainingPlanDetail: (dc: DataConnect, vars: GetTrainingPlanDetailVariables) => Promise<{ data: GetTrainingPlanDetailData }>;
-  addTrainingSession: (dc: DataConnect, vars: AddTrainingSessionVariables) => Promise<{ data: AddTrainingSessionData }>;
-  removeTrainingSession: (dc: DataConnect, vars: RemoveTrainingSessionVariables) => Promise<{ data: RemoveTrainingSessionData }>;
-  addTrainingSessionItem: (dc: DataConnect, vars: AddTrainingSessionItemVariables) => Promise<{ data: AddTrainingSessionItemData }>;
-  removeTrainingSessionItem: (dc: DataConnect, vars: RemoveTrainingSessionItemVariables) => Promise<{ data: RemoveTrainingSessionItemData }>;
-  // Starter templates
-  getNutritionTemplates: (dc: DataConnect) => Promise<{ data: GetNutritionTemplatesData }>;
-  getTrainingTemplates: (dc: DataConnect) => Promise<{ data: GetTrainingTemplatesData }>;
-  cloneAsNutritionPlan: (dc: DataConnect, vars: CloneAsNutritionPlanVariables) => Promise<{ data: CloneAsNutritionPlanData }>;
-  cloneAsTrainingPlan: (dc: DataConnect, vars: CloneAsTrainingPlanVariables) => Promise<{ data: CloneAsTrainingPlanData }>;
-  // DC singleton
-  getDataConnectInstance: () => DataConnect;
+type FirestoreNutritionPlan = {
+  id: string;
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  sourceKind: 'predefined' | 'assigned' | 'self_managed';
+  isArchived: boolean;
+  isDraft: boolean;
+  name: string;
+  caloriesTarget: number;
+  carbsTarget: number;
+  proteinsTarget: number;
+  fatsTarget: number;
+  items: Array<{ id: string; foodName: string }>;
+  createdAt: string;
+  updatedAt: string;
 };
 
-/**
- * @deprecated Use PlanBuilderSourceDeps instead.
- * Kept for backward compatibility — starter template tests may reference this name.
- */
+type FirestoreTrainingPlan = {
+  id: string;
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  sourceKind: 'predefined' | 'assigned' | 'self_managed';
+  isArchived: boolean;
+  isDraft: boolean;
+  name: string;
+  sessions: Array<{ id: string; sessionName: string; items: Array<{ id: string; exerciseName: string }> }>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FirestoreStarterTemplate = {
+  id: string;
+  planType: PlanType;
+  name: string;
+  description: string | null;
+  nutritionDefaults?: {
+    caloriesTarget: number;
+    carbsTarget: number;
+    proteinsTarget: number;
+    fatsTarget: number;
+    items: Array<{ id: string; foodName: string }>;
+  };
+  trainingDefaults?: {
+    sessions: Array<{ id: string; sessionName: string; items: Array<{ id: string; exerciseName: string }> }>;
+  };
+};
+
+export type PlanBuilderSourceDeps = {
+  getFirestoreInstance: () => Firestore;
+  getCurrentAuthUid: () => string;
+};
+
 export type StarterTemplateDeps = PlanBuilderSourceDeps;
 
 const defaultDeps: PlanBuilderSourceDeps = {
-  createNutritionPlan: _createNutritionPlan,
-  updateNutritionPlan: _updateNutritionPlan,
-  getNutritionPlanDetail: _getNutritionPlanDetail,
-  addNutritionMealItem: _addNutritionMealItem,
-  removeNutritionMealItem: _removeNutritionMealItem,
-  createTrainingPlan: _createTrainingPlan,
-  updateTrainingPlan: _updateTrainingPlan,
-  getTrainingPlanDetail: _getTrainingPlanDetail,
-  addTrainingSession: _addTrainingSession,
-  removeTrainingSession: _removeTrainingSession,
-  addTrainingSessionItem: _addTrainingSessionItem,
-  removeTrainingSessionItem: _removeTrainingSessionItem,
-  getNutritionTemplates: _getNutritionTemplates,
-  getTrainingTemplates: _getTrainingTemplates,
-  cloneAsNutritionPlan: _cloneAsNutritionPlan,
-  cloneAsTrainingPlan: _cloneAsTrainingPlan,
-  getDataConnectInstance: _getDataConnectInstance,
+  getFirestoreInstance: _getFirestoreInstance,
+  getCurrentAuthUid: _getCurrentAuthUid,
 };
 
-// ─── Mappers ──────────────────────────────────────────────────────────────────
+const FALLBACK_STARTER_TEMPLATES: FirestoreStarterTemplate[] = [
+  {
+    id: 'starter_nutrition_default_balance',
+    planType: 'nutrition',
+    name: 'Balanced Starter',
+    description: 'Balanced calories and macros for kickoff.',
+    nutritionDefaults: {
+      caloriesTarget: 2000,
+      carbsTarget: 220,
+      proteinsTarget: 140,
+      fatsTarget: 70,
+      items: [
+        { id: 'item_1', foodName: 'Oats + banana breakfast' },
+        { id: 'item_2', foodName: 'Chicken + rice lunch' },
+      ],
+    },
+  },
+  {
+    id: 'starter_training_default_fullbody',
+    planType: 'training',
+    name: 'Full Body Starter',
+    description: 'Simple full-body 3-day split.',
+    trainingDefaults: {
+      sessions: [
+        {
+          id: 'session_1',
+          sessionName: 'Day A',
+          items: [{ id: 'exercise_1', exerciseName: 'Squat 3x8' }],
+        },
+      ],
+    },
+  },
+];
 
-function mapNutritionPlanDetail(raw: GetNutritionPlanDetailData['nutritionPlan']): NutritionPlanDetail {
+function normalizePlanBuilderSourceError(error: unknown): PlanBuilderSourceError {
+  if (error instanceof PlanBuilderSourceError) return error;
+
+  switch (classifyFirestoreError(error)) {
+    case 'network':
+      return new PlanBuilderSourceError('network', (error as Error)?.message ?? 'Network error.');
+    case 'configuration':
+      return new PlanBuilderSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
+    default:
+      return new PlanBuilderSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected plan builder source error.');
+  }
+}
+
+function mapNutritionPlanDetail(raw: FirestoreNutritionPlan | null | undefined): NutritionPlanDetail {
   if (!raw) {
     throw new PlanBuilderSourceError('invalid_response', 'getNutritionPlanDetail returned no plan.');
   }
 
-  const items: NutritionMealItem[] = (raw.meals ?? []).map((meal) => ({
+  const items: NutritionMealItem[] = (raw.items ?? []).map((meal) => ({
     id: meal.id,
     name: meal.foodName,
     quantity: '',
@@ -210,7 +208,7 @@ function mapNutritionPlanDetail(raw: GetNutritionPlanDetailData['nutritionPlan']
   };
 }
 
-function mapTrainingPlanDetail(raw: GetTrainingPlanDetailData['trainingPlan']): TrainingPlanDetail {
+function mapTrainingPlanDetail(raw: FirestoreTrainingPlan | null | undefined): TrainingPlanDetail {
   if (!raw) {
     throw new PlanBuilderSourceError('invalid_response', 'getTrainingPlanDetail returned no plan.');
   }
@@ -234,289 +232,453 @@ function mapTrainingPlanDetail(raw: GetTrainingPlanDetailData['trainingPlan']): 
   };
 }
 
-// ─── Nutrition plan CRUD ──────────────────────────────────────────────────────
-
-/**
- * Creates a new named predefined nutrition plan in the professional's library.
- * Refs: FR-240, FR-241, BR-291, BR-292
- */
 export async function createNutritionPlan(
   input: NutritionPlanInput,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<NutritionPlanDetail> {
-  const dc = deps.getDataConnectInstance();
-  const { data: createData } = await deps.createNutritionPlan(dc, {
-    name: input.name.trim(),
-    caloriesTarget: parseFloat(input.caloriesTarget) || 0,
-    carbsTarget: parseFloat(input.carbsTarget) || 0,
-    proteinsTarget: parseFloat(input.proteinsTarget) || 0,
-    fatsTarget: parseFloat(input.fatsTarget) || 0,
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+    const id = generateId('nutrition_plan');
+    const timestamp = nowIso();
 
-  const planId = createData.nutritionPlan_insert.id;
-  const { data: detailData } = await deps.getNutritionPlanDetail(dc, { planId: planId });
-  return mapNutritionPlanDetail(detailData.nutritionPlan);
+    const plan: FirestoreNutritionPlan = {
+      id,
+      ownerProfessionalUid: uid,
+      studentAuthUid: uid,
+      sourceKind: 'predefined',
+      isArchived: false,
+      isDraft: false,
+      name: input.name.trim(),
+      caloriesTarget: parseFloat(input.caloriesTarget) || 0,
+      carbsTarget: parseFloat(input.carbsTarget) || 0,
+      proteinsTarget: parseFloat(input.proteinsTarget) || 0,
+      fatsTarget: parseFloat(input.fatsTarget) || 0,
+      items: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'nutritionPlans', id), plan);
+    });
+
+    return mapNutritionPlanDetail(plan);
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Updates an existing nutrition plan's metadata (name, calorie/macro targets).
- */
 export async function updateNutritionPlan(
   planId: string,
   input: NutritionPlanInput,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.updateNutritionPlan(dc, {
-    planId: planId,
-    name: input.name.trim(),
-    caloriesTarget: parseFloat(input.caloriesTarget) || 0,
-    carbsTarget: parseFloat(input.carbsTarget) || 0,
-    proteinsTarget: parseFloat(input.proteinsTarget) || 0,
-    fatsTarget: parseFloat(input.fatsTarget) || 0,
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'nutritionPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
+      }
+
+      tx.update(ref, {
+        name: input.name.trim(),
+        caloriesTarget: parseFloat(input.caloriesTarget) || 0,
+        carbsTarget: parseFloat(input.carbsTarget) || 0,
+        proteinsTarget: parseFloat(input.proteinsTarget) || 0,
+        fatsTarget: parseFloat(input.fatsTarget) || 0,
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Fetches full nutrition plan detail including items.
- */
 export async function getNutritionPlanDetail(
   planId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<NutritionPlanDetail> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getNutritionPlanDetail(dc, { planId: planId });
-  return mapNutritionPlanDetail(data.nutritionPlan);
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const snapshot = await getDoc(doc(firestore, 'nutritionPlans', planId));
+    return mapNutritionPlanDetail(snapshot.exists() ? (snapshot.data() as FirestoreNutritionPlan) : null);
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Adds a food item to an existing nutrition plan.
- * SDK vars: foodName (maps from item.name), macros as numbers.
- * NutritionMealItem.quantity and .notes are preserved as empty strings since
- * the SDK schema no longer carries those fields.
- * Refs: FR-242
- */
 export async function addNutritionMealItem(
   planId: string,
   item: NutritionMealItemInput,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<NutritionMealItem> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.addNutritionMealItem(dc, {
-    planId: planId,
-    foodName: item.name.trim(),
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const insertedId = generateId('nutrition_item');
 
-  const insertedId = data.nutritionPlanMeal_insert.id;
-  return { id: insertedId, name: item.name.trim(), quantity: '', notes: '' };
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'nutritionPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
+      }
+      const current = snap.data() as FirestoreNutritionPlan;
+      const items = current.items ?? [];
+      items.push({ id: insertedId, foodName: item.name.trim() });
+      tx.update(ref, {
+        items,
+        updatedAt: nowIso(),
+      });
+    });
+
+    return { id: insertedId, name: item.name.trim(), quantity: '', notes: '' };
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Removes a food item from a nutrition plan.
- * SDK only requires itemId (planId param dropped per SDK schema change).
- */
 export async function removeNutritionMealItem(
   _planId: string,
   itemId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.removeNutritionMealItem(dc, { itemId: itemId });
+  try {
+    const firestore = deps.getFirestoreInstance();
+
+    const plans = await getDocs(query(collection(firestore, 'nutritionPlans'), where('items', '!=', null)));
+    const target = plans.docs.find((snap) => {
+      const raw = snap.data() as FirestoreNutritionPlan;
+      return (raw.items ?? []).some((item) => item.id === itemId);
+    });
+
+    if (!target) return;
+
+    await runTransaction(firestore, async (tx) => {
+      const raw = target.data() as FirestoreNutritionPlan;
+      const filtered = (raw.items ?? []).filter((item) => item.id !== itemId);
+      tx.update(target.ref, {
+        items: filtered,
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-// ─── Training plan CRUD ───────────────────────────────────────────────────────
-
-/**
- * Creates a new named predefined training plan in the professional's library.
- * Refs: FR-244, BR-293
- */
 export async function createTrainingPlan(
   input: TrainingPlanInput,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<TrainingPlanDetail> {
-  const dc = deps.getDataConnectInstance();
-  const { data: createData } = await deps.createTrainingPlan(dc, {
-    name: input.name.trim(),
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+    const id = generateId('training_plan');
+    const timestamp = nowIso();
 
-  const planId = createData.trainingPlan_insert.id;
-  const { data: detailData } = await deps.getTrainingPlanDetail(dc, { planId: planId });
-  return mapTrainingPlanDetail(detailData.trainingPlan);
+    const plan: FirestoreTrainingPlan = {
+      id,
+      ownerProfessionalUid: uid,
+      studentAuthUid: uid,
+      sourceKind: 'predefined',
+      isArchived: false,
+      isDraft: false,
+      name: input.name.trim(),
+      sessions: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'trainingPlans', id), plan);
+    });
+
+    return mapTrainingPlanDetail(plan);
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Updates an existing training plan's name.
- */
 export async function updateTrainingPlan(
   planId: string,
   input: TrainingPlanInput,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.updateTrainingPlan(dc, {
-    planId: planId,
-    name: input.name.trim(),
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'trainingPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
+      }
+
+      tx.update(ref, {
+        name: input.name.trim(),
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Fetches full training plan detail including sessions and session items.
- */
 export async function getTrainingPlanDetail(
   planId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<TrainingPlanDetail> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.getTrainingPlanDetail(dc, { planId: planId });
-  return mapTrainingPlanDetail(data.trainingPlan);
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const snapshot = await getDoc(doc(firestore, 'trainingPlans', planId));
+    return mapTrainingPlanDetail(snapshot.exists() ? (snapshot.data() as FirestoreTrainingPlan) : null);
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Adds a session to a training plan.
- * SDK var: sessionName (maps from session.name). notes field dropped per SDK schema.
- * Refs: FR-245
- */
 export async function addTrainingSession(
   planId: string,
   session: TrainingSessionInput,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<TrainingSession> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.addTrainingSession(dc, {
-    planId: planId,
-    sessionName: session.name.trim(),
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const insertedId = generateId('training_session');
 
-  const insertedId = data.trainingPlanSession_insert.id;
-  return { id: insertedId, name: session.name.trim(), notes: '', items: [] };
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'trainingPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
+      }
+      const current = snap.data() as FirestoreTrainingPlan;
+      const sessions = current.sessions ?? [];
+      sessions.push({ id: insertedId, sessionName: session.name.trim(), items: [] });
+      tx.update(ref, {
+        sessions,
+        updatedAt: nowIso(),
+      });
+    });
+
+    return { id: insertedId, name: session.name.trim(), notes: '', items: [] };
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Removes a session from a training plan.
- * SDK only requires sessionId (planId param dropped per SDK schema change).
- */
 export async function removeTrainingSession(
   _planId: string,
   sessionId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.removeTrainingSession(dc, { sessionId: sessionId });
+  try {
+    const firestore = deps.getFirestoreInstance();
+
+    const plans = await getDocs(query(collection(firestore, 'trainingPlans'), where('sessions', '!=', null)));
+    const target = plans.docs.find((snap) => {
+      const raw = snap.data() as FirestoreTrainingPlan;
+      return (raw.sessions ?? []).some((s) => s.id === sessionId);
+    });
+
+    if (!target) return;
+
+    await runTransaction(firestore, async (tx) => {
+      const raw = target.data() as FirestoreTrainingPlan;
+      tx.update(target.ref, {
+        sessions: (raw.sessions ?? []).filter((s) => s.id !== sessionId),
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Adds a custom item to a training session.
- * SDK var: exerciseName (maps from item.name). Sets/reps/weight are omitted
- * since TrainingSessionItemInput uses name/quantity/notes for display.
- * Refs: FR-246, BR-294
- */
 export async function addTrainingSessionItem(
   sessionId: string,
   item: TrainingSessionItemInput,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<TrainingSessionItem> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await deps.addTrainingSessionItem(dc, {
-    sessionId: sessionId,
-    exerciseName: item.name.trim(),
-  });
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const insertedId = generateId('training_item');
 
-  const insertedId = data.trainingSessionItem_insert.id;
-  return { id: insertedId, name: item.name.trim(), quantity: '', notes: '' };
+    const plans = await getDocs(query(collection(firestore, 'trainingPlans'), where('sessions', '!=', null)));
+    const target = plans.docs.find((snap) => {
+      const raw = snap.data() as FirestoreTrainingPlan;
+      return (raw.sessions ?? []).some((s) => s.id === sessionId);
+    });
+
+    if (!target) {
+      throw new PlanBuilderSourceError('graphql', 'Training session not found.');
+    }
+
+    await runTransaction(firestore, async (tx) => {
+      const raw = target.data() as FirestoreTrainingPlan;
+      const sessions = (raw.sessions ?? []).map((session) => {
+        if (session.id !== sessionId) return session;
+        return {
+          ...session,
+          items: [...(session.items ?? []), { id: insertedId, exerciseName: item.name.trim() }],
+        };
+      });
+      tx.update(target.ref, {
+        sessions,
+        updatedAt: nowIso(),
+      });
+    });
+
+    return { id: insertedId, name: item.name.trim(), quantity: '', notes: '' };
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Removes a custom item from a training session.
- * SDK only requires itemId (sessionId param dropped per SDK schema change).
- */
 export async function removeTrainingSessionItem(
   _sessionId: string,
   itemId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
-  const dc = deps.getDataConnectInstance();
-  await deps.removeTrainingSessionItem(dc, { itemId: itemId });
+  try {
+    const firestore = deps.getFirestoreInstance();
+
+    const plans = await getDocs(query(collection(firestore, 'trainingPlans'), where('sessions', '!=', null)));
+    const target = plans.docs.find((snap) => {
+      const raw = snap.data() as FirestoreTrainingPlan;
+      return (raw.sessions ?? []).some((s) => (s.items ?? []).some((it) => it.id === itemId));
+    });
+
+    if (!target) return;
+
+    await runTransaction(firestore, async (tx) => {
+      const raw = target.data() as FirestoreTrainingPlan;
+      const sessions = (raw.sessions ?? []).map((session) => ({
+        ...session,
+        items: (session.items ?? []).filter((it) => it.id !== itemId),
+      }));
+      tx.update(target.ref, {
+        sessions,
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-// ─── Starter templates ────────────────────────────────────────────────────────
+async function loadStarterTemplatesFromFirestore(
+  planType: PlanType,
+  deps: PlanBuilderSourceDeps
+): Promise<FirestoreStarterTemplate[]> {
+  const firestore = deps.getFirestoreInstance();
+  const snapshots = await getDocs(query(collection(firestore, 'starterTemplates'), where('planType', '==', planType)));
+  return snapshots.docs.map((snap) => snap.data() as FirestoreStarterTemplate);
+}
 
-/**
- * Returns starter templates for a given plan type from Data Connect.
- * Refs: D-114, FR-247, BR-270, BR-295
- */
 export async function getStarterTemplates(
   planType: PlanType,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<StarterTemplate[]> {
-  const dc = deps.getDataConnectInstance();
-  const { data } = await (planType === 'nutrition'
-    ? deps.getNutritionTemplates(dc)
-    : deps.getTrainingTemplates(dc));
+  try {
+    const firestoreTemplates = await loadStarterTemplatesFromFirestore(planType, deps);
+    const templates = firestoreTemplates.length > 0
+      ? firestoreTemplates
+      : FALLBACK_STARTER_TEMPLATES.filter((t) => t.planType === planType);
 
-  return data.starterTemplates.map((t) => ({
-    id: t.id,
-    planType: planType,
-    name: t.name,
-    description: coalesceTemplateDescription(t.description),
-  }));
+    return templates.map((t) => ({
+      id: t.id,
+      planType,
+      name: t.name,
+      description: coalesceTemplateDescription(t.description),
+    }));
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
 }
 
-/**
- * Clones a starter template into a new editable plan draft via Data Connect.
- * Dispatches to CloneAsNutritionPlan or CloneAsTrainingPlan based on templateId prefix.
- * Refs: D-114, FR-247, BR-270, BR-295, TC-280
- */
 export async function cloneStarterTemplate(
   user: { uid: string },
   templateId: string,
   name: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<{ id: string; planType: PlanType; name: string }> {
-  const planType = deriveStarterTemplatePlanType(templateId);
+  try {
+    const planType = deriveStarterTemplatePlanType(templateId);
+    if (!planType) {
+      throw new PlanBuilderSourceError('invalid_response', `Cannot derive planType from templateId: ${templateId}`);
+    }
 
-  if (!planType) {
-    throw new PlanBuilderSourceError(
-      'invalid_response',
-      `Cannot derive planType from templateId: ${templateId}`
-    );
+    const firestore = deps.getFirestoreInstance();
+    const professionalId = user.uid || deps.getCurrentAuthUid();
+
+    const templateSnap = await getDoc(doc(firestore, 'starterTemplates', templateId));
+    const template = (templateSnap.exists() ? templateSnap.data() : null) as FirestoreStarterTemplate | null;
+    const fallback = FALLBACK_STARTER_TEMPLATES.find((t) => t.id === templateId) ?? null;
+    const sourceTemplate = template ?? fallback;
+
+    const timestamp = nowIso();
+
+    if (planType === 'nutrition') {
+      const id = generateId('nutrition_plan');
+      const defaults = sourceTemplate?.nutritionDefaults;
+      const nutritionPlan: FirestoreNutritionPlan = {
+        id,
+        ownerProfessionalUid: professionalId,
+        studentAuthUid: professionalId,
+        sourceKind: 'predefined',
+        isArchived: false,
+        isDraft: true,
+        name,
+        caloriesTarget: defaults?.caloriesTarget ?? 0,
+        carbsTarget: defaults?.carbsTarget ?? 0,
+        proteinsTarget: defaults?.proteinsTarget ?? 0,
+        fatsTarget: defaults?.fatsTarget ?? 0,
+        items: defaults?.items ?? [],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      await runTransaction(firestore, async (tx) => {
+        tx.set(doc(firestore, 'nutritionPlans', id), nutritionPlan);
+      });
+
+      return { id, planType, name };
+    }
+
+    const id = generateId('training_plan');
+    const defaults = sourceTemplate?.trainingDefaults;
+    const trainingPlan: FirestoreTrainingPlan = {
+      id,
+      ownerProfessionalUid: professionalId,
+      studentAuthUid: professionalId,
+      sourceKind: 'predefined',
+      isArchived: false,
+      isDraft: true,
+      name,
+      sessions: defaults?.sessions ?? [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'trainingPlans', id), trainingPlan);
+    });
+
+    return { id, planType, name };
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
   }
-
-  const dc = deps.getDataConnectInstance();
-  const professionalId = user.uid;
-
-  const { data } = await (planType === 'nutrition'
-    ? deps.cloneAsNutritionPlan(dc, { professionalId, sourceTemplateId: templateId, name })
-    : deps.cloneAsTrainingPlan(dc, { professionalId, sourceTemplateId: templateId, name }));
-
-  const key = planType === 'nutrition'
-    ? (data as { nutritionPlan_insert: { id: string } }).nutritionPlan_insert
-    : (data as { trainingPlan_insert: { id: string } }).trainingPlan_insert;
-
-  if (!key?.id) {
-    throw new PlanBuilderSourceError(
-      'invalid_response',
-      'cloneStarterTemplate returned no plan ID.'
-    );
-  }
-
-  return { id: key.id, planType, name };
 }
 
-// ─── Food search ──────────────────────────────────────────────────────────────
-
-/**
- * Searches fatsecret food database via Firebase Cloud Function proxy.
- * Retrieves the current Firebase Auth user and delegates to food-search-source.
- * Throws FoodSearchSourceError if the Cloud Function URL is unconfigured or
- * the request fails.
- * Refs: D-113, D-127, FR-243
- */
 export async function searchFoods(query: string): Promise<FoodSearchResult[]> {
   const auth = getFirebaseAuth();
   const user = auth.currentUser;
   if (!user) {
-    // User signed out mid-session — surface as configuration-like error so the
-    // hook can map it to 'unknown' via normalizePlanBuilderError.
     throw new Error('No authenticated user for food search.');
   }
   return searchFoodsFromSource(user, query);

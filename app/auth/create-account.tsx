@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -37,6 +38,7 @@ import {
 import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -57,6 +59,7 @@ export default function CreateAccountScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { emitEvent } = useAnalytics();
+  const insets = useSafeAreaInsets();
   const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
     iosClientId: firebaseOAuthConfig.iosClientId,
     androidClientId: firebaseOAuthConfig.androidClientId,
@@ -205,7 +208,11 @@ export default function CreateAccountScreen() {
         ]}
       />
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 20 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
@@ -463,7 +470,7 @@ export default function CreateAccountScreen() {
             {t('auth.signup.cta_back_signin')}
           </Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -491,9 +498,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
     paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 14,
   },
   header: {
     alignItems: 'center',
@@ -627,9 +635,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 6,
-    marginTop: 'auto',
+    justifyContent: 'center',
+    marginTop: 24,
     paddingBottom: 8,
-    paddingTop: 20,
+    paddingTop: 8,
   },
   secondaryButtonHint: {
     fontSize: 14,

@@ -5,13 +5,14 @@
  * Coverage:
  *   - resolveRevenueCatApiKey: missing key, present key
  *   - mapCustomerInfoToEntitlementStatus: active, lapsed (no entitlement), lapsed (isActive false), unknown shape
- *   - mapCustomerInfoToAiEntitlementStatus: active premium_student, lapsed (no entitlement), lapsed (isActive false), unknown shape
+ *   - mapCustomerInfoToAiEntitlementStatus: active student_pro, lapsed (no entitlement), lapsed (isActive false), unknown shape
  *   - normalizeSubscriptionError: all reason branches
  *   - fetchEntitlementStatus: happy path, getCustomerInfo throws (network, unknown), SDK throws SubscriptionSourceError
  *   - purchasePackage: happy path with customerInfo, no customerInfo, cancellation, store error
  *   - restorePurchases: happy path, network error, SubscriptionSourceError passthrough
  *   - configureRevenueCat: calls configure with key, throws on missing key
- *   - presentAiPaywall: calls presentPaywall with 'ai_features', propagates errors, passes through SubscriptionSourceError
+ *   - presentAiPaywall: calls presentPaywall with AI_OFFERING_ID ('default_student'), propagates errors, passes through SubscriptionSourceError
+ *   - presentProPaywall: calls presentPaywall with PRO_OFFERING_ID ('default_professional'), propagates errors, passes through SubscriptionSourceError
  */
 
 import { describe, it } from 'node:test';
@@ -27,9 +28,12 @@ import {
   restorePurchases,
   configureRevenueCat,
   presentAiPaywall,
+  presentProPaywall,
   SubscriptionSourceError,
   PRO_ENTITLEMENT_ID,
   AI_FEATURES_ENTITLEMENT_ID,
+  PRO_OFFERING_ID,
+  AI_OFFERING_ID,
   type SubscriptionSourceDeps,
   type RawCustomerInfo,
 } from './subscription-source';
@@ -441,11 +445,11 @@ describe('restorePurchases', () => {
 // ─── mapCustomerInfoToAiEntitlementStatus ─────────────────────────────────────
 
 describe('mapCustomerInfoToAiEntitlementStatus', () => {
-  it('AI_FEATURES_ENTITLEMENT_ID is premium_student', () => {
-    assert.equal(AI_FEATURES_ENTITLEMENT_ID, 'premium_student');
+  it('AI_FEATURES_ENTITLEMENT_ID is student_pro', () => {
+    assert.equal(AI_FEATURES_ENTITLEMENT_ID, 'student_pro');
   });
 
-  it('returns active when premium_student entitlement is active', () => {
+  it('returns active when student_pro entitlement is active', () => {
     const info: RawCustomerInfo = {
       entitlements: {
         active: {
@@ -456,14 +460,14 @@ describe('mapCustomerInfoToAiEntitlementStatus', () => {
     assert.equal(mapCustomerInfoToAiEntitlementStatus(info), 'active');
   });
 
-  it('returns lapsed when no premium_student entitlement in active map', () => {
+  it('returns lapsed when no student_pro entitlement in active map', () => {
     const info: RawCustomerInfo = {
       entitlements: { active: {} },
     };
     assert.equal(mapCustomerInfoToAiEntitlementStatus(info), 'lapsed');
   });
 
-  it('returns lapsed when premium_student isActive is false', () => {
+  it('returns lapsed when student_pro isActive is false', () => {
     const info: RawCustomerInfo = {
       entitlements: {
         active: {
@@ -495,13 +499,17 @@ describe('mapCustomerInfoToAiEntitlementStatus', () => {
 // ─── presentAiPaywall ─────────────────────────────────────────────────────────
 
 describe('presentAiPaywall', () => {
-  it('calls deps.presentPaywall with ai_features offering identifier', async () => {
+  it('AI_OFFERING_ID constant is default_student', () => {
+    assert.equal(AI_OFFERING_ID, 'default_student');
+  });
+
+  it('calls deps.presentPaywall with AI_OFFERING_ID (default_student) offering identifier', async () => {
     let calledWith: string | undefined;
     const deps = makeDeps({
       presentPaywall: async (id) => { calledWith = id; },
     });
     await presentAiPaywall(deps);
-    assert.equal(calledWith, 'ai_features');
+    assert.equal(calledWith, AI_OFFERING_ID);
   });
 
   it('propagates network-like errors as SubscriptionSourceError', async () => {
@@ -524,6 +532,50 @@ describe('presentAiPaywall', () => {
     });
     await assert.rejects(
       presentAiPaywall(deps),
+      (err: unknown) => {
+        assert.ok(err === original);
+        return true;
+      }
+    );
+  });
+});
+
+// ─── presentProPaywall ────────────────────────────────────────────────────────
+
+describe('presentProPaywall', () => {
+  it('PRO_OFFERING_ID constant is default_professional', () => {
+    assert.equal(PRO_OFFERING_ID, 'default_professional');
+  });
+
+  it('calls deps.presentPaywall with PRO_OFFERING_ID (default_professional) offering identifier', async () => {
+    let calledWith: string | undefined | 'NOT_CALLED' = 'NOT_CALLED';
+    const deps = makeDeps({
+      presentPaywall: async (id) => { calledWith = id; },
+    });
+    await presentProPaywall(deps);
+    assert.equal(calledWith, PRO_OFFERING_ID);
+  });
+
+  it('propagates network-like errors as SubscriptionSourceError', async () => {
+    const deps = makeDeps({
+      presentPaywall: async () => { throw new Error('network failure'); },
+    });
+    await assert.rejects(
+      presentProPaywall(deps),
+      (err: unknown) => {
+        assert.ok(err instanceof SubscriptionSourceError);
+        return true;
+      }
+    );
+  });
+
+  it('passes through SubscriptionSourceError directly', async () => {
+    const original = new SubscriptionSourceError('store_problem', 'store failure');
+    const deps = makeDeps({
+      presentPaywall: async () => { throw original; },
+    });
+    await assert.rejects(
+      presentProPaywall(deps),
       (err: unknown) => {
         assert.ok(err === original);
         return true;

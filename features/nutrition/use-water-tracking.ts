@@ -1,7 +1,7 @@
 /**
  * React hook for water tracking operations.
  * Wraps water-tracking-source for UI consumption.
- * No Firebase/Data Connect concerns in screen components.
+ * No Firebase/Firestore concerns in screen components.
  */
 
 import { useCallback, useEffect, useState } from 'react';

@@ -32,7 +32,7 @@
   - Terms URL from config (`EXPO_PUBLIC_TERMS_URL`, fallback `https://google.com`).
   - Checkbox state.
 - Outputs:
-  - Local persisted acceptance version per user (`AsyncStorage` key namespace `auth.terms.accepted_version.{uid}`).
+  - Firestore persisted acceptance version on `userProfiles/{uid}.acceptedTermsVersion`.
   - Updated auth session state (`needsTermsAcceptance=false` when versions match).
 
 ## Edge Cases
@@ -40,18 +40,18 @@
 - If profile hydration fails, session keeps terms gate locked (safe default) until retry/refresh succeeds.
 - If accepted version differs from newly required version, gate is shown again.
 
-## Implementation Snapshot (2026-03-04)
+## Implementation Snapshot (2026-03-06)
 - Implemented in code:
   - `app/auth/accept-terms.tsx`
   - `features/auth/terms.logic.ts`
-  - `features/auth/terms-storage.ts`
   - `features/auth/terms-config.ts`
   - `features/auth/auth-session.tsx`
+  - `features/auth/profile-source.ts`
   - `features/auth/auth-route-guard.logic.ts`
 - Current implementation status:
   - Acceptance happens after sign-in/create-account and before role-selection.
   - Sign-in and create-account success paths now route to `/auth/accept-terms`.
-  - Terms acceptance persistence is local fallback while Data Connect profile terms fields are pending.
+  - Terms acceptance persistence is Firestore-backed (`acceptedTermsVersion` in profile source).
   - Route guard enforces terms gate globally for authenticated sessions.
   - Primary accept pill button uses light foreground for label/loading contrast over the accent background.
 

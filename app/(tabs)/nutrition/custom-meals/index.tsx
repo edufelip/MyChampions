@@ -8,7 +8,7 @@
  * AI meal photo analysis (BL-108): camera CTA in the quick-log panel pre-fills
  * grams from the AI-estimated totalGrams. Uses expo-image-picker (camera + library)
  * and expo-image-manipulator for client-side JPEG compression (FR-230, BR-287).
- * AI CTA is gated by paywall — requires premium_student or professional_unlimited
+ * AI CTA is gated by paywall — requires student_pro or professional_pro
  * entitlement (D-132). RevenueCat native paywall shown on upgrade tap.
  * Data Connect meal source wiring is complete (D-126).
  * Portion log persistence is wired via logPortion SDK operation.

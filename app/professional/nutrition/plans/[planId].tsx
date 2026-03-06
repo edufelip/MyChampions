@@ -5,9 +5,8 @@
  * Allows nutritionists to create and edit named predefined nutrition plans with
  * calorie/macro targets and food item lists.
  *
- * Food search (fatsecret) is stubbed — returns empty and shows a stub notice.
- * Starter template cloning and Data Connect plan CRUD are stubbed; wiring deferred.
- * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Starter template cloning supports local fallback templates and Firestore writes.
+ * Food search is wired through Cloud Function source integration.
  *
  * Docs: docs/screens/v2/SC-207-nutrition-plan-builder.md
  * Refs: D-111–D-114, FR-240–FR-243, FR-247–FR-248,
@@ -15,7 +14,7 @@
  *       AC-207, AC-256, AC-264, AC-265,
  *       TC-275–TC-277, TC-280
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -107,6 +106,14 @@ export default function NutritionPlanBuilderScreen() {
   const [formErrors, setFormErrors] = useState<ReturnType<typeof validateNutritionPlanInput>>({});
   const [isSaving, setIsSaving] = useState(false);
 
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   // ── Load existing plan ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!isNew && !isStarterClone && planId) {
@@ -138,7 +145,7 @@ export default function NutritionPlanBuilderScreen() {
 
     if (isNew || isStarterClone) {
       const result = await createPlan(input);
-      setIsSaving(false);
+      if (isMounted.current) setIsSaving(false);
       if ('error' in result) {
         Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
       } else {
@@ -148,7 +155,7 @@ export default function NutritionPlanBuilderScreen() {
       }
     } else {
       const err = await savePlan(planId!, input);
-      setIsSaving(false);
+      if (isMounted.current) setIsSaving(false);
       if (err) Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
     }
   }, [name, caloriesTarget, carbsTarget, proteinsTarget, fatsTarget, validateInput, isNew, isStarterClone, createPlan, savePlan, planId, router, tr, isStudentBuilder]);

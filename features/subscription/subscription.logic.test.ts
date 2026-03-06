@@ -142,8 +142,8 @@ test('isPlanUpdateLocked returns false when active', () => {
 
 // --- hasAiAnalysisAccess (D-132) ---
 
-test('AI_ENTITLEMENT_ID is premium_student', () => {
-  assert.equal(AI_ENTITLEMENT_ID, 'premium_student');
+test('AI_ENTITLEMENT_ID is student_pro', () => {
+  assert.equal(AI_ENTITLEMENT_ID, 'student_pro');
 });
 
 test('hasAiAnalysisAccess: professional active + student unknown → true', () => {

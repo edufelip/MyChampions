@@ -240,7 +240,7 @@ test('normalizeInviteSubmitError maps NETWORK_ERROR code to network', () => {
 
 test('normalizeInviteSubmitError maps config message to configuration', () => {
   assert.equal(
-    normalizeInviteSubmitError({ message: 'Data Connect endpoint is not configured' }),
+    normalizeInviteSubmitError({ message: 'Firestore is not configured' }),
     'configuration'
   );
 });
@@ -298,7 +298,7 @@ test('normalizeConnectionActionError maps message containing network to network'
 
 test('normalizeConnectionActionError maps message containing endpoint to configuration', () => {
   assert.equal(
-    normalizeConnectionActionError({ message: 'Data Connect endpoint is not configured' }),
+    normalizeConnectionActionError({ message: 'Firestore is not configured' }),
     'configuration'
   );
 });
