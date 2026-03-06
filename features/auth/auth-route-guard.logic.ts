@@ -25,7 +25,7 @@ export function normalizeGuardPathname(pathname: string | null | undefined): str
 
 export function roleHomePath(role: RoleIntent): string {
   if (role === 'professional') {
-    return '/explore';
+    return '/professional/specialty';
   }
 
   return '/';
@@ -80,14 +80,14 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
 
   // Role-scoped route guard: students cannot access /professional/* and vice versa
   if (input.lockedRole === 'student') {
-    if (path.startsWith('/explore') || path.startsWith('/professional/')) {
+    if (path.startsWith('/professional/')) {
       return '/';
     }
   }
 
   if (input.lockedRole === 'professional') {
     if (path === '/' || path.startsWith('/student/')) {
-      return '/explore';
+      return '/professional/specialty';
     }
   }
 

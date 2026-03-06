@@ -55,7 +55,8 @@
     - Professional -> `/professional/specialty` (SC-202 onboarding specialty setup).
   - Error handling distinguishes role persistence failure (`auth.role.error.save_failed`) from post-save navigation failure (`auth.role.error.navigation_failed`).
   - Continue action is blocked when no authenticated session is available and routes to sign-in with `auth.role.error.auth_required`.
-  - Role-lock persistence includes a defensive profile upsert fallback and one read-after-write retry to absorb transient consistency delays from Data Connect responses.
+  - Profile hydration parser is backward-compatible with both legacy list payload (`userProfiles[]`) and deterministic key payload (`userProfile`) while Data Connect connector rollout completes.
+  - Role-lock persistence includes defensive profile upsert fallback, multi-step read-after-write retries, and mutation-acknowledged fallback confirmation when Data Connect read-after-write lag persists.
   - Route auto-bypass for locked-role accounts is enforced by global auth guard in `app/_layout.tsx`.
   - Authentication session source is Firebase Auth; role-lock profile source is now Data Connect-backed via `features/auth/profile-source.ts` (remote-only reads/writes).
   - Visual layout is aligned with Stitch role-selection reference (`0e872419a1ff45b39fbc89d7c3592c44`) using the same playful auth system as SC-217/SC-218:
@@ -93,7 +94,7 @@
 - Use case: UC-002.1, UC-002.8, UC-002.11, UC-002.18
 - Acceptance criteria: AC-201, AC-211, AC-224, AC-233, AC-248, AC-251, AC-252, AC-512
 - Business rules: BR-201, BR-211, BR-226, BR-227, BR-236, BR-262, BR-265, BR-266, BR-275
-- Test cases: TC-201, TC-211, TC-225, TC-235, TC-249, TC-254, TC-255, TC-290, TC-291, TC-292, TC-293, TC-512
+- Test cases: TC-201, TC-211, TC-225, TC-235, TC-249, TC-254, TC-255, TC-290, TC-291, TC-292, TC-293, TC-294, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md
 - Copy guidance: docs/screens/v2/copy-guidelines-v2.md

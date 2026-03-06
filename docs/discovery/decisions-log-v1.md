@@ -247,5 +247,9 @@
 
 - `D-148`: Student empty-state self-guided actions in SC-209 and SC-210 now route to direct self-managed plan creation flows (`/student/nutrition/plans/new`, `/student/training/plans/new`) instead of returning to Home. Current implementation reuses shared plan builder screens to keep plan authoring behavior consistent and applies student-branded titles/actions on student-prefixed routes while broader student-only shell refinements remain pending.
 
+- `D-149`: SC-201 role-lock persistence now tolerates transient Data Connect read-after-write lag: after `setLockedRole` mutation, client performs multi-attempt confirmation reads; if mutation returns a non-null `userProfile_update` key but confirmation reads remain stale, client treats lock as successful for immediate routing and re-converges on subsequent hydration.
+
+- `D-150`: Profile hydration query for auth context is moving to deterministic key lookup (`userProfile(key: { id_expr: "auth.uid" })`) instead of filtered list query to prevent cross-UID row resolution anomalies. Client parser remains backward-compatible with legacy `userProfiles[]` payload shape until connector deployment + SDK regeneration is completed in all environments.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

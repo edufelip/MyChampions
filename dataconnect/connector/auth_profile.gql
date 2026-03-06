@@ -5,7 +5,8 @@
 # ─── Queries ─────────────────────────────────────────────────────────────────
 
 query GetMyProfile @auth(level: USER) {
-  userProfiles(where: { authUid: { eq_expr: "auth.uid" } }, limit: 1) {
+  userProfile(key: { id_expr: "auth.uid" }) {
+    id
     authUid
     displayName
     emailNormalized

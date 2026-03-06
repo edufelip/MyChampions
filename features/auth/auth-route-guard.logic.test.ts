@@ -9,7 +9,7 @@ import {
 
 test('roleHomePath resolves role home route', () => {
   assert.equal(roleHomePath('student'), '/');
-  assert.equal(roleHomePath('professional'), '/explore');
+  assert.equal(roleHomePath('professional'), '/professional/specialty');
 });
 
 test('normalizeGuardPathname normalizes empty, duplicate, and trailing slash paths', () => {
@@ -89,7 +89,7 @@ test('guard blocks wrong-role tab access', () => {
     isAuthenticated: true,
     lockedRole: 'student',
     needsTermsAcceptance: false,
-    pathname: '/explore',
+    pathname: '/professional/specialty',
   });
 
   const professionalRedirect = resolveAuthGuardRedirect({
@@ -100,7 +100,7 @@ test('guard blocks wrong-role tab access', () => {
   });
 
   assert.equal(studentRedirect, '/');
-  assert.equal(professionalRedirect, '/explore');
+  assert.equal(professionalRedirect, '/professional/specialty');
 });
 
 test('guard blocks student from accessing professional routes', () => {
@@ -133,7 +133,7 @@ test('guard blocks professional from accessing student routes', () => {
     pathname: '/student/professionals',
   });
 
-  assert.equal(redirect, '/explore');
+  assert.equal(redirect, '/professional/specialty');
 });
 
 test('guard allows professional on professional-scoped routes', () => {
@@ -195,5 +195,5 @@ test('guard redirects away from accept-terms after acceptance', () => {
   });
 
   assert.equal(redirectUnlocked, '/auth/role-selection');
-  assert.equal(redirectLocked, '/explore');
+  assert.equal(redirectLocked, '/professional/specialty');
 });

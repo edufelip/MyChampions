@@ -64,7 +64,10 @@ type RemoteProfileSnapshot = {
   exists: boolean;
   authUid: string | null;
   lockedRole: RoleIntent | null;
+  hasAuthUidMismatch: boolean;
 };
+
+let lastLoggedUidMismatchKey: string | null = null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -112,6 +115,38 @@ function delay(ms: number): Promise<void> {
   });
 }
 
+async function confirmLockedRoleWithRetry(
+  role: RoleIntent,
+  deps: ProfileSourceDeps,
+  expectedAuthUid?: string
+): Promise<{ confirmedRole: RoleIntent | null; hadUidMismatch: boolean }> {
+  const retryDelaysMs = [120, 220, 350, 550, 800, 1100];
+  let hadUidMismatch = false;
+
+  for (const delayMs of retryDelaysMs) {
+    const snapshot = await getRemoteProfileSnapshot(deps, expectedAuthUid, {
+      logAuthUidMismatch: false,
+    });
+    if (snapshot.hasAuthUidMismatch) {
+      hadUidMismatch = true;
+    }
+
+    if (snapshot.lockedRole === role) {
+      return {
+        confirmedRole: snapshot.lockedRole,
+        hadUidMismatch,
+      };
+    }
+
+    await delay(delayMs);
+  }
+
+  return {
+    confirmedRole: null,
+    hadUidMismatch,
+  };
+}
+
 // ─── Operations ───────────────────────────────────────────────────────────────
 
 /**
@@ -155,16 +190,29 @@ async function getRemoteLockedRole(
 
 async function getRemoteProfileSnapshot(
   deps: ProfileSourceDeps,
-  expectedAuthUid?: string
+  expectedAuthUid?: string,
+  options: { logAuthUidMismatch?: boolean } = {}
 ): Promise<RemoteProfileSnapshot> {
   const dc = deps.getDataConnectInstance();
   try {
     const { data } = await deps.getMyProfile(dc);
 
-    const profile = data.userProfiles[0];
+    const profileData = data as unknown as {
+      userProfile?: {
+        authUid?: string | null;
+        lockedRole?: string | null;
+      } | null;
+      userProfiles?: Array<{
+        authUid?: string | null;
+        lockedRole?: string | null;
+      }>;
+    };
+    const profile = profileData.userProfile ?? profileData.userProfiles?.[0] ?? null;
     const authUid = typeof profile?.authUid === 'string' ? profile.authUid : null;
     if (expectedAuthUid && authUid && authUid !== expectedAuthUid) {
-      if (__DEV__) {
+      const mismatchKey = `${expectedAuthUid}::${authUid}`;
+      if (__DEV__ && options.logAuthUidMismatch !== false && lastLoggedUidMismatchKey !== mismatchKey) {
+        lastLoggedUidMismatchKey = mismatchKey;
         console.warn('[auth][profile-source] profile uid mismatch', {
           expectedAuthUid,
           receivedAuthUid: authUid,
@@ -174,13 +222,17 @@ async function getRemoteProfileSnapshot(
         exists: false,
         authUid,
         lockedRole: null,
+        hasAuthUidMismatch: true,
       };
     }
+
+    lastLoggedUidMismatchKey = null;
 
     return {
       exists: Boolean(profile),
       authUid,
       lockedRole: normalizeLockedRole(profile?.lockedRole ?? null),
+      hasAuthUidMismatch: false,
     };
   } catch (error) {
     throw normalizeProfileSourceError(error);
@@ -229,8 +281,10 @@ export async function lockRoleInSource(
     await upsertRemoteProfile('', '', deps);
   }
 
+  let mutationApplied = false;
   try {
-    await deps.setLockedRole(dc, { role });
+    const { data } = await deps.setLockedRole(dc, { role });
+    mutationApplied = Boolean(data.userProfile_update?.id);
   } catch (error) {
     const current = await getRemoteProfileSnapshot(deps, currentAuthUid);
     if (current.lockedRole === role) {
@@ -239,21 +293,33 @@ export async function lockRoleInSource(
     throw normalizeProfileSourceError(error);
   }
 
-  // Re-read to get confirmed server-side value
-  let confirmedRole = await getRemoteLockedRole(deps, currentAuthUid);
-  if (!confirmedRole) {
-    await delay(120);
-    confirmedRole = await getRemoteLockedRole(deps, currentAuthUid);
+  if (!mutationApplied) {
+    await upsertRemoteProfile('', '', deps);
+    const { data } = await deps.setLockedRole(dc, { role });
+    mutationApplied = Boolean(data.userProfile_update?.id);
   }
 
-  if (!confirmedRole) {
-    throw new ProfileSourceError(
-      'invalid_response',
-      'Data Connect did not return a locked role after setLockedRole.'
-    );
+  const { confirmedRole, hadUidMismatch } = await confirmLockedRoleWithRetry(role, deps, currentAuthUid);
+  if (confirmedRole) {
+    return { lockedRole: confirmedRole };
   }
 
-  return { lockedRole: confirmedRole };
+  if (mutationApplied) {
+    if (__DEV__) {
+      console.warn('[auth][profile-source] lock role confirmed by mutation fallback', {
+        role,
+        uid: currentAuthUid ?? null,
+        reason: hadUidMismatch ? 'uid_mismatch' : 'read_after_write_stale',
+      });
+    }
+
+    return { lockedRole: role };
+  }
+
+  throw new ProfileSourceError(
+    'invalid_response',
+    'Data Connect did not return a locked role after setLockedRole.'
+  );
 }
 
 /**

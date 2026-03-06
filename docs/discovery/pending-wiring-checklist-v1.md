@@ -146,6 +146,8 @@ Track intentionally deferred implementation wiring so it is completed before rel
   - Done: Dev Data Connect service (`mychampions-fb928-2-service`) schema + connector deployed and SQL migrated on 2026-03-04.
   - Done: `UserProfile` key mismatch fixed on dev service — schema uses `id: String` keyed to `auth.uid`, and `UpsertUserProfile` now sets `authUid_expr: "auth.uid"` (removed client `authUid` var).
   - Done: Connector variable names normalized to camelCase for Firebase CLI validation; generated SDK regenerated/reinstalled.
+  - Done: Client role-lock confirmation hardened against eventual consistency lag with mutation-ack fallback + multi-read retry window in `features/auth/profile-source.ts`.
+  - In progress: `GetMyProfile` connector query switched from list filter (`userProfiles where authUid`) to key lookup (`userProfile key id_expr: "auth.uid"`) in `dataconnect/connector/auth_profile.gql`; pending Data Connect deploy + generated SDK refresh to fully eliminate cross-UID mismatch reads observed in dev logs.
   - In progress: Finalize production Data Connect connector schema/operation compatibility and environment endpoint provisioning.
 - `In progress`: Implement Data Connect connection lifecycle connectors for invite submit/confirm/end and code rotation cancellation semantics.
   - Done: Pure connection logic module created in `features/connections/connection.logic.ts` (status/reason normalization, display state resolution, error mapping).

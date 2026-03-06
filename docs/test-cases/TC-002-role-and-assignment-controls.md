@@ -90,6 +90,7 @@
 | TC-291 | Role Selection Auth Gate | Unauthenticated user attempts to access `/auth/role-selection` directly | Navigate to role-selection route without active Firebase auth session | App redirects to `/auth/sign-in`; role-selection continue action stays blocked until a valid authenticated session exists |
 | TC-292 | Cross-Account Role-State Reset | Account A has locked role and signs out; Account B is newly created with no role lock | Sign in as Account B immediately after Account A | Session clears prior role state before hydration; Account B is routed to `/auth/role-selection` until role is selected |
 | TC-293 | Profile UID Mismatch Guard | Active Firebase UID differs from `GetMyProfile.authUid` payload | Hydrate profile for newly authenticated account while backend returns mismatched profile row | App ignores mismatched `lockedRole`, treats account as unlocked, and keeps user on `/auth/role-selection` |
+| TC-294 | Role Lock Read-After-Write Lag | `setLockedRole` mutation returns success key but immediate `GetMyProfile` still returns `lockedRole=null` | Select role and tap Continue during transient Data Connect read lag window | App accepts mutation-acknowledged lock, proceeds to role route, and converges to persisted role on subsequent hydration |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.
