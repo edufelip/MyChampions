@@ -1,16 +1,12 @@
 /**
- * fatsecret food search source — HTTP call to Firebase Cloud Function proxy.
+ * fatsecret food search source — Direct integration with fatsecret Platform API v2.
  *
- * The Cloud Function validates the caller's Firebase Auth ID token, fetches an
- * OAuth 2.0 Bearer token from fatsecret using Client Credentials grant, and
- * proxies the foods.search request. fatsecret credentials (Client ID + Secret)
- * are stored as Cloud Function secrets only — never in the client binary.
+ * This implementation replaces the previous Cloud Function proxy.
+ * It handles OAuth 2.0 Client Credentials flow locally in the client.
  *
- * Pattern: identical to meal-photo-analysis-source.ts (BL-108, D-106).
+ * Pattern: OAuth 2.0 Client Credentials + foods.search.v2
  * Refs: D-113, D-127, BL-106, FR-243
  */
-
-import type { User } from 'firebase/auth';
 
 import {
   normalizeFoodArray,
@@ -24,7 +20,7 @@ export type FoodSearchErrorCode =
   | 'configuration'
   | 'network'
   | 'unauthenticated'
-  | 'not_found'
+  | 'quota'
   | 'unknown';
 
 export class FoodSearchSourceError extends Error {
@@ -37,96 +33,170 @@ export class FoodSearchSourceError extends Error {
   }
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const OAUTH_URL = 'https://oauth.fatsecret.com/connect/token';
+const API_URL = 'https://platform.fatsecret.com/rest/foods/search/v2';
+
 // ─── Injectable deps (for testability) ───────────────────────────────────────
 
 export type FoodSearchSourceDeps = {
-  getFunctionUrl: () => string | undefined;
+  getClientId: () => string | undefined;
+  getClientSecret: () => string | undefined;
   fetchFn: typeof fetch;
-  getIdToken: (user: User) => Promise<string>;
 };
 
 const defaultDeps: FoodSearchSourceDeps = {
-  getFunctionUrl: () => process.env['EXPO_PUBLIC_FOOD_SEARCH_FUNCTION_URL'],
+  getClientId: () => process.env['EXPO_PUBLIC_FATSECRET_CLIENT_ID'],
+  getClientSecret: () => process.env['EXPO_PUBLIC_FATSECRET_CLIENT_SECRET'],
   fetchFn: fetch,
-  getIdToken: (user) => user.getIdToken(),
 };
 
-// ─── Raw response types ───────────────────────────────────────────────────────
+// ─── Token Management ────────────────────────────────────────────────────────
 
-type FoodSearchFunctionResponse = {
-  results?: unknown; // array of FoodSearchResult from the Cloud Function
-  error?: string;
-};
+let cachedToken: string | null = null;
+let tokenExpiry: number = 0;
+let tokenPromise: Promise<string> | null = null;
+
+// Safe base64 encode for environments without btoa (e.g. bare React Native)
+function encodeBase64(str: string): string {
+  if (typeof btoa === 'function') return btoa(str);
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  let out = '', i = 0, len = str.length;
+  while (i < len) {
+    const c1 = str.charCodeAt(i++) & 0xff;
+    if (i === len) { out += chars.charAt(c1 >> 2) + chars.charAt((c1 & 0x3) << 4) + '=='; break; }
+    const c2 = str.charCodeAt(i++);
+    if (i === len) { out += chars.charAt(c1 >> 2) + chars.charAt(((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4)) + chars.charAt((c2 & 0xf) << 2) + '='; break; }
+    const c3 = str.charCodeAt(i++);
+    out += chars.charAt(c1 >> 2) + chars.charAt(((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4)) + chars.charAt(((c2 & 0xf) << 2) | ((c3 & 0xc0) >> 6)) + chars.charAt(c3 & 0x3f);
+  }
+  return out;
+}
+
+async function getAccessToken(deps: FoodSearchSourceDeps): Promise<string> {
+  const now = Date.now();
+  // Buffer of 60 seconds
+  if (cachedToken && now < tokenExpiry - 60000) {
+    return cachedToken;
+  }
+
+  // Deduplicate concurrent token requests
+  if (tokenPromise) {
+    return tokenPromise;
+  }
+
+  const clientId = deps.getClientId();
+  const clientSecret = deps.getClientSecret();
+
+  if (!clientId || !clientSecret) {
+    throw new FoodSearchSourceError(
+      'configuration',
+      'FatSecret credentials not configured. Set EXPO_PUBLIC_FATSECRET_CLIENT_ID and EXPO_PUBLIC_FATSECRET_CLIENT_SECRET.'
+    );
+  }
+
+  tokenPromise = (async () => {
+    try {
+      const authHeader = encodeBase64(`${clientId}:${clientSecret}`);
+      const response = await deps.fetchFn(OAUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${authHeader}`,
+        },
+        body: 'grant_type=client_credentials&scope=basic',
+      });
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        console.error('[FoodSearchSource] OAuth failed:', response.status, errText);
+        throw new FoodSearchSourceError('unauthenticated', 'Failed to authenticate with FatSecret.');
+      }
+
+      const data = await response.json();
+      cachedToken = data.access_token;
+      tokenExpiry = Date.now() + data.expires_in * 1000;
+
+      return cachedToken!;
+    } catch (err) {
+      console.error('[FoodSearchSource] OAuth fetch exception:', err);
+      if (err instanceof FoodSearchSourceError) throw err;
+      throw new FoodSearchSourceError('network', 'Could not connect to FatSecret Auth service.');
+    } finally {
+      tokenPromise = null;
+    }
+  })();
+
+  return tokenPromise;
+}
 
 // ─── Source call ──────────────────────────────────────────────────────────────
 
 /**
- * Calls the Firebase Cloud Function proxy to search fatsecret food database.
+ * Calls the FatSecret Platform API directly to search food database.
  * Returns an array of FoodSearchResult normalized to per-100g macros.
  *
- * Throws FoodSearchSourceError with typed code on all failure paths.
- *
- * @param user    - Firebase Auth User (provides ID token for Cloud Function auth)
  * @param query   - Search expression forwarded to fatsecret foods.search
  * @param deps    - Injectable dependencies; omit in production
  */
 export async function searchFoodsFromSource(
-  user: User,
   query: string,
   deps: FoodSearchSourceDeps = defaultDeps
 ): Promise<FoodSearchResult[]> {
-  const url = deps.getFunctionUrl();
-  if (!url) {
-    throw new FoodSearchSourceError(
-      'configuration',
-      'Food search Cloud Function URL is not configured. Set EXPO_PUBLIC_FOOD_SEARCH_FUNCTION_URL.'
-    );
-  }
+  console.log('[searchFoodsFromSource] Starting search for:', query);
 
-  let idToken: string;
   try {
-    idToken = await deps.getIdToken(user);
-  } catch {
-    throw new FoodSearchSourceError('network', 'Failed to retrieve Firebase ID token.');
-  }
+    const accessToken = await getAccessToken(deps);
 
-  let response: Response;
-  try {
-    response = await deps.fetchFn(url, {
-      method: 'POST',
+    const searchUrl = `${API_URL}?search_expression=${encodeURIComponent(query)}&format=json&max_results=20`;
+    
+    console.log('[searchFoodsFromSource] Fetching from API:', searchUrl);
+    const response = await deps.fetchFn(searchUrl, {
+      method: 'GET',
       headers: {
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
       },
-      body: JSON.stringify({ query, maxResults: 20 }),
     });
-  } catch {
-    throw new FoodSearchSourceError('network', 'Network request to food search Cloud Function failed.');
+
+    console.log('[searchFoodsFromSource] HTTP Status:', response.status);
+
+    if (response.status === 401 || response.status === 403) {
+      cachedToken = null; // Clear possibly expired token
+      throw new FoodSearchSourceError('unauthenticated', 'FatSecret API token rejected.');
+    }
+
+    if (!response.ok) {
+      throw new FoodSearchSourceError('unknown', `FatSecret API returned error status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Check for FatSecret specific error response structure
+    if (data.error) {
+      console.error('[searchFoodsFromSource] API level error:', data.error);
+      if (data.error.code === '13') { // Example quota error code for FatSecret
+        throw new FoodSearchSourceError('quota', 'FatSecret API quota exceeded.');
+      }
+      throw new FoodSearchSourceError('unknown', data.error.message || 'FatSecret API error');
+    }
+
+    // FatSecret v2 search response structure: data.foods.food
+    const rawResults = data?.foods?.food;
+    const rawFoods = normalizeFoodArray(rawResults ?? []);
+    console.log('[searchFoodsFromSource] Raw foods count:', rawFoods.length);
+
+    const results = rawFoods
+      .map((f) => normalizeFoodSearchResult(f))
+      .filter((r): r is FoodSearchResult => r !== null);
+
+    console.log('[searchFoodsFromSource] Final normalized results count:', results.length);
+    return results;
+
+  } catch (err) {
+    if (err instanceof FoodSearchSourceError) throw err;
+    console.error('[searchFoodsFromSource] Unexpected error:', err);
+    throw new FoodSearchSourceError('unknown', 'An unexpected error occurred during food search.');
   }
-
-  if (response.status === 401 || response.status === 403) {
-    throw new FoodSearchSourceError('unauthenticated', 'Cloud Function rejected Firebase Auth ID token.');
-  }
-
-  let body: FoodSearchFunctionResponse;
-  try {
-    body = (await response.json()) as FoodSearchFunctionResponse;
-  } catch {
-    throw new FoodSearchSourceError('unknown', 'Cloud Function returned non-JSON body.');
-  }
-
-  if (body.error !== undefined || response.status >= 500) {
-    throw new FoodSearchSourceError(
-      'unknown',
-      `Cloud Function error: ${String(body.error ?? response.status)}`
-    );
-  }
-
-  // Cloud Function returns raw fatsecret food objects; normalize here
-  const rawFoods = normalizeFoodArray(body.results ?? []);
-  const results = rawFoods
-    .map((f) => normalizeFoodSearchResult(f))
-    .filter((r): r is FoodSearchResult => r !== null);
-
-  return results;
 }

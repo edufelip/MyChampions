@@ -87,7 +87,7 @@ function RootLayoutContent() {
     ...(scheme === 'dark' ? DarkTheme : DefaultTheme),
     colors: {
       ...(scheme === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
-      primary: ds.color.accentBlue,
+      primary: ds.color.accentPrimary,
       background: ds.color.canvas,
       card: ds.color.surface,
       text: ds.color.textPrimary,

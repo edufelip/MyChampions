@@ -21,6 +21,8 @@ import { searchFoodsFromSource } from '../nutrition/food-search-source';
 
 import type {
   NutritionPlanInput,
+  NutritionMeal,
+  NutritionMealInput,
   NutritionMealItem,
   NutritionMealItemInput,
   TrainingPlanInput,
@@ -34,6 +36,8 @@ import type {
 import {
   deriveStarterTemplatePlanType,
   coalesceTemplateDescription,
+  calculateTotalsFromItems,
+  calculateTotalsFromMeals,
 } from './plan-builder.logic';
 import type { PlanType } from './plan-change-request.logic';
 
@@ -62,7 +66,7 @@ export type NutritionPlanDetail = {
   carbsTarget: number;
   proteinsTarget: number;
   fatsTarget: number;
-  items: NutritionMealItem[];
+  meals: NutritionMeal[];
   createdAt: string;
   updatedAt: string;
 };
@@ -77,6 +81,23 @@ export type TrainingPlanDetail = {
 
 export type { FoodSearchResult } from './plan-builder.logic';
 
+type FirestoreNutritionItem = {
+  id: string;
+  foodName: string;
+  quantity: string;
+  notes: string;
+  calories?: number;
+  carbs?: number;
+  proteins?: number;
+  fats?: number;
+};
+
+type FirestoreNutritionMeal = {
+  id: string;
+  mealName: string;
+  items: FirestoreNutritionItem[];
+};
+
 type FirestoreNutritionPlan = {
   id: string;
   ownerProfessionalUid: string | null;
@@ -89,7 +110,7 @@ type FirestoreNutritionPlan = {
   carbsTarget: number;
   proteinsTarget: number;
   fatsTarget: number;
-  items: Array<{ id: string; foodName: string }>;
+  meals: FirestoreNutritionMeal[];
   createdAt: string;
   updatedAt: string;
 };
@@ -117,7 +138,7 @@ type FirestoreStarterTemplate = {
     carbsTarget: number;
     proteinsTarget: number;
     fatsTarget: number;
-    items: Array<{ id: string; foodName: string }>;
+    meals: FirestoreNutritionMeal[];
   };
   trainingDefaults?: {
     sessions: Array<{ id: string; sessionName: string; items: Array<{ id: string; exerciseName: string }> }>;
@@ -147,9 +168,21 @@ const FALLBACK_STARTER_TEMPLATES: FirestoreStarterTemplate[] = [
       carbsTarget: 220,
       proteinsTarget: 140,
       fatsTarget: 70,
-      items: [
-        { id: 'item_1', foodName: 'Oats + banana breakfast' },
-        { id: 'item_2', foodName: 'Chicken + rice lunch' },
+      meals: [
+        { 
+          id: 'meal_1', 
+          mealName: 'Breakfast', 
+          items: [
+            { id: 'item_1', foodName: 'Oats + banana breakfast', quantity: '1 bowl', notes: 'Morning' }
+          ] 
+        },
+        { 
+          id: 'meal_2', 
+          mealName: 'Lunch', 
+          items: [
+            { id: 'item_2', foodName: 'Chicken + rice lunch', quantity: '1 plate', notes: 'Post-workout' }
+          ] 
+        },
       ],
     },
   },
@@ -188,11 +221,19 @@ function mapNutritionPlanDetail(raw: FirestoreNutritionPlan | null | undefined):
     throw new PlanBuilderSourceError('invalid_response', 'getNutritionPlanDetail returned no plan.');
   }
 
-  const items: NutritionMealItem[] = (raw.items ?? []).map((meal) => ({
+  const meals: NutritionMeal[] = (raw.meals ?? []).map((meal) => ({
     id: meal.id,
-    name: meal.foodName,
-    quantity: '',
-    notes: '',
+    name: meal.mealName,
+    items: (meal.items ?? []).map((item) => ({
+      id: item.id,
+      name: item.foodName,
+      quantity: item.quantity ?? '',
+      notes: item.notes ?? '',
+      calories: item.calories,
+      carbs: item.carbs,
+      proteins: item.proteins,
+      fats: item.fats,
+    })),
   }));
 
   return {
@@ -202,7 +243,7 @@ function mapNutritionPlanDetail(raw: FirestoreNutritionPlan | null | undefined):
     carbsTarget: raw.carbsTarget ?? 0,
     proteinsTarget: raw.proteinsTarget ?? 0,
     fatsTarget: raw.fatsTarget ?? 0,
-    items,
+    meals,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
@@ -250,11 +291,11 @@ export async function createNutritionPlan(
       isArchived: false,
       isDraft: false,
       name: input.name.trim(),
-      caloriesTarget: parseFloat(input.caloriesTarget) || 0,
-      carbsTarget: parseFloat(input.carbsTarget) || 0,
-      proteinsTarget: parseFloat(input.proteinsTarget) || 0,
-      fatsTarget: parseFloat(input.fatsTarget) || 0,
-      items: [],
+      caloriesTarget: 0,
+      carbsTarget: 0,
+      proteinsTarget: 0,
+      fatsTarget: 0,
+      meals: [],
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -286,10 +327,6 @@ export async function updateNutritionPlan(
 
       tx.update(ref, {
         name: input.name.trim(),
-        caloriesTarget: parseFloat(input.caloriesTarget) || 0,
-        carbsTarget: parseFloat(input.carbsTarget) || 0,
-        proteinsTarget: parseFloat(input.proteinsTarget) || 0,
-        fatsTarget: parseFloat(input.fatsTarget) || 0,
         updatedAt: nowIso(),
       });
     });
@@ -311,8 +348,120 @@ export async function getNutritionPlanDetail(
   }
 }
 
+export async function addNutritionMeal(
+  planId: string,
+  meal: NutritionMealInput,
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<NutritionMeal> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const insertedId = generateId('nutrition_meal');
+
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'nutritionPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
+      }
+      const current = snap.data() as FirestoreNutritionPlan;
+      const meals = current.meals ?? [];
+      meals.push({
+        id: insertedId,
+        mealName: meal.name.trim(),
+        items: [],
+      });
+      tx.update(ref, {
+        meals,
+        updatedAt: nowIso(),
+      });
+    });
+
+    return {
+      id: insertedId,
+      name: meal.name.trim(),
+      items: [],
+    };
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
+export async function removeNutritionMeal(
+  planId: string,
+  mealId: string,
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'nutritionPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('Plan not found');
+      
+      const current = snap.data() as FirestoreNutritionPlan;
+      const filtered = (current.meals ?? []).filter((m) => m.id !== mealId);
+      
+      // Map Firestore meals to NutritionMeal to use calculateTotalsFromMeals
+      const mappedMeals: NutritionMeal[] = filtered.map(m => ({
+        id: m.id,
+        name: m.mealName,
+        items: (m.items ?? []).map(i => ({
+          id: i.id,
+          name: i.foodName,
+          quantity: i.quantity,
+          notes: i.notes,
+          calories: i.calories,
+          carbs: i.carbs,
+          proteins: i.proteins,
+          fats: i.fats
+        }))
+      }));
+
+      const totals = calculateTotalsFromMeals(mappedMeals);
+
+      tx.update(ref, {
+        meals: filtered,
+        caloriesTarget: totals.calories,
+        carbsTarget: totals.carbs,
+        proteinsTarget: totals.proteins,
+        fatsTarget: totals.fats,
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
+export async function reorderNutritionMeals(
+  planId: string,
+  mealIds: string[],
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'nutritionPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('Plan not found');
+      
+      const current = snap.data() as FirestoreNutritionPlan;
+      const meals = current.meals ?? [];
+      const reordered = mealIds.map(id => meals.find(m => m.id === id)).filter(Boolean) as FirestoreNutritionMeal[];
+      
+      tx.update(ref, {
+        meals: reordered,
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
 export async function addNutritionMealItem(
   planId: string,
+  mealId: string,
   item: NutritionMealItemInput,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<NutritionMealItem> {
@@ -327,43 +476,186 @@ export async function addNutritionMealItem(
         throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
       }
       const current = snap.data() as FirestoreNutritionPlan;
-      const items = current.items ?? [];
-      items.push({ id: insertedId, foodName: item.name.trim() });
+      const meals = (current.meals ?? []).map((meal) => {
+        if (meal.id !== mealId) return meal;
+        return {
+          ...meal,
+          items: [
+            ...(meal.items ?? []),
+            {
+              id: insertedId,
+              foodName: item.name.trim(),
+              quantity: item.quantity,
+              notes: item.notes,
+              calories: item.calories,
+              carbs: item.carbs,
+              proteins: item.proteins,
+              fats: item.fats,
+            },
+          ],
+        };
+      });
+
+      // Recalculate plan totals
+      const mappedMeals: NutritionMeal[] = meals.map(m => ({
+        id: m.id,
+        name: m.mealName,
+        items: (m.items ?? []).map(i => ({
+          id: i.id,
+          name: i.foodName,
+          quantity: i.quantity,
+          notes: i.notes,
+          calories: i.calories,
+          carbs: i.carbs,
+          proteins: i.proteins,
+          fats: i.fats
+        }))
+      }));
+
+      const totals = calculateTotalsFromMeals(mappedMeals);
+
       tx.update(ref, {
-        items,
+        meals,
+        caloriesTarget: totals.calories,
+        carbsTarget: totals.carbs,
+        proteinsTarget: totals.proteins,
+        fatsTarget: totals.fats,
         updatedAt: nowIso(),
       });
     });
 
-    return { id: insertedId, name: item.name.trim(), quantity: '', notes: '' };
+    return {
+      id: insertedId,
+      name: item.name.trim(),
+      quantity: item.quantity,
+      notes: item.notes,
+      calories: item.calories,
+      carbs: item.carbs,
+      proteins: item.proteins,
+      fats: item.fats,
+    };
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
   }
 }
 
 export async function removeNutritionMealItem(
-  _planId: string,
+  planId: string,
+  mealId: string,
   itemId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   try {
     const firestore = deps.getFirestoreInstance();
 
-    const plans = await getDocs(query(collection(firestore, 'nutritionPlans'), where('items', '!=', null)));
-    const target = plans.docs.find((snap) => {
-      const raw = snap.data() as FirestoreNutritionPlan;
-      return (raw.items ?? []).some((item) => item.id === itemId);
-    });
-
-    if (!target) return;
-
     await runTransaction(firestore, async (tx) => {
-      const raw = target.data() as FirestoreNutritionPlan;
-      const filtered = (raw.items ?? []).filter((item) => item.id !== itemId);
-      tx.update(target.ref, {
-        items: filtered,
+      const ref = doc(firestore, 'nutritionPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('Plan not found');
+      
+      const current = snap.data() as FirestoreNutritionPlan;
+      const meals = (current.meals ?? []).map((meal) => {
+        if (meal.id !== mealId) return meal;
+        return {
+          ...meal,
+          items: (meal.items ?? []).filter((it) => it.id !== itemId),
+        };
+      });
+
+      // Recalculate plan totals
+      const mappedMeals: NutritionMeal[] = meals.map(m => ({
+        id: m.id,
+        name: m.mealName,
+        items: (m.items ?? []).map(i => ({
+          id: i.id,
+          name: i.foodName,
+          quantity: i.quantity,
+          notes: i.notes,
+          calories: i.calories,
+          carbs: i.carbs,
+          proteins: i.proteins,
+          fats: i.fats
+        }))
+      }));
+
+      const totals = calculateTotalsFromMeals(mappedMeals);
+
+      tx.update(ref, {
+        meals,
+        caloriesTarget: totals.calories,
+        carbsTarget: totals.carbs,
+        proteinsTarget: totals.proteins,
+        fatsTarget: totals.fats,
         updatedAt: nowIso(),
       });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
+export async function reorderNutritionMealItems(
+  planId: string,
+  mealId: string,
+  itemIds: string[],
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'nutritionPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('Plan not found');
+      
+      const current = snap.data() as FirestoreNutritionPlan;
+      const meals = (current.meals ?? []).map((meal) => {
+        if (meal.id !== mealId) return meal;
+        const reorderedItems = itemIds.map(id => meal.items.find(it => it.id === id)).filter(Boolean) as FirestoreNutritionItem[];
+        return { ...meal, items: reorderedItems };
+      });
+      
+      tx.update(ref, {
+        meals,
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
+export async function deleteNutritionPlan(
+  planId: string,
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'nutritionPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
+      }
+      tx.delete(ref);
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
+export async function deleteTrainingPlan(
+  planId: string,
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'trainingPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
+      }
+      tx.delete(ref);
     });
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
@@ -499,6 +791,33 @@ export async function removeTrainingSession(
   }
 }
 
+export async function reorderTrainingSessions(
+  planId: string,
+  sessionIds: string[],
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'trainingPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('Plan not found');
+      
+      const current = snap.data() as FirestoreTrainingPlan;
+      const sessions = current.sessions ?? [];
+      
+      const reordered = sessionIds.map(id => sessions.find(s => s.id === id)).filter(Boolean) as Array<{ id: string; sessionName: string; items: any }>;
+      
+      tx.update(ref, {
+        sessions: reordered,
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
 export async function addTrainingSessionItem(
   sessionId: string,
   item: TrainingSessionItemInput,
@@ -561,6 +880,39 @@ export async function removeTrainingSessionItem(
         ...session,
         items: (session.items ?? []).filter((it) => it.id !== itemId),
       }));
+      tx.update(target.ref, {
+        sessions,
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
+export async function reorderTrainingSessionItems(
+  sessionId: string,
+  itemIds: string[],
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const plans = await getDocs(query(collection(firestore, 'trainingPlans'), where('sessions', '!=', null)));
+    const target = plans.docs.find((snap) => {
+      const raw = snap.data() as FirestoreTrainingPlan;
+      return (raw.sessions ?? []).some((s) => s.id === sessionId);
+    });
+
+    if (!target) throw new Error('Session not found');
+
+    await runTransaction(firestore, async (tx) => {
+      const raw = target.data() as FirestoreTrainingPlan;
+      const sessions = (raw.sessions ?? []).map((session) => {
+        if (session.id !== sessionId) return session;
+        const items = session.items ?? [];
+        const reordered = itemIds.map(id => items.find(it => it.id === id)).filter(Boolean) as Array<{ id: string; exerciseName: string }>;
+        return { ...session, items: reordered };
+      });
       tx.update(target.ref, {
         sessions,
         updatedAt: nowIso(),
@@ -638,7 +990,7 @@ export async function cloneStarterTemplate(
         carbsTarget: defaults?.carbsTarget ?? 0,
         proteinsTarget: defaults?.proteinsTarget ?? 0,
         fatsTarget: defaults?.fatsTarget ?? 0,
-        items: defaults?.items ?? [],
+        meals: defaults?.meals ?? [],
         createdAt: timestamp,
         updatedAt: timestamp,
       };
@@ -676,10 +1028,5 @@ export async function cloneStarterTemplate(
 }
 
 export async function searchFoods(query: string): Promise<FoodSearchResult[]> {
-  const auth = getFirebaseAuth();
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('No authenticated user for food search.');
-  }
-  return searchFoodsFromSource(user, query);
+  return searchFoodsFromSource(query);
 }

@@ -16,10 +16,6 @@ export type DsTheme = {
     accentPrimary: string;
     accentPrimaryHover: string;
     accentPrimarySoft: string;
-    accentBlue: string;
-    accentBlueSoft: string;
-    accentCyan: string;
-    accentCyanSoft: string;
     success: string;
     successSoft: string;
     warning: string;
@@ -55,10 +51,6 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       accentPrimary: '#1ea95a',
       accentPrimaryHover: '#198a49',
       accentPrimarySoft: '#1ea95a20',
-      accentBlue: '#0A2463',
-      accentBlueSoft: '#dbeafe',
-      accentCyan: '#06b6d4',
-      accentCyanSoft: '#cffafe',
       success: '#16a34a',
       successSoft: '#dcfce7',
       warning: '#b45309',
@@ -70,8 +62,8 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       border: '#e2e8f0',
       borderStrong: '#cbd5e1',
       onAccent: '#f8fafc',
-      overlaySoft: 'rgba(10,36,99,0.6)',
-      overlayStrong: 'rgba(10,36,99,0.95)',
+      overlaySoft: 'rgba(30,169,90,0.4)',
+      overlayStrong: 'rgba(30,169,90,0.85)',
     },
     blob: {
       topLeft: '#dcfce7',
@@ -92,10 +84,6 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       accentPrimary: '#1ea95a',
       accentPrimaryHover: '#198a49',
       accentPrimarySoft: '#1ea95a29',
-      accentBlue: '#93c5fd',
-      accentBlueSoft: '#1e3a5f',
-      accentCyan: '#22d3ee',
-      accentCyanSoft: '#164e63',
       success: '#22c55e',
       successSoft: '#14532d',
       warning: '#f59e0b',
@@ -107,8 +95,8 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       border: '#374151',
       borderStrong: '#4b5563',
       onAccent: '#f8fafc',
-      overlaySoft: 'rgba(10,36,99,0.55)',
-      overlayStrong: 'rgba(10,36,99,0.88)',
+      overlaySoft: 'rgba(30,169,90,0.3)',
+      overlayStrong: 'rgba(30,169,90,0.7)',
     },
     blob: {
       topLeft: '#1f3b28',
@@ -166,7 +154,7 @@ export const DsTypography: Record<
     fontWeight: '400',
   },
   button: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
     fontWeight: '600',
   },

@@ -1,58 +1,49 @@
 /**
  * SC-207 Nutrition Plan Builder
  * Route: /professional/nutrition/plans/:planId
- *
- * Allows nutritionists to create and edit named predefined nutrition plans with
- * calorie/macro targets and food item lists.
- *
- * Starter template cloning supports local fallback templates and Firestore writes.
- * Food search is wired through Cloud Function source integration.
- *
- * Docs: docs/screens/v2/SC-207-nutrition-plan-builder.md
- * Refs: D-111–D-114, FR-240–FR-243, FR-247–FR-248,
- *       BR-281, BR-291–BR-292, BR-295–BR-296,
- *       AC-207, AC-256, AC-264, AC-265,
- *       TC-275–TC-277, TC-280
  */
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  LayoutAnimation,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import { getDsTheme } from '@/constants/design-system';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
+import { PlanMetadataForm } from '@/features/plans/components/PlanMetadataForm';
+
+import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import {
   validateNutritionPlanInput,
   isStarterTemplate,
+  calculateTotalsFromItems,
 } from '@/features/plans/plan-builder.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import { usePlanForm } from '@/features/plans/use-plan-form';
+import { usePlanDraft } from '@/features/plans/use-plan-draft';
+import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type TFn = ReturnType<typeof useTranslation>['t'];
-type Palette = {
-  background: string;
-  text: string;
-  tint: string;
-  icon: string;
-  danger: string;
-};
-
-type AddItemFormState =
-  | { kind: 'closed' }
-  | { kind: 'open'; name: string; quantity: string; notes: string };
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -60,13 +51,15 @@ export default function NutritionPlanBuilderScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
-  const palette = {
+  
+  const palette = useMemo(() => ({
     background: theme.color.canvas,
     text: theme.color.textPrimary,
     tint: theme.color.accentPrimary,
     icon: theme.color.textSecondary,
     danger: theme.color.danger,
-  };
+  }), [theme]);
+
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
@@ -75,119 +68,205 @@ export default function NutritionPlanBuilderScreen() {
   const isStudentBuilder = pathname.startsWith('/student/');
 
   const tr = useCallback(
-    (proKey: Parameters<typeof t>[0], studentKey: Parameters<typeof t>[0]) =>
-      t(isStudentBuilder ? studentKey : proKey),
+    (proKey: string, studentKey: string) =>
+      t((isStudentBuilder ? studentKey : proKey) as any),
     [isStudentBuilder, t]
   );
 
   const {
     state,
-    foodSearchState,
     loadPlan,
     createPlan,
     savePlan,
-    addItem,
-    removeItem,
-    searchFoods,
+    addMeal,
+    removeMeal,
+    reorderMeals,
+    deletePlan,
+    initNewPlan,
     validateInput,
   } = useNutritionPlanBuilder(Boolean(currentUser));
 
-  // ── Local form state ───────────────────────────────────────────────────────
+  // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
 
-  const [name, setName] = useState('');
-  const [caloriesTarget, setCaloriesTarget] = useState('');
-  const [carbsTarget, setCarbsTarget] = useState('');
-  const [proteinsTarget, setProteinsTarget] = useState('');
-  const [fatsTarget, setFatsTarget] = useState('');
-  const [addItemForm, setAddItemForm] = useState<AddItemFormState>({ kind: 'closed' });
-  const [foodQuery, setFoodQuery] = useState('');
-  const [formErrors, setFormErrors] = useState<ReturnType<typeof validateNutritionPlanInput>>({});
-  const [isSaving, setIsSaving] = useState(false);
+  const initialValues = useMemo(() => ({
+    name: state.kind === 'ready' ? state.plan.name : '',
+  }), [state]);
 
-  const isMounted = useRef(true);
+  const {
+    values,
+    setValues,
+    setFieldValue,
+    errors: formErrors,
+    isSaving,
+    isDirty,
+    setIsDirty,
+    handleSave,
+    handleBack,
+  } = usePlanForm({
+    initialValues,
+    validate: (v) => validateInput(v as any),
+    t,
+    onClearDraft: () => clearDraft(),
+    onSave: async (formValues) => {
+      if (isNew || isStarterClone) {
+        return createPlan(formValues);
+      }
+      return savePlan(planId!, formValues);
+    },
+    onSuccess: (id) => {
+      if (isNew || isStarterClone) {
+        router.replace(
+          `${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${id}` as never
+        );
+      }
+    }
+  });
+
+  const { checkDraft, clearDraft } = usePlanDraft(
+    planId || 'new',
+    values,
+    isDirty,
+    (restored) => setValues(restored),
+    t
+  );
 
   useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
+    if (state.kind === 'ready') {
+      checkDraft().then((draft) => {
+        if (draft) {
+          Alert.alert(t('pro.plan.draft.title'), t('pro.plan.draft.body'), [
+            { text: t('pro.plan.draft.no'), style: 'destructive', onPress: clearDraft },
+            { text: t('pro.plan.draft.yes'), onPress: () => setValues(draft) },
+          ]);
+        }
+      });
+    }
+  }, [state.kind, checkDraft, clearDraft, t, setValues]);
+
+  // ── Local UI state ─────────────────────────────────────────────────────────
+  const [addMealForm, setAddMealForm] = useState<{ kind: 'closed' } | { kind: 'open'; name: string }>({ kind: 'closed' });
+  const [isSortMode, setIsSortMode] = useState(false);
+  const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.nutrition_builder');
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!isNew && !isStarterClone && planId) {
+    if (isNew) {
+      initNewPlan();
+    } else if (!isStarterClone && planId) {
       loadPlan(planId);
     }
-  }, [planId, isNew, isStarterClone, loadPlan]);
+  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan]);
 
-  // ── Populate form from loaded plan ─────────────────────────────────────────
-  useEffect(() => {
-    if (state.kind === 'ready') {
-      setName(state.plan.name);
-      setCaloriesTarget(state.plan.caloriesTarget > 0 ? String(state.plan.caloriesTarget) : '');
-      setCarbsTarget(state.plan.carbsTarget > 0 ? String(state.plan.carbsTarget) : '');
-      setProteinsTarget(state.plan.proteinsTarget > 0 ? String(state.plan.proteinsTarget) : '');
-      setFatsTarget(state.plan.fatsTarget > 0 ? String(state.plan.fatsTarget) : '');
-    }
-  }, [state]);
+  // ── Handlers with Animations ───────────────────────────────────────────────
+  const handleAddMeal = useCallback(async () => {
+    if (addMealForm.kind !== 'open' || state.kind !== 'ready') return;
+    const { name: mealName } = addMealForm;
+    if (!mealName.trim()) return;
 
-  // ── Save / Create ──────────────────────────────────────────────────────────
-  const handleSave = useCallback(async () => {
-    const input = { name, caloriesTarget, carbsTarget, proteinsTarget, fatsTarget };
-    const errors = validateInput(input);
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-    setFormErrors({});
-    setIsSaving(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    if (isNew || isStarterClone) {
-      const result = await createPlan(input);
-      if (isMounted.current) setIsSaving(false);
-      if ('error' in result) {
-        Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
-      } else {
-        router.replace(
-          `${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${result.id}` as never
-        );
-      }
-    } else {
-      const err = await savePlan(planId!, input);
-      if (isMounted.current) setIsSaving(false);
-      if (err) Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
-    }
-  }, [name, caloriesTarget, carbsTarget, proteinsTarget, fatsTarget, validateInput, isNew, isStarterClone, createPlan, savePlan, planId, router, tr, isStudentBuilder]);
-
-  // ── Add item ───────────────────────────────────────────────────────────────
-  const handleAddItem = useCallback(async () => {
-    if (addItemForm.kind !== 'open' || state.kind !== 'ready') return;
-    const { name: itemName, quantity, notes } = addItemForm;
-    if (!itemName.trim()) return;
-
-    const currentPlanId = state.plan.id;
-    const err = await addItem(currentPlanId, { name: itemName, quantity, notes });
-    if (err) {
+    const { planId: realId, error } = await addMeal(state.plan.id, { name: mealName }, { name: values.name });
+    
+    if (error) {
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
     } else {
-      setAddItemForm({ kind: 'closed' });
-    }
-  }, [addItemForm, state, addItem, tr]);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setAddMealForm({ kind: 'closed' });
+      setIsDirty(true);
 
-  // ── Remove item ────────────────────────────────────────────────────────────
-  const handleRemoveItem = useCallback(
-    (itemId: string) => {
+      // If it was a new plan, update the URL to avoid 'new' ID
+      if (isNew) {
+        router.replace(`${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${realId}` as any);
+      }
+    }
+  }, [addMealForm, state, addMeal, values.name, tr, setIsDirty, isNew, isStudentBuilder, router]);
+
+  const handleRemoveMeal = useCallback(
+    (mealId: string) => {
       if (state.kind !== 'ready') return;
-      void removeItem(state.plan.id, itemId);
+      
+      const meal = state.plan.meals.find(m => m.id === mealId);
+      const mealName = meal?.name || t('pro.plan.section.meals');
+
+      Alert.alert(
+        t('common.cta.delete') as string,
+        (t('pro.plan.delete.body') as string).replace('{name}', mealName),
+        [
+          { text: t('common.cta.cancel'), style: 'cancel' },
+          {
+            text: t('common.cta.delete'),
+            style: 'destructive',
+            onPress: () => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              void removeMeal(state.plan.id, mealId);
+              setIsDirty(true);
+            },
+          },
+        ]
+      );
     },
-    [state, removeItem]
+    [state, removeMeal, setIsDirty, t]
   );
 
-  // ── Food search ────────────────────────────────────────────────────────────
-  const handleFoodSearch = useCallback(() => {
-    searchFoods(foodQuery);
-  }, [foodQuery, searchFoods]);
+  const handleMoveMeal = useCallback(async (index: number, direction: 'up' | 'down') => {
+    if (state.kind !== 'ready') return;
+    const newMeals = [...state.plan.meals];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newMeals.length) return;
+
+    const [moved] = newMeals.splice(index, 1);
+    newMeals.splice(targetIndex, 0, moved);
+
+    // Immediate visual update with animation
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Call optimistic reorder
+    await reorderMeals(state.plan.id, newMeals.map(m => m.id));
+  }, [state, reorderMeals]);
+
+  const handleFieldChange = useCallback((field: keyof typeof values, v: string) => {
+    setFieldValue(field, v);
+  }, [setFieldValue]);
+
+  const handleCloseAddMeal = useCallback(() => {
+    setAddMealForm({ kind: 'closed' });
+  }, []);
+
+  const handleOpenAddMeal = useCallback(() => {
+    setAddMealForm({ kind: 'open', name: '' });
+  }, []);
+
+  const handleNavigateToMeal = useCallback((mealId: string) => {
+    router.push(`${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${planId}/meals/${mealId}` as any);
+  }, [isStudentBuilder, planId, router]);
+
+  const handleDeletePlan = useCallback(() => {
+    if (isNew || !planId) return;
+
+    Alert.alert(
+      tr('pro.plan.delete.title', 'student.plan.delete.title'),
+      tr('pro.plan.delete.body', 'student.plan.delete.body'),
+      [
+        { text: t('common.cta.cancel'), style: 'cancel' },
+        {
+          text: t('common.cta.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            const err = await deletePlan(planId);
+            if (!err) {
+              router.replace(isStudentBuilder ? '/student/nutrition' : '/professional/nutrition');
+            } else {
+              Alert.alert(tr('pro.plan.error.delete', 'student.plan.error.delete'));
+            }
+          },
+        },
+      ]
+    );
+  }, [isNew, planId, deletePlan, router, isStudentBuilder, t, tr]);
 
   const screenTitle = isNew || isStarterClone
     ? tr('pro.plan.nutrition.title.create', 'student.plan.nutrition.title.create')
@@ -196,24 +275,42 @@ export default function NutritionPlanBuilderScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      headerShown={false}
+      style={[styles.container, { backgroundColor: palette.background }]}
       contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
     >
-      <Stack.Screen options={{ title: screenTitle, headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false }} />
 
-      <DsBackButton
-        scheme={scheme}
-        onPress={() => {
-          if (router.canGoBack()) {
-            router.back();
-            return;
-          }
+      {/* ── Header Row ──────────────────────────────────────────────────── */}
+      <View style={styles.headerRow}>
+        <DsBackButton
+          scheme={scheme}
+          onPress={handleBack}
+          accessibilityLabel={t('auth.role.cta_back') as string}
+          style={styles.backButton}
+        />
 
-          router.replace('/');
-        }}
-        accessibilityLabel={t('auth.role.cta_back') as string}
-        style={styles.backButton}
-        testID={isStudentBuilder ? 'student.plan.nutrition.backButton' : 'pro.plan.nutrition.backButton'}
+        <View style={{ flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center' }}>
+          {!isNew && (
+            <Pressable 
+              onPress={handleDeletePlan}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.cta.delete') as string}
+              style={styles.headerActionBtn}
+            >
+              <IconSymbol name="trash" size={20} color={palette.danger} />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      <BuilderGuidanceCard
+        theme={theme}
+        visible={showGuidance}
+        onDismiss={hideGuidance}
+        title={tr('pro.plan.builder.guidance.nutrition.title', 'student.plan.builder.guidance.nutrition.title')}
+        description={tr('pro.plan.builder.guidance.nutrition.body', 'student.plan.builder.guidance.nutrition.body')}
       />
 
       {/* ── Error state ───────────────────────────────────────────────────── */}
@@ -229,464 +326,287 @@ export default function NutritionPlanBuilderScreen() {
         </View>
       )}
 
+      {state.kind === 'ready' && state.backgroundError && (
+        <View
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          style={[styles.errorBanner, { backgroundColor: theme.color.warningSoft, borderColor: theme.color.warning, borderWidth: 1 }]}
+        >
+          <Text style={[styles.errorBannerText, { color: theme.color.warning }]}>
+            {t('common.error.generic')} • Background update failed
+          </Text>
+        </View>
+      )}
+
       {/* ── Loading state ─────────────────────────────────────────────────── */}
-      {state.kind === 'loading' && (
+      {(state.kind === 'loading' || isSaving) && (
         <ActivityIndicator
           style={styles.loader}
           accessibilityLabel={t('a11y.loading.default')}
         />
       )}
 
-      {/* ── Plan metadata form ────────────────────────────────────────────── */}
+      {/* Plan metadata form ────────────────────────────────────────────── */}
       <PlanMetadataForm
         palette={palette}
+        theme={theme}
         t={t}
-        name={name}
-        caloriesTarget={caloriesTarget}
-        carbsTarget={carbsTarget}
-        proteinsTarget={proteinsTarget}
-        fatsTarget={fatsTarget}
+        tr={tr}
+        name={values.name}
+        caloriesTarget={state.kind === 'ready' ? String(state.plan.caloriesTarget) : '0'}
+        carbsTarget={state.kind === 'ready' ? String(state.plan.carbsTarget) : '0'}
+        proteinsTarget={state.kind === 'ready' ? String(state.plan.proteinsTarget) : '0'}
+        fatsTarget={state.kind === 'ready' ? String(state.plan.fatsTarget) : '0'}
         errors={formErrors}
-        onNameChange={setName}
-        onCaloriesChange={setCaloriesTarget}
-        onCarbsChange={setCarbsTarget}
-        onProteinsChange={setProteinsTarget}
-        onFatsChange={setFatsTarget}
+        onNameChange={(v) => handleFieldChange('name', v)}
+        autoFocus={!values.name}
       />
 
+
       {/* ── Food items list ───────────────────────────────────────────────── */}
-      <Text style={[styles.sectionHeader, { color: palette.text }]}>
-        {tr('pro.plan.section.meals', 'student.plan.section.meals')}
-      </Text>
-
-      {state.kind === 'ready' && state.plan.items.length === 0 && (
-        <Text style={[styles.emptyText, { color: palette.icon }]}>
-          {tr('pro.plan.food_search.stub_notice', 'student.plan.food_search.stub_notice')}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionHeader, { color: palette.text }]}>
+          {tr('pro.plan.section.meals', 'student.plan.section.meals')}
         </Text>
-      )}
+        <Text style={[styles.supportText, { color: palette.icon, marginTop: 2 }]}>
+          {tr('pro.plan.section.meals.support', 'student.plan.section.meals.support')}
+        </Text>
+      </View>
 
-      {state.kind === 'ready' &&
-        state.plan.items.map((item) => (
-          <FoodItemRow
-            key={item.id}
-            name={item.name}
-            quantity={item.quantity}
-            notes={item.notes}
-            palette={palette}
-            onRemove={() => handleRemoveItem(item.id)}
-            t={t}
-          />
-        ))}
-
-      {/* ── Add item form ─────────────────────────────────────────────────── */}
-      {state.kind === 'ready' && addItemForm.kind === 'open' && (
-        <AddItemForm
-          palette={palette}
-          t={t}
-          name={addItemForm.name}
-          quantity={addItemForm.quantity}
-          notes={addItemForm.notes}
-          onNameChange={(v) =>
-            setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, name: v } : prev))
-          }
-          onQuantityChange={(v) =>
-            setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, quantity: v } : prev))
-          }
-          onNotesChange={(v) =>
-            setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, notes: v } : prev))
-          }
-          onConfirm={handleAddItem}
-          onCancel={() => setAddItemForm({ kind: 'closed' })}
-        />
-      )}
-
-      {state.kind === 'ready' && addItemForm.kind === 'closed' && (
-        <Pressable
-          style={[styles.secondaryBtn, { borderColor: palette.tint }]}
-          onPress={() => setAddItemForm({ kind: 'open', name: '', quantity: '', notes: '' })}
-          accessibilityRole="button"
-          accessibilityLabel={tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
+      {/* ── Add meal form ─────────────────────────────────────────────────── */}
+      {!isSortMode && state.kind === 'ready' && addMealForm.kind === 'open' && (
+        <Animated.View 
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(200)}
+          style={[styles.addMealInline, { backgroundColor: theme.color.surface }]}
         >
-          <Text style={[styles.secondaryBtnText, { color: palette.tint }]}>
-            {tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
-          </Text>
-        </Pressable>
+          <TextInput
+            style={[styles.addMealInput, { color: palette.text }]}
+            placeholder={t('pro.plan.meal.name.placeholder')}
+            placeholderTextColor={palette.icon}
+            value={addMealForm.name}
+            onChangeText={(v) => setAddMealForm({ ...addMealForm, name: v })}
+            autoFocus
+          />
+          <View style={styles.addMealActions}>
+            <DsPillButton
+              scheme={scheme}
+              variant="ghost"
+              size="sm"
+              label={t('common.cta.cancel') as string}
+              onPress={handleCloseAddMeal}
+              fullWidth={false}
+            />
+            <DsPillButton
+              scheme={scheme}
+              size="sm"
+              label={t('common.cta.add') as string}
+              onPress={handleAddMeal}
+              disabled={!addMealForm.name.trim()}
+              fullWidth={false}
+            />
+          </View>
+        </Animated.View>
       )}
 
-      {/* ── Food search (stub) ────────────────────────────────────────────── */}
-      {state.kind === 'ready' && (
-        <View style={styles.foodSearchRow}>
-          <TextInput
-            style={[styles.foodSearchInput, { color: palette.text, borderColor: palette.icon }]}
-            placeholder={t('pro.plan.food_search.placeholder')}
-            placeholderTextColor={palette.icon}
-            value={foodQuery}
-            onChangeText={setFoodQuery}
-            onSubmitEditing={handleFoodSearch}
-            returnKeyType="search"
-            accessibilityLabel={t('pro.plan.food_search.placeholder')}
+      {!isSortMode && state.kind === 'ready' && addMealForm.kind === 'closed' && (
+        <View style={styles.actionRow}>
+          <DsPillButton
+            scheme={scheme}
+            variant="outline"
+            label={tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
+            onPress={handleOpenAddMeal}
+            fullWidth={false}
+            style={{ flex: 1 }}
+            leftIcon={<IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />}
+          />
+
+          {state.plan.meals.length > 1 && (
+            <DsPillButton
+              scheme={scheme}
+              variant="outline"
+              label={t('pro.plan.cta.sort')}
+              onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setIsSortMode(true);
+              }}
+              fullWidth={false}
+              style={styles.sortBtn}
+              leftIcon={<IconSymbol name="arrow.up.arrow.down" size={14} color={palette.tint} />}
+            />
+          )}
+        </View>
+      )}
+
+      {isSortMode && state.kind === 'ready' && (
+        <View style={styles.sortModeHeader}>
+          <DsPillButton
+            scheme={scheme}
+            variant="primary"
+            size="sm"
+            label={t('pro.plan.cta.sort_done')}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setIsSortMode(false);
+            }}
+            fullWidth={true}
           />
         </View>
       )}
 
-      {foodSearchState.kind === 'done' && foodSearchState.results.length === 0 && foodQuery.trim() !== '' && (
-        <Text style={[styles.emptyText, { color: palette.icon }]}>
-          {t('pro.plan.food_search.empty')}
-        </Text>
+      {state.kind === 'ready' && state.plan.meals.length === 0 && (
+        <View style={styles.emptyContainer}>
+          <View style={[styles.emptyIconWrapper, { backgroundColor: theme.color.surfaceMuted }]}>
+            <IconSymbol name="fork.knife" size={40} color={palette.icon} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: palette.text }]}>
+            {tr('pro.plan.nutrition.empty.title', 'student.plan.nutrition.empty.title')}
+          </Text>
+          <Text style={[styles.emptyText, { color: palette.icon }]}>
+            {tr('pro.plan.nutrition.empty.body', 'student.plan.nutrition.empty.body')}
+          </Text>
+        </View>
+      )}
+
+      {state.kind === 'ready' && state.plan.meals.length > 0 && (
+        <View style={styles.itemsInsetWrapper}>
+          {state.plan.meals.map((meal, index) => (
+            <MealRow
+              key={meal.id}
+              meal={meal}
+              palette={palette}
+              theme={theme}
+              isLast={index === state.plan.meals.length - 1}
+              onRemove={() => handleRemoveMeal(meal.id)}
+              onPress={() => handleNavigateToMeal(meal.id)}
+              isSortMode={isSortMode}
+              onMoveUp={() => handleMoveMeal(index, 'up')}
+              onMoveDown={() => handleMoveMeal(index, 'down')}
+              isFirstInList={index === 0}
+              isLastInList={index === state.plan.meals.length - 1}
+            />
+          ))}
+        </View>
       )}
 
       {/* ── Save CTA ──────────────────────────────────────────────────────── */}
-      <Pressable
-        style={[styles.primaryBtn, { backgroundColor: palette.tint }, isSaving && styles.btnDisabled]}
-        onPress={handleSave}
-        disabled={isSaving}
-        accessibilityRole="button"
-        accessibilityLabel={tr('pro.plan.cta.save', 'student.plan.cta.save')}
-        accessibilityState={{ disabled: isSaving, busy: isSaving }}
-      >
-        {isSaving ? (
-          <ActivityIndicator color={palette.background} accessibilityLabel={t('a11y.loading.saving')} />
-        ) : (
-          <Text style={[styles.primaryBtnText, { color: palette.background }]}>
-            {tr('pro.plan.cta.save', 'student.plan.cta.save')}
-          </Text>
-        )}
-      </Pressable>
+      <View style={styles.footerActions}>
+        <DsPillButton
+          scheme={scheme}
+          variant="primary"
+          label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
+          onPress={handleSave}
+          isLoading={isSaving}
+          style={{ flex: 1 }}
+        />
+      </View>
     </DsScreen>
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+function MealRow({ 
+  meal, 
+  palette, 
+  theme, 
+  isLast, 
+  onRemove, 
+  onPress,
+  isSortMode, 
+  onMoveUp, 
+  onMoveDown,
+  isFirstInList,
+  isLastInList 
+}: { 
+  meal: any; 
+  palette: any; 
+  theme: any; 
+  isLast: boolean; 
+  onRemove: () => void; 
+  onPress: () => void;
+  isSortMode: boolean; 
+  onMoveUp: () => void; 
+  onMoveDown: () => void;
+  isFirstInList: boolean;
+  isLastInList: boolean;
+}) {
+  const totals = calculateTotalsFromItems(meal.items);
 
-type PlanMetadataFormProps = {
-  palette: Palette;
-  t: TFn;
-  name: string;
-  caloriesTarget: string;
-  carbsTarget: string;
-  proteinsTarget: string;
-  fatsTarget: string;
-  errors: ReturnType<typeof validateNutritionPlanInput>;
-  onNameChange: (v: string) => void;
-  onCaloriesChange: (v: string) => void;
-  onCarbsChange: (v: string) => void;
-  onProteinsChange: (v: string) => void;
-  onFatsChange: (v: string) => void;
-};
-
-function PlanMetadataForm({
-  palette,
-  t,
-  name,
-  caloriesTarget,
-  carbsTarget,
-  proteinsTarget,
-  fatsTarget,
-  errors,
-  onNameChange,
-  onCaloriesChange,
-  onCarbsChange,
-  onProteinsChange,
-  onFatsChange,
-}: PlanMetadataFormProps) {
   return (
-    <View style={styles.formSection}>
-      {/* Name */}
-      <Text style={[styles.fieldLabel, { color: palette.text }]}> 
-        {t('pro.plan.field.name.label')}
-      </Text>
-      <TextInput
-        style={[styles.textInput, { color: palette.text, borderColor: errors.name ? palette.danger : palette.icon }]}
-        placeholder={t('pro.plan.field.name.placeholder')}
-        placeholderTextColor={palette.icon}
-        value={name}
-        onChangeText={onNameChange}
-        accessibilityLabel={t('pro.plan.field.name.label')}
-      />
-      {errors.name && (
-        <View accessibilityLiveRegion="polite">
-          <Text style={[styles.fieldError, { color: palette.danger }]}>
-            {errors.name === 'required'
-              ? t('pro.plan.validation.name_required')
-              : t('pro.plan.validation.name_too_short')}
-          </Text>
-        </View>
-      )}
-
-      {/* Calorie target */}
-      <Text style={[styles.fieldLabel, { color: palette.text }]}>
-        {t('pro.plan.field.calories_target.label')}
-      </Text>
-      <TextInput
-        style={[styles.textInput, { color: palette.text, borderColor: errors.caloriesTarget ? palette.danger : palette.icon }]}
-        placeholder={t('pro.plan.field.calories_target.placeholder')}
-        placeholderTextColor={palette.icon}
-        value={caloriesTarget}
-        onChangeText={onCaloriesChange}
-        keyboardType="decimal-pad"
-        accessibilityLabel={t('pro.plan.field.calories_target.label')}
-      />
-      {errors.caloriesTarget && (
-        <View accessibilityLiveRegion="polite">
-          <Text style={[styles.fieldError, { color: palette.danger }]}>{t('pro.plan.validation.calories_non_negative')}</Text>
-        </View>
-      )}
-
-      {/* Macro targets row */}
-      <View style={styles.macroRow}>
-        <MacroField
-          label={t('pro.plan.field.carbs_target.label')}
-          value={carbsTarget}
-          hasError={!!errors.carbsTarget}
-          palette={palette}
-          onChange={onCarbsChange}
-        />
-        <MacroField
-          label={t('pro.plan.field.proteins_target.label')}
-          value={proteinsTarget}
-          hasError={!!errors.proteinsTarget}
-          palette={palette}
-          onChange={onProteinsChange}
-        />
-        <MacroField
-          label={t('pro.plan.field.fats_target.label')}
-          value={fatsTarget}
-          hasError={!!errors.fatsTarget}
-          palette={palette}
-          onChange={onFatsChange}
-        />
-      </View>
-      {(errors.carbsTarget || errors.proteinsTarget || errors.fatsTarget) && (
-        <View accessibilityLiveRegion="polite">
-          <Text style={[styles.fieldError, { color: palette.danger }]}>{t('pro.plan.validation.macros_non_negative')}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-type MacroFieldProps = {
-  label: string;
-  value: string;
-  hasError: boolean;
-  palette: Palette;
-  onChange: (v: string) => void;
-};
-
-function MacroField({ label, value, hasError, palette, onChange }: MacroFieldProps) {
-  return (
-    <View style={styles.macroField}>
-      <Text style={[styles.macroLabel, { color: palette.icon }]} numberOfLines={2}>
-        {label}
-      </Text>
-      <TextInput
-        style={[
-          styles.macroInput,
-          { color: palette.text, borderColor: hasError ? palette.danger : palette.icon },
-        ]}
-        value={value}
-        onChangeText={onChange}
-        keyboardType="decimal-pad"
-        placeholder="0"
-        placeholderTextColor={palette.icon}
-        accessibilityLabel={label}
-      />
-    </View>
-  );
-}
-
-type FoodItemRowProps = {
-  name: string;
-  quantity: string;
-  notes: string;
-  palette: Palette;
-  t: TFn;
-  onRemove: () => void;
-};
-
-function FoodItemRow({ name, quantity, notes, palette, t, onRemove }: FoodItemRowProps) {
-  return (
-    <View style={[styles.itemRow, { borderColor: palette.icon }]}>
-      <View style={styles.itemInfo}>
-        <Text style={[styles.itemName, { color: palette.text }]}>{name}</Text>
-        {quantity ? (
-          <Text style={[styles.itemMeta, { color: palette.icon }]}>{quantity}</Text>
-        ) : null}
-        {notes ? (
-          <Text style={[styles.itemMeta, { color: palette.icon }]}>{notes}</Text>
-        ) : null}
-      </View>
-      <Pressable
-        onPress={onRemove}
-        accessibilityRole="button"
-        accessibilityLabel={`Remove ${name}`}
-        hitSlop={8}
+    <View style={[styles.itemRowContainer, !isLast && { borderBottomWidth: 1, borderBottomColor: theme.color.border }]}>
+      <Pressable 
+        onPress={isSortMode ? undefined : onPress}
+        style={({ pressed }) => [styles.itemRowPressable, pressed && !isSortMode && { backgroundColor: theme.color.surfaceMuted }]}
       >
-        <Text style={[styles.removeBtn, { color: palette.tint }]}>✕</Text>
+        <View style={styles.itemRowMain}>
+          <View style={styles.itemRowInfo}>
+            <Text style={[styles.itemName, { color: palette.text }]}>{meal.name}</Text>
+            <Text style={[styles.itemDetail, { color: palette.icon }]}>
+              {meal.items.length} {meal.items.length === 1 ? 'food' : 'foods'} · {totals.calories} kcal
+            </Text>
+          </View>
+          
+          {isSortMode ? (
+            <View style={styles.sortActions}>
+              <Pressable onPress={onMoveUp} disabled={isFirstInList} style={{ opacity: isFirstInList ? 0.2 : 1 }}>
+                <IconSymbol name="chevron.up" size={20} color={palette.icon} />
+              </Pressable>
+              <Pressable onPress={onMoveDown} disabled={isLastInList} style={{ opacity: isLastInList ? 0.2 : 1 }}>
+                <IconSymbol name="chevron.down" size={20} color={palette.icon} />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.rowRight}>
+               <IconSymbol name="chevron.right" size={16} color={palette.icon} />
+            </View>
+          )}
+        </View>
       </Pressable>
+
+      {!isSortMode && (
+        <Pressable 
+          onPress={onRemove}
+          hitSlop={8}
+          style={styles.removeBtn}
+        >
+          <IconSymbol name="minus.circle.fill" size={20} color={palette.danger} />
+        </Pressable>
+      )}
     </View>
   );
 }
-
-type AddItemFormProps = {
-  palette: Palette;
-  t: TFn;
-  name: string;
-  quantity: string;
-  notes: string;
-  onNameChange: (v: string) => void;
-  onQuantityChange: (v: string) => void;
-  onNotesChange: (v: string) => void;
-  onConfirm: () => void;
-  onCancel: () => void;
-};
-
-function AddItemForm({
-  palette,
-  t,
-  name,
-  quantity,
-  notes,
-  onNameChange,
-  onQuantityChange,
-  onNotesChange,
-  onConfirm,
-  onCancel,
-}: AddItemFormProps) {
-  return (
-    <View style={[styles.addItemCard, { borderColor: palette.icon }]}>
-      <TextInput
-        style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
-        placeholder={t('pro.plan.item.field.name.placeholder')}
-        placeholderTextColor={palette.icon}
-        value={name}
-        onChangeText={onNameChange}
-        accessibilityLabel={t('pro.plan.item.field.name.label')}
-      />
-      <TextInput
-        style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
-        placeholder={t('pro.plan.item.field.quantity.placeholder')}
-        placeholderTextColor={palette.icon}
-        value={quantity}
-        onChangeText={onQuantityChange}
-        accessibilityLabel={t('pro.plan.item.field.quantity.label')}
-      />
-      <TextInput
-        style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
-        placeholder={t('pro.plan.item.field.notes.label')}
-        placeholderTextColor={palette.icon}
-        value={notes}
-        onChangeText={onNotesChange}
-        accessibilityLabel={t('pro.plan.item.field.notes.label')}
-      />
-      <View style={styles.addItemActions}>
-        <Pressable
-          style={[styles.primaryBtn, { backgroundColor: palette.tint, flex: 1 }]}
-          onPress={onConfirm}
-          accessibilityRole="button"
-          accessibilityLabel={t('pro.plan.cta.add_meal')}
-        >
-          <Text style={[styles.primaryBtnText, { color: palette.background }]}> 
-            {t('pro.plan.cta.add_meal')}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.secondaryBtn, { borderColor: palette.icon, flex: 1 }]}
-          onPress={onCancel}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.secondaryBtnText, { color: palette.icon }]}>
-            {t('meal.library.quick_log.cta_cancel')}
-          </Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 20, gap: 12, paddingBottom: 40 },
-  backButton: { marginBottom: 2 },
-  loader: { marginVertical: 24 },
-  errorBanner: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  errorBannerText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  formSection: { gap: 8 },
-  sectionHeader: {
-    fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginTop: 8 },
-  fieldError: { fontSize: 12, marginTop: 2 },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 15,
-  },
-  macroRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  macroField: { flex: 1 },
-  macroLabel: { fontSize: 12, marginBottom: 4 },
-  macroInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 8,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  emptyText: { fontSize: 14, textAlign: 'center', marginVertical: 8 },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    gap: 8,
-  },
-  itemInfo: { flex: 1, gap: 2 },
-  itemName: { fontSize: 14, fontWeight: '600' },
-  itemMeta: { fontSize: 12 },
-  removeBtn: { fontSize: 16, fontWeight: '700', paddingHorizontal: 4 },
-  addItemCard: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    gap: 8,
-  },
-  addItemActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  foodSearchRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  foodSearchInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 14,
-  },
-  primaryBtn: {
-    borderRadius: 10,
-    padding: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  primaryBtnText: { fontSize: 15, fontWeight: '700' },
-  btnDisabled: { opacity: 0.6 },
-  secondaryBtn: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  secondaryBtnText: { fontSize: 14, fontWeight: '600' },
+  content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 60 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
+  backButton: { marginBottom: 0 },
+  loader: { marginVertical: DsSpace.xl },
+  errorBanner: { borderRadius: DsRadius.md, padding: DsSpace.sm, marginBottom: DsSpace.xs },
+  errorBannerText: { ...DsTypography.caption, fontWeight: '600', textAlign: 'center' },
+  itemsInsetWrapper: { borderRadius: DsRadius.lg, padding: 0, overflow: 'hidden', ...DsShadow.soft, backgroundColor: 'white' }, // Explicit fallback for surface
+  supportText: { ...DsTypography.micro, textTransform: 'none', opacity: 0.6, marginTop: DsSpace.xxs },
+  sectionHeaderRow: { marginTop: DsSpace.md, marginBottom: DsSpace.xs, paddingHorizontal: DsSpace.xs },
+  sectionHeader: { ...DsTypography.screenTitle, fontFamily: Fonts?.rounded ?? 'normal' },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: DsSpace.xxl, gap: DsSpace.xs },
+  emptyIconWrapper: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: DsSpace.xs },
+  emptyTitle: { ...DsTypography.cardTitle, fontWeight: '700' },
+  emptyText: { ...DsTypography.body, textAlign: 'center', opacity: 0.7 },
+  footerActions: { marginTop: DsSpace.xl, paddingBottom: DsSpace.xl },
+  itemRowContainer: { flexDirection: 'row', alignItems: 'center' },
+  itemRowPressable: { flex: 1, padding: DsSpace.md },
+  itemRowMain: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  itemRowInfo: { flex: 1, gap: 2 },
+  itemName: { ...DsTypography.body, fontWeight: '700' },
+  itemDetail: { ...DsTypography.micro, opacity: 0.8 },
+  rowRight: { paddingLeft: DsSpace.sm },
+  removeBtn: { padding: DsSpace.md },
+  sortActions: { flexDirection: 'row', gap: DsSpace.md, alignItems: 'center' },
+  addMealInline: { padding: DsSpace.md, borderRadius: DsRadius.lg, ...DsShadow.soft, gap: DsSpace.md, marginTop: 0, marginBottom: DsSpace.sm },
+  addMealInput: { ...DsTypography.body, paddingVertical: DsSpace.xs, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  addMealActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: DsSpace.md },
+  addMealCancel: { ...DsTypography.button, opacity: 0.6, paddingHorizontal: DsSpace.sm, paddingVertical: DsSpace.xs },
+  headerActionBtn: { padding: DsSpace.xs, justifyContent: 'center', alignItems: 'center' },
+  actionRow: { flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center', marginTop: 0 },
+  sortBtn: { flex: 0 },
+  sortModeHeader: { marginBottom: DsSpace.sm },
 });

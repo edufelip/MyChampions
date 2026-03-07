@@ -438,7 +438,7 @@ export default function CreateAccountScreen() {
                 },
               ]}
               testID="auth.createAccount.googleButton">
-              <Text style={[styles.socialButtonText, { color: theme.color.accentBlue }]}>{t('auth.social.google')}</Text>
+              <Text style={[styles.socialButtonText, { color: theme.color.accentPrimary }]}>{t('auth.social.google')}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"

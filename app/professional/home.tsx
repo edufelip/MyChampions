@@ -4,9 +4,9 @@
  *
  * Control center for professionals:
  *  - Invite code display, share, and rotation (with confirmation)
- *  - Active student count + pending request count widgets
+ *  - Active student count widget
  *  - Subscription pre-lapse warning + entitlement lock notice
- *  - CTAs to student roster, pending requests, subscription
+ *  - CTAs to student roster and subscription (card)
  *  - Offline read-only banner + write-lock feedback
  */
 import { useState } from 'react';
@@ -14,6 +14,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
+  Pressable,
   Share,
   StyleSheet,
   Text,
@@ -111,16 +113,16 @@ export default function ProfessionalHomeScreen() {
             {
               backgroundColor: subState.isPreLapseWarningVisible
                 ? theme.color.warningSoft
-                : theme.color.accentBlueSoft,
+                : theme.color.accentPrimarySoft,
               borderColor: subState.isPreLapseWarningVisible
                 ? theme.color.warning
-                : theme.color.accentBlue,
+                : theme.color.accentPrimary,
             },
           ]}>
           <MaterialIcons
             name={subState.isPreLapseWarningVisible ? 'warning-amber' : 'verified-user'}
             size={16}
-            color={subState.isPreLapseWarningVisible ? theme.color.warning : theme.color.accentBlue}
+            color={subState.isPreLapseWarningVisible ? theme.color.warning : theme.color.accentPrimary}
           />
           <Text
             style={[
@@ -128,7 +130,7 @@ export default function ProfessionalHomeScreen() {
               {
                 color: subState.isPreLapseWarningVisible
                   ? theme.color.warning
-                  : theme.color.accentBlue,
+                  : theme.color.accentPrimary,
               },
             ]}>
             {subState.isPreLapseWarningVisible
@@ -264,26 +266,32 @@ export default function ProfessionalHomeScreen() {
         ) : null}
       </DsCard>
 
-      <View style={styles.footerActions}>
-        <DsPillButton
-          scheme={scheme}
-          variant="outline"
-          size="sm"
-          label={t('pro.home.cta_pending') as string}
-          onPress={() => router.push('/professional/pending')}
-          testID="pro.home.pendingCta"
-          style={styles.footerAction}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/professional/subscription')}
+        style={styles.subscriptionCard}
+        testID="pro.home.subscriptionCta">
+        <ImageBackground
+          source={require('@/assets/images/hero-workout.jpg')}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
         />
-        <DsPillButton
-          scheme={scheme}
-          variant="outline"
-          size="sm"
-          label={t('pro.subscription.title') as string}
-          onPress={() => router.push('/professional/subscription')}
-          testID="pro.home.subscriptionCta"
-          style={styles.footerAction}
-        />
-      </View>
+        <View style={styles.subscriptionOverlay} />
+        <View style={styles.subscriptionContent}>
+          <View style={styles.subscriptionHeader}>
+            <MaterialIcons name="star" size={24} color="#FFD700" />
+            <Text style={styles.subscriptionTitle}>{t('pro.subscription.title')}</Text>
+          </View>
+          <Text style={styles.subscriptionSubtitle}>
+            {t('pro.subscription.cap_usage')
+              .replace('{count}', String(activeStudentCount))
+              .replace('{limit}', '10')}
+          </Text>
+        </View>
+        <View style={styles.subscriptionArrowWrap}>
+          <MaterialIcons name="chevron-right" size={28} color="white" />
+        </View>
+      </Pressable>
     </DsScreen>
   );
 }
@@ -438,11 +446,43 @@ const styles = StyleSheet.create({
   },
   meta: { ...DsTypography.caption },
   errorText: { ...DsTypography.caption },
-  footerActions: {
-    flexDirection: 'row',
-    gap: DsSpace.sm,
+  subscriptionCard: {
+    borderRadius: DsRadius.xl,
+    height: 120,
+    marginTop: DsSpace.sm,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  footerAction: {
+  subscriptionOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 51, 0.6)',
+  },
+  subscriptionContent: {
     flex: 1,
+    justifyContent: 'center',
+    padding: DsSpace.lg,
+  },
+  subscriptionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: DsSpace.xs,
+    marginBottom: 4,
+  },
+  subscriptionTitle: {
+    ...DsTypography.cardTitle,
+    color: '#FFFFFF',
+    fontFamily: Fonts.rounded,
+    fontSize: 22,
+  },
+  subscriptionSubtitle: {
+    ...DsTypography.body,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+  },
+  subscriptionArrowWrap: {
+    position: 'absolute',
+    right: DsSpace.lg,
+    top: '50%',
+    transform: [{ translateY: -14 }],
   },
 });

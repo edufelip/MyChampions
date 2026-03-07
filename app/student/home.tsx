@@ -194,7 +194,7 @@ export default function StudentHomeScreen() {
                 label={t('student.home.nutrition.section') as string}
                 value={String(nutritionPlanCount)}
                 progress={hasNutritionPlan ? 100 : 0}
-                tint={theme.color.accentBlue}
+                tint={theme.color.accentPrimary}
               />
               <StatCard
                 theme={theme}

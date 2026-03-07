@@ -266,7 +266,7 @@ export default function ProfessionalStudentsScreen() {
               <View style={styles.emptyHeroDots}>
                 <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
                 <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimary }]} />
-                <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentBlueSoft }]} />
+                <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
               </View>
             </View>
           </View>
@@ -281,13 +281,6 @@ export default function ProfessionalStudentsScreen() {
           </View>
 
           <View style={styles.emptyActions}>
-            <DsPillButton
-              scheme={scheme}
-              label={t('pro.students.empty.cta_add_first') as string}
-              onPress={() => router.push('/professional/home')}
-              testID="pro.students.empty.addFirstCta"
-            />
-
             <Pressable
               accessibilityRole="button"
               onPress={() => {
@@ -528,8 +521,8 @@ function StudentRowItem({
         </View>
       )}
 
-      <View style={[styles.avatar, { backgroundColor: theme.color.accentBlueSoft }]}>
-        <Text style={[styles.avatarText, { color: theme.color.accentBlue }]}>
+      <View style={[styles.avatar, { backgroundColor: theme.color.accentPrimarySoft }]}>
+        <Text style={[styles.avatarText, { color: theme.color.accentPrimary }]}>
           {student.displayName.slice(0, 1).toUpperCase()}
         </Text>
       </View>

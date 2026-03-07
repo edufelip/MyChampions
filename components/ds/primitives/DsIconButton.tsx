@@ -20,7 +20,7 @@ export function DsIconButton({
   onPress,
   accessibilityLabel,
   testID,
-  size = 48,
+  size = 42,
 }: DsIconButtonProps) {
   const theme = getDsTheme(scheme);
 
@@ -41,7 +41,7 @@ export function DsIconButton({
         },
       ]}
       testID={testID}>
-      <MaterialIcons color={theme.color.textPrimary} name={icon} size={22} />
+      <MaterialIcons color={theme.color.textPrimary} name={icon} size={20} />
     </Pressable>
   );
 }

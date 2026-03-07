@@ -338,7 +338,7 @@ export default function SignInScreen() {
                 },
               ]}
               testID="auth.signIn.googleButton">
-              <AntDesign name="google" size={20} color={theme.color.accentBlue} />
+              <AntDesign name="google" size={20} color={theme.color.accentPrimary} />
               <Text style={[styles.socialButtonText, { color: palette.text }]}>
                 {t('auth.social.google')}
               </Text>

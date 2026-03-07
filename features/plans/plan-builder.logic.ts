@@ -21,26 +21,35 @@ export type NutritionMealItemInput = {
   name: string;
   quantity: string; // free-form e.g. "100g" or "1 cup"
   notes: string;
+  calories?: number;
+  carbs?: number;
+  proteins?: number;
+  fats?: number;
 };
 
 export type NutritionMealItem = NutritionMealItemInput & {
   id: string;
 };
 
+export type NutritionMealInput = {
+  name: string;
+};
+
+export type NutritionMeal = NutritionMealInput & {
+  id: string;
+  items: NutritionMealItem[];
+};
+
 export type NutritionPlanInput = {
   name: string;
-  caloriesTarget: string; // raw string from text field
-  carbsTarget: string;
-  proteinsTarget: string;
-  fatsTarget: string;
 };
 
 export type NutritionPlanValidationErrors = {
   name?: 'required' | 'too_short';
-  caloriesTarget?: 'non_negative';
-  carbsTarget?: 'non_negative';
-  proteinsTarget?: 'non_negative';
-  fatsTarget?: 'non_negative';
+};
+
+export type NutritionMealValidationErrors = {
+  name?: 'required';
 };
 
 // ─── Training plan types ──────────────────────────────────────────────────────
@@ -148,26 +157,6 @@ export function validateNutritionPlanInput(
     errors.name = 'too_short';
   }
 
-  const caloriesNum = parseFloat(input.caloriesTarget);
-  if (input.caloriesTarget.trim() !== '' && (isNaN(caloriesNum) || caloriesNum < 0)) {
-    errors.caloriesTarget = 'non_negative';
-  }
-
-  const carbsNum = parseFloat(input.carbsTarget);
-  if (input.carbsTarget.trim() !== '' && (isNaN(carbsNum) || carbsNum < 0)) {
-    errors.carbsTarget = 'non_negative';
-  }
-
-  const proteinsNum = parseFloat(input.proteinsTarget);
-  if (input.proteinsTarget.trim() !== '' && (isNaN(proteinsNum) || proteinsNum < 0)) {
-    errors.proteinsTarget = 'non_negative';
-  }
-
-  const fatsNum = parseFloat(input.fatsTarget);
-  if (input.fatsTarget.trim() !== '' && (isNaN(fatsNum) || fatsNum < 0)) {
-    errors.fatsTarget = 'non_negative';
-  }
-
   return errors;
 }
 
@@ -219,22 +208,37 @@ export type NutritionTotals = {
 };
 
 /**
- * Calculates parsed numeric totals from raw string inputs.
- * Returns 0 for any field that is empty or unparseable.
- * Refs: BR-210, FR-241
+ * Calculates totals from a list of meal items.
+ * Refs: AC-207
  */
-export function calculateNutritionTotals(input: NutritionPlanInput): NutritionTotals {
-  const parse = (raw: string): number => {
-    const n = parseFloat(raw);
-    return isNaN(n) || n < 0 ? 0 : n;
-  };
+export function calculateTotalsFromItems(items: (NutritionMealItem | NutritionMealItemInput)[]): NutritionTotals {
+  return items.reduce(
+    (acc, item) => ({
+      calories: Math.round((acc.calories + (item.calories ?? 0)) * 10) / 10,
+      carbs: Math.round((acc.carbs + (item.carbs ?? 0)) * 10) / 10,
+      proteins: Math.round((acc.proteins + (item.proteins ?? 0)) * 10) / 10,
+      fats: Math.round((acc.fats + (item.fats ?? 0)) * 10) / 10,
+    }),
+    { calories: 0, carbs: 0, proteins: 0, fats: 0 }
+  );
+}
 
-  return {
-    calories: parse(input.caloriesTarget),
-    carbs: parse(input.carbsTarget),
-    proteins: parse(input.proteinsTarget),
-    fats: parse(input.fatsTarget),
-  };
+/**
+ * Calculates totals across all meals in a plan.
+ */
+export function calculateTotalsFromMeals(meals: NutritionMeal[]): NutritionTotals {
+  return meals.reduce(
+    (acc, meal) => {
+      const mealTotals = calculateTotalsFromItems(meal.items);
+      return {
+        calories: Math.round((acc.calories + mealTotals.calories) * 10) / 10,
+        carbs: Math.round((acc.carbs + mealTotals.carbs) * 10) / 10,
+        proteins: Math.round((acc.proteins + mealTotals.proteins) * 10) / 10,
+        fats: Math.round((acc.fats + mealTotals.fats) * 10) / 10,
+      };
+    },
+    { calories: 0, carbs: 0, proteins: 0, fats: 0 }
+  );
 }
 
 // ─── Starter template helpers ─────────────────────────────────────────────────

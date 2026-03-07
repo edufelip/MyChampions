@@ -39,14 +39,15 @@ export function DsPillButton({
 }: DsPillButtonProps) {
   const theme = getDsTheme(scheme);
   const isPrimary = variant === 'primary';
+  const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
   const isSmall = size === 'sm';
   const isExtraSmall = size === 'xs';
-  const secondaryBackgroundColor =
-    scheme === 'dark' ? theme.color.overlayStrong : theme.color.accentBlue;
+
+  const secondaryBackgroundColor = theme.color.accentPrimarySoft;
 
   const resolvedContentColor =
-    contentColor ?? (isOutline ? theme.color.accentPrimary : theme.color.onAccent);
+    contentColor ?? (isOutline || isSecondary ? theme.color.accentPrimary : theme.color.onAccent);
 
   const getVariantStyles = () => {
     if (isPrimary) {
@@ -125,13 +126,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   buttonMd: {
-    minHeight: 52,
+    minHeight: 46,
   },
   buttonSm: {
-    minHeight: 44,
+    minHeight: 38,
   },
   buttonXs: {
-    minHeight: 36,
+    minHeight: 32,
     paddingHorizontal: 12,
   },
   text: {
@@ -139,13 +140,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   textMd: {
-    fontSize: 16,
+    fontSize: 15,
   },
   textSm: {
-    fontSize: 14,
+    fontSize: 13.5,
   },
   textXs: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
 });

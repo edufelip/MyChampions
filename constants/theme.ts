@@ -12,7 +12,7 @@ export const Colors = {
     tint: light.accentPrimary,
     icon: light.textSecondary,
     tabIconDefault: light.textTertiary,
-    tabIconSelected: light.accentBlue,
+    tabIconSelected: light.accentPrimary,
   },
   dark: {
     text: dark.textPrimary,

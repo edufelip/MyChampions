@@ -229,7 +229,7 @@ export default function RoleSelectionScreen() {
               {
                 borderColor: professionalCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ['transparent', theme.color.accentBlue],
+                  outputRange: ['transparent', theme.color.accentPrimary],
                 }),
                 borderWidth: professionalCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
@@ -247,7 +247,7 @@ export default function RoleSelectionScreen() {
                     }),
                   },
                 ],
-                shadowColor: theme.color.accentBlue,
+                shadowColor: theme.color.accentPrimary,
                 shadowRadius: 12,
                 shadowOffset: { width: 0, height: 4 },
                 elevation: isProfessionalSelected ? 4 : 1,
@@ -265,20 +265,20 @@ export default function RoleSelectionScreen() {
               testID="auth.roleSelection.professionalCard">
 
               {isProfessionalSelected ? (
-                <View style={[styles.selectedBadge, { backgroundColor: theme.color.accentBlue }]}>
+                <View style={[styles.selectedBadge, { backgroundColor: theme.color.accentPrimary }]}>
                   <MaterialIcons color={theme.color.onAccent} name="check" size={14} />
                 </View>
               ) : null}
 
-              <View style={[styles.cardIconWrap, { backgroundColor: isDark ? theme.color.accentBlueSoft : theme.color.accentBlueSoft }]}>
-                <MaterialIcons color={isDark ? theme.color.accentBlue : theme.color.accentBlue} name="assignment" size={26} />
+              <View style={[styles.cardIconWrap, { backgroundColor: isDark ? theme.color.accentPrimarySoft : theme.color.accentPrimarySoft }]}>
+                <MaterialIcons color={isDark ? theme.color.accentPrimary : theme.color.accentPrimary} name="assignment" size={26} />
               </View>
 
               <View style={styles.cardTextBlock}>
                 <Text style={[styles.roleTitle, { color: palette.text }]}>
                   {t('auth.role.option_pro.title')}
                 </Text>
-                <Text style={[styles.roleTag, { color: theme.color.accentBlue }]}>
+                <Text style={[styles.roleTag, { color: theme.color.accentPrimary }]}>
                   {t('auth.role.option_pro.subtitle')}
                 </Text>
                 <Text style={[styles.roleDescription, { color: palette.icon }]}>

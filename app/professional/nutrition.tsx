@@ -159,7 +159,7 @@ function EmptyState({
           <View style={styles.emptyHeroDots}>
             <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
             <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimary }]} />
-            <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentBlueSoft }]} />
+            <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
           </View>
         </View>
       </View>
@@ -184,7 +184,7 @@ function PlanRow({ plan, theme, t, onPress }: PlanRowProps) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${plan.name}, ${t('pro.plan.predefined.label')}`}>
-      <View style={[styles.rowIconWrap, { backgroundColor: theme.color.accentBlueSoft }]}>
+      <View style={[styles.rowIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
         <MaterialIcons name="restaurant" size={18} color={theme.color.accentPrimary} />
       </View>
       <View style={styles.planInfo}>

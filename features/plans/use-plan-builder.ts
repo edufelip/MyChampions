@@ -10,16 +10,24 @@ import { useCallback, useState } from 'react';
 import {
   createNutritionPlan,
   updateNutritionPlan,
+  deleteNutritionPlan,
   getNutritionPlanDetail,
+  addNutritionMeal,
+  removeNutritionMeal,
+  reorderNutritionMeals,
   addNutritionMealItem,
   removeNutritionMealItem,
+  reorderNutritionMealItems,
   createTrainingPlan,
   updateTrainingPlan,
+  deleteTrainingPlan,
   getTrainingPlanDetail,
   addTrainingSession,
   removeTrainingSession,
+  reorderTrainingSessions,
   addTrainingSessionItem,
   removeTrainingSessionItem,
+  reorderTrainingSessionItems,
   getStarterTemplates,
   cloneStarterTemplate,
   searchFoods,
@@ -32,7 +40,11 @@ import {
   validateTrainingPlanInput,
   validateTrainingSessionItemInput,
   normalizePlanBuilderError,
+  calculateTotalsFromItems,
+  calculateTotalsFromMeals,
   type NutritionPlanInput,
+  type NutritionMeal,
+  type NutritionMealInput,
   type NutritionMealItemInput,
   type NutritionPlanValidationErrors,
   type TrainingPlanInput,
@@ -45,19 +57,26 @@ import {
 } from './plan-builder.logic';
 import type { PlanType } from './plan-change-request.logic';
 
+import {
+  getCachedNutritionPlan,
+  setCachedNutritionPlan,
+  getCachedTrainingPlan,
+  setCachedTrainingPlan,
+} from './plan-cache';
+
 // ─── State types ──────────────────────────────────────────────────────────────
 
 export type NutritionBuilderState =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'ready'; plan: NutritionPlanDetail }
+  | { kind: 'ready'; plan: NutritionPlanDetail; isBackgroundUpdating?: boolean; backgroundError?: string }
   | { kind: 'saving' }
   | { kind: 'error'; reason: PlanBuilderErrorReason; message: string };
 
 export type TrainingBuilderState =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'ready'; plan: TrainingPlanDetail }
+  | { kind: 'ready'; plan: TrainingPlanDetail; isBackgroundUpdating?: boolean; backgroundError?: string }
   | { kind: 'saving' }
   | { kind: 'error'; reason: PlanBuilderErrorReason; message: string };
 
@@ -80,10 +99,16 @@ export type UseNutritionPlanBuilderResult = {
   templatePickerState: TemplatePickerState;
   foodSearchState: FoodSearchState;
   loadPlan: (planId: string) => void;
+  initNewPlan: () => void;
   createPlan: (input: NutritionPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   savePlan: (planId: string, input: NutritionPlanInput) => Promise<PlanBuilderErrorReason | null>;
-  addItem: (planId: string, item: NutritionMealItemInput) => Promise<PlanBuilderErrorReason | null>;
-  removeItem: (planId: string, itemId: string) => Promise<PlanBuilderErrorReason | null>;
+  addMeal: (planId: string, meal: NutritionMealInput, planInput?: NutritionPlanInput) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
+  removeMeal: (planId: string, mealId: string) => Promise<PlanBuilderErrorReason | null>;
+  reorderMeals: (planId: string, mealIds: string[]) => Promise<PlanBuilderErrorReason | null>;
+  addItem: (planId: string, mealId: string, item: NutritionMealItemInput, planInput?: NutritionPlanInput) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
+  removeItem: (planId: string, mealId: string, itemId: string) => Promise<PlanBuilderErrorReason | null>;
+  reorderItems: (planId: string, mealId: string, itemIds: string[]) => Promise<PlanBuilderErrorReason | null>;
+  deletePlan: (planId: string) => Promise<PlanBuilderErrorReason | null>;
   loadTemplates: () => void;
   cloneTemplate: (templateId: string, name: string) => Promise<{ id: string; planType: PlanType } | { error: PlanBuilderErrorReason }>;
   searchFoods: (query: string) => void;
@@ -101,19 +126,73 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
         setState({ kind: 'error', reason: 'unknown', message: 'Not authenticated.' });
         return;
       }
-      setState({ kind: 'loading' });
-      void getNutritionPlanDetail(planId)
-        .then((plan) => setState({ kind: 'ready', plan }))
-        .catch((err: Error) => {
-          setState({
-            kind: 'error',
-            reason: normalizePlanBuilderError(err),
-            message: err.message,
-          });
-        });
+
+      async function execute() {
+        // 1. Check cache first
+        const cached = await getCachedNutritionPlan(planId);
+        
+        if (cached) {
+          // Accessing for subsequent time: show cache immediately, then bg update
+          setState({ kind: 'ready', plan: cached, isBackgroundUpdating: true });
+          
+          try {
+            const updated = await getNutritionPlanDetail(planId);
+            await setCachedNutritionPlan(updated);
+            setState({ kind: 'ready', plan: updated, isBackgroundUpdating: false });
+          } catch (err) {
+            // Background update failed: show warning banner but keep cached data
+            setState({ 
+              kind: 'ready', 
+              plan: cached, 
+              isBackgroundUpdating: false, 
+              backgroundError: (err as Error).message 
+            });
+          }
+        } else {
+          // Accessing for the first time: show loading for at least 300ms
+          setState({ kind: 'loading' });
+          const startTime = Date.now();
+          
+          try {
+            const plan = await getNutritionPlanDetail(planId);
+            const elapsed = Date.now() - startTime;
+            if (elapsed < 300) {
+              await new Promise(resolve => setTimeout(resolve, 300 - elapsed));
+            }
+            
+            await setCachedNutritionPlan(plan);
+            setState({ kind: 'ready', plan });
+          } catch (err: Error) {
+            setState({
+              kind: 'error',
+              reason: normalizePlanBuilderError(err),
+              message: err.message,
+            });
+          }
+        }
+      }
+
+      void execute();
     },
     [isAuthenticated]
   );
+
+  const initNewPlan = useCallback(() => {
+    setState({
+      kind: 'ready',
+      plan: {
+        id: 'new',
+        name: '',
+        caloriesTarget: 0,
+        carbsTarget: 0,
+        proteinsTarget: 0,
+        fatsTarget: 0,
+        meals: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  }, []);
 
   const createPlan = useCallback(
     async (input: NutritionPlanInput): Promise<{ id: string } | { error: PlanBuilderErrorReason }> => {
@@ -163,14 +242,74 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
     [isAuthenticated]
   );
 
-  const addItem = useCallback(
-    async (planId: string, item: NutritionMealItemInput): Promise<PlanBuilderErrorReason | null> => {
+  const deletePlan = useCallback(
+    async (planId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
+      setState({ kind: 'saving' });
       try {
-        const newItem = await addNutritionMealItem(planId, item);
+        await deleteNutritionPlan(planId);
+        setState({ kind: 'idle' });
+        return null;
+      } catch (err) {
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
+      }
+    },
+    [isAuthenticated]
+  );
+
+  const addMeal = useCallback(
+    async (planId: string, meal: NutritionMealInput, planInput?: NutritionPlanInput): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
+      if (!isAuthenticated) return { planId, error: 'unknown' };
+      try {
+        let currentPlanId = planId;
+        if (planId === 'new') {
+          const res = await createPlan(planInput ?? { name: 'Untitled' });
+          if ('error' in res) return { planId, error: res.error };
+          currentPlanId = res.id;
+        }
+
+        const newMeal = await addNutritionMeal(currentPlanId, meal);
         setState((prev) => {
           if (prev.kind !== 'ready') return prev;
-          return { ...prev, plan: { ...prev.plan, items: [...prev.plan.items, newItem] } };
+          return {
+            ...prev,
+            plan: {
+              ...prev.plan,
+              meals: [...prev.plan.meals, newMeal],
+            },
+          };
+        });
+        return { planId: currentPlanId, error: null };
+      } catch (err) {
+        return { planId, error: normalizePlanBuilderError(err) };
+      }
+    },
+    [isAuthenticated, createPlan]
+  );
+
+  const removeMeal = useCallback(
+    async (planId: string, mealId: string): Promise<PlanBuilderErrorReason | null> => {
+      if (!isAuthenticated) return 'unknown';
+      if (planId === 'new') return null;
+      try {
+        await removeNutritionMeal(planId, mealId);
+        setState((prev) => {
+          if (prev.kind !== 'ready') return prev;
+          const newMeals = prev.plan.meals.filter((m) => m.id !== mealId);
+          const totals = calculateTotalsFromMeals(newMeals);
+          return {
+            ...prev,
+            plan: {
+              ...prev.plan,
+              meals: newMeals,
+              caloriesTarget: totals.calories,
+              carbsTarget: totals.carbs,
+              proteinsTarget: totals.proteins,
+              fatsTarget: totals.fats,
+            },
+          };
         });
         return null;
       } catch (err) {
@@ -180,20 +319,138 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
     [isAuthenticated]
   );
 
-  const removeItem = useCallback(
-    async (planId: string, itemId: string): Promise<PlanBuilderErrorReason | null> => {
+  const reorderMeals = useCallback(
+    async (planId: string, mealIds: string[]): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
+      if (planId === 'new') return null;
+
+      // Optimistic update
+      let previousState: NutritionBuilderState | null = null;
+      setState((prev) => {
+        if (prev.kind !== 'ready') return prev;
+        previousState = prev;
+        const reorderedMeals = mealIds
+          .map((id) => prev.plan.meals.find((m) => m.id === id))
+          .filter(Boolean) as NutritionMeal[];
+        return {
+          ...prev,
+          plan: { ...prev.plan, meals: reorderedMeals },
+        };
+      });
+
       try {
-        await removeNutritionMealItem(planId, itemId);
+        await reorderNutritionMeals(planId, mealIds);
+        return null;
+      } catch (err) {
+        // Rollback
+        if (previousState) setState(previousState);
+        return normalizePlanBuilderError(err);
+      }
+    },
+    [isAuthenticated]
+  );
+
+  const addItem = useCallback(
+    async (planId: string, mealId: string, item: NutritionMealItemInput, planInput?: NutritionPlanInput): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
+      if (!isAuthenticated) return { planId, error: 'unknown' };
+      try {
+        let currentPlanId = planId;
+        if (planId === 'new') {
+          const res = await createPlan(planInput ?? { name: 'Untitled' });
+          if ('error' in res) return { planId, error: res.error };
+          currentPlanId = res.id;
+        }
+
+        const newItem = await addNutritionMealItem(currentPlanId, mealId, item);
         setState((prev) => {
           if (prev.kind !== 'ready') return prev;
+          const meals = prev.plan.meals.map((m) => {
+            if (m.id !== mealId) return m;
+            return { ...m, items: [...m.items, newItem] };
+          });
+          const totals = calculateTotalsFromMeals(meals);
           return {
             ...prev,
-            plan: { ...prev.plan, items: prev.plan.items.filter((i) => i.id !== itemId) },
+            plan: {
+              ...prev.plan,
+              meals,
+              caloriesTarget: totals.calories,
+              carbsTarget: totals.carbs,
+              proteinsTarget: totals.proteins,
+              fatsTarget: totals.fats,
+            },
+          };
+        });
+        return { planId: currentPlanId, error: null };
+      } catch (err) {
+        return { planId, error: normalizePlanBuilderError(err) };
+      }
+    },
+    [isAuthenticated, createPlan]
+  );
+
+  const removeItem = useCallback(
+    async (planId: string, mealId: string, itemId: string): Promise<PlanBuilderErrorReason | null> => {
+      if (!isAuthenticated) return 'unknown';
+      if (planId === 'new') return null;
+      try {
+        await removeNutritionMealItem(planId, mealId, itemId);
+        setState((prev) => {
+          if (prev.kind !== 'ready') return prev;
+          const meals = prev.plan.meals.map((m) => {
+            if (m.id !== mealId) return m;
+            return { ...m, items: m.items.filter((i) => i.id !== itemId) };
+          });
+          const totals = calculateTotalsFromMeals(meals);
+          return {
+            ...prev,
+            plan: {
+              ...prev.plan,
+              meals,
+              caloriesTarget: totals.calories,
+              carbsTarget: totals.carbs,
+              proteinsTarget: totals.proteins,
+              fatsTarget: totals.fats,
+            },
           };
         });
         return null;
       } catch (err) {
+        return normalizePlanBuilderError(err);
+      }
+    },
+    [isAuthenticated]
+  );
+
+  const reorderItems = useCallback(
+    async (planId: string, mealId: string, itemIds: string[]): Promise<PlanBuilderErrorReason | null> => {
+      if (!isAuthenticated) return 'unknown';
+      if (planId === 'new') return null;
+
+      // Optimistic update
+      let previousState: NutritionBuilderState | null = null;
+      setState((prev) => {
+        if (prev.kind !== 'ready') return prev;
+        previousState = prev;
+        const meals = prev.plan.meals.map((m) => {
+          if (m.id !== mealId) return m;
+          const reorderedItems = itemIds
+            .map((id) => m.items.find((it) => it.id === id))
+            .filter(Boolean) as any[];
+          return { ...m, items: reorderedItems };
+        });
+        return {
+          ...prev,
+          plan: { ...prev.plan, meals },
+        };
+      });
+
+      try {
+        await reorderNutritionMealItems(planId, mealId, itemIds);
+        return null;
+      } catch (err) {
+        // Rollback
+        if (previousState) setState(previousState);
         return normalizePlanBuilderError(err);
       }
     },
@@ -226,16 +483,21 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
   );
 
   const runFoodSearch = useCallback((query: string) => {
+    console.log('[useNutritionPlanBuilder] runFoodSearch triggered with query:', query);
     if (!query.trim()) {
       setFoodSearchState({ kind: 'idle' });
       return;
     }
     setFoodSearchState({ kind: 'searching' });
     void searchFoods(query)
-      .then((results) => setFoodSearchState({ kind: 'done', results }))
-      .catch((err: unknown) =>
-        setFoodSearchState({ kind: 'error', reason: normalizePlanBuilderError(err) })
-      );
+      .then((results) => {
+        console.log('[useNutritionPlanBuilder] searchFoods results count:', results.length);
+        setFoodSearchState({ kind: 'done', results });
+      })
+      .catch((err: unknown) => {
+        console.error('[useNutritionPlanBuilder] searchFoods error:', err);
+        setFoodSearchState({ kind: 'error', reason: normalizePlanBuilderError(err) });
+      });
   }, []);
 
   const validateInput = useCallback(
@@ -248,10 +510,16 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
     templatePickerState,
     foodSearchState,
     loadPlan,
+    initNewPlan,
     createPlan,
     savePlan,
+    addMeal,
+    removeMeal,
+    reorderMeals,
     addItem,
     removeItem,
+    reorderItems,
+    deletePlan,
     loadTemplates,
     cloneTemplate,
     searchFoods: runFoodSearch,
@@ -269,8 +537,11 @@ export type UseTrainingPlanBuilderResult = {
   savePlan: (planId: string, input: TrainingPlanInput) => Promise<PlanBuilderErrorReason | null>;
   addSession: (planId: string, session: TrainingSessionInput) => Promise<PlanBuilderErrorReason | null>;
   removeSession: (planId: string, sessionId: string) => Promise<PlanBuilderErrorReason | null>;
+  reorderSessions: (planId: string, sessionIds: string[]) => Promise<PlanBuilderErrorReason | null>;
   addSessionItem: (sessionId: string, item: TrainingSessionItemInput) => Promise<PlanBuilderErrorReason | null>;
   removeSessionItem: (sessionId: string, itemId: string) => Promise<PlanBuilderErrorReason | null>;
+  reorderSessionItems: (sessionId: string, itemIds: string[]) => Promise<PlanBuilderErrorReason | null>;
+  deletePlan: (planId: string) => Promise<PlanBuilderErrorReason | null>;
   loadTemplates: () => void;
   cloneTemplate: (templateId: string, name: string) => Promise<{ id: string; planType: PlanType } | { error: PlanBuilderErrorReason }>;
   validateInput: (input: TrainingPlanInput) => TrainingPlanValidationErrors;
@@ -287,16 +558,46 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
         setState({ kind: 'error', reason: 'unknown', message: 'Not authenticated.' });
         return;
       }
-      setState({ kind: 'loading' });
-      void getTrainingPlanDetail(planId)
-        .then((plan) => setState({ kind: 'ready', plan }))
-        .catch((err: Error) => {
-          setState({
-            kind: 'error',
-            reason: normalizePlanBuilderError(err),
-            message: err.message,
-          });
-        });
+
+      async function execute() {
+        const cached = await getCachedTrainingPlan(planId);
+        
+        if (cached) {
+          setState({ kind: 'ready', plan: cached, isBackgroundUpdating: true });
+          try {
+            const updated = await getTrainingPlanDetail(planId);
+            await setCachedTrainingPlan(updated);
+            setState({ kind: 'ready', plan: updated, isBackgroundUpdating: false });
+          } catch (err) {
+            setState({ 
+              kind: 'ready', 
+              plan: cached, 
+              isBackgroundUpdating: false, 
+              backgroundError: (err as Error).message 
+            });
+          }
+        } else {
+          setState({ kind: 'loading' });
+          const startTime = Date.now();
+          try {
+            const plan = await getTrainingPlanDetail(planId);
+            const elapsed = Date.now() - startTime;
+            if (elapsed < 300) {
+              await new Promise(resolve => setTimeout(resolve, 300 - elapsed));
+            }
+            await setCachedTrainingPlan(plan);
+            setState({ kind: 'ready', plan });
+          } catch (err: Error) {
+            setState({
+              kind: 'error',
+              reason: normalizePlanBuilderError(err),
+              message: err.message,
+            });
+          }
+        }
+      }
+
+      void execute();
     },
     [isAuthenticated]
   );
@@ -338,6 +639,23 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
         await updateTrainingPlan(planId, input);
         const updated = await getTrainingPlanDetail(planId);
         setState({ kind: 'ready', plan: updated });
+        return null;
+      } catch (err) {
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
+      }
+    },
+    [isAuthenticated]
+  );
+
+  const deletePlan = useCallback(
+    async (planId: string): Promise<PlanBuilderErrorReason | null> => {
+      if (!isAuthenticated) return 'unknown';
+      setState({ kind: 'saving' });
+      try {
+        await deleteTrainingPlan(planId);
+        setState({ kind: 'idle' });
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
@@ -427,6 +745,70 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     [isAuthenticated]
   );
 
+  const reorderSessions = useCallback(
+    async (planId: string, sessionIds: string[]): Promise<PlanBuilderErrorReason | null> => {
+      if (!isAuthenticated) return 'unknown';
+
+      // Optimistic update
+      let previousState: TrainingBuilderState | null = null;
+      setState((prev) => {
+        if (prev.kind !== 'ready') return prev;
+        previousState = prev;
+        const reorderedSessions = sessionIds
+          .map((id) => prev.plan.sessions.find((s) => s.id === id))
+          .filter(Boolean) as any[];
+        return {
+          ...prev,
+          plan: { ...prev.plan, sessions: reorderedSessions },
+        };
+      });
+
+      try {
+        await reorderTrainingSessions(planId, sessionIds);
+        return null;
+      } catch (err) {
+        // Rollback
+        if (previousState) setState(previousState);
+        return normalizePlanBuilderError(err);
+      }
+    },
+    [isAuthenticated]
+  );
+
+  const reorderSessionItems = useCallback(
+    async (sessionId: string, itemIds: string[]): Promise<PlanBuilderErrorReason | null> => {
+      if (!isAuthenticated) return 'unknown';
+
+      // Optimistic update
+      let previousState: TrainingBuilderState | null = null;
+      setState((prev) => {
+        if (prev.kind !== 'ready') return prev;
+        previousState = prev;
+        const sessions = prev.plan.sessions.map((s) => {
+          if (s.id !== sessionId) return s;
+          const reorderedItems = itemIds
+            .map((id) => s.items.find((it) => it.id === id))
+            .filter(Boolean) as any[];
+          return { ...s, items: reorderedItems };
+        });
+        return {
+          ...prev,
+          plan: { ...prev.plan, sessions },
+        };
+      });
+
+      try {
+        await reorderTrainingSessionItems(sessionId, itemIds);
+        return null;
+      } catch (err) {
+        // Rollback
+        if (previousState) setState(previousState);
+        return normalizePlanBuilderError(err);
+      }
+    },
+    [isAuthenticated]
+  );
+
   const loadTemplates = useCallback(() => {
     setTemplatePickerState({ kind: 'loading' });
     void getStarterTemplates('training')
@@ -467,8 +849,11 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     savePlan,
     addSession,
     removeSession,
+    reorderSessions,
     addSessionItem,
     removeSessionItem,
+    reorderSessionItems,
+    deletePlan,
     loadTemplates,
     cloneTemplate,
     validateInput,

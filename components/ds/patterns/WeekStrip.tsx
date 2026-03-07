@@ -32,8 +32,8 @@ export function WeekStrip({ scheme, items }: WeekStripProps) {
           style={[
             styles.item,
             item.isActive
-              ? { backgroundColor: theme.color.accentPrimary, width: 52, height: 64 }
-              : { width: 44, height: 56 },
+              ? { backgroundColor: theme.color.accentPrimary, width: 48, height: 60 }
+              : { width: 40, height: 52 },
           ]}>
           <Text style={[styles.dayLabel, { color: item.isActive ? theme.color.onAccent : theme.color.textSecondary }]}>
             {item.dayLabel}

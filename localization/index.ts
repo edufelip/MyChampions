@@ -4,6 +4,7 @@ import { enUS, type TranslationKey } from './en-US';
 
 export type { TranslationKey };
 import { esES } from './es-ES';
+import { getDeviceLocale } from './get-device-locale';
 import { ptBR } from './pt-BR';
 
 export const SUPPORTED_LOCALES = ['en-US', 'pt-BR', 'es-ES'] as const;
@@ -36,10 +37,7 @@ export function resolveLocale(rawLocale?: string): SupportedLocale {
   return 'en-US';
 }
 
-export function getDeviceLocale(): string {
-  const locale = Intl.DateTimeFormat().resolvedOptions().locale;
-  return typeof locale === 'string' && locale.length > 0 ? locale : 'en-US';
-}
+export { getDeviceLocale };
 
 export function t(
   locale: SupportedLocale,

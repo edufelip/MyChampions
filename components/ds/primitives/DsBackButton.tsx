@@ -35,7 +35,7 @@ export function DsBackButton({
         style,
       ]}
       testID={testID}>
-      <MaterialIcons color={theme.color.textPrimary} name="arrow-back" size={22} />
+      <MaterialIcons color={theme.color.textPrimary} name="arrow-back" size={20} />
     </Pressable>
   );
 }
@@ -45,8 +45,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: DsRadius.pill,
     borderWidth: 1,
-    height: 40,
+    height: 36,
     justifyContent: 'center',
-    width: 40,
+    width: 36,
   },
 });

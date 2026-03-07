@@ -149,6 +149,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [
       'expo-apple-authentication',
       'expo-router',
+      'expo-localization',
       // expo-camera and expo-image-picker native permissions are applied directly
       // to ios/mychampions/Info.plist and android/app/src/main/AndroidManifest.xml.
       // Plugin entries are omitted here because native dirs are maintained manually

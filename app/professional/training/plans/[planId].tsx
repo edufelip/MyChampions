@@ -1,39 +1,36 @@
 /**
  * SC-208 Training Plan Builder
  * Route: /professional/training/plans/:planId
- *
- * Allows fitness coaches to create and edit named predefined training plans with
- * fully customizable sessions and custom session items (no fixed workout fields).
- *
- * Starter template cloning supports local fallback templates and Firestore writes.
- *
- * Docs: docs/screens/v2/SC-208-training-plan-builder.md
- * Refs: D-013, D-111–D-114, FR-244–FR-248,
- *       BR-224, BR-281, BR-293–BR-296,
- *       AC-208, AC-223, AC-256, AC-264, AC-265,
- *       TC-278–TC-280
  */
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
+  LayoutAnimation,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
+import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
 import { TemplatePickerModal } from '@/components/ds/patterns/TemplatePickerModal';
 import { StudentPickerModal } from '@/components/ds/patterns/StudentPickerModal';
 import { ExerciseSearchModal } from '@/components/ds/patterns/ExerciseSearchModal';
-import { DsRadius, DsSpace, DsTypography, getDsTheme, type DsTheme } from '@/constants/design-system';
+import { SessionCard } from '@/features/plans/components/SessionCard';
+
+import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
@@ -43,39 +40,23 @@ import type { YMoveExercise } from '@/features/plans/ymove-source';
 import {
   validateTrainingPlanInput,
   isStarterTemplate,
-  type TrainingSession,
 } from '@/features/plans/plan-builder.logic';
 import { getProfessionalStudentRoster, type ProfessionalStudentRosterItem } from '@/features/professional/professional-source';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import { usePlanForm } from '@/features/plans/use-plan-form';
+import { usePlanDraft } from '@/features/plans/use-plan-draft';
+import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type TFn = ReturnType<typeof useTranslation>['t'];
-type Palette = {
-  background: string;
-  text: string;
-  tint: string;
-  icon: string;
-  danger: string;
-};
 
 type AddSessionFormState =
   | { kind: 'closed' }
   | { kind: 'open'; name: string; notes: string };
-
-type AddItemFormState =
-  | { kind: 'closed' }
-  | {
-      kind: 'open';
-      sessionId: string;
-      name: string;
-      quantity: string;
-      notes: string;
-      ymoveId?: string;
-      thumbnailUrl?: string;
-      videoUrl?: string;
-    };
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -83,13 +64,15 @@ export default function TrainingPlanBuilderScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
-  const palette = {
+  
+  const palette = useMemo(() => ({
     background: theme.color.canvas,
     text: theme.color.textPrimary,
     tint: theme.color.accentPrimary,
     icon: theme.color.textSecondary,
     danger: theme.color.danger,
-  };
+  }), [theme]);
+
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
@@ -98,8 +81,8 @@ export default function TrainingPlanBuilderScreen() {
   const isStudentBuilder = pathname.startsWith('/student/');
 
   const tr = useCallback(
-    (proKey: Parameters<typeof t>[0], studentKey: Parameters<typeof t>[0]) =>
-      t(isStudentBuilder ? studentKey : proKey),
+    (proKey: string, studentKey: string) =>
+      t((isStudentBuilder ? studentKey : proKey) as any),
     [isStudentBuilder, t]
   );
 
@@ -111,25 +94,80 @@ export default function TrainingPlanBuilderScreen() {
     savePlan,
     addSession,
     removeSession,
+    reorderSessions,
     addSessionItem,
     removeSessionItem,
+    reorderSessionItems,
     loadTemplates,
     cloneTemplate,
     validateInput,
-    validateSessionItem,
   } = useTrainingPlanBuilder(Boolean(currentUser));
 
   const { bulkAssign } = usePlans(Boolean(currentUser), { fetchOnMount: false });
 
-  // ── Local form state ───────────────────────────────────────────────────────
+  // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
 
-  const [name, setName] = useState('');
-  const [formErrors, setFormErrors] = useState<ReturnType<typeof validateTrainingPlanInput>>({});
+  const initialValues = useMemo(() => ({
+    name: state.kind === 'ready' ? state.plan.name : '',
+  }), [state]);
+
+  const {
+    values,
+    setValues,
+    setFieldValue,
+    errors: formErrors,
+    isSaving,
+    isDirty,
+    setIsDirty,
+    handleSave,
+    handleBack,
+  } = usePlanForm({
+    initialValues,
+    validate: validateInput,
+    t,
+    onClearDraft: () => clearDraft(),
+    onSave: async (formValues) => {
+      if (isNew || isStarterClone) {
+        return createPlan(formValues);
+      }
+      return savePlan(planId!, formValues);
+    },
+    onSuccess: (id) => {
+      if (isNew || isStarterClone) {
+        router.replace(
+          `${isStudentBuilder ? '/student/training/plans' : '/professional/training/plans'}/${id}` as never
+        );
+      }
+    }
+  });
+
+  const { checkDraft, clearDraft } = usePlanDraft(
+    planId || 'new',
+    values,
+    isDirty,
+    (restored) => setValues(restored),
+    t
+  );
+
+  useEffect(() => {
+    if (state.kind === 'ready') {
+      checkDraft().then((draft) => {
+        if (draft) {
+          Alert.alert(t('pro.plan.draft.title'), t('pro.plan.draft.body'), [
+            { text: t('pro.plan.draft.no'), style: 'destructive', onPress: clearDraft },
+            { text: t('pro.plan.draft.yes'), onPress: () => setFieldValue('name', draft.name) },
+          ]);
+        }
+      });
+    }
+  }, [state.kind, checkDraft, clearDraft, t, setFieldValue]);
+
+  // ── Local UI state ─────────────────────────────────────────────────────────
   const [addSessionForm, setAddSessionForm] = useState<AddSessionFormState>({ kind: 'closed' });
-  const [isSaving, setIsSaving] = useState(false);
-  const [isTemplatePickerVisible, setIsTemplatePickerVisible] = useState(false);
+  const [isSortMode, setIsSortMode] = useState(false);
+  const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.training_builder');
   
   const [isStudentPickerVisible, setIsStudentPickerVisible] = useState(false);
   const [students, setStudents] = useState<ProfessionalStudentRosterItem[]>([]);
@@ -140,15 +178,7 @@ export default function TrainingPlanBuilderScreen() {
   const [isExerciseSearchVisible, setIsExerciseSearchVisible] = useState(false);
   const [activeSessionIdForSearch, setActiveSessionIdForSearch] = useState<string | null>(null);
 
-  const [isDirty, setIsDirty] = useState(false);
-  const isMounted = useRef(true);
   const sessionNotesRef = useRef<TextInput>(null);
-
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -157,127 +187,90 @@ export default function TrainingPlanBuilderScreen() {
     }
   }, [planId, isNew, isStarterClone, loadPlan]);
 
-  // ── Populate form from loaded plan ─────────────────────────────────────────
-  useEffect(() => {
-    if (state.kind === 'ready') {
-      setName(state.plan.name);
-      setIsDirty(false);
-    }
-  }, [state]);
+  // ── Handlers with Animations ───────────────────────────────────────────────
+  const handleNameChange = useCallback((val: string) => {
+    setFieldValue('name', val);
+  }, [setFieldValue]);
 
-  // ── Save / Create ──────────────────────────────────────────────────────────
-  const handleSave = useCallback(async () => {
-    const input = { name };
-    const errors = validateInput(input);
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-    setFormErrors({});
-    setIsSaving(true);
-
-    if (isNew || isStarterClone) {
-      const result = await createPlan(input);
-      if (isMounted.current) setIsSaving(false);
-      if ('error' in result) {
-        Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
-      } else {
-        setIsDirty(false);
-        router.replace(
-          `${isStudentBuilder ? '/student/training/plans' : '/professional/training/plans'}/${result.id}` as never
-        );
-      }
-    } else {
-      const err = await savePlan(planId!, input);
-      if (isMounted.current) setIsSaving(false);
-      if (err) {
-        Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
-      } else {
-        setIsDirty(false);
-      }
-    }
-  }, [name, validateInput, isNew, isStarterClone, createPlan, savePlan, planId, router, tr, isStudentBuilder]);
-
-  // ── Template Cloning ───────────────────────────────────────────────────────
-  const handleOpenTemplatePicker = () => {
-    loadTemplates();
-    setIsTemplatePickerVisible(true);
-  };
-
-  const handleSelectTemplate = async (templateId: string, templateName: string) => {
-    setIsTemplatePickerVisible(false);
-    setIsSaving(true);
-    const result = await cloneTemplate(templateId, `${templateName} (Copy)`);
-    if (isMounted.current) setIsSaving(false);
-
-    if ('error' in result) {
-      Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
-    } else {
-      router.replace(`/professional/training/plans/${result.id}` as never);
-    }
-  };
-
-  // ── Assignment ─────────────────────────────────────────────────────────────
-  const handleOpenStudentPicker = async () => {
-    setIsLoadingStudents(true);
-    setIsStudentPickerVisible(true);
-    try {
-      const roster = await getProfessionalStudentRoster();
-      // Filter for students whose training specialty matches
-      setStudents(roster.filter(s => s.specialty === 'fitness_coach'));
-    } catch {
-      Alert.alert(t('pro.students.error') as string);
-      setIsStudentPickerVisible(false);
-    } finally {
-      setIsLoadingStudents(false);
-    }
-  };
-
-  const handleAssignToStudent = async (studentUid: string) => {
-    if (!planId) return;
-    setIsStudentPickerVisible(false);
-    setIsAssigning(true);
-    const result = await bulkAssign(planId, [studentUid]);
-    setIsAssigning(false);
-
-    if ('error' in result) {
-      Alert.alert(t('pro.plan.assign.error') as string);
-    } else {
-      Alert.alert(t('pro.plan.assign.success') as string);
-    }
-  };
-
-  // ── Add session ────────────────────────────────────────────────────────────
   const handleAddSession = useCallback(async () => {
     if (addSessionForm.kind !== 'open' || state.kind !== 'ready') return;
     const { name: sessionName, notes } = addSessionForm;
     if (!sessionName.trim()) return;
+
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     const err = await addSession(state.plan.id, { name: sessionName, notes });
     if (err) {
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
     } else {
       setAddSessionForm({ kind: 'closed' });
+      setIsDirty(true);
     }
-  }, [addSessionForm, state, addSession, tr]);
+  }, [addSessionForm, state, addSession, tr, setIsDirty]);
 
-  // ── Remove session ─────────────────────────────────────────────────────────
   const handleRemoveSession = useCallback(
     (sessionId: string) => {
       if (state.kind !== 'ready') return;
-      void removeSession(state.plan.id, sessionId);
+      
+      const session = state.plan.sessions.find(s => s.id === sessionId);
+      const sessionName = session?.name || t('pro.plan.section.sessions');
+
+      Alert.alert(
+        t('common.cta.delete') as string,
+        (t('pro.plan.delete.body') as string).replace('{name}', sessionName),
+        [
+          { text: t('common.cta.cancel'), style: 'cancel' },
+          {
+            text: t('common.cta.delete'),
+            style: 'destructive',
+            onPress: () => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              void removeSession(state.plan.id, sessionId);
+              setIsDirty(true);
+            },
+          },
+        ]
+      );
     },
-    [state, removeSession]
+    [state, removeSession, setIsDirty, t]
   );
 
-  // ── YMove Search Handlers ──────────────────────────────────────────────────
-  const handleOpenExerciseSearch = (sessionId: string) => {
-    setActiveSessionIdForSearch(sessionId);
-    setIsExerciseSearchVisible(true);
-  };
+  const handleRemoveSessionItem = useCallback(
+    (sessionId: string, itemId: string) => {
+      if (state.kind !== 'ready') return;
 
-  const handleConfirmExercise = async (exercise: YMoveExercise, quantity: string, notes: string) => {
+      const session = state.plan.sessions.find(s => s.id === sessionId);
+      const item = session?.items.find(i => i.id === itemId);
+      const itemName = item?.name || t('pro.plan.section.sessions');
+
+      Alert.alert(
+        t('common.cta.delete') as string,
+        (t('pro.plan.delete.body') as string).replace('{name}', itemName),
+        [
+          { text: t('common.cta.cancel'), style: 'cancel' },
+          {
+            text: t('common.cta.delete'),
+            style: 'destructive',
+            onPress: () => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              void removeSessionItem(sessionId, itemId);
+              setIsDirty(true);
+            },
+          },
+        ]
+      );
+    },
+    [state, removeSessionItem, setIsDirty, t]
+  );
+
+  const handleConfirmExercise = useCallback(async (exercise: YMoveExercise, quantity: string, notes: string) => {
     if (!activeSessionIdForSearch) return;
+    
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     setIsExerciseSearchVisible(false);
     const sessionId = activeSessionIdForSearch;
@@ -295,89 +288,175 @@ export default function TrainingPlanBuilderScreen() {
 
     if (err) {
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
+    } else {
+      setIsDirty(true);
     }
-  };
+  }, [activeSessionIdForSearch, addSessionItem, clearYMoveSearch, tr, setIsDirty]);
 
-  // ── Remove session item ────────────────────────────────────────────────────
-  const handleRemoveSessionItem = useCallback(
-    (sessionId: string, itemId: string) => {
-      void removeSessionItem(sessionId, itemId);
-    },
-    [removeSessionItem]
-  );
+  // ── Reordering logic ───────────────────────────────────────────────────────
+  const handleMoveSession = useCallback(async (index: number, direction: 'up' | 'down') => {
+    if (state.kind !== 'ready') return;
+    const newSessions = [...state.plan.sessions];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newSessions.length) return;
 
-  const screenTitle = isNew || isStarterClone
-    ? tr('pro.plan.training.title.create', 'student.plan.training.title.create')
-    : tr('pro.plan.training.title.edit', 'student.plan.training.title.edit');
+    const [moved] = newSessions.splice(index, 1);
+    newSessions.splice(targetIndex, 0, moved);
 
-  const sessions: TrainingSession[] = state.kind === 'ready' ? state.plan.sessions : [];
+    // Immediate visual update with animation
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    await reorderSessions(state.plan.id, newSessions.map(s => s.id));
+  }, [state, reorderSessions]);
+
+  const handleMoveItem = useCallback(async (sessionId: string, itemId: string, direction: 'up' | 'down') => {
+    if (state.kind !== 'ready') return;
+    const session = state.plan.sessions.find(s => s.id === sessionId);
+    if (!session) return;
+
+    const newItems = [...session.items];
+    const index = newItems.findIndex(i => i.id === itemId);
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newItems.length) return;
+
+    const [moved] = newItems.splice(index, 1);
+    newItems.splice(targetIndex, 0, moved);
+
+    // Immediate visual update with animation
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    await reorderSessionItems(sessionId, newItems.map(i => i.id));
+  }, [state, reorderSessionItems]);
+
+  // ── Template Cloning ───────────────────────────────────────────────────────
+  const handleOpenTemplatePicker = useCallback(() => {
+    loadTemplates();
+    setIsTemplatePickerVisible(true);
+  }, [loadTemplates]);
+
+  const handleSelectTemplate = useCallback(async (templateId: string, templateName: string) => {
+    setIsTemplatePickerVisible(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const result = await cloneTemplate(templateId, `${templateName} (Copy)`);
+
+    if ('error' in result) {
+      Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace(`/professional/training/plans/${result.id}` as never);
+    }
+  }, [cloneTemplate, tr, router]);
+
+  // ── Assignment ─────────────────────────────────────────────────────────────
+  const handleOpenStudentPicker = useCallback(async () => {
+    setIsLoadingStudents(true);
+    setIsStudentPickerVisible(true);
+    try {
+      const roster = await getProfessionalStudentRoster();
+      setStudents(roster.filter(s => s.specialty === 'fitness_coach'));
+    } catch {
+      Alert.alert(t('pro.students.error') as string);
+      setIsStudentPickerVisible(false);
+    } finally {
+      setIsLoadingStudents(false);
+    }
+  }, [t]);
+
+  const handleAssignToStudent = useCallback(async (studentUid: string) => {
+    if (!planId) return;
+    setIsStudentPickerVisible(false);
+    setIsAssigning(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const result = await bulkAssign(planId, [studentUid]);
+    setIsAssigning(false);
+
+    if ('error' in result) {
+      Alert.alert(t('pro.plan.assign.error') as string);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(t('pro.plan.assign.success') as string);
+    }
+  }, [bulkAssign, planId, t]);
+
+  const handleOpenExerciseSearch = useCallback((sessionId: string) => {
+    setActiveSessionIdForSearch(sessionId);
+    setIsExerciseSearchVisible(true);
+  }, []);
+
+  const sessions = state.kind === 'ready' ? state.plan.sessions : [];
 
   return (
     <DsScreen
       scheme={scheme}
+      headerShown={false}
+      style={[styles.container, { backgroundColor: palette.background }]}
       contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
     >
-      <Stack.Screen options={{ title: screenTitle, headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false }} />
 
+      {/* ── Header Row ──────────────────────────────────────────────────── */}
       <View style={styles.headerRow}>
         <DsBackButton
           scheme={scheme}
-          onPress={() => {
-            const goBack = () => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace('/');
-              }
-            };
-
-            if (isDirty) {
-              Alert.alert(
-                t('pro.plan.discard.title') as string,
-                t('pro.plan.discard.body') as string,
-                [
-                  { text: t('pro.plan.discard.no') as string, style: 'cancel' },
-                  { text: t('pro.plan.discard.yes') as string, style: 'destructive', onPress: goBack },
-                ]
-              );
-            } else {
-              goBack();
-            }
-          }}
+          onPress={handleBack}
           accessibilityLabel={t('auth.role.cta_back') as string}
           style={styles.backButton}
-          testID={isStudentBuilder ? 'student.plan.training.backButton' : 'pro.plan.training.backButton'}
         />
 
-        {isNew && !isStudentBuilder && (
-          <DsPillButton
-            scheme={scheme}
-            variant="outline"
-            size="sm"
-            label={t('pro.plan.cta.clone_template')}
-            onPress={handleOpenTemplatePicker}
-            fullWidth={false}
-            style={styles.templateCta}
-          />
-        )}
+        <View style={{ flexDirection: 'row', gap: DsSpace.sm }}>
+          {sessions.length > 1 && (
+            <DsPillButton
+              scheme={scheme}
+              variant="ghost"
+              size="sm"
+              label={isSortMode ? t('pro.plan.cta.sort_done') : t('pro.plan.cta.sort')}
+              onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setIsSortMode(!isSortMode);
+              }}
+              fullWidth={false}
+              style={styles.templateCta}
+              leftIcon={<IconSymbol name={isSortMode ? "checkmark.circle.fill" : "arrow.up.arrow.down"} size={14} color={palette.tint} />}
+            />
+          )}
+          {isNew && !isStudentBuilder && (
+            <DsPillButton
+              scheme={scheme}
+              variant="outline"
+              size="sm"
+              label={t('pro.plan.cta.clone_template')}
+              onPress={handleOpenTemplatePicker}
+              fullWidth={false}
+              style={styles.templateCta}
+              leftIcon={<IconSymbol name="square.stack.3d.up.fill" size={14} color={palette.tint} />}
+            />
+          )}
+        </View>
       </View>
 
-      {/* ── Error state ───────────────────────────────────────────────────── */}
-      {state.kind === 'error' && (
+      <BuilderGuidanceCard
+        theme={theme}
+        visible={showGuidance}
+        onDismiss={hideGuidance}
+        title={tr('pro.plan.builder.guidance.training.title', 'student.plan.builder.guidance.training.title')}
+        description={tr('pro.plan.builder.guidance.training.body', 'student.plan.builder.guidance.training.body')}
+      />
+
+      {state.kind === 'ready' && state.backgroundError && (
         <View
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
-          style={[styles.errorBanner, { backgroundColor: palette.icon }]}
+          style={[styles.errorBanner, { backgroundColor: theme.color.warningSoft, borderColor: theme.color.warning, borderWidth: 1 }]}
         >
-          <Text style={[styles.errorBannerText, { color: palette.background }]}>
-            {tr('pro.plan.error.load', 'student.plan.error.load')}
+          <Text style={[styles.errorBannerText, { color: theme.color.warning }]}>
+            {t('common.error.generic')} • Background update failed
           </Text>
         </View>
       )}
 
-      {/* ── Loading state ─────────────────────────────────────────────────── */}
-      {(state.kind === 'loading' || isAssigning) && (
+      {(state.kind === 'loading' || isAssigning || isSaving) && (
         <ActivityIndicator
           style={styles.loader}
           accessibilityLabel={t('a11y.loading.default')}
@@ -385,123 +464,123 @@ export default function TrainingPlanBuilderScreen() {
       )}
 
       {/* ── Plan name field ───────────────────────────────────────────────── */}
-      <View style={styles.formSection}>
-        <Text style={[styles.fieldLabel, { color: palette.text }]}>
+      <BuilderInsetGroup theme={theme}>
+        <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
           {t('pro.plan.field.name.label')}
         </Text>
         <TextInput
-          style={[
-            styles.textInput,
-            { color: palette.text, borderColor: formErrors.name ? palette.danger : palette.icon },
-          ]}
-          placeholder={t('pro.plan.field.name.placeholder')}
+          style={[styles.titleInput, { color: palette.text }]}
+          placeholder={tr('pro.plan.field.name.placeholder', 'student.plan.field.name.placeholder')}
           placeholderTextColor={palette.icon}
-          value={name}
-          onChangeText={(val) => {
-            setName(val);
-            setIsDirty(true);
-          }}
+          value={values.name}
+          onChangeText={handleNameChange}
           accessibilityLabel={t('pro.plan.field.name.label')}
         />
+        <Text style={[styles.supportText, { color: palette.icon }]}>
+          {tr('pro.plan.field.name.support', 'student.plan.field.name.support')}
+        </Text>
         {formErrors.name && (
-          <View accessibilityLiveRegion="polite">
-            <Text style={[styles.fieldError, { color: palette.danger }]}>
-              {formErrors.name === 'required'
-                ? t('pro.plan.validation.name_required')
-                : t('pro.plan.validation.name_too_short')}
-            </Text>
-          </View>
+          <Text style={[styles.fieldError, { color: palette.danger }]}>
+            {formErrors.name === 'required' ? t('pro.plan.validation.name_required') : t('pro.plan.validation.name_too_short')}
+          </Text>
         )}
-      </View>
+      </BuilderInsetGroup>
 
       {/* ── Sessions list ─────────────────────────────────────────────────── */}
-      <Text style={[styles.sectionHeader, { color: palette.text }]}>
-          {tr('pro.plan.section.sessions', 'student.plan.section.sessions')}
-      </Text>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionHeader, { color: palette.text }]}>
+            {tr('pro.plan.section.sessions', 'student.plan.section.sessions')}
+        </Text>
+        <Text style={[styles.supportText, { color: palette.icon, marginTop: 2 }]}>
+          {tr('pro.plan.section.sessions.support', 'student.plan.section.sessions.support')}
+        </Text>
+      </View>
 
       {sessions.length === 0 && state.kind === 'ready' && (
-        <Text style={[styles.emptyText, { color: palette.icon }]}>
-          {tr('pro.library.training.empty', 'student.plan.training.empty_sessions')}
-        </Text>
+        <View style={styles.emptyContainer}>
+          <View style={[styles.emptyIconWrapper, { backgroundColor: theme.color.surfaceMuted }]}>
+            <IconSymbol name="list.bullet.clipboard" size={40} color={palette.icon} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: palette.text }]}>
+            {tr('pro.plan.training.empty.title', 'student.plan.training.empty.title')}
+          </Text>
+          <Text style={[styles.emptyText, { color: palette.icon }]}>
+            {tr('pro.plan.training.empty.body', 'student.plan.training.empty.body')}
+          </Text>
+        </View>
       )}
 
-      {sessions.map((session) => (
+      {sessions.map((session, index) => (
         <SessionCard
           key={session.id}
           session={session}
           palette={palette}
+          theme={theme}
           t={t}
+          tr={tr}
           onRemoveSession={() => handleRemoveSession(session.id)}
           onAddItem={() => handleOpenExerciseSearch(session.id)}
           onRemoveItem={(itemId) => handleRemoveSessionItem(session.id, itemId)}
+          isSortMode={isSortMode}
+          onMoveUp={() => handleMoveSession(index, 'up')}
+          onMoveDown={() => handleMoveSession(index, 'down')}
+          onMoveItemUp={(itemId) => handleMoveItem(session.id, itemId, 'up')}
+          onMoveItemDown={(itemId) => handleMoveItem(session.id, itemId, 'down')}
+          isFirst={index === 0}
+          isLast={index === sessions.length - 1}
         />
       ))}
 
       {/* ── Add session form ──────────────────────────────────────────────── */}
-      {state.kind === 'ready' && addSessionForm.kind === 'open' && (
-        <View style={[styles.addCard, { borderColor: palette.icon }]}>
-          <TextInput
-            style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
-            placeholder={t('pro.plan.session.field.name.placeholder')}
-            placeholderTextColor={palette.icon}
-            value={addSessionForm.name}
-            onChangeText={(v) =>
-              setAddSessionForm((prev) =>
-                prev.kind === 'open' ? { ...prev, name: v } : prev
-              )
-            }
-            autoFocus
-            returnKeyType="next"
-            onSubmitEditing={() => sessionNotesRef.current?.focus()}
-            accessibilityLabel={t('pro.plan.session.field.name.label')}
-          />
+      {!isSortMode && state.kind === 'ready' && addSessionForm.kind === 'open' && (
+        <Animated.View 
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(200)}
+          style={[styles.sessionCard, { backgroundColor: theme.color.surface }]}
+        >
+          <View style={styles.sessionHeader}>
+            <TextInput
+              style={[styles.sessionNameInput, { color: palette.text }]}
+              placeholder={tr('pro.plan.session.field.name.placeholder', 'pro.plan.session.field.name.placeholder')}
+              placeholderTextColor={palette.icon}
+              value={addSessionForm.name}
+              onChangeText={(v) => setAddSessionForm((prev) => prev.kind === 'open' ? { ...prev, name: v } : prev)}
+              autoFocus
+              returnKeyType="next"
+              onSubmitEditing={() => sessionNotesRef.current?.focus()}
+              accessibilityLabel={t('pro.plan.session.field.name.label')}
+            />
+          </View>
           <TextInput
             ref={sessionNotesRef}
-            style={[styles.textInput, { color: palette.text, borderColor: palette.icon }]}
+            style={[styles.sessionNotesInput, { color: palette.text }]}
             placeholder={t('pro.plan.session.field.notes.label')}
             placeholderTextColor={palette.icon}
             value={addSessionForm.notes}
-            onChangeText={(v) =>
-              setAddSessionForm((prev) =>
-                prev.kind === 'open' ? { ...prev, notes: v } : prev
-              )
-            }
+            onChangeText={(v) => setAddSessionForm((prev) => prev.kind === 'open' ? { ...prev, notes: v } : prev)}
             returnKeyType="done"
             onSubmitEditing={handleAddSession}
             accessibilityLabel={t('pro.plan.session.field.notes.label')}
           />
           <View style={styles.rowActions}>
-            <Pressable
-              style={[styles.primaryBtn, { backgroundColor: palette.tint, flex: 1 }]}
-              onPress={handleAddSession}
-              accessibilityRole="button"
-              accessibilityLabel={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')}
-            >
-              <Text style={[styles.primaryBtnText, { color: palette.background }]}>
-                {tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')}
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.secondaryBtn, { borderColor: palette.icon, flex: 1 }]}
-              onPress={() => setAddSessionForm({ kind: 'closed' })}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.secondaryBtnText, { color: palette.icon }]}>
-                {t('meal.library.quick_log.cta_cancel')}
-              </Text>
-            </Pressable>
+            <DsPillButton scheme={scheme} variant="filled" label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')} onPress={handleAddSession} style={{ flex: 1 }} />
+            <DsPillButton scheme={scheme} variant="ghost" label={t('meal.library.quick_log.cta_cancel')} onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAddSessionForm({ kind: 'closed' }); }} style={{ flex: 1 }} />
           </View>
-        </View>
+        </Animated.View>
       )}
 
-      {state.kind === 'ready' && addSessionForm.kind === 'closed' && (
+      {!isSortMode && state.kind === 'ready' && addSessionForm.kind === 'closed' && (
         <Pressable
-          style={[styles.secondaryBtn, { borderColor: palette.tint }]}
-          onPress={() => setAddSessionForm({ kind: 'open', name: '', notes: '' })}
+          style={[styles.addSessionBtn, { backgroundColor: theme.color.surface }]}
+          onPress={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setAddSessionForm({ kind: 'open', name: '', notes: '' });
+          }}
           accessibilityRole="button"
           accessibilityLabel={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')}
         >
-          <Text style={[styles.secondaryBtnText, { color: palette.tint }]}>
+          <IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />
+          <Text style={[styles.addSessionBtnText, { color: palette.tint }]}>
             {tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')}
           </Text>
         </Pressable>
@@ -509,26 +588,14 @@ export default function TrainingPlanBuilderScreen() {
 
       {/* ── Footer Actions ────────────────────────────────────────────────── */}
       <View style={styles.footerActions}>
-        <Pressable
-          style={[
-            styles.primaryBtn,
-            { backgroundColor: palette.tint, flex: 1, marginTop: 0 },
-            isSaving && styles.btnDisabled,
-          ]}
+        <DsPillButton
+          scheme={scheme}
+          variant="primary"
+          label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
           onPress={handleSave}
-          disabled={isSaving}
-          accessibilityRole="button"
-          accessibilityLabel={tr('pro.plan.cta.save', 'student.plan.cta.save')}
-          accessibilityState={{ disabled: isSaving, busy: isSaving }}
-        >
-          {isSaving ? (
-            <ActivityIndicator color={palette.background} accessibilityLabel={t('a11y.loading.saving')} />
-          ) : (
-            <Text style={[styles.primaryBtnText, { color: palette.background }]}>
-              {tr('pro.plan.cta.save', 'student.plan.cta.save')}
-            </Text>
-          )}
-        </Pressable>
+          isLoading={isSaving}
+          style={{ flex: 1 }}
+        />
 
         {!isNew && !isStudentBuilder && (
           <DsPillButton
@@ -536,7 +603,7 @@ export default function TrainingPlanBuilderScreen() {
             variant="outline"
             label={t('pro.plan.cta.assign')}
             onPress={handleOpenStudentPicker}
-            style={{ flex: 1, minHeight: 48 }}
+            style={{ flex: 1 }}
           />
         )}
       </View>
@@ -580,209 +647,29 @@ export default function TrainingPlanBuilderScreen() {
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-type SessionCardProps = {
-  session: TrainingSession;
-  palette: Palette;
-  t: TFn;
-  onRemoveSession: () => void;
-  onAddItem: () => void;
-  onRemoveItem: (itemId: string) => void;
-};
-
-function SessionCard({
-  session,
-  palette,
-  t,
-  onRemoveSession,
-  onAddItem,
-  onRemoveItem,
-}: SessionCardProps) {
-  return (
-    <View style={[styles.sessionCard, { borderColor: palette.icon }]}>
-      {/* Session header */}
-      <View style={styles.sessionHeader}>
-        <Text style={[styles.sessionName, { color: palette.text }]}>{session.name}</Text>
-        <Pressable
-          onPress={onRemoveSession}
-          accessibilityRole="button"
-          accessibilityLabel={`Remove session ${session.name}`}
-          hitSlop={8}
-          style={styles.removeBtnWrapper}
-        >
-          <MaterialIcons name="remove-circle-outline" size={24} color={palette.icon} />
-        </Pressable>
-      </View>
-      {session.notes ? (
-        <Text style={[styles.sessionNotes, { color: palette.icon }]}>{session.notes}</Text>
-      ) : null}
-
-      {/* Items */}
-      {session.items.map((item) => (
-        <View key={item.id} style={[styles.itemRow, { borderColor: palette.icon }]}>
-          {item.thumbnailUrl ? (
-            <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} />
-          ) : (
-            <View style={[styles.thumbnailPlaceholder, { backgroundColor: palette.icon }]}>
-              <Text style={{ color: palette.background, fontSize: 16 }}>🏃</Text>
-            </View>
-          )}
-          <View style={styles.itemInfo}>
-            <Text style={[styles.itemName, { color: palette.text }]}>{item.name}</Text>
-            {item.quantity ? (
-              <Text style={[styles.itemMeta, { color: palette.icon }]}>{item.quantity}</Text>
-            ) : null}
-            {item.notes ? (
-              <Text style={[styles.itemMeta, { color: palette.icon }]}>{item.notes}</Text>
-            ) : null}
-          </View>
-          <Pressable
-            onPress={() => onRemoveItem(item.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${item.name}`}
-            hitSlop={8}
-            style={styles.removeBtnWrapper}
-          >
-            <MaterialIcons name="remove-circle-outline" size={22} color={palette.icon} />
-          </Pressable>
-        </View>
-      ))}
-
-      <Pressable
-        style={[styles.secondaryBtn, { borderColor: palette.tint, marginTop: 8 }]}
-        onPress={onAddItem}
-        accessibilityRole="button"
-        accessibilityLabel={t('pro.plan.cta.add_item')}
-      >
-        <Text style={[styles.secondaryBtnText, { color: palette.tint }]}>
-          {t('pro.plan.cta.add_item')}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 20, gap: 12, paddingBottom: 40 },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
+  content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 60 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
   backButton: { marginBottom: 0 },
   templateCta: { minHeight: 40 },
-  loader: { marginVertical: 24 },
-  errorBanner: { borderRadius: 8, padding: 12, marginBottom: 8 },
-  errorBannerText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  formSection: { gap: 8 },
-  sectionHeader: {
-    fontFamily: Fonts?.rounded ?? 'normal',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginTop: 8 },
-  fieldError: { fontSize: 12, marginTop: 2 },
-  textInput: { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 15 },
-  emptyText: { fontSize: 14, textAlign: 'center', marginVertical: 8 },
-  sessionCard: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    gap: 8,
-    marginBottom: 4,
-  },
-  sessionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sessionName: { fontSize: 15, fontWeight: '700', flex: 1 },
-  sessionNotes: { fontSize: 13 },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 8,
-    gap: 8,
-  },
-  itemInfo: { flex: 1, gap: 2 },
-  itemName: { fontSize: 14, fontWeight: '600' },
-  itemMeta: { fontSize: 12 },
-  removeBtnWrapper: { padding: DsSpace.sm, justifyContent: 'center', alignItems: 'center' },
-  thumbnail: {
-    width: 44,
-    height: 44,
-    borderRadius: DsRadius.md,
-  },
-  thumbnailPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: DsRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addItemInline: { gap: 8, marginTop: 4 },
-  addCard: { borderWidth: 1, borderRadius: 8, padding: 12, gap: 8 },
-  rowActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  primaryBtn: {
-    borderRadius: 10,
-    padding: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  primaryBtnText: { fontSize: 15, fontWeight: '700' },
-  btnDisabled: { opacity: 0.6 },
-  secondaryBtn: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  secondaryBtnText: { fontSize: 14, fontWeight: '600' },
-  footerActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: DsRadius.xl,
-    borderTopRightRadius: DsRadius.xl,
-    minHeight: '50%',
-    maxHeight: '85%',
-    padding: DsSpace.lg,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: DsSpace.md,
-  },
-  modalTitle: {
-    ...DsTypography.cardTitle,
-    fontFamily: Fonts?.rounded ?? 'normal',
-  },
-  modalScroll: { gap: DsSpace.md, paddingBottom: 40 },
-  templateRow: {
-    borderWidth: 1,
-    borderRadius: DsRadius.lg,
-    padding: DsSpace.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: DsSpace.sm,
-  },
-  templateName: { fontWeight: '700', fontSize: 15 },
-  templateDesc: { fontSize: 13, marginTop: 2 },
+  loader: { marginVertical: DsSpace.xl },
+  insetGroupLabel: { ...DsTypography.micro, marginBottom: DsSpace.xxs, opacity: 0.7 },
+  titleInput: { ...DsTypography.title, fontFamily: Fonts?.rounded ?? 'normal', paddingVertical: DsSpace.xxs },
+  supportText: { ...DsTypography.micro, textTransform: 'none', opacity: 0.6, marginTop: DsSpace.xxs },
+  sectionHeaderRow: { marginTop: DsSpace.md, marginBottom: DsSpace.xs, paddingHorizontal: DsSpace.xs },
+  sectionHeader: { ...DsTypography.screenTitle, fontFamily: Fonts?.rounded ?? 'normal' },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: DsSpace.xxl, gap: DsSpace.xs },
+  emptyIconWrapper: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: DsSpace.xs },
+  emptyTitle: { ...DsTypography.cardTitle, fontWeight: '700' },
+  emptyText: { ...DsTypography.body, textAlign: 'center', opacity: 0.7 },
+  sessionCard: { borderRadius: DsRadius.lg, padding: DsSpace.md, gap: DsSpace.md, ...DsShadow.soft, marginBottom: DsSpace.xs },
+  sessionHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  sessionNameInput: { ...DsTypography.cardTitle, fontFamily: Fonts?.rounded ?? 'normal', flex: 1, paddingVertical: DsSpace.xxs },
+  sessionNotesInput: { ...DsTypography.body, paddingVertical: DsSpace.xs },
+  addSessionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: DsSpace.xs, padding: DsSpace.md, borderRadius: DsRadius.lg, ...DsShadow.soft, marginTop: DsSpace.sm },
+  addSessionBtnText: { ...DsTypography.button },
+  rowActions: { flexDirection: 'row', gap: DsSpace.sm, marginTop: DsSpace.sm },
+  footerActions: { flexDirection: 'row', gap: DsSpace.md, marginTop: DsSpace.xl, paddingBottom: DsSpace.xl },
+  fieldError: { ...DsTypography.micro, color: '#ff0000', marginTop: 2 },
 });

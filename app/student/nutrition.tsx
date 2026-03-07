@@ -309,7 +309,7 @@ function WaterWidget({
               </View>
             </View>
 
-            <View style={[styles.waterIconWrap, { backgroundColor: theme.color.accentBlueSoft }]}> 
+            <View style={[styles.waterIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}> 
               <MaterialIcons color={theme.color.accentCyan} name="water-drop" size={32} />
             </View>
           </View>

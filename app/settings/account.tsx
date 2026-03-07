@@ -338,8 +338,8 @@ export default function AccountSettingsScreen() {
         style={[
           styles.heroCard,
           {
-            backgroundColor: isProfessional ? theme.color.accentPrimarySoft : theme.color.accentBlueSoft,
-            borderColor: isProfessional ? theme.color.accentPrimary : theme.color.accentBlue,
+            backgroundColor: isProfessional ? theme.color.accentPrimarySoft : theme.color.accentPrimarySoft,
+            borderColor: isProfessional ? theme.color.accentPrimary : theme.color.accentPrimary,
             flexDirection: 'row',
             alignItems: 'center',
           },
@@ -350,13 +350,13 @@ export default function AccountSettingsScreen() {
             styles.avatar,
             {
               backgroundColor: theme.color.surface,
-              borderColor: isProfessional ? theme.color.accentPrimary : theme.color.accentBlue,
+              borderColor: isProfessional ? theme.color.accentPrimary : theme.color.accentPrimary,
             },
           ]}>
           <Text
             style={[
               styles.avatarInitial,
-              { color: isProfessional ? theme.color.accentPrimary : theme.color.accentBlue },
+              { color: isProfessional ? theme.color.accentPrimary : theme.color.accentPrimary },
             ]}>
             {avatarInitial}
           </Text>
@@ -378,7 +378,7 @@ export default function AccountSettingsScreen() {
             <View
               style={[
                 styles.rolePill,
-                { backgroundColor: isProfessional ? theme.color.accentPrimary : theme.color.accentBlue },
+                { backgroundColor: isProfessional ? theme.color.accentPrimary : theme.color.accentPrimary },
               ]}>
               <Text style={[styles.rolePillText, { color: theme.color.surface }]}>
                 {roleBadgeLabel}
