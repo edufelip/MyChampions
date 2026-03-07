@@ -1028,5 +1028,6 @@ export async function cloneStarterTemplate(
 }
 
 export async function searchFoods(query: string): Promise<FoodSearchResult[]> {
-  return searchFoodsFromSource(query);
+  const user = getFirebaseAuth().currentUser;
+  return searchFoodsFromSource(user, query);
 }
