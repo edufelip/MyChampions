@@ -17,6 +17,7 @@ in-app support access.
 - Grouped `<View>` rows styled as iOS-native settings groups (rounded, bordered).
 - Offline communication uses `DsOfflineBanner` while preserving BL-008 write-lock restrictions.
 - Section headers use compact uppercase DS caption pattern.
+- Spacing between profile card and the first section header is reduced to half for a tighter layout.
 - Top safe-area spacing is role-aware: Student Profile tab uses full top inset; Professional Account tab uses half inset.
 - Interactive settings rows use icon chevrons and refined row height/spacing while preserving existing behavior contracts.
 
@@ -31,14 +32,20 @@ in-app support access.
 ### 2. Account Section
 - **Email** — display-only row showing the signed-in email.
 - **Change password** — email/password accounts: triggers `sendPasswordResetEmail` with confirmation alert → inline success/error feedback. OAuth accounts (Google/Apple): informational alert noting password is managed by the provider.
-- **Language** — in-app language switcher. iOS: `ActionSheetIOS`. Android: `Alert` with options. Persisted to `AsyncStorage` via `features/auth/language-storage.ts`. Takes effect on next app launch.
+- **Language** — in-app language switcher. Tapping navigates to `/settings/language-select` (SC-222). The active locale is read from `LocaleContext`; the language label on this row updates immediately after returning from SC-222. Language override is persisted to `AsyncStorage` and takes effect in the current session — no app restart required.
 
 ### 3. Legal & Privacy Section
-- **Privacy Policy** — opens `PRIVACY_POLICY_URL` via `Linking.openURL`. URL is a placeholder (D-103); replace before release.
-- **Terms of Service** — opens `TERMS_URL` via `Linking.openURL`. URL is a placeholder; replace before release.
+- **Privacy Policy** — opens `PRIVACY_POLICY_URL` in an internal WebView screen (`/shared/webview`).
+- **Terms of Service** — opens `TERMS_URL` in an internal WebView screen (`/shared/webview`).
 
 ### 4. Support Section
-- **Contact support** — opens `mailto:support@mychampions.app` via `Linking.openURL`.
+- **Contact support** — opens a custom dialog for messaging support.
+- **Support Dialog**:
+  - **Disclaimer**: Explains this is for messaging the support team.
+  - **Subject**: One-line input (max 50 chars).
+  - **Message**: Multi-line input (max 500 chars).
+  - **Submit Button**: Saves message to Firestore `supportMessages` collection.
+  - **Success/Error states**: Inline feedback within the dialog.
 
 ### 5. Sign Out
 - Outlined warning-color button.
@@ -48,7 +55,7 @@ in-app support access.
 ### 6. Danger Zone
 - Danger-tinted background group.
 - Body copy explaining data retention policy.
-- **Request account deletion** — destructive button; confirmation alert → `deleteProfileFromSource()` → `signOut()`; inline success/error feedback; disabled when offline.
+- **Request account deletion** — destructive button; confirmation alert → `deleteAccountAndDataFromSource()` → `signOut()`; inline success/error feedback; disabled when offline.
 
 ### 7. App Version Footer
 - Subtle centered text: "Version {app version}" from `Constants.expoConfig.version`.
@@ -74,11 +81,11 @@ in-app support access.
 - Inputs:
   - `useAuthSession()`: `currentUser`, `lockedRole`, `clearSession`, `termsUrl`.
   - `useNetworkStatus()`: connectivity state.
-  - `getLanguageOverride()`: persisted locale preference.
+  - `useLocale()`: `activeLocale` (current effective locale for the language row label).
 - Outputs:
-  - `deleteProfileFromSource()` + `signOut()`: account deletion.
+  - `deleteAccountAndDataFromSource()` + `signOut()`: account deletion.
   - `sendPasswordResetEmail()`: password reset email.
-  - `setLanguageOverride()`: persisted locale preference.
+  - `router.push('/settings/language-select')`: navigates to SC-222 for language selection.
   - `Linking.openURL()`: external URLs and mailto.
 
 ## Edge Cases
@@ -86,15 +93,18 @@ in-app support access.
 - OAuth users tapping "Change password" → informational alert, no email sent.
 - Offline → deletion CTA is disabled; all read-only rows remain accessible.
 - Repeated deletion request → `already_requested` error state.
-- Language change takes effect on next app launch; current session locale is unchanged.
+- Language change takes effect immediately in the current session via `LocaleContext`; no app restart required.
 
 ## New Files Introduced
 - `features/auth/language-storage.ts` — AsyncStorage read/write for language override key `app.language.override`.
+- `localization/locale-context.tsx` — `LocaleProvider` + `useLocale()` hook for in-session locale switching (introduced with SC-222).
+- `localization/use-translation.ts` — context-aware `useTranslation()` hook (introduced with SC-222).
+- `app/settings/language-select.tsx` — dedicated Language Select screen SC-222 (navigated to from this screen's Language row).
 
 ## Links
-- Functional requirement: FR-133, FR-157
+- Functional requirement: FR-133, FR-157, FR-250, FR-251, FR-252, FR-253
 - Use case: UC-002.5
-- Acceptance criteria: AC-305, AC-306, AC-307, AC-308, AC-310
-- Business rules: BR-225, BR-231
-- Test cases: TC-304, TC-305, TC-306, TC-307, TC-309
+- Acceptance criteria: AC-305, AC-306, AC-307, AC-308, AC-310, AC-520, AC-521, AC-522, AC-523, AC-524
+- Business rules: BR-225, BR-231, BR-299, BR-300, BR-301, BR-302
+- Test cases: TC-304, TC-305, TC-306, TC-307, TC-309, TC-310, TC-311, TC-312, TC-313, TC-314
 - Decisions: D-045, D-103, D-025, D-014

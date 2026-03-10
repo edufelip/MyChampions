@@ -5,7 +5,7 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "lint": "eslint --ext .ts src/",
-    "test": "node --test --require ts-node/register src/fatsecret-helpers.test.ts src/openai-helpers.test.ts",
+    "test": "node --test --require ts-node/register src/openai-helpers.test.ts",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions"
   },

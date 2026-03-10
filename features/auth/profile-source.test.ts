@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   hydrateProfileFromSource,
   lockRoleInSource,
-  deleteProfileFromSource,
+  deleteAccountAndDataFromSource,
   setAcceptedTermsVersionInSource,
   ProfileSourceError,
   type ProfileSourceDeps,
@@ -22,12 +22,15 @@ type FakeProfile = {
 
 function makeDeps(seed?: FakeProfile | null): ProfileSourceDeps {
   let profile = seed ?? null;
+  let userDeleted = false;
 
   return {
     getFirestoreInstance: () => ({}) as never,
-    getCurrentAuthUid: () => 'uid-1',
+    getFirebaseAuth: () => ({}) as never,
+    getCurrentAuthUid: () => (userDeleted ? undefined : 'uid-1'),
+    getCurrentUser: () => (userDeleted ? null : ({ uid: 'uid-1' } as never)),
     readProfile: async (_firestore, uid) => {
-      if (!profile) return null;
+      if (!profile || userDeleted) return null;
       return { ...profile, authUid: uid };
     },
     upsertProfile: async (_firestore, uid, input) => {
@@ -58,6 +61,9 @@ function makeDeps(seed?: FakeProfile | null): ProfileSourceDeps {
     },
     deleteProfile: async () => {
       profile = null;
+    },
+    deleteUser: async () => {
+      userDeleted = true;
     },
     delay: async () => {},
   };
@@ -111,7 +117,7 @@ describe('profile-source firestore', () => {
     assert.equal(result.lockedRole, 'student');
   });
 
-  it('deletes profile', async () => {
+  it('deletes account and data', async () => {
     const deps = makeDeps({
       authUid: 'uid-1',
       displayName: 'A',
@@ -122,14 +128,10 @@ describe('profile-source firestore', () => {
       updatedAt: '2026-01-01T00:00:00.000Z',
     });
 
-    await deleteProfileFromSource(deps);
+    await deleteAccountAndDataFromSource(deps);
 
-    const hydrated = await hydrateProfileFromSource(
-      { uid: 'uid-1', displayName: 'A', email: 'a@a.com' },
-      deps
-    );
-    assert.equal(hydrated.lockedRole, null);
-    assert.equal(hydrated.acceptedTermsVersion, null);
+    assert.equal(deps.getCurrentAuthUid(), undefined);
+    assert.equal(deps.getCurrentUser(), null);
   });
 
   it('persists accepted terms version in source', async () => {

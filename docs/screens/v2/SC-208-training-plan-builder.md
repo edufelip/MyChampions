@@ -30,6 +30,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 
 ### Plan Builder (`/professional/training/plans/:planId`)
 - Enter or edit the plan name (required, min 2 chars).
+- In create mode (`planId = 'new'`), add sessions and exercises immediately without pressing Save first; the first add operation persists the plan and keeps the user in the same builder flow.
 - Add training sessions (name required, notes optional).
 - Remove sessions.
 - Add exercise items to a session (name required, quantity and notes optional).

@@ -1,4 +1,4 @@
-package com.eduardo880.mychampions;
+package com.edufelip.mychampions;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.ActivityTestRule;

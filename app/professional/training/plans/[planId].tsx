@@ -90,6 +90,7 @@ export default function TrainingPlanBuilderScreen() {
     state,
     templatePickerState,
     loadPlan,
+    initNewPlan,
     createPlan,
     savePlan,
     addSession,
@@ -118,6 +119,7 @@ export default function TrainingPlanBuilderScreen() {
     setValues,
     setFieldValue,
     errors: formErrors,
+    setErrors,
     isSaving,
     isDirty,
     setIsDirty,
@@ -168,6 +170,7 @@ export default function TrainingPlanBuilderScreen() {
   const [addSessionForm, setAddSessionForm] = useState<AddSessionFormState>({ kind: 'closed' });
   const [isSortMode, setIsSortMode] = useState(false);
   const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.training_builder');
+  const [isTemplatePickerVisible, setIsTemplatePickerVisible] = useState(false);
   
   const [isStudentPickerVisible, setIsStudentPickerVisible] = useState(false);
   const [students, setStudents] = useState<ProfessionalStudentRosterItem[]>([]);
@@ -182,10 +185,12 @@ export default function TrainingPlanBuilderScreen() {
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!isNew && !isStarterClone && planId) {
+    if (isNew) {
+      initNewPlan();
+    } else if (!isStarterClone && planId) {
       loadPlan(planId);
     }
-  }, [planId, isNew, isStarterClone, loadPlan]);
+  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan]);
 
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleNameChange = useCallback((val: string) => {
@@ -200,14 +205,27 @@ export default function TrainingPlanBuilderScreen() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const err = await addSession(state.plan.id, { name: sessionName, notes });
-    if (err) {
+    const { planId: resolvedPlanId, error } = await addSession(
+      state.plan.id,
+      { name: sessionName, notes },
+      { name: values.name }
+    );
+    if (error) {
+      if (error === 'validation') {
+        setErrors(validateInput({ name: values.name }));
+        return;
+      }
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
     } else {
       setAddSessionForm({ kind: 'closed' });
       setIsDirty(true);
+      if (isNew && resolvedPlanId !== 'new') {
+        router.replace(
+          `${isStudentBuilder ? '/student/training/plans' : '/professional/training/plans'}/${resolvedPlanId}` as never
+        );
+      }
     }
-  }, [addSessionForm, state, addSession, tr, setIsDirty]);
+  }, [addSessionForm, state, addSession, tr, setIsDirty, values.name, isNew, router, isStudentBuilder, setErrors, validateInput]);
 
   const handleRemoveSession = useCallback(
     (sessionId: string) => {

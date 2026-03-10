@@ -88,6 +88,7 @@
 | TC-278 | SC-208 Create Named Training Plan With Session | Professional on training plan builder | Enter plan name, add session with one custom item, save | Plan appears in predefined training library |
 | TC-279 | SC-208 Validation — Name Required | Professional on training plan builder | Attempt save with empty name | Validation error shown; save blocked |
 | TC-280 | SC-207/SC-208 Starter Template Clone | Professional opens starter template | Begin editing | Editable cloned draft created; original starter unchanged |
+| TC-303 | SC-208 Add Session Before First Save | Professional opens `/professional/training/plans/new` | Enter plan name, add session, add one exercise item, then save | Session and exercise are accepted before explicit initial save; route is promoted from `new` to persisted plan id without forcing a separate first-save step |
 | TC-288 | Terms Gate Redirect Enforcement | Authenticated user without required terms acceptance | Attempt to access `/auth/role-selection` or role-home route | App redirects user to `/auth/accept-terms` |
 | TC-289 | Terms Gate Version Re-Prompt | User has accepted terms version `v1`; app required version changes to `v2` | Re-open app/authenticated session | Terms gate is shown again until `v2` is accepted |
 | TC-290 | Role Selection Relaunch Lock | Authenticated user with unlocked role (no persisted role lock) | Close and reopen app while route resolves to `/(tabs)` or home shell | App redirects to `/auth/role-selection` and blocks tab/home access until role is selected and continued |
@@ -99,6 +100,12 @@
 | TC-299 | Role Lock Profile Row Missing Classification | `upsertUserProfile` + `setLockedRole` return keys but all server-only confirmation snapshots return `exists=false` | Select role and inspect error classification/log payload | Client throws typed profile-source error `profile_row_not_found_after_upsert` and logs `allSnapshotsMissing=true` for backend drift diagnosis |
 | TC-295 | Role Selection Relaunch Auth Persistence | Authenticated user reaches `/auth/role-selection` with `lockedRole=null` and closes app | Reopen app on same device/session | User remains authenticated and is redirected back to `/auth/role-selection` (not `/auth/sign-in`) |
 | TC-296 | Locked Role Relaunch Persistence | Authenticated user with existing Firestore profile and `lockedRole='professional'` reaches `/professional/home` | Close and reopen app | Hydration reads existing profile first, does not rewrite profile on bootstrap, and user is routed back to professional home/tab shell (not `/auth/role-selection`) |
+
+| TC-310 | Password Reset — Confirmation Alert | Authenticated email/password account user on account settings screen | Tap "Change password" | Confirmation alert is shown before any email is dispatched; dismissing alert leaves screen unchanged |
+| TC-311 | Password Reset — Loading State | Authenticated email/password account user confirms password reset | Observe row state while `sendPasswordResetEmail` is in flight | "Change password" row shows loading indicator and is non-interactive during the request |
+| TC-312 | Password Reset — Success Banner | Authenticated email/password account user confirms password reset; `sendPasswordResetEmail` resolves successfully | Observe row state after success | "Change password" row is replaced by inline success banner; success message is visible for the rest of the session |
+| TC-313 | Password Reset — Error Inline Message With Retry | Authenticated email/password account user confirms password reset; `sendPasswordResetEmail` rejects with an error | Observe row state after failure | Inline error message is shown below the row; row remains visible and tappable for retry |
+| TC-314 | Password Reset — OAuth Informational Alert | Authenticated Google or Apple OAuth account user on account settings screen | Tap "Change password" | Informational alert is shown naming the provider; no password reset email is dispatched |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.

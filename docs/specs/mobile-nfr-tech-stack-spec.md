@@ -18,6 +18,10 @@ Define non-functional architecture constraints and technology options for the mo
 - Android and iOS native packages/pipelines are managed independently.
 - Native directories (`ios/`, `android/`) are committed from day 1.
 - Native directory generation policy is one-time `expo prebuild`; ongoing native work is edited directly in committed native projects.
+- Native identity must stay aligned across Expo config and committed native projects:
+  - prod bundle/package id: `com.edufelip.mychampions`
+  - dev bundle/package id: `com.edufelip.mychampions.dev`
+  - stable app deep-link scheme: `mychampions`
 - Backend platform is Firebase (Auth, Firestore, Cloud Storage).
 - Social auth is implemented through Firebase Auth.
 - Crash reporting is mandatory with Firebase Crashlytics.
@@ -111,7 +115,7 @@ Define non-functional architecture constraints and technology options for the mo
 2. Firebase Auth manages email/password and social identity.
 3. Firebase Firestore enforces domain rules through collection structure and security rules.
 4. Firebase Cloud Storage stores recipe and profile images.
-5. fatsecret API serves nutrition lookup dataset.
+5. VPS food-search microservice serves nutrition lookup dataset.
 6. RevenueCat orchestrates professional subscription entitlements.
 7. Firebase Crashlytics captures runtime crashes and non-fatal exceptions.
 

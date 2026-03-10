@@ -28,7 +28,8 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>mychampions</string>
-          <string>com.eduardo880.mychampions</string>
+          <string>com.edufelip.mychampions</string>
+          <string>com.edufelip.mychampions.dev</string>
         </array>
       </dict>
     </array>

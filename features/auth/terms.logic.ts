@@ -1,6 +1,7 @@
 export type TermsConfig = {
   requiredVersion: string;
   termsUrl: string;
+  privacyPolicyUrl: string;
 };
 
 export type TermsStateInput = {
@@ -19,6 +20,12 @@ export function resolveRequiredTermsVersion(value: string | null | undefined, fa
 }
 
 export function resolveTermsUrl(value: string | null | undefined, fallback = 'https://google.com'): string {
+  if (!value) return fallback;
+  const next = value.trim();
+  return next.length > 0 ? next : fallback;
+}
+
+export function resolvePrivacyPolicyUrl(value: string | null | undefined, fallback = 'https://google.com'): string {
   if (!value) return fallback;
   const next = value.trim();
   return next.length > 0 ? next : fallback;

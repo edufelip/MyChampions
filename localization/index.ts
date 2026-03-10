@@ -1,11 +1,9 @@
-import { useRef } from 'react';
-
 import { enUS, type TranslationKey } from './en-US';
-
-export type { TranslationKey };
 import { esES } from './es-ES';
 import { getDeviceLocale } from './get-device-locale';
 import { ptBR } from './pt-BR';
+
+export type { TranslationKey };
 
 export const SUPPORTED_LOCALES = ['en-US', 'pt-BR', 'es-ES'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -73,9 +71,6 @@ export function buildTranslationBinding(
   };
 }
 
-export function useTranslation() {
-  const locale = resolveLocale(getDeviceLocale());
-  const bindingRef = useRef<TranslationBinding | null>(null);
-  bindingRef.current = buildTranslationBinding(locale, bindingRef.current);
-  return bindingRef.current;
-}
+// Re-export the context-aware useTranslation so all existing imports from
+// `@/localization` continue to work without change.
+export { useTranslation } from './use-translation';

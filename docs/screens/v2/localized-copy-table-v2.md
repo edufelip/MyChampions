@@ -208,7 +208,8 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.predefined_plan.bulk_assign.select_students` | SC-205 | Bulk assign helper | Select students to receive this plan | Selecione os alunos que vão receber este plano | Selecciona los alumnos que recibirán este plan | BL-106 |
 | `pro.predefined_plan.bulk_assign.fine_tune_title` | SC-207/SC-208 | Fine-tune step title | Fine-tune each student plan | Ajustar o plano de cada aluno | Ajustar el plan de cada alumno | BL-106 |
 | `pro.predefined_plan.bulk_assign.cta_finalize` | SC-207/SC-208 | Final bulk assign CTA | Confirm assignments | Confirmar atribuições | Confirmar asignaciones | BL-106 |
-| `pro.predefined_plan.copy_independent_note` | SC-207/SC-208 | Copy isolation helper | Each student gets an independent copy. Future library edits won't change assigned plans. | Cada aluno recebe uma cópia independente. Alterações futuras na biblioteca não mudam planos já atribuídos. | Cada alumno recibe una copia independiente. Los cambios futuros en la biblioteca no afectarán los planes ya asignados. | BL-106 |
+| `pro.library.nutrition.helper` | SC-207 | Plan library helper | Create your diet presets. After assigning to a student, you only need to fine-tune it. | Crie suas predefinições de dieta. Depois de atribuir a um aluno você só precisa fazer o ajuste fino. | Crea tus preajustes de dieta. Después de asignar a un alumno, solo necesitas hacer el ajuste fino. | BL-106 |
+| `pro.library.training.helper` | SC-208 | Plan library helper | Create your workout presets. After assigning to a student, you only need to fine-tune it. | Crie suas predefinições de treino. Depois de atribuir a um aluno você só precisa fazer o ajuste fino. | Crea tus preajustes de entrenamiento. Después de asignar a un alumno, solo necesitas hacer el ajuste fino. | BL-106 |
 | `pro.student.water_goal.section_title` | SC-206 | Professional water goal section title | Student water goal | Meta de água do aluno | Objetivo de agua del alumno | BL-104 |
 | `pro.student.water_goal.field_daily_ml` | SC-206 | Professional water goal input label | Daily water goal (ml) | Meta diária de água (ml) | Objetivo diario de agua (ml) | BL-104 |
 | `pro.student.water_goal.cta_save` | SC-206 | Professional water goal save CTA | Save water goal | Salvar meta de água | Establecer objetivo de agua | BL-104 |
@@ -321,11 +322,26 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `settings.account.language.en_us` | SC-213 | Locale option | English | English | English | Intentionally not translated |
 | `settings.account.language.pt_br` | SC-213 | Locale option | Português | Português | Português | Intentionally not translated |
 | `settings.account.language.es_es` | SC-213 | Locale option | Español | Español | Español | Intentionally not translated |
-| `settings.account.language.picker_title` | SC-213 | Picker title | Choose language | Escolher idioma | Elegir idioma | |
+| `settings.account.language.picker_title` | SC-213 | Picker title | Choose language | Escolher idioma | Elegir idioma | Legacy — superseded by SC-222 dedicated screen |
+| `common.back` | SC-222 | Accessibility label for back button | Back | Voltar | Atrás | |
+| `settings.language_select.title` | SC-222 | Screen / header title | Language | Idioma | Idioma | |
+| `settings.language_select.save` | SC-222 | Header Save button | Save | Salvar | Guardar | |
+| `settings.language_select.section_header` | SC-222 | Section group header | App Language | Idioma do App | Idioma de la app | |
 | `settings.account.privacy_policy.label` | SC-213 | Row label | Privacy Policy | Política de Privacidade | Política de Privacidad | |
 | `settings.account.privacy_policy.cta` | SC-213 | Legacy CTA (unused) | View Privacy Policy | Ver Política de Privacidade | Ver Política de Privacidad | Kept for backwards compat |
 | `settings.account.terms.label` | SC-213 | Row label | Terms of Service | Termos de Uso | Términos de servicio | |
-| `settings.account.contact.label` | SC-213 | Row label | Contact support | Falar com o suporte | Contactar soporte | Opens mailto: |
+| `settings.account.contact.label` | SC-213 | Row label | Contact support | Falar com o suporte | Contactar soporte | Opens support message dialog |
+| `settings.account.support.dialog.title` | SC-213 | Modal title | Talk to support | Falar com o suporte | Contactar soporte | |
+| `settings.account.support.dialog.disclaimer` | SC-213 | Modal disclaimer | This screen is for messaging our support team. | Esta tela é para enviar mensagens para nossa equipe de suporte. | Esta pantalla es para enviar mensajes a nuestro equipo de soporte. | |
+| `settings.account.support.field.subject.label` | SC-213 | Field label | Subject | Assunto | Asunto | |
+| `settings.account.support.field.subject.placeholder` | SC-213 | Field placeholder | e.g. Login issue | Ex: Dificuldade com login | p.ej. Problema con el inicio de sesión | |
+| `settings.account.support.field.body.label` | SC-213 | Field label | Message | Mensagem | Mensaje | |
+| `settings.account.support.field.body.placeholder` | SC-213 | Field placeholder | How can we help? | Como podemos ajudar? | ¿Cómo podemos ayudarte? | |
+| `settings.account.support.cta_submit` | SC-213 | Primary CTA | Send message | Enviar mensagem | Enviar mensaje | |
+| `settings.account.support.success` | SC-213 | Success message | Message sent successfully! | Mensagem enviada com sucesso! | ¡Mensaje enviado con éxito! | |
+| `settings.account.support.error` | SC-213 | Error message | Error sending message. Try again. | Erro ao enviar mensagem. Tente novamente. | Error al enviar el mensaje. Inténtalo de nuevo. | |
+| `settings.account.support.validation.subject_required` | SC-213 | Validation error | Subject is required. | O assunto é obrigatório. | El asunto es obligatorio. | |
+| `settings.account.support.validation.body_required` | SC-213 | Validation error | Message is required. | A mensagem é obrigatória. | El mensaje es obligatorio. | |
 | `settings.account.app_version.label` | SC-213 | Footer label | Version | Versão | Versión | Followed by app version string |
 | `settings.account.sign_out.cta` | SC-213 | CTA | Sign out | Sair | Cerrar sesión | |
 | `settings.account.sign_out.confirm_title` | SC-213 | Alert title | Sign out? | Sair da conta? | ¿Cerrar sesión? | |
@@ -354,6 +370,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `a11y.selected_count` | SC-pending | SR bulk selection count | {count} selected | {count} selecionado(s) | {count} seleccionado(s) | Replaces hardcoded string in pending.tsx |
 | `a11y.student_row` | SC-205 | SR student row label | {name}, {specialty}, {status} | {name}, {specialty}, {status} | {name}, {specialty}, {status} | Combines name+specialty+status for SR |
 | `a11y.stat_card` | SC-204 | SR stat card label | {value} {label} | {value} {label} | {value} {label} | Combines value+label for stat cards |
+| `a11y.brand_logo` | SC-217 | SR label for brand logo image | My Champions logo | Logo My Champions | Logo de My Champions | Used on sign-in screen brand badge |
 | `meal.photo_analysis.cta` | SC-214/SC-215 | Camera/AI entry CTA | Analyze with AI | Analisar com IA | Analizar con IA | BL-108 |
 | `meal.photo_analysis.analyzing` | SC-219 | In-progress loading text | Analyzing your meal… | Analisando sua refeição… | Analizando tu comida… | BL-108 |
 | `meal.photo_analysis.disclaimer` | SC-219 | Estimate disclaimer | These are AI estimates. Please verify before saving. | Estes são valores estimados pela IA. Verifique antes de salvar. | Estos son valores estimados por IA. Verifícalos antes de guardar. | BR-290; always shown with results |
@@ -400,6 +417,8 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.template.cta_use` | SC-207/208 | Use template CTA | Use this template | Usar este modelo | Usar esta plantilla | |
 | `pro.plan.food_search.placeholder` | SC-207 | Food search input | Search foods… | Buscar alimentos… | Buscar alimentos… | FR-243 |
 | `pro.plan.food_search.empty` | SC-207 | Empty food search | No foods found. Try a different search term. | Nenhum alimento encontrado. Tente outro termo. | No se encontraron alimentos. Prueba otro término. | |
+| `pro.plan.food_search.error` | SC-207 | Generic food-search error | Food search unavailable. Try again. | Busca de alimentos indisponível. Tente novamente. | Búsqueda de alimentos no disponible. Inténtalo de nuevo. | |
+| `pro.plan.food_search.error.quota` | SC-207 | Rate-limit error | Food search is temporarily rate-limited. Try again soon. | A busca de alimentos está temporariamente limitada. Tente novamente em instantes. | La búsqueda de alimentos está temporalmente limitada. Inténtalo de nuevo en breve. | 429 + quota_exceeded |
 | `pro.plan.food_search.stub_notice` | SC-207 | Empty meal helper | Add food items to start this plan. | Adicione alimentos para começar este plano. | Añade alimentos para empezar este plan. | |
 | `pro.plan.validation.name_required` | SC-207/208 | Name required error | Plan name is required. | O nome do plano é obrigatório. | El nombre del plan es obligatorio. | BR-291, BR-293 |
 | `pro.plan.validation.name_too_short` | SC-207/208 | Name too short error | Plan name must be at least 2 characters. | O nome do plano deve ter pelo menos 2 caracteres. | El nombre del plan debe tener al menos 2 caracteres. | |

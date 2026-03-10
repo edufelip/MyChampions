@@ -2,35 +2,26 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { 
-  calculateNutritionTotals, 
+  calculateTotalsFromItems,
   isStarterTemplate,
-  deriveStarterTemplatePlanType
+  deriveStarterTemplatePlanType,
 } from './plan-builder.logic';
 
-test('calculateNutritionTotals parses valid numeric strings', () => {
-  const input = {
-    name: 'Plan',
-    caloriesTarget: '2000',
-    carbsTarget: '200',
-    proteinsTarget: '150',
-    fatsTarget: '70'
-  };
-  const totals = calculateNutritionTotals(input);
-  assert.equal(totals.calories, 2000);
-  assert.equal(totals.carbs, 200);
-  assert.equal(totals.proteins, 150);
-  assert.equal(totals.fats, 70);
+test('calculateTotalsFromItems sums numeric macros', () => {
+  const totals = calculateTotalsFromItems([
+    { name: 'Chicken', quantity: '100g', notes: '', calories: 165, carbs: 0, proteins: 31, fats: 3.6 },
+    { name: 'Rice', quantity: '100g', notes: '', calories: 130, carbs: 28, proteins: 2.7, fats: 0.3 },
+  ]);
+  assert.equal(totals.calories, 295);
+  assert.equal(totals.carbs, 28);
+  assert.equal(totals.proteins, 33.7);
+  assert.equal(totals.fats, 3.9);
 });
 
-test('calculateNutritionTotals handles empty and invalid strings as 0', () => {
-  const input = {
-    name: 'Plan',
-    caloriesTarget: '',
-    carbsTarget: 'abc',
-    proteinsTarget: '-10',
-    fatsTarget: ' '
-  };
-  const totals = calculateNutritionTotals(input);
+test('calculateTotalsFromItems treats missing macros as 0', () => {
+  const totals = calculateTotalsFromItems([
+    { name: 'Unknown', quantity: '', notes: '' },
+  ]);
   assert.equal(totals.calories, 0);
   assert.equal(totals.carbs, 0);
   assert.equal(totals.proteins, 0);

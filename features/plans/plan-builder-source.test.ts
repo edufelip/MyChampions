@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import {
   deriveStarterTemplatePlanType,
   coalesceTemplateDescription,
+  resolveTrainingDraftCreationInput,
 } from './plan-builder.logic';
 
 // ─── deriveStarterTemplatePlanType ────────────────────────────────────────────
@@ -175,5 +176,31 @@ describe('coalesceTemplateDescription', () => {
     const result = coalesceTemplateDescription(undefined);
     assert.equal(result, undefined);
     assert.notEqual(result, null);
+  });
+});
+
+describe('resolveTrainingDraftCreationInput', () => {
+  it('returns validation error when input is missing', () => {
+    const result = resolveTrainingDraftCreationInput(undefined);
+    assert.equal(result.error, 'validation');
+    assert.equal(result.input, undefined);
+  });
+
+  it('returns validation error when name is empty', () => {
+    const result = resolveTrainingDraftCreationInput({ name: '   ' });
+    assert.equal(result.error, 'validation');
+    assert.equal(result.input, undefined);
+  });
+
+  it('returns validation error when name is too short', () => {
+    const result = resolveTrainingDraftCreationInput({ name: 'A' });
+    assert.equal(result.error, 'validation');
+    assert.equal(result.input, undefined);
+  });
+
+  it('returns input when name is valid', () => {
+    const result = resolveTrainingDraftCreationInput({ name: 'Upper Body' });
+    assert.equal(result.error, undefined);
+    assert.deepEqual(result.input, { name: 'Upper Body' });
   });
 });

@@ -4,6 +4,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -204,9 +205,12 @@ export default function SignInScreen() {
 
       <View style={styles.content}>
         <View style={styles.titleArea}>
-          <View style={[styles.brandBadge, { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft }]}>
-            <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={34} />
-          </View>
+          <Image
+            accessibilityLabel={t('a11y.brand_logo')}
+            contentFit="contain"
+            source={require('../../assets/images/logo.svg')}
+            style={styles.brandLogo}
+          />
           <Text testID="auth.signIn.title" style={[styles.title, { color: palette.text }]}>
             {t('auth.signin.title')}
           </Text>
@@ -407,14 +411,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 64,
   },
-  brandBadge: {
-    alignItems: 'center',
-    borderRadius: 50,
-    borderWidth: 4,
-    elevation: 2,
+  brandLogo: {
+    borderRadius: 20,
     height: 100,
-    justifyContent: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
     width: 100,
   },
   formWrapper: {

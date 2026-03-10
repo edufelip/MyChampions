@@ -19,6 +19,7 @@ type AuthSessionContextValue = {
   termsRequiredVersion: string;
   acceptedTermsVersion: string | null;
   termsUrl: string;
+  privacyPolicyUrl: string;
   needsTermsAcceptance: boolean;
   lockRole: (role: RoleIntent) => Promise<void>;
   acceptTerms: () => Promise<void>;
@@ -130,6 +131,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       termsRequiredVersion: termsConfig.requiredVersion,
       acceptedTermsVersion,
       termsUrl: termsConfig.termsUrl,
+      privacyPolicyUrl: termsConfig.privacyPolicyUrl,
       needsTermsAcceptance: requiresTermsAcceptance,
       lockRole: async (role: RoleIntent) => {
         const activeUser = currentUser ?? getFirebaseAuth().currentUser;
@@ -166,6 +168,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       requiresTermsAcceptance,
       termsConfig.requiredVersion,
       termsConfig.termsUrl,
+      termsConfig.privacyPolicyUrl,
     ]
   );
 

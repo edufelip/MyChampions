@@ -1,10 +1,16 @@
 import Constants from 'expo-constants';
 
-import { resolveRequiredTermsVersion, resolveTermsUrl, type TermsConfig } from './terms.logic';
+import {
+  resolvePrivacyPolicyUrl,
+  resolveRequiredTermsVersion,
+  resolveTermsUrl,
+  type TermsConfig,
+} from './terms.logic';
 
 type TermsExtraConfig = {
   requiredVersion?: string;
   url?: string;
+  privacyPolicyUrl?: string;
 };
 
 export function resolveTermsConfigFromExpo(): TermsConfig {
@@ -14,5 +20,6 @@ export function resolveTermsConfigFromExpo(): TermsConfig {
   return {
     requiredVersion: resolveRequiredTermsVersion(terms.requiredVersion, 'v1'),
     termsUrl: resolveTermsUrl(terms.url, 'https://google.com'),
+    privacyPolicyUrl: resolvePrivacyPolicyUrl(terms.privacyPolicyUrl, 'https://google.com'),
   };
 }

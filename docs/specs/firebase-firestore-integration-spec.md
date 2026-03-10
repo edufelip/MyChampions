@@ -25,6 +25,8 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - `starterTemplates/{templateId}` (optional remote templates; local fallback allowed).
 - `waterLogs/{uid_dateKey}` and `waterGoals/{uid}`.
 - `customMeals/{mealId}`, `mealShareLinks/{shareToken}`, `portionLogs/{logId}`.
+- `supportMessages/{messageId}`: user-submitted support tickets.
+  - Fields: `userId`, `userEmail`, `userName`, `subject`, `body`, `status` (pending/reviewed/resolved), `createdAt`, `updatedAt`, `appVersion`, `platform`.
 
 ## Ownership And Authorization Contract
 - Every user-owned document includes `ownerUid` or equivalent role-specific uid fields.

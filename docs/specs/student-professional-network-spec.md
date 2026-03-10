@@ -58,7 +58,7 @@ Specify the target domain behavior for role-based journeys, professional assignm
 27. Account settings expose privacy policy access and account deletion initiation per store baseline.
 28. Student-facing connection flows do not expose professional credential/verification status as badge/filter.
 29. Student can view credential info only for currently assigned professionals, limited to `registry_id`, `authority`, and `country`.
-30. Nutrition plan search/lookup nutrient data is sourced from fatsecret Platform API for MVP.
+30. Nutrition plan search/lookup nutrient data is sourced from the VPS food-search microservice (`https://foodservice.eduwaldo.com/searchFoods`) for MVP.
 31. Users can create reusable custom meals with total grams and nutrient totals.
 32. Users can log consumed grams from saved custom meals and receive proportional calorie/macro calculations.
 33. Editing custom meal definitions does not mutate previously stored nutrition logs.

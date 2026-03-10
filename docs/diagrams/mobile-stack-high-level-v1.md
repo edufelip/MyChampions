@@ -7,7 +7,7 @@ flowchart LR
   A --> B[Firebase Auth]
   A --> C[Firebase Cloud Firestore]
   A --> D[Firebase Cloud Storage]
-  A --> E[fatsecret API]
+  A --> E[Food Search Microservice]
   A --> F[RevenueCat]
   A --> G[Firebase Crashlytics]
 

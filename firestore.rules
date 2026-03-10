@@ -143,6 +143,11 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /supportMessages/{messageId} {
+      allow create: if isUid(request.resource.data.userId);
+      allow read, update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

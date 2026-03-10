@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import { getDsTheme } from '@/constants/design-system';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import { LocaleProvider } from '@/localization/locale-context';
 import { normalizeGuardPathname, resolveAuthGuardRedirect } from '@/features/auth/auth-route-guard.logic';
 import { AuthSessionProvider, useAuthSession } from '@/features/auth/auth-session';
 
@@ -17,9 +18,11 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   return (
-    <AuthSessionProvider>
-      <RootLayoutContent />
-    </AuthSessionProvider>
+    <LocaleProvider>
+      <AuthSessionProvider>
+        <RootLayoutContent />
+      </AuthSessionProvider>
+    </LocaleProvider>
   );
 }
 
@@ -119,6 +122,7 @@ function RootLayoutContent() {
         <Stack.Screen name="professional/nutrition/plans/[planId]" options={{ headerShown: false }} />
         <Stack.Screen name="professional/training/plans/[planId]" options={{ headerShown: false }} />
         <Stack.Screen name="settings/account" options={{ headerShown: false }} />
+        <Stack.Screen name="settings/language-select" options={{ headerShown: false }} />
         <Stack.Screen name="shared/recipes/[shareToken]" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"

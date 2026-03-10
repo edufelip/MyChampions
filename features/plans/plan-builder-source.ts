@@ -1,6 +1,6 @@
 /**
  * Plan builder Firestore source — nutrition/training CRUD,
- * starter templates, and food search proxy integration.
+ * starter templates, and food search service integration.
  */
 
 import {
@@ -476,25 +476,32 @@ export async function addNutritionMealItem(
         throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
       }
       const current = snap.data() as FirestoreNutritionPlan;
+      let itemAdded = false;
       const meals = (current.meals ?? []).map((meal) => {
         if (meal.id !== mealId) return meal;
+
+        // Strip undefined/null values to keep Firestore happy
+        const newItem: any = {
+          id: insertedId,
+          foodName: item.name.trim(),
+          quantity: item.quantity || '',
+          notes: item.notes || '',
+        };
+        if (item.calories != null) newItem.calories = item.calories;
+        if (item.carbs != null) newItem.carbs = item.carbs;
+        if (item.proteins != null) newItem.proteins = item.proteins;
+        if (item.fats != null) newItem.fats = item.fats;
+
+        itemAdded = true;
         return {
           ...meal,
-          items: [
-            ...(meal.items ?? []),
-            {
-              id: insertedId,
-              foodName: item.name.trim(),
-              quantity: item.quantity,
-              notes: item.notes,
-              calories: item.calories,
-              carbs: item.carbs,
-              proteins: item.proteins,
-              fats: item.fats,
-            },
-          ],
+          items: [...(meal.items ?? []), newItem],
         };
       });
+
+      if (!itemAdded) {
+        throw new PlanBuilderSourceError('graphql', `Meal with ID ${mealId} not found in this plan.`);
+      }
 
       // Recalculate plan totals
       const mappedMeals: NutritionMeal[] = meals.map(m => ({

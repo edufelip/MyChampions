@@ -1,9 +1,8 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -24,25 +23,21 @@ export default function AcceptTermsScreen() {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   const { acceptTerms, termsUrl, termsRequiredVersion } = useAuthSession();
+  const router = useRouter();
 
   const [isChecked, setIsChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null);
 
-  const onOpenTerms = async () => {
+  const onOpenTerms = () => {
     setErrorKey(null);
-
-    try {
-      const supported = await Linking.canOpenURL(termsUrl);
-      if (!supported) {
-        setErrorKey('auth.terms.error.link_unavailable');
-        return;
-      }
-
-      await Linking.openURL(termsUrl);
-    } catch {
-      setErrorKey('auth.terms.error.link_unavailable');
-    }
+    router.push({
+      pathname: '/shared/webview',
+      params: {
+        url: termsUrl,
+        title: t('auth.terms.title'),
+      },
+    });
   };
 
   const onAccept = async () => {

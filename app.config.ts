@@ -26,6 +26,7 @@ type VariantConfig = {
 type TermsConfig = {
   requiredVersion: string;
   url: string;
+  privacyPolicyUrl: string;
 };
 
 type RevenueCatConfig = {
@@ -62,10 +63,13 @@ function resolveFirebaseConfig(prefix: 'FIREBASE_DEV' | 'FIREBASE_PROD'): Fireba
 function resolveTermsConfig(): TermsConfig {
   const requiredVersion = process.env.EXPO_PUBLIC_TERMS_REQUIRED_VERSION?.trim() || 'v1';
   const url = process.env.EXPO_PUBLIC_TERMS_URL?.trim() || 'https://google.com';
+  const privacyPolicyUrl =
+    process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim() || 'https://google.com';
 
   return {
     requiredVersion,
     url,
+    privacyPolicyUrl,
   };
 }
 
@@ -133,7 +137,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: '#E6F4FE',
+        backgroundColor: '#E2FAE8',
         foregroundImage: './assets/images/android-icon-foreground.png',
         backgroundImage: './assets/images/android-icon-background.png',
         monochromeImage: './assets/images/android-icon-monochrome.png',

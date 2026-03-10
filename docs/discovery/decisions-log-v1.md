@@ -15,7 +15,7 @@
 - `D-012`: Student or professional can unbind relationship at any moment.
 - `D-013`: Training schema is fully customizable by professional.
 - `D-014`: MVP compliance baseline is defined by Apple App Store + Google Play policy requirements for payments, privacy, account deletion, and data disclosures.
-- `D-015`: MVP nutrition API provider is fatsecret Platform API.
+- `D-015`: MVP nutrition API provider is the VPS food-search microservice (`https://foodservice.eduwaldo.com/searchFoods`).
 - `D-016`: UX copy must clearly communicate self-guided usage without professional connection and use plain-language role labels.
 - `D-017`: Users can create reusable custom meals with weight, calories/macros, optional ingredient cost, and log consumed grams with proportional nutrient calculation.
 - `D-018`: Shared recipe links create recipient-owned copies on confirmation; recipient copies remain available even if source creator deletes original recipe.
@@ -122,7 +122,7 @@
 - `D-110`: AI analysis errors (network, quota, unrecognizable image) are recoverable. User is shown a reason-specific error message and can dismiss it to fill form fields manually. Analysis failure is never a hard failure blocking meal creation.
 - `D-111`: SC-207 (Nutrition Plan Builder) and SC-208 (Training Plan Builder) are implemented as route-level screens at `/professional/nutrition/plans/:planId` and `/professional/training/plans/:planId`. The tab-level `app/professional/nutrition.tsx` and `app/professional/training.tsx` become plan library list screens showing the professional's predefined plan library with create and open CTAs.
 - `D-112`: Plan builder logic (validation, totals calculation, error normalization) is isolated in `features/plans/plan-builder.logic.ts` (pure functions, no Firebase deps). Firestore CRUD operations (create/update plan, add/remove items/sessions) are stubbed in `features/plans/plan-builder-source.ts` following the existing `gql<T>()` + `PlanSourceError` pattern. React hook `features/plans/use-plan-builder.ts` adapts source for screen consumption.
-- `D-113`: Fatsecret food search is intentionally stubbed (`searchFoods` returns empty array) for SC-207 MVP; the search entry point UI is shown but wiring is deferred. Stub is tracked in `docs/discovery/pending-wiring-checklist-v1.md`.
+- `D-113`: Legacy Firebase `searchFoods` Cloud Function integration has been decommissioned. SC-207 food search now uses the VPS food-search microservice with Firebase ID token authorization.
 - `D-114`: Starter templates are returned by a stub `getStarterTemplates(planType)` in plan-builder-source; the stub returns two hardcoded template stubs per plan type. Template cloning (`cloneStarterTemplate`) is also stubbed and tracked for later Firestore wiring.
 - `D-115`: BL-104 water tracker is implemented as embedded widgets in existing screens — no standalone route is created. Implementation surfaces:
   - `HydrationCard` in `app/student/home.tsx` (SC-203) — compact daily hydration summary with progress and streak.
@@ -152,7 +152,7 @@
 
 - `D-126`: All app-domain source modules are cut over from Firebase Data Connect/generated SDK usage to Firebase JS Firestore (`firebase/firestore`) while preserving hook/screen-facing contracts. Completed sources: `profile-source.ts`, `connection-source.ts`, `professional-source.ts`, `plan-source.ts`, `water-tracking-source.ts`, `custom-meal-source.ts`, `plan-builder-source.ts`. Wiring pattern remains injectable `*Deps` with production `defaultDeps` and test doubles. Source functions continue to avoid direct screen coupling; hooks remain the UI adapter boundary.
 
-- `D-127`: fatsecret food search is implemented via Firebase Cloud Function proxy, not by direct client calls. fatsecret OAuth 2.0 docs explicitly require tokens to be requested through a proxy server to keep credentials off devices. Pattern matches AI meal analysis (D-106/BL-108). Client-side: `features/nutrition/food-search-source.ts` calls `EXPO_PUBLIC_FOOD_SEARCH_FUNCTION_URL` with a Firebase Auth ID token; response normalization (per-serving → per-100g) lives in pure helpers `normalizeFoodArray` + `normalizeFoodSearchResult` in `plan-builder.logic.ts` (TC-281, 21 unit tests). `searchFoods` in `plan-builder-source.ts` is wired. Cloud Function `searchFoods` (Gen 2, Node 20, us-central1) is deployed to `mychampions-fb928`; fatsecret Client ID and Secret stored as Firebase Secret Manager secrets only. URL: `https://us-central1-mychampions-fb928.cloudfunctions.net/searchFoods`. `EXPO_PUBLIC_FOOD_SEARCH_FUNCTION_URL` is set in `.env` for dev. Production Cloud Function deployment is deferred to when the prod Firebase project is provisioned.
+- `D-127`: Food search is implemented via external VPS microservice (`https://foodservice.eduwaldo.com/searchFoods`) from `features/nutrition/food-search-source.ts`, using `Authorization: Bearer <Firebase ID token>`. Request body uses `{ query, maxResults, region, language }`, where `region/language` are derived from effective app locale (language override first, device locale fallback; mapping `en-US -> us/en`, `pt-BR -> br/pt`, `es-ES -> es/es`, fallback `us/en`). Response parsing uses per-100g macros (`carbohydrate`, `protein`, `fat`) with tolerant numeric parsing (`number` or numeric `string`), enforces `serving === 100`, and derives calories client-side (`4/4/9`). The app reads `EXPO_PUBLIC_FOOD_SEARCH_SERVICE_URL`, maps HTTP `429` and `200 { "error": "quota_exceeded" }` to quota-style errors, maps upstream 502 error bodies (`upstream_ip_not_allowlisted`, `upstream_error`) to network-style errors, and no longer depends on Firebase `searchFoods` Cloud Function secrets.
 
 - `D-128`: Code review of the full `analyzeMealPhoto` (BL-108) feature identified and fixed four must-fix issues:
   1. **M1** — `PhotoAnalysisSourceError.code` was typed as loose `string`; changed to `PhotoAnalysisErrorReason` union for compile-time safety.
@@ -307,6 +307,45 @@
   - Full shell reset still occurs on real identity change (sign-out or UID swap).
   - Localization hook `useTranslation` now uses stable translation binding per locale; `t` reference remains stable while locale is unchanged.
   - SC-205 student roster loading arbitration now uses explicit first-load precedence so loading and empty states do not overlap/flicker.
+
+- `D-166`: App icon and splash screen branding migrated to the official My Champions logo (`assets/images/logo.svg`):
+  - Source SVG is stored at `assets/images/logo.svg` and used as the single source of truth for all icon and splash assets.
+  - A Node script (`scripts/generate-icons.mjs`) powered by `sharp` (dev dependency) generates all PNG/WebP outputs from the SVG at build time. Run with `yarn icons`.
+  - iOS app icon: `ios/mychampions/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png` (1024×1024).
+  - iOS splash logo: `SplashScreenLogo.imageset/image.png|@2x|@3x` (200/400/600 px).
+  - Android launcher icons: `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher*.webp` (foreground, background solid `#E2FAE8`, monochrome, round, default).
+  - Android splash drawables: `drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/splashscreen_logo.png`.
+  - Asset source files under `assets/images/` (`icon.png`, `splash-icon.png`, `android-icon-*.png`) are also regenerated from the SVG and remain the Expo config source for future managed-workflow compatibility.
+- `D-167`: Android SplashScreen native wiring migrated from `expo-splash-screen` `SplashScreenManager.registerOnActivity()` to the raw `androidx.core.splashscreen` API (`installSplashScreen()`):
+  - `MainActivity.kt` now imports `androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen` and calls `installSplashScreen()` at the top of `onCreate`, before `super.onCreate(null)`.
+  - The existing `android:theme="@style/Theme.App.SplashScreen"` on `<activity>` in `AndroidManifest.xml` is preserved; it must extend `Theme.SplashScreen` (from `androidx.core:core-splashscreen`) for `installSplashScreen()` to function.
+  - `androidx.core:core-splashscreen` is available transitively through `expo-splash-screen`'s android module (`expo-splash-screen` remains installed as a package).
+  - JS-side `SplashScreen.preventAutoHideAsync`/`hideAsync` calls are not present in the codebase; splash dismissal is fully native (auto-dismiss after JS bundle renders).
+- `D-168`: Sign-in screen brand badge updated to display the My Champions SVG logo:
+  - The `MaterialIcons fitness-center` icon in the `brandBadge` container on `app/auth/sign-in.tsx` is replaced with an `expo-image` `<Image>` rendering `assets/images/logo.svg`.
+  - `expo-image` handles SVG rendering natively on both iOS and Android without additional native dependencies.
+  - The `brandBadge` style is updated to `borderRadius: 20`, `overflow: hidden`, removing the previous border and surface background (the logo provides its own `#E2FAE8` background).
+- `D-169`: SC-208 runtime stability guard — `app/professional/training/plans/[planId].tsx` keeps template picker visibility in explicit local state (`isTemplatePickerVisible`) so template-clone CTA and modal rendering do not throw `ReferenceError` at runtime.
+- `D-170`: Native app identity is normalized to the `com.edufelip.*` baseline across Expo config and committed native projects:
+  - iOS launch/deep-link registration keeps `mychampions` as the stable custom scheme.
+  - iOS `CFBundleURLSchemes` also includes `com.edufelip.mychampions` and `com.edufelip.mychampions.dev` so Expo dev-client launches resolve against the current prod/dev bundle ids instead of the legacy `com.eduardo880.mychampions` scheme.
+  - Android source packages are aligned to `com.edufelip.mychampions` to match Gradle `namespace` / `applicationId`.
+  - The legacy `com.eduardo880.mychampions` identifier is deprecated and must not remain in runtime-critical native config.
+
+- `D-171`: Contact support (SC-213) migrated from mailto link to custom Firestore-backed dialog.
+  - **Firestore Collection**: `supportMessages`.
+  - **Schema**: `id`, `userId`, `userEmail`, `userName`, `subject` (max 50), `body` (max 500), `status` (pending/reviewed/resolved), `createdAt`, `updatedAt`, `appVersion`, `platform`.
+  - **UI**: Custom dialog with disclaimer, one-line subject, and multi-line body.
+  - **Reason**: Better user experience and ability to track support requests within the app infrastructure.
+
+- `D-155`: Language picker (SC-213) replaced with a dedicated Language Select screen (SC-222) at route `/settings/language-select`. Architecture decisions:
+  - **Dedicated screen**: The former inline `ActionSheetIOS` (iOS) / `Alert.alert` (Android) picker in SC-213 is removed. Language selection now pushes SC-222 onto the navigation stack, matching the iOS Settings pattern and providing a consistent cross-platform experience.
+  - **In-session locale switching**: A `LocaleContext` (`localization/locale-context.tsx`) holds the active locale in React state. `LocaleProvider` wraps the entire app in `app/_layout.tsx`. All `useTranslation()` callers re-render immediately when `setActiveLocale()` is called — no app restart required.
+  - **useTranslation refactor**: To avoid a circular import (`locale-context.tsx` imports from `localization/index.ts`), `useTranslation` is moved to `localization/use-translation.ts` which imports from both `index.ts` and `locale-context.tsx`. The barrel `localization/index.ts` re-exports it so all existing import paths are unchanged.
+  - **Save-on-confirm UX**: SC-222 uses a radio-style row list with an explicit Save button (enabled only when the pending selection differs from the current locale). Tapping Save calls `setActiveLocale()` + `router.back()`. Back/cancel discards pending selection without saving.
+  - **Language row in SC-213**: Now reads `activeLocale` from `useLocale()` instead of a local `useState` backed by an async `getLanguageOverride()` read. The label updates reactively when returning from SC-222.
+  - **Persistence**: `setLanguageOverride(locale)` (AsyncStorage key `app.language.override`) is called inside `setActiveLocale()`. Storage contract unchanged.
+  - **Supersedes D-144 language switcher decision**: The inline picker behavior documented in D-144 no longer applies. D-144 remains for historical reference; SC-222 is the authoritative implementation.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

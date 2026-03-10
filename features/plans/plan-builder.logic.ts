@@ -1,8 +1,8 @@
 /**
  * Plan builder logic — nutrition and training plan creation/editing,
- * plus pure fatsecret API response normalization helpers.
+ * plus pure food-search API response normalization helpers.
  * Pure functions, no Firebase dependencies.
- * Refs: D-111–D-114, D-127, FR-240–FR-248, BR-291–BR-296,
+ * Refs: D-111–D-114, FR-240–FR-248, BR-291–BR-296,
  *       AC-207, AC-208, AC-256, AC-264, AC-265,
  *       TC-275–TC-280, TC-281
  */
@@ -21,10 +21,10 @@ export type NutritionMealItemInput = {
   name: string;
   quantity: string; // free-form e.g. "100g" or "1 cup"
   notes: string;
-  calories?: number;
-  carbs?: number;
-  proteins?: number;
-  fats?: number;
+  calories?: number | null;
+  carbs?: number | null;
+  proteins?: number | null;
+  fats?: number | null;
 };
 
 export type NutritionMealItem = NutritionMealItemInput & {
@@ -134,6 +134,7 @@ export type PlanBuilderErrorReason =
   | 'validation'
   | 'not_found'
   | 'no_active_assignment'
+  | 'quota_exceeded'
   | 'network'
   | 'configuration'
   | 'unknown';
@@ -182,6 +183,15 @@ export function validateTrainingPlanInput(
   return errors;
 }
 
+export function resolveTrainingDraftCreationInput(
+  input?: TrainingPlanInput
+): { input?: TrainingPlanInput; error?: 'validation' } {
+  if (!input) return { error: 'validation' };
+  const errors = validateTrainingPlanInput(input);
+  if (Object.keys(errors).length > 0) return { error: 'validation' };
+  return { input };
+}
+
 /**
  * Validates a single training session item input.
  * Name is required; quantity and notes are optional (BR-294).
@@ -213,12 +223,18 @@ export type NutritionTotals = {
  */
 export function calculateTotalsFromItems(items: (NutritionMealItem | NutritionMealItemInput)[]): NutritionTotals {
   return items.reduce(
-    (acc, item) => ({
-      calories: Math.round((acc.calories + (item.calories ?? 0)) * 10) / 10,
-      carbs: Math.round((acc.carbs + (item.carbs ?? 0)) * 10) / 10,
-      proteins: Math.round((acc.proteins + (item.proteins ?? 0)) * 10) / 10,
-      fats: Math.round((acc.fats + (item.fats ?? 0)) * 10) / 10,
-    }),
+    (acc, item) => {
+      const safeVal = (v: number | null | undefined) => {
+        if (v == null || isNaN(v)) return 0;
+        return v;
+      };
+      return {
+        calories: Math.round((acc.calories + safeVal(item.calories)) * 10) / 10,
+        carbs: Math.round((acc.carbs + safeVal(item.carbs)) * 10) / 10,
+        proteins: Math.round((acc.proteins + safeVal(item.proteins)) * 10) / 10,
+        fats: Math.round((acc.fats + safeVal(item.fats)) * 10) / 10,
+      };
+    },
     { calories: 0, carbs: 0, proteins: 0, fats: 0 }
   );
 }
@@ -239,6 +255,54 @@ export function calculateTotalsFromMeals(meals: NutritionMeal[]): NutritionTotal
     },
     { calories: 0, carbs: 0, proteins: 0, fats: 0 }
   );
+}
+
+/**
+ * Sanitizes and parses raw input values for a nutrition meal item.
+ * Trims strings and converts numeric inputs into valid numbers or null.
+ * Specifically handles solitary decimal points ('.') and empty strings by returning null.
+ */
+export function sanitizeNutritionMealItemInput(input: {
+  name: string;
+  quantity?: string;
+  notes?: string;
+  calories?: string | number | null;
+  carbs?: string | number | null;
+  proteins?: string | number | null;
+  fats?: string | number | null;
+}): NutritionMealItemInput {
+  const parse = (v: string | number | null | undefined): number | null => {
+    if (v == null) return null;
+    if (typeof v === 'number') return isNaN(v) ? null : v;
+    const trimmed = v.trim();
+    if (trimmed === '' || trimmed === '.') return null;
+    const n = parseFloat(trimmed);
+    return isNaN(n) ? null : n;
+  };
+
+  const name = input.name.trim();
+  const quantity = (input.quantity || '').trim();
+  const notes = (input.notes || '').trim();
+
+  const c = parse(input.carbs);
+  const p = parse(input.proteins);
+  const f = parse(input.fats);
+  let cal = parse(input.calories);
+
+  // Auto-calculate calories if missing but macros are provided
+  if (cal === null && (c !== null || p !== null || f !== null)) {
+    cal = Math.round(((c ?? 0) * 4 + (p ?? 0) * 4 + (f ?? 0) * 9) * 10) / 10;
+  }
+
+  return {
+    name,
+    quantity,
+    notes,
+    calories: cal,
+    carbs: c,
+    proteins: p,
+    fats: f,
+  };
 }
 
 // ─── Starter template helpers ─────────────────────────────────────────────────
@@ -273,17 +337,18 @@ export function normalizePlanBuilderError(error: unknown): PlanBuilderErrorReaso
     )
       return 'no_active_assignment';
     if (code === 'VALIDATION' || msg?.includes('validation')) return 'validation';
+    if (code === 'quota' || code === 'QUOTA_EXCEEDED' || msg?.includes('quota') || msg?.includes('rate limit')) return 'quota_exceeded';
     if (code === 'NETWORK_ERROR' || msg?.includes('network')) return 'network';
     if (msg?.includes('endpoint') || msg?.includes('config')) return 'configuration';
   }
   return 'unknown';
 }
 
-// ─── fatsecret response normalization ─────────────────────────────────────────
-// Raw types matching the fatsecret Platform API v2 JSON response.
-// Refs: D-127, FR-243
+// ─── food search response normalization ───────────────────────────────────────
+// Raw types matching the upstream food-search provider response format.
+// Refs: FR-243
 
-export type RawFatsecretServing = {
+export type RawFoodSearchServing = {
   calories?: string;
   carbohydrate?: string;
   protein?: string;
@@ -292,11 +357,11 @@ export type RawFatsecretServing = {
   metric_serving_unit?: string;
 };
 
-export type RawFatsecretFood = {
+export type RawFoodSearchFood = {
   food_id?: string;
   food_name?: string;
   servings?: {
-    serving?: RawFatsecretServing | RawFatsecretServing[];
+    serving?: RawFoodSearchServing | RawFoodSearchServing[];
   };
 };
 
@@ -310,15 +375,14 @@ export type FoodSearchResult = {
 };
 
 /**
- * Normalizes the fatsecret `food` field which may be a single object or an
+ * Normalizes the provider `food` field which may be a single object or an
  * array when results > 1.
  * Returns an empty array for any non-object input.
- * Refs: D-127
  */
-export function normalizeFoodArray(raw: unknown): RawFatsecretFood[] {
+export function normalizeFoodArray(raw: unknown): RawFoodSearchFood[] {
   if (!raw || typeof raw !== 'object') return [];
-  if (Array.isArray(raw)) return raw as RawFatsecretFood[];
-  return [raw as RawFatsecretFood];
+  if (Array.isArray(raw)) return raw as RawFoodSearchFood[];
+  return [raw as RawFoodSearchFood];
 }
 
 /**
@@ -328,9 +392,9 @@ export function normalizeFoodArray(raw: unknown): RawFatsecretFood[] {
  *  - no serving data is available
  *  - metric_serving_unit is not 'g' (cannot safely normalize to per-100g)
  *  - metric_serving_amount is 0 or unparseable
- * Refs: D-127, FR-243
+ * Refs: FR-243
  */
-export function normalizeFoodSearchResult(raw: RawFatsecretFood): FoodSearchResult | null {
+export function normalizeFoodSearchResult(raw: RawFoodSearchFood): FoodSearchResult | null {
   if (!raw.food_id || !raw.food_name) return null;
 
   const servingsField = raw.servings?.serving;

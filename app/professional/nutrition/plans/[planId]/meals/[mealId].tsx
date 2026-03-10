@@ -27,8 +27,9 @@ import { AddItemForm } from '@/features/plans/components/AddItemForm';
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import { calculateTotalsFromItems } from '@/features/plans/plan-builder.logic';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNutritionPlanBuilder, type FoodSearchState, type FoodSearchResult } from '@/features/plans/use-plan-builder';
+import { calculateTotalsFromItems, sanitizeNutritionMealItemInput } from '@/features/plans/plan-builder.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -46,10 +47,11 @@ type AddItemFormState =
       quantity: string;
       notes: string;
       foodQuery: string;
-      calories?: number;
-      carbs?: number;
-      proteins?: number;
-      fats?: number;
+      calories?: string;
+      carbs?: string;
+      proteins?: string;
+      fats?: string;
+      selectedFood?: FoodSearchResult;
     };
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -58,6 +60,7 @@ export default function NutritionMealBuilderScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
+  const insets = useSafeAreaInsets();
   
   const palette = useMemo(() => ({
     background: theme.color.canvas,
@@ -88,6 +91,7 @@ export default function NutritionMealBuilderScreen() {
     reorderItems,
     searchFoods,
     foodSearchState,
+    clearFoodSearch,
   } = useNutritionPlanBuilder(Boolean(currentUser));
 
   // ── Load existing plan ─────────────────────────────────────────────────────
@@ -109,13 +113,13 @@ export default function NutritionMealBuilderScreen() {
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleAddItem = useCallback(async () => {
     if (addItemForm.kind !== 'open' || state.kind !== 'ready' || !mealId) return;
-    const { name: itemName, quantity, notes, calories, carbs, proteins, fats } = addItemForm;
-    if (!itemName.trim()) return;
+    const { name, quantity, notes, calories, carbs, proteins, fats } = addItemForm;
+    if (!name.trim()) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const { error } = await addItem(planId!, mealId, {
-      name: itemName,
+    const sanitized = sanitizeNutritionMealItemInput({
+      name,
       quantity,
       notes,
       calories,
@@ -123,13 +127,19 @@ export default function NutritionMealBuilderScreen() {
       proteins,
       fats,
     });
+
+    const { error } = await addItem(planId!, mealId, sanitized);
     if (error) {
-      Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
+      Alert.alert(
+        tr('pro.plan.error.save', 'student.plan.error.save'),
+        `Reason: ${error}`
+      );
     } else {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setAddItemForm({ kind: 'closed' });
+      clearFoodSearch();
     }
-  }, [addItemForm, state, addItem, planId, mealId, tr]);
+  }, [addItemForm, state, addItem, planId, mealId, tr, clearFoodSearch]);
 
   const handleRemoveItem = useCallback(
     (itemId: string) => {
@@ -197,9 +207,7 @@ export default function NutritionMealBuilderScreen() {
   return (
     <DsScreen
       scheme={scheme}
-      headerShown={false}
-      style={[styles.container, { backgroundColor: palette.background }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}
     >
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -211,20 +219,21 @@ export default function NutritionMealBuilderScreen() {
           accessibilityLabel={t('auth.role.cta_back') as string}
           style={styles.backButton}
         />
-
         <View style={{ flexDirection: 'row', gap: DsSpace.sm }}>
           {meal && meal.items.length > 1 && (
             <DsPillButton
               scheme={scheme}
-              variant="ghost"
+              variant="secondary"
               size="sm"
               label={isSortMode ? t('pro.plan.cta.sort_done') : t('pro.plan.cta.sort')}
+              contentColor={theme.color.accentPrimary}
               onPress={() => {
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setIsSortMode(!isSortMode);
               }}
               fullWidth={false}
-              leftIcon={<IconSymbol name={isSortMode ? "checkmark.circle.fill" : "arrow.up.arrow.down"} size={14} color={palette.tint} />}
+              style={styles.templateCta}
+              leftIcon={<IconSymbol name={isSortMode ? "checkmark.circle.fill" : "arrow.up.arrow.down"} size={14} color={theme.color.accentPrimary} />}
             />
           )}
         </View>
@@ -250,10 +259,106 @@ export default function NutritionMealBuilderScreen() {
       )}
 
       {/* ── Food items list ───────────────────────────────────────────────── */}
-      <View style={styles.sectionHeaderRow}>
+      <View style={[styles.sectionHeaderRow, { zIndex: 10 }]}>
         <Text style={[styles.sectionHeader, { color: palette.text }]}>
           {tr('pro.plan.section.meal_items', 'student.plan.section.meal_items')}
         </Text>
+
+        {/* ── Add item form (Floating Overlay inside header bounds) ───────── */}
+        {!isSortMode && meal && addItemForm.kind === 'open' && (
+          <AddItemForm
+            palette={palette}
+            theme={theme}
+            t={t}
+            tr={tr}
+            name={addItemForm.name}
+            quantity={addItemForm.quantity}
+            notes={addItemForm.notes}
+            carbs={addItemForm.carbs}
+            proteins={addItemForm.proteins}
+            fats={addItemForm.fats}
+            foodQuery={addItemForm.foodQuery}
+            foodSearchState={foodSearchState}
+            selectedFood={addItemForm.selectedFood}
+            onNameChange={(v) =>
+              setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, name: v } : prev))
+            }
+            onQuantityChange={(v) => {
+              setAddItemForm((prev) => {
+                if (prev.kind !== 'open') return prev;
+                
+                // If we have a selected food, calculate macros
+                if (prev.selectedFood) {
+                  const qty = parseFloat(v);
+                  if (!isNaN(qty) && qty > 0) {
+                    const ratio = qty / 100;
+                    return {
+                      ...prev,
+                      quantity: v,
+                      calories: Number((prev.selectedFood.caloriesPer100g * ratio).toFixed(2)).toString(),
+                      carbs: Number((prev.selectedFood.carbsPer100g * ratio).toFixed(2)).toString(),
+                      proteins: Number((prev.selectedFood.proteinsPer100g * ratio).toFixed(2)).toString(),
+                      fats: Number((prev.selectedFood.fatsPer100g * ratio).toFixed(2)).toString(),
+                    };
+                  }
+                }
+                
+                return { ...prev, quantity: v };
+              });
+            }}
+            onNotesChange={(v) =>
+              setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, notes: v } : prev))
+            }
+            onCarbsChange={(v) =>
+              setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, carbs: v } : prev))
+            }
+            onProteinsChange={(v) =>
+              setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, proteins: v } : prev))
+            }
+            onFatsChange={(v) =>
+              setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, fats: v } : prev))
+            }
+            onQueryChange={(v) =>
+              setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, foodQuery: v } : prev))
+            }
+            onSearch={() => addItemForm.kind === 'open' && searchFoods(addItemForm.foodQuery)}
+            onClearFood={() => 
+              setAddItemForm((prev) => 
+                prev.kind === 'open' ? { 
+                  ...prev, 
+                  selectedFood: undefined, 
+                  foodQuery: '',
+                  name: '',
+                  quantity: '',
+                  // Keep notes as user might have typed them before selecting a food
+                  calories: undefined,
+                  carbs: undefined,
+                  proteins: undefined,
+                  fats: undefined
+                } : prev
+              )
+            }
+            onSelectFood={(food) =>
+              setAddItemForm((prev) =>
+                prev.kind === 'open'
+                  ? {
+                      ...prev,
+                      selectedFood: food,
+                      name: food.name,
+                      calories: food.caloriesPer100g.toString(),
+                      carbs: food.carbsPer100g.toString(),
+                      proteins: food.proteinsPer100g.toString(),
+                      fats: food.fatsPer100g.toString(),
+                      quantity: '100',
+                    }
+                  : prev
+              )
+            }
+            onAdd={handleAddItem}
+            onClose={handleCloseAddItem}
+            style={{ top: '100%', left: 0, right: 0, marginTop: 16 }}
+          />
+        )}
       </View>
 
       {meal && meal.items.length === 0 && (
@@ -278,8 +383,13 @@ export default function NutritionMealBuilderScreen() {
               name={item.name}
               quantity={item.quantity}
               notes={item.notes}
+              calories={item.calories}
+              carbs={item.carbs}
+              proteins={item.proteins}
+              fats={item.fats}
               palette={palette}
               theme={theme}
+              t={t}
               isLast={index === meal.items.length - 1}
               onRemove={() => handleRemoveItem(item.id)}
               isSortMode={isSortMode}
@@ -292,51 +402,7 @@ export default function NutritionMealBuilderScreen() {
         </View>
       )}
 
-      {/* ── Add item form ─────────────────────────────────────────────────── */}
-      {!isSortMode && meal && addItemForm.kind === 'open' && (
-        <AddItemForm
-          palette={palette}
-          theme={theme}
-          t={t}
-          tr={tr}
-          name={addItemForm.name}
-          quantity={addItemForm.quantity}
-          notes={addItemForm.notes}
-          foodQuery={addItemForm.foodQuery}
-          foodSearchState={foodSearchState}
-          onNameChange={(v) =>
-            setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, name: v } : prev))
-          }
-          onQuantityChange={(v) =>
-            setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, quantity: v } : prev))
-          }
-          onNotesChange={(v) =>
-            setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, notes: v } : prev))
-          }
-          onQueryChange={(v) =>
-            setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, foodQuery: v } : prev))
-          }
-          onSearch={() => addItemForm.kind === 'open' && searchFoods(addItemForm.foodQuery)}
-          onSelectFood={(food) =>
-            setAddItemForm((prev) =>
-              prev.kind === 'open'
-                ? {
-                    ...prev,
-                    name: food.name,
-                    calories: food.caloriesPer100g,
-                    carbs: food.carbsPer100g,
-                    proteins: food.proteinsPer100g,
-                    fats: food.fatsPer100g,
-                    quantity: '100g',
-                  }
-                : prev
-            )
-          }
-          onAdd={handleAddItem}
-          onClose={handleCloseAddItem}
-        />
-      )}
-
+      {/* ── Add item trigger button (at bottom) ───────────────────────────── */}
       {!isSortMode && meal && addItemForm.kind === 'closed' && (
         <Pressable
           style={[styles.addSessionBtn, { backgroundColor: theme.color.surface }]}
@@ -350,6 +416,7 @@ export default function NutritionMealBuilderScreen() {
           </Text>
         </Pressable>
       )}
+
     </DsScreen>
   );
 }
@@ -365,7 +432,7 @@ function TotalChip({ label, value, palette }: { label: string, value: string, pa
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 60 },
+  content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 100 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
   backButton: { marginBottom: 0 },
   loader: { marginVertical: DsSpace.xl },
@@ -376,7 +443,7 @@ const styles = StyleSheet.create({
   totalLabel: { ...DsTypography.micro, opacity: 0.6 },
   totalValue: { ...DsTypography.caption, fontWeight: '700' },
   itemsInsetWrapper: { borderRadius: DsRadius.lg, padding: 0, overflow: 'hidden', ...DsShadow.soft, backgroundColor: 'white' },
-  sectionHeaderRow: { marginTop: DsSpace.md, marginBottom: DsSpace.xs, paddingHorizontal: DsSpace.xs },
+  sectionHeaderRow: { marginBottom: DsSpace.xs, paddingHorizontal: DsSpace.xs },
   sectionHeader: { ...DsTypography.cardTitle, fontFamily: Fonts?.rounded ?? 'normal' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: DsSpace.xxl, gap: DsSpace.xs },
   emptyIconWrapper: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: DsSpace.xs },
@@ -384,4 +451,5 @@ const styles = StyleSheet.create({
   emptyText: { ...DsTypography.body, textAlign: 'center', opacity: 0.7 },
   addSessionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: DsSpace.xs, padding: DsSpace.md, borderRadius: DsRadius.lg, ...DsShadow.soft, marginTop: DsSpace.sm },
   addSessionBtnText: { ...DsTypography.button },
+  templateCta: { paddingHorizontal: DsSpace.sm },
 });

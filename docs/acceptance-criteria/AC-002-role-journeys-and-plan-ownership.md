@@ -79,6 +79,11 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-517`: User can edit all AI-pre-filled fields before confirming; no field is locked or auto-saved after analysis.
 - `AC-518`: AI analysis failure (network, quota, unrecognizable image) surfaces a reason-specific recoverable error; form fields remain available for manual entry.
 - `AC-519`: OpenAI API key is not present in client binary or any client-accessible environment variable; analysis calls route through Firebase Cloud Function proxy with Auth ID token validation.
+- `AC-520`: When an email/password account user taps "Change password" in account settings, a confirmation alert is shown before any email is dispatched.
+- `AC-521`: After confirming the password reset request, the app calls `sendPasswordResetEmail` and the "Change password" row enters a loading state for the duration of the request.
+- `AC-522`: On successful dispatch of the password reset email, the "Change password" row is replaced by an inline success banner confirming the email was sent; the banner persists for the remainder of the session.
+- `AC-523`: On failure to dispatch the password reset email, an inline error message is displayed below the "Change password" row; the row remains actionable so the user can retry.
+- `AC-524`: When an OAuth account user (Google or Apple) taps "Change password", an informational alert is shown noting that the password is managed by the provider; no reset email is sent.
 
 ## Gherkin Scenarios
 ```gherkin
@@ -341,4 +346,32 @@ Feature: Role-based onboarding and care assignments
     Given a professional is on the nutrition plan builder
     When they attempt to save with no plan name entered
     Then a validation error is shown and save is blocked
+
+  Scenario: Password reset — email/password account confirmation flow
+    Given an email/password account user is on the account settings screen
+    When the user taps "Change password"
+    Then a confirmation alert is shown requesting consent before sending the email
+
+  Scenario: Password reset — loading state during dispatch
+    Given an email/password account user confirmed the password reset request
+    When the reset email dispatch is in progress
+    Then the "Change password" row shows a loading indicator
+
+  Scenario: Password reset — success inline banner
+    Given an email/password account user confirmed the password reset request
+    When sendPasswordResetEmail succeeds
+    Then the "Change password" row is replaced by an inline success banner
+    And the banner remains visible for the rest of the session
+
+  Scenario: Password reset — error inline message with retry
+    Given an email/password account user confirmed the password reset request
+    When sendPasswordResetEmail fails
+    Then an inline error message is shown below the "Change password" row
+    And the row remains actionable for retry
+
+  Scenario: Password reset — OAuth account informational alert
+    Given a Google or Apple OAuth account user is on the account settings screen
+    When the user taps "Change password"
+    Then an informational alert is shown naming the provider
+    And no password reset email is dispatched
 ```

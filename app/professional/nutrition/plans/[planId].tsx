@@ -291,6 +291,26 @@ export default function NutritionPlanBuilderScreen() {
         />
 
         <View style={{ flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center' }}>
+          <DsPillButton
+            scheme={scheme}
+            variant="primary"
+            size="sm"
+            fullWidth={false}
+            label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
+            onPress={() => {
+              Alert.alert(
+                tr('pro.plan.cta.save', 'student.plan.cta.save') as string,
+                undefined,
+                [
+                  { text: t('common.cta.cancel') as string, style: 'cancel' },
+                  { text: t('common.cta.save') as string, onPress: handleSave },
+                ]
+              );
+            }}
+            disabled={!isDirty || isSaving}
+            loading={isSaving}
+          />
+
           {!isNew && (
             <Pressable 
               onPress={handleDeletePlan}
@@ -489,17 +509,7 @@ export default function NutritionPlanBuilderScreen() {
         </View>
       )}
 
-      {/* ── Save CTA ──────────────────────────────────────────────────────── */}
-      <View style={styles.footerActions}>
-        <DsPillButton
-          scheme={scheme}
-          variant="primary"
-          label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
-          onPress={handleSave}
-          isLoading={isSaving}
-          style={{ flex: 1 }}
-        />
-      </View>
+      {/* ── Footer Actions Removed ──────────────────────────────────────────── */}
     </DsScreen>
   );
 }

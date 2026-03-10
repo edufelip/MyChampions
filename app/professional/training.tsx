@@ -75,7 +75,7 @@ export default function ProTrainingLibraryScreen() {
               {t('pro.library.training.title')}
             </Text>
             <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
-              {t('pro.predefined_plan.copy_independent_note')}
+              {t('pro.library.training.helper')}
             </Text>
           </View>
         </View>

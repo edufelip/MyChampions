@@ -12,6 +12,7 @@ import {
   updateDoc,
   type Firestore,
 } from 'firebase/firestore';
+import { deleteUser, type Auth, type User } from 'firebase/auth';
 
 import type { RoleIntent } from './role-selection.logic';
 import {
@@ -20,6 +21,7 @@ import {
   nowIso,
 } from '../firestore';
 import { classifyFirestoreError } from '../firestore-error';
+import { getFirebaseAuth as _getFirebaseAuth } from './firebase';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -29,7 +31,9 @@ type ProfileSourceErrorCode =
   | 'graphql'
   | 'invalid_response'
   | 'role_update_not_persisted'
-  | 'profile_row_not_found_after_upsert';
+  | 'profile_row_not_found_after_upsert'
+  | 'requires_recent_login'
+  | 'unauthenticated';
 
 export class ProfileSourceError extends Error {
   code: ProfileSourceErrorCode;
@@ -55,7 +59,9 @@ type FirestoreProfile = {
 
 export type ProfileSourceDeps = {
   getFirestoreInstance: () => Firestore;
+  getFirebaseAuth: () => Auth;
   getCurrentAuthUid: () => string | undefined;
+  getCurrentUser: () => User | null;
   readProfile: (firestore: Firestore, uid: string) => Promise<FirestoreProfile | null>;
   upsertProfile: (
     firestore: Firestore,
@@ -65,6 +71,7 @@ export type ProfileSourceDeps = {
   setLockedRole: (firestore: Firestore, uid: string, role: RoleIntent) => Promise<void>;
   setAcceptedTermsVersion: (firestore: Firestore, uid: string, version: string) => Promise<void>;
   deleteProfile: (firestore: Firestore, uid: string) => Promise<void>;
+  deleteUser: (user: User) => Promise<void>;
   delay: (ms: number) => Promise<void>;
 };
 
@@ -74,6 +81,7 @@ function profileDoc(firestore: Firestore, uid: string) {
 
 const defaultProfileSourceDeps: ProfileSourceDeps = {
   getFirestoreInstance: _getFirestoreInstance,
+  getFirebaseAuth: _getFirebaseAuth,
   getCurrentAuthUid: () => {
     try {
       return _getCurrentAuthUid();
@@ -81,6 +89,7 @@ const defaultProfileSourceDeps: ProfileSourceDeps = {
       return undefined;
     }
   },
+  getCurrentUser: () => _getFirebaseAuth().currentUser,
   readProfile: async (firestore, uid) => {
     const snapshot = await getDoc(profileDoc(firestore, uid));
     if (!snapshot.exists()) return null;
@@ -136,6 +145,9 @@ const defaultProfileSourceDeps: ProfileSourceDeps = {
   deleteProfile: async (firestore, uid) => {
     await deleteDoc(profileDoc(firestore, uid));
   },
+  deleteUser: async (user) => {
+    await deleteUser(user);
+  },
   setAcceptedTermsVersion: async (firestore, uid, version) => {
     await setDoc(
       profileDoc(firestore, uid),
@@ -170,9 +182,19 @@ const ROLE_LOCK_CONFIRMATION_RETRY_DELAYS_MS = [120, 220, 350, 550, 800, 1100] a
 function normalizeProfileSourceError(error: unknown): ProfileSourceError {
   if (error instanceof ProfileSourceError) return error;
 
+  const firebaseError = error as { code?: string };
+  if (firebaseError.code === 'auth/requires-recent-login') {
+    return new ProfileSourceError('requires_recent_login', 'Please re-authenticate before deleting account.');
+  }
+  if (firebaseError.code === 'auth/user-token-expired' || firebaseError.code === 'auth/network-request-failed') {
+    return new ProfileSourceError('network', 'Network error or session expired.');
+  }
+
   switch (classifyFirestoreError(error)) {
     case 'network':
       return new ProfileSourceError('network', (error as Error)?.message ?? 'Network error.');
+    case 'unauthenticated':
+      return new ProfileSourceError('unauthenticated', (error as Error)?.message ?? 'Unauthenticated.');
     case 'configuration':
       return new ProfileSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
     case 'not_found':
@@ -181,6 +203,7 @@ function normalizeProfileSourceError(error: unknown): ProfileSourceError {
       return new ProfileSourceError('invalid_response', (error as Error)?.message ?? 'Unknown profile source error.');
   }
 }
+
 
 async function getRemoteProfileSnapshot(
   deps: ProfileSourceDeps,
@@ -309,17 +332,28 @@ export async function lockRoleInSource(
   }
 }
 
-export async function deleteProfileFromSource(
+export async function deleteAccountAndDataFromSource(
   deps: ProfileSourceDeps = defaultProfileSourceDeps
 ): Promise<void> {
   const uid = deps.getCurrentAuthUid();
-  if (!uid) {
-    throw new ProfileSourceError('configuration', 'No authenticated user found.');
+  const user = deps.getCurrentUser();
+
+  if (!uid || !user) {
+    throw new ProfileSourceError('unauthenticated', 'No authenticated user found.');
   }
 
   try {
     const firestore = deps.getFirestoreInstance();
+
+    // 1. Delete user profile (Firestore)
     await deps.deleteProfile(firestore, uid);
+
+    // TODO: Clear other user-owned Firestore collections here (waterLogs, customMeals, etc.)
+    // For now, deleting the profile and auth user fulfills the core requirement.
+
+    // 2. Delete Auth user (Firebase Auth)
+    // This will trigger requires_recent_login if session is old.
+    await deps.deleteUser(user);
   } catch (error) {
     throw normalizeProfileSourceError(error);
   }

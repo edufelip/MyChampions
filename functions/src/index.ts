@@ -2,21 +2,19 @@
  * Firebase Cloud Functions (Gen 2) — MyChampions backend proxy layer.
  *
  * Functions exported:
- *  - searchFoods      : fatsecret food search proxy (D-113, D-127, BL-106)
  *  - analyzeMealPhoto : OpenAI GPT-4o Vision meal macro analysis proxy (D-106–D-110, BL-108)
  *
  * Security model (both functions):
  *  - Caller must supply a valid Firebase Auth ID token: Authorization: Bearer <token>.
  *  - Third-party API credentials are stored as Cloud Function secrets only — never in the binary.
  *
- * Refs: D-106–D-110, D-113, D-127, BL-106, BL-108, FR-229–FR-248, BR-287–BR-296
+ * Refs: D-106–D-110, BL-108, FR-229–FR-248, BR-287–BR-296
  */
 
 import * as admin from 'firebase-admin';
 import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 
-import { getFatsecretToken, searchFatsecret, type TokenCache } from './fatsecret-helpers';
 import { callOpenAIVision, OpenAIHelperError } from './openai-helpers';
 
 // ─── Firebase Admin init ──────────────────────────────────────────────────────
@@ -27,8 +25,6 @@ if (admin.apps.length === 0) {
 
 // ─── Secrets ──────────────────────────────────────────────────────────────────
 
-const FATSECRET_CLIENT_ID = defineSecret('FATSECRET_CLIENT_ID');
-const FATSECRET_CLIENT_SECRET = defineSecret('FATSECRET_CLIENT_SECRET');
 const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
 
 // ─── Shared auth helper ───────────────────────────────────────────────────────
@@ -49,55 +45,6 @@ async function verifyAuthHeader(
     return null;
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// searchFoods — fatsecret food search proxy
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const tokenCache: { value: TokenCache | null } = { value: null };
-
-export const searchFoods = onRequest(
-  {
-    secrets: [FATSECRET_CLIENT_ID, FATSECRET_CLIENT_SECRET],
-    cors: false,
-    region: 'us-central1',
-    timeoutSeconds: 30,
-  },
-  async (req, res) => {
-    if (req.method !== 'POST') {
-      res.status(405).json({ error: 'method_not_allowed' });
-      return;
-    }
-
-    const decoded = await verifyAuthHeader(req.headers['authorization'] ?? '');
-    if (!decoded) {
-      res.status(401).json({ error: 'unauthenticated' });
-      return;
-    }
-
-    const { query, maxResults } = req.body as { query?: unknown; maxResults?: unknown };
-
-    if (!query || typeof query !== 'string' || !query.trim()) {
-      res.status(400).json({ error: 'bad_request', message: 'query is required' });
-      return;
-    }
-
-    const limit = typeof maxResults === 'number' ? Math.min(maxResults, 50) : 20;
-
-    try {
-      const token = await getFatsecretToken(
-        FATSECRET_CLIENT_ID.value(),
-        FATSECRET_CLIENT_SECRET.value(),
-        tokenCache
-      );
-      const results = await searchFatsecret(token, query.trim(), limit);
-      res.status(200).json({ results });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: message });
-    }
-  }
-);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // analyzeMealPhoto — OpenAI GPT-4o Vision proxy

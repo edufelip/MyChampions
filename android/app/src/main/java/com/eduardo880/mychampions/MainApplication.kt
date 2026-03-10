@@ -1,4 +1,4 @@
-package com.eduardo880.mychampions
+package com.edufelip.mychampions
 
 import android.app.Application
 import android.content.res.Configuration

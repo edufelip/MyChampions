@@ -43,7 +43,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-131`: Replacement of an active professional in a specialty shall occur by ending the current binding, then activating a new binding via invite + professional confirmation.
 - `FR-132`: Training plan/session schema shall be fully customizable by the professional, without fixed mandatory workout fields beyond system metadata required for storage/auditing.
 - `FR-133`: MVP must satisfy Apple App Store and Google Play policy requirements for payments, account deletion, privacy disclosures, and user-data handling.
-- `FR-134`: MVP nutrition data provider shall be the fatsecret Platform API.
+- `FR-134`: MVP nutrition data provider shall be the VPS food-search microservice at `https://foodservice.eduwaldo.com/searchFoods`.
 - `FR-135`: Onboarding and student-facing copy shall explicitly state that connecting to a professional is optional and users can continue in self-guided mode.
 - `FR-136`: Role selection UI shall use plain-language labels that reduce domain jargon while preserving internal role model semantics.
 - `FR-137`: Users shall be able to create custom meals with a name and total meal weight in grams.
@@ -152,13 +152,17 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-240`: The professional nutrition plan builder (SC-207) shall allow professionals to create and edit named predefined nutrition plans with a user-defined plan name.
 - `FR-241`: The nutrition plan builder shall allow setting calorie and macro targets (carbs, proteins, fats) as numeric inputs.
 - `FR-242`: The nutrition plan builder shall allow adding and removing nutrition items (food entries) on a plan.
-- `FR-243`: The nutrition plan builder shall provide a food search entry point backed by fatsecret; in MVP the food search stub returns an empty result set (fatsecret wiring deferred).
+- `FR-243`: The nutrition plan builder shall provide a food search entry point backed by the VPS food-search microservice (`https://foodservice.eduwaldo.com/searchFoods`) using Firebase ID token authorization, with request payload `{ query, maxResults, region, language }` and response parsing of per-100g macros (`carbohydrate`, `protein`, `fat`).
 - `FR-244`: The professional training plan builder (SC-208) shall allow professionals to create and edit named predefined training plans with a user-defined plan name.
 - `FR-245`: The training plan builder shall allow adding and removing sessions, where each session has a name and optional notes, and supports a list of custom session items (FR-132, BR-224).
 - `FR-246`: Each custom session item shall have a name, optional quantity, and optional notes; no fixed domain workout fields are required beyond storage metadata.
 - `FR-247`: Both nutrition and training plan builders shall allow professionals to start from a starter template by cloning it into an editable draft; the original starter template must remain immutable (FR-212, BR-270).
 - `FR-248`: Both nutrition and training plan builders shall surface assign and bulk-assign CTAs wired to existing bulkAssignPredefinedPlan source operation (FR-223–FR-226, D-082).
 - `FR-249`: After successful authentication (sign-in or create-account), users shall pass through a required terms-acceptance gate before role-selection or role-home routing; acceptance must be versioned and re-prompted when required version changes.
+- `FR-250`: The account settings screen shall expose a "Change password" action available to all authenticated users regardless of auth provider.
+- `FR-251`: For email/password accounts, the "Change password" action shall trigger a `sendPasswordResetEmail` call to the user's registered email address, preceded by a user confirmation alert.
+- `FR-252`: For OAuth accounts (Google, Apple), the "Change password" action shall show an informational alert naming the provider and shall not dispatch a reset email.
+- `FR-253`: The "Change password" row shall reflect the in-flight, success, and error states of the reset email dispatch with appropriate loading, inline success banner, and inline error feedback.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

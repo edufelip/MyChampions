@@ -104,6 +104,10 @@
 - `BR-296`: Plan builder screens are accessible only to professional role accounts; student route access to `/professional/nutrition/plans/*` and `/professional/training/plans/*` is blocked by the route guard.
 - `BR-297`: Terms acceptance is a required post-authentication gate; users must accept the currently required terms version before role-selection or role-home access.
 - `BR-298`: Terms acceptance persistence is versioned per user account; if required terms version changes, prior acceptance does not satisfy the new version and user must accept again.
+- `BR-299`: In-app password reset is available only for accounts whose Firebase Auth `providerData` includes the `password` provider; OAuth-only accounts (Google, Apple) do not receive a reset email and instead receive an informational alert.
+- `BR-300`: Provider detection for the password reset flow is performed at runtime by inspecting `currentUser.providerData`; the "Change password" row is always visible regardless of provider, and the runtime branch determines the action.
+- `BR-301`: A user confirmation alert must precede any `sendPasswordResetEmail` call from the account settings screen; silent auto-dispatch without user acknowledgment is not permitted.
+- `BR-302`: The OAuth provider label shown in the informational alert must be resolved from `providerData` at runtime: `google.com` maps to "Google", `apple.com` maps to "Apple", and any other unrecognized provider maps to "your sign-in provider".
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

@@ -75,13 +75,19 @@ Convert current brainstorming into an execution-ready product backlog with clear
 | BL-009 Subscription pre-lapse warning | Implemented — `pre_lapse.title`, `pre_lapse.body`, `pre_lapse.cta_renew` locale keys in all 3 bundles; renew CTA Pressable added in `pro/subscription.tsx`; purchase/restore CTAs gated with `isWriteLocked` | FR-215 | UC-002.15 | AC-312 | BR-273 | TC-311 |
 | BL-013 Accessibility baseline for MVP | Implemented — all auth, student, professional, and Phase 6 screens annotated with RN core a11y props (D-105, D-125); screen-reader Detox E2E smoke and color-contrast audit deferred to release hardening | FR-217 | UC-002.18 | AC-512 | BR-275 | TC-512 |
 
+## Account & Support Coverage
+| Backlog Item | Status | FR | UC | AC | BR | TC |
+|---|---|---|---|---|---|---|
+| BL-014 In-App Support Dialog | Implemented — custom Firestore-backed modal (D-171), logic layer with 6 tests, security rules, character counters, offline awareness, and localization (3 bundles). | FR-133 | UC-002.5 | AC-006 | BR-004 | TC-304 |
+| BL-015 Account & Privacy Settings | Implemented — SC-213 screen covering identity, password reset, language switcher (SC-222), legal links, and account deletion. | FR-133, FR-157 | UC-002.5 | AC-305–310 | BR-225, BR-231 | TC-304–310 |
+
 All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/TC traceability.
 
 ## P1 Selected Spec Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
 | BL-104 Water tracker with personal/professional goals | Screens implemented; Firestore wiring deferred | FR-218, FR-219, FR-220, FR-221, FR-222 | UC-002.19 | AC-259, AC-260, AC-261, AC-262, AC-263 | BR-276, BR-277, BR-278, BR-279, BR-280 | TC-264, TC-265, TC-266, TC-267 |
-| BL-106 Named predefined plans + clone/bulk assignment | Screens implemented; Firestore + fatsecret wiring deferred | FR-223, FR-224, FR-225, FR-226 | UC-002.20 | AC-264, AC-265 | BR-281, BR-282, BR-283 | TC-268, TC-269, TC-270 |
+| BL-106 Named predefined plans + clone/bulk assignment | Screens implemented; Firestore + VPS food-service wiring completed | FR-223, FR-224, FR-225, FR-226 | UC-002.20 | AC-264, AC-265 | BR-281, BR-282, BR-283 | TC-268, TC-269, TC-270 |
 | BL-108 AI meal photo macronutrient analysis | Implemented — logic/hook/source/Cloud Function/camera/compression all wired; photo Cloud Storage attachment and SC-214 attach-toggle integration deferred (D-109) | FR-229, FR-230, FR-231, FR-232, FR-233, FR-234, FR-235, FR-236, FR-237, FR-238, FR-239 | UC-003.9 | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 | BR-286, BR-287, BR-288, BR-289, BR-290 | TC-271, TC-272, TC-273, TC-274, TC-285 |
 
 ## Documentation Gate For Each Backlog Item

@@ -2,8 +2,8 @@
  * Unit tests for food-search-source.ts
  * Runner: node:test + node:assert/strict (npm run test:unit)
  *
- * All fatsecret proxy and fetch dependencies are injected via FoodSearchSourceDeps.
- * Refs: D-113, D-127, FR-243, TC-282
+ * Food search service and fetch dependencies are injected via FoodSearchSourceDeps.
+ * Refs: FR-243, TC-282
  */
 
 import { describe, it } from 'node:test';
@@ -19,7 +19,8 @@ import {
 
 function makeDeps(overrides: Partial<FoodSearchSourceDeps> = {}): FoodSearchSourceDeps {
   return {
-    getFunctionUrl: () => 'https://fake-proxy-url.com/searchFoods',
+    getServiceUrl: () => 'https://foodservice.eduwaldo.com/searchFoods',
+    getLocale: async () => 'en-US',
     fetchFn: async () => {
       throw new Error('fetchFn not configured');
     },
@@ -54,8 +55,8 @@ describe('FoodSearchSourceError', () => {
 // ─── searchFoodsFromSource — error paths ──────────────────────────────────────
 
 describe('searchFoodsFromSource — configuration error', () => {
-  it('throws configuration error when function URL is not set', async () => {
-    const deps = makeDeps({ getFunctionUrl: () => undefined });
+  it('throws configuration error when service URL is not set', async () => {
+    const deps = makeDeps({ getServiceUrl: () => undefined });
     await assert.rejects(
       () => searchFoodsFromSource(mockUser, 'chicken', deps),
       (err: FoodSearchSourceError) => {
@@ -114,7 +115,7 @@ describe('searchFoodsFromSource — network errors', () => {
 });
 
 describe('searchFoodsFromSource — proxy errors', () => {
-  it('throws unauthenticated error on 401 response from proxy', async () => {
+  it('throws unauthenticated error on 401 response from service', async () => {
     const deps = makeDeps({
       fetchFn: async () => makeResponse(401, { error: 'unauthorized' }),
     });
@@ -127,7 +128,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
     );
   });
 
-  it('throws quota error on proxy error indicating quota', async () => {
+  it('throws quota error on service body error indicating quota', async () => {
     const deps = makeDeps({
       fetchFn: async () => makeResponse(200, { error: 'quota_exceeded' }),
     });
@@ -140,7 +141,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
     );
   });
 
-  it('throws unknown error when proxy returns generic error body', async () => {
+  it('throws unknown error when service returns generic error body', async () => {
     const deps = makeDeps({
       fetchFn: async () => makeResponse(200, { error: 'something_broke' }),
     });
@@ -154,7 +155,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
     );
   });
 
-  it('throws unknown error when proxy returns non-JSON body', async () => {
+  it('throws unknown error when service returns non-JSON body', async () => {
     const deps = makeDeps({
       fetchFn: async () => {
         return {
@@ -174,7 +175,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
     );
   });
 
-  it('throws unknown error when proxy returns non-OK status', async () => {
+  it('throws unknown error when service returns non-OK status', async () => {
     const deps = makeDeps({
       fetchFn: async () => makeResponse(500, {}),
     });
@@ -187,38 +188,123 @@ describe('searchFoodsFromSource — proxy errors', () => {
       }
     );
   });
+
+  it('throws quota error on 429 status', async () => {
+    const deps = makeDeps({
+      fetchFn: async () => makeResponse(429, { error: 'too_many_requests' }),
+    });
+    await assert.rejects(
+      () => searchFoodsFromSource(mockUser, 'chicken', deps),
+      (err: FoodSearchSourceError) => {
+        assert.equal(err.code, 'quota');
+        return true;
+      }
+    );
+  });
+
+  it('throws network error on upstream allowlist failure', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(502, {
+          error: 'upstream_ip_not_allowlisted',
+          message: 'Food provider IP allowlist mismatch',
+        }),
+    });
+    await assert.rejects(
+      () => searchFoodsFromSource(mockUser, 'rice', deps),
+      (err: FoodSearchSourceError) => {
+        assert.equal(err.code, 'network');
+        return true;
+      }
+    );
+  });
+
+  it('throws network error on upstream generic failure', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(502, {
+          error: 'upstream_error',
+          message: 'Food provider unavailable',
+        }),
+    });
+    await assert.rejects(
+      () => searchFoodsFromSource(mockUser, 'rice', deps),
+      (err: FoodSearchSourceError) => {
+        assert.equal(err.code, 'network');
+        return true;
+      }
+    );
+  });
+
+  it('throws unknown error for bad_request response body', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(400, {
+          error: 'bad_request',
+          message: 'region and language are required',
+        }),
+    });
+    await assert.rejects(
+      () => searchFoodsFromSource(mockUser, 'rice', deps),
+      (err: FoodSearchSourceError) => {
+        assert.equal(err.code, 'unknown');
+        assert.equal(err.message, 'region and language are required');
+        return true;
+      }
+    );
+  });
 });
 
 // ─── searchFoodsFromSource — happy paths ──────────────────────────────────────
 
 describe('searchFoodsFromSource — happy path', () => {
-  const validFood = {
-    food_id: '41963',
-    food_name: 'Cheeseburger',
-    servings: {
-      serving: {
-        calories: '300',
-        carbohydrate: '32.0',
-        protein: '15.0',
-        fat: '13.0',
-        metric_serving_amount: '100.000',
-        metric_serving_unit: 'g',
-      },
-    },
+  const microserviceFood = {
+    id: '12345',
+    name: 'Chicken Breast',
+    carbohydrate: 0,
+    protein: 31,
+    fat: 3.6,
+    serving: 100,
   };
 
-  it('returns normalized FoodSearchResult array on success', async () => {
+  it('returns normalized FoodSearchResult array on microservice success shape', async () => {
     const deps = makeDeps({
-      fetchFn: async () => makeResponse(200, { results: [validFood] }),
+      fetchFn: async () => makeResponse(200, { results: [microserviceFood] }),
     });
     const results = await searchFoodsFromSource(mockUser, 'cheeseburger', deps);
     assert.equal(results.length, 1);
-    assert.equal(results[0]?.id, '41963');
-    assert.equal(results[0]?.name, 'Cheeseburger');
-    assert.equal(results[0]?.caloriesPer100g, 300);
+    assert.equal(results[0]?.id, '12345');
+    assert.equal(results[0]?.name, 'Chicken Breast');
+    assert.equal(results[0]?.caloriesPer100g, 156.4);
   });
 
-  it('handles empty results from Proxy', async () => {
+  it('maps current service payload fields', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(200, {
+          results: [
+            {
+              id: '987',
+              name: 'Rice',
+              carbohydrate: 28,
+              protein: 2.71,
+              fat: 0.3,
+              serving: 100,
+            },
+          ],
+        }),
+    });
+
+    const results = await searchFoodsFromSource(mockUser, 'rice', deps);
+    assert.equal(results.length, 1);
+    assert.equal(results[0]?.id, '987');
+    assert.equal(results[0]?.name, 'Rice');
+    assert.equal(results[0]?.carbsPer100g, 28);
+    assert.equal(results[0]?.proteinsPer100g, 2.71);
+    assert.equal(results[0]?.caloriesPer100g, 125.54);
+  });
+
+  it('handles empty results from service', async () => {
     const deps = makeDeps({
       fetchFn: async () => makeResponse(200, { results: [] }),
     });
@@ -231,6 +317,135 @@ describe('searchFoodsFromSource — happy path', () => {
       fetchFn: async () => makeResponse(200, {}), // no results field
     });
     const results = await searchFoodsFromSource(mockUser, 'nothing', deps);
+    assert.deepEqual(results, []);
+  });
+
+  it('sends expected request contract to service', async () => {
+    let capturedInit: RequestInit | undefined;
+    const deps = makeDeps({
+      fetchFn: async (_url, init) => {
+        capturedInit = init;
+        return makeResponse(200, { results: [] });
+      },
+    });
+
+    await searchFoodsFromSource(mockUser, 'banana', deps);
+
+    assert.equal(capturedInit?.method, 'POST');
+    assert.equal(
+      (capturedInit?.headers as Record<string, string>)?.Authorization,
+      'Bearer fake-id-token'
+    );
+    assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+      query: 'banana',
+      maxResults: 10,
+      region: 'us',
+      language: 'en',
+    });
+  });
+
+  it('maps locale pt-BR to region/language', async () => {
+    let capturedInit: RequestInit | undefined;
+    const deps = makeDeps({
+      getLocale: async () => 'pt-BR',
+      fetchFn: async (_url, init) => {
+        capturedInit = init;
+        return makeResponse(200, { results: [] });
+      },
+    });
+
+    await searchFoodsFromSource(mockUser, 'banana', deps);
+    assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+      query: 'banana',
+      maxResults: 10,
+      region: 'br',
+      language: 'pt',
+    });
+  });
+
+  it('maps locale es-MX to es/es fallback mapping', async () => {
+    let capturedInit: RequestInit | undefined;
+    const deps = makeDeps({
+      getLocale: async () => 'es-MX',
+      fetchFn: async (_url, init) => {
+        capturedInit = init;
+        return makeResponse(200, { results: [] });
+      },
+    });
+
+    await searchFoodsFromSource(mockUser, 'banana', deps);
+    assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+      query: 'banana',
+      maxResults: 10,
+      region: 'es',
+      language: 'es',
+    });
+  });
+
+  it('filters invalid items that do not contain numeric macros', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(200, {
+          results: [
+            {
+              id: 'bad-1',
+              name: 'Invalid Food',
+              carbohydrate: null,
+              protein: 2.7,
+              fat: 0.3,
+              serving: 100,
+            },
+          ],
+        }),
+    });
+
+    const results = await searchFoodsFromSource(mockUser, 'rice', deps);
+    assert.deepEqual(results, []);
+  });
+
+  it('accepts numeric string macros from service payload', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(200, {
+          results: [
+            {
+              id: 'str-1',
+              name: 'String Macro Food',
+              carbohydrate: '27.81',
+              protein: '2.65',
+              fat: '0.28',
+              serving: '100',
+            },
+          ],
+        }),
+    });
+
+    const results = await searchFoodsFromSource(mockUser, 'rice', deps);
+    assert.equal(results.length, 1);
+    assert.equal(results[0]?.id, 'str-1');
+    assert.equal(results[0]?.carbsPer100g, 27.81);
+    assert.equal(results[0]?.proteinsPer100g, 2.65);
+    assert.equal(results[0]?.fatsPer100g, 0.28);
+  });
+
+  it('filters items when serving is not 100', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(200, {
+          results: [
+            {
+              id: 'serving-1',
+              name: 'Invalid Serving Food',
+              carbohydrate: 20,
+              protein: 3,
+              fat: 1,
+              serving: 90,
+            },
+          ],
+        }),
+    });
+
+    const results = await searchFoodsFromSource(mockUser, 'rice', deps);
     assert.deepEqual(results, []);
   });
 });

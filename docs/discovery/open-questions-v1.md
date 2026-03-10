@@ -51,7 +51,7 @@
   - Regeneration becomes a complete containment action instead of partial mitigation.
 
 ## Resolved
-- `Q-010`: Food API final selection approved as fatsecret Platform API.
+- `Q-010`: Food API final selection approved as VPS food-search microservice (`https://foodservice.eduwaldo.com/searchFoods`).
 - `Q-011`: Specialty-removal guard fixed to `active + pending` constraint.
 - `Q-012`: Student-visible credential field scope fixed to `registry_id + authority + country` (assigned professionals only).
 - `Q-013`: Invite-code regeneration fixed to auto-cancel pending requests tied to superseded code.

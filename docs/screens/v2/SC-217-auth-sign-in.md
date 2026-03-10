@@ -69,7 +69,8 @@
   - Firebase Auth initializes with React Native persistence (`AsyncStorage`) on device runtimes so authenticated sessions survive app relaunches.
   - Successful sign-in routes to `/auth/accept-terms`; global guard then routes to role-selection or role home depending on terms + role state.
   - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes after terms acceptance.
-  - Visual treatment follows a playful rounded layout with decorative background blobs, circular brand icon badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.
+  - Visual treatment follows a playful rounded layout with decorative background blobs, rounded brand logo badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.
+  - The brand logo in the title area is an `expo-image` `<Image>` rendering `assets/images/logo.svg` (`contentFit="contain"`, `borderRadius: 20`, `overflow: hidden`, 100×100, `marginBottom: 16`). No wrapper `View` — styles are applied directly on the image. The previous `MaterialIcons fitness-center` icon and its `brandBadge` container are removed. Accessibility label uses key `a11y.brand_logo`.
   - Primary email sign-in pill button uses light foreground (label, icon, and loading spinner) for contrast against the accent background.
   - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
 

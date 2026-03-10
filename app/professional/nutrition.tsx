@@ -75,7 +75,7 @@ export default function ProNutritionLibraryScreen() {
               {t('pro.library.nutrition.title')}
             </Text>
             <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
-              {t('pro.predefined_plan.copy_independent_note')}
+              {t('pro.library.nutrition.helper')}
             </Text>
           </View>
         </View>

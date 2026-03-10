@@ -8,7 +8,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { SUPPORTED_LOCALES, type SupportedLocale } from '@/localization';
+import { getDeviceLocale, resolveLocale, SUPPORTED_LOCALES, type SupportedLocale } from '@/localization';
 
 const LANGUAGE_OVERRIDE_KEY = 'app.language.override';
 
@@ -26,4 +26,14 @@ export async function setLanguageOverride(locale: SupportedLocale): Promise<void
 
 export async function clearLanguageOverride(): Promise<void> {
   await AsyncStorage.removeItem(LANGUAGE_OVERRIDE_KEY);
+}
+
+/**
+ * Returns the effective app locale used by runtime features:
+ * 1) explicit in-app override, 2) device locale fallback.
+ */
+export async function getEffectiveLocale(): Promise<SupportedLocale> {
+  const override = await getLanguageOverride();
+  if (override) return override;
+  return resolveLocale(getDeviceLocale());
 }

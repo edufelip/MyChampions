@@ -1,8 +1,8 @@
-package com.eduardo880.mychampions
-import expo.modules.splashscreen.SplashScreenManager
+package com.edufelip.mychampions
 
 import android.os.Build
 import android.os.Bundle
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -13,13 +13,12 @@ import expo.modules.ReactActivityDelegateWrapper
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
-    // Set the theme to AppTheme BEFORE onCreate to support
-    // coloring the background, status bar, and navigation bar.
-    // This is required for expo-splash-screen.
-    // setTheme(R.style.AppTheme);
-    // @generated begin expo-splashscreen - expo prebuild (DO NOT MODIFY) sync-f3ff59a738c56c9a6119210cb55f0b613eb8b6af
-    SplashScreenManager.registerOnActivity(this)
-    // @generated end expo-splashscreen
+    // Install the Android 12+ SplashScreen API.
+    // Theme.App.SplashScreen (declared in styles.xml) is the activity theme and must extend
+    // Theme.SplashScreen from androidx.core:core-splashscreen for this to work.
+    // The returned SplashScreen handle is intentionally discarded; we rely on the default
+    // auto-dismiss behaviour (splash hides as soon as the first frame is drawn).
+    installSplashScreen()
     super.onCreate(null)
   }
 

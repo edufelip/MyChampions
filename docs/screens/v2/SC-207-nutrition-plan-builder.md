@@ -34,7 +34,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Enter or edit carbs/proteins/fats targets (optional, must be ≥ 0).
 - Add food items (name, quantity, optional notes).
 - Remove food items.
-- Search foods via fatsecret Cloud Function proxy integration.
+- Search foods via VPS food-search microservice integration (`https://foodservice.eduwaldo.com/searchFoods`).
 - Pick and clone a starter template.
 - Save plan (create or update).
 - Assign plan to a student.
@@ -84,7 +84,18 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `NutritionMealItem` | Individual food item with id, name, quantity, notes |
 | `NutritionTotals` | Parsed numeric totals from raw string inputs |
 | `StarterTemplate[]` | Starter template records from Firestore with local fallback entries |
-| `FoodSearchResult[]` | Normalized food search results from Cloud Function source integration |
+| `FoodSearchResult[]` | Normalized food search results from VPS food-search service integration |
+
+### Food Search Service Contract
+| Field | Value |
+|---|---|
+| URL | `https://foodservice.eduwaldo.com/searchFoods` |
+| Method | `POST` |
+| Headers | `Content-Type: application/json`, `Authorization: Bearer <Firebase ID token>` |
+| Request body | `{ query: string, maxResults: number, region: string, language: string }` |
+| Success body | `{ results: Array<{ id: string, name: string, carbohydrate: number, protein: number, fat: number, serving: 100 }> }` |
+| Client normalization | App maps macros to per-100g result fields and derives calories as `carbohydrate*4 + protein*4 + fat*9` |
+| Known errors | `400` (`bad_request`), `401`, `429`, `500`, `502` (`upstream_ip_not_allowlisted` / `upstream_error`), and `200 { error: "quota_exceeded" }` |
 
 ### Source Operations
 | Operation | Description |
@@ -96,7 +107,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `removeNutritionMealItem` | Remove food item from plan |
 | `getStarterTemplates('nutrition')` | Fetch starter template list |
 | `cloneStarterTemplate` | Clone starter into editable draft |
-| `searchFoods` | fatsecret food search via Cloud Function proxy source |
+| `searchFoods` | VPS food-search service source |
 
 Plan library and builder persistence are Firestore-backed via `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`.
 
@@ -128,6 +139,7 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 | `pro.plan.template.cta_use` | Use template CTA |
 | `pro.plan.food_search.placeholder` | Food search input placeholder |
 | `pro.plan.food_search.empty` | Empty food search result |
+| `pro.plan.food_search.error.quota` | Food search rate-limit feedback |
 | `pro.plan.food_search.stub_notice` | Empty meal helper text |
 | `pro.plan.validation.name_required` | Name required error |
 | `pro.plan.validation.name_too_short` | Name too short error |
@@ -150,7 +162,7 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Edge Cases
-- fatsecret unavailable: source call returns typed error and UI surfaces fallback copy.
+- Food service unavailable/rate-limited: source call returns typed error and UI surfaces fallback copy.
 - Starter template cloning follows immutable-template semantics; editing the source template does not mutate existing clones (BR-295).
 - If assignment becomes inactive mid-edit: block assign action; plan save remains available.
 - Editing a predefined plan after it has been bulk-assigned does not mutate already assigned student copies (D-082, BR-283).

@@ -15,55 +15,49 @@
  *   - OAuth accounts (Google/Apple) → informational notice (no reset email)
  *
  * Language switcher:
- *   - Persisted to AsyncStorage via features/auth/language-storage.ts
- *   - Takes effect on next app launch (standard RN pattern)
+ *   - Pushes to /settings/language-select (SC-222) via router.push.
+ *   - Takes effect immediately in-session via LocaleContext (no app restart needed).
  *
  * Docs: docs/screens/v2/SC-213-account-privacy-settings.md
  * Refs: FR-133, FR-157, UC-002.5, AC-305–308, AC-310, BR-225, BR-231
  *       TC-304–307, TC-309
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
-  ActionSheetIOS,
   Alert,
-  Linking,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { sendPasswordResetEmail, signOut } from 'firebase/auth';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
+import { SupportModal } from '@/components/ds/patterns/SupportModal';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { deleteProfileFromSource } from '@/features/auth/profile-source';
-import { getFirebaseAuth } from '@/features/auth/firebase';
 import {
-  getLanguageOverride,
-  setLanguageOverride,
-} from '@/features/auth/language-storage';
+  deleteAccountAndDataFromSource,
+  ProfileSourceError,
+} from '@/features/auth/profile-source';
+import { getFirebaseAuth } from '@/features/auth/firebase';
+
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { SUPPORTED_LOCALES, type SupportedLocale, useTranslation } from '@/localization';
+import { useTranslation } from '@/localization';
+import { useLocale } from '@/localization/locale-context';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-// Deferred: replace with env-based legal config link before release (D-103)
-const PRIVACY_POLICY_URL = 'https://example.com/privacy';
-const TERMS_URL = 'https://example.com/terms';
-const SUPPORT_EMAIL = 'support@mychampions.app';
 
 const APP_VERSION: string =
   (Constants.expoConfig?.version as string | undefined) ?? '—';
@@ -74,7 +68,7 @@ type DeleteRequestState =
   | { kind: 'idle' }
   | { kind: 'pending' }
   | { kind: 'success' }
-  | { kind: 'error'; reason: 'network' | 'already_requested' | 'unknown' };
+  | { kind: 'error'; reason: 'network' | 'already_requested' | 'requires_recent_login' | 'unauthenticated' | 'unknown' };
 
 type PasswordResetState =
   | { kind: 'idle' }
@@ -116,8 +110,10 @@ export default function AccountSettingsScreen() {
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
   const { t } = useTranslation();
+  const router = useRouter();
+  const { activeLocale } = useLocale();
 
-  const { currentUser, lockedRole, clearSession } = useAuthSession();
+  const { currentUser, lockedRole, clearSession, termsUrl, privacyPolicyUrl } = useAuthSession();
 
   // ── Offline state ──────────────────────────────────────────────────────────
   const networkStatus = useNetworkStatus();
@@ -130,14 +126,8 @@ export default function AccountSettingsScreen() {
   // ── Feature state ──────────────────────────────────────────────────────────
   const [deleteState, setDeleteState] = useState<DeleteRequestState>({ kind: 'idle' });
   const [passwordState, setPasswordState] = useState<PasswordResetState>({ kind: 'idle' });
-  const [currentLanguage, setCurrentLanguage] = useState<SupportedLocale | null>(null);
+  const [isSupportModalVisible, setIsSupportModalVisible] = useState(false);
 
-  // Load persisted language override on mount
-  useEffect(() => {
-    void getLanguageOverride().then((override) => {
-      setCurrentLanguage(override);
-    });
-  }, []);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const email = currentUser?.email ?? null;
@@ -163,21 +153,37 @@ export default function AccountSettingsScreen() {
         ? t('settings.account.delete.error.network')
         : deleteState.reason === 'already_requested'
           ? t('settings.account.delete.error.already_requested')
-          : t('settings.account.delete.error.unknown')
+          : deleteState.reason === 'requires_recent_login'
+            ? t('settings.account.delete.error.requires_recent_login')
+            : deleteState.reason === 'unauthenticated'
+              ? t('settings.account.delete.error.unauthenticated')
+              : t('settings.account.delete.error.unknown')
       : null;
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   function handleOpenPrivacyPolicy() {
-    void Linking.openURL(PRIVACY_POLICY_URL);
+    router.push({
+      pathname: '/shared/webview',
+      params: {
+        url: privacyPolicyUrl,
+        title: t('settings.account.privacy_policy.label') as string,
+      },
+    });
   }
 
   function handleOpenTerms() {
-    void Linking.openURL(TERMS_URL);
+    router.push({
+      pathname: '/shared/webview',
+      params: {
+        url: termsUrl,
+        title: t('settings.account.terms.label') as string,
+      },
+    });
   }
 
   function handleContactSupport() {
-    void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+    setIsSupportModalVisible(true);
   }
 
   function handleChangePassword() {
@@ -215,46 +221,7 @@ export default function AccountSettingsScreen() {
   }
 
   function handleLanguagePicker() {
-    const localeLabels: Record<SupportedLocale, string> = {
-      'en-US': t('settings.account.language.en_us') as string,
-      'pt-BR': t('settings.account.language.pt_br') as string,
-      'es-ES': t('settings.account.language.es_es') as string,
-    };
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          title: t('settings.account.language.picker_title') as string,
-          options: [
-            ...SUPPORTED_LOCALES.map((l) => localeLabels[l]),
-            'Cancel',
-          ],
-          cancelButtonIndex: SUPPORTED_LOCALES.length,
-        },
-        (index) => {
-          const chosen = SUPPORTED_LOCALES[index];
-          if (chosen) void applyLanguage(chosen);
-        }
-      );
-    } else {
-      // Android: use Alert with buttons for the three options
-      Alert.alert(
-        t('settings.account.language.picker_title') as string,
-        undefined,
-        [
-          ...SUPPORTED_LOCALES.map((locale) => ({
-            text: localeLabels[locale],
-            onPress: () => void applyLanguage(locale),
-          })),
-          { text: 'Cancel', style: 'cancel' as const },
-        ]
-      );
-    }
-  }
-
-  async function applyLanguage(locale: SupportedLocale) {
-    await setLanguageOverride(locale);
-    setCurrentLanguage(locale);
+    router.push('/settings/language-select');
   }
 
   function handleSignOut() {
@@ -295,19 +262,35 @@ export default function AccountSettingsScreen() {
   async function submitDeletionRequest() {
     setDeleteState({ kind: 'pending' });
     try {
-      await deleteProfileFromSource();
-      await signOut(getFirebaseAuth());
+      await deleteAccountAndDataFromSource();
+      clearSession();
+      // Optional: signOut is redundant if deleteUser succeeds, but safe to call.
+      void signOut(getFirebaseAuth());
       setDeleteState({ kind: 'success' });
-    } catch {
-      setDeleteState({ kind: 'error', reason: 'unknown' });
+    } catch (err) {
+      if (err instanceof ProfileSourceError) {
+        if (err.code === 'requires_recent_login') {
+          setDeleteState({ kind: 'error', reason: 'requires_recent_login' });
+        } else if (err.code === 'network') {
+          setDeleteState({ kind: 'error', reason: 'network' });
+        } else if (err.code === 'unauthenticated') {
+          setDeleteState({ kind: 'error', reason: 'unauthenticated' });
+        } else {
+          setDeleteState({ kind: 'error', reason: 'unknown' });
+        }
+      } else {
+        setDeleteState({ kind: 'error', reason: 'unknown' });
+      }
     }
   }
 
   // ── Locale label for current language ─────────────────────────────────────
+  // Reads from LocaleContext so the row updates immediately after returning
+  // from the Language Select screen (SC-222) without needing an AsyncStorage read.
   const languageLabel =
-    currentLanguage === 'pt-BR'
+    activeLocale === 'pt-BR'
       ? (t('settings.account.language.pt_br') as string)
-      : currentLanguage === 'es-ES'
+      : activeLocale === 'es-ES'
         ? (t('settings.account.language.es_es') as string)
         : (t('settings.account.language.en_us') as string);
 
@@ -525,6 +508,14 @@ export default function AccountSettingsScreen() {
       <Text style={[styles.versionFooter, { color: theme.color.textTertiary }]} testID="settings.account.version">
         {t('settings.account.app_version.label')} {APP_VERSION}
       </Text>
+
+      <SupportModal
+        isVisible={isSupportModalVisible}
+        onClose={() => setIsSupportModalVisible(false)}
+        scheme={scheme}
+        theme={theme}
+        t={t}
+      />
     </ScrollView>
   );
 }
@@ -624,7 +615,7 @@ const styles = StyleSheet.create({
     borderRadius: DsRadius.xl,
     borderWidth: 1,
     gap: 14,
-    marginBottom: DsSpace.sm,
+    marginBottom: DsSpace.xxs,
     padding: DsSpace.md,
   },
 
@@ -670,7 +661,7 @@ const styles = StyleSheet.create({
     ...DsTypography.caption,
     fontWeight: '700',
     letterSpacing: 0.7,
-    marginTop: DsSpace.md,
+    marginTop: DsSpace.sm,
     marginBottom: 6,
     marginLeft: 4,
   },
