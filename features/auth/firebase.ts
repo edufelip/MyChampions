@@ -3,7 +3,14 @@ import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth, initializeAuth, type Auth, type Persistence } from 'firebase/auth';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+
+function getPlatform() {
+  try {
+    return require('react-native').Platform;
+  } catch {
+    return { OS: 'web' };
+  }
+}
 
 type FirebaseExtraConfig = {
   apiKey?: string;
@@ -72,7 +79,7 @@ export function getFirebaseAuth() {
   const firebaseConfig = requireFirebaseConfig();
   const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-  if (Platform.OS === 'web') {
+  if (getPlatform().OS === 'web') {
     firebaseAuthInstance = getAuth(firebaseApp);
     return firebaseAuthInstance;
   }

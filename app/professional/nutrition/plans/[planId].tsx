@@ -419,6 +419,7 @@ export default function NutritionPlanBuilderScreen() {
             />
             <DsPillButton
               scheme={scheme}
+              variant="ghost"
               size="sm"
               label={t('common.cta.add') as string}
               onPress={handleAddMeal}

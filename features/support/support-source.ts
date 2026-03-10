@@ -20,6 +20,7 @@ import {
 export interface SupportSourceDeps {
   getFirestore: () => Firestore;
   getCurrentUser: () => { uid: string; email: string | null; displayName: string | null } | null;
+  getCurrentUserRole: () => string | null;
   getAppVersion: () => string;
   getPlatform: () => 'ios' | 'android' | 'web';
   now: () => string;
@@ -38,6 +39,13 @@ export function makeDeps(): SupportSourceDeps {
         displayName: user.displayName,
       };
     },
+    getCurrentUserRole: () => {
+      // We could use useAuthSession but source layers should be pure or use direct SDKs/Storage
+      // In this project, AuthSession handles hydration and exposes lockedRole.
+      // For the source layer, we'll try to get it from our profile hydration context or similar if available,
+      // but since we want to avoid complex circular deps, we can pass it from the hook or just use a simple lookup.
+      return null; // Will be passed from the hook/caller if we want it robust
+    },
     getAppVersion: () => (Constants.expoConfig?.version as string) ?? '—',
     getPlatform: () => (Platform.OS as 'ios' | 'android' | 'web') ?? 'web',
     now: nowIso,
@@ -45,7 +53,7 @@ export function makeDeps(): SupportSourceDeps {
 }
 
 export async function submitSupportMessage(
-  input: SupportMessageInput,
+  input: SupportMessageInput & { userRole?: string | null },
   deps = makeDeps()
 ): Promise<string> {
   const user = deps.getCurrentUser();
@@ -60,6 +68,7 @@ export async function submitSupportMessage(
       userId: user.uid,
       userEmail: user.email,
       userName: user.displayName,
+      userRole: input.userRole ?? deps.getCurrentUserRole() ?? 'unknown',
       subject: input.subject.trim(),
       body: input.body.trim(),
       status,

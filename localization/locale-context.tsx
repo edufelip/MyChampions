@@ -23,7 +23,8 @@ import {
   setLanguageOverride,
 } from '@/features/auth/language-storage';
 
-import { getDeviceLocale, resolveLocale, type SupportedLocale } from './index';
+import { getDeviceLocale } from './get-device-locale';
+import { resolveLocale, type SupportedLocale } from './core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

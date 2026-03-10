@@ -8,7 +8,7 @@
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
 ## Objective
-Let nutritionists create and edit named predefined nutrition plans (calorie/macro targets + food item list) stored in their private library. Plans can be assigned to individual students or bulk-assigned. Starter templates are available to clone-then-customize.
+Let nutritionists create and edit named predefined nutrition plans (calorie/macro targets + food item list) stored in their private library. Plans can be assigned to individual students or bulk-assigned.
 
 ## Design Structure (D-134)
 - Library route (`/professional/nutrition`) uses `DsScreen` as shell with DS spacing/typography tokens and the SC-204 professional surface baseline (hero header + contextual helper).
@@ -35,7 +35,6 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Add food items (name, quantity, optional notes).
 - Remove food items.
 - Search foods via VPS food-search microservice integration (`https://foodservice.eduwaldo.com/searchFoods`).
-- Pick and clone a starter template.
 - Save plan (create or update).
 - Assign plan to a student.
 - Bulk-assign plan to multiple students with per-student fine-tune step.
@@ -49,8 +48,6 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | Saving | `createPlan` or `savePlan` in flight | Save CTA disabled, loading indicator |
 | Ready | Plan loaded or created successfully | Full form with item list, CTAs |
 | Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
-| Template picker loading | `loadTemplates` called | Template picker loading indicator |
-| Template picker ready | Templates fetched | Picker list with available starter templates |
 | Food search idle | No query | Placeholder shown |
 | Food search searching | Query in flight | Search loading indicator |
 | Food search done | Results returned | Result list (empty state helper shown) |
@@ -59,7 +56,6 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Plan name is required and must be at least 2 characters (BR-291).
 - Calorie target must be zero or greater if provided (BR-292).
 - Carbs, proteins, and fats targets must each be zero or greater if provided (BR-292).
-- Starter templates are immutable — edits apply to cloned drafts only (BR-295).
 - Bulk assignment produces independent per-student plan copies; later library edits do not mutate assigned copies (BR-283, D-082).
 - Assigned plans are read-only for students (D-006).
 
@@ -83,7 +79,6 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `NutritionPlanDetail` | Full plan with id, name, macro targets, items list, timestamps |
 | `NutritionMealItem` | Individual food item with id, name, quantity, notes |
 | `NutritionTotals` | Parsed numeric totals from raw string inputs |
-| `StarterTemplate[]` | Starter template records from Firestore with local fallback entries |
 | `FoodSearchResult[]` | Normalized food search results from VPS food-search service integration |
 
 ### Food Search Service Contract
@@ -105,8 +100,6 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `getNutritionPlanDetail` | Load plan with items |
 | `addNutritionMealItem` | Add food item to plan |
 | `removeNutritionMealItem` | Remove food item from plan |
-| `getStarterTemplates('nutrition')` | Fetch starter template list |
-| `cloneStarterTemplate` | Clone starter into editable draft |
 | `searchFoods` | VPS food-search service source |
 
 Plan library and builder persistence are Firestore-backed via `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`.
@@ -133,10 +126,6 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 | `pro.plan.cta.save` | Save plan CTA |
 | `pro.plan.cta.assign` | Assign to student CTA |
 | `pro.plan.cta.bulk_assign` | Bulk assign CTA |
-| `pro.plan.cta.clone_template` | Start from template CTA |
-| `pro.plan.template.starter_label` | Starter templates section label |
-| `pro.plan.template.picker_title` | Template picker title |
-| `pro.plan.template.cta_use` | Use template CTA |
 | `pro.plan.food_search.placeholder` | Food search input placeholder |
 | `pro.plan.food_search.empty` | Empty food search result |
 | `pro.plan.food_search.error.quota` | Food search rate-limit feedback |
@@ -156,14 +145,11 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 | `pro.predefined_plan.field_name` | Predefined plan name label |
 | `pro.predefined_plan.cta_create` | Save predefined plan CTA |
 | `pro.predefined_plan.bulk_assign.*` | Bulk assign flow keys |
-| `pro.template_library.*` | Template library section keys |
-| `pro.template.clone_notice` | Template clone helper |
 
 All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Edge Cases
 - Food service unavailable/rate-limited: source call returns typed error and UI surfaces fallback copy.
-- Starter template cloning follows immutable-template semantics; editing the source template does not mutate existing clones (BR-295).
 - If assignment becomes inactive mid-edit: block assign action; plan save remains available.
 - Editing a predefined plan after it has been bulk-assigned does not mutate already assigned student copies (D-082, BR-283).
 
@@ -172,7 +158,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | `features/plans/plan-builder.logic.ts` | Pure functions: `validateNutritionPlanInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError` |
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/plans/plan-builder-source.ts` | Firestore source ops: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `getStarterTemplates`, `cloneStarterTemplate`, `searchFoods` |
+| `features/plans/plan-builder-source.ts` | Firestore source ops: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `searchFoods` |
 | `features/plans/use-plan-builder.ts` | React hook `useNutritionPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
 | `app/professional/nutrition.tsx` | Plan library list screen |
 | `app/professional/nutrition/plans/[planId].tsx` | Plan builder screen |
@@ -183,7 +169,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Functional requirements | FR-240, FR-241, FR-242, FR-243, FR-247, FR-248, FR-223, FR-224, FR-225, FR-226 |
 | Use case | UC-002.14, UC-002.20 |
 | Acceptance criteria | AC-256, AC-264, AC-265 |
-| Business rules | BR-281, BR-282, BR-283, BR-291, BR-292, BR-295 |
+| Business rules | BR-281, BR-282, BR-283, BR-291, BR-292 |
 | Test cases | TC-268, TC-269, TC-270, TC-275, TC-276, TC-280 |
 | Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114 |
 | Backlog | BL-106 |

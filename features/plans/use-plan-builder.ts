@@ -81,12 +81,6 @@ export type TrainingBuilderState =
   | { kind: 'saving' }
   | { kind: 'error'; reason: PlanBuilderErrorReason; message: string };
 
-export type TemplatePickerState =
-  | { kind: 'idle' }
-  | { kind: 'loading' }
-  | { kind: 'ready'; templates: StarterTemplate[] }
-  | { kind: 'error'; reason: PlanBuilderErrorReason };
-
 export type FoodSearchState =
   | { kind: 'idle' }
   | { kind: 'searching' }
@@ -99,7 +93,6 @@ export type { FoodSearchResult };
 
 export type UseNutritionPlanBuilderResult = {
   state: NutritionBuilderState;
-  templatePickerState: TemplatePickerState;
   foodSearchState: FoodSearchState;
   clearFoodSearch: () => void;
   loadPlan: (planId: string) => void;
@@ -113,15 +106,12 @@ export type UseNutritionPlanBuilderResult = {
   removeItem: (planId: string, mealId: string, itemId: string) => Promise<PlanBuilderErrorReason | null>;
   reorderItems: (planId: string, mealId: string, itemIds: string[]) => Promise<PlanBuilderErrorReason | null>;
   deletePlan: (planId: string) => Promise<PlanBuilderErrorReason | null>;
-  loadTemplates: () => void;
-  cloneTemplate: (templateId: string, name: string) => Promise<{ id: string; planType: PlanType } | { error: PlanBuilderErrorReason }>;
   searchFoods: (query: string) => void;
   validateInput: (input: NutritionPlanInput) => NutritionPlanValidationErrors;
 };
 
 export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionPlanBuilderResult {
   const [state, setState] = useState<NutritionBuilderState>({ kind: 'idle' });
-  const [templatePickerState, setTemplatePickerState] = useState<TemplatePickerState>({ kind: 'idle' });
   const [foodSearchState, setFoodSearchState] = useState<FoodSearchState>({ kind: 'idle' });
 
   const loadPlan = useCallback(
@@ -266,28 +256,30 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
   const addMeal = useCallback(
     async (planId: string, meal: NutritionMealInput, planInput?: NutritionPlanInput): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
       if (!isAuthenticated) return { planId, error: 'unknown' };
+      
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      
       try {
         let currentPlanId = planId;
         if (planId === 'new') {
           const res = await createPlan(planInput ?? { name: 'Untitled' });
-          if ('error' in res) return { planId, error: res.error };
+          if ('error' in res) {
+            // Error already set by createPlan
+            return { planId, error: res.error };
+          }
           currentPlanId = res.id;
         }
 
         const newMeal = await addNutritionMeal(currentPlanId, meal);
-        setState((prev) => {
-          if (prev.kind !== 'ready') return prev;
-          return {
-            ...prev,
-            plan: {
-              ...prev.plan,
-              meals: [...prev.plan.meals, newMeal],
-            },
-          };
-        });
+        const updated = await getNutritionPlanDetail(currentPlanId);
+        await setCachedNutritionPlan(updated);
+        setState({ kind: 'ready', plan: updated });
+        
         return { planId: currentPlanId, error: null };
       } catch (err) {
-        return { planId, error: normalizePlanBuilderError(err) };
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return { planId, error: reason };
       }
     },
     [isAuthenticated, createPlan]
@@ -297,27 +289,19 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
     async (planId: string, mealId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
       if (planId === 'new') return null;
+
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+
       try {
         await removeNutritionMeal(planId, mealId);
-        setState((prev) => {
-          if (prev.kind !== 'ready') return prev;
-          const newMeals = prev.plan.meals.filter((m) => m.id !== mealId);
-          const totals = calculateTotalsFromMeals(newMeals);
-          return {
-            ...prev,
-            plan: {
-              ...prev.plan,
-              meals: newMeals,
-              caloriesTarget: totals.calories,
-              carbsTarget: totals.carbs,
-              proteinsTarget: totals.proteins,
-              fatsTarget: totals.fats,
-            },
-          };
-        });
+        const updated = await getNutritionPlanDetail(planId);
+        await setCachedNutritionPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
-        return normalizePlanBuilderError(err);
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -328,27 +312,18 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       if (!isAuthenticated) return 'unknown';
       if (planId === 'new') return null;
 
-      // Optimistic update
-      let previousState: NutritionBuilderState | null = null;
-      setState((prev) => {
-        if (prev.kind !== 'ready') return prev;
-        previousState = prev;
-        const reorderedMeals = mealIds
-          .map((id) => prev.plan.meals.find((m) => m.id === id))
-          .filter(Boolean) as NutritionMeal[];
-        return {
-          ...prev,
-          plan: { ...prev.plan, meals: reorderedMeals },
-        };
-      });
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
 
       try {
         await reorderNutritionMeals(planId, mealIds);
+        const updated = await getNutritionPlanDetail(planId);
+        await setCachedNutritionPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
-        // Rollback
-        if (previousState) setState(previousState);
-        return normalizePlanBuilderError(err);
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -357,6 +332,9 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
   const addItem = useCallback(
     async (planId: string, mealId: string, item: NutritionMealItemInput, planInput?: NutritionPlanInput): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
       if (!isAuthenticated) return { planId, error: 'unknown' };
+
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+
       try {
         let currentPlanId = planId;
         if (planId === 'new') {
@@ -365,29 +343,16 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
           currentPlanId = res.id;
         }
 
-        const newItem = await addNutritionMealItem(currentPlanId, mealId, item);
-        setState((prev) => {
-          if (prev.kind !== 'ready') return prev;
-          const meals = prev.plan.meals.map((m) => {
-            if (m.id !== mealId) return m;
-            return { ...m, items: [...m.items, newItem] };
-          });
-          const totals = calculateTotalsFromMeals(meals);
-          return {
-            ...prev,
-            plan: {
-              ...prev.plan,
-              meals,
-              caloriesTarget: totals.calories,
-              carbsTarget: totals.carbs,
-              proteinsTarget: totals.proteins,
-              fatsTarget: totals.fats,
-            },
-          };
-        });
+        await addNutritionMealItem(currentPlanId, mealId, item);
+        const updated = await getNutritionPlanDetail(currentPlanId);
+        await setCachedNutritionPlan(updated);
+        setState({ kind: 'ready', plan: updated });
+        
         return { planId: currentPlanId, error: null };
       } catch (err) {
-        return { planId, error: normalizePlanBuilderError(err) };
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return { planId: currentPlanId, error: reason };
       }
     },
     [isAuthenticated, createPlan]
@@ -397,30 +362,19 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
     async (planId: string, mealId: string, itemId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
       if (planId === 'new') return null;
+
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+
       try {
         await removeNutritionMealItem(planId, mealId, itemId);
-        setState((prev) => {
-          if (prev.kind !== 'ready') return prev;
-          const meals = prev.plan.meals.map((m) => {
-            if (m.id !== mealId) return m;
-            return { ...m, items: m.items.filter((i) => i.id !== itemId) };
-          });
-          const totals = calculateTotalsFromMeals(meals);
-          return {
-            ...prev,
-            plan: {
-              ...prev.plan,
-              meals,
-              caloriesTarget: totals.calories,
-              carbsTarget: totals.carbs,
-              proteinsTarget: totals.proteins,
-              fatsTarget: totals.fats,
-            },
-          };
-        });
+        const updated = await getNutritionPlanDetail(planId);
+        await setCachedNutritionPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
-        return normalizePlanBuilderError(err);
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -431,56 +385,18 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       if (!isAuthenticated) return 'unknown';
       if (planId === 'new') return null;
 
-      // Optimistic update
-      let previousState: NutritionBuilderState | null = null;
-      setState((prev) => {
-        if (prev.kind !== 'ready') return prev;
-        previousState = prev;
-        const meals = prev.plan.meals.map((m) => {
-          if (m.id !== mealId) return m;
-          const reorderedItems = itemIds
-            .map((id) => m.items.find((it) => it.id === id))
-            .filter(Boolean) as any[];
-          return { ...m, items: reorderedItems };
-        });
-        return {
-          ...prev,
-          plan: { ...prev.plan, meals },
-        };
-      });
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
 
       try {
         await reorderNutritionMealItems(planId, mealId, itemIds);
+        const updated = await getNutritionPlanDetail(planId);
+        await setCachedNutritionPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
-        // Rollback
-        if (previousState) setState(previousState);
-        return normalizePlanBuilderError(err);
-      }
-    },
-    [isAuthenticated]
-  );
-
-  const loadTemplates = useCallback(() => {
-    setTemplatePickerState({ kind: 'loading' });
-    void getStarterTemplates('nutrition')
-      .then((templates) => setTemplatePickerState({ kind: 'ready', templates }))
-      .catch((err: unknown) =>
-        setTemplatePickerState({ kind: 'error', reason: normalizePlanBuilderError(err) })
-      );
-  }, []);
-
-  const cloneTemplate = useCallback(
-    async (templateId: string, name: string): Promise<{ id: string; planType: PlanType } | { error: PlanBuilderErrorReason }> => {
-      if (!isAuthenticated) return { error: 'unknown' };
-      try {
-        // cloneStarterTemplate still requires a user.uid for the professionalId in the SDK call.
-        // The SDK itself handles auth; uid is used only for the clone vars.
-        // Pass a sentinel object — the DC instance carries the real auth token.
-        const result = await cloneStarterTemplate({ uid: '' }, templateId, name);
-        return { id: result.id, planType: result.planType };
-      } catch (err) {
-        return { error: normalizePlanBuilderError(err) };
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -524,7 +440,6 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
 
   return {
     state,
-    templatePickerState,
     foodSearchState,
     clearFoodSearch,
     loadPlan,
@@ -538,8 +453,6 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
     removeItem,
     reorderItems,
     deletePlan,
-    loadTemplates,
-    cloneTemplate,
     searchFoods: runFoodSearch,
     validateInput,
   };
@@ -549,7 +462,6 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
 
 export type UseTrainingPlanBuilderResult = {
   state: TrainingBuilderState;
-  templatePickerState: TemplatePickerState;
   loadPlan: (planId: string) => void;
   initNewPlan: () => void;
   createPlan: (input: TrainingPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
@@ -565,15 +477,12 @@ export type UseTrainingPlanBuilderResult = {
   removeSessionItem: (sessionId: string, itemId: string) => Promise<PlanBuilderErrorReason | null>;
   reorderSessionItems: (sessionId: string, itemIds: string[]) => Promise<PlanBuilderErrorReason | null>;
   deletePlan: (planId: string) => Promise<PlanBuilderErrorReason | null>;
-  loadTemplates: () => void;
-  cloneTemplate: (templateId: string, name: string) => Promise<{ id: string; planType: PlanType } | { error: PlanBuilderErrorReason }>;
   validateInput: (input: TrainingPlanInput) => TrainingPlanValidationErrors;
   validateSessionItem: (item: TrainingSessionItemInput) => TrainingSessionItemValidationErrors;
 };
 
 export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPlanBuilderResult {
   const [state, setState] = useState<TrainingBuilderState>({ kind: 'idle' });
-  const [templatePickerState, setTemplatePickerState] = useState<TemplatePickerState>({ kind: 'idle' });
 
   const loadPlan = useCallback(
     (planId: string) => {
@@ -709,25 +618,33 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
       planInput?: TrainingPlanInput
     ): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
       if (!isAuthenticated) return { planId, error: 'unknown' };
+
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+
       try {
         let currentPlanId = planId;
         if (planId === 'new') {
           const resolvedInput = resolveTrainingDraftCreationInput(planInput);
-          if (resolvedInput.error) return { planId, error: resolvedInput.error };
+          if (resolvedInput.error) {
+            // Revert state if possible or handle error
+            return { planId, error: resolvedInput.error };
+          }
 
           const res = await createPlan(resolvedInput.input!);
           if ('error' in res) return { planId, error: res.error };
           currentPlanId = res.id;
         }
 
-        const newSession = await addTrainingSession(currentPlanId, session);
-        setState((prev) => {
-          if (prev.kind !== 'ready') return prev;
-          return { ...prev, plan: { ...prev.plan, sessions: [...prev.plan.sessions, newSession] } };
-        });
+        await addTrainingSession(currentPlanId, session);
+        const updated = await getTrainingPlanDetail(currentPlanId);
+        await setCachedTrainingPlan(updated);
+        setState({ kind: 'ready', plan: updated });
+        
         return { planId: currentPlanId, error: null };
       } catch (err) {
-        return { planId, error: normalizePlanBuilderError(err) };
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return { planId, error: reason };
       }
     },
     [isAuthenticated, createPlan]
@@ -736,18 +653,19 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
   const removeSession = useCallback(
     async (planId: string, sessionId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
+
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+
       try {
         await removeTrainingSession(planId, sessionId);
-        setState((prev) => {
-          if (prev.kind !== 'ready') return prev;
-          return {
-            ...prev,
-            plan: { ...prev.plan, sessions: prev.plan.sessions.filter((s) => s.id !== sessionId) },
-          };
-        });
+        const updated = await getTrainingPlanDetail(planId);
+        await setCachedTrainingPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
-        return normalizePlanBuilderError(err);
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -758,18 +676,29 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
       if (!isAuthenticated) return 'unknown';
       const itemErrors = validateTrainingSessionItemInput(item);
       if (Object.keys(itemErrors).length > 0) return 'validation';
+
+      // Capture current planId from state if ready
+      let currentPlanId: string | null = null;
+      setState((prev) => {
+        if (prev.kind === 'ready') {
+          currentPlanId = prev.plan.id;
+          return { kind: 'saving' };
+        }
+        return prev;
+      });
+
       try {
-        const newItem = await addTrainingSessionItem(sessionId, item);
-        setState((prev) => {
-          if (prev.kind !== 'ready') return prev;
-          const sessions = prev.plan.sessions.map((s) =>
-            s.id === sessionId ? { ...s, items: [...s.items, newItem] } : s
-          );
-          return { ...prev, plan: { ...prev.plan, sessions } };
-        });
+        await addTrainingSessionItem(sessionId, item);
+        if (currentPlanId) {
+          const updated = await getTrainingPlanDetail(currentPlanId);
+          await setCachedTrainingPlan(updated);
+          setState({ kind: 'ready', plan: updated });
+        }
         return null;
       } catch (err) {
-        return normalizePlanBuilderError(err);
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -778,18 +707,28 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
   const removeSessionItem = useCallback(
     async (sessionId: string, itemId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
+
+      let currentPlanId: string | null = null;
+      setState((prev) => {
+        if (prev.kind === 'ready') {
+          currentPlanId = prev.plan.id;
+          return { kind: 'saving' };
+        }
+        return prev;
+      });
+
       try {
         await removeTrainingSessionItem(sessionId, itemId);
-        setState((prev) => {
-          if (prev.kind !== 'ready') return prev;
-          const sessions = prev.plan.sessions.map((s) =>
-            s.id === sessionId ? { ...s, items: s.items.filter((i) => i.id !== itemId) } : s
-          );
-          return { ...prev, plan: { ...prev.plan, sessions } };
-        });
+        if (currentPlanId) {
+          const updated = await getTrainingPlanDetail(currentPlanId);
+          await setCachedTrainingPlan(updated);
+          setState({ kind: 'ready', plan: updated });
+        }
         return null;
       } catch (err) {
-        return normalizePlanBuilderError(err);
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -799,27 +738,18 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     async (planId: string, sessionIds: string[]): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
-      // Optimistic update
-      let previousState: TrainingBuilderState | null = null;
-      setState((prev) => {
-        if (prev.kind !== 'ready') return prev;
-        previousState = prev;
-        const reorderedSessions = sessionIds
-          .map((id) => prev.plan.sessions.find((s) => s.id === id))
-          .filter(Boolean) as any[];
-        return {
-          ...prev,
-          plan: { ...prev.plan, sessions: reorderedSessions },
-        };
-      });
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
 
       try {
         await reorderTrainingSessions(planId, sessionIds);
+        const updated = await getTrainingPlanDetail(planId);
+        await setCachedTrainingPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
-        // Rollback
-        if (previousState) setState(previousState);
-        return normalizePlanBuilderError(err);
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -829,53 +759,27 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     async (sessionId: string, itemIds: string[]): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
-      // Optimistic update
-      let previousState: TrainingBuilderState | null = null;
+      let currentPlanId: string | null = null;
       setState((prev) => {
-        if (prev.kind !== 'ready') return prev;
-        previousState = prev;
-        const sessions = prev.plan.sessions.map((s) => {
-          if (s.id !== sessionId) return s;
-          const reorderedItems = itemIds
-            .map((id) => s.items.find((it) => it.id === id))
-            .filter(Boolean) as any[];
-          return { ...s, items: reorderedItems };
-        });
-        return {
-          ...prev,
-          plan: { ...prev.plan, sessions },
-        };
+        if (prev.kind === 'ready') {
+          currentPlanId = prev.plan.id;
+          return { kind: 'saving' };
+        }
+        return prev;
       });
 
       try {
         await reorderTrainingSessionItems(sessionId, itemIds);
+        if (currentPlanId) {
+          const updated = await getTrainingPlanDetail(currentPlanId);
+          await setCachedTrainingPlan(updated);
+          setState({ kind: 'ready', plan: updated });
+        }
         return null;
       } catch (err) {
-        // Rollback
-        if (previousState) setState(previousState);
-        return normalizePlanBuilderError(err);
-      }
-    },
-    [isAuthenticated]
-  );
-
-  const loadTemplates = useCallback(() => {
-    setTemplatePickerState({ kind: 'loading' });
-    void getStarterTemplates('training')
-      .then((templates) => setTemplatePickerState({ kind: 'ready', templates }))
-      .catch((err: unknown) =>
-        setTemplatePickerState({ kind: 'error', reason: normalizePlanBuilderError(err) })
-      );
-  }, []);
-
-  const cloneTemplate = useCallback(
-    async (templateId: string, name: string): Promise<{ id: string; planType: PlanType } | { error: PlanBuilderErrorReason }> => {
-      if (!isAuthenticated) return { error: 'unknown' };
-      try {
-        const result = await cloneStarterTemplate({ uid: '' }, templateId, name);
-        return { id: result.id, planType: result.planType };
-      } catch (err) {
-        return { error: normalizePlanBuilderError(err) };
+        const reason = normalizePlanBuilderError(err);
+        setState({ kind: 'error', reason, message: (err as Error).message });
+        return reason;
       }
     },
     [isAuthenticated]
@@ -893,7 +797,6 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
 
   return {
     state,
-    templatePickerState,
     loadPlan,
     initNewPlan,
     createPlan,
@@ -905,8 +808,6 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     removeSessionItem,
     reorderSessionItems,
     deletePlan,
-    loadTemplates,
-    cloneTemplate,
     validateInput,
     validateSessionItem,
   };

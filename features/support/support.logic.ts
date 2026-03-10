@@ -14,6 +14,7 @@ export interface SupportMessage extends SupportMessageInput {
   userId: string;
   userEmail: string;
   userName: string;
+  userRole: string;
   status: SupportMessageStatus;
   createdAt: string; // ISO
   updatedAt: string; // ISO

@@ -197,10 +197,6 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.student_profile.plan_change_requests.dismiss` | SC-206 | Triage action CTA | Dismiss | Dispensar | Descartar | BL-005 |
 | `pro.student_profile.plan_change_requests.load_error` | SC-206 | Load error | Could not load change requests. Try again. | Não foi possível carregar as solicitações. Tente novamente. | No se pudieron cargar las solicitudes. Inténtalo de nuevo. | BL-005 |
 | `pro.student_profile.plan_change_requests.action_error` | SC-206 | Action error | Could not update request. Try again. | Não foi possível atualizar a solicitação. Tente novamente. | No se pudo actualizar la solicitud. Inténtalo de nuevo. | BL-005 |
-| `pro.template_library.title` | SC-207/SC-208 | Starter template section title | Start from a template | Começar por um modelo | Empezar desde una plantilla | BL-006 |
-| `pro.template_library.badge_starter` | SC-207/SC-208 | Starter template badge | Starter | Inicial | Inicial | BL-006 |
-| `pro.template_library.cta_use` | SC-207/SC-208 | Starter template CTA | Use template | Usar modelo | Usar plantilla | BL-006 |
-| `pro.template.clone_notice` | SC-207/SC-208 | Template helper text | We create an editable copy. The original template does not change. | Criamos uma cópia editável. O modelo original não é alterado. | Creamos una copia editable. La plantilla original no cambia. | BL-006 |
 | `pro.predefined_plan.field_name` | SC-207/SC-208 | Predefined plan name label | Predefined plan name | Nome do plano predefinido | Nombre del plan predefinido | BL-106 |
 | `pro.predefined_plan.cta_create` | SC-207/SC-208 | Create predefined plan CTA | Save predefined plan | Salvar plano predefinido | Guardar plan predefinido | BL-106 |
 | `pro.predefined_plan.bulk_assign.cta` | SC-205/SC-207/SC-208 | Bulk assign entry CTA | Bulk assign plan | Atribuir plano em massa | Asignar plan en masa | BL-106 |
@@ -411,11 +407,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.cta.save` | SC-207/208 | Save CTA | Save plan | Salvar plano | Guardar plan | |
 | `pro.plan.cta.assign` | SC-207/208 | Assign CTA | Assign to student | Atribuir ao aluno | Asignar al alumno | |
 | `pro.plan.cta.bulk_assign` | SC-207/208 | Bulk assign CTA | Bulk assign | Atribuição em massa | Asignación masiva | D-082 |
-| `pro.plan.cta.clone_template` | SC-207/208 | Template clone CTA | Start from template | Começar com modelo | Empezar desde plantilla | FR-247 |
-| `pro.plan.template.starter_label` | SC-207/208 | Template section label | Starter templates | Modelos iniciais | Plantillas iniciales | |
-| `pro.plan.template.picker_title` | SC-207/208 | Template picker title | Choose a starter template | Escolha um modelo inicial | Elige una plantilla inicial | |
-| `pro.plan.template.cta_use` | SC-207/208 | Use template CTA | Use this template | Usar este modelo | Usar esta plantilla | |
-| `pro.plan.food_search.placeholder` | SC-207 | Food search input | Search foods… | Buscar alimentos… | Buscar alimentos… | FR-243 |
+| `pro.plan.predefined.label` | SC-207/208 | Predefined plan badge | Predefined | Predefinido | Predefinido | |
 | `pro.plan.food_search.empty` | SC-207 | Empty food search | No foods found. Try a different search term. | Nenhum alimento encontrado. Tente outro termo. | No se encontraron alimentos. Prueba otro término. | |
 | `pro.plan.food_search.error` | SC-207 | Generic food-search error | Food search unavailable. Try again. | Busca de alimentos indisponível. Tente novamente. | Búsqueda de alimentos no disponible. Inténtalo de nuevo. | |
 | `pro.plan.food_search.error.quota` | SC-207 | Rate-limit error | Food search is temporarily rate-limited. Try again soon. | A busca de alimentos está temporariamente limitada. Tente novamente em instantes. | La búsqueda de alimentos está temporalmente limitada. Inténtalo de nuevo en breve. | 429 + quota_exceeded |

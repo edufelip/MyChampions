@@ -25,7 +25,6 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
 import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
-import { TemplatePickerModal } from '@/components/ds/patterns/TemplatePickerModal';
 import { StudentPickerModal } from '@/components/ds/patterns/StudentPickerModal';
 import { ExerciseSearchModal } from '@/components/ds/patterns/ExerciseSearchModal';
 import { SessionCard } from '@/features/plans/components/SessionCard';
@@ -88,7 +87,6 @@ export default function TrainingPlanBuilderScreen() {
 
   const {
     state,
-    templatePickerState,
     loadPlan,
     initNewPlan,
     createPlan,
@@ -99,8 +97,7 @@ export default function TrainingPlanBuilderScreen() {
     addSessionItem,
     removeSessionItem,
     reorderSessionItems,
-    loadTemplates,
-    cloneTemplate,
+    deletePlan,
     validateInput,
   } = useTrainingPlanBuilder(Boolean(currentUser));
 
@@ -170,7 +167,6 @@ export default function TrainingPlanBuilderScreen() {
   const [addSessionForm, setAddSessionForm] = useState<AddSessionFormState>({ kind: 'closed' });
   const [isSortMode, setIsSortMode] = useState(false);
   const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.training_builder');
-  const [isTemplatePickerVisible, setIsTemplatePickerVisible] = useState(false);
   
   const [isStudentPickerVisible, setIsStudentPickerVisible] = useState(false);
   const [students, setStudents] = useState<ProfessionalStudentRosterItem[]>([]);
@@ -196,6 +192,30 @@ export default function TrainingPlanBuilderScreen() {
   const handleNameChange = useCallback((val: string) => {
     setFieldValue('name', val);
   }, [setFieldValue]);
+
+  const handleDeletePlan = useCallback(() => {
+    if (isNew || !planId) return;
+
+    Alert.alert(
+      tr('pro.plan.delete.title', 'student.plan.delete.title'),
+      tr('pro.plan.delete.body', 'student.plan.delete.body'),
+      [
+        { text: t('common.cta.cancel'), style: 'cancel' },
+        {
+          text: t('common.cta.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            const err = await deletePlan(planId);
+            if (!err) {
+              router.replace(isStudentBuilder ? '/student/training' : '/professional/training');
+            } else {
+              Alert.alert(tr('pro.plan.error.delete', 'student.plan.error.delete'));
+            }
+          },
+        },
+      ]
+    );
+  }, [isNew, planId, deletePlan, router, isStudentBuilder, t, tr]);
 
   const handleAddSession = useCallback(async () => {
     if (addSessionForm.kind !== 'open' || state.kind !== 'ready') return;
@@ -326,7 +346,8 @@ export default function TrainingPlanBuilderScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     await reorderSessions(state.plan.id, newSessions.map(s => s.id));
-  }, [state, reorderSessions]);
+    setIsDirty(true);
+  }, [state, reorderSessions, setIsDirty]);
 
   const handleMoveItem = useCallback(async (sessionId: string, itemId: string, direction: 'up' | 'down') => {
     if (state.kind !== 'ready') return;
@@ -346,26 +367,8 @@ export default function TrainingPlanBuilderScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     await reorderSessionItems(sessionId, newItems.map(i => i.id));
-  }, [state, reorderSessionItems]);
-
-  // ── Template Cloning ───────────────────────────────────────────────────────
-  const handleOpenTemplatePicker = useCallback(() => {
-    loadTemplates();
-    setIsTemplatePickerVisible(true);
-  }, [loadTemplates]);
-
-  const handleSelectTemplate = useCallback(async (templateId: string, templateName: string) => {
-    setIsTemplatePickerVisible(false);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const result = await cloneTemplate(templateId, `${templateName} (Copy)`);
-
-    if ('error' in result) {
-      Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace(`/professional/training/plans/${result.id}` as never);
-    }
-  }, [cloneTemplate, tr, router]);
+    setIsDirty(true);
+  }, [state, reorderSessionItems, setIsDirty]);
 
   // ── Assignment ─────────────────────────────────────────────────────────────
   const handleOpenStudentPicker = useCallback(async () => {
@@ -439,17 +442,16 @@ export default function TrainingPlanBuilderScreen() {
               leftIcon={<IconSymbol name={isSortMode ? "checkmark.circle.fill" : "arrow.up.arrow.down"} size={14} color={palette.tint} />}
             />
           )}
-          {isNew && !isStudentBuilder && (
-            <DsPillButton
-              scheme={scheme}
-              variant="outline"
-              size="sm"
-              label={t('pro.plan.cta.clone_template')}
-              onPress={handleOpenTemplatePicker}
-              fullWidth={false}
-              style={styles.templateCta}
-              leftIcon={<IconSymbol name="square.stack.3d.up.fill" size={14} color={palette.tint} />}
-            />
+          {!isNew && (
+            <Pressable 
+              onPress={handleDeletePlan}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.cta.delete') as string}
+              style={styles.headerActionBtn}
+            >
+              <IconSymbol name="trash" size={20} color={palette.danger} />
+            </Pressable>
           )}
         </View>
       </View>
@@ -581,7 +583,7 @@ export default function TrainingPlanBuilderScreen() {
             accessibilityLabel={t('pro.plan.session.field.notes.label')}
           />
           <View style={styles.rowActions}>
-            <DsPillButton scheme={scheme} variant="filled" label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')} onPress={handleAddSession} style={{ flex: 1 }} />
+            <DsPillButton scheme={scheme} variant="ghost" label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')} onPress={handleAddSession} style={{ flex: 1 }} />
             <DsPillButton scheme={scheme} variant="ghost" label={t('meal.library.quick_log.cta_cancel')} onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAddSessionForm({ kind: 'closed' }); }} style={{ flex: 1 }} />
           </View>
         </Animated.View>
@@ -611,6 +613,7 @@ export default function TrainingPlanBuilderScreen() {
           variant="primary"
           label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
           onPress={handleSave}
+          disabled={!isDirty || isSaving}
           isLoading={isSaving}
           style={{ flex: 1 }}
         />
@@ -625,16 +628,6 @@ export default function TrainingPlanBuilderScreen() {
           />
         )}
       </View>
-
-      <TemplatePickerModal
-        isVisible={isTemplatePickerVisible}
-        onClose={() => setIsTemplatePickerVisible(false)}
-        onSelect={handleSelectTemplate}
-        state={templatePickerState}
-        scheme={scheme}
-        theme={theme}
-        t={t}
-      />
 
       <StudentPickerModal
         isVisible={isStudentPickerVisible}
@@ -687,6 +680,7 @@ const styles = StyleSheet.create({
   sessionNotesInput: { ...DsTypography.body, paddingVertical: DsSpace.xs },
   addSessionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: DsSpace.xs, padding: DsSpace.md, borderRadius: DsRadius.lg, ...DsShadow.soft, marginTop: DsSpace.sm },
   addSessionBtnText: { ...DsTypography.button },
+  headerActionBtn: { padding: DsSpace.xs, justifyContent: 'center', alignItems: 'center' },
   rowActions: { flexDirection: 'row', gap: DsSpace.sm, marginTop: DsSpace.sm },
   footerActions: { flexDirection: 'row', gap: DsSpace.md, marginTop: DsSpace.xl, paddingBottom: DsSpace.xl },
   fieldError: { ...DsTypography.micro, color: '#ff0000', marginTop: 2 },

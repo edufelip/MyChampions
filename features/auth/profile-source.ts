@@ -15,13 +15,7 @@ import {
 import { deleteUser, type Auth, type User } from 'firebase/auth';
 
 import type { RoleIntent } from './role-selection.logic';
-import {
-  getCurrentAuthUid as _getCurrentAuthUid,
-  getFirestoreInstance as _getFirestoreInstance,
-  nowIso,
-} from '../firestore';
 import { classifyFirestoreError } from '../firestore-error';
-import { getFirebaseAuth as _getFirebaseAuth } from './firebase';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -79,88 +73,93 @@ function profileDoc(firestore: Firestore, uid: string) {
   return doc(firestore, 'userProfiles', uid);
 }
 
-const defaultProfileSourceDeps: ProfileSourceDeps = {
-  getFirestoreInstance: _getFirestoreInstance,
-  getFirebaseAuth: _getFirebaseAuth,
-  getCurrentAuthUid: () => {
-    try {
-      return _getCurrentAuthUid();
-    } catch {
-      return undefined;
-    }
-  },
-  getCurrentUser: () => _getFirebaseAuth().currentUser,
-  readProfile: async (firestore, uid) => {
-    const snapshot = await getDoc(profileDoc(firestore, uid));
-    if (!snapshot.exists()) return null;
-    const data = snapshot.data() as Partial<FirestoreProfile>;
-    return {
-      authUid: String(data.authUid ?? uid),
-      displayName: String(data.displayName ?? ''),
-      emailNormalized: String(data.emailNormalized ?? ''),
-      lockedRole: data.lockedRole === 'student' || data.lockedRole === 'professional' ? data.lockedRole : null,
-      acceptedTermsVersion:
-        typeof data.acceptedTermsVersion === 'string' ? data.acceptedTermsVersion : null,
-      createdAt: String(data.createdAt ?? nowIso()),
-      updatedAt: String(data.updatedAt ?? nowIso()),
-    };
-  },
-  upsertProfile: async (firestore, uid, input) => {
-    const timestamp = nowIso();
-    await setDoc(
-      profileDoc(firestore, uid),
-      {
-        authUid: uid,
-        displayName: input.displayName,
-        emailNormalized: input.emailNormalized,
-        lockedRole: null,
-        acceptedTermsVersion: null,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      },
-      { merge: true }
-    );
-  },
-  setLockedRole: async (firestore, uid, role) => {
-    await runTransaction(firestore, async (tx) => {
-      const ref = profileDoc(firestore, uid);
-      const snap = await tx.get(ref);
-      if (!snap.exists()) {
-        throw new ProfileSourceError('profile_row_not_found_after_upsert', 'Profile row not found for role lock.');
+function getProfileSourceDeps(): ProfileSourceDeps {
+  const { getFirebaseAuth } = require('./firebase');
+  const { getFirestoreInstance, getCurrentAuthUid, nowIso } = require('../firestore');
+
+  return {
+    getFirestoreInstance,
+    getFirebaseAuth,
+    getCurrentAuthUid: () => {
+      try {
+        return getCurrentAuthUid();
+      } catch {
+        return undefined;
       }
-      const current = snap.data() as Partial<FirestoreProfile>;
-      const currentRole = current.lockedRole;
-      if (currentRole === 'student' || currentRole === 'professional') {
-        if (currentRole !== role) {
-          throw new ProfileSourceError('graphql', 'Role is already locked and cannot be changed.');
+    },
+    getCurrentUser: () => getFirebaseAuth().currentUser,
+    readProfile: async (firestore, uid) => {
+      const snapshot = await getDoc(profileDoc(firestore, uid));
+      if (!snapshot.exists()) return null;
+      const data = snapshot.data() as Partial<FirestoreProfile>;
+      return {
+        authUid: String(data.authUid ?? uid),
+        displayName: String(data.displayName ?? ''),
+        emailNormalized: String(data.emailNormalized ?? ''),
+        lockedRole: data.lockedRole === 'student' || data.lockedRole === 'professional' ? data.lockedRole : null,
+        acceptedTermsVersion:
+          typeof data.acceptedTermsVersion === 'string' ? data.acceptedTermsVersion : null,
+        createdAt: String(data.createdAt ?? nowIso()),
+        updatedAt: String(data.updatedAt ?? nowIso()),
+      };
+    },
+    upsertProfile: async (firestore, uid, input) => {
+      const timestamp = nowIso();
+      await setDoc(
+        profileDoc(firestore, uid),
+        {
+          authUid: uid,
+          displayName: input.displayName,
+          emailNormalized: input.emailNormalized,
+          lockedRole: null,
+          acceptedTermsVersion: null,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        },
+        { merge: true }
+      );
+    },
+    setLockedRole: async (firestore, uid, role) => {
+      await runTransaction(firestore, async (tx) => {
+        const ref = profileDoc(firestore, uid);
+        const snap = await tx.get(ref);
+        if (!snap.exists()) {
+          throw new ProfileSourceError('profile_row_not_found_after_upsert', 'Profile row not found for role lock.');
         }
-        return;
-      }
-      tx.update(ref, {
-        lockedRole: role,
-        updatedAt: nowIso(),
+        const current = snap.data() as Partial<FirestoreProfile>;
+        const currentRole = current.lockedRole;
+        if (currentRole === 'student' || currentRole === 'professional') {
+          if (currentRole !== role) {
+            throw new ProfileSourceError('graphql', 'Role is already locked and cannot be changed.');
+          }
+          return;
+        }
+        tx.update(ref, {
+          lockedRole: role,
+          updatedAt: nowIso(),
+        });
       });
-    });
-  },
-  deleteProfile: async (firestore, uid) => {
-    await deleteDoc(profileDoc(firestore, uid));
-  },
-  deleteUser: async (user) => {
-    await deleteUser(user);
-  },
-  setAcceptedTermsVersion: async (firestore, uid, version) => {
-    await setDoc(
-      profileDoc(firestore, uid),
-      {
-        authUid: uid,
-        acceptedTermsVersion: version,
-        updatedAt: nowIso(),
-      },
-      { merge: true }
-    );
-  },
-  delay: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
-};
+    },
+    deleteProfile: async (firestore, uid) => {
+      await deleteDoc(profileDoc(firestore, uid));
+    },
+    deleteUser: async (user) => {
+      await deleteUser(user);
+    },
+    setAcceptedTermsVersion: async (firestore, uid, version) => {
+      await setDoc(
+        profileDoc(firestore, uid),
+        {
+          authUid: uid,
+          acceptedTermsVersion: version,
+          updatedAt: nowIso(),
+        },
+        { merge: true }
+      );
+    },
+    delay: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+  };
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -261,7 +260,7 @@ async function confirmLockedRoleWithRetry(
 
 export async function hydrateProfileFromSource(
   user: { uid: string; displayName: string | null; email: string | null },
-  deps: ProfileSourceDeps = defaultProfileSourceDeps
+  deps: ProfileSourceDeps = getProfileSourceDeps()
 ): Promise<AuthProfile> {
   try {
     const initialSnapshot = await getRemoteProfileSnapshot(deps, user.uid);
@@ -290,7 +289,7 @@ export async function hydrateProfileFromSource(
 
 export async function lockRoleInSource(
   role: RoleIntent,
-  deps: ProfileSourceDeps = defaultProfileSourceDeps
+  deps: ProfileSourceDeps = getProfileSourceDeps()
 ): Promise<AuthProfile> {
   const uid = deps.getCurrentAuthUid();
   if (!uid) {
@@ -333,7 +332,7 @@ export async function lockRoleInSource(
 }
 
 export async function deleteAccountAndDataFromSource(
-  deps: ProfileSourceDeps = defaultProfileSourceDeps
+  deps: ProfileSourceDeps = getProfileSourceDeps()
 ): Promise<void> {
   const uid = deps.getCurrentAuthUid();
   const user = deps.getCurrentUser();
@@ -361,7 +360,7 @@ export async function deleteAccountAndDataFromSource(
 
 export async function setAcceptedTermsVersionInSource(
   version: string,
-  deps: ProfileSourceDeps = defaultProfileSourceDeps
+  deps: ProfileSourceDeps = getProfileSourceDeps()
 ): Promise<void> {
   const uid = deps.getCurrentAuthUid();
   if (!uid) {

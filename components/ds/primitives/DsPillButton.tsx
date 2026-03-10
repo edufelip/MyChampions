@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, type ColorValue, type S
 
 import { DsRadius, DsTypography, type DsColorScheme, getDsTheme } from '@/constants/design-system';
 
-type DsPillButtonVariant = 'primary' | 'secondary' | 'outline';
+type DsPillButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 type DsPillButtonSize = 'xs' | 'sm' | 'md';
 
 type DsPillButtonProps = {
@@ -41,13 +41,14 @@ export function DsPillButton({
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
+  const isGhost = variant === 'ghost';
   const isSmall = size === 'sm';
   const isExtraSmall = size === 'xs';
 
   const secondaryBackgroundColor = theme.color.accentPrimarySoft;
 
   const resolvedContentColor =
-    contentColor ?? (isOutline || isSecondary ? theme.color.accentPrimary : theme.color.onAccent);
+    contentColor ?? (isOutline || isSecondary || isGhost ? theme.color.accentPrimary : theme.color.onAccent);
 
   const getVariantStyles = () => {
     if (isPrimary) {
@@ -61,6 +62,12 @@ export function DsPillButton({
         backgroundColor: 'transparent',
         borderColor: theme.color.accentPrimary,
         borderWidth: 1.5,
+      };
+    }
+    if (isGhost) {
+      return {
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
       };
     }
     return {

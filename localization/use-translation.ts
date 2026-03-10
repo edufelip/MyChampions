@@ -14,7 +14,7 @@
 import { useRef } from 'react';
 
 import { useLocale } from './locale-context';
-import { buildTranslationBinding, type TranslationBinding } from './index';
+import { buildTranslationBinding, type TranslationBinding } from './core';
 
 export function useTranslation() {
   const { activeLocale } = useLocale();
