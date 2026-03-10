@@ -58,9 +58,12 @@ export type TrainingSessionItemInput = {
   name: string;
   quantity: string; // optional, e.g. "3 sets x 10 reps"
   notes: string;
+  /**
+   * YMove exercise UUID. Only the ID is persisted to Firestore.
+   * Video/thumbnail URLs must never be stored — they expire after 48 hours.
+   * Fetch fresh URLs on demand via getYMoveExerciseById().
+   */
   ymoveId?: string;
-  thumbnailUrl?: string;
-  videoUrl?: string;
 };
 
 export type TrainingSessionItem = TrainingSessionItemInput & {

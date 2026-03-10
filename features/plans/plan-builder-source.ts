@@ -115,6 +115,19 @@ type FirestoreNutritionPlan = {
   updatedAt: string;
 };
 
+/** Firestore shape for a single exercise item in a training session. */
+type FirestoreTrainingItem = {
+  id: string;
+  exerciseName: string;
+  quantity?: string;
+  notes?: string;
+  /**
+   * YMove exercise UUID. Only the ID is persisted — never the pre-signed URLs.
+   * Video/thumbnail URLs expire after 48 h and must be fetched fresh from the API.
+   */
+  ymoveId?: string;
+};
+
 type FirestoreTrainingPlan = {
   id: string;
   ownerProfessionalUid: string | null;
@@ -123,7 +136,7 @@ type FirestoreTrainingPlan = {
   isArchived: boolean;
   isDraft: boolean;
   name: string;
-  sessions: Array<{ id: string; sessionName: string; items: Array<{ id: string; exerciseName: string }> }>;
+  sessions: Array<{ id: string; sessionName: string; notes?: string; items: FirestoreTrainingItem[] }>;
   createdAt: string;
   updatedAt: string;
 };
@@ -141,7 +154,7 @@ type FirestoreStarterTemplate = {
     meals: FirestoreNutritionMeal[];
   };
   trainingDefaults?: {
-    sessions: Array<{ id: string; sessionName: string; items: Array<{ id: string; exerciseName: string }> }>;
+    sessions: Array<{ id: string; sessionName: string; notes?: string; items: FirestoreTrainingItem[] }>;
   };
 };
 
@@ -258,10 +271,11 @@ function mapTrainingPlanDetail(raw: FirestoreTrainingPlan | null | undefined): T
     const items: TrainingSessionItem[] = (s.items ?? []).map((item) => ({
       id: item.id,
       name: item.exerciseName,
-      quantity: '',
-      notes: '',
+      quantity: item.quantity ?? '',
+      notes: item.notes ?? '',
+      ymoveId: item.ymoveId,
     }));
-    return { id: s.id, name: s.sessionName, notes: '', items };
+    return { id: s.id, name: s.sessionName, notes: s.notes ?? '', items };
   });
 
   return {
@@ -727,6 +741,50 @@ export async function updateTrainingPlan(
   }
 }
 
+function mapTrainingSessionsToFirestore(
+  sessions: TrainingSession[]
+): FirestoreTrainingPlan['sessions'] {
+  return sessions.map((session) => ({
+    id: session.id,
+    sessionName: session.name.trim(),
+    notes: session.notes.trim(),
+    items: session.items.map((item) => ({
+      id: item.id,
+      exerciseName: item.name.trim(),
+      quantity: item.quantity ?? '',
+      notes: item.notes ?? '',
+      ...(item.ymoveId ? { ymoveId: item.ymoveId } : {}),
+    })),
+  }));
+}
+
+export async function updateTrainingPlanDraft(
+  planId: string,
+  input: TrainingPlanInput,
+  sessions: TrainingSession[],
+  deps: PlanBuilderSourceDeps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+
+    await runTransaction(firestore, async (tx) => {
+      const ref = doc(firestore, 'trainingPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
+      }
+
+      tx.update(ref, {
+        name: input.name.trim(),
+        sessions: mapTrainingSessionsToFirestore(sessions),
+        updatedAt: nowIso(),
+      });
+    });
+  } catch (error) {
+    throw normalizePlanBuilderSourceError(error);
+  }
+}
+
 export async function getTrainingPlanDetail(
   planId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
@@ -757,7 +815,7 @@ export async function addTrainingSession(
       }
       const current = snap.data() as FirestoreTrainingPlan;
       const sessions = current.sessions ?? [];
-      sessions.push({ id: insertedId, sessionName: session.name.trim(), items: [] });
+      sessions.push({ id: insertedId, sessionName: session.name.trim(), notes: session.notes.trim(), items: [] });
       tx.update(ref, {
         sessions,
         updatedAt: nowIso(),
@@ -771,24 +829,21 @@ export async function addTrainingSession(
 }
 
 export async function removeTrainingSession(
-  _planId: string,
+  planId: string,
   sessionId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   try {
     const firestore = deps.getFirestoreInstance();
-
-    const plans = await getDocs(query(collection(firestore, 'trainingPlans'), where('sessions', '!=', null)));
-    const target = plans.docs.find((snap) => {
-      const raw = snap.data() as FirestoreTrainingPlan;
-      return (raw.sessions ?? []).some((s) => s.id === sessionId);
-    });
-
-    if (!target) return;
-
+    // Direct document lookup — O(1), consistent, no collection scan.
     await runTransaction(firestore, async (tx) => {
-      const raw = target.data() as FirestoreTrainingPlan;
-      tx.update(target.ref, {
+      const ref = doc(firestore, 'trainingPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
+      }
+      const raw = snap.data() as FirestoreTrainingPlan;
+      tx.update(ref, {
         sessions: (raw.sessions ?? []).filter((s) => s.id !== sessionId),
         updatedAt: nowIso(),
       });
@@ -813,7 +868,7 @@ export async function reorderTrainingSessions(
       const current = snap.data() as FirestoreTrainingPlan;
       const sessions = current.sessions ?? [];
       
-      const reordered = sessionIds.map(id => sessions.find(s => s.id === id)).filter(Boolean) as Array<{ id: string; sessionName: string; items: any }>;
+      const reordered = sessionIds.map(id => sessions.find(s => s.id === id)).filter(Boolean) as FirestoreTrainingPlan['sessions'];
       
       tx.update(ref, {
         sessions: reordered,
@@ -845,12 +900,24 @@ export async function addTrainingSessionItem(
     }
 
     await runTransaction(firestore, async (tx) => {
-      const raw = target.data() as FirestoreTrainingPlan;
+      // Re-read the document inside the transaction for a consistent snapshot.
+      // Using target.data() from the outer getDocs snapshot is a stale read —
+      // another writer could have modified the document between getDocs and here.
+      const freshSnap = await tx.get(target.ref);
+      const raw = freshSnap.data() as FirestoreTrainingPlan;
+      const newItem: FirestoreTrainingItem = {
+        id: insertedId,
+        exerciseName: item.name.trim(),
+        quantity: item.quantity || '',
+        notes: item.notes || '',
+        // Only store ymoveId — never thumbnail/video URLs (they expire after 48 h).
+        ...(item.ymoveId ? { ymoveId: item.ymoveId } : {}),
+      };
       const sessions = (raw.sessions ?? []).map((session) => {
         if (session.id !== sessionId) return session;
         return {
           ...session,
-          items: [...(session.items ?? []), { id: insertedId, exerciseName: item.name.trim() }],
+          items: [...(session.items ?? []), newItem],
         };
       });
       tx.update(target.ref, {
@@ -859,35 +926,39 @@ export async function addTrainingSessionItem(
       });
     });
 
-    return { id: insertedId, name: item.name.trim(), quantity: '', notes: '' };
+    return {
+      id: insertedId,
+      name: item.name.trim(),
+      quantity: item.quantity ?? '',
+      notes: item.notes ?? '',
+      ymoveId: item.ymoveId,
+    };
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
   }
 }
 
 export async function removeTrainingSessionItem(
+  planId: string,
   _sessionId: string,
   itemId: string,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   try {
     const firestore = deps.getFirestoreInstance();
-
-    const plans = await getDocs(query(collection(firestore, 'trainingPlans'), where('sessions', '!=', null)));
-    const target = plans.docs.find((snap) => {
-      const raw = snap.data() as FirestoreTrainingPlan;
-      return (raw.sessions ?? []).some((s) => (s.items ?? []).some((it) => it.id === itemId));
-    });
-
-    if (!target) return;
-
+    // Direct document lookup — O(1), consistent, no collection scan.
     await runTransaction(firestore, async (tx) => {
-      const raw = target.data() as FirestoreTrainingPlan;
+      const ref = doc(firestore, 'trainingPlans', planId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) {
+        throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
+      }
+      const raw = snap.data() as FirestoreTrainingPlan;
       const sessions = (raw.sessions ?? []).map((session) => ({
         ...session,
         items: (session.items ?? []).filter((it) => it.id !== itemId),
       }));
-      tx.update(target.ref, {
+      tx.update(ref, {
         sessions,
         updatedAt: nowIso(),
       });
@@ -917,7 +988,7 @@ export async function reorderTrainingSessionItems(
       const sessions = (raw.sessions ?? []).map((session) => {
         if (session.id !== sessionId) return session;
         const items = session.items ?? [];
-        const reordered = itemIds.map(id => items.find(it => it.id === id)).filter(Boolean) as Array<{ id: string; exerciseName: string }>;
+        const reordered = itemIds.map(id => items.find(it => it.id === id)).filter(Boolean) as FirestoreTrainingItem[];
         return { ...session, items: reordered };
       });
       tx.update(target.ref, {

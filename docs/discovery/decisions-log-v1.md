@@ -347,5 +347,11 @@
   - **Persistence**: `setLanguageOverride(locale)` (AsyncStorage key `app.language.override`) is called inside `setActiveLocale()`. Storage contract unchanged.
   - **Supersedes D-144 language switcher decision**: The inline picker behavior documented in D-144 no longer applies. D-144 remains for historical reference; SC-222 is the authoritative implementation.
 
+- `D-157`: YMove Exercise API — video URL caching policy and client-side key exposure.
+  - **No server proxy**: YMove API calls are made directly from the mobile client using `EXPO_PUBLIC_YMOVE_API_KEY` (embedded in the binary). This avoids Cloud Function costs but exposes the key to potential binary extraction. Accepted risk per `.env.example` comment and YMove's own recommendation for simpler integrations.
+  - **No URL persistence**: Pre-signed video and thumbnail URLs returned by the YMove API expire after 48 hours (API contract). Only `ymoveId` (UUID) is persisted to Firestore. Fresh URLs are fetched on demand via `getYMoveExerciseById` at display time (wired via `useYMoveThumbnail` hook in `SessionCard`).
+  - **Graceful degradation**: When the API key is absent (e.g., dev environment before key is set), `searchYMoveExercises` returns `[]` silently with a `console.warn`. `useYMoveThumbnail` falls back to the placeholder icon without surfacing an error to the user.
+  - **Localization**: Muscle group slugs returned by the API (`chest`, `full_body`, etc.) are translated via `ymove.muscle_group.<slug>` i18n keys in all 3 locale bundles. Raw slug is used as fallback if a key is missing.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

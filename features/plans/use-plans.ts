@@ -13,6 +13,8 @@ import {
   submitPlanChangeRequest,
   reviewPlanChangeRequest,
   getStudentPlanChangeRequests,
+  getCachedPlans,
+  getCachedPredefinedPlans,
   type Plan,
   type PredefinedPlan,
 } from './plan-source';
@@ -62,7 +64,15 @@ export function usePlans(
   isAuthenticated: boolean,
   options: { fetchOnMount?: boolean } = { fetchOnMount: true }
 ): UsePlansResult {
-  const [state, setState] = useState<PlansLoadState>({ kind: 'idle' });
+  const [state, setState] = useState<PlansLoadState>(() => {
+    if (!isAuthenticated) return { kind: 'idle' };
+    const plans = getCachedPlans();
+    const predefinedPlans = getCachedPredefinedPlans();
+    if (plans && predefinedPlans) {
+      return { kind: 'ready', plans, predefinedPlans };
+    }
+    return { kind: 'idle' };
+  });
 
   const load = useCallback(() => {
     if (!isAuthenticated) {
@@ -70,7 +80,11 @@ export function usePlans(
       return;
     }
 
-    setState({ kind: 'loading' });
+    // If we have cached data, don't show loading spinner to avoid flicker.
+    // The background refetch will update the UI silently.
+    if (!getCachedPlans() || !getCachedPredefinedPlans()) {
+      setState({ kind: 'loading' });
+    }
 
     void Promise.all([getMyPlans(), getMyPredefinedPlans()])
       .then(([plans, predefinedPlans]) => {

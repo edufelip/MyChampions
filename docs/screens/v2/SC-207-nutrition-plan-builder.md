@@ -36,6 +36,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Remove food items.
 - Search foods via VPS food-search microservice integration (`https://foodservice.eduwaldo.com/searchFoods`).
 - Save plan (create or update).
+- Delete plan; after a successful delete, show the blocking loading scrim and then return the user to the nutrition library.
 - Assign plan to a student.
 - Bulk-assign plan to multiple students with per-student fine-tune step.
 
@@ -45,7 +46,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 |---|---|---|
 | Idle | Initial mount | Empty form or loading gated |
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
-| Saving | `createPlan` or `savePlan` in flight | Save CTA disabled, loading indicator |
+| Saving | `createPlan`, `savePlan`, delete plan, add/remove/reorder meal/item in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with item list, CTAs |
 | Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
 | Food search idle | No query | Placeholder shown |
@@ -58,6 +59,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Carbs, proteins, and fats targets must each be zero or greater if provided (BR-292).
 - Bulk assignment produces independent per-student plan copies; later library edits do not mutate assigned copies (BR-283, D-082).
 - Assigned plans are read-only for students (D-006).
+- Meal add/remove/item mutations must not clear already rendered builder content while the request is still pending; UI remains visible until the mutation resolves.
 
 ## Data Contract
 

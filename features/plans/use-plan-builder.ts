@@ -20,6 +20,7 @@ import {
   reorderNutritionMealItems,
   createTrainingPlan,
   updateTrainingPlan,
+  updateTrainingPlanDraft,
   deleteTrainingPlan,
   getTrainingPlanDetail,
   addTrainingSession,
@@ -31,6 +32,8 @@ import {
   getStarterTemplates,
   cloneStarterTemplate,
   searchFoods,
+  optimisticUpdatePredefinedPlan,
+  optimisticDeletePredefinedPlan,
   type NutritionPlanDetail,
   type TrainingPlanDetail,
   type FoodSearchResult,
@@ -49,6 +52,7 @@ import {
   type NutritionMealItemInput,
   type NutritionPlanValidationErrors,
   type TrainingPlanInput,
+  type TrainingSession,
   type TrainingSessionInput,
   type TrainingSessionItemInput,
   type TrainingPlanValidationErrors,
@@ -70,14 +74,26 @@ import {
 export type NutritionBuilderState =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'ready'; plan: NutritionPlanDetail; isBackgroundUpdating?: boolean; backgroundError?: string }
+  | {
+      kind: 'ready';
+      plan: NutritionPlanDetail;
+      isBackgroundUpdating?: boolean;
+      backgroundError?: string;
+      isMutating?: boolean;
+    }
   | { kind: 'saving' }
   | { kind: 'error'; reason: PlanBuilderErrorReason; message: string };
 
 export type TrainingBuilderState =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'ready'; plan: TrainingPlanDetail; isBackgroundUpdating?: boolean; backgroundError?: string }
+  | {
+      kind: 'ready';
+      plan: TrainingPlanDetail;
+      isBackgroundUpdating?: boolean;
+      backgroundError?: string;
+      isMutating?: boolean;
+    }
   | { kind: 'saving' }
   | { kind: 'error'; reason: PlanBuilderErrorReason; message: string };
 
@@ -88,6 +104,72 @@ export type FoodSearchState =
   | { kind: 'error'; reason: PlanBuilderErrorReason };
 
 export type { FoodSearchResult };
+
+export function markNutritionBuilderMutating(
+  state: NutritionBuilderState
+): NutritionBuilderState {
+  if (state.kind !== 'ready') {
+    return state;
+  }
+
+  return {
+    ...state,
+    isMutating: true,
+    backgroundError: undefined,
+  };
+}
+
+export function markTrainingBuilderMutating(
+  state: TrainingBuilderState
+): TrainingBuilderState {
+  if (state.kind !== 'ready') {
+    return state;
+  }
+
+  return {
+    ...state,
+    isMutating: true,
+    backgroundError: undefined,
+  };
+}
+
+function buildNutritionMutationErrorState(
+  previousState: NutritionBuilderState,
+  err: unknown
+): NutritionBuilderState {
+  if (previousState.kind === 'ready') {
+    return {
+      ...previousState,
+      isMutating: false,
+      backgroundError: (err as Error).message,
+    };
+  }
+
+  return {
+    kind: 'error',
+    reason: normalizePlanBuilderError(err),
+    message: (err as Error).message,
+  };
+}
+
+function buildTrainingMutationErrorState(
+  previousState: TrainingBuilderState,
+  err: unknown
+): TrainingBuilderState {
+  if (previousState.kind === 'ready') {
+    return {
+      ...previousState,
+      isMutating: false,
+      backgroundError: (err as Error).message,
+    };
+  }
+
+  return {
+    kind: 'error',
+    reason: normalizePlanBuilderError(err),
+    message: (err as Error).message,
+  };
+}
 
 // ─── Nutrition plan builder hook ──────────────────────────────────────────────
 
@@ -199,6 +281,14 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       try {
         const plan = await createNutritionPlan(input);
         setState({ kind: 'ready', plan });
+        optimisticUpdatePredefinedPlan({
+          id: plan.id,
+          name: plan.name,
+          planType: 'nutrition',
+          ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
+          createdAt: plan.createdAt,
+          updatedAt: plan.updatedAt,
+        });
         return { id: plan.id };
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
@@ -216,48 +306,59 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       const errors = validateNutritionPlanInput(input);
       if (Object.keys(errors).length > 0) return 'validation';
 
-      setState((prev) => {
-        if (prev.kind === 'ready') return { kind: 'saving' };
-        return prev;
-      });
+      const previousState = state;
+      setState((prev) => markNutritionBuilderMutating(prev));
 
       try {
         await updateNutritionPlan(planId, input);
         // Reload to get authoritative state from server
         const updated = await getNutritionPlanDetail(planId);
         setState({ kind: 'ready', plan: updated });
+
+        if (updated.sourceKind === 'predefined') {
+          optimisticUpdatePredefinedPlan({
+            id: updated.id,
+            name: updated.name,
+            planType: 'nutrition',
+            ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
+            createdAt: updated.createdAt,
+            updatedAt: updated.updatedAt,
+          });
+        }
+        
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildNutritionMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const deletePlan = useCallback(
     async (planId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
-      setState({ kind: 'saving' });
+      const previousState = state;
       try {
         await deleteNutritionPlan(planId);
-        setState({ kind: 'idle' });
+        optimisticDeletePredefinedPlan(planId);
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildNutritionMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const addMeal = useCallback(
     async (planId: string, meal: NutritionMealInput, planInput?: NutritionPlanInput): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
       if (!isAuthenticated) return { planId, error: 'unknown' };
       
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      setState((prev) => markNutritionBuilderMutating(prev));
       
       try {
         let currentPlanId = planId;
@@ -274,15 +375,26 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
         const updated = await getNutritionPlanDetail(currentPlanId);
         await setCachedNutritionPlan(updated);
         setState({ kind: 'ready', plan: updated });
+
+        if (updated.sourceKind === 'predefined') {
+          optimisticUpdatePredefinedPlan({
+            id: updated.id,
+            name: updated.name,
+            planType: 'nutrition',
+            ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
+            createdAt: updated.createdAt,
+            updatedAt: updated.updatedAt,
+          });
+        }
         
         return { planId: currentPlanId, error: null };
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildNutritionMutationErrorState(previousState, err));
         return { planId, error: reason };
       }
     },
-    [isAuthenticated, createPlan]
+    [isAuthenticated, createPlan, state]
   );
 
   const removeMeal = useCallback(
@@ -290,21 +402,34 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       if (!isAuthenticated) return 'unknown';
       if (planId === 'new') return null;
 
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      setState((prev) => markNutritionBuilderMutating(prev));
 
       try {
         await removeNutritionMeal(planId, mealId);
         const updated = await getNutritionPlanDetail(planId);
         await setCachedNutritionPlan(updated);
         setState({ kind: 'ready', plan: updated });
+
+        if (updated.sourceKind === 'predefined') {
+          optimisticUpdatePredefinedPlan({
+            id: updated.id,
+            name: updated.name,
+            planType: 'nutrition',
+            ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
+            createdAt: updated.createdAt,
+            updatedAt: updated.updatedAt,
+          });
+        }
+        
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildNutritionMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const reorderMeals = useCallback(
@@ -312,31 +437,45 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       if (!isAuthenticated) return 'unknown';
       if (planId === 'new') return null;
 
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      setState((prev) => markNutritionBuilderMutating(prev));
 
       try {
         await reorderNutritionMeals(planId, mealIds);
         const updated = await getNutritionPlanDetail(planId);
         await setCachedNutritionPlan(updated);
         setState({ kind: 'ready', plan: updated });
+
+        if (updated.sourceKind === 'predefined') {
+          optimisticUpdatePredefinedPlan({
+            id: updated.id,
+            name: updated.name,
+            planType: 'nutrition',
+            ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
+            createdAt: updated.createdAt,
+            updatedAt: updated.updatedAt,
+          });
+        }
+        
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildNutritionMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const addItem = useCallback(
     async (planId: string, mealId: string, item: NutritionMealItemInput, planInput?: NutritionPlanInput): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
       if (!isAuthenticated) return { planId, error: 'unknown' };
 
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      let currentPlanId = planId;
+      setState((prev) => markNutritionBuilderMutating(prev));
 
       try {
-        let currentPlanId = planId;
         if (planId === 'new') {
           const res = await createPlan(planInput ?? { name: 'Untitled' });
           if ('error' in res) return { planId, error: res.error };
@@ -351,11 +490,11 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
         return { planId: currentPlanId, error: null };
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildNutritionMutationErrorState(previousState, err));
         return { planId: currentPlanId, error: reason };
       }
     },
-    [isAuthenticated, createPlan]
+    [isAuthenticated, createPlan, state]
   );
 
   const removeItem = useCallback(
@@ -363,7 +502,8 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       if (!isAuthenticated) return 'unknown';
       if (planId === 'new') return null;
 
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      setState((prev) => markNutritionBuilderMutating(prev));
 
       try {
         await removeNutritionMealItem(planId, mealId, itemId);
@@ -373,11 +513,11 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildNutritionMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const reorderItems = useCallback(
@@ -385,7 +525,8 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       if (!isAuthenticated) return 'unknown';
       if (planId === 'new') return null;
 
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      setState((prev) => markNutritionBuilderMutating(prev));
 
       try {
         await reorderNutritionMealItems(planId, mealId, itemIds);
@@ -395,11 +536,11 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildNutritionMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const activeSearchQuery = useRef<string | null>(null);
@@ -466,6 +607,11 @@ export type UseTrainingPlanBuilderResult = {
   initNewPlan: () => void;
   createPlan: (input: TrainingPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   savePlan: (planId: string, input: TrainingPlanInput) => Promise<PlanBuilderErrorReason | null>;
+  savePlanDraft: (
+    planId: string,
+    input: TrainingPlanInput,
+    sessions: TrainingSession[]
+  ) => Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }>;
   addSession: (
     planId: string,
     session: TrainingSessionInput,
@@ -545,6 +691,14 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
       try {
         const plan = await createTrainingPlan(input);
         setState({ kind: 'ready', plan });
+        optimisticUpdatePredefinedPlan({
+          id: plan.id,
+          name: plan.name,
+          planType: 'training',
+          ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
+          createdAt: plan.createdAt,
+          updatedAt: plan.updatedAt,
+        });
         return { id: plan.id };
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
@@ -575,10 +729,8 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
       const errors = validateTrainingPlanInput(input);
       if (Object.keys(errors).length > 0) return 'validation';
 
-      setState((prev) => {
-        if (prev.kind === 'ready') return { kind: 'saving' };
-        return prev;
-      });
+      const previousState = state;
+      setState((prev) => markTrainingBuilderMutating(prev));
 
       try {
         await updateTrainingPlan(planId, input);
@@ -587,28 +739,76 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildTrainingMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
+  );
+
+  const savePlanDraft = useCallback(
+    async (
+      planId: string,
+      input: TrainingPlanInput,
+      sessions: TrainingSession[]
+    ): Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }> => {
+      if (!isAuthenticated) return { error: 'unknown' };
+
+      const errors = validateTrainingPlanInput(input);
+      if (Object.keys(errors).length > 0) return { error: 'validation' };
+
+      const previousState = state;
+      setState((prev) => markTrainingBuilderMutating(prev));
+
+      try {
+        let currentPlanId = planId;
+        if (planId === 'new') {
+          const created = await createTrainingPlan(input);
+          currentPlanId = created.id;
+        }
+
+        await updateTrainingPlanDraft(currentPlanId, input, sessions);
+        const updated = await getTrainingPlanDetail(currentPlanId);
+        await setCachedTrainingPlan(updated);
+        setState({ kind: 'ready', plan: updated });
+
+        // Optimistically update the predefined plans list cache
+        if (updated.sourceKind === 'predefined') {
+          optimisticUpdatePredefinedPlan({
+            id: updated.id,
+            name: updated.name,
+            planType: 'training',
+            ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
+            createdAt: updated.createdAt,
+            updatedAt: updated.updatedAt,
+          });
+        }
+        
+        return { id: currentPlanId, plan: updated };
+      } catch (err) {
+        const reason = normalizePlanBuilderError(err);
+        setState(buildTrainingMutationErrorState(previousState, err));
+        return { error: reason };
+      }
+    },
+    [isAuthenticated, state]
   );
 
   const deletePlan = useCallback(
     async (planId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
-      setState({ kind: 'saving' });
+      const previousState = state;
       try {
         await deleteTrainingPlan(planId);
-        setState({ kind: 'idle' });
+        optimisticDeletePredefinedPlan(planId);
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildTrainingMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const addSession = useCallback(
@@ -619,10 +819,11 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     ): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
       if (!isAuthenticated) return { planId, error: 'unknown' };
 
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      let currentPlanId = planId;
+      setState((prev) => markTrainingBuilderMutating(prev));
 
       try {
-        let currentPlanId = planId;
         if (planId === 'new') {
           const resolvedInput = resolveTrainingDraftCreationInput(planInput);
           if (resolvedInput.error) {
@@ -643,18 +844,19 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
         return { planId: currentPlanId, error: null };
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildTrainingMutationErrorState(previousState, err));
         return { planId, error: reason };
       }
     },
-    [isAuthenticated, createPlan]
+    [isAuthenticated, createPlan, state]
   );
 
   const removeSession = useCallback(
     async (planId: string, sessionId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      setState((prev) => markTrainingBuilderMutating(prev));
 
       try {
         await removeTrainingSession(planId, sessionId);
@@ -664,11 +866,11 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildTrainingMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const addSessionItem = useCallback(
@@ -677,68 +879,66 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
       const itemErrors = validateTrainingSessionItemInput(item);
       if (Object.keys(itemErrors).length > 0) return 'validation';
 
-      // Capture current planId from state if ready
-      let currentPlanId: string | null = null;
-      setState((prev) => {
-        if (prev.kind === 'ready') {
-          currentPlanId = prev.plan.id;
-          return { kind: 'saving' };
-        }
-        return prev;
-      });
+      // Read planId synchronously from the current state snapshot BEFORE calling
+      // setState. Capturing it inside a setState updater closure is unreliable —
+      // React batches updaters and may run them after the first await suspension
+      // point, leaving currentPlanId null when the if-guard would run.
+      if (state.kind !== 'ready') return null;
+      const previousState = state;
+      const currentPlanId = state.plan.id;
+
+      setState((prev) => markTrainingBuilderMutating(prev));
 
       try {
         await addTrainingSessionItem(sessionId, item);
-        if (currentPlanId) {
-          const updated = await getTrainingPlanDetail(currentPlanId);
-          await setCachedTrainingPlan(updated);
-          setState({ kind: 'ready', plan: updated });
-        }
+        const updated = await getTrainingPlanDetail(currentPlanId);
+        await setCachedTrainingPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildTrainingMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const removeSessionItem = useCallback(
     async (sessionId: string, itemId: string): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
-      let currentPlanId: string | null = null;
-      setState((prev) => {
-        if (prev.kind === 'ready') {
-          currentPlanId = prev.plan.id;
-          return { kind: 'saving' };
-        }
-        return prev;
-      });
+      // Read planId synchronously from the current state snapshot BEFORE calling
+      // setState. Capturing it inside a setState updater closure is unreliable —
+      // React batches updaters and may run them after the first await suspension
+      // point, leaving currentPlanId null when the if-guard below runs.
+      if (state.kind !== 'ready') return null;
+      const previousState = state;
+      const currentPlanId = state.plan.id;
+
+      setState((prev) => markTrainingBuilderMutating(prev));
 
       try {
-        await removeTrainingSessionItem(sessionId, itemId);
-        if (currentPlanId) {
-          const updated = await getTrainingPlanDetail(currentPlanId);
-          await setCachedTrainingPlan(updated);
-          setState({ kind: 'ready', plan: updated });
-        }
+        await removeTrainingSessionItem(currentPlanId, sessionId, itemId);
+        const updated = await getTrainingPlanDetail(currentPlanId);
+        await setCachedTrainingPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildTrainingMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const reorderSessions = useCallback(
     async (planId: string, sessionIds: string[]): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
-      setState((prev) => (prev.kind === 'ready' ? { kind: 'saving' } : prev));
+      const previousState = state;
+      setState((prev) => markTrainingBuilderMutating(prev));
 
       try {
         await reorderTrainingSessions(planId, sessionIds);
@@ -748,41 +948,35 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildTrainingMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const reorderSessionItems = useCallback(
     async (sessionId: string, itemIds: string[]): Promise<PlanBuilderErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
-      let currentPlanId: string | null = null;
-      setState((prev) => {
-        if (prev.kind === 'ready') {
-          currentPlanId = prev.plan.id;
-          return { kind: 'saving' };
-        }
-        return prev;
-      });
+      if (state.kind !== 'ready') return null;
+      const previousState = state;
+      const currentPlanId = state.plan.id;
+      setState((prev) => markTrainingBuilderMutating(prev));
 
       try {
         await reorderTrainingSessionItems(sessionId, itemIds);
-        if (currentPlanId) {
-          const updated = await getTrainingPlanDetail(currentPlanId);
-          await setCachedTrainingPlan(updated);
-          setState({ kind: 'ready', plan: updated });
-        }
+        const updated = await getTrainingPlanDetail(currentPlanId);
+        await setCachedTrainingPlan(updated);
+        setState({ kind: 'ready', plan: updated });
         return null;
       } catch (err) {
         const reason = normalizePlanBuilderError(err);
-        setState({ kind: 'error', reason, message: (err as Error).message });
+        setState(buildTrainingMutationErrorState(previousState, err));
         return reason;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, state]
   );
 
   const validateInput = useCallback(
@@ -801,6 +995,7 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     initNewPlan,
     createPlan,
     savePlan,
+    savePlanDraft,
     addSession,
     removeSession,
     reorderSessions,

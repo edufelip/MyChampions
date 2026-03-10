@@ -98,6 +98,57 @@ type FirestorePlanChangeRequest = {
 
 type PlanSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
+// ─── Global Cache (Optimistic UI) ──────────────────────────────────────────
+
+let globalPlansCache: Plan[] | null = null;
+let globalPredefinedPlansCache: PredefinedPlan[] | null = null;
+
+export function getCachedPlans(): Plan[] | null {
+  return globalPlansCache;
+}
+
+export function getCachedPredefinedPlans(): PredefinedPlan[] | null {
+  return globalPredefinedPlansCache;
+}
+
+export function setCachedPlans(plans: Plan[]) {
+  globalPlansCache = plans;
+}
+
+export function setCachedPredefinedPlans(plans: PredefinedPlan[]) {
+  globalPredefinedPlansCache = plans;
+}
+
+/**
+ * Optimistically adds or updates a predefined plan in the global cache.
+ * Useful for seamless transitions after a builder save before the next fetch.
+ */
+export function optimisticUpdatePredefinedPlan(plan: PredefinedPlan) {
+  if (!globalPredefinedPlansCache) {
+    globalPredefinedPlansCache = [plan];
+    return;
+  }
+
+  const index = globalPredefinedPlansCache.findIndex((p) => p.id === plan.id);
+  if (index >= 0) {
+    const next = [...globalPredefinedPlansCache];
+    next[index] = plan;
+    globalPredefinedPlansCache = next.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  } else {
+    globalPredefinedPlansCache = [plan, ...globalPredefinedPlansCache].sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt)
+    );
+  }
+}
+
+/**
+ * Optimistically removes a predefined plan from the global cache.
+ */
+export function optimisticDeletePredefinedPlan(planId: string) {
+  if (!globalPredefinedPlansCache) return;
+  globalPredefinedPlansCache = globalPredefinedPlansCache.filter((p) => p.id !== planId);
+}
+
 export class PlanSourceError extends Error {
   code: PlanSourceErrorCode;
 
@@ -186,7 +237,9 @@ export async function getMyPlans(deps = defaultDeps): Promise<Plan[]> {
       unique.set(`training:${snap.id}`, toPlanFromTraining(raw));
     }
 
-    return [...unique.values()];
+    const result = [...unique.values()];
+    setCachedPlans(result);
+    return result;
   } catch (error) {
     throw normalizePlanSourceError(error);
   }
@@ -233,9 +286,11 @@ export async function getMyPredefinedPlans(deps = defaultDeps): Promise<Predefin
       };
     });
 
-    return [...nutritionPredefined, ...trainingPredefined].sort((a, b) =>
+    const result = [...nutritionPredefined, ...trainingPredefined].sort((a, b) =>
       b.updatedAt.localeCompare(a.updatedAt)
     );
+    setCachedPredefinedPlans(result);
+    return result;
   } catch (error) {
     throw normalizePlanSourceError(error);
   }

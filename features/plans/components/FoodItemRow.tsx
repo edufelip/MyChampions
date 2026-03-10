@@ -26,6 +26,7 @@ type FoodItemRowProps = {
   onMoveDown?: () => void;
   isFirstInList?: boolean;
   isLastInList?: boolean;
+  isInteractionLocked?: boolean;
   t: (key: TranslationKey) => string;
 };
 
@@ -46,16 +47,17 @@ export const FoodItemRow = React.memo(({
   onMoveDown,
   isFirstInList,
   isLastInList,
+  isInteractionLocked,
   t,
 }: FoodItemRowProps) => {
   return (
     <View style={[styles.itemRow, !isLast && { borderBottomWidth: 1, borderBottomColor: theme.color.border }]}>
       {isSortMode && (
         <View style={styles.sortControls}>
-          <Pressable onPress={onMoveUp} disabled={isFirstInList}>
+          <Pressable onPress={onMoveUp} disabled={isInteractionLocked || isFirstInList}>
             <IconSymbol name="chevron.up" size={16} color={isFirstInList ? theme.color.textSecondary : palette.tint} />
           </Pressable>
-          <Pressable onPress={onMoveDown} disabled={isLastInList}>
+          <Pressable onPress={onMoveDown} disabled={isInteractionLocked || isLastInList}>
             <IconSymbol name="chevron.down" size={16} color={isLastInList ? theme.color.textSecondary : palette.tint} />
           </Pressable>
         </View>
@@ -90,6 +92,7 @@ export const FoodItemRow = React.memo(({
       {!isSortMode && (
         <Pressable
           onPress={onRemove}
+          disabled={isInteractionLocked}
           accessibilityRole="button"
           accessibilityLabel={`Remove ${name}`}
           hitSlop={8}

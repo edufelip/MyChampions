@@ -28,6 +28,7 @@ type AddItemFormProps = {
   foodQuery: string;
   foodSearchState: FoodSearchState;
   selectedFood?: FoodSearchResult;
+  isInteractionLocked?: boolean;
   onNameChange: (v: string) => void;
   onQuantityChange: (v: string) => void;
   onNotesChange: (v: string) => void;
@@ -57,6 +58,7 @@ export const AddItemForm = React.memo(({
   foodQuery,
   foodSearchState,
   selectedFood,
+  isInteractionLocked = false,
   onNameChange,
   onQuantityChange,
   onNotesChange,
@@ -83,7 +85,7 @@ export const AddItemForm = React.memo(({
         <Text style={[styles.title, { color: palette.text }]}>
           {tr('pro.plan.cta.add_food', 'student.plan.cta.add_food')}
         </Text>
-        <Pressable onPress={onClose} hitSlop={12}>
+        <Pressable onPress={onClose} disabled={isInteractionLocked} hitSlop={12}>
           <MaterialIcons name="close" size={24} color={palette.icon} />
         </Pressable>
       </View>
@@ -99,10 +101,11 @@ export const AddItemForm = React.memo(({
             value={foodQuery}
             onChangeText={onQueryChange}
             onSubmitEditing={onSearch}
+            editable={!isInteractionLocked}
             returnKeyType="search"
           />
           {foodQuery.length > 0 && (
-            <Pressable onPress={() => onQueryChange('')}>
+            <Pressable onPress={() => onQueryChange('')} disabled={isInteractionLocked}>
               <MaterialIcons name="cancel" size={18} color={palette.icon} />
             </Pressable>
           )}
@@ -115,7 +118,7 @@ export const AddItemForm = React.memo(({
               {selectedFood.name}
             </Text>
           </View>
-          <Pressable onPress={onClearFood} hitSlop={8} style={styles.clearFoodBtn}>
+          <Pressable onPress={onClearFood} disabled={isInteractionLocked} hitSlop={8} style={styles.clearFoodBtn}>
             <Text style={[styles.clearFoodText, { color: theme.color.danger }]}>
               {t('common.cta.clear') || 'Clear'}
             </Text>
@@ -139,6 +142,7 @@ export const AddItemForm = React.memo(({
                   palette={palette}
                   theme={theme}
                   t={t}
+                  disabled={isInteractionLocked}
                   onSelect={() => onSelectFood(item)}
                 />
               ))}
@@ -169,6 +173,7 @@ export const AddItemForm = React.memo(({
               style={[styles.input, styles.textArea, { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
               value={name}
               onChangeText={onNameChange}
+              editable={!isInteractionLocked}
               placeholder={t('pro.plan.item.field.nutrition_name.placeholder')}
               placeholderTextColor={theme.color.textTertiary}
               multiline
@@ -182,6 +187,7 @@ export const AddItemForm = React.memo(({
               style={[styles.input, { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
               value={quantity}
               onChangeText={(text) => onQuantityChange(text.replace(/[^0-9.]/g, ''))}
+              editable={!isInteractionLocked}
               keyboardType="decimal-pad"
               placeholder={t('pro.plan.item.field.nutrition_quantity.placeholder')}
               placeholderTextColor={theme.color.textTertiary}
@@ -201,7 +207,7 @@ export const AddItemForm = React.memo(({
               keyboardType="decimal-pad"
               placeholder="0"
               placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood}
+              editable={!selectedFood && !isInteractionLocked}
             />
           </View>
           <View style={[styles.field, { flex: 1 }]}>
@@ -215,7 +221,7 @@ export const AddItemForm = React.memo(({
               keyboardType="decimal-pad"
               placeholder="0"
               placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood}
+              editable={!selectedFood && !isInteractionLocked}
             />
           </View>
           <View style={[styles.field, { flex: 1 }]}>
@@ -229,7 +235,7 @@ export const AddItemForm = React.memo(({
               keyboardType="decimal-pad"
               placeholder="0"
               placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood}
+              editable={!selectedFood && !isInteractionLocked}
             />
           </View>
         </View>
@@ -242,6 +248,7 @@ export const AddItemForm = React.memo(({
             style={[styles.input, { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
             value={notes}
             onChangeText={onNotesChange}
+            editable={!isInteractionLocked}
             placeholder={t('pro.plan.item.field.nutrition_notes.placeholder')}
             placeholderTextColor={theme.color.textTertiary}
           />
@@ -252,7 +259,7 @@ export const AddItemForm = React.memo(({
         scheme={scheme}
         label={t('common.cta.add') as string}
         onPress={onAdd}
-        disabled={!name.trim()}
+        disabled={isInteractionLocked || !name.trim()}
         style={styles.addBtn}
       />
     </Animated.View>
@@ -264,13 +271,15 @@ function FoodSearchItem({
   palette, 
   theme, 
   t, 
-  onSelect 
+  onSelect,
+  disabled = false,
 }: { 
   item: FoodSearchResult; 
   palette: any; 
   theme: any; 
   t: (key: TranslationKey) => string; 
-  onSelect: () => void 
+  onSelect: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
@@ -280,6 +289,7 @@ function FoodSearchItem({
         pressed && { backgroundColor: theme.color.surfaceMuted }
       ]}
       onPress={onSelect}
+      disabled={disabled}
     >
       <View style={styles.searchItemInfo}>
         <Text style={[styles.searchItemName, { color: palette.text }]}>{item.name}</Text>

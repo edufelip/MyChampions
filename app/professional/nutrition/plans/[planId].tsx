@@ -4,18 +4,16 @@
  */
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   LayoutAnimation,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
-  UIManager,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -24,12 +22,20 @@ import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
+import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
+import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
+import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
 import { PlanMetadataForm } from '@/features/plans/components/PlanMetadataForm';
 
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
+import {
+  createBuilderPalette,
+  createBuilderRoleTranslator,
+  enableBuilderLayoutAnimations,
+} from '@/features/plans/builder-screen';
 import {
   validateNutritionPlanInput,
   isStarterTemplate,
@@ -41,9 +47,7 @@ import { usePlanForm } from '@/features/plans/use-plan-form';
 import { usePlanDraft } from '@/features/plans/use-plan-draft';
 import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+enableBuilderLayoutAnimations();
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -52,26 +56,17 @@ export default function NutritionPlanBuilderScreen() {
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
   
-  const palette = useMemo(() => ({
-    background: theme.color.canvas,
-    text: theme.color.textPrimary,
-    tint: theme.color.accentPrimary,
-    icon: theme.color.textSecondary,
-    danger: theme.color.danger,
-  }), [theme]);
+  const palette = useMemo(() => createBuilderPalette(theme), [theme]);
 
   const { t } = useTranslation();
   const router = useRouter();
+  const navigation = useNavigation<any>();
   const pathname = usePathname();
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const { currentUser } = useAuthSession();
   const isStudentBuilder = pathname.startsWith('/student/');
 
-  const tr = useCallback(
-    (proKey: string, studentKey: string) =>
-      t((isStudentBuilder ? studentKey : proKey) as any),
-    [isStudentBuilder, t]
-  );
+  const tr = useMemo(() => createBuilderRoleTranslator(isStudentBuilder, t), [isStudentBuilder, t]);
 
   const {
     state,
@@ -103,7 +98,6 @@ export default function NutritionPlanBuilderScreen() {
     isDirty,
     setIsDirty,
     handleSave,
-    handleBack,
   } = usePlanForm({
     initialValues,
     validate: (v) => validateInput(v as any),
@@ -116,11 +110,13 @@ export default function NutritionPlanBuilderScreen() {
       return savePlan(planId!, formValues);
     },
     onSuccess: (id) => {
-      if (isNew || isStarterClone) {
-        router.replace(
-          `${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${id}` as never
-        );
-      }
+      // After a successful save, we want to go back to the library.
+      // We must clear the local dirty state first.
+      setIsDirty(false);
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Navigate to the tab route so the bottom nav bar is visible
+      router.replace('/nutrition');
     }
   });
 
@@ -145,10 +141,51 @@ export default function NutritionPlanBuilderScreen() {
     }
   }, [state.kind, checkDraft, clearDraft, t, setValues]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event: any) => {
+      if (!isDirty) {
+        return;
+      }
+
+      event.preventDefault();
+      Alert.alert(
+        t('pro.plan.discard.title'),
+        t('pro.plan.discard.body'),
+        [
+          { text: t('pro.plan.discard.no'), style: 'cancel' },
+          {
+            text: t('pro.plan.discard.yes'),
+            style: 'destructive',
+            onPress: async () => {
+              setIsDirty(false);
+              await clearDraft();
+              navigation.dispatch(event.data.action);
+            },
+          },
+        ]
+      );
+    });
+
+    return unsubscribe;
+  }, [clearDraft, isDirty, navigation, t, setIsDirty]);
+
+  const handleBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/nutrition');
+    }
+  }, [router]);
+
   // ── Local UI state ─────────────────────────────────────────────────────────
   const [addMealForm, setAddMealForm] = useState<{ kind: 'closed' } | { kind: 'open'; name: string }>({ kind: 'closed' });
   const [isSortMode, setIsSortMode] = useState(false);
   const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.nutrition_builder');
+  const [isDeletingPlan, setIsDeletingPlan] = useState(false);
+  const [shouldNavigateAfterDelete, setShouldNavigateAfterDelete] = useState(false);
+  const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
+  const isInitialLoading = state.kind === 'loading';
+  const isBusy = isSaving || isMutating || isDeletingPlan;
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -159,9 +196,22 @@ export default function NutritionPlanBuilderScreen() {
     }
   }, [planId, isNew, isStarterClone, loadPlan, initNewPlan]);
 
+  useEffect(() => {
+    if (!shouldNavigateAfterDelete || isDeletingPlan) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      setShouldNavigateAfterDelete(false);
+      router.replace(isStudentBuilder ? '/student/nutrition' : '/professional/nutrition');
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [shouldNavigateAfterDelete, isDeletingPlan, router, isStudentBuilder]);
+
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleAddMeal = useCallback(async () => {
-    if (addMealForm.kind !== 'open' || state.kind !== 'ready') return;
+    if (isBusy || addMealForm.kind !== 'open' || state.kind !== 'ready') return;
     const { name: mealName } = addMealForm;
     if (!mealName.trim()) return;
 
@@ -181,11 +231,11 @@ export default function NutritionPlanBuilderScreen() {
         router.replace(`${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${realId}` as any);
       }
     }
-  }, [addMealForm, state, addMeal, values.name, tr, setIsDirty, isNew, isStudentBuilder, router]);
+  }, [isBusy, addMealForm, state, addMeal, values.name, tr, setIsDirty, isNew, isStudentBuilder, router]);
 
   const handleRemoveMeal = useCallback(
     (mealId: string) => {
-      if (state.kind !== 'ready') return;
+      if (isBusy || state.kind !== 'ready') return;
       
       const meal = state.plan.meals.find(m => m.id === mealId);
       const mealName = meal?.name || t('pro.plan.section.meals');
@@ -208,11 +258,11 @@ export default function NutritionPlanBuilderScreen() {
         ]
       );
     },
-    [state, removeMeal, setIsDirty, t]
+    [isBusy, state, removeMeal, setIsDirty, t]
   );
 
   const handleMoveMeal = useCallback(async (index: number, direction: 'up' | 'down') => {
-    if (state.kind !== 'ready') return;
+    if (isBusy || state.kind !== 'ready') return;
     const newMeals = [...state.plan.meals];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newMeals.length) return;
@@ -226,7 +276,7 @@ export default function NutritionPlanBuilderScreen() {
     
     // Call optimistic reorder
     await reorderMeals(state.plan.id, newMeals.map(m => m.id));
-  }, [state, reorderMeals]);
+  }, [isBusy, state, reorderMeals]);
 
   const handleFieldChange = useCallback((field: keyof typeof values, v: string) => {
     setFieldValue(field, v);
@@ -245,7 +295,7 @@ export default function NutritionPlanBuilderScreen() {
   }, [isStudentBuilder, planId, router]);
 
   const handleDeletePlan = useCallback(() => {
-    if (isNew || !planId) return;
+    if (isBusy || isNew || !planId) return;
 
     Alert.alert(
       tr('pro.plan.delete.title', 'student.plan.delete.title'),
@@ -256,17 +306,20 @@ export default function NutritionPlanBuilderScreen() {
           text: t('common.cta.delete'),
           style: 'destructive',
           onPress: async () => {
+            setIsDeletingPlan(true);
             const err = await deletePlan(planId);
             if (!err) {
-              router.replace(isStudentBuilder ? '/student/nutrition' : '/professional/nutrition');
+              setShouldNavigateAfterDelete(true);
+              setIsDeletingPlan(false);
             } else {
+              setIsDeletingPlan(false);
               Alert.alert(tr('pro.plan.error.delete', 'student.plan.error.delete'));
             }
           },
         },
       ]
     );
-  }, [isNew, planId, deletePlan, router, isStudentBuilder, t, tr]);
+  }, [isBusy, isNew, planId, deletePlan, t, tr]);
 
   const screenTitle = isNew || isStarterClone
     ? tr('pro.plan.nutrition.title.create', 'student.plan.nutrition.title.create')
@@ -275,8 +328,6 @@ export default function NutritionPlanBuilderScreen() {
   return (
     <DsScreen
       scheme={scheme}
-      headerShown={false}
-      style={[styles.container, { backgroundColor: palette.background }]}
       contentContainerStyle={styles.content}
     >
       <Stack.Screen options={{ headerShown: false }} />
@@ -297,16 +348,7 @@ export default function NutritionPlanBuilderScreen() {
             size="sm"
             fullWidth={false}
             label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
-            onPress={() => {
-              Alert.alert(
-                tr('pro.plan.cta.save', 'student.plan.cta.save') as string,
-                undefined,
-                [
-                  { text: t('common.cta.cancel') as string, style: 'cancel' },
-                  { text: t('common.cta.save') as string, onPress: handleSave },
-                ]
-              );
-            }}
+            onPress={handleSave}
             disabled={!isDirty || isSaving}
             loading={isSaving}
           />
@@ -335,34 +377,17 @@ export default function NutritionPlanBuilderScreen() {
 
       {/* ── Error state ───────────────────────────────────────────────────── */}
       {state.kind === 'error' && (
-        <View
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-          style={[styles.errorBanner, { backgroundColor: palette.icon }]}
-        >
-          <Text style={[styles.errorBannerText, { color: palette.background }]}>
-            {tr('pro.plan.error.load', 'student.plan.error.load')}
-          </Text>
-        </View>
+        <BuilderAlertBanner
+          message={tr('pro.plan.error.load', 'student.plan.error.load')}
+          backgroundColor={palette.icon}
+          textColor={palette.background}
+        />
       )}
 
       {state.kind === 'ready' && state.backgroundError && (
-        <View
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-          style={[styles.errorBanner, { backgroundColor: theme.color.warningSoft, borderColor: theme.color.warning, borderWidth: 1 }]}
-        >
-          <Text style={[styles.errorBannerText, { color: theme.color.warning }]}>
-            {t('common.error.generic')} • Background update failed
-          </Text>
-        </View>
-      )}
-
-      {/* ── Loading state ─────────────────────────────────────────────────── */}
-      {(state.kind === 'loading' || isSaving) && (
-        <ActivityIndicator
-          style={styles.loader}
-          accessibilityLabel={t('a11y.loading.default')}
+        <BuilderBackgroundErrorBanner
+          theme={theme}
+          message={`${t('common.error.generic')} • Background update failed`}
         />
       )}
 
@@ -415,6 +440,7 @@ export default function NutritionPlanBuilderScreen() {
               size="sm"
               label={t('common.cta.cancel') as string}
               onPress={handleCloseAddMeal}
+              disabled={isBusy}
               fullWidth={false}
             />
             <DsPillButton
@@ -423,7 +449,7 @@ export default function NutritionPlanBuilderScreen() {
               size="sm"
               label={t('common.cta.add') as string}
               onPress={handleAddMeal}
-              disabled={!addMealForm.name.trim()}
+              disabled={isBusy || !addMealForm.name.trim()}
               fullWidth={false}
             />
           </View>
@@ -437,6 +463,7 @@ export default function NutritionPlanBuilderScreen() {
             variant="outline"
             label={tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
             onPress={handleOpenAddMeal}
+            disabled={isBusy}
             fullWidth={false}
             style={{ flex: 1 }}
             leftIcon={<IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />}
@@ -448,9 +475,11 @@ export default function NutritionPlanBuilderScreen() {
               variant="outline"
               label={t('pro.plan.cta.sort')}
               onPress={() => {
+                if (isBusy) return;
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setIsSortMode(true);
               }}
+              disabled={isBusy}
               fullWidth={false}
               style={styles.sortBtn}
               leftIcon={<IconSymbol name="arrow.up.arrow.down" size={14} color={palette.tint} />}
@@ -467,9 +496,11 @@ export default function NutritionPlanBuilderScreen() {
             size="sm"
             label={t('pro.plan.cta.sort_done')}
             onPress={() => {
+              if (isBusy) return;
               LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
               setIsSortMode(false);
             }}
+            disabled={isBusy}
             fullWidth={true}
           />
         </View>
@@ -511,6 +542,15 @@ export default function NutritionPlanBuilderScreen() {
       )}
 
       {/* ── Footer Actions Removed ──────────────────────────────────────────── */}
+
+      {(isInitialLoading || isBusy) && (
+        <BuilderLoadingScrim
+          scheme={scheme}
+          theme={theme}
+          spinnerColor={palette.tint}
+          label={t('a11y.loading.default')}
+        />
+      )}
     </DsScreen>
   );
 }
@@ -591,9 +631,6 @@ const styles = StyleSheet.create({
   content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 60 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
   backButton: { marginBottom: 0 },
-  loader: { marginVertical: DsSpace.xl },
-  errorBanner: { borderRadius: DsRadius.md, padding: DsSpace.sm, marginBottom: DsSpace.xs },
-  errorBannerText: { ...DsTypography.caption, fontWeight: '600', textAlign: 'center' },
   itemsInsetWrapper: { borderRadius: DsRadius.lg, padding: 0, overflow: 'hidden', ...DsShadow.soft, backgroundColor: 'white' }, // Explicit fallback for surface
   supportText: { ...DsTypography.micro, textTransform: 'none', opacity: 0.6, marginTop: DsSpace.xxs },
   sectionHeaderRow: { marginTop: DsSpace.md, marginBottom: DsSpace.xs, paddingHorizontal: DsSpace.xs },

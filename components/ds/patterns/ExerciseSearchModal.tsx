@@ -8,8 +8,39 @@ import { Fonts } from '@/constants/theme';
 import type { useYMoveSearch } from '@/features/plans/use-ymove-search';
 import type { YMoveExercise } from '@/features/plans/ymove-source';
 import type { useTranslation } from '@/localization';
+import { type TranslationKey } from '@/localization';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
+
+/**
+ * Exhaustive set of muscle group slugs the YMove API currently returns.
+ * Listed here so `translateMuscleGroup` can do a real membership check —
+ * unknown future slugs fall through to the raw slug fallback rather than
+ * returning the key string (which `t()` emits for unknown keys).
+ *
+ * SYNC NOTE: Every slug in this set must have a corresponding
+ * `ymove.muscle_group.<slug>` key in all three locale bundles:
+ *   localization/en-US.ts
+ *   localization/pt-BR.ts
+ *   localization/es-ES.ts
+ * When adding a new slug here, add the key to all three bundles in the same change.
+ */
+const YMOVE_MUSCLE_GROUP_KEYS = new Set([
+  'chest', 'back', 'shoulders', 'biceps', 'triceps',
+  'forearms', 'quads', 'hamstrings', 'glutes', 'calves',
+  'core', 'full_body',
+]);
+
+/**
+ * Translate a YMove muscle group slug (e.g. "full_body") to a localized label.
+ * Falls back to the raw slug for any slug not in the known set — safe against
+ * future API additions. We cannot rely on `t(key) || slug` because `t()` returns
+ * the key string itself for unknown keys (truthy), making the fallback dead.
+ */
+function translateMuscleGroup(slug: string, t: TFn): string {
+  if (!YMOVE_MUSCLE_GROUP_KEYS.has(slug)) return slug;
+  return t(`ymove.muscle_group.${slug}` as TranslationKey);
+}
 
 export function ExerciseSearchModal({
   isVisible,
@@ -156,13 +187,22 @@ export function ExerciseSearchModal({
                         </Text>
                         {exercise.muscleGroup && (
                           <Text style={{ fontSize: 12, color: theme.color.textSecondary }}>
-                            {exercise.muscleGroup}
+                            {translateMuscleGroup(exercise.muscleGroup, t)}
                           </Text>
                         )}
                       </View>
                       <MaterialIcons name="chevron-right" size={24} color={theme.color.textSecondary} />
                     </Pressable>
                   ))}
+
+                {searchState.kind === 'done' && searchState.capWarning && (
+                  <View style={[styles.capWarningBanner, { backgroundColor: theme.color.surfaceMuted }]}>
+                    <MaterialIcons name="warning" size={14} color={theme.color.textSecondary} />
+                    <Text style={[styles.capWarningText, { color: theme.color.textSecondary }]}>
+                      {t('ymove.cap_warning')}
+                    </Text>
+                  </View>
+                )}
               </ScrollView>
             </>
           ) : (
@@ -180,9 +220,17 @@ export function ExerciseSearchModal({
                   <Text style={[styles.exerciseNameLarge, { color: theme.color.textPrimary }]}>
                     {selectedExercise.title}
                   </Text>
-                  <Pressable onPress={() => setSelectedExercise(null)} hitSlop={12} style={{ marginTop: 4 }}>
+                  <Pressable
+                    onPress={() => {
+                      setSelectedExercise(null);
+                      setQuantity('');
+                      setNotes('');
+                    }}
+                    hitSlop={12}
+                    style={{ marginTop: 4 }}
+                  >
                     <Text style={{ color: theme.color.accentPrimary, fontSize: 13, fontWeight: '600' }}>
-                       Back to search
+                      {t('pro.plan.item.search.back')}
                     </Text>
                   </Pressable>
                 </View>
@@ -354,5 +402,17 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     paddingTop: DsSpace.lg,
     paddingBottom: DsSpace.xl,
-  }
+  },
+  capWarningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DsSpace.xs,
+    borderRadius: DsRadius.md,
+    padding: DsSpace.sm,
+    marginTop: DsSpace.sm,
+  },
+  capWarningText: {
+    ...DsTypography.caption,
+    flex: 1,
+  },
 });

@@ -4,14 +4,11 @@
  */
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   LayoutAnimation,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
-  UIManager,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
@@ -23,19 +20,23 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { FoodItemRow } from '@/features/plans/components/FoodItemRow';
 import { AddItemForm } from '@/features/plans/components/AddItemForm';
+import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
 
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNutritionPlanBuilder, type FoodSearchState, type FoodSearchResult } from '@/features/plans/use-plan-builder';
+import {
+  createBuilderPalette,
+  createBuilderRoleTranslator,
+  enableBuilderLayoutAnimations,
+} from '@/features/plans/builder-screen';
 import { calculateTotalsFromItems, sanitizeNutritionMealItemInput } from '@/features/plans/plan-builder.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+enableBuilderLayoutAnimations();
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,13 +63,7 @@ export default function NutritionMealBuilderScreen() {
   const theme = getDsTheme(scheme);
   const insets = useSafeAreaInsets();
   
-  const palette = useMemo(() => ({
-    background: theme.color.canvas,
-    text: theme.color.textPrimary,
-    tint: theme.color.accentPrimary,
-    icon: theme.color.textSecondary,
-    danger: theme.color.danger,
-  }), [theme]);
+  const palette = useMemo(() => createBuilderPalette(theme), [theme]);
 
   const { t } = useTranslation();
   const router = useRouter();
@@ -77,11 +72,7 @@ export default function NutritionMealBuilderScreen() {
   const { currentUser } = useAuthSession();
   const isStudentBuilder = pathname.startsWith('/student/');
 
-  const tr = useCallback(
-    (proKey: string, studentKey: string) =>
-      t((isStudentBuilder ? studentKey : proKey) as any),
-    [isStudentBuilder, t]
-  );
+  const tr = useMemo(() => createBuilderRoleTranslator(isStudentBuilder, t), [isStudentBuilder, t]);
 
   const {
     state,
@@ -93,6 +84,9 @@ export default function NutritionMealBuilderScreen() {
     foodSearchState,
     clearFoodSearch,
   } = useNutritionPlanBuilder(Boolean(currentUser));
+  const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
+  const isInitialLoading = state.kind === 'loading';
+  const isBusy = isMutating;
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -112,7 +106,7 @@ export default function NutritionMealBuilderScreen() {
 
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleAddItem = useCallback(async () => {
-    if (addItemForm.kind !== 'open' || state.kind !== 'ready' || !mealId) return;
+    if (isBusy || addItemForm.kind !== 'open' || state.kind !== 'ready' || !mealId) return;
     const { name, quantity, notes, calories, carbs, proteins, fats } = addItemForm;
     if (!name.trim()) return;
 
@@ -139,11 +133,11 @@ export default function NutritionMealBuilderScreen() {
       setAddItemForm({ kind: 'closed' });
       clearFoodSearch();
     }
-  }, [addItemForm, state, addItem, planId, mealId, tr, clearFoodSearch]);
+  }, [isBusy, addItemForm, state, addItem, planId, mealId, tr, clearFoodSearch]);
 
   const handleRemoveItem = useCallback(
     (itemId: string) => {
-      if (state.kind !== 'ready' || !meal || !mealId) return;
+      if (isBusy || state.kind !== 'ready' || !meal || !mealId) return;
 
       const item = meal.items.find(i => i.id === itemId);
       const itemName = item?.name || t('pro.plan.section.meal_items');
@@ -165,11 +159,11 @@ export default function NutritionMealBuilderScreen() {
         ]
       );
     },
-    [state, removeItem, planId, mealId, meal, t]
+    [isBusy, state, removeItem, planId, mealId, meal, t]
   );
 
   const handleMoveItem = useCallback(async (index: number, direction: 'up' | 'down') => {
-    if (state.kind !== 'ready' || !meal || !mealId) return;
+    if (isBusy || state.kind !== 'ready' || !meal || !mealId) return;
     const newItems = [...meal.items];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newItems.length) return;
@@ -183,7 +177,7 @@ export default function NutritionMealBuilderScreen() {
     
     // Call optimistic reorder
     await reorderItems(planId!, mealId, newItems.map(i => i.id));
-  }, [state, reorderItems, meal, planId, mealId]);
+  }, [isBusy, state, reorderItems, meal, planId, mealId]);
 
   const handleCloseAddItem = useCallback(() => {
     setAddItemForm({ kind: 'closed' });
@@ -195,7 +189,7 @@ export default function NutritionMealBuilderScreen() {
 
   if (!meal && state.kind === 'ready') {
     return (
-      <DsScreen scheme={scheme} style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <DsScreen scheme={scheme} contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
         <Text style={{ color: palette.text }}>Meal not found</Text>
         <DsPillButton scheme={scheme} label="Go Back" onPress={() => router.back()} />
       </DsScreen>
@@ -228,9 +222,11 @@ export default function NutritionMealBuilderScreen() {
               label={isSortMode ? t('pro.plan.cta.sort_done') : t('pro.plan.cta.sort')}
               contentColor={theme.color.accentPrimary}
               onPress={() => {
+                if (isBusy) return;
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setIsSortMode(!isSortMode);
               }}
+              disabled={isBusy}
               fullWidth={false}
               style={styles.templateCta}
               leftIcon={<IconSymbol name={isSortMode ? "checkmark.circle.fill" : "arrow.up.arrow.down"} size={14} color={theme.color.accentPrimary} />}
@@ -249,14 +245,6 @@ export default function NutritionMealBuilderScreen() {
           <TotalChip label={t('common.nutrition.fats')} value={`${totals.fats}g`} palette={palette} />
         </View>
       </View>
-
-      {/* ── Loading state ─────────────────────────────────────────────────── */}
-      {state.kind === 'loading' && (
-        <ActivityIndicator
-          style={styles.loader}
-          accessibilityLabel={t('a11y.loading.default')}
-        />
-      )}
 
       {/* ── Food items list ───────────────────────────────────────────────── */}
       <View style={[styles.sectionHeaderRow, { zIndex: 10 }]}>
@@ -280,6 +268,7 @@ export default function NutritionMealBuilderScreen() {
             foodQuery={addItemForm.foodQuery}
             foodSearchState={foodSearchState}
             selectedFood={addItemForm.selectedFood}
+            isInteractionLocked={isBusy}
             onNameChange={(v) =>
               setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, name: v } : prev))
             }
@@ -397,6 +386,7 @@ export default function NutritionMealBuilderScreen() {
               onMoveDown={() => handleMoveItem(index, 'down')}
               isFirstInList={index === 0}
               isLastInList={index === meal.items.length - 1}
+              isInteractionLocked={isBusy}
             />
           ))}
         </View>
@@ -406,7 +396,8 @@ export default function NutritionMealBuilderScreen() {
       {!isSortMode && meal && addItemForm.kind === 'closed' && (
         <Pressable
           style={[styles.addSessionBtn, { backgroundColor: theme.color.surface }]}
-          onPress={handleOpenAddItem}
+          onPress={isBusy ? undefined : handleOpenAddItem}
+          disabled={isBusy}
           accessibilityRole="button"
           accessibilityLabel={t('pro.plan.cta.add_food')}
         >
@@ -415,6 +406,15 @@ export default function NutritionMealBuilderScreen() {
             {t('pro.plan.cta.add_food')}
           </Text>
         </Pressable>
+      )}
+
+      {(isInitialLoading || isBusy) && (
+        <BuilderLoadingScrim
+          scheme={scheme}
+          theme={theme}
+          spinnerColor={palette.tint}
+          label={t('a11y.loading.default')}
+        />
       )}
 
     </DsScreen>
@@ -435,7 +435,6 @@ const styles = StyleSheet.create({
   content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 100 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
   backButton: { marginBottom: 0 },
-  loader: { marginVertical: DsSpace.xl },
   titleSection: { gap: DsSpace.xs, paddingHorizontal: DsSpace.xs, marginBottom: DsSpace.sm },
   screenTitle: { ...DsTypography.screenTitle, fontFamily: Fonts?.rounded ?? 'normal' },
   totalsRow: { flexDirection: 'row', gap: DsSpace.sm, flexWrap: 'wrap' },

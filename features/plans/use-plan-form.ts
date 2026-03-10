@@ -35,9 +35,10 @@ export function usePlanForm<T extends Record<string, any>>({
 
   // Sync values when initialValues change (e.g. after data fetch)
   useEffect(() => {
-    setValues(initialValues);
-    setIsDirty(false);
-  }, [initialValues]);
+    if (!isDirty) {
+      setValues(initialValues);
+    }
+  }, [initialValues, isDirty]);
 
   const setFieldValue = useCallback((field: keyof T, value: any) => {
     setValues((prev) => ({ ...prev, [field]: value }));

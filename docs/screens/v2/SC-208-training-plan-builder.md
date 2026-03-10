@@ -17,6 +17,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 - Empty and error states are presented inside `DsCard` containers with consistent semantics.
 - Empty state uses a centered hero treatment (soft glow + icon circle) and localized copy.
 - Plan rows use icon-leading card treatment aligned with the nutrition library, including open-status pill + trailing chevron.
+- Session cards and the "Add session" form use a reduced vertical padding (`DsSpace.xs` / 8px) to maximize content density.
 - Primary create/retry actions use DS pill buttons and localization-key copy only.
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
@@ -30,14 +31,38 @@ Let fitness coaches create and edit fully customizable named predefined training
 
 ### Plan Builder (`/professional/training/plans/:planId`)
 - Enter or edit the plan name (required, min 2 chars).
-- In create mode (`planId = 'new'`), add sessions and exercises immediately without pressing Save first; the first add operation persists the plan and keeps the user in the same builder flow.
+- In create mode (`planId = 'new'`), plan name, sessions, and exercises remain local draft edits until the user explicitly presses `Save`.
 - Add training sessions (name required, notes optional).
+- When no sessions exist yet, tapping `Add session` opens the creation form in the same empty-state region, layered above the empty-state helper copy instead of pushing it downward.
+- The main `Add session` CTA uses a solid accent-green pill treatment with light text so it reads as the primary creation action.
 - Remove sessions.
-- Add exercise items to a session (name required, quantity and notes optional).
+- Add exercise items to a session via YMove exercise search (name required, quantity and notes optional) or by typing a custom name.
 - Remove exercise items from a session.
-- Save plan (create or update).
+- Save plan (create or update) as a single persistence step that writes the current local draft to Firestore.
+- Delete plan; after a successful delete, show the blocking loading scrim and then return the user to the training library.
+- If the user attempts to leave with unsaved local changes, show a discard-confirmation dialog before navigation.
 - Assign plan to a student.
 - Bulk-assign plan to multiple students with per-student fine-tune step.
+
+## YMove Exercise Search Integration
+
+Exercise items backed by YMove are added via the `ExerciseSearchModal` component, which:
+1. Debounces user input (400 ms) and calls `searchYMoveExercises` via the `useYMoveSearch` hook.
+2. Displays a scrollable list of search results (title + localized muscle group + thumbnail).
+3. On item selection, shows a detail/confirmation form for `quantity` and `notes`.
+4. On confirm, calls `handleConfirmExercise` which adds the item to the local draft; Firestore is updated only when the user presses `Save`.
+
+### YMove API Key
+The integration requires `EXPO_PUBLIC_YMOVE_API_KEY` set in `.env`.
+Without this key the search guard fires and returns an empty result silently.
+Get a key at https://ymove.app/exercise-api/signup.
+
+### Video URL Caching Policy (API Contract — Critical)
+YMove pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
+- **Only `ymoveId` (the UUID) is persisted to Firestore.**
+- Thumbnail/video URLs are **never stored** in Firestore.
+- `SessionCard` re-fetches a fresh thumbnail via `useYMoveThumbnail(item.ymoveId)` → `getYMoveExerciseById` at display time.
+- If the API key is absent or the fetch fails, the placeholder icon is shown silently.
 
 ## States
 
@@ -45,7 +70,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 |---|---|---|
 | Idle | Initial mount | Empty form or loading gated |
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
-| Saving | `createPlan` or `savePlan` in flight | Save CTA disabled, loading indicator |
+| Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
 | Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
 
@@ -56,6 +81,8 @@ Let fitness coaches create and edit fully customizable named predefined training
 - Bulk assignment produces independent per-student plan copies; later library edits do not mutate assigned copies (BR-283, D-082).
 - Assigned plans are read-only for students (D-006, D-013).
 - No fixed mandatory fields beyond name for session items (D-013).
+- Session add/remove/reorder and item add/remove/reorder are local draft edits only; Firestore is not called until the user presses `Save`.
+- If local draft edits exist, back navigation must require explicit discard confirmation before leaving the screen.
 
 ## Data Contract
 
@@ -68,13 +95,21 @@ Let fitness coaches create and edit fully customizable named predefined training
 | Item `name` | string | required |
 | Item `quantity` | string | optional free-form (e.g. "3 sets × 10 reps") |
 | Item `notes` | string | optional |
+| Item `ymoveId` | string (UUID) | optional; YMove exercise ID — the only YMove field stored in Firestore |
 
 ### Outputs
 | Type | Description |
 |---|---|
 | `TrainingPlanDetail` | Full plan with id, name, sessions list, timestamps |
 | `TrainingSession` | Session with id, name, notes, items array |
-| `TrainingSessionItem` | Exercise item with id, name, quantity, notes |
+| `TrainingSessionItem` | Exercise item with id, name, quantity, notes, optional ymoveId |
+
+### YMove Source Types
+| Type | Description |
+|---|---|
+| `YMoveExercise` | Full exercise from API (title, muscleGroup, equipment, difficulty, exerciseType[], instructions[], videos[], pre-signed URLs) |
+| `YMoveVideo` | Single video variant (white-background or gym-shot, with tag/orientation/isPrimary) |
+| `YMoveSearchResponse` | API list response with `data[]`, `pagination` (page/pageSize/total/totalPages), optional `_warning` for monthly cap |
 
 ### Source Operations
 | Operation | Description |
@@ -129,6 +164,22 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 | `pro.predefined_plan.field_name` | Predefined plan name label |
 | `pro.predefined_plan.cta_create` | Save predefined plan CTA |
 | `pro.predefined_plan.bulk_assign.*` | Bulk assign flow keys |
+| `pro.plan.item.search.placeholder` | Exercise search input placeholder |
+| `pro.plan.item.search.empty` | No results state |
+| `pro.plan.item.search.error` | Search error state |
+| `pro.plan.item.search.back` | "Back to search" link in exercise detail form |
+| `ymove.muscle_group.chest` | Muscle group label: Chest |
+| `ymove.muscle_group.back` | Muscle group label: Back |
+| `ymove.muscle_group.shoulders` | Muscle group label: Shoulders |
+| `ymove.muscle_group.biceps` | Muscle group label: Biceps |
+| `ymove.muscle_group.triceps` | Muscle group label: Triceps |
+| `ymove.muscle_group.forearms` | Muscle group label: Forearms |
+| `ymove.muscle_group.quads` | Muscle group label: Quads |
+| `ymove.muscle_group.hamstrings` | Muscle group label: Hamstrings |
+| `ymove.muscle_group.glutes` | Muscle group label: Glutes |
+| `ymove.muscle_group.calves` | Muscle group label: Calves |
+| `ymove.muscle_group.core` | Muscle group label: Core |
+| `ymove.muscle_group.full_body` | Muscle group label: Full Body |
 
 All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
@@ -144,6 +195,11 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
 | `features/plans/plan-builder-source.ts` | Firestore source ops: `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem` |
 | `features/plans/use-plan-builder.ts` | React hook `useTrainingPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
+| `features/plans/ymove-source.ts` | YMove API client: `searchYMoveExercises`, `getYMoveExerciseById`; types: `YMoveExercise`, `YMoveVideo`, `YMoveSearchResponse` |
+| `features/plans/use-ymove-search.ts` | Hook `useYMoveSearch` — state machine: `idle/loading/error/done` |
+| `features/plans/use-ymove-thumbnail.ts` | Hook `useYMoveThumbnail(ymoveId)` — fetches fresh thumbnail URL on demand; never caches |
+| `components/ds/patterns/ExerciseSearchModal.tsx` | Two-phase modal: search results list → exercise detail/confirm form |
+| `features/plans/components/SessionCard.tsx` | Renders session items; `SessionItemRow` sub-component calls `useYMoveThumbnail` per item |
 | `app/professional/training.tsx` | Plan library list screen |
 | `app/professional/training/plans/[planId].tsx` | Plan builder screen |
 

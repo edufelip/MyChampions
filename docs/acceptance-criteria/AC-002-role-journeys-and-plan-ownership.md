@@ -336,6 +336,17 @@ Feature: Role-based onboarding and care assignments
     And save the plan
     Then the predefined plan appears in the professional private training library
 
+  Scenario: SC-208 Training plan builder — local draft changes before save
+    Given a professional is editing the training plan builder
+    When they add or remove sessions or exercise items before pressing save
+    Then those changes remain local on the screen only
+    And Firestore is updated only after the user presses save
+
+  Scenario: SC-208 Training plan builder — discard confirmation on back
+    Given a professional has unsaved training plan draft changes
+    When they attempt to navigate back
+    Then the app shows a discard confirmation dialog before leaving the builder
+
   Scenario: SC-208 Training plan builder — starter template clone
     Given a professional opens a starter template in the training plan builder
     When they begin editing

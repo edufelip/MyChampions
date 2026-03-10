@@ -198,6 +198,17 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Student self-guided empty-state CTAs in SC-209/SC-210 now route to direct creation flows: `/student/nutrition/plans/new` and `/student/training/plans/new`.
 - `In progress`: Student-specific self-managed plan builder shell for SC-209/SC-210 currently reuses shared builder screens (`app/professional/nutrition/plans/[planId].tsx`, `app/professional/training/plans/[planId].tsx`) via student route aliases. Student-branded titles/actions are applied on student-prefixed routes; follow-up required for fully dedicated student-only layout treatment.
 
+## YMove Exercise Search (BL-106 — SC-208)
+- `Done`: `features/plans/ymove-source.ts` — YMove API v2 client: `searchYMoveExercises`, `getYMoveExerciseById`; full `YMoveExercise` type (correct `instructions: string[]`, `exerciseType: string[]`, `videos: YMoveVideo[]`); `YMoveSearchResponse` using correct v2 `pagination` shape (`pageSize`, not `limit`).
+- `Done`: `features/plans/use-ymove-search.ts` — `useYMoveSearch` hook with `idle/loading/error/done` state machine.
+- `Done`: `features/plans/use-ymove-thumbnail.ts` — `useYMoveThumbnail(ymoveId)` hook; fetches fresh thumbnail URL on demand via `getYMoveExerciseById`; never caches URLs (API contract: pre-signed URLs expire after 48 h).
+- `Done`: `components/ds/patterns/ExerciseSearchModal.tsx` — two-phase modal (search results list → exercise detail/confirm form); all strings use i18n (including `pro.plan.item.search.back`); `muscleGroup` subtitle rendered via `ymove.muscle_group.<slug>` i18n key.
+- `Done`: `features/plans/components/SessionCard.tsx` — `SessionItemRow` sub-component calls `useYMoveThumbnail` per item; placeholder shown while loading or when key is absent.
+- `Done`: `features/plans/plan-builder.logic.ts` — `TrainingSessionItemInput` stores only `ymoveId`; `thumbnailUrl`/`videoUrl` removed (API contract violation — URLs expire after 48 h).
+- `Done`: `features/plans/plan-builder-source.ts` — `addTrainingSessionItem` persists `ymoveId`, `quantity`, `notes` to Firestore; `mapTrainingPlanDetail` reads them back; `FirestoreTrainingItem` typed explicitly.
+- `Done`: All `pro.plan.item.search.*` and `ymove.muscle_group.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
+- `Pending`: Set `EXPO_PUBLIC_YMOVE_API_KEY` in `.env` once API key is obtained (https://ymove.app/exercise-api/signup). Without it the search returns empty silently.
+
 ## Plan Builder (BL-106 — SC-207, SC-208)
 - `Done`: `features/plans/plan-builder.logic.ts` — pure functions: `validateNutritionPlanInput`, `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError`, plus food-search normalization helpers `normalizeFoodArray`, `normalizeFoodSearchResult` and associated raw types `RawFoodSearchFood`, `RawFoodSearchServing`, `FoodSearchResult` (D-127, TC-281).
 - `Done`: `features/plans/plan-builder.logic.test.ts` — 24 unit tests for `normalizeFoodArray` and `normalizeFoodSearchResult` covering per-100g scaling, single/array serving normalization, missing fields, unsupported units, rounding, empty serving array, negative serving amount, negative macro fields (TC-281). App test suite at 691 pass, 0 fail.

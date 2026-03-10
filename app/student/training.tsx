@@ -8,7 +8,7 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
@@ -65,7 +65,7 @@ export default function StudentTrainingScreen() {
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
-  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
+  const { state: plansState, reload, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
 
   const assignedTrainingPlan =
     plansState.kind === 'ready'
