@@ -30,6 +30,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 
 ### Plan Builder (`/professional/nutrition/plans/:planId`)
 - Enter or edit the plan name (required, min 2 chars).
+- Enter or edit daily water goal (required, positive integer ml).
 - Enter or edit calorie target (optional, must be ≥ 0).
 - Enter or edit carbs/proteins/fats targets (optional, must be ≥ 0).
 - Add food items (name, quantity, optional notes).
@@ -55,6 +56,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 
 ## Validation Rules
 - Plan name is required and must be at least 2 characters (BR-291).
+- Daily water goal is required and must be greater than zero.
 - Calorie target must be zero or greater if provided (BR-292).
 - Carbs, proteins, and fats targets must each be zero or greater if provided (BR-292).
 - Bulk assignment produces independent per-student plan copies; later library edits do not mutate assigned copies (BR-283, D-082).
@@ -67,6 +69,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | Field | Type | Validation |
 |---|---|---|
 | `name` | string | required, min 2 chars |
+| `hydrationGoalMl` | string (raw field) | required, positive integer |
 | `caloriesTarget` | string (raw field) | optional, ≥ 0 when provided |
 | `carbsTarget` | string (raw field) | optional, ≥ 0 when provided |
 | `proteinsTarget` | string (raw field) | optional, ≥ 0 when provided |
@@ -119,6 +122,8 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 | `pro.plan.nutrition.title.edit` | Builder screen title (edit mode) |
 | `pro.plan.field.name.label` | Plan name field label |
 | `pro.plan.field.name.placeholder` | Plan name placeholder |
+| `pro.plan.field.hydration_goal.label` | Daily water-goal field label |
+| `pro.plan.field.hydration_goal.placeholder` | Daily water-goal placeholder |
 | `pro.plan.field.calories_target.label` | Calorie target label |
 | `pro.plan.field.carbs_target.label` | Carbs target label |
 | `pro.plan.field.proteins_target.label` | Proteins target label |
@@ -134,6 +139,8 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 | `pro.plan.food_search.stub_notice` | Empty meal helper text |
 | `pro.plan.validation.name_required` | Name required error |
 | `pro.plan.validation.name_too_short` | Name too short error |
+| `pro.plan.validation.hydration_goal_required` | Hydration-goal required error |
+| `pro.plan.validation.hydration_goal_positive` | Hydration-goal positive error |
 | `pro.plan.validation.calories_non_negative` | Negative calories error |
 | `pro.plan.validation.macros_non_negative` | Negative macros error |
 | `pro.plan.error.save` | Save error |

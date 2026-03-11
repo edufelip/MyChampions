@@ -87,13 +87,13 @@ Prevent confusion for first-time users who do not know the Student/Professional 
 - Card title: `Water intake`
 - Progress helper: `{consumed} / {goal} ml`
 - Log CTA: `Log Intake`
-- Set-goal CTA: `Set Daily Goal`
 - Student-goal helper: `Personal Goal`
 - Nutritionist-goal helper: `Goal set by Nutritionist`
 - Streak helper: `Current streak: {days} days`
-- Professional section title: `Student water goal`
-- Professional input label: `Daily water goal (ml)`
-- Professional save CTA: `Save water goal`
+- Hydration helper in tracking widgets: `Water goal is defined in your nutrition plan.`
+- Plan-builder hydration field label: `Daily water goal (ml)`
+- Plan-builder hydration validation (required): `Daily water goal is required.`
+- Plan-builder hydration validation (positive): `Daily water goal must be greater than zero.`
 
 ## Recommended Starter Template Copy
 - Section title: `Start from a template`

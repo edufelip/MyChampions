@@ -129,9 +129,9 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-217`: MVP core screens shall meet accessibility baseline for contrast, text scaling, focus order, and screen-reader labels.
 - `FR-218`: Habit-tracking scope for BL-104 shall include water tracking only (sleep and steps are out of scope for this item).
 - `FR-219`: Students shall be able to log daily water intake and visualize goal-adherence streaks.
-- `FR-220`: Students shall be able to set a personal daily water goal.
-- `FR-221`: Nutritionists shall be able to set and update daily water goals for their actively assigned students.
-- `FR-222`: When an active nutritionist sets a student water goal, it becomes the effective tracking target for that assignment context; student personal goal remains stored as fallback when no active nutritionist goal is present.
+- `FR-220`: Students shall define personal daily water goals during self-managed nutrition plan creation/edit flows.
+- `FR-221`: Nutritionists shall define and update student daily water goals during nutrition plan authoring/assignment flows for actively assigned students.
+- `FR-222`: Effective hydration target shall resolve from the active nutrition plan context (assigned plan goal first; otherwise self-managed plan goal), with legacy `waterGoals` data used only as compatibility fallback during migration.
 - `FR-223`: Professionals shall be able to create named predefined plan artifacts (nutrition and training) in their private plan library.
 - `FR-224`: Professionals shall be able to clone predefined plans and bulk assign them to multiple students in one workflow.
 - `FR-225`: Bulk assignment flow shall support per-student fine-tuning before finalizing assigned plan copies.
@@ -163,6 +163,9 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-251`: For email/password accounts, the "Change password" action shall trigger a `sendPasswordResetEmail` call to the user's registered email address, preceded by a user confirmation alert.
 - `FR-252`: For OAuth accounts (Google, Apple), the "Change password" action shall show an informational alert naming the provider and shall not dispatch a reset email.
 - `FR-253`: The "Change password" row shall reflect the in-flight, success, and error states of the reset email dispatch with appropriate loading, inline success banner, and inline error feedback.
+- `FR-254`: SC-208 exercise search/detail requests shall route through the exercise proxy microservice (`https://exerciseservice.eduwaldo.com/proxy`) instead of direct upstream client calls.
+- `FR-255`: Exercise proxy requests shall include normalized language (`en`, `pt`, `es`; fallback `en`) and `x-request-id` header; response `x-request-id` shall be captured for diagnostics.
+- `FR-256`: The mobile client shall never include or expose the upstream YMove API key; key injection must be server-side in the exercise proxy.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

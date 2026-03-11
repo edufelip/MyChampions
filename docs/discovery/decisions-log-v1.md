@@ -83,7 +83,7 @@
 - `D-076`: Specialty-removal blocked states include direct assist actions to resolve active/pending blockers.
 - `D-077`: MVP launch includes baseline accessibility coverage for core screens (contrast, dynamic text scaling, focus order, screen-reader labels).
 - `D-078`: Habit-tracking P1 scope is narrowed to water tracking only (no sleep/steps in this item), with daily intake history and streak visibility.
-- `D-079`: Water goals can be set by students for self-management, and nutritionists can set/update water goals for assigned students.
+- `D-079`: Water goals are authored in nutrition plan create/edit flows: self-guided students define their personal hydration goal in self-managed plan builder, and nutritionists define assigned-student hydration goals in professional plan authoring.
 - `D-080`: Plan cloning/bulk-assignment P1 scope requires named predefined plans created by professionals (for example `Caloric Deficit A/B`), with per-student fine-tuning after assignment.
 - `D-081`: Effective water-goal precedence uses nutritionist-defined goal when active nutrition assignment override exists; otherwise stored student personal goal is used.
 - `D-082`: Bulk-assigned plans are independent per-student copies; later edits to source predefined plans do not mutate already assigned student plans.
@@ -126,9 +126,9 @@
 - `D-114`: Starter templates are returned by a stub `getStarterTemplates(planType)` in plan-builder-source; the stub returns two hardcoded template stubs per plan type. Template cloning (`cloneStarterTemplate`) is also stubbed and tracked for later Firestore wiring.
 - `D-115`: BL-104 water tracker is implemented as embedded widgets in existing screens — no standalone route is created. Implementation surfaces:
   - `HydrationCard` in `app/student/home.tsx` (SC-203) — compact daily hydration summary with progress and streak.
-  - `WaterWidget` in `app/student/nutrition.tsx` (SC-209) — full intake log form and personal goal form.
-  - Nutritionist override goal form in `app/professional/student-profile.tsx` (SC-206) — calls `setNutritionistWaterGoalForStudent` (stub; Firestore wiring deferred).
-  - SC-220 documents the water tracker feature across all three surfaces.
+  - `WaterWidget` in `app/student/nutrition.tsx` (SC-209) — full intake log form with effective-goal progress, no direct goal-edit form.
+  - Nutrition plan builders in `app/professional/nutrition/plans/[planId].tsx` and `/student/nutrition/plans/[planId]` (SC-207 alias) own hydration-goal authoring.
+  - SC-220 documents the water tracker feature and goal-authoring boundaries across these surfaces.
 
 - `D-116`: BL-005 plan change request flow is implemented with screen-specific localization keys per plan type (`student.nutrition.plan_change.*` for SC-209, `student.training.plan_change.*` for SC-210) rather than a single shared key group. Professional-side triage uses `pro.student_profile.plan_change_requests.*` keys in SC-206. Pure logic in `plan-change-request.logic.ts`, Firestore stubs in `plan-source.ts` (`submitPlanChangeRequest`, `reviewPlanChangeRequest`, `getStudentPlanChangeRequests`), React hook in `use-plans.ts`. Professional notification on submission is deferred until push notification infrastructure is provisioned.
 
@@ -310,12 +310,14 @@
 
 - `D-166`: App icon and splash screen branding migrated to the official My Champions logo (`assets/images/logo.svg`):
   - Source SVG is stored at `assets/images/logo.svg` and used as the single source of truth for all icon and splash assets.
-  - A Node script (`scripts/generate-icons.mjs`) powered by `sharp` (dev dependency) generates all PNG/WebP outputs from the SVG at build time. Run with `yarn icons`.
+  - A Node script (`scripts/generate-icons.mjs`) powered by `sharp` (dev dependency) generates all PNG/WebP outputs from the SVG at build time. Run with `npm run icons`.
   - iOS app icon: `ios/mychampions/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png` (1024×1024).
   - iOS splash logo: `SplashScreenLogo.imageset/image.png|@2x|@3x` (200/400/600 px).
   - Android launcher icons: `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher*.webp` (foreground, background solid `#E2FAE8`, monochrome, round, default).
   - Android splash drawables: `drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/splashscreen_logo.png`.
   - Asset source files under `assets/images/` (`icon.png`, `splash-icon.png`, `android-icon-*.png`) are also regenerated from the SVG and remain the Expo config source for future managed-workflow compatibility.
+  - Latest refresh: 2026-03-10, source updated from `~/Downloads/logo.svg` and full Android/iOS icon sets regenerated via `npm run icons`.
+  - Splash background color is standardized to `#E2FAE8` (same as icon background) across Expo splash config, Android `splashscreen_background` color resources, and iOS `SplashScreenBackground` color asset/storyboard.
 - `D-167`: Android SplashScreen native wiring migrated from `expo-splash-screen` `SplashScreenManager.registerOnActivity()` to the raw `androidx.core.splashscreen` API (`installSplashScreen()`):
   - `MainActivity.kt` now imports `androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen` and calls `installSplashScreen()` at the top of `onCreate`, before `super.onCreate(null)`.
   - The existing `android:theme="@style/Theme.App.SplashScreen"` on `<activity>` in `AndroidManifest.xml` is preserved; it must extend `Theme.SplashScreen` (from `androidx.core:core-splashscreen`) for `installSplashScreen()` to function.
@@ -338,6 +340,11 @@
   - **UI**: Custom dialog with disclaimer, one-line subject, and multi-line body.
   - **Reason**: Better user experience and ability to track support requests within the app infrastructure.
 
+- `D-172`: Hydration-goal authoring ownership is moved into nutrition plan builders (SC-207, including student alias route) for both self-guided and professional-assigned contexts.
+  - SC-209/SC-203 hydration widgets are intake/progress surfaces only; they do not expose direct goal-edit controls.
+  - SC-206 professional student profile no longer contains a direct water-goal form.
+  - Effective-goal resolution reads active non-archived nutrition plans first, with temporary backward-compatibility fallback to legacy `waterGoals` records while existing accounts migrate.
+
 - `D-155`: Language picker (SC-213) replaced with a dedicated Language Select screen (SC-222) at route `/settings/language-select`. Architecture decisions:
   - **Dedicated screen**: The former inline `ActionSheetIOS` (iOS) / `Alert.alert` (Android) picker in SC-213 is removed. Language selection now pushes SC-222 onto the navigation stack, matching the iOS Settings pattern and providing a consistent cross-platform experience.
   - **In-session locale switching**: A `LocaleContext` (`localization/locale-context.tsx`) holds the active locale in React state. `LocaleProvider` wraps the entire app in `app/_layout.tsx`. All `useTranslation()` callers re-render immediately when `setActiveLocale()` is called — no app restart required.
@@ -347,11 +354,13 @@
   - **Persistence**: `setLanguageOverride(locale)` (AsyncStorage key `app.language.override`) is called inside `setActiveLocale()`. Storage contract unchanged.
   - **Supersedes D-144 language switcher decision**: The inline picker behavior documented in D-144 no longer applies. D-144 remains for historical reference; SC-222 is the authoritative implementation.
 
-- `D-157`: YMove Exercise API — video URL caching policy and client-side key exposure.
-  - **No server proxy**: YMove API calls are made directly from the mobile client using `EXPO_PUBLIC_YMOVE_API_KEY` (embedded in the binary). This avoids Cloud Function costs but exposes the key to potential binary extraction. Accepted risk per `.env.example` comment and YMove's own recommendation for simpler integrations.
-  - **No URL persistence**: Pre-signed video and thumbnail URLs returned by the YMove API expire after 48 hours (API contract). Only `ymoveId` (UUID) is persisted to Firestore. Fresh URLs are fetched on demand via `getYMoveExerciseById` at display time (wired via `useYMoveThumbnail` hook in `SessionCard`).
-  - **Graceful degradation**: When the API key is absent (e.g., dev environment before key is set), `searchYMoveExercises` returns `[]` silently with a `console.warn`. `useYMoveThumbnail` falls back to the placeholder icon without surfacing an error to the user.
-  - **Localization**: Muscle group slugs returned by the API (`chest`, `full_body`, etc.) are translated via `ymove.muscle_group.<slug>` i18n keys in all 3 locale bundles. Raw slug is used as fallback if a key is missing.
+- `D-157`: SC-208 exercise integration uses exercise proxy microservice (supersedes direct-client YMove key approach).
+  - **Server proxy required**: Mobile calls `POST https://exerciseservice.eduwaldo.com/proxy` for search/detail requests instead of direct upstream calls.
+  - **No client upstream key**: The upstream YMove API key is injected server-side only. `EXPO_PUBLIC_YMOVE_API_KEY` is removed from mobile runtime contract.
+  - **Request correlation**: Mobile always sends `x-request-id` and captures response `x-request-id` for diagnostics.
+  - **Language normalization**: App locale maps to proxy `lang` (`en-US -> en`, `pt-BR -> pt`, `es-ES -> es`, fallback `en`).
+  - **No URL persistence**: Pre-signed media URLs still expire after 48 h and are never persisted; only stable exercise id is stored.
+  - **Data compatibility**: `exerciseId` is the new persisted field; legacy `ymoveId` remains read-compatible during migration.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

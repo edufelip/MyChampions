@@ -12,6 +12,7 @@ Define the baseline functional requirements for the initial app shell.
 - `FR-006`: The app shall adapt theme provider values to device light/dark mode.
 - `FR-007`: The app shall run on Android, iOS, and web through Expo workflows.
 - `FR-008`: The app shall centralize color, typography, spacing, radius, and elevation tokens in `constants/design-system.ts` and consume those tokens in shell/navigation primitives.
+- `FR-009`: The app shall use a single brand-logo source (`assets/images/logo.svg`) to generate launcher icon assets for both Android and iOS.
 
 ## Out Of Scope For This Baseline
 - Authentication.

@@ -31,7 +31,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 | BL-101 | In-app chat per student-professional link | Communication currently requires external channels. | Student and professional can exchange messages in assignment context. |
 | BL-102 | Weekly check-in form | Professionals lack structured feedback signals. | Student submits weekly check-in; professional can review trend history. |
 | BL-103 | Progress trend dashboard | Progress is hard to interpret from raw daily logs. | User sees weekly/monthly trends for adherence and key metrics. |
-| BL-104 | Water tracker with personal/professional goals | Hydration adherence is not explicitly tracked in daily routines. | Student can track daily water intake and streaks, define personal water goal, and nutritionist can set/update water goal for assigned students. |
+| BL-104 | Water tracker with personal/professional goals | Hydration adherence is not explicitly tracked in daily routines. | Student can track daily water intake and streaks; water goals are authored in nutrition plan create/edit flows for both self-guided and professional-assigned contexts. |
 | BL-105 | Shared notes/comments on plans | Feedback loops are fragmented. | Notes/comments can be added per plan block and viewed by both sides. |
 | BL-106 | Named predefined plans + clone/bulk assignment | Manual repetitive setup wastes professional time and reduces consistency. | Professional can create named predefined plans (for example, `Caloric Deficit A/B`), clone and bulk-assign them, then fine-tune each student plan before finalizing. |
 | BL-107 | Smart reminders for meals/workouts | Users may forget scheduled actions and drop adherence. | Configurable reminders trigger at configured windows with deep links. |
@@ -86,7 +86,7 @@ All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/
 ## P1 Selected Spec Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
-| BL-104 Water tracker with personal/professional goals | Screens implemented; Firestore wiring deferred | FR-218, FR-219, FR-220, FR-221, FR-222 | UC-002.19 | AC-259, AC-260, AC-261, AC-262, AC-263 | BR-276, BR-277, BR-278, BR-279, BR-280 | TC-264, TC-265, TC-266, TC-267 |
+| BL-104 Water tracker with personal/professional goals | Implemented — hydration goal authoring moved to nutrition plan builders (SC-207); hydration widgets focus on intake/progress using plan-defined effective goal | FR-218, FR-219, FR-220, FR-221, FR-222 | UC-002.19 | AC-259, AC-260, AC-261, AC-262, AC-263 | BR-276, BR-277, BR-278, BR-279, BR-280 | TC-264, TC-265, TC-266, TC-267 |
 | BL-106 Named predefined plans + clone/bulk assignment | Screens implemented; Firestore + VPS food-service wiring completed | FR-223, FR-224, FR-225, FR-226 | UC-002.20 | AC-264, AC-265 | BR-281, BR-282, BR-283 | TC-268, TC-269, TC-270 |
 | BL-108 AI meal photo macronutrient analysis | Implemented — logic/hook/source/Cloud Function/camera/compression all wired; photo Cloud Storage attachment and SC-214 attach-toggle integration deferred (D-109) | FR-229, FR-230, FR-231, FR-232, FR-233, FR-234, FR-235, FR-236, FR-237, FR-238, FR-239 | UC-003.9 | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 | BR-286, BR-287, BR-288, BR-289, BR-290 | TC-271, TC-272, TC-273, TC-274, TC-285 |
 

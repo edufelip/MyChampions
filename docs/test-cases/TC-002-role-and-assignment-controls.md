@@ -71,8 +71,8 @@
 | TC-262 | Specialty Removal Assist Guidance | Specialty removal is blocked by active/pending records | Attempt specialty removal in settings | UI shows direct actions to resolve blockers (view active/pending and queue actions) |
 | TC-263 | Specialty Removal After Assisted Resolution | Specialty previously blocked for removal | Resolve blockers using assist actions and retry removal | Specialty removal succeeds when constraints are satisfied |
 | TC-264 | Water Tracking Scope Boundaries | Habit tracking surfaces enabled | Inspect available habit modules | Water tracker is available and sleep/steps are absent from BL-104 scope |
-| TC-265 | Student Personal Water Goal | Student has no nutritionist goal override | Set personal daily water goal, log intake across days | Completion and streak values are computed from student personal goal |
-| TC-266 | Nutritionist Water Goal Assignment | Active nutritionist-student assignment exists | Nutritionist sets/updates student water goal | Student effective hydration target updates to nutritionist-defined goal |
+| TC-265 | Student Personal Water Goal | Student has no nutritionist goal override | Create/edit self-managed nutrition plan with water goal, then log intake across days | Completion and streak values are computed from the self-managed plan goal |
+| TC-266 | Nutritionist Water Goal Assignment | Active nutritionist-student assignment exists | Nutritionist sets/updates student water goal in assigned nutrition plan flow | Student effective hydration target updates to assigned-plan goal |
 | TC-267 | Water Goal Precedence Fallback | Student has personal goal and receives nutritionist goal, then assignment ends | Track intake with active assignment, then after unbind | Active assignment uses nutritionist goal; post-unbind uses stored personal goal |
 | TC-268 | Named Predefined Plan Creation | Professional has specialty access | Create predefined plan with custom name (for example `Caloric Deficit A`) | Predefined plan appears in professional private library with saved name |
 | TC-269 | Predefined Plan Bulk Assignment With Fine-Tuning | Professional has predefined plan and multiple target students | Bulk assign plan to selected students and adjust each student draft | Assignment succeeds and per-student customizations are preserved |
@@ -107,6 +107,11 @@
 | TC-312 | Password Reset — Success Banner | Authenticated email/password account user confirms password reset; `sendPasswordResetEmail` resolves successfully | Observe row state after success | "Change password" row is replaced by inline success banner; success message is visible for the rest of the session |
 | TC-313 | Password Reset — Error Inline Message With Retry | Authenticated email/password account user confirms password reset; `sendPasswordResetEmail` rejects with an error | Observe row state after failure | Inline error message is shown below the row; row remains visible and tappable for retry |
 | TC-314 | Password Reset — OAuth Informational Alert | Authenticated Google or Apple OAuth account user on account settings screen | Tap "Change password" | Informational alert is shown naming the provider; no password reset email is dispatched |
+| TC-315 | SC-208 Exercise Search Proxy Contract | Professional opens exercise search on SC-208 | Type a search query and inspect network payload | Request goes to `https://exerciseservice.eduwaldo.com/proxy` with normalized `lang`, `request.url`, `request.method=GET`, and `x-request-id` header |
+| TC-316 | SC-208 Request Id Correlation | Professional executes exercise search/detail calls | Trigger a controlled proxy failure and inspect logs | Client logs include response `x-request-id` to support backend tracing |
+| TC-317 | SC-208 Locale Normalization | App locale is `pt-BR`, `es-ES`, and unknown locale (e.g. `de-DE`) | Execute exercise search in each locale | Proxy body sends `lang=pt`, `lang=es`, and fallback `lang=en` respectively |
+| TC-318 | SC-208 No Client Upstream Key Exposure | Build app binary and inspect runtime env references | Search for upstream YMove API key variables/usages | No client-exposed upstream key exists; app still searches through proxy |
+| TC-319 | SC-208 Legacy ymoveId Read Compatibility | Existing training plan items were saved with `ymoveId` only | Open and render existing training plan sessions | Thumbnail/search detail resolution still works via fallback from `ymoveId` while new writes persist `exerciseId` |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.

@@ -52,7 +52,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: SC-204 Professional Home (`app/professional/home.tsx`) implemented — invite code display via `useInviteCode`, subscription state via `resolveSubscriptionState`; RevenueCat entitlement wired as stub `'unknown'`.
 - `Done`: SC-205 Student Roster (`app/professional/students.tsx`) implemented — search + filter chip UI, FlatList with stub empty data; Firestore student-roster endpoint wiring deferred.
 - `Done`: DS shell virtualization fix for list screens — `DsScreen` now supports `scrollable={false}` (non-ScrollView mode) and is applied to FlatList-backed routes (`SC-205`, `/professional/nutrition`, `/professional/training`, `SC-215`) to avoid nested VirtualizedList warnings in runtime logs.
-- `Done`: SC-206 Student Profile Professional View (`app/professional/student-profile.tsx`) implemented — assignment status cards, unbind CTA, plan-change requests, water goal form; Firestore endpoint wiring deferred.
+- `Done`: SC-206 Student Profile Professional View (`app/professional/student-profile.tsx`) implemented — assignment status cards, unbind CTA, and plan-change requests; direct water-goal form removed (goal authoring occurs in SC-207 nutrition plan builder flows).
 - `Done`: SC-212 Professional Subscription Gate (`app/professional/subscription.tsx`) implemented — entitlement status display, cap usage, purchase/restore/refresh CTAs; RevenueCat SDK wiring deferred.
 - `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 5 new professional screens.
 - `Done`: SC-205/SC-206 now consume professional-source Firestore reads/mutations for student roster, assignment-status hydration, and unbind (`getProfessionalStudentRoster`, `getProfessionalStudentAssignmentSnapshot`, `unbindStudentConnections`).
@@ -133,14 +133,14 @@ Track intentionally deferred implementation wiring so it is completed before rel
 ## Water Tracking (BL-104)
 - `Done`: `features/nutrition/water-tracking.logic.ts` — pure functions: `resolveEffectiveWaterGoal`, `resolveWaterDayStatus`, `calculateWaterStreak`, `validateWaterGoalInput`, `validateWaterIntakeInput`, `normalizeWaterTrackingError`.
 - `Done`: `features/nutrition/water-tracking.logic.test.ts` — unit tests included in 301-test suite (TC-264–TC-267).
-- `Done`: `features/nutrition/water-tracking-source.ts` — Firestore source surface: `getMyWaterLogs`, `logWaterIntake`, `setStudentWaterGoal`, `getMyWaterGoalContext`, `setNutritionistWaterGoalForStudent`.
-- `Done`: `features/nutrition/use-water-tracking.ts` — React hook with `idle/loading/ready/error` state machine, `logIntake`, `setGoal`, `validateGoal`, `validateIntake`.
+- `Done`: `features/nutrition/water-tracking-source.ts` — Firestore source surface: `getMyWaterLogs`, `logWaterIntake`, `getMyWaterGoalContext`; effective-goal context resolves from active nutrition plans first with backward-compatibility fallback to legacy `waterGoals` records.
+- `Done`: `features/nutrition/use-water-tracking.ts` — React hook with `idle/loading/ready/error` state machine, `reload`, `logIntake`, `validateIntake` (goal mutation API removed from hook surface).
 - `Done`: `HydrationCard` in `app/student/home.tsx` (SC-203) — wired to `useWaterTracking`; shows progress, streak, goal ownership label.
-- `Done`: `WaterWidget` in `app/student/nutrition.tsx` (SC-209) — intake log form + personal goal form wired to `useWaterTracking`.
-- `Done`: Nutritionist water goal form in `app/professional/student-profile.tsx` (SC-206) — `setNutritionistWaterGoalForStudent` wired via `useWaterTracking.setGoal`.
-- `Done`: All localization keys present in `en-US`, `pt-BR`, and `es-ES` (`student.hydration.*`, `student.home.hydration.*`, `student.nutrition.water.*`, `pro.student_profile.water_goal.*`).
+- `Done`: `WaterWidget` in `app/student/nutrition.tsx` (SC-209) — intake log form + helper text indicating water goals are defined in nutrition plans.
+- `Done`: Hydration-goal input is documented and wired in nutrition plan builder metadata form (SC-207) for both professional and student plan-authoring routes.
+- `Done`: Localization alignment shipped in `en-US`, `pt-BR`, and `es-ES` for hydration helper and plan-builder hydration field/validation keys.
 - `Done`: Screen spec created at `docs/screens/v2/SC-220-water-tracker.md`.
-- `Done`: Wire Firestore endpoints for water tracking (`getMyWaterLogs`, `logWaterIntake`, `setStudentWaterGoal`, `getMyWaterGoalContext`, `setNutritionistWaterGoalForStudent`) replacing stubs in `water-tracking-source.ts` (D-126 batch).
+- `Done`: Wire Firestore endpoints for hydration tracking (`getMyWaterLogs`, `logWaterIntake`, `getMyWaterGoalContext`) replacing stubs in `water-tracking-source.ts` (D-126 batch), with plan-context precedence and migration fallback behavior documented in D-172.
 
 ## Food/Plan/Data Wiring
 - `In progress`: Implement Firebase Firestore profile connector contract (`getMyProfile`, `upsertUserProfile`, `setLockedRole`) and switch auth route-guard profile source to Firestore.
@@ -198,16 +198,15 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Student self-guided empty-state CTAs in SC-209/SC-210 now route to direct creation flows: `/student/nutrition/plans/new` and `/student/training/plans/new`.
 - `In progress`: Student-specific self-managed plan builder shell for SC-209/SC-210 currently reuses shared builder screens (`app/professional/nutrition/plans/[planId].tsx`, `app/professional/training/plans/[planId].tsx`) via student route aliases. Student-branded titles/actions are applied on student-prefixed routes; follow-up required for fully dedicated student-only layout treatment.
 
-## YMove Exercise Search (BL-106 — SC-208)
-- `Done`: `features/plans/ymove-source.ts` — YMove API v2 client: `searchYMoveExercises`, `getYMoveExerciseById`; full `YMoveExercise` type (correct `instructions: string[]`, `exerciseType: string[]`, `videos: YMoveVideo[]`); `YMoveSearchResponse` using correct v2 `pagination` shape (`pageSize`, not `limit`).
-- `Done`: `features/plans/use-ymove-search.ts` — `useYMoveSearch` hook with `idle/loading/error/done` state machine.
-- `Done`: `features/plans/use-ymove-thumbnail.ts` — `useYMoveThumbnail(ymoveId)` hook; fetches fresh thumbnail URL on demand via `getYMoveExerciseById`; never caches URLs (API contract: pre-signed URLs expire after 48 h).
-- `Done`: `components/ds/patterns/ExerciseSearchModal.tsx` — two-phase modal (search results list → exercise detail/confirm form); all strings use i18n (including `pro.plan.item.search.back`); `muscleGroup` subtitle rendered via `ymove.muscle_group.<slug>` i18n key.
-- `Done`: `features/plans/components/SessionCard.tsx` — `SessionItemRow` sub-component calls `useYMoveThumbnail` per item; placeholder shown while loading or when key is absent.
-- `Done`: `features/plans/plan-builder.logic.ts` — `TrainingSessionItemInput` stores only `ymoveId`; `thumbnailUrl`/`videoUrl` removed (API contract violation — URLs expire after 48 h).
-- `Done`: `features/plans/plan-builder-source.ts` — `addTrainingSessionItem` persists `ymoveId`, `quantity`, `notes` to Firestore; `mapTrainingPlanDetail` reads them back; `FirestoreTrainingItem` typed explicitly.
-- `Done`: All `pro.plan.item.search.*` and `ymove.muscle_group.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
-- `Pending`: Set `EXPO_PUBLIC_YMOVE_API_KEY` in `.env` once API key is obtained (https://ymove.app/exercise-api/signup). Without it the search returns empty silently.
+## Exercise Service Search (BL-106 — SC-208)
+- `Done`: `features/plans/exercise-service-source.ts` — proxy client: `searchExerciseLibrary`, `getExerciseById`; requests route through `https://exerciseservice.eduwaldo.com/proxy` with normalized `lang` and `x-request-id`.
+- `Done`: `features/plans/use-exercise-search.ts` — `useExerciseSearch` hook with `idle/loading/error/done` state machine.
+- `Done`: `features/plans/use-exercise-thumbnail.ts` — `useExerciseThumbnail(exerciseId)` hook; fetches fresh thumbnails on demand via `getExerciseById`; never caches expiring URLs.
+- `Done`: `components/ds/patterns/ExerciseSearchModal.tsx` — two-phase modal wired to exercise service search; subtitle localized via `exercise.muscle_group.<slug>` keys.
+- `Done`: `features/plans/components/SessionCard.tsx` — item rows resolve thumbnails from `exerciseId` with legacy `ymoveId` fallback.
+- `Done`: `features/plans/plan-builder.logic.ts` and `features/plans/plan-builder-source.ts` — `exerciseId` is canonical persisted field; legacy `ymoveId` remains read-compatible during migration.
+- `Done`: Exercise muscle-group localization keys (`exercise.muscle_group.*`) are present in `en-US`, `pt-BR`, and `es-ES`.
+- `Done`: `.env` / `.env.example` now use `EXPO_PUBLIC_EXERCISE_SERVICE_URL`; client-side `EXPO_PUBLIC_YMOVE_API_KEY` contract removed.
 
 ## Plan Builder (BL-106 — SC-207, SC-208)
 - `Done`: `features/plans/plan-builder.logic.ts` — pure functions: `validateNutritionPlanInput`, `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError`, plus food-search normalization helpers `normalizeFoodArray`, `normalizeFoodSearchResult` and associated raw types `RawFoodSearchFood`, `RawFoodSearchServing`, `FoodSearchResult` (D-127, TC-281).

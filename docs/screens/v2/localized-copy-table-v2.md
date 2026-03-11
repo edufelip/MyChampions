@@ -53,7 +53,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.terms.open_link` | SC-221 | Legal link CTA | Open terms and privacy policy | Abrir termos e política de privacidade | Abrir términos y política de privacidad | Temporary URL fallback is config-driven |
 | `auth.terms.checkbox` | SC-221 | Acceptance checkbox label | I have read and agree with the terms and privacy policy. | Li e concordo com os termos e a política de privacidade. | He leído y acepto los términos y la política de privacidad. | Required before continue |
 | `auth.terms.accept_button` | SC-221 | Accept CTA | Accept and continue | Aceitar e continuar | Aceptar y continuar | |
-| `auth.terms.offline_hint` | SC-221 | Link/open hint | You need internet access to open the legal link. | Você precisa de internet para abrir o link legal. | Necesitas internet para abrir el enlace legal. | |
+| `auth.terms.offline_hint` | SC-221 | Link/open hint | You need internet access to open the legal link. | Você precisa de internet para abrir o link acima. | Necesitas internet para abrir el enlace legal. | |
 | `auth.terms.version` | SC-221 | Required version label | Required version: {version} | Versão obrigatória: {version} | Versión obligatoria: {version} | |
 | `auth.terms.error.link_unavailable` | SC-221 | Terms link error | Could not open the terms link right now. Try again. | Não foi possível abrir o link dos termos agora. Tente novamente. | No se pudo abrir el enlace de términos ahora. Inténtalo de nuevo. | |
 | `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | Crea tu cuenta | |
@@ -97,7 +97,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.home.hydration.progress` | SC-203 | Hydration progress value | {consumed} / {goal} ml | {consumed} / {goal} ml | {consumed} / {goal} ml | |
 | `student.home.hydration.goal_student` | SC-203 | Goal owner helper | Using your personal water goal | Usando seu objetivo pessoal de água | Usando tu objetivo personal de agua | |
 | `student.home.hydration.goal_nutritionist` | SC-203 | Goal owner helper | Goal set by Nutritionist | Meta definida pelo nutricionista | Meta definida por el nutricionista | Stitch compact helper |
-| `student.home.hydration.no_goal` | SC-203 | No-goal helper | Set a daily water goal to track progress | Defina um objetivo diário de água para acompanhar o progresso | Establece un objetivo diario de agua para seguir tu progreso | |
+| `student.home.hydration.no_goal` | SC-203 | No-goal helper | Create a nutrition plan to define your daily water goal | Crie um plano alimentar para definir sua meta diária de água | Crea un plan de nutrición para definir tu objetivo diario de agua | |
 | `student.home.nutrition.section` | SC-203 | Nutrition card title | Nutrition Plan | Plano de Nutrição | Plan de Nutrición | Stitch active state |
 | `student.home.training.section` | SC-203 | Training card title | Workout of the Day | Treino do Dia | Entrenamiento del Día | Stitch active state |
 | `student.home.nutrition.plan_available` | SC-203 | Active nutrition helper | Plan available for today | Plano disponível para hoje | Plan disponible para hoy | |
@@ -155,15 +155,12 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.nutrition.water.personal_goal` | SC-209 | Goal ownership badge | Personal Goal | Meta Pessoal | Objetivo Personal | BL-104 |
 | `student.nutrition.water.nutritionist_goal` | SC-209 | Goal ownership badge | Goal set by Nutritionist | Meta definida pelo Nutricionista | Objetivo definido por tu Nutricionista | BL-104 |
 | `student.nutrition.water.cta_log` | SC-209 | Hydration primary action | Log Intake | Registrar Consumo | Registrar Consumo | BL-104 |
-| `student.nutrition.water.cta_set_goal` | SC-209 | Hydration goal action | Set Daily Goal | Definir Meta Diária | Definir Objetivo Diario | BL-104 |
 | `student.nutrition.water.log.label` | SC-209 | Hydration intake label | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
 | `student.nutrition.water.log.placeholder` | SC-209 | Hydration intake placeholder | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
-| `student.nutrition.water.goal.label` | SC-209 | Hydration goal label | Goal (ml) | Meta (ml) | Objetivo (ml) | BL-104 |
-| `student.nutrition.water.goal.placeholder` | SC-209 | Hydration goal placeholder | Goal (ml) | Meta (ml) | Objetivo (ml) | BL-104 |
+| `student.nutrition.water.goal_defined_in_plan` | SC-209 | Hydration helper | Water goal is defined in your nutrition plan. | A meta de água é definida no seu plano alimentar. | El objetivo de agua se define en tu plan de nutrición. | BL-104 |
 | `student.hydration.card_title` | SC-203/SC-209 | Hydration summary title | Water intake | Consumo de água | Consumo de agua | BL-104 |
 | `student.hydration.progress` | SC-203/SC-209 | Hydration progress helper | {consumed} / {goal} ml | {consumido} / {meta} ml | {consumed} / {goal} ml | BL-104 |
 | `student.hydration.cta_log` | SC-209 | Hydration primary action | Log water | Registrar água | Registrar agua | BL-104 |
-| `student.hydration.cta_set_goal` | SC-209 | Hydration goal action | Set water goal | Definir meta de água | Definir objetivo de agua | BL-104 |
 | `student.hydration.goal_owner_student` | SC-209 | Goal ownership helper | Using your personal water goal | Usando sua meta pessoal de água | Usando tu objetivo personal de agua | BL-104 |
 | `student.hydration.goal_owner_nutritionist` | SC-209 | Goal ownership helper | Daily water goal defined by your nutritionist | Meta diária de água definida pelo seu nutricionista | Objetivo diario de agua definido por tu nutricionista | BL-104 |
 | `student.hydration.streak` | SC-203/SC-209 | Streak helper | Current streak: {days} days | Sequência atual: {days} dias | Racha actual: {days} días | BL-104 |
@@ -206,9 +203,6 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.predefined_plan.bulk_assign.cta_finalize` | SC-207/SC-208 | Final bulk assign CTA | Confirm assignments | Confirmar atribuições | Confirmar asignaciones | BL-106 |
 | `pro.library.nutrition.helper` | SC-207 | Plan library helper | Create your diet presets. After assigning to a student, you only need to fine-tune it. | Crie suas predefinições de dieta. Depois de atribuir a um aluno você só precisa fazer o ajuste fino. | Crea tus preajustes de dieta. Después de asignar a un alumno, solo necesitas hacer el ajuste fino. | BL-106 |
 | `pro.library.training.helper` | SC-208 | Plan library helper | Create your workout presets. After assigning to a student, you only need to fine-tune it. | Crie suas predefinições de treino. Depois de atribuir a um aluno você só precisa fazer o ajuste fino. | Crea tus preajustes de entrenamiento. Después de asignar a un alumno, solo necesitas hacer el ajuste fino. | BL-106 |
-| `pro.student.water_goal.section_title` | SC-206 | Professional water goal section title | Student water goal | Meta de água do aluno | Objetivo de agua del alumno | BL-104 |
-| `pro.student.water_goal.field_daily_ml` | SC-206 | Professional water goal input label | Daily water goal (ml) | Meta diária de água (ml) | Objetivo diario de agua (ml) | BL-104 |
-| `pro.student.water_goal.cta_save` | SC-206 | Professional water goal save CTA | Save water goal | Salvar meta de água | Establecer objetivo de agua | BL-104 |
 | `custom_meal.builder.title` | SC-214 | Builder screen title | Create custom meal | Criar refeição personalizada | Crear comida personalizada | |
 | `custom_meal.builder.helper` | SC-214 | Builder helper text | Add total meal weight and nutrients. We use this to calculate any portion you log. | Adicione o peso total da refeição e os nutrientes. Usamos isso para calcular qualquer porção que você registrar. | Añade el peso total de la comida y los nutrientes. Los usamos para calcular cualquier porción que registres. | |
 | `custom_meal.field.name` | SC-214 | Field label | Meal name | Nome da refeição | Nombre de la comida | |
@@ -394,6 +388,12 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.training.title.edit` | SC-208 | Screen title (edit) | Edit training plan | Editar plano de treino | Editar plan de entrenamiento | |
 | `pro.plan.field.name.label` | SC-207/208 | Plan name label | Plan name | Nome do plano | Nombre del plan | BR-281, BR-291, BR-293 |
 | `pro.plan.field.name.placeholder` | SC-207/208 | Plan name placeholder | e.g. Caloric Deficit A | ex.: Déficit Calórico A | p.ej. Déficit Calórico A | |
+| `student.plan.field.name.label` | SC-207/208 | Student plan name label | My plan name | Nome do meu plano | Nombre de mi plan | Student self-guided alias copy |
+| `student.plan.field.name.placeholder` | SC-207/208 | Student plan name placeholder | e.g. My Training Plan | ex.: Meu Plano de Treino | p.ej. Mi Plan de Entrenamiento | |
+| `pro.plan.field.hydration_goal.label` | SC-207 | Hydration goal label | Daily water goal (ml) | Meta diária de água (ml) | Objetivo diario de agua (ml) | BL-104 |
+| `pro.plan.field.hydration_goal.placeholder` | SC-207 | Hydration goal placeholder | e.g. 2200 | ex.: 2200 | p.ej. 2200 | BL-104 |
+| `student.plan.field.hydration_goal.label` | SC-207 | Student hydration goal label | Daily water goal (ml) | Meta diária de água (ml) | Objetivo diario de agua (ml) | BL-104 |
+| `student.plan.field.hydration_goal.placeholder` | SC-207 | Student hydration goal placeholder | e.g. 2200 | ex.: 2200 | p.ej. 2200 | BL-104 |
 | `pro.plan.field.calories_target.label` | SC-207 | Calorie target label | Calorie target (kcal) | Meta de calorias (kcal) | Meta de calorías (kcal) | BR-210 |
 | `pro.plan.field.calories_target.placeholder` | SC-207 | Calorie placeholder | e.g. 2000 | ex.: 2000 | p.ej. 2000 | |
 | `pro.plan.field.carbs_target.label` | SC-207 | Carbs target label | Carbs target (g) | Meta de carboidratos (g) | Meta de carbohidratos (g) | BR-210 |
@@ -414,6 +414,10 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.food_search.stub_notice` | SC-207 | Empty meal helper | Add food items to start this plan. | Adicione alimentos para começar este plano. | Añade alimentos para empezar este plan. | |
 | `pro.plan.validation.name_required` | SC-207/208 | Name required error | Plan name is required. | O nome do plano é obrigatório. | El nombre del plan es obligatorio. | BR-291, BR-293 |
 | `pro.plan.validation.name_too_short` | SC-207/208 | Name too short error | Plan name must be at least 2 characters. | O nome do plano deve ter pelo menos 2 caracteres. | El nombre del plan debe tener al menos 2 caracteres. | |
+| `pro.plan.validation.hydration_goal_required` | SC-207 | Hydration goal required error | Daily water goal is required. | A meta diária de água é obrigatória. | El objetivo diario de agua es obligatorio. | BL-104 |
+| `pro.plan.validation.hydration_goal_positive` | SC-207 | Hydration goal positive error | Daily water goal must be greater than zero. | A meta diária de água deve ser maior que zero. | El objetivo diario de agua debe ser mayor que cero. | BL-104 |
+| `student.plan.validation.hydration_goal_required` | SC-207 | Student hydration goal required error | Daily water goal is required. | A meta diária de água é obrigatória. | El objetivo diario de agua es obligatorio. | BL-104 |
+| `student.plan.validation.hydration_goal_positive` | SC-207 | Student hydration goal positive error | Daily water goal must be greater than zero. | A meta diária de água deve ser maior que zero. | El objetivo diario de agua debe ser mayor que cero. | BL-104 |
 | `pro.plan.validation.calories_non_negative` | SC-207 | Negative calories error | Calorie target must be zero or more. | A meta de calorias deve ser zero ou mais. | La meta de calorías debe ser cero o más. | BR-292 |
 | `pro.plan.validation.macros_non_negative` | SC-207 | Negative macros error | Macro targets must be zero or more. | As metas de macronutrientes devem ser zero ou mais. | Las metas de macronutrientes deben ser cero o más. | BR-292 |
 | `pro.plan.error.save` | SC-207/208 | Save error | Could not save plan. Try again. | Não foi possível salvar o plano. Tente novamente. | No se pudo guardar el plan. Inténtalo de nuevo. | |
@@ -431,6 +435,25 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.item.field.quantity.label` | SC-208 | Item quantity label | Quantity (optional) | Quantidade (opcional) | Cantidad (opcional) | |
 | `pro.plan.item.field.quantity.placeholder` | SC-208 | Item quantity placeholder | e.g. 3 sets × 10 reps | ex.: 3 séries × 10 reps | p.ej. 3 series × 10 reps | |
 | `pro.plan.item.field.notes.label` | SC-208 | Item notes label | Notes (optional) | Observações (opcional) | Notas (opcional) | |
+| `pro.plan.item.search.placeholder` | SC-208 | Exercise search placeholder | Search for an exercise... | Buscar por um exercício... | Buscar un ejercicio... | |
+| `pro.plan.item.search.empty` | SC-208 | Exercise search empty state | No exercises found. | Nenhum exercício encontrado. | No se encontraron ejercicios. | |
+| `pro.plan.item.search.error` | SC-208 | Exercise search error | Error searching for exercises. | Erro ao buscar exercícios. | Error al buscar ejercicios. | |
+| `pro.plan.item.search.back` | SC-208 | Exercise detail back link | Back to search | Voltar para a busca | Volver a la búsqueda | |
+| `pro.plan.item.detail.description` | SC-208 | Exercise detail section title | Description | Descrição | Descripción | |
+| `pro.plan.item.detail.instructions` | SC-208 | Exercise detail section title | Instructions | Instruções | Instrucciones | |
+| `pro.plan.item.detail.important_points` | SC-208 | Exercise detail section title | Important Points | Pontos Importantes | Puntos Importantes | |
+| `exercise.muscle_group.chest` | SC-208 | Muscle group label | Chest | Peitoral | Pecho | |
+| `exercise.muscle_group.back` | SC-208 | Muscle group label | Back | Costas | Espalda | |
+| `exercise.muscle_group.shoulders` | SC-208 | Muscle group label | Shoulders | Ombros | Hombros | |
+| `exercise.muscle_group.biceps` | SC-208 | Muscle group label | Biceps | Bíceps | Bíceps | |
+| `exercise.muscle_group.triceps` | SC-208 | Muscle group label | Triceps | Tríceps | Tríceps | |
+| `exercise.muscle_group.forearms` | SC-208 | Muscle group label | Forearms | Antebraços | Antebrazos | |
+| `exercise.muscle_group.quads` | SC-208 | Muscle group label | Quads | Quadríceps | Cuádriceps | |
+| `exercise.muscle_group.hamstrings` | SC-208 | Muscle group label | Hamstrings | Isquiotibiais | Isquiotibiales | |
+| `exercise.muscle_group.glutes` | SC-208 | Muscle group label | Glutes | Glúteos | Glúteos | |
+| `exercise.muscle_group.calves` | SC-208 | Muscle group label | Calves | Panturrilhas | Pantorrillas | |
+| `exercise.muscle_group.core` | SC-208 | Muscle group label | Core | Core | Core | |
+| `exercise.muscle_group.full_body` | SC-208 | Muscle group label | Full Body | Corpo Inteiro | Cuerpo Completo | |
 | `pro.plan.predefined.label` | SC-207/208 | Plan kind badge | Predefined plan | Plano predefinido | Plan predefinido | BR-281 |
 
 ## Shell — Bottom Tab Navigator

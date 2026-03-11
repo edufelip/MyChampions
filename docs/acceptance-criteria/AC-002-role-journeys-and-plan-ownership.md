@@ -65,12 +65,15 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-257`: Offline mode surfaces persistent offline/read-only banner and explicit write-lock reason on blocked actions.
 - `AC-258`: Specialty-removal blocked state includes direct assist actions to resolve active/pending blockers.
 - `AC-259`: Habit tracking scope under BL-104 includes water tracking only; sleep and steps are excluded from this item.
-- `AC-260`: Students can set personal daily water goals and log daily water intake.
-- `AC-261`: Nutritionists can set/update daily water goals for actively assigned students.
+- `AC-260`: Students define personal daily water goals in self-managed nutrition plan creation/edit and log daily water intake in hydration widgets.
+- `AC-261`: Nutritionists define/update daily water goals for actively assigned students in nutrition plan authoring/assignment flows.
 - `AC-262`: When nutritionist water goal exists in active assignment context, it becomes effective target; otherwise student personal water goal is effective target.
 - `AC-263`: Hydration tracker provides visible daily completion status and streak progression based on effective water goal.
 - `AC-264`: Professionals can create named predefined nutrition/training plans in a reusable private library.
 - `AC-265`: Professionals can bulk assign predefined plans to multiple students and fine-tune each student copy before finalization; assigned copies remain independent.
+- `AC-525`: SC-208 exercise search/detail requests must be sent to the exercise proxy endpoint (`https://exerciseservice.eduwaldo.com/proxy`) rather than direct upstream endpoints from mobile.
+- `AC-526`: Exercise proxy calls include normalized `lang` and client-generated `x-request-id`, and app diagnostics capture response `x-request-id`.
+- `AC-527`: The upstream YMove API key is never present in client binary/runtime variables; exercise search succeeds through proxy-only integration.
 - `AC-266`: After successful sign-in or create-account, users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted.
 - `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
 - `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.
@@ -352,6 +355,17 @@ Feature: Role-based onboarding and care assignments
     When they begin editing
     Then an editable cloned draft is created
     And the original starter template remains unchanged
+
+  Scenario: SC-208 exercise search uses proxy service
+    Given a professional opens exercise search on SC-208
+    When the app performs a search request
+    Then the request is sent to `https://exerciseservice.eduwaldo.com/proxy`
+    And the request includes normalized `lang` and `x-request-id`
+
+  Scenario: SC-208 upstream key is not shipped in client
+    Given the app binary is inspected
+    Then no upstream YMove API key is present in client environment/runtime
+    And exercise search continues to function through the proxy service
 
   Scenario: Plan builder — validation guards
     Given a professional is on the nutrition plan builder

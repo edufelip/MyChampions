@@ -39,7 +39,7 @@ The same professional can fill both specialties if dual-qualified.
 - Recipe sharing with copy-on-save ownership.
 - Training planning with reusable and customizable session schemas.
 - Daily student tracking and adherence feedback.
-- Hydration tracking with student-defined and nutritionist-defined water goals.
+- Hydration tracking with water goals authored in nutrition plan flows for both self-guided students and nutritionists.
 
 ## MVP Intent (Draft)
 - Deliver end-to-end role onboarding.

@@ -8,8 +8,9 @@ flowchart LR
   A --> C[Firebase Cloud Firestore]
   A --> D[Firebase Cloud Storage]
   A --> E[Food Search Microservice]
-  A --> F[RevenueCat]
-  A --> G[Firebase Crashlytics]
+  A --> F[Exercise Service Microservice]
+  A --> G[RevenueCat]
+  A --> H[Firebase Crashlytics]
 
   B --> C
   C --> D
@@ -25,6 +26,7 @@ flowchart LR
     E
     F
     G
+    H
   end
 ```
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 Define behavior for two selected P1 items:
-- BL-104 water tracking with personal/professional goal ownership.
+- BL-104 water tracking with personal/professional goal ownership authored in nutrition plans.
 - BL-106 named predefined plans with clone/bulk assignment and per-student fine-tuning.
 
 ## Scope
@@ -13,16 +13,16 @@ Define behavior for two selected P1 items:
 - Bulk assignment workflow and copy isolation.
 
 ## Definitions
-- Personal water goal: student-defined daily hydration target.
-- Nutritionist water goal: assigned professional override target for student hydration.
+- Personal water goal: student-authored hydration target in self-managed nutrition plan.
+- Nutritionist water goal: hydration target authored by assigned professional in assigned nutrition plan.
 - Effective water goal: active target used for completion/streak calculations.
 - Predefined plan: named professional-owned plan artifact reusable for assignment.
 
 ## Expected Behavior
 1. Hydration tracking under BL-104 is limited to water intake.
 2. Student can log water consumption for each day.
-3. Student can set/update personal daily water goal.
-4. Assigned nutritionist can set/update water goal for actively assigned student.
+3. Student can set/update personal daily water goal during self-managed nutrition plan creation/edit.
+4. Assigned nutritionist can set/update water goal for actively assigned student during nutrition plan authoring/assignment flows.
 5. If nutritionist override exists in active assignment context, it is the effective water goal.
 6. If no active nutritionist override exists, student personal goal is effective target.
 7. Hydration streak increments on days that meet/exceed effective goal and breaks on non-complete days.
@@ -36,6 +36,7 @@ Define behavior for two selected P1 items:
 - Hydration scope for BL-104 excludes sleep and steps.
 - Water-goal precedence is deterministic (nutritionist override > personal fallback).
 - Bulk-assigned plans do not share mutable references across students.
+- Hydration widgets are intake/progress-only and do not expose direct goal-edit controls.
 
 ## Traceability
 - Functional requirements: `FR-218`, `FR-219`, `FR-220`, `FR-221`, `FR-222`, `FR-223`, `FR-224`, `FR-225`, `FR-226`.

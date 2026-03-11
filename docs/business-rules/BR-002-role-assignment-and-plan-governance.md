@@ -82,9 +82,9 @@
 - `BR-274`: Specialty-removal blocked state must include direct navigation/actions to resolve active/pending blockers.
 - `BR-275`: Accessibility baseline requires support for dynamic text scaling, screen-reader semantics, logical focus order, and sufficient contrast on core screens.
 - `BR-276`: BL-104 habit-tracking scope is hydration-only (water intake); sleep and steps are excluded from this item.
-- `BR-277`: Students can define and update personal daily water-goal targets for self-management contexts.
-- `BR-278`: Nutritionists can define and update daily water-goal targets for students with active nutrition assignment.
-- `BR-279`: Effective water-goal precedence is nutritionist-defined goal (when active assignment + goal exists); otherwise student personal goal applies.
+- `BR-277`: Student personal daily water-goal targets are authored in self-managed nutrition plan creation/edit contexts.
+- `BR-278`: Nutritionist daily water-goal targets are authored in assigned nutrition plan creation/edit or assignment fine-tune contexts.
+- `BR-279`: Effective water-goal precedence is plan-context driven: active assigned nutrition plan goal first, otherwise self-managed nutrition plan goal; legacy `waterGoals` values are compatibility fallback only.
 - `BR-280`: Water streak progression is based on daily completion against effective goal; non-complete days break the active streak.
 - `BR-281`: Predefined plans are professional-owned named library items for nutrition and/or training domains.
 - `BR-282`: Bulk assignment clones predefined plans into per-student copies; later edits to source predefined plan do not retroactively mutate already assigned student copies.
@@ -108,6 +108,10 @@
 - `BR-300`: Provider detection for the password reset flow is performed at runtime by inspecting `currentUser.providerData`; the "Change password" row is always visible regardless of provider, and the runtime branch determines the action.
 - `BR-301`: A user confirmation alert must precede any `sendPasswordResetEmail` call from the account settings screen; silent auto-dispatch without user acknowledgment is not permitted.
 - `BR-302`: The OAuth provider label shown in the informational alert must be resolved from `providerData` at runtime: `google.com` maps to "Google", `apple.com` maps to "Apple", and any other unrecognized provider maps to "your sign-in provider".
+- `BR-303`: SC-208 exercise search/detail calls must use `https://exerciseservice.eduwaldo.com/proxy`; direct mobile calls to upstream YMove endpoints are not allowed.
+- `BR-304`: Proxy requests must include normalized language code (`en`, `pt`, `es`, fallback `en`) and client-generated `x-request-id` for correlation.
+- `BR-305`: Upstream YMove API keys are server-side only; no client build/runtime variable may expose that key.
+- `BR-306`: Training session items persist only stable exercise identifiers (`exerciseId`); pre-signed media URLs are never persisted.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

@@ -16,7 +16,7 @@
   - Submit nutrition plan-change request for assigned plans.
 - Secondary:
   - Inspect plan targets and progress breakdown.
-  - Set/update personal water goal when no nutritionist goal override is active.
+  - Navigate to nutrition plan builder to change daily water goal when needed.
   - Open custom meal library/builder.
 
 ## States
@@ -64,7 +64,7 @@
 - Hydration goal badge (personal): `Personal Goal`
 - Hydration goal badge (nutritionist): `Goal set by Nutritionist`
 - Hydration intake CTA: `Log Intake`
-- Hydration set-goal CTA: `Set Daily Goal`
+- Hydration helper: `Water goal is defined in your nutrition plan.`
 
 ## Links
 - Functional requirement: FR-114, FR-115, FR-116, FR-123, FR-124, FR-135, FR-139, FR-140, FR-141, FR-211, FR-214, FR-218, FR-219, FR-220, FR-221, FR-222

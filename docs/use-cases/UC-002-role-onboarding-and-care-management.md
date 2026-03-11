@@ -242,15 +242,15 @@
 - Expected result: Core flows remain usable with baseline accessibility support.
 
 ## UC-002.19 Water Goal And Intake Tracking
-- Primary actor: Student (and assigned nutritionist for goal-setting).
-- Trigger: Student tracks hydration or manages water goal.
-- Preconditions: User authenticated; optional active nutritionist assignment.
+- Primary actor: Student (and assigned nutritionist for goal authoring in plan builder).
+- Trigger: Student tracks hydration or creates/edits nutrition plan.
+- Preconditions: User authenticated; nutrition plan exists or is being created.
 - Main flow:
-  1. Student opens hydration tracker and logs daily water intake.
-  2. Student sets/updates personal daily water goal.
-  3. If assigned nutritionist sets a water goal, app applies nutritionist goal as effective target.
+  1. Student or nutritionist defines daily water goal during nutrition plan creation/edit.
+  2. Student opens hydration tracker and logs daily water intake.
+  3. App resolves effective goal from active nutrition plan context (assigned first, otherwise self-managed).
   4. App computes completion status and streak progression against effective target.
-- Expected result: Hydration tracking and streaks reflect effective goal ownership rules.
+- Expected result: Hydration tracking and streaks reflect plan-defined water goals and active assignment precedence.
 
 ## UC-002.20 Professional Predefined Plans And Bulk Assignment
 - Primary actor: Professional.
@@ -263,6 +263,21 @@
   4. Professional fine-tunes each student draft as needed.
   5. Professional confirms assignments.
 - Expected result: Multiple students receive independent assigned plan copies with optional per-student adjustments.
+
+## UC-002.22 SC-208 Exercise Search Via Proxy Service
+- Primary actor: Professional.
+- Trigger: Professional searches and previews exercises while editing a training plan.
+- Preconditions: Professional authenticated and SC-208 is open.
+- Main flow:
+  1. Professional opens exercise search in SC-208.
+  2. App calls `POST /proxy` on `https://exerciseservice.eduwaldo.com` with normalized `lang` and generated `x-request-id`.
+  3. Proxy service translates search intent/fields as needed and calls upstream YMove endpoint.
+  4. App renders localized search results and allows selecting one exercise.
+  5. App stores only `exerciseId` in local draft/persistence; URLs are fetched on demand for display.
+- Alternate flow:
+  - If proxy returns non-success, UI shows search error state and allows retry.
+  - If selected item thumbnail fetch fails, UI falls back to placeholder image.
+- Expected result: Exercise search works without exposing upstream API key in client runtime.
 
 ## UC-002.21 Accept Terms Before Onboarding Continuation
 - Primary actor: New or returning authenticated user.

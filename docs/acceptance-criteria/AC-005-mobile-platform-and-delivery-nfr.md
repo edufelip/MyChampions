@@ -18,6 +18,7 @@ Mobile platform constraints and delivery workflow without EAS dependency.
 - `AC-512`: Core screens meet accessibility baseline for contrast, dynamic text scaling, focus order, and screen-reader labels.
 - `AC-513`: User-facing strings use localization keys with populated values for `en-US`, `pt-BR`, and `es-ES` in release-candidate builds.
 - `AC-514`: Detox E2E suite is configured for iOS simulator and Android emulator builds, and includes auth sign-in smoke scenarios (empty-submit validation + success route to role-selection).
+- `AC-515`: Android and iOS launcher icon assets are generated from the same source logo file (`assets/images/logo.svg`) and updated together.
 
 ## Gherkin Scenarios
 ```gherkin
@@ -75,4 +76,9 @@ Feature: Mobile platform and delivery constraints
     When the auth smoke suite runs
     Then empty sign-in submission shows required-field validation errors
     And valid credential submission routes the user to role-selection screen
+
+  Scenario: Cross-platform icon source consistency
+    Given the source logo file at assets/images/logo.svg
+    When icon generation runs
+    Then iOS app icon and Android launcher icons are regenerated from that same source
 ```

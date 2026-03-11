@@ -90,7 +90,7 @@ Specify the target domain behavior for role-based journeys, professional assignm
 57. Specialty-removal blocked state exposes direct blocker-resolution actions.
 58. Core screens support accessibility baseline for dynamic text scaling, screen-reader labels, logical focus order, and contrast.
 59. Hydration tracking scope includes water only, with daily intake logging, effective-goal completion, and streaks.
-60. Students can set personal water goals; assigned nutritionists can set override goals for actively assigned students.
+60. Water goals are authored in nutrition plan creation/edit flows: self-guided students define personal hydration goals and assigned nutritionists define override goals in assigned plan authoring.
 61. Professionals can create named predefined nutrition/training plans and bulk assign them to multiple students.
 62. Bulk assignment supports per-student fine-tuning and produces independent assigned copies.
 
