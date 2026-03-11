@@ -378,5 +378,9 @@
     - Builder hooks now accept an optional scope key and reset builder/food-search state on scope transitions to avoid stale plan bleed between route instances.
   - Unsaved drafts remain session-only; no AsyncStorage draft persistence was introduced by this migration.
 
+- `D-174`: GitHub Actions workflows no longer run legacy Firebase Data Connect runtime validation (`scripts/check-dataconnect-runtime-config.mjs`) because app/runtime persistence is fully Firestore-based.
+  - Removed `Validate Data Connect runtime config` steps from: `android-pr.yml`, `ios-pr.yml`, `firebase-distribution-android.yml`, `firebase-distribution-ios.yml`, `android-release.yml`, and `ios-release.yml`.
+  - CI Firebase/App Distribution/TestFlight signing and environment checks remain unchanged; only the deprecated Data Connect preflight was removed.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
