@@ -195,6 +195,9 @@ dependencies {
         implementation jscFlavor
     }
 
+    // Android 12+ splash screen API used in MainActivity
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
     androidTestImplementation(project(':detox'))
     androidTestImplementation('androidx.test.ext:junit:1.2.1')
     androidTestImplementation('androidx.test:runner:1.6.2')
