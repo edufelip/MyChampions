@@ -78,6 +78,9 @@ export type NutritionPlanDetail = {
 export type TrainingPlanDetail = {
   id: string;
   name: string;
+  sourceKind: 'predefined' | 'assigned' | 'self_managed';
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
   sessions: TrainingSession[];
   createdAt: string;
   updatedAt: string;
@@ -294,6 +297,9 @@ function mapTrainingPlanDetail(raw: FirestoreTrainingPlan | null | undefined): T
   return {
     id: raw.id,
     name: raw.name,
+    sourceKind: raw.sourceKind,
+    ownerProfessionalUid: raw.ownerProfessionalUid ?? null,
+    studentAuthUid: raw.studentAuthUid,
     sessions,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,

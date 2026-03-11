@@ -2,7 +2,7 @@
  * SC-207 Nutrition Plan Builder
  * Route: /professional/nutrition/plans/:planId
  */
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import {
   Alert,
   LayoutAnimation,
@@ -77,7 +77,7 @@ export default function NutritionPlanBuilderScreen() {
     deletePlan,
     initNewPlan,
     validateInput,
-  } = useNutritionPlanBuilder(Boolean(currentUser));
+  } = useNutritionPlanBuilder(Boolean(currentUser), `${pathname}:plan:${planId ?? 'new'}`);
 
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
@@ -163,7 +163,7 @@ export default function NutritionPlanBuilderScreen() {
   const isBusy = isSaving || isMutating || isDeletingPlan;
 
   // ── Load existing plan ─────────────────────────────────────────────────────
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isNew) {
       initNewPlan();
     } else if (!isStarterClone && planId) {

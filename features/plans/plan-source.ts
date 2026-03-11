@@ -104,6 +104,7 @@ type PlanSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_re
 
 let globalPlansCache: Plan[] | null = null;
 let globalPredefinedPlansCache: PredefinedPlan[] | null = null;
+let globalPlansCacheOwnerUid: string | null = null;
 
 export function getCachedPlans(): Plan[] | null {
   return globalPlansCache;
@@ -115,10 +116,21 @@ export function getCachedPredefinedPlans(): PredefinedPlan[] | null {
 
 export function setCachedPlans(plans: Plan[]) {
   globalPlansCache = plans;
+  globalPlansCacheOwnerUid = plans[0]?.studentUid ?? null;
 }
 
 export function setCachedPredefinedPlans(plans: PredefinedPlan[]) {
   globalPredefinedPlansCache = plans;
+}
+
+export function getCachedPlansOwnerUid(): string | null {
+  return globalPlansCacheOwnerUid;
+}
+
+export function clearPlanCaches() {
+  globalPlansCache = null;
+  globalPredefinedPlansCache = null;
+  globalPlansCacheOwnerUid = null;
 }
 
 /**

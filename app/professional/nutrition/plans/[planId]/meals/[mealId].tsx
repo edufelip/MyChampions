@@ -2,7 +2,7 @@
  * SC-207 Nutrition Meal Builder
  * Route: /professional/nutrition/plans/:planId/meals/:mealId
  */
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useLayoutEffect, useState, useMemo } from 'react';
 import {
   Alert,
   LayoutAnimation,
@@ -26,7 +26,7 @@ import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constan
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNutritionPlanBuilder, type FoodSearchState, type FoodSearchResult } from '@/features/plans/use-plan-builder';
+import { useNutritionPlanBuilder, type FoodSearchResult } from '@/features/plans/use-plan-builder';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
@@ -83,13 +83,16 @@ export default function NutritionMealBuilderScreen() {
     searchFoods,
     foodSearchState,
     clearFoodSearch,
-  } = useNutritionPlanBuilder(Boolean(currentUser));
+  } = useNutritionPlanBuilder(
+    Boolean(currentUser),
+    `${pathname}:meal:${planId ?? 'unknown'}:${mealId ?? 'unknown'}`
+  );
   const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
   const isInitialLoading = state.kind === 'loading';
   const isBusy = isMutating;
 
   // ── Load existing plan ─────────────────────────────────────────────────────
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (planId) {
       loadPlan(planId);
     }

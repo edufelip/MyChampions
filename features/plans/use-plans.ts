@@ -1,42 +1,21 @@
 /**
  * React hook for plan and plan change request operations.
- * Wraps plan-source for UI consumption.
- * No Firebase/Firestore concerns in screen components.
+ * Store-backed adapter over the centralized Zustand plans store.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { shallow } from 'zustand/shallow';
 
-import {
-  getMyPlans,
-  getMyPredefinedPlans,
-  bulkAssignPredefinedPlan,
-  submitPlanChangeRequest,
-  reviewPlanChangeRequest,
-  getStudentPlanChangeRequests,
-  getCachedPlans,
-  getCachedPredefinedPlans,
-  type Plan,
-  type PredefinedPlan,
-} from './plan-source';
-import {
-  validatePlanChangeRequestInput,
-  normalizePlanChangeRequestError,
-  type PlanType,
-  type PlanChangeRequest,
-  type PlanChangeRequestInput,
-  type PlanChangeRequestValidationErrors,
-  type PlanChangeRequestErrorReason,
+import type {
+  PlanType,
+  PlanChangeRequest,
+  PlanChangeRequestInput,
+  PlanChangeRequestValidationErrors,
+  PlanChangeRequestErrorReason,
 } from './plan-change-request.logic';
+import { usePlansStore, type PlansLoadState } from './plans-store';
 
-// ─── State types ──────────────────────────────────────────────────────────────
-
-export type PlansLoadState =
-  | { kind: 'idle' }
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'ready'; plans: Plan[]; predefinedPlans: PredefinedPlan[] };
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+export type { PlansLoadState };
 
 export type UsePlansResult = {
   state: PlansLoadState;
@@ -64,123 +43,81 @@ export function usePlans(
   isAuthenticated: boolean,
   options: { fetchOnMount?: boolean } = { fetchOnMount: true }
 ): UsePlansResult {
-  const [state, setState] = useState<PlansLoadState>(() => {
-    if (!isAuthenticated) return { kind: 'idle' };
-    const plans = getCachedPlans();
-    const predefinedPlans = getCachedPredefinedPlans();
-    if (plans && predefinedPlans) {
-      return { kind: 'ready', plans, predefinedPlans };
-    }
-    return { kind: 'idle' };
-  });
+  const {
+    state,
+    plansInvalidation,
+    syncAuthContext,
+    loadPlans,
+    validateChangeRequest,
+    submitChangeRequestFromStore,
+    reviewChangeRequestFromStore,
+    getChangeRequestsForStudentFromStore,
+    bulkAssignFromStore,
+  } = usePlansStore(
+    (s) => ({
+      state: s.plansState,
+      plansInvalidation: s.invalidation.plans,
+      syncAuthContext: s.syncAuthContext,
+      loadPlans: s.loadPlans,
+      validateChangeRequest: s.validateChangeRequest,
+      submitChangeRequestFromStore: s.submitChangeRequest,
+      reviewChangeRequestFromStore: s.reviewChangeRequest,
+      getChangeRequestsForStudentFromStore: s.getChangeRequestsForStudent,
+      bulkAssignFromStore: s.bulkAssign,
+    }),
+    shallow
+  );
 
-  const load = useCallback(() => {
-    if (!isAuthenticated) {
-      setState({ kind: 'idle' });
-      return;
-    }
+  const reload = useCallback(() => {
+    void loadPlans(isAuthenticated);
+  }, [isAuthenticated, loadPlans]);
 
-    // If we have cached data, don't show loading spinner to avoid flicker.
-    // The background refetch will update the UI silently.
-    if (!getCachedPlans() || !getCachedPredefinedPlans()) {
-      setState({ kind: 'loading' });
-    }
-
-    void Promise.all([getMyPlans(), getMyPredefinedPlans()])
-      .then(([plans, predefinedPlans]) => {
-        setState({ kind: 'ready', plans, predefinedPlans });
-      })
-      .catch((err: Error) => {
-        setState({ kind: 'error', message: err.message });
-      });
-  }, [isAuthenticated]);
+  useEffect(() => {
+    syncAuthContext(isAuthenticated);
+  }, [isAuthenticated, syncAuthContext]);
 
   useEffect(() => {
     if (options.fetchOnMount) {
-      load();
+      void loadPlans(isAuthenticated);
     }
-  }, [load, options.fetchOnMount]);
+  }, [isAuthenticated, loadPlans, options.fetchOnMount]);
 
-  const validateChangeRequest = useCallback(
-    (input: PlanChangeRequestInput) => validatePlanChangeRequestInput(input),
-    []
-  );
+  useEffect(() => {
+    if (!isAuthenticated || !options.fetchOnMount || plansInvalidation === 0) return;
+    void loadPlans(isAuthenticated);
+  }, [isAuthenticated, loadPlans, options.fetchOnMount, plansInvalidation]);
 
   const submitChangeRequest = useCallback(
-    async (
-      planId: string,
-      planType: PlanType,
-      requestText: string
-    ): Promise<{ data: PlanChangeRequest } | { error: PlanChangeRequestErrorReason }> => {
-      if (!isAuthenticated) return { error: 'unknown' };
-
-      const errors = validatePlanChangeRequestInput({ requestText });
-      if (Object.keys(errors).length > 0) return { error: 'validation' };
-
-      try {
-        const data = await submitPlanChangeRequest(planId, planType, requestText);
-        return { data };
-      } catch (err) {
-        return { error: normalizePlanChangeRequestError(err) };
-      }
+    (planId: string, planType: PlanType, requestText: string) => {
+      return submitChangeRequestFromStore(isAuthenticated, planId, planType, requestText);
     },
-    [isAuthenticated]
+    [isAuthenticated, submitChangeRequestFromStore]
   );
 
   const reviewChangeRequest = useCallback(
-    async (
-      requestId: string,
-      action: 'reviewed' | 'dismissed'
-    ): Promise<PlanChangeRequestErrorReason | null> => {
-      if (!isAuthenticated) return 'unknown';
-
-      try {
-        await reviewPlanChangeRequest(requestId, action);
-        return null;
-      } catch (err) {
-        return normalizePlanChangeRequestError(err);
-      }
+    (requestId: string, action: 'reviewed' | 'dismissed') => {
+      return reviewChangeRequestFromStore(isAuthenticated, requestId, action);
     },
-    [isAuthenticated]
+    [isAuthenticated, reviewChangeRequestFromStore]
   );
 
   const getChangeRequestsForStudent = useCallback(
-    async (
-      studentUid: string
-    ): Promise<{ data: PlanChangeRequest[] } | { error: PlanChangeRequestErrorReason }> => {
-      if (!isAuthenticated) return { error: 'unknown' };
-
-      try {
-        const data = await getStudentPlanChangeRequests(studentUid);
-        return { data };
-      } catch (err) {
-        return { error: normalizePlanChangeRequestError(err) };
-      }
+    (studentUid: string) => {
+      return getChangeRequestsForStudentFromStore(isAuthenticated, studentUid);
     },
-    [isAuthenticated]
+    [isAuthenticated, getChangeRequestsForStudentFromStore]
   );
 
   const bulkAssign = useCallback(
-    async (
-      predefinedPlanId: string,
-      studentUids: string[]
-    ): Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }> => {
-      if (!isAuthenticated) return { error: 'unknown' };
-
-      try {
-        const result = await bulkAssignPredefinedPlan(predefinedPlanId, studentUids);
-        load();
-        return result;
-      } catch (err) {
-        return { error: normalizePlanChangeRequestError(err) };
-      }
+    (predefinedPlanId: string, studentUids: string[]) => {
+      return bulkAssignFromStore(isAuthenticated, predefinedPlanId, studentUids);
     },
-    [isAuthenticated, load]
+    [bulkAssignFromStore, isAuthenticated]
   );
 
   return {
     state,
-    reload: load,
+    reload,
     validateChangeRequest,
     submitChangeRequest,
     reviewChangeRequest,

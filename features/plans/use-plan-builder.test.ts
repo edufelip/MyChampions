@@ -6,7 +6,7 @@ import {
   markTrainingBuilderMutating,
   type NutritionBuilderState,
   type TrainingBuilderState,
-} from './use-plan-builder';
+} from './plan-builder-state';
 
 test('markTrainingBuilderMutating keeps current plan visible while mutation runs', () => {
   const state: TrainingBuilderState = {

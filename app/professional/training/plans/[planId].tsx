@@ -2,7 +2,7 @@
  * SC-208 Training Plan Builder
  * Route: /professional/training/plans/:planId
  */
-import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
 import {
   Alert,
   LayoutAnimation,
@@ -86,7 +86,7 @@ export default function TrainingPlanBuilderScreen() {
     savePlanWithSessions,
     deletePlan,
     validateInput,
-  } = useTrainingPlanBuilder(Boolean(currentUser));
+  } = useTrainingPlanBuilder(Boolean(currentUser), `${pathname}:plan:${planId ?? 'new'}`);
 
   const { bulkAssign } = usePlans(Boolean(currentUser), { fetchOnMount: false });
 
@@ -165,7 +165,7 @@ export default function TrainingPlanBuilderScreen() {
   }, [isNew, values.name, state.kind]);
 
   // ── Load existing plan ─────────────────────────────────────────────────────
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isNew) {
       initNewPlan();
     } else if (!isStarterClone && planId) {
