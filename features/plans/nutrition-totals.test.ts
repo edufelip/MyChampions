@@ -57,13 +57,10 @@ test('calculateTotalsFromMeals sums up across multiple meals', () => {
   assert.equal(totals.fats, 6);
 });
 
-test('validateNutritionPlanInput no longer cares about targets', () => {
+test('validateNutritionPlanInput accepts valid hydration goal', () => {
   const input = {
     name: 'Valid Name',
-    caloriesTarget: 'invalid', // Should be ignored
-    carbsTarget: '-10',       // Should be ignored
-    proteinsTarget: 'abc',    // Should be ignored
-    fatsTarget: ' '           // Should be ignored
+    hydrationGoalMl: '2200',
   };
   const errors = validateNutritionPlanInput(input);
   assert.equal(Object.keys(errors).length, 0);
@@ -72,11 +69,26 @@ test('validateNutritionPlanInput no longer cares about targets', () => {
 test('validateNutritionPlanInput still validates name', () => {
   const input = {
     name: 'A', // too short
-    caloriesTarget: '',
-    carbsTarget: '',
-    proteinsTarget: '',
-    fatsTarget: ''
+    hydrationGoalMl: '2200',
   };
   const errors = validateNutritionPlanInput(input);
   assert.equal(errors.name, 'too_short');
+});
+
+test('validateNutritionPlanInput requires hydration goal', () => {
+  const input = {
+    name: 'My Plan',
+    hydrationGoalMl: '',
+  };
+  const errors = validateNutritionPlanInput(input);
+  assert.equal(errors.hydrationGoalMl, 'required');
+});
+
+test('validateNutritionPlanInput rejects non-positive hydration goal', () => {
+  const input = {
+    name: 'My Plan',
+    hydrationGoalMl: '0',
+  };
+  const errors = validateNutritionPlanInput(input);
+  assert.equal(errors.hydrationGoalMl, 'must_be_positive');
 });

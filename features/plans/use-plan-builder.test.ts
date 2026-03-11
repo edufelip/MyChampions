@@ -40,6 +40,10 @@ test('markNutritionBuilderMutating keeps current plan visible while mutation run
     plan: {
       id: 'plan_1',
       name: 'Cutting',
+      sourceKind: 'predefined',
+      ownerProfessionalUid: 'pro_1',
+      studentAuthUid: 'pro_1',
+      hydrationGoalMl: 2200,
       caloriesTarget: 2100,
       carbsTarget: 180,
       proteinsTarget: 160,

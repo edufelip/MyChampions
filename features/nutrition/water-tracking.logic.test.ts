@@ -5,6 +5,7 @@ import {
   resolveEffectiveWaterGoal,
   resolveWaterDayStatus,
   calculateWaterStreak,
+  resolvePlanHydrationGoalContext,
   validateWaterGoalInput,
   validateWaterIntakeInput,
   normalizeWaterTrackingError,
@@ -55,6 +56,81 @@ test('resolveEffectiveWaterGoal returns null when assignment is active but both 
     hasActiveNutritionistAssignment: true,
   });
   assert.equal(result, null);
+});
+
+test('resolvePlanHydrationGoalContext ignores assigned plan when professional assignment is not active', () => {
+  const result = resolvePlanHydrationGoalContext({
+    currentUserUid: 'student-1',
+    activeNutritionistUids: new Set<string>(),
+    plans: [
+      {
+        sourceKind: 'assigned',
+        ownerProfessionalUid: 'pro-1',
+        hydrationGoalMl: 2600,
+        updatedAt: '2026-03-10T10:00:00.000Z',
+      },
+      {
+        sourceKind: 'predefined',
+        ownerProfessionalUid: 'student-1',
+        hydrationGoalMl: 2100,
+        updatedAt: '2026-03-09T10:00:00.000Z',
+      },
+    ],
+  });
+
+  assert.deepEqual(result, {
+    studentGoalMl: 2100,
+    nutritionistGoalMl: null,
+    hasActiveNutritionistAssignment: false,
+  });
+});
+
+test('resolvePlanHydrationGoalContext uses assigned plan when professional assignment is active', () => {
+  const result = resolvePlanHydrationGoalContext({
+    currentUserUid: 'student-1',
+    activeNutritionistUids: new Set<string>(['pro-1']),
+    plans: [
+      {
+        sourceKind: 'assigned',
+        ownerProfessionalUid: 'pro-1',
+        hydrationGoalMl: 2600,
+        updatedAt: '2026-03-10T10:00:00.000Z',
+      },
+      {
+        sourceKind: 'predefined',
+        ownerProfessionalUid: 'student-1',
+        hydrationGoalMl: 2100,
+        updatedAt: '2026-03-09T10:00:00.000Z',
+      },
+    ],
+  });
+
+  assert.deepEqual(result, {
+    studentGoalMl: 2100,
+    nutritionistGoalMl: 2600,
+    hasActiveNutritionistAssignment: true,
+  });
+});
+
+test('resolvePlanHydrationGoalContext treats student-owned predefined plan as personal fallback', () => {
+  const result = resolvePlanHydrationGoalContext({
+    currentUserUid: 'student-1',
+    activeNutritionistUids: new Set<string>(),
+    plans: [
+      {
+        sourceKind: 'predefined',
+        ownerProfessionalUid: 'student-1',
+        hydrationGoalMl: 2050,
+        updatedAt: '2026-03-08T10:00:00.000Z',
+      },
+    ],
+  });
+
+  assert.deepEqual(result, {
+    studentGoalMl: 2050,
+    nutritionistGoalMl: null,
+    hasActiveNutritionistAssignment: false,
+  });
 });
 
 // --- resolveWaterDayStatus ---
