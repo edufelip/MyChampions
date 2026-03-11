@@ -24,6 +24,8 @@ export const BuilderInsetGroup = React.memo(({
   );
 });
 
+BuilderInsetGroup.displayName = 'BuilderInsetGroup';
+
 const styles = StyleSheet.create({
   group: {
     borderRadius: DsRadius.lg,

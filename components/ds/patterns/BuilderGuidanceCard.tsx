@@ -43,6 +43,8 @@ export const BuilderGuidanceCard = React.memo(({
   );
 });
 
+BuilderGuidanceCard.displayName = 'BuilderGuidanceCard';
+
 const styles = StyleSheet.create({
   card: {
     padding: DsSpace.md,

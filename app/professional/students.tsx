@@ -20,9 +20,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Modal,
   Pressable,
-  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -31,7 +29,6 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
-import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
