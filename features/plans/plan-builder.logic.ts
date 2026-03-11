@@ -42,10 +42,12 @@ export type NutritionMeal = NutritionMealInput & {
 
 export type NutritionPlanInput = {
   name: string;
+  hydrationGoalMl: string;
 };
 
 export type NutritionPlanValidationErrors = {
   name?: 'required' | 'too_short';
+  hydrationGoalMl?: 'required' | 'must_be_positive';
 };
 
 export type NutritionMealValidationErrors = {
@@ -59,9 +61,13 @@ export type TrainingSessionItemInput = {
   quantity: string; // optional, e.g. "3 sets x 10 reps"
   notes: string;
   /**
-   * YMove exercise UUID. Only the ID is persisted to Firestore.
+   * Stable upstream exercise UUID. Only this ID is persisted to Firestore.
    * Video/thumbnail URLs must never be stored — they expire after 48 hours.
-   * Fetch fresh URLs on demand via getYMoveExerciseById().
+   * Fetch fresh URLs on demand through the exercise proxy service.
+   */
+  exerciseId?: string;
+  /**
+   * @deprecated legacy field read-compatibility only. New writes use exerciseId.
    */
   ymoveId?: string;
 };
@@ -159,6 +165,16 @@ export function validateNutritionPlanInput(
     errors.name = 'required';
   } else if (name.length < MIN_PLAN_NAME_LENGTH) {
     errors.name = 'too_short';
+  }
+
+  const hydrationGoalRaw = input.hydrationGoalMl.trim();
+  if (!hydrationGoalRaw) {
+    errors.hydrationGoalMl = 'required';
+  } else {
+    const hydrationGoalMl = parseInt(hydrationGoalRaw, 10);
+    if (!Number.isFinite(hydrationGoalMl) || hydrationGoalMl <= 0) {
+      errors.hydrationGoalMl = 'must_be_positive';
+    }
   }
 
   return errors;

@@ -4,7 +4,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import type { TrainingSession, TrainingSessionItem } from '@/features/plans/plan-builder.logic';
-import { useYMoveThumbnail } from '@/features/plans/use-ymove-thumbnail';
+import { useExerciseThumbnail } from '@/features/plans/use-exercise-thumbnail';
 
 type SessionCardProps = {
   session: TrainingSession;
@@ -36,7 +36,7 @@ type SessionCardProps = {
 };
 
 // ─── SessionItemRow ───────────────────────────────────────────────────────────
-// Extracted so hooks (useYMoveThumbnail) can be called per item, not inside map.
+// Extracted so hooks (useExerciseThumbnail) can be called per item, not inside map.
 
 type SessionItemRowProps = {
   item: TrainingSessionItem;
@@ -65,9 +65,9 @@ const SessionItemRow = React.memo(function SessionItemRow({
   onMoveItemUp,
   onMoveItemDown,
 }: SessionItemRowProps) {
-  // Re-fetch a fresh thumbnail URL from YMove whenever ymoveId changes.
-  // Pre-signed URLs expire after 48 h — only ymoveId is stored in Firestore.
-  const thumbnailUrl = useYMoveThumbnail(item.ymoveId);
+  // Re-fetch a fresh thumbnail URL from exercise service whenever exerciseId changes.
+  // Pre-signed URLs expire after 48 h — only the stable exercise id is stored.
+  const thumbnailUrl = useExerciseThumbnail(item.exerciseId ?? item.ymoveId);
 
   return (
     <View

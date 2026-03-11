@@ -34,13 +34,13 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
 import { usePlans } from '@/features/plans/use-plans';
-import { useYMoveSearch } from '@/features/plans/use-ymove-search';
+import { useExerciseSearch } from '@/features/plans/use-exercise-search';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
-import type { YMoveExercise } from '@/features/plans/ymove-source';
+import type { ExerciseItem } from '@/features/plans/exercise-service-source';
 import {
   isStarterTemplate,
   type TrainingSession,
@@ -50,7 +50,6 @@ import { getProfessionalStudentRoster, type ProfessionalStudentRosterItem } from
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import { usePlanForm } from '@/features/plans/use-plan-form';
-import { usePlanDraft } from '@/features/plans/use-plan-draft';
 import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
 
 enableBuilderLayoutAnimations();
@@ -84,7 +83,7 @@ export default function TrainingPlanBuilderScreen() {
     state,
     loadPlan,
     initNewPlan,
-    savePlanDraft,
+    savePlanWithSessions,
     deletePlan,
     validateInput,
   } = useTrainingPlanBuilder(Boolean(currentUser));
@@ -106,7 +105,6 @@ export default function TrainingPlanBuilderScreen() {
 
   const {
     values,
-    setValues,
     setFieldValue,
     errors: formErrors,
     isSaving,
@@ -117,9 +115,8 @@ export default function TrainingPlanBuilderScreen() {
     initialValues,
     validate: validateInput,
     t,
-    onClearDraft: () => clearDraft(),
     onSave: async (formValues) => {
-      return savePlanDraft(planId ?? 'new', formValues, draftSessions);
+      return savePlanWithSessions(planId ?? 'new', formValues, draftSessions);
     },
     onSuccess: (id) => {
       // After a successful save, we want to go back to the library.
@@ -133,30 +130,6 @@ export default function TrainingPlanBuilderScreen() {
       router.replace('/training');
     }
   });
-
-  const { checkDraft, clearDraft } = usePlanDraft(
-    planId || 'new',
-    { ...values, sessions: draftSessions },
-    isDirty || hasSessionChanges,
-    (restored) => {
-      setValues({ name: restored.name });
-      setDraftSessions(restored.sessions ?? []);
-    },
-    t
-  );
-
-  useEffect(() => {
-    if (state.kind === 'ready') {
-      checkDraft().then((draft) => {
-        if (draft) {
-          Alert.alert(t('pro.plan.draft.title'), t('pro.plan.draft.body'), [
-            { text: t('pro.plan.draft.no'), style: 'destructive', onPress: clearDraft },
-            { text: t('pro.plan.draft.yes'), onPress: () => setFieldValue('name', draft.name) },
-          ]);
-        }
-      });
-    }
-  }, [state.kind, checkDraft, clearDraft, t, setFieldValue]);
 
   // ── Local UI state ─────────────────────────────────────────────────────────
   const [addSessionForm, setAddSessionForm] = useState<AddSessionFormState>({ kind: 'closed' });
@@ -174,7 +147,7 @@ export default function TrainingPlanBuilderScreen() {
   const isBusy = isAssigning || isSaving || isMutating || isDeletingPlan;
   const hasUnsavedChanges = isDirty || hasSessionChanges;
 
-  const { state: ymoveSearchState, search: searchYMove, clear: clearYMoveSearch } = useYMoveSearch();
+  const { state: exerciseSearchState, search: searchExerciseLibrary, clear: clearExerciseSearch } = useExerciseSearch();
   const [isExerciseSearchVisible, setIsExerciseSearchVisible] = useState(false);
   const [activeSessionIdForSearch, setActiveSessionIdForSearch] = useState<string | null>(null);
 
@@ -243,7 +216,6 @@ export default function TrainingPlanBuilderScreen() {
               // Reset dirty states before dispatching so the listener doesn't fire again
               setIsDirty(false);
               setDraftSessions(savedSessionsSnapshot);
-              await clearDraft();
               navigation.dispatch(event.data.action);
             },
           },
@@ -252,7 +224,7 @@ export default function TrainingPlanBuilderScreen() {
     });
 
     return unsubscribe;
-  }, [clearDraft, hasUnsavedChanges, navigation, t, setIsDirty, savedSessionsSnapshot]);
+  }, [hasUnsavedChanges, navigation, t, setIsDirty, savedSessionsSnapshot]);
 
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleNameChange = useCallback((val: string) => {
@@ -394,7 +366,7 @@ export default function TrainingPlanBuilderScreen() {
     [draftSessions, isBusy, state.kind, setIsDirty, t]
   );
 
-  const handleConfirmExercise = useCallback(async (exercise: YMoveExercise, quantity: string, notes: string) => {
+  const handleConfirmExercise = useCallback(async (exercise: ExerciseItem, quantity: string, notes: string) => {
     if (isBusy || !activeSessionIdForSearch) return;
     
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -403,10 +375,10 @@ export default function TrainingPlanBuilderScreen() {
     setIsExerciseSearchVisible(false);
     const sessionId = activeSessionIdForSearch;
     setActiveSessionIdForSearch(null);
-    clearYMoveSearch();
+    clearExerciseSearch();
 
-    // Only persist the ymoveId — URLs are pre-signed, expire after 48 h,
-    // and must not be cached. Re-fetch them on demand via getYMoveExerciseById.
+    // Only persist the stable exerciseId — URLs are pre-signed, expire after 48 h,
+    // and must not be cached. Re-fetch them on demand through exercise service.
     setDraftSessions((prev) => prev.map((sessionDraft) => {
       if (sessionDraft.id !== sessionId) {
         return sessionDraft;
@@ -421,13 +393,13 @@ export default function TrainingPlanBuilderScreen() {
             name: exercise.title,
             quantity,
             notes,
-            ymoveId: exercise.id,
+            exerciseId: exercise.id,
           },
         ],
       };
     }));
     setIsDirty(true);
-  }, [isBusy, activeSessionIdForSearch, clearYMoveSearch, setIsDirty]);
+  }, [isBusy, activeSessionIdForSearch, clearExerciseSearch, setIsDirty]);
 
   // ── Reordering logic ───────────────────────────────────────────────────────
   const handleMoveSession = useCallback(async (index: number, direction: 'up' | 'down') => {
@@ -587,7 +559,7 @@ export default function TrainingPlanBuilderScreen() {
       {/* ── Plan name field ───────────────────────────────────────────────── */}
       <BuilderInsetGroup theme={theme}>
         <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
-          {t('pro.plan.field.name.label')}
+          {tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
         </Text>
         <TextInput
           ref={planNameRef}
@@ -596,7 +568,7 @@ export default function TrainingPlanBuilderScreen() {
           placeholderTextColor={palette.icon}
           value={values.name}
           onChangeText={handleNameChange}
-          accessibilityLabel={t('pro.plan.field.name.label')}
+          accessibilityLabel={tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
         />
         <Text style={[styles.supportText, { color: palette.icon }]}>
           {tr('pro.plan.field.name.support', 'student.plan.field.name.support')}
@@ -645,7 +617,7 @@ export default function TrainingPlanBuilderScreen() {
               <View style={styles.sessionHeader}>
                 <TextInput
                   style={[styles.sessionNameInput, { color: palette.text }]}
-                  placeholder={tr('pro.plan.session.field.name.placeholder', 'pro.plan.session.field.name.placeholder')}
+                  placeholder={tr('pro.plan.session.field.name.placeholder', 'student.plan.session.field.name.placeholder')}
                   placeholderTextColor={palette.icon}
                   value={addSessionDraft?.name ?? ''}
                   onChangeText={(v) => setAddSessionForm((prev) => prev.kind === 'open' ? { ...prev, name: v } : prev)}
@@ -653,7 +625,7 @@ export default function TrainingPlanBuilderScreen() {
                   autoFocus
                   returnKeyType="next"
                   onSubmitEditing={() => sessionNotesRef.current?.focus()}
-                  accessibilityLabel={t('pro.plan.session.field.name.label')}
+                  accessibilityLabel={tr('pro.plan.session.field.name.label', 'pro.plan.session.field.name.label')}
                 />
               </View>
               <TextInput
@@ -707,7 +679,7 @@ export default function TrainingPlanBuilderScreen() {
           <View style={styles.sessionHeader}>
             <TextInput
               style={[styles.sessionNameInput, { color: palette.text }]}
-              placeholder={tr('pro.plan.session.field.name.placeholder', 'pro.plan.session.field.name.placeholder')}
+              placeholder={tr('pro.plan.session.field.name.placeholder', 'student.plan.session.field.name.placeholder')}
               placeholderTextColor={palette.icon}
               value={addSessionForm.name}
               onChangeText={(v) => setAddSessionForm((prev) => prev.kind === 'open' ? { ...prev, name: v } : prev)}
@@ -715,7 +687,7 @@ export default function TrainingPlanBuilderScreen() {
               autoFocus
               returnKeyType="next"
               onSubmitEditing={() => sessionNotesRef.current?.focus()}
-              accessibilityLabel={t('pro.plan.session.field.name.label')}
+              accessibilityLabel={tr('pro.plan.session.field.name.label', 'pro.plan.session.field.name.label')}
             />
           </View>
           <TextInput
@@ -794,9 +766,9 @@ export default function TrainingPlanBuilderScreen() {
           setActiveSessionIdForSearch(null);
         }}
         onConfirm={handleConfirmExercise}
-        searchState={ymoveSearchState}
-        onSearch={searchYMove}
-        onClear={clearYMoveSearch}
+        searchState={exerciseSearchState}
+        onSearch={searchExerciseLibrary}
+        onClear={clearExerciseSearch}
         scheme={scheme}
         theme={theme}
         t={t}

@@ -15,12 +15,14 @@ type PlanMetadataFormProps = {
   t: (key: string) => string;
   tr: (pro: string, student: string) => string;
   name: string;
+  hydrationGoalMl: string;
   caloriesTarget: string;
   carbsTarget: string;
   proteinsTarget: string;
   fatsTarget: string;
   errors: ReturnType<typeof validateNutritionPlanInput>;
   onNameChange: (v: string) => void;
+  onHydrationGoalChange: (v: string) => void;
   autoFocus?: boolean;
 };
 
@@ -30,12 +32,14 @@ export const PlanMetadataForm = React.memo(({
   t,
   tr,
   name,
+  hydrationGoalMl,
   caloriesTarget,
   carbsTarget,
   proteinsTarget,
   fatsTarget,
   errors,
   onNameChange,
+  onHydrationGoalChange,
   autoFocus,
 }: PlanMetadataFormProps) => {
   return (
@@ -57,6 +61,39 @@ export const PlanMetadataForm = React.memo(({
         {errors.name && (
           <Text style={[styles.fieldError, { color: palette.danger }]}>
             {errors.name === 'required' ? t('pro.plan.validation.name_required') : t('pro.plan.validation.name_too_short')}
+          </Text>
+        )}
+      </View>
+
+      <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
+
+      <View style={styles.fieldSection}>
+        <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
+          {tr('pro.plan.field.hydration_goal.label', 'student.plan.field.hydration_goal.label')}
+        </Text>
+        <TextInput
+          style={[styles.titleInput, { color: palette.text }]}
+          placeholder={tr(
+            'pro.plan.field.hydration_goal.placeholder',
+            'student.plan.field.hydration_goal.placeholder'
+          )}
+          placeholderTextColor={palette.icon}
+          value={hydrationGoalMl}
+          onChangeText={onHydrationGoalChange}
+          keyboardType="numeric"
+          accessibilityLabel={tr(
+            'pro.plan.field.hydration_goal.label',
+            'student.plan.field.hydration_goal.label'
+          )}
+        />
+        {errors.hydrationGoalMl && (
+          <Text style={[styles.fieldError, { color: palette.danger }]}>
+            {errors.hydrationGoalMl === 'required'
+              ? tr('pro.plan.validation.hydration_goal_required', 'student.plan.validation.hydration_goal_required')
+              : tr(
+                  'pro.plan.validation.hydration_goal_positive',
+                  'student.plan.validation.hydration_goal_positive'
+                )}
           </Text>
         )}
       </View>

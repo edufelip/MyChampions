@@ -37,14 +37,12 @@ import {
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
 import {
-  validateNutritionPlanInput,
   isStarterTemplate,
   calculateTotalsFromItems,
 } from '@/features/plans/plan-builder.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import { usePlanForm } from '@/features/plans/use-plan-form';
-import { usePlanDraft } from '@/features/plans/use-plan-draft';
 import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
 
 enableBuilderLayoutAnimations();
@@ -87,11 +85,11 @@ export default function NutritionPlanBuilderScreen() {
 
   const initialValues = useMemo(() => ({
     name: state.kind === 'ready' ? state.plan.name : '',
+    hydrationGoalMl: state.kind === 'ready' && state.plan.hydrationGoalMl ? String(state.plan.hydrationGoalMl) : '',
   }), [state]);
 
   const {
     values,
-    setValues,
     setFieldValue,
     errors: formErrors,
     isSaving,
@@ -102,7 +100,6 @@ export default function NutritionPlanBuilderScreen() {
     initialValues,
     validate: (v) => validateInput(v as any),
     t,
-    onClearDraft: () => clearDraft(),
     onSave: async (formValues) => {
       if (isNew || isStarterClone) {
         return createPlan(formValues);
@@ -119,27 +116,6 @@ export default function NutritionPlanBuilderScreen() {
       router.replace('/nutrition');
     }
   });
-
-  const { checkDraft, clearDraft } = usePlanDraft(
-    planId || 'new',
-    values,
-    isDirty,
-    (restored) => setValues(restored),
-    t
-  );
-
-  useEffect(() => {
-    if (state.kind === 'ready') {
-      checkDraft().then((draft) => {
-        if (draft) {
-          Alert.alert(t('pro.plan.draft.title'), t('pro.plan.draft.body'), [
-            { text: t('pro.plan.draft.no'), style: 'destructive', onPress: clearDraft },
-            { text: t('pro.plan.draft.yes'), onPress: () => setValues(draft) },
-          ]);
-        }
-      });
-    }
-  }, [state.kind, checkDraft, clearDraft, t, setValues]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event: any) => {
@@ -158,7 +134,6 @@ export default function NutritionPlanBuilderScreen() {
             style: 'destructive',
             onPress: async () => {
               setIsDirty(false);
-              await clearDraft();
               navigation.dispatch(event.data.action);
             },
           },
@@ -167,7 +142,7 @@ export default function NutritionPlanBuilderScreen() {
     });
 
     return unsubscribe;
-  }, [clearDraft, isDirty, navigation, t, setIsDirty]);
+  }, [isDirty, navigation, t, setIsDirty]);
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -217,7 +192,11 @@ export default function NutritionPlanBuilderScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const { planId: realId, error } = await addMeal(state.plan.id, { name: mealName }, { name: values.name });
+    const { planId: realId, error } = await addMeal(
+      state.plan.id,
+      { name: mealName },
+      { name: values.name, hydrationGoalMl: values.hydrationGoalMl }
+    );
     
     if (error) {
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
@@ -231,7 +210,7 @@ export default function NutritionPlanBuilderScreen() {
         router.replace(`${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${realId}` as any);
       }
     }
-  }, [isBusy, addMealForm, state, addMeal, values.name, tr, setIsDirty, isNew, isStudentBuilder, router]);
+  }, [isBusy, addMealForm, state, addMeal, values.name, values.hydrationGoalMl, tr, setIsDirty, isNew, isStudentBuilder, router]);
 
   const handleRemoveMeal = useCallback(
     (mealId: string) => {
@@ -321,10 +300,6 @@ export default function NutritionPlanBuilderScreen() {
     );
   }, [isBusy, isNew, planId, deletePlan, t, tr]);
 
-  const screenTitle = isNew || isStarterClone
-    ? tr('pro.plan.nutrition.title.create', 'student.plan.nutrition.title.create')
-    : tr('pro.plan.nutrition.title.edit', 'student.plan.nutrition.title.edit');
-
   return (
     <DsScreen
       scheme={scheme}
@@ -398,12 +373,14 @@ export default function NutritionPlanBuilderScreen() {
         t={t}
         tr={tr}
         name={values.name}
+        hydrationGoalMl={values.hydrationGoalMl}
         caloriesTarget={state.kind === 'ready' ? String(state.plan.caloriesTarget) : '0'}
         carbsTarget={state.kind === 'ready' ? String(state.plan.carbsTarget) : '0'}
         proteinsTarget={state.kind === 'ready' ? String(state.plan.proteinsTarget) : '0'}
         fatsTarget={state.kind === 'ready' ? String(state.plan.fatsTarget) : '0'}
         errors={formErrors}
         onNameChange={(v) => handleFieldChange('name', v)}
+        onHydrationGoalChange={(v) => handleFieldChange('hydrationGoalMl', v)}
         autoFocus={!values.name}
       />
 

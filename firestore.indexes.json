@@ -58,6 +58,14 @@
         { "fieldPath": "ownerProfessionalUid", "order": "ASCENDING" },
         { "fieldPath": "sourceKind", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "trainingPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerProfessionalUid", "order": "ASCENDING" },
+        { "fieldPath": "sourceKind", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

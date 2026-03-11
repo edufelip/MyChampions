@@ -62,6 +62,10 @@ export class PlanBuilderSourceError extends Error {
 export type NutritionPlanDetail = {
   id: string;
   name: string;
+  sourceKind: 'predefined' | 'assigned' | 'self_managed';
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  hydrationGoalMl: number | null;
   caloriesTarget: number;
   carbsTarget: number;
   proteinsTarget: number;
@@ -106,6 +110,7 @@ type FirestoreNutritionPlan = {
   isArchived: boolean;
   isDraft: boolean;
   name: string;
+  hydrationGoalMl: number | null;
   caloriesTarget: number;
   carbsTarget: number;
   proteinsTarget: number;
@@ -122,8 +127,12 @@ type FirestoreTrainingItem = {
   quantity?: string;
   notes?: string;
   /**
-   * YMove exercise UUID. Only the ID is persisted — never the pre-signed URLs.
-   * Video/thumbnail URLs expire after 48 h and must be fetched fresh from the API.
+   * Stable exercise UUID persisted by the app.
+   * Video/thumbnail URLs expire after 48 h and must be fetched fresh.
+   */
+  exerciseId?: string;
+  /**
+   * @deprecated read-compatibility with pre-migration records.
    */
   ymoveId?: string;
 };
@@ -252,6 +261,10 @@ function mapNutritionPlanDetail(raw: FirestoreNutritionPlan | null | undefined):
   return {
     id: raw.id,
     name: raw.name,
+    sourceKind: raw.sourceKind,
+    ownerProfessionalUid: raw.ownerProfessionalUid ?? null,
+    studentAuthUid: raw.studentAuthUid,
+    hydrationGoalMl: raw.hydrationGoalMl ?? null,
     caloriesTarget: raw.caloriesTarget ?? 0,
     carbsTarget: raw.carbsTarget ?? 0,
     proteinsTarget: raw.proteinsTarget ?? 0,
@@ -273,7 +286,7 @@ function mapTrainingPlanDetail(raw: FirestoreTrainingPlan | null | undefined): T
       name: item.exerciseName,
       quantity: item.quantity ?? '',
       notes: item.notes ?? '',
-      ymoveId: item.ymoveId,
+      exerciseId: item.exerciseId ?? item.ymoveId,
     }));
     return { id: s.id, name: s.sessionName, notes: s.notes ?? '', items };
   });
@@ -297,6 +310,7 @@ export async function createNutritionPlan(
     const id = generateId('nutrition_plan');
     const timestamp = nowIso();
 
+    const hydrationGoalMl = parseInt(input.hydrationGoalMl.trim(), 10);
     const plan: FirestoreNutritionPlan = {
       id,
       ownerProfessionalUid: uid,
@@ -305,6 +319,7 @@ export async function createNutritionPlan(
       isArchived: false,
       isDraft: false,
       name: input.name.trim(),
+      hydrationGoalMl: Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
       caloriesTarget: 0,
       carbsTarget: 0,
       proteinsTarget: 0,
@@ -341,6 +356,7 @@ export async function updateNutritionPlan(
 
       tx.update(ref, {
         name: input.name.trim(),
+        hydrationGoalMl: parseInt(input.hydrationGoalMl.trim(), 10),
         updatedAt: nowIso(),
       });
     });
@@ -435,11 +451,12 @@ export async function removeNutritionMeal(
 
       tx.update(ref, {
         meals: filtered,
-        caloriesTarget: totals.calories,
-        carbsTarget: totals.carbs,
-        proteinsTarget: totals.proteins,
-        fatsTarget: totals.fats,
-        updatedAt: nowIso(),
+      caloriesTarget: totals.calories,
+      carbsTarget: totals.carbs,
+      proteinsTarget: totals.proteins,
+      fatsTarget: totals.fats,
+      hydrationGoalMl: current.hydrationGoalMl ?? null,
+      updatedAt: nowIso(),
       });
     });
   } catch (error) {
@@ -537,11 +554,12 @@ export async function addNutritionMealItem(
 
       tx.update(ref, {
         meals,
-        caloriesTarget: totals.calories,
-        carbsTarget: totals.carbs,
-        proteinsTarget: totals.proteins,
-        fatsTarget: totals.fats,
-        updatedAt: nowIso(),
+      caloriesTarget: totals.calories,
+      carbsTarget: totals.carbs,
+      proteinsTarget: totals.proteins,
+      fatsTarget: totals.fats,
+      hydrationGoalMl: current.hydrationGoalMl ?? null,
+      updatedAt: nowIso(),
       });
     });
 
@@ -603,11 +621,12 @@ export async function removeNutritionMealItem(
 
       tx.update(ref, {
         meals,
-        caloriesTarget: totals.calories,
-        carbsTarget: totals.carbs,
-        proteinsTarget: totals.proteins,
-        fatsTarget: totals.fats,
-        updatedAt: nowIso(),
+      caloriesTarget: totals.calories,
+      carbsTarget: totals.carbs,
+      proteinsTarget: totals.proteins,
+      fatsTarget: totals.fats,
+      hydrationGoalMl: current.hydrationGoalMl ?? null,
+      updatedAt: nowIso(),
       });
     });
   } catch (error) {
@@ -753,12 +772,14 @@ function mapTrainingSessionsToFirestore(
       exerciseName: item.name.trim(),
       quantity: item.quantity ?? '',
       notes: item.notes ?? '',
-      ...(item.ymoveId ? { ymoveId: item.ymoveId } : {}),
+      ...(item.exerciseId ?? item.ymoveId
+        ? { exerciseId: item.exerciseId ?? item.ymoveId }
+        : {}),
     })),
   }));
 }
 
-export async function updateTrainingPlanDraft(
+export async function updateTrainingPlanWithSessions(
   planId: string,
   input: TrainingPlanInput,
   sessions: TrainingSession[],
@@ -910,8 +931,10 @@ export async function addTrainingSessionItem(
         exerciseName: item.name.trim(),
         quantity: item.quantity || '',
         notes: item.notes || '',
-        // Only store ymoveId — never thumbnail/video URLs (they expire after 48 h).
-        ...(item.ymoveId ? { ymoveId: item.ymoveId } : {}),
+        // Only store exerciseId — never thumbnail/video URLs (they expire after 48 h).
+        ...(item.exerciseId ?? item.ymoveId
+          ? { exerciseId: item.exerciseId ?? item.ymoveId }
+          : {}),
       };
       const sessions = (raw.sessions ?? []).map((session) => {
         if (session.id !== sessionId) return session;
@@ -931,7 +954,7 @@ export async function addTrainingSessionItem(
       name: item.name.trim(),
       quantity: item.quantity ?? '',
       notes: item.notes ?? '',
-      ymoveId: item.ymoveId,
+      exerciseId: item.exerciseId ?? item.ymoveId,
     };
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
@@ -1068,6 +1091,7 @@ export async function cloneStarterTemplate(
         carbsTarget: defaults?.carbsTarget ?? 0,
         proteinsTarget: defaults?.proteinsTarget ?? 0,
         fatsTarget: defaults?.fatsTarget ?? 0,
+        hydrationGoalMl: null,
         meals: defaults?.meals ?? [],
         createdAt: timestamp,
         updatedAt: timestamp,

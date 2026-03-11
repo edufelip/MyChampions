@@ -154,6 +154,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       'expo-apple-authentication',
       'expo-router',
       'expo-localization',
+      'expo-video',
       // expo-camera and expo-image-picker native permissions are applied directly
       // to ios/mychampions/Info.plist and android/app/src/main/AndroidManifest.xml.
       // Plugin entries are omitted here because native dirs are maintained manually
@@ -164,9 +165,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           image: './assets/images/splash-icon.png',
           imageWidth: 200,
           resizeMode: 'contain',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#E2FAE8',
           dark: {
-            backgroundColor: '#000000',
+            backgroundColor: '#E2FAE8',
           },
         },
       ],

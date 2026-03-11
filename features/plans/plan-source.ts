@@ -50,6 +50,7 @@ export type PredefinedPlan = {
 
 export type NutritionPlan = Plan & {
   isDraft: boolean;
+  hydrationGoalMl: number | null;
   caloriesTarget: number | null;
   carbsTarget: number | null;
   proteinsTarget: number | null;
@@ -64,6 +65,7 @@ type FirestoreNutritionPlan = {
   isArchived: boolean;
   isDraft: boolean;
   name: string;
+  hydrationGoalMl: number | null;
   caloriesTarget: number;
   carbsTarget: number;
   proteinsTarget: number;
@@ -192,6 +194,7 @@ function toNutritionPlan(raw: FirestoreNutritionPlan): NutritionPlan {
     studentUid: raw.studentAuthUid,
     isArchived: raw.isArchived,
     isDraft: raw.isDraft,
+    hydrationGoalMl: raw.hydrationGoalMl ?? null,
     caloriesTarget: raw.caloriesTarget ?? null,
     carbsTarget: raw.carbsTarget ?? null,
     proteinsTarget: raw.proteinsTarget ?? null,

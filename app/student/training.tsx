@@ -8,7 +8,7 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
@@ -23,6 +23,7 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -65,16 +66,16 @@ export default function StudentTrainingScreen() {
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
-  const { state: plansState, reload, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
+  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
 
-  const assignedTrainingPlan =
-    plansState.kind === 'ready'
-      ? plansState.plans.find(
-          (plan) => plan.planType === 'training' && plan.sourceKind === 'assigned' && !plan.isArchived
-        ) ?? null
-      : null;
+  const trainingPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'training' && !p.isArchived) : [];
+  
+  const assignedTrainingPlan = trainingPlans.find(plan => plan.sourceKind === 'assigned') ?? null;
+  const selfManagedTrainingPlan =
+    trainingPlans.find(plan => isSelfGuidedPlan(plan, currentUser?.uid ?? null)) ?? null;
 
   const hasActiveTrainingAssignment = assignedTrainingPlan !== null;
+  const hasSelfManagedPlan = selfManagedTrainingPlan !== null;
   const weekStrip = useMemo(() => getWeekStrip(locale), [locale]);
 
   return (
@@ -82,13 +83,17 @@ export default function StudentTrainingScreen() {
       <Stack.Screen options={{ title: t('student.training.title'), headerShown: false }} />
 
       <View style={[styles.shell, { backgroundColor: theme.color.shell }]}>
-        
+        <View style={styles.headerRow}>
+          <Text style={[styles.pageTitle, { color: theme.color.textPrimary }]}>
+            {t('student.training.title')}
+          </Text>
+        </View>
 
         {offlineDisplay.showOfflineBanner ? (
           <DsOfflineBanner scheme={scheme} text={t('offline.banner')} testID="student.training.offlineBanner" />
         ) : null}
 
-        {hasActiveTrainingAssignment ? <WeekStrip scheme={scheme} items={weekStrip} /> : null}
+        {hasActiveTrainingAssignment || hasSelfManagedPlan ? <WeekStrip scheme={scheme} items={weekStrip} /> : null}
 
         {plansState.kind === 'loading' ? (
           <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.plansLoading">
@@ -136,6 +141,32 @@ export default function StudentTrainingScreen() {
               }}
             />
           </View>
+        ) : hasSelfManagedPlan ? (
+           <View style={styles.sectionStack}>
+              <DsCard scheme={scheme} testID="student.training.selfManagedPlanCard">
+                <View style={styles.selfManagedHeader}>
+                  <View style={[styles.selfManagedIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+                    <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={24} />
+                  </View>
+                  <View style={styles.selfManagedTextWrap}>
+                    <Text style={[styles.selfManagedTitle, { color: theme.color.textPrimary }]}>
+                      {selfManagedTrainingPlan.name || t('student.home.training.section')}
+                    </Text>
+                    <Text style={[styles.selfManagedSubtitle, { color: theme.color.textSecondary }]}>
+                      {t('student.plan.training.title.edit')}
+                    </Text>
+                  </View>
+                </View>
+
+                <DsPillButton
+                  scheme={scheme}
+                  label={t('student.home.cta_training')}
+                  onPress={() => router.push(`/student/training/plans/${selfManagedTrainingPlan.id}`)}
+                  style={styles.selfManagedCta}
+                  testID="student.training.editSelfManagedPlanCta"
+                />
+              </DsCard>
+            </View>
         ) : (
           <View style={styles.emptyStateWrap} testID="student.training.emptyState">
             <View style={styles.emptyHero}>
@@ -330,5 +361,31 @@ const styles = StyleSheet.create({
     ...DsTypography.body,
     maxWidth: 300,
     textAlign: 'center',
+  },
+  selfManagedHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: DsSpace.md,
+  },
+  selfManagedIconWrap: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  selfManagedTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  selfManagedTitle: {
+    ...DsTypography.cardTitle,
+  },
+  selfManagedSubtitle: {
+    ...DsTypography.micro,
+  },
+  selfManagedCta: {
+    marginTop: DsSpace.xs,
   },
 });

@@ -90,7 +90,9 @@ export function usePlans(
       .then(([plans, predefinedPlans]) => {
         setState({ kind: 'ready', plans, predefinedPlans });
       })
-      .catch((err: Error) => setState({ kind: 'error', message: err.message }));
+      .catch((err: Error) => {
+        setState({ kind: 'error', message: err.message });
+      });
   }, [isAuthenticated]);
 
   useEffect(() => {

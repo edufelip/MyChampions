@@ -20,7 +20,7 @@ import {
   reorderNutritionMealItems,
   createTrainingPlan,
   updateTrainingPlan,
-  updateTrainingPlanDraft,
+  updateTrainingPlanWithSessions,
   deleteTrainingPlan,
   getTrainingPlanDetail,
   addTrainingSession,
@@ -259,6 +259,10 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       plan: {
         id: 'new',
         name: '',
+        sourceKind: 'predefined',
+        ownerProfessionalUid: null,
+        studentAuthUid: '',
+        hydrationGoalMl: null,
         caloriesTarget: 0,
         carbsTarget: 0,
         proteinsTarget: 0,
@@ -275,7 +279,9 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       if (!isAuthenticated) return { error: 'unknown' };
 
       const errors = validateNutritionPlanInput(input);
-      if (Object.keys(errors).length > 0) return { error: 'validation' };
+      if (Object.keys(errors).length > 0) {
+        return { error: 'validation' };
+      }
 
       setState({ kind: 'saving' });
       try {
@@ -304,7 +310,9 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
       if (!isAuthenticated) return 'unknown';
 
       const errors = validateNutritionPlanInput(input);
-      if (Object.keys(errors).length > 0) return 'validation';
+      if (Object.keys(errors).length > 0) {
+        return 'validation';
+      }
 
       const previousState = state;
       setState((prev) => markNutritionBuilderMutating(prev));
@@ -356,14 +364,20 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
   const addMeal = useCallback(
     async (planId: string, meal: NutritionMealInput, planInput?: NutritionPlanInput): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
       if (!isAuthenticated) return { planId, error: 'unknown' };
-      
+
+      if (planId === 'new') {
+        if (!planInput) return { planId, error: 'validation' };
+        const errors = validateNutritionPlanInput(planInput);
+        if (Object.keys(errors).length > 0) return { planId, error: 'validation' };
+      }
+
       const previousState = state;
       setState((prev) => markNutritionBuilderMutating(prev));
       
       try {
         let currentPlanId = planId;
         if (planId === 'new') {
-          const res = await createPlan(planInput ?? { name: 'Untitled' });
+          const res = await createPlan(planInput!);
           if ('error' in res) {
             // Error already set by createPlan
             return { planId, error: res.error };
@@ -371,7 +385,7 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
           currentPlanId = res.id;
         }
 
-        const newMeal = await addNutritionMeal(currentPlanId, meal);
+        await addNutritionMeal(currentPlanId, meal);
         const updated = await getNutritionPlanDetail(currentPlanId);
         await setCachedNutritionPlan(updated);
         setState({ kind: 'ready', plan: updated });
@@ -471,13 +485,19 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
     async (planId: string, mealId: string, item: NutritionMealItemInput, planInput?: NutritionPlanInput): Promise<{ planId: string; error: PlanBuilderErrorReason | null }> => {
       if (!isAuthenticated) return { planId, error: 'unknown' };
 
+      if (planId === 'new') {
+        if (!planInput) return { planId, error: 'validation' };
+        const errors = validateNutritionPlanInput(planInput);
+        if (Object.keys(errors).length > 0) return { planId, error: 'validation' };
+      }
+
       const previousState = state;
       let currentPlanId = planId;
       setState((prev) => markNutritionBuilderMutating(prev));
 
       try {
         if (planId === 'new') {
-          const res = await createPlan(planInput ?? { name: 'Untitled' });
+          const res = await createPlan(planInput!);
           if ('error' in res) return { planId, error: res.error };
           currentPlanId = res.id;
         }
@@ -559,12 +579,10 @@ export function useNutritionPlanBuilder(isAuthenticated: boolean): UseNutritionP
     void searchFoods(trimmed)
       .then((results) => {
         if (activeSearchQuery.current !== trimmed) return;
-        console.log('[useNutritionPlanBuilder] searchFoods results count:', results.length);
         setFoodSearchState({ kind: 'done', results });
       })
       .catch((err: unknown) => {
         if (activeSearchQuery.current !== trimmed) return;
-        console.error('[useNutritionPlanBuilder] searchFoods error:', err);
         setFoodSearchState({ kind: 'error', reason: normalizePlanBuilderError(err) });
       });
   }, [isAuthenticated]);
@@ -607,7 +625,7 @@ export type UseTrainingPlanBuilderResult = {
   initNewPlan: () => void;
   createPlan: (input: TrainingPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   savePlan: (planId: string, input: TrainingPlanInput) => Promise<PlanBuilderErrorReason | null>;
-  savePlanDraft: (
+  savePlanWithSessions: (
     planId: string,
     input: TrainingPlanInput,
     sessions: TrainingSession[]
@@ -746,7 +764,7 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     [isAuthenticated, state]
   );
 
-  const savePlanDraft = useCallback(
+  const savePlanWithSessions = useCallback(
     async (
       planId: string,
       input: TrainingPlanInput,
@@ -767,7 +785,7 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
           currentPlanId = created.id;
         }
 
-        await updateTrainingPlanDraft(currentPlanId, input, sessions);
+        await updateTrainingPlanWithSessions(currentPlanId, input, sessions);
         const updated = await getTrainingPlanDetail(currentPlanId);
         await setCachedTrainingPlan(updated);
         setState({ kind: 'ready', plan: updated });
@@ -995,7 +1013,7 @@ export function useTrainingPlanBuilder(isAuthenticated: boolean): UseTrainingPla
     initNewPlan,
     createPlan,
     savePlan,
-    savePlanDraft,
+    savePlanWithSessions,
     addSession,
     removeSession,
     reorderSessions,

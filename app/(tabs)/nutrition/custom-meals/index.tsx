@@ -223,7 +223,7 @@ export default function CustomMealLibraryScreen({
           <Text style={[styles.meta, { color: palette.icon }]}>{t('meal.library.error')}</Text>
         </View>
       ) : state.kind === 'ready' && state.meals.length === 0 ? (
-        <EmptyState palette={palette} scheme={scheme} t={t} onCreate={() => router.push('/nutrition/custom-meals/new')} isWriteLocked={isWriteLocked} />
+        <EmptyState palette={palette} scheme={scheme} t={t} onCreate={() => router.push('/(tabs)/nutrition/custom-meals/new')} isWriteLocked={isWriteLocked} />
       ) : state.kind === 'ready' ? (
         <FlatList
           data={state.meals}
@@ -236,7 +236,7 @@ export default function CustomMealLibraryScreen({
               t={t}
               isWriteLocked={isWriteLocked}
               onLog={() => openQuickLog(item)}
-              onEdit={() => router.push(`/nutrition/custom-meals/${item.id}`)}
+              onEdit={() => router.push(`/(tabs)/nutrition/custom-meals/${item.id}`)}
               onShare={() => handleShare(item)}
               onDelete={() => remove(item.id)}
             />
@@ -244,7 +244,7 @@ export default function CustomMealLibraryScreen({
           ListFooterComponent={
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push('/nutrition/custom-meals/new')}
+              onPress={() => router.push('/(tabs)/nutrition/custom-meals/new')}
               style={[styles.createButton, { borderColor: palette.tint }]}
               testID="meal.library.cta.create">
               <Text style={[styles.createButtonText, { color: palette.tint }]}>

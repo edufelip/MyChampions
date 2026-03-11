@@ -103,27 +103,32 @@ service cloud.firestore {
     }
 
     match /waterLogs/{logId} {
-      allow read, update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow read, update, delete: if signedIn() && (
+        (resource != null && resource.data.ownerUid == request.auth.uid) ||
+        (resource == null && request.auth.uid != null)
+      );
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
     }
 
     match /waterGoals/{goalId} {
       allow read: if signedIn() && (
-        resource.data.ownerUid == request.auth.uid ||
-        resource.data.nutritionistAuthUid == request.auth.uid
+        goalId == request.auth.uid ||
+        (resource != null && (resource.data.ownerUid == request.auth.uid || resource.data.nutritionistAuthUid == request.auth.uid))
       );
       allow create: if signedIn() && (
-        request.resource.data.ownerUid == request.auth.uid ||
-        request.resource.data.nutritionistAuthUid == request.auth.uid
+        goalId == request.auth.uid && request.resource.data.ownerUid == request.auth.uid
       );
       allow update, delete: if signedIn() && (
-        resource.data.ownerUid == request.auth.uid ||
-        resource.data.nutritionistAuthUid == request.auth.uid
+        goalId == request.auth.uid ||
+        (resource != null && (resource.data.ownerUid == request.auth.uid || resource.data.nutritionistAuthUid == request.auth.uid))
       );
     }
 
     match /customMeals/{mealId} {
-      allow read, update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow read, update, delete: if signedIn() && (
+        (resource != null && resource.data.ownerUid == request.auth.uid) ||
+        (resource == null && request.auth.uid != null)
+      );
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
     }
 
@@ -134,7 +139,10 @@ service cloud.firestore {
     }
 
     match /portionLogs/{logId} {
-      allow read, update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow read, update, delete: if signedIn() && (
+        (resource != null && resource.data.ownerUid == request.auth.uid) ||
+        (resource == null && request.auth.uid != null)
+      );
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
     }
 

@@ -1,45 +1,27 @@
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState, useRef } from 'react';
+import { Image } from 'expo-image';
+import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
-import type { useYMoveSearch } from '@/features/plans/use-ymove-search';
-import type { YMoveExercise } from '@/features/plans/ymove-source';
-import type { useTranslation } from '@/localization';
-import { type TranslationKey } from '@/localization';
+import type { useExerciseSearch } from '@/features/plans/use-exercise-search';
+import type { ExerciseItem } from '@/features/plans/exercise-service-source';
+import { useTranslation, type TranslationKey } from '@/localization';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
-/**
- * Exhaustive set of muscle group slugs the YMove API currently returns.
- * Listed here so `translateMuscleGroup` can do a real membership check —
- * unknown future slugs fall through to the raw slug fallback rather than
- * returning the key string (which `t()` emits for unknown keys).
- *
- * SYNC NOTE: Every slug in this set must have a corresponding
- * `ymove.muscle_group.<slug>` key in all three locale bundles:
- *   localization/en-US.ts
- *   localization/pt-BR.ts
- *   localization/es-ES.ts
- * When adding a new slug here, add the key to all three bundles in the same change.
- */
-const YMOVE_MUSCLE_GROUP_KEYS = new Set([
+const EXERCISE_MUSCLE_GROUP_KEYS = new Set([
   'chest', 'back', 'shoulders', 'biceps', 'triceps',
   'forearms', 'quads', 'hamstrings', 'glutes', 'calves',
   'core', 'full_body',
 ]);
 
-/**
- * Translate a YMove muscle group slug (e.g. "full_body") to a localized label.
- * Falls back to the raw slug for any slug not in the known set — safe against
- * future API additions. We cannot rely on `t(key) || slug` because `t()` returns
- * the key string itself for unknown keys (truthy), making the fallback dead.
- */
 function translateMuscleGroup(slug: string, t: TFn): string {
-  if (!YMOVE_MUSCLE_GROUP_KEYS.has(slug)) return slug;
-  return t(`ymove.muscle_group.${slug}` as TranslationKey);
+  if (!EXERCISE_MUSCLE_GROUP_KEYS.has(slug)) return slug;
+  return t(`exercise.muscle_group.${slug}` as TranslationKey);
 }
 
 export function ExerciseSearchModal({
@@ -55,8 +37,8 @@ export function ExerciseSearchModal({
 }: {
   isVisible: boolean;
   onClose: () => void;
-  onConfirm: (exercise: YMoveExercise, quantity: string, notes: string) => void;
-  searchState: ReturnType<typeof useYMoveSearch>['state'];
+  onConfirm: (exercise: ExerciseItem, quantity: string, notes: string) => void;
+  searchState: ReturnType<typeof useExerciseSearch>['state'];
   onSearch: (query: string) => void;
   onClear: () => void;
   scheme: 'light' | 'dark';
@@ -64,32 +46,43 @@ export function ExerciseSearchModal({
   t: TFn;
 }) {
   const [query, setQuery] = useState('');
-  const [selectedExercise, setSelectedExercise] = useState<YMoveExercise | null>(null);
+  const [view, setView] = useState<'search' | 'detail'>('search');
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseItem | null>(null);
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const notesRef = useRef<TextInput>(null);
 
   // Debounce search
   useEffect(() => {
-    if (!isVisible || selectedExercise) return;
+    if (!isVisible || view === 'detail') return;
     
     const timeoutId = setTimeout(() => {
       onSearch(query);
     }, 400);
 
     return () => clearTimeout(timeoutId);
-  }, [query, onSearch, isVisible, selectedExercise]);
+  }, [query, onSearch, isVisible, view]);
 
   // Reset state when closed
   useEffect(() => {
     if (!isVisible) {
       setQuery('');
+      setView('search');
       setSelectedExercise(null);
       setQuantity('');
       setNotes('');
       onClear();
     }
   }, [isVisible, onClear]);
+
+  const handleSelectExercise = (exercise: ExerciseItem) => {
+    setSelectedExercise(exercise);
+    setView('detail');
+  };
+
+  const handleBackToSearch = () => {
+    setView('search');
+  };
 
   const handleConfirm = () => {
     if (!selectedExercise) return;
@@ -104,7 +97,7 @@ export function ExerciseSearchModal({
         <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
-              {selectedExercise ? t('pro.plan.item.field.name.label') : t('pro.plan.item.search.placeholder')}
+              {view === 'detail' ? t('pro.plan.item.field.name.label') : t('pro.plan.item.search.placeholder')}
             </Text>
             <Pressable onPress={onClose} hitSlop={12}>
               <Text style={{ color: theme.color.accentPrimary, fontWeight: '600' }}>
@@ -113,7 +106,7 @@ export function ExerciseSearchModal({
             </Pressable>
           </View>
 
-          {!selectedExercise ? (
+          {view === 'search' ? (
             // ── Search View ──────────────────────────────────────────────────
             <>
               <View
@@ -171,10 +164,10 @@ export function ExerciseSearchModal({
                     <Pressable
                       key={exercise.id}
                       style={[styles.exerciseRow, { borderColor: theme.color.border }]}
-                      onPress={() => setSelectedExercise(exercise)}>
+                      onPress={() => handleSelectExercise(exercise)}>
                       
                       {exercise.thumbnailUrl ? (
-                        <Image source={{ uri: exercise.thumbnailUrl }} style={styles.thumbnail} />
+                        <Image source={{ uri: exercise.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
                       ) : (
                         <View style={[styles.thumbnailPlaceholder, { backgroundColor: theme.color.surfaceMuted }]}>
                           <MaterialIcons name="fitness-center" size={24} color={theme.color.textSecondary} />
@@ -195,95 +188,155 @@ export function ExerciseSearchModal({
                     </Pressable>
                   ))}
 
-                {searchState.kind === 'done' && searchState.capWarning && (
-                  <View style={[styles.capWarningBanner, { backgroundColor: theme.color.surfaceMuted }]}>
-                    <MaterialIcons name="warning" size={14} color={theme.color.textSecondary} />
-                    <Text style={[styles.capWarningText, { color: theme.color.textSecondary }]}>
-                      {t('ymove.cap_warning')}
-                    </Text>
-                  </View>
-                )}
               </ScrollView>
             </>
           ) : (
-            // ── Details Form View ────────────────────────────────────────────
-            <View style={styles.detailsContainer}>
-              <View style={[styles.selectedHeader, { borderColor: theme.color.border }]}>
-                 {selectedExercise.thumbnailUrl ? (
-                    <Image source={{ uri: selectedExercise.thumbnailUrl }} style={styles.thumbnailLarge} />
-                  ) : (
-                    <View style={[styles.thumbnailPlaceholderLarge, { backgroundColor: theme.color.surfaceMuted }]}>
-                      <MaterialIcons name="fitness-center" size={32} color={theme.color.textSecondary} />
-                    </View>
-                  )}
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.exerciseNameLarge, { color: theme.color.textPrimary }]}>
-                    {selectedExercise.title}
-                  </Text>
-                  <Pressable
-                    onPress={() => {
-                      setSelectedExercise(null);
-                      setQuantity('');
-                      setNotes('');
-                    }}
-                    hitSlop={12}
-                    style={{ marginTop: 4 }}
-                  >
-                    <Text style={{ color: theme.color.accentPrimary, fontSize: 13, fontWeight: '600' }}>
-                      {t('pro.plan.item.search.back')}
+            // ── Detail View ──────────────────────────────────────────────────
+            <ScrollView style={styles.detailsContainer} contentContainerStyle={{ paddingBottom: 40 }}>
+              <Pressable onPress={handleBackToSearch} hitSlop={12} style={styles.backButton}>
+                <MaterialIcons name="arrow-back" size={20} color={theme.color.accentPrimary} />
+                <Text style={{ color: theme.color.accentPrimary, fontSize: 14, fontWeight: '600', marginLeft: 4 }}>
+                  {t('pro.plan.item.search.back')}
+                </Text>
+              </Pressable>
+
+              <Text style={[styles.detailTitle, { color: theme.color.textPrimary }]}>
+                {selectedExercise?.title}
+              </Text>
+
+              <ExerciseVideoPlayer 
+                videoUrl={selectedExercise?.videoUrl} 
+                thumbnailUrl={selectedExercise?.thumbnailUrl} 
+                theme={theme}
+              />
+
+              <View style={styles.detailMeta}>
+                {selectedExercise?.category && (
+                  <View style={[styles.tag, { backgroundColor: theme.color.surfaceMuted }]}>
+                    <Text style={[styles.tagText, { color: theme.color.textSecondary }]}>
+                      {selectedExercise.category}
                     </Text>
-                  </Pressable>
-                </View>
+                  </View>
+                )}
+                {selectedExercise?.muscleGroup && (
+                  <View style={[styles.tag, { backgroundColor: theme.color.surfaceMuted }]}>
+                    <Text style={[styles.tagText, { color: theme.color.textSecondary }]}>
+                      {translateMuscleGroup(selectedExercise.muscleGroup, t)}
+                    </Text>
+                  </View>
+                )}
               </View>
 
-              <Text style={[styles.fieldLabel, { color: theme.color.textPrimary }]}>
-                {t('pro.plan.item.field.quantity.label')}
-              </Text>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  { color: theme.color.textPrimary, borderColor: theme.color.border },
-                ]}
-                placeholder={t('pro.plan.item.field.quantity.placeholder') as string}
-                placeholderTextColor={theme.color.textSecondary}
-                value={quantity}
-                onChangeText={setQuantity}
-                autoFocus
-                returnKeyType="next"
-                onSubmitEditing={() => notesRef.current?.focus()}
-                accessibilityLabel={t('pro.plan.item.field.quantity.label') as string}
-              />
+              {selectedExercise?.description && (
+                <View style={styles.detailSection}>
+                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>{t('pro.plan.item.detail.description')}</Text>
+                  <Text style={[styles.sectionBody, { color: theme.color.textSecondary }]}>
+                    {selectedExercise.description}
+                  </Text>
+                </View>
+              )}
 
-              <Text style={[styles.fieldLabel, { color: theme.color.textPrimary }]}>
-                {t('pro.plan.item.field.notes.label')}
-              </Text>
-              <TextInput
-                ref={notesRef}
-                style={[
-                  styles.textInput,
-                  { color: theme.color.textPrimary, borderColor: theme.color.border },
-                ]}
-                placeholder={t('pro.plan.item.field.notes.placeholder') as string}
-                placeholderTextColor={theme.color.textSecondary}
-                value={notes}
-                onChangeText={setNotes}
-                returnKeyType="done"
-                onSubmitEditing={handleConfirm}
-                accessibilityLabel={t('pro.plan.item.field.notes.label') as string}
-              />
+              {selectedExercise?.instructions && selectedExercise.instructions.length > 0 && (
+                <View style={styles.detailSection}>
+                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>{t('pro.plan.item.detail.instructions')}</Text>
+                  {selectedExercise.instructions.map((step, i) => (
+                    <View key={i} style={styles.bulletRow}>
+                      <Text style={[styles.bullet, { color: theme.color.textSecondary }]}>•</Text>
+                      <Text style={[styles.bulletText, { color: theme.color.textSecondary }]}>{step}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
 
-              <View style={styles.actionsFooter}>
-                 <DsPillButton
+              {selectedExercise?.importantPoints && selectedExercise.importantPoints.length > 0 && (
+                <View style={styles.detailSection}>
+                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>{t('pro.plan.item.detail.important_points')}</Text>
+                  {selectedExercise.importantPoints.map((point, i) => (
+                    <View key={i} style={styles.bulletRow}>
+                      <Text style={[styles.bullet, { color: theme.color.textSecondary }]}>•</Text>
+                      <Text style={[styles.bulletText, { color: theme.color.textSecondary }]}>{point}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <View style={[styles.formSection, { borderTopColor: theme.color.border }]}>
+                <Text style={[styles.fieldLabel, { color: theme.color.textPrimary }]}>
+                  {t('pro.plan.item.field.quantity.label')}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    { color: theme.color.textPrimary, borderColor: theme.color.border },
+                  ]}
+                  placeholder={t('pro.plan.item.field.quantity.placeholder') as string}
+                  placeholderTextColor={theme.color.textSecondary}
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  returnKeyType="next"
+                  onSubmitEditing={() => notesRef.current?.focus()}
+                  accessibilityLabel={t('pro.plan.item.field.quantity.label') as string}
+                />
+
+                <Text style={[styles.fieldLabel, { color: theme.color.textPrimary }]}>
+                  {t('pro.plan.item.field.notes.label')}
+                </Text>
+                <TextInput
+                  ref={notesRef}
+                  style={[
+                    styles.textInput,
+                    { color: theme.color.textPrimary, borderColor: theme.color.border },
+                  ]}
+                  placeholder={t('pro.plan.item.field.notes.placeholder') as string}
+                  placeholderTextColor={theme.color.textSecondary}
+                  value={notes}
+                  onChangeText={setNotes}
+                  returnKeyType="done"
+                  onSubmitEditing={handleConfirm}
+                  accessibilityLabel={t('pro.plan.item.field.notes.label') as string}
+                />
+
+                <View style={styles.actionsFooter}>
+                  <DsPillButton
                     scheme={scheme}
                     label={t('pro.plan.cta.add_item') as string}
                     onPress={handleConfirm}
                   />
+                </View>
               </View>
-            </View>
+            </ScrollView>
           )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+function ExerciseVideoPlayer({ videoUrl, thumbnailUrl, theme }: { videoUrl?: string | null, thumbnailUrl?: string | null, theme: DsTheme }) {
+  const player = useVideoPlayer(videoUrl ?? '', (player) => {
+    player.loop = true;
+    player.play();
+  });
+
+  if (!videoUrl) {
+    return (
+      <View style={[styles.videoPlaceholder, { backgroundColor: theme.color.surfaceMuted }]}>
+        {thumbnailUrl ? (
+          <Image source={{ uri: thumbnailUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        ) : (
+          <MaterialIcons name="videocam-off" size={48} color={theme.color.textSecondary} />
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <VideoView
+      style={styles.videoPlayer}
+      player={player}
+      allowsFullscreen
+      allowsPictureInPicture
+    />
   );
 }
 
@@ -360,29 +413,77 @@ const styles = StyleSheet.create({
   detailsContainer: {
     flex: 1,
   },
-  selectedHeader: {
+  backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: DsSpace.md,
-    paddingBottom: DsSpace.md,
     marginBottom: DsSpace.md,
-    borderBottomWidth: 1,
   },
-  thumbnailLarge: {
-    width: 72,
-    height: 72,
-    borderRadius: DsRadius.md,
+  detailTitle: {
+    ...DsTypography.cardTitle,
+    fontSize: 20,
+    marginBottom: DsSpace.md,
   },
-  thumbnailPlaceholderLarge: {
-    width: 72,
-    height: 72,
-    borderRadius: DsRadius.md,
+  videoPlayer: {
+    width: '100%',
+    height: 200,
+    borderRadius: DsRadius.lg,
+    marginBottom: DsSpace.md,
+  },
+  videoPlaceholder: {
+    width: '100%',
+    height: 200,
+    borderRadius: DsRadius.lg,
+    marginBottom: DsSpace.md,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  exerciseNameLarge: {
-    ...DsTypography.cardTitle,
-    fontFamily: Fonts?.rounded ?? 'normal',
+  detailMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: DsSpace.sm,
+    marginBottom: DsSpace.lg,
+  },
+  tag: {
+    paddingHorizontal: DsSpace.sm,
+    paddingVertical: 4,
+    borderRadius: DsRadius.sm,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  detailSection: {
+    marginBottom: DsSpace.lg,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: DsSpace.xs,
+  },
+  sectionBody: {
+    ...DsTypography.body,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+    paddingRight: DsSpace.md,
+  },
+  bullet: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  bulletText: {
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
+  },
+  formSection: {
+    marginTop: DsSpace.md,
+    paddingTop: DsSpace.lg,
+    borderTopWidth: 1,
   },
   fieldLabel: {
     fontSize: 13,
@@ -399,20 +500,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   actionsFooter: {
-    marginTop: 'auto',
-    paddingTop: DsSpace.lg,
-    paddingBottom: DsSpace.xl,
-  },
-  capWarningBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: DsSpace.xs,
-    borderRadius: DsRadius.md,
-    padding: DsSpace.sm,
     marginTop: DsSpace.sm,
-  },
-  capWarningText: {
-    ...DsTypography.caption,
-    flex: 1,
+    paddingBottom: DsSpace.xl,
   },
 });

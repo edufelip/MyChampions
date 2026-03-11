@@ -19,12 +19,9 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -48,8 +45,6 @@ import {
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
-import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
-import { validateWaterGoalInput } from '@/features/nutrition/water-tracking.logic';
 import type { PlanChangeRequest } from '@/features/plans/plan-change-request.logic';
 import { usePlans } from '@/features/plans/use-plans';
 import {
@@ -97,9 +92,6 @@ export default function ProfessionalStudentProfileScreen() {
   const [pickerPlanType, setPickerPlanType] = useState<'nutrition' | 'training'>('training');
   const [isAssigning, setIsAssigning] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const { state: waterState, setGoal } = useWaterTracking(Boolean(currentUser), today);
-
   const loadChangeRequests = useCallback(async () => {
     if (!studentId) return;
     setChangeRequestsLoadError(null);
@@ -115,9 +107,6 @@ export default function ProfessionalStudentProfileScreen() {
     void loadChangeRequests();
   }, [loadChangeRequests]);
 
-  const [goalInput, setGoalInput] = useState('');
-  const [goalError, setGoalError] = useState<string | null>(null);
-  const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
   const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
   const [unbindError, setUnbindError] = useState<string | null>(null);
@@ -194,30 +183,6 @@ export default function ProfessionalStudentProfileScreen() {
         },
       ]
     );
-  }
-
-  async function handleSetGoal() {
-    setGoalError(null);
-    const errors = validateWaterGoalInput({ dailyMlString: goalInput });
-    if (errors.dailyMl) {
-      setGoalError(
-        errors.dailyMl === 'required'
-          ? (t('pro.student_profile.water_goal.validation.required') as string)
-          : (t('pro.student_profile.water_goal.validation.must_be_positive') as string)
-      );
-      return;
-    }
-
-    const dailyMl = parseInt(goalInput, 10);
-    setIsSavingGoal(true);
-    const err = await setGoal(dailyMl);
-    setIsSavingGoal(false);
-
-    if (err) {
-      setGoalError(t('pro.student_profile.water_goal.error') as string);
-    } else {
-      setGoalInput('');
-    }
   }
 
   const handleOpenPicker = (type: 'nutrition' | 'training') => {
@@ -353,21 +318,6 @@ export default function ProfessionalStudentProfileScreen() {
           void handleReviewChangeRequest(id, 'dismissed');
         }}
       />
-
-      {nutritionStatus === 'active' ? (
-        <WaterGoalCard
-          goalInput={goalInput}
-          goalError={goalError}
-          isSaving={isSavingGoal}
-          isWriteLocked={isWriteLocked}
-          waterState={waterState}
-          theme={theme}
-          t={t}
-          onChangeGoal={setGoalInput}
-          onSaveGoal={handleSetGoal}
-          scheme={scheme}
-        />
-      ) : null}
 
       <PlanPickerModal
         isVisible={isPlanPickerVisible}
@@ -528,85 +478,6 @@ function PlanChangeRequestsCard({
   );
 }
 
-function WaterGoalCard({
-  goalInput,
-  goalError,
-  isSaving,
-  isWriteLocked,
-  waterState,
-  theme,
-  t,
-  onChangeGoal,
-  onSaveGoal,
-  scheme,
-}: {
-  goalInput: string;
-  goalError: string | null;
-  isSaving: boolean;
-  isWriteLocked: boolean;
-  waterState: ReturnType<typeof useWaterTracking>['state'];
-  theme: DsTheme;
-  t: TFn;
-  onChangeGoal: (v: string) => void;
-  onSaveGoal: () => void;
-  scheme: 'light' | 'dark';
-}) {
-  return (
-    <DsCard scheme={scheme} testID="pro.student_profile.waterGoalCard" style={styles.cardWithGap}>
-      <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
-        {t('pro.student_profile.water_goal.title')}
-      </Text>
-
-      <Text style={[styles.fieldLabel, { color: theme.color.textPrimary }]}>
-        {t('pro.student_profile.water_goal.label')}
-      </Text>
-      <TextInput
-        style={[
-          styles.input,
-          {
-            borderColor: theme.color.border,
-            color: theme.color.textPrimary,
-            backgroundColor: theme.color.surfaceMuted,
-          },
-        ]}
-        placeholder={t('pro.student_profile.water_goal.placeholder') as string}
-        placeholderTextColor={theme.color.textSecondary}
-        value={goalInput}
-        onChangeText={onChangeGoal}
-        keyboardType="numeric"
-        editable={!isWriteLocked}
-        testID="pro.student_profile.waterGoal.input"
-        accessibilityLabel={t('pro.student_profile.water_goal.label') as string}
-      />
-
-      {waterState.kind === 'ready' ? (
-        <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
-          {String(waterState.todayConsumedMl)} / {String(waterState.effectiveGoal?.dailyMl ?? 0)} ml
-        </Text>
-      ) : null}
-
-      {goalError ? (
-        <View accessibilityLiveRegion="polite">
-          <Text style={[styles.errorText, { color: theme.color.danger }]}>{goalError}</Text>
-        </View>
-      ) : null}
-
-      {isWriteLocked ? (
-        <Text style={[styles.meta, { color: theme.color.danger }]}>{t('offline.write_lock')}</Text>
-      ) : isSaving ? (
-        <ActivityIndicator accessibilityLabel={t('a11y.loading.saving') as string} color={theme.color.accentPrimary} />
-      ) : (
-        <DsPillButton
-          scheme={scheme}
-          label={t('pro.student_profile.water_goal.save') as string}
-          onPress={onSaveGoal}
-          testID="pro.student_profile.waterGoal.save"
-        />
-      )}
-    </DsCard>
-  );
-}
-
 const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
@@ -628,18 +499,6 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...DsTypography.caption,
-  },
-  fieldLabel: {
-    ...DsTypography.caption,
-    fontWeight: '700',
-  },
-  input: {
-    borderRadius: DsRadius.lg,
-    borderWidth: 1,
-    fontSize: 15,
-    minHeight: 44,
-    paddingHorizontal: DsSpace.md,
-    paddingVertical: DsSpace.sm,
   },
   errorText: {
     ...DsTypography.caption,

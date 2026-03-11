@@ -16,8 +16,8 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
+import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
 import { usePlans } from '@/features/plans/use-plans';
-import type { Plan } from '@/features/plans/plan-source';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -36,14 +36,6 @@ function formatStaleElapsed(elapsed: StaleElapsed, t: ReturnType<typeof useTrans
   if (elapsed.unit === 'minutes') return (t('offline.stale_minutes') as string).replace('{value}', value);
   if (elapsed.unit === 'hours') return (t('offline.stale_hours') as string).replace('{value}', value);
   return (t('offline.stale_days') as string).replace('{value}', value);
-}
-
-function hasActivePlanForType(plans: Plan[], planType: string): boolean {
-  return plans.some((plan) => plan.planType === planType && !plan.isArchived);
-}
-
-function countActivePlansForType(plans: Plan[], planType: string): number {
-  return plans.filter((plan) => plan.planType === planType && !plan.isArchived).length;
 }
 
 export default function StudentHomeScreen() {
@@ -74,14 +66,20 @@ export default function StudentHomeScreen() {
     connectionsState.kind === 'ready' &&
     connectionsState.displayStates.some((display) => display.kind === 'pending');
 
-  const hasNutritionPlan =
-    plansState.kind === 'ready' && hasActivePlanForType(plansState.plans, 'nutrition');
-  const hasTrainingPlan =
-    plansState.kind === 'ready' && hasActivePlanForType(plansState.plans, 'training');
-  const nutritionPlanCount =
-    plansState.kind === 'ready' ? countActivePlansForType(plansState.plans, 'nutrition') : 0;
-  const trainingPlanCount =
-    plansState.kind === 'ready' ? countActivePlansForType(plansState.plans, 'training') : 0;
+  const nutritionPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'nutrition' && !p.isArchived) : [];
+  const trainingPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'training' && !p.isArchived) : [];
+
+  const hasNutritionPlan = nutritionPlans.length > 0;
+  const hasTrainingPlan = trainingPlans.length > 0;
+
+  const assignedNutritionPlan = nutritionPlans.find(p => p.sourceKind === 'assigned');
+  const selfManagedNutritionPlan = nutritionPlans.find((plan) => isSelfGuidedPlan(plan, currentUser?.uid ?? null));
+
+  const assignedTrainingPlan = trainingPlans.find(p => p.sourceKind === 'assigned');
+  const selfManagedTrainingPlan = trainingPlans.find((plan) => isSelfGuidedPlan(plan, currentUser?.uid ?? null));
+
+  const nutritionPlanCount = nutritionPlans.length;
+  const trainingPlanCount = trainingPlans.length;
 
   const hydrationGoal =
     waterState.kind === 'ready' && waterState.effectiveGoal ? waterState.effectiveGoal.dailyMl : 0;
@@ -210,7 +208,15 @@ export default function StudentHomeScreen() {
             <SectionTitle title={t('student.home.training.section') as string} theme={theme} />
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.navigate('/(tabs)/training')}
+              onPress={() => {
+                if (assignedTrainingPlan) {
+                  router.navigate('/(tabs)/training');
+                } else if (selfManagedTrainingPlan) {
+                  router.push(`/student/training/plans/${selfManagedTrainingPlan.id}`);
+                } else {
+                  router.navigate('/(tabs)/training');
+                }
+              }}
               style={[styles.heroCard, { borderColor: theme.color.border }]}
               testID={hasTrainingPlan ? 'student.home.training.goCta' : 'student.home.training.emptyCta'}>
               <ImageBackground
@@ -249,7 +255,15 @@ export default function StudentHomeScreen() {
             <SectionTitle title={t('student.home.nutrition.section') as string} theme={theme} />
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.navigate('/(tabs)/nutrition')}
+              onPress={() => {
+                if (assignedNutritionPlan) {
+                  router.navigate('/(tabs)/nutrition');
+                } else if (selfManagedNutritionPlan) {
+                  router.push(`/student/nutrition/plans/${selfManagedNutritionPlan.id}`);
+                } else {
+                  router.navigate('/(tabs)/nutrition');
+                }
+              }}
               style={[styles.heroCard, { borderColor: theme.color.border }]}
               testID={hasNutritionPlan ? 'student.home.nutrition.goCta' : 'student.home.nutrition.emptyCta'}>
               <ImageBackground

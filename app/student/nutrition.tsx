@@ -24,6 +24,7 @@ import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
+import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -50,20 +51,26 @@ export default function StudentNutritionScreen() {
   const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
   const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
 
-  const assignedNutritionPlan =
-    plansState.kind === 'ready'
-      ? plansState.plans.find(
-          (plan) => plan.planType === 'nutrition' && plan.sourceKind === 'assigned' && !plan.isArchived
-        ) ?? null
-      : null;
+  const nutritionPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'nutrition' && !p.isArchived) : [];
+
+  const assignedNutritionPlan = nutritionPlans.find(plan => plan.sourceKind === 'assigned') ?? null;
+  const selfManagedNutritionPlan =
+    nutritionPlans.find((plan) => isSelfGuidedPlan(plan, currentUser?.uid ?? null)) ?? null;
 
   const hasActiveNutritionAssignment = assignedNutritionPlan !== null;
+  const hasSelfManagedPlan = selfManagedNutritionPlan !== null;
 
   return (
     <DsScreen scheme={scheme} testID="student.nutrition.screen">
       <Stack.Screen options={{ title: t('student.nutrition.title'), headerShown: false }} />
 
       <View style={styles.shell}>
+        <View style={styles.headerRow}>
+          <Text style={[styles.pageTitle, { color: theme.color.textPrimary }]}>
+            {t('student.nutrition.title')}
+          </Text>
+        </View>
+
         {offlineDisplay.showOfflineBanner ? (
           <DsOfflineBanner scheme={scheme} text={t('offline.banner')} testID="student.nutrition.offlineBanner" />
         ) : null}
@@ -104,6 +111,34 @@ export default function StudentNutritionScreen() {
                   errorUnknown: 'student.nutrition.plan_change.error.unknown',
                 }}
               />
+            </>
+          ) : hasSelfManagedPlan ? (
+             <>
+              <WaterWidget waterHook={waterHook} scheme={scheme} t={t} isWriteLocked={isWriteLocked} />
+
+              <DsCard scheme={scheme} testID="student.nutrition.selfManagedPlanCard">
+                <View style={styles.selfManagedHeader}>
+                  <View style={[styles.selfManagedIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+                    <MaterialIcons color={theme.color.accentPrimary} name="restaurant" size={24} />
+                  </View>
+                  <View style={styles.selfManagedTextWrap}>
+                    <Text style={[styles.selfManagedTitle, { color: theme.color.textPrimary }]}>
+                      {selfManagedNutritionPlan.name || t('student.home.nutrition.section')}
+                    </Text>
+                    <Text style={[styles.selfManagedSubtitle, { color: theme.color.textSecondary }]}>
+                      {t('student.plan.nutrition.title.edit')}
+                    </Text>
+                  </View>
+                </View>
+
+                <DsPillButton
+                  scheme={scheme}
+                  label={t('student.home.cta_nutrition')}
+                  onPress={() => router.push(`/student/nutrition/plans/${selfManagedNutritionPlan.id}`)}
+                  style={styles.selfManagedCta}
+                  testID="student.nutrition.editSelfManagedPlanCta"
+                />
+              </DsCard>
             </>
           ) : (
             <View style={styles.emptyStateWrap} testID="student.nutrition.emptyState">
@@ -217,23 +252,15 @@ function WaterWidget({
   isWriteLocked: boolean;
 }) {
   const theme = getDsTheme(scheme);
-  const { state, validateIntake, validateGoal, logIntake, setGoal } = waterHook;
+  const { state, validateIntake, logIntake } = waterHook;
 
   const [intakeRaw, setIntakeRaw] = useState('');
   const [intakeError, setIntakeError] = useState<string | null>(null);
   const [isLoggingIntake, setIsLoggingIntake] = useState(false);
 
-  const [goalRaw, setGoalRaw] = useState('');
-  const [goalError, setGoalError] = useState<string | null>(null);
-  const [isSettingGoal, setIsSettingGoal] = useState(false);
-
   const goal = state.kind === 'ready' && state.effectiveGoal ? state.effectiveGoal.dailyMl : null;
   const consumed = state.kind === 'ready' ? state.todayConsumedMl : 0;
-
-  const canSetPersonalGoal =
-    state.kind === 'ready' &&
-    (state.effectiveGoal === null || state.effectiveGoal.owner === 'student') &&
-    !isWriteLocked;
+  const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
 
   const goalOwnerLabel =
     state.kind === 'ready' && state.effectiveGoal?.owner === 'nutritionist'
@@ -264,30 +291,6 @@ function WaterWidget({
     setIntakeError(t('common.error.generic'));
   };
 
-  const onSetGoal = async () => {
-    const errors = validateGoal({ dailyMlString: goalRaw.trim() });
-    if (errors.dailyMl) {
-      setGoalError(
-        errors.dailyMl === 'required'
-          ? t('student.nutrition.water.goal.validation.required')
-          : t('student.nutrition.water.goal.validation.must_be_positive')
-      );
-      return;
-    }
-
-    setGoalError(null);
-    setIsSettingGoal(true);
-    const err = await setGoal(parseInt(goalRaw.trim(), 10));
-    setIsSettingGoal(false);
-
-    if (!err) {
-      setGoalRaw('');
-      return;
-    }
-
-    setGoalError(t('common.error.generic'));
-  };
-
   return (
     <DsCard scheme={scheme} style={styles.waterCard} testID="student.nutrition.waterWidget">
       {state.kind === 'loading' ? (
@@ -299,7 +302,14 @@ function WaterWidget({
           <View style={styles.waterHeaderRow}>
             <View style={styles.waterHeaderLeft}>
               <View style={styles.waterValueRow}>
-                <Text style={[styles.waterValue, { color: theme.color.textPrimary }]}>{String(consumed)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={[styles.waterValue, { color: theme.color.textPrimary }, isMutating && { opacity: 0.5 }]}>
+                    {String(consumed)}
+                  </Text>
+                  {isMutating && (
+                    <ActivityIndicator size="small" color={theme.color.accentCyan} />
+                  )}
+                </View>
                 <Text style={[styles.waterGoalValue, { color: theme.color.textSecondary }]}>{`/ ${goal ?? 0} ml`}</Text>
               </View>
 
@@ -356,50 +366,9 @@ function WaterWidget({
                   <Text style={[styles.inlineError, { color: theme.color.danger }]}>{intakeError}</Text>
                 </View>
               ) : null}
-
-              {canSetPersonalGoal ? (
-                <View style={styles.inputRow}>
-                  <TextInput
-                    accessibilityLabel={t('student.nutrition.water.goal.label')}
-                    keyboardType="numeric"
-                    onChangeText={(value) => {
-                      setGoalRaw(value);
-                      setGoalError(null);
-                    }}
-                    placeholder={t('student.nutrition.water.goal.placeholder')}
-                    placeholderTextColor={theme.color.textSecondary}
-                    style={[
-                      styles.textInput,
-                      {
-                        backgroundColor: theme.color.surfaceMuted,
-                        color: theme.color.textPrimary,
-                        borderColor: goalError ? theme.color.danger : 'transparent',
-                      },
-                    ]}
-                    testID="student.nutrition.waterWidget.goalInput"
-                    value={goalRaw}
-                  />
-
-                  <DsPillButton
-                    scheme={scheme}
-                    label={t('student.nutrition.water.cta_set_goal')}
-                    onPress={() => {
-                      void onSetGoal();
-                    }}
-                    loading={isSettingGoal}
-                    variant="secondary"
-                    fullWidth={false}
-                    testID="student.nutrition.waterWidget.setGoalButton"
-                    style={styles.compactButton}
-                  />
-                </View>
-              ) : null}
-
-              {goalError ? (
-                <View accessibilityLiveRegion="polite">
-                  <Text style={[styles.inlineError, { color: theme.color.danger }]}>{goalError}</Text>
-                </View>
-              ) : null}
+              <Text style={[styles.writeLockText, { color: theme.color.textSecondary }]}>
+                {t('student.nutrition.water.goal_defined_in_plan')}
+              </Text>
             </>
           ) : (
             <Text
@@ -421,6 +390,16 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingHorizontal: 20,
     paddingTop: 18,
+  },
+  headerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  pageTitle: {
+    ...DsTypography.title,
+    fontFamily: Fonts.rounded,
   },
   sectionStack: {
     flex: 1,
@@ -595,6 +574,32 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     width: 56,
+  },
+  selfManagedHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: DsSpace.md,
+  },
+  selfManagedIconWrap: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  selfManagedTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  selfManagedTitle: {
+    ...DsTypography.cardTitle,
+  },
+  selfManagedSubtitle: {
+    ...DsTypography.micro,
+  },
+  selfManagedCta: {
+    marginTop: DsSpace.xs,
   },
   inputRow: {
     flexDirection: 'row',

@@ -257,7 +257,7 @@ export default function CustomMealBuilderScreen() {
             return;
           }
 
-          router.replace('/');
+          router.replace('/(tabs)/recipes');
         }}
         accessibilityLabel={t('auth.role.cta_back') as string}
         style={styles.backButton}

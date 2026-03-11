@@ -1,5 +1,5 @@
 /**
- * Water tracking Firestore source — log intake, set goals.
+ * Water tracking Firestore source — intake logging + effective goal context.
  */
 
 import {
@@ -15,7 +15,7 @@ import {
 
 import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso } from '../firestore';
 import { classifyFirestoreError } from '../firestore-error';
-import type { WaterIntakeLog } from './water-tracking.logic';
+import { resolvePlanHydrationGoalContext, type PlanHydrationSnapshot, type WaterIntakeLog } from './water-tracking.logic';
 
 type WaterSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
@@ -43,6 +43,12 @@ type FirestoreWaterGoal = {
   nutritionistDailyMl: number | null;
   nutritionistAuthUid: string | null;
   updatedAt: string;
+};
+
+type FirestoreNutritionPlanHydration = PlanHydrationSnapshot & { isArchived: boolean };
+
+type FirestoreConnectionAssignment = {
+  professionalAuthUid: string;
 };
 
 export type WaterTrackingSourceDeps = {
@@ -118,61 +124,6 @@ export async function logWaterIntake(
   }
 }
 
-export async function setStudentWaterGoal(dailyMl: number, deps = defaultDeps): Promise<string> {
-  try {
-    const firestore = deps.getFirestoreInstance();
-    const uid = deps.getCurrentAuthUid();
-
-    await runTransaction(firestore, async (tx) => {
-      tx.set(doc(firestore, 'waterGoals', uid), {
-        ownerUid: uid,
-        personalDailyMl: dailyMl,
-        updatedAt: nowIso(),
-      } satisfies Partial<FirestoreWaterGoal>, { merge: true });
-    });
-
-    return uid;
-  } catch (error) {
-    throw normalizeWaterSourceError(error);
-  }
-}
-
-export async function setNutritionistWaterGoalForStudent(
-  studentUid: string,
-  dailyMl: number,
-  deps = defaultDeps
-): Promise<string> {
-  try {
-    const firestore = deps.getFirestoreInstance();
-    const nutritionistUid = deps.getCurrentAuthUid();
-
-    const activeAssignments = await getDocs(query(
-      collection(firestore, 'connections'),
-      where('professionalAuthUid', '==', nutritionistUid),
-      where('studentAuthUid', '==', studentUid),
-      where('specialty', '==', 'nutritionist'),
-      where('status', '==', 'active')
-    ));
-
-    if (activeAssignments.empty) {
-      throw new WaterTrackingSourceError('graphql', 'No active nutrition assignment for this student.');
-    }
-
-    await runTransaction(firestore, async (tx) => {
-      tx.set(doc(firestore, 'waterGoals', studentUid), {
-        ownerUid: studentUid,
-        nutritionistDailyMl: dailyMl,
-        nutritionistAuthUid: nutritionistUid,
-        updatedAt: nowIso(),
-      } satisfies Partial<FirestoreWaterGoal>, { merge: true });
-    });
-
-    return studentUid;
-  } catch (error) {
-    throw normalizeWaterSourceError(error);
-  }
-}
-
 export async function getMyWaterGoalContext(deps = defaultDeps): Promise<{
   studentGoalMl: number | null;
   nutritionistGoalMl: number | null;
@@ -182,8 +133,41 @@ export async function getMyWaterGoalContext(deps = defaultDeps): Promise<{
     const firestore = deps.getFirestoreInstance();
     const uid = deps.getCurrentAuthUid();
 
+    const plansSnap = await getDocs(
+      query(
+        collection(firestore, 'nutritionPlans'),
+        where('studentAuthUid', '==', uid),
+        where('isArchived', '==', false)
+      )
+    );
+
+    const plans = plansSnap.docs.map((d) => d.data() as FirestoreNutritionPlanHydration);
+
+    const activeAssignmentsSnap = await getDocs(query(
+      collection(firestore, 'connections'),
+      where('studentAuthUid', '==', uid),
+      where('specialty', '==', 'nutritionist'),
+      where('status', '==', 'active')
+    ));
+    const activeNutritionistUids = new Set<string>(
+      activeAssignmentsSnap.docs
+        .map((d) => (d.data() as FirestoreConnectionAssignment).professionalAuthUid)
+        .filter((v): v is string => typeof v === 'string' && v.length > 0)
+    );
+
+    const planContext = resolvePlanHydrationGoalContext({
+      plans,
+      activeNutritionistUids,
+      currentUserUid: uid,
+    });
+
+    if (planContext) {
+      return planContext;
+    }
+
+    // Backward-compatibility fallback while existing users still have waterGoals records.
     const snap = await getDoc(doc(firestore, 'waterGoals', uid));
-    const raw = (snap.exists() ? (snap.data() as FirestoreWaterGoal) : null);
+    const raw = snap.exists() ? (snap.data() as FirestoreWaterGoal) : null;
 
     let hasActiveNutritionistAssignment = false;
     if (raw?.nutritionistAuthUid) {

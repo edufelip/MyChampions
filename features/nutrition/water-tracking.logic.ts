@@ -21,6 +21,13 @@ export type WaterIntakeLog = {
   loggedAt: string;
 };
 
+export type PlanHydrationSnapshot = {
+  sourceKind: 'predefined' | 'assigned' | 'self_managed';
+  ownerProfessionalUid: string | null;
+  hydrationGoalMl?: number | null;
+  updatedAt?: string;
+};
+
 export type WaterDayStatus = 'goal_met' | 'on_track' | 'below_goal';
 
 export type WaterTrackingActionErrorReason =
@@ -51,6 +58,51 @@ export function resolveEffectiveWaterGoal(input: {
   return null;
 }
 
+export function resolvePlanHydrationGoalContext(input: {
+  plans: PlanHydrationSnapshot[];
+  activeNutritionistUids: Set<string>;
+  currentUserUid: string;
+}): {
+  studentGoalMl: number | null;
+  nutritionistGoalMl: number | null;
+  hasActiveNutritionistAssignment: boolean;
+} | null {
+  const plans = input.plans
+    .filter((p) => typeof p.hydrationGoalMl === 'number' && Number.isFinite(p.hydrationGoalMl) && p.hydrationGoalMl > 0)
+    .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
+
+  const assignedPlanGoal = plans.find(
+    (p) =>
+      p.sourceKind === 'assigned' &&
+      Boolean(p.ownerProfessionalUid) &&
+      input.activeNutritionistUids.has(p.ownerProfessionalUid as string)
+  )?.hydrationGoalMl ?? null;
+
+  const selfManagedPlanGoal =
+    plans.find((p) => p.sourceKind === 'self_managed')?.hydrationGoalMl ??
+    plans.find((p) => p.sourceKind === 'predefined' && p.ownerProfessionalUid === input.currentUserUid)
+      ?.hydrationGoalMl ??
+    null;
+
+  if (assignedPlanGoal !== null) {
+    return {
+      studentGoalMl: selfManagedPlanGoal,
+      nutritionistGoalMl: assignedPlanGoal,
+      hasActiveNutritionistAssignment: true,
+    };
+  }
+
+  if (selfManagedPlanGoal !== null) {
+    return {
+      studentGoalMl: selfManagedPlanGoal,
+      nutritionistGoalMl: null,
+      hasActiveNutritionistAssignment: false,
+    };
+  }
+
+  return null;
+}
+
 // ─── Day status ───────────────────────────────────────────────────────────────
 
 export function resolveWaterDayStatus(
@@ -74,7 +126,7 @@ export function resolveWaterDayStatus(
  * @param todayKey Today's date as YYYY-MM-DD.
  */
 export function calculateWaterStreak(
-  logs: Array<{ dateKey: string; totalMl: number }>,
+  logs: { dateKey: string; totalMl: number }[],
   goalMl: number,
   todayKey: string
 ): number {
