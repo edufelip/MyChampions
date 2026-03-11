@@ -19,6 +19,7 @@
 - Empty: no active training assignment; show illustrated acquisition empty state with direct coach-hiring CTA and secondary self-guided action that opens student self-managed training plan creation.
 - Error: tracking update failure.
 - Success: completion state and progress summary updated.
+- Plan context and plan-change request actions are consumed through centralized plans store via `usePlans`.
 
 ## Validation Rules
 - If training plan is professionally assigned, student cannot edit plan structure.

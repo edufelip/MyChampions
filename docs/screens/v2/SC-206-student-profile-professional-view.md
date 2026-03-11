@@ -29,6 +29,7 @@
 - Empty: student has no current plan in one or both specialties.
 - Error: load or save operations fail.
 - Success: profile and assignment controls available.
+- Plan library context and plan-change request triage actions use the centralized plans store through `usePlans`.
 
 ## Validation Rules
 - Must preserve one-active-professional-per-specialty invariant.

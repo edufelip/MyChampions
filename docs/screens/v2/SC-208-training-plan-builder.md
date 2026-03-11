@@ -21,6 +21,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 - Primary create/retry actions use DS pill buttons and localization-key copy only.
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
+- State orchestration uses centralized plans store (`features/plans/plans-store.ts`) through the existing `useTrainingPlanBuilder` adapter hook.
 
 ## User Actions
 
@@ -218,5 +219,5 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Acceptance criteria | AC-256, AC-264, AC-265 |
 | Business rules | BR-281, BR-282, BR-283, BR-293, BR-294, BR-303, BR-304, BR-305, BR-306 |
 | Test cases | TC-268, TC-269, TC-270, TC-277, TC-278, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
-| Decisions | D-013, D-072, D-080, D-082, D-111, D-112, D-114, D-157 |
+| Decisions | D-013, D-072, D-080, D-082, D-111, D-112, D-114, D-157, D-173 |
 | Backlog | BL-106 |

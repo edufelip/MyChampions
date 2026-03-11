@@ -24,6 +24,7 @@
 - Empty: no active nutrition assignment; show illustrated acquisition empty state with direct nutritionist-hiring CTA and secondary self-guided action that opens student self-managed nutrition plan creation.
 - Error: log write/read failure.
 - Success: totals update and adherence status visible.
+- Plan context and plan-change request actions are consumed through centralized plans store via `usePlans`.
 
 ## Validation Rules
 - Macro totals must reflect carbs, proteins, fats.

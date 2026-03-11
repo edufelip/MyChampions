@@ -362,5 +362,21 @@
   - **No URL persistence**: Pre-signed media URLs still expire after 48 h and are never persisted; only stable exercise id is stored.
   - **Data compatibility**: `exerciseId` is the new persisted field; legacy `ymoveId` remains read-compatible during migration.
 
+- `D-173`: Plan-state orchestration for SC-206/SC-207/SC-208/SC-209/SC-210 is centralized in a Zustand store (`features/plans/plans-store.ts`) with hook-compatible adapters.
+  - Existing screen contracts remain stable: `usePlans`, `useNutritionPlanBuilder`, and `useTrainingPlanBuilder` continue exposing the same API shape to screens.
+  - Store slices cover:
+    - Plans library state (`plansState` with cached bootstrap + reload).
+    - Nutrition builder state.
+    - Training builder state.
+    - Food-search state.
+    - A plans invalidation version signal consumed by `usePlans` to trigger background list refetch after plan mutations.
+  - Freshness strategy is optimistic writes + targeted invalidation/reload (no Firestore realtime `onSnapshot` listeners in this phase).
+  - Auth-boundary safety:
+    - Store state and in-memory plan caches are reset when auth is lost or auth UID changes.
+    - Builder loads use request-id guards to ignore stale/out-of-order async responses.
+  - Route-scope safety:
+    - Builder hooks now accept an optional scope key and reset builder/food-search state on scope transitions to avoid stale plan bleed between route instances.
+  - Unsaved drafts remain session-only; no AsyncStorage draft persistence was introduced by this migration.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

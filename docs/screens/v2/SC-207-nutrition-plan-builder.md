@@ -20,6 +20,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
+- State orchestration uses centralized plans store (`features/plans/plans-store.ts`) through the existing `useNutritionPlanBuilder` adapter hook.
 
 ## User Actions
 
@@ -180,5 +181,5 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Acceptance criteria | AC-256, AC-264, AC-265 |
 | Business rules | BR-281, BR-282, BR-283, BR-291, BR-292 |
 | Test cases | TC-268, TC-269, TC-270, TC-275, TC-276, TC-280 |
-| Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114 |
+| Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114, D-173 |
 | Backlog | BL-106 |
