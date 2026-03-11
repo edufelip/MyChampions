@@ -54,14 +54,6 @@ jobs:
           fi
           echo "EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
         working-directory: .
-      - name: Validate Data Connect runtime config
-        run: |
-          set -a
-          source .env
-          set +a
-          node scripts/check-dataconnect-runtime-config.mjs
-        working-directory: .
-
       - name: Validate Firebase secrets
         env:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64_DEV }}

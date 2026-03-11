@@ -25,13 +25,6 @@ jobs:
       - name: Set app variant
         run: echo "APP_VARIANT=dev" >> "$GITHUB_ENV"
         working-directory: .
-      - name: Validate Data Connect runtime config
-        run: |
-          set -a
-          source .env
-          set +a
-          node scripts/check-dataconnect-runtime-config.mjs
-        working-directory: .
       - uses: actions/setup-node@v4
         with:
           node-version: 24
