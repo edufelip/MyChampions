@@ -183,13 +183,28 @@ export async function confirmPendingConnection(
         throw new ConnectionSourceError('graphql', 'Invalid connection transition.');
       }
 
+      // Archive student self-managed plans for this connection specialty
+      const targetCollection = data.specialty === 'nutritionist' ? 'nutritionPlans' : 'trainingPlans';
+      const selfManagedQuery = query(
+        collection(firestore, targetCollection),
+        where('studentAuthUid', '==', data.studentAuthUid),
+        where('sourceKind', '==', 'self_managed'),
+        where('isArchived', '==', false)
+      );
+      const selfManagedSnaps = await getDocs(selfManagedQuery);
+
       tx.update(ref, {
         status: 'active',
         canceledReason: null,
         endedAt: null,
         updatedAt: nowIso(),
       });
+
+      selfManagedSnaps.forEach((docSnap) => {
+        tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso() });
+      });
     });
+
 
     return { connectionId, status: 'active' };
   } catch (error) {
