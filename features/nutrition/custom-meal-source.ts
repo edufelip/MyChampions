@@ -9,6 +9,7 @@ import {
   getDocs,
   query,
   runTransaction,
+  setDoc,
   where,
   type Firestore,
 } from 'firebase/firestore';
@@ -446,16 +447,14 @@ export async function logAssignedMealPortion(
     const id = generateId('portion_log');
     const timestamp = nowIso();
     
-    await runTransaction(firestore, async (tx) => {
-      tx.set(doc(firestore, 'portionLogs', id), {
-        id,
-        ownerUid: uid,
-        mealId,
-        consumedGrams: 0,
-        snapshot,
-        loggedAt: timestamp,
-      } satisfies FirestorePortionLog);
-    });
+    await setDoc(doc(firestore, 'portionLogs', id), {
+      id,
+      ownerUid: uid,
+      mealId,
+      consumedGrams: 0,
+      snapshot,
+      loggedAt: timestamp,
+    } satisfies FirestorePortionLog);
   } catch (error) {
     throw normalizeCustomMealSourceError(error);
   }

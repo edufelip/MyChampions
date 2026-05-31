@@ -8,11 +8,12 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import { logAssignedMealPortion, getTodayPortionLogs, type FirestorePortionLog } from '@/features/nutrition/custom-meal-source';
+import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/plan-builder.logic';
 
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -67,7 +68,8 @@ export default function StudentNutritionScreen() {
   const [todayPortionLogs, setTodayPortionLogs] = useState<FirestorePortionLog[]>([]);
   const [expandedMealIds, setExpandedMealIds] = useState<string[]>([]);
   const [isLoggingMealId, setIsLoggingMealId] = useState<string | null>(null);
-
+  
+  const loggingMealsRef = useRef(new Set<string>());
   const loggedMealIds = todayPortionLogs.map((log) => log.mealId);
 
   const todayConsumed = {
@@ -114,26 +116,19 @@ export default function StudentNutritionScreen() {
     );
   };
 
-  const handleLogMeal = async (meal: { id: string; name: string; items: any[] }) => {
-    if (isWriteLocked || loggedMealIds.includes(meal.id)) return;
+  const handleLogMeal = async (meal: NutritionMeal) => {
+    if (isWriteLocked || loggedMealIds.includes(meal.id) || loggingMealsRef.current.has(meal.id)) return;
+    
+    loggingMealsRef.current.add(meal.id);
     setIsLoggingMealId(meal.id);
     try {
+      const totals = calculateTotalsFromItems(meal.items || []);
       const snapshot = {
-        calories: 0,
-        carbs: 0,
-        proteins: 0,
-        fats: 0,
+        calories: Math.round(totals.calories),
+        carbs: Math.round(totals.carbs),
+        proteins: Math.round(totals.proteins),
+        fats: Math.round(totals.fats),
       };
-      for (const item of meal.items || []) {
-        snapshot.calories += Number(item.calories || 0);
-        snapshot.carbs += Number(item.carbs || 0);
-        snapshot.proteins += Number(item.proteins || 0);
-        snapshot.fats += Number(item.fats || 0);
-      }
-      snapshot.calories = Math.round(snapshot.calories);
-      snapshot.carbs = Math.round(snapshot.carbs);
-      snapshot.proteins = Math.round(snapshot.proteins);
-      snapshot.fats = Math.round(snapshot.fats);
 
       await logAssignedMealPortion(meal.id, snapshot);
       
@@ -148,7 +143,9 @@ export default function StudentNutritionScreen() {
       setTodayPortionLogs((prev) => [...prev, newLog]);
     } catch (err) {
       console.error('Failed to log meal portion:', err);
+      Alert.alert(t('common.error.generic'), t('student.nutrition.plan_change.error.unknown') || 'Something went wrong. Try again.');
     } finally {
+      loggingMealsRef.current.delete(meal.id);
       setIsLoggingMealId(null);
     }
   };
@@ -322,7 +319,7 @@ export default function StudentNutritionScreen() {
                                   <View style={styles.itemsList}>
                                     {meal.items.map((item) => (
                                       <View key={item.id} style={styles.itemRow}>
-                                        <View style={styles.itemDot} />
+                                        <View style={[styles.itemDot, { backgroundColor: theme.color.accentPrimary }]} />
                                         <View style={styles.itemInfo}>
                                           <Text style={[styles.itemName, { color: theme.color.textPrimary }]}>
                                             {item.name}
@@ -1076,7 +1073,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#1ea95a',
     marginTop: 7,
   },
   itemInfo: {
