@@ -399,6 +399,81 @@ export async function bulkAssignPredefinedPlan(
   }
 }
 
+export async function createDraftAssignedPlan(
+  predefinedPlanId: string,
+  studentUid: string,
+  deps = defaultDeps
+): Promise<{ id: string }> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const professionalUid = deps.getCurrentAuthUid();
+    const timestamp = nowIso();
+    let newPlanId = '';
+
+    await runTransaction(firestore, async (tx) => {
+      const nutritionRef = doc(firestore, 'nutritionPlans', predefinedPlanId);
+      const trainingRef = doc(firestore, 'trainingPlans', predefinedPlanId);
+
+      const [nutritionSnap, trainingSnap] = await Promise.all([
+        tx.get(nutritionRef),
+        tx.get(trainingRef),
+      ]);
+
+      if (!nutritionSnap.exists() && !trainingSnap.exists()) {
+        throw new PlanSourceError('graphql', 'Predefined plan not found.');
+      }
+
+      if (nutritionSnap.exists()) {
+        const source = nutritionSnap.data() as FirestoreNutritionPlan;
+        if (source.sourceKind !== 'predefined') {
+          throw new PlanSourceError('invalid_response', 'Only predefined plans can be assigned.');
+        }
+        if (source.ownerProfessionalUid !== professionalUid) {
+          throw new PlanSourceError('configuration', 'Cannot assign a plan owned by another professional.');
+        }
+        newPlanId = generateId('nutrition_plan');
+        const newRef = doc(firestore, 'nutritionPlans', newPlanId);
+        tx.set(newRef, {
+          ...source,
+          id: newPlanId,
+          ownerProfessionalUid: professionalUid,
+          studentAuthUid: studentUid,
+          sourceKind: 'assigned',
+          isArchived: false,
+          isDraft: true,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        } satisfies FirestoreNutritionPlan);
+      } else {
+        const source = trainingSnap.data() as FirestoreTrainingPlan;
+        if (source.sourceKind !== 'predefined') {
+          throw new PlanSourceError('invalid_response', 'Only predefined plans can be assigned.');
+        }
+        if (source.ownerProfessionalUid !== professionalUid) {
+          throw new PlanSourceError('configuration', 'Cannot assign a plan owned by another professional.');
+        }
+        newPlanId = generateId('training_plan');
+        const newRef = doc(firestore, 'trainingPlans', newPlanId);
+        tx.set(newRef, {
+          ...source,
+          id: newPlanId,
+          ownerProfessionalUid: professionalUid,
+          studentAuthUid: studentUid,
+          sourceKind: 'assigned',
+          isArchived: false,
+          isDraft: true,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        } satisfies FirestoreTrainingPlan);
+      }
+    });
+
+    return { id: newPlanId };
+  } catch (error) {
+    throw normalizePlanSourceError(error);
+  }
+}
+
 export async function submitPlanChangeRequest(
   planId: string,
   planType: PlanType,

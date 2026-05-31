@@ -4,6 +4,7 @@ import {
   getMyPlans,
   getMyPredefinedPlans,
   bulkAssignPredefinedPlan,
+  createDraftAssignedPlan,
   submitPlanChangeRequest,
   reviewPlanChangeRequest,
   getStudentPlanChangeRequests,
@@ -166,6 +167,11 @@ export type PlansStoreState = {
     predefinedPlanId: string,
     studentUids: string[]
   ) => Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }>;
+  createDraftAssignedPlan: (
+    isAuthenticated: boolean,
+    predefinedPlanId: string,
+    studentUid: string
+  ) => Promise<{ id: string } | { error: PlanChangeRequestErrorReason }>;
   clearFoodSearch: () => void;
   loadNutritionPlan: (isAuthenticated: boolean, planId: string) => Promise<void>;
   initNewNutritionPlan: () => void;
@@ -176,7 +182,8 @@ export type PlansStoreState = {
   saveNutritionPlanAction: (
     isAuthenticated: boolean,
     planId: string,
-    input: NutritionPlanInput
+    input: NutritionPlanInput,
+    publish?: boolean
   ) => Promise<PlanBuilderErrorReason | null>;
   addNutritionMealAction: (
     isAuthenticated: boolean,
@@ -228,13 +235,15 @@ export type PlansStoreState = {
   saveTrainingPlanAction: (
     isAuthenticated: boolean,
     planId: string,
-    input: TrainingPlanInput
+    input: TrainingPlanInput,
+    publish?: boolean
   ) => Promise<PlanBuilderErrorReason | null>;
   saveTrainingPlanWithSessionsAction: (
     isAuthenticated: boolean,
     planId: string,
     input: TrainingPlanInput,
-    sessions: TrainingSession[]
+    sessions: TrainingSession[],
+    publish?: boolean
   ) => Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }>;
   addTrainingSessionAction: (
     isAuthenticated: boolean,
@@ -423,6 +432,18 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
+  createDraftAssignedPlan: async (isAuthenticated, predefinedPlanId, studentUid) => {
+    if (!isAuthenticated) return { error: 'unknown' };
+
+    try {
+      const result = await createDraftAssignedPlan(predefinedPlanId, studentUid);
+      await get().loadPlans(isAuthenticated);
+      return result;
+    } catch (err) {
+      return { error: normalizePlanChangeRequestError(err) };
+    }
+  },
+
   clearFoodSearch: () => {
     set({ foodSearchState: { kind: 'idle' }, foodSearchRequestId: 0 });
   },
@@ -538,7 +559,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  saveNutritionPlanAction: async (isAuthenticated, planId, input) => {
+  saveNutritionPlanAction: async (isAuthenticated, planId, input, publish) => {
     if (!isAuthenticated) return 'unknown';
 
     const errors = validateNutritionPlanInput(input);
@@ -550,7 +571,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ nutritionBuilderState: markNutritionBuilderMutating(previousState) });
 
     try {
-      await updateNutritionPlan(planId, input);
+      await updateNutritionPlan(planId, input, publish);
       const updated = await getNutritionPlanDetail(planId);
       set((state) => ({
         nutritionBuilderState: { kind: 'ready', plan: updated },
@@ -949,7 +970,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  saveTrainingPlanAction: async (isAuthenticated, planId, input) => {
+  saveTrainingPlanAction: async (isAuthenticated, planId, input, publish) => {
     if (!isAuthenticated) return 'unknown';
 
     const errors = validateTrainingPlanInput(input);
@@ -959,7 +980,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ trainingBuilderState: markTrainingBuilderMutating(previousState) });
 
     try {
-      await updateTrainingPlan(planId, input);
+      await updateTrainingPlan(planId, input, publish);
       const updated = await getTrainingPlanDetail(planId);
       set((state) => ({
         trainingBuilderState: { kind: 'ready', plan: updated },
@@ -976,7 +997,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  saveTrainingPlanWithSessionsAction: async (isAuthenticated, planId, input, sessions) => {
+  saveTrainingPlanWithSessionsAction: async (isAuthenticated, planId, input, sessions, publish) => {
     if (!isAuthenticated) return { error: 'unknown' };
 
     const errors = validateTrainingPlanInput(input);
@@ -992,7 +1013,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         currentPlanId = created.id;
       }
 
-      await updateTrainingPlanWithSessions(currentPlanId, input, sessions);
+      await updateTrainingPlanWithSessions(currentPlanId, input, sessions, publish);
       const updated = await getTrainingPlanDetail(currentPlanId);
       await setCachedTrainingPlan(updated);
       set((state) => ({

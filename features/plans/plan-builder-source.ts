@@ -348,6 +348,7 @@ export async function createNutritionPlan(
 export async function updateNutritionPlan(
   planId: string,
   input: NutritionPlanInput,
+  publish?: boolean,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   try {
@@ -360,11 +361,16 @@ export async function updateNutritionPlan(
         throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
       }
 
-      tx.update(ref, {
+      const updateData: any = {
         name: input.name.trim(),
         hydrationGoalMl: parseInt(input.hydrationGoalMl.trim(), 10),
         updatedAt: nowIso(),
-      });
+      };
+      if (publish) {
+        updateData.isDraft = false;
+      }
+
+      tx.update(ref, updateData);
     });
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
@@ -744,6 +750,7 @@ export async function createTrainingPlan(
 export async function updateTrainingPlan(
   planId: string,
   input: TrainingPlanInput,
+  publish?: boolean,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   try {
@@ -756,10 +763,15 @@ export async function updateTrainingPlan(
         throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
       }
 
-      tx.update(ref, {
+      const updateData: any = {
         name: input.name.trim(),
         updatedAt: nowIso(),
-      });
+      };
+      if (publish) {
+        updateData.isDraft = false;
+      }
+
+      tx.update(ref, updateData);
     });
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
@@ -789,6 +801,7 @@ export async function updateTrainingPlanWithSessions(
   planId: string,
   input: TrainingPlanInput,
   sessions: TrainingSession[],
+  publish?: boolean,
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<void> {
   try {
@@ -801,11 +814,16 @@ export async function updateTrainingPlanWithSessions(
         throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
       }
 
-      tx.update(ref, {
+      const updateData: any = {
         name: input.name.trim(),
         sessions: mapTrainingSessionsToFirestore(sessions),
         updatedAt: nowIso(),
-      });
+      };
+      if (publish) {
+        updateData.isDraft = false;
+      }
+
+      tx.update(ref, updateData);
     });
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
