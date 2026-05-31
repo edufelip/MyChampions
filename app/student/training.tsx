@@ -84,7 +84,9 @@ export default function StudentTrainingScreen() {
 
   const hasActiveTrainingAssignment = assignedTrainingPlan !== null;
   const hasSelfManagedPlan = selfManagedTrainingPlan !== null;
+  const isConnectionsLoading = Boolean(currentUser) && connectionsState.kind === 'loading';
   const isWaitingForCoachPlan = hasActiveFitnessCoachConnection && !hasActiveTrainingAssignment;
+  const shouldShowPlanCalendar = hasActiveTrainingAssignment || (hasSelfManagedPlan && !isWaitingForCoachPlan);
   const weekStrip = useMemo(() => getWeekStrip(locale), [locale]);
 
   const { state: builderState, loadPlan } = useTrainingPlanBuilder(Boolean(currentUser), 'student-assigned');
@@ -158,9 +160,9 @@ export default function StudentTrainingScreen() {
           <DsOfflineBanner scheme={scheme} text={t('offline.banner')} testID="student.training.offlineBanner" />
         ) : null}
 
-        {hasActiveTrainingAssignment || hasSelfManagedPlan ? <WeekStrip scheme={scheme} items={weekStrip} /> : null}
+        {shouldShowPlanCalendar ? <WeekStrip scheme={scheme} items={weekStrip} /> : null}
 
-        {plansState.kind === 'loading' ? (
+        {plansState.kind === 'loading' || isConnectionsLoading ? (
           <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.plansLoading">
             <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
           </DsCard>
@@ -339,6 +341,7 @@ export default function StudentTrainingScreen() {
               scheme={scheme}
               label={t('student.training.waiting.cta')}
               onPress={() => router.push('/student/professionals')}
+              disabled={isWriteLocked}
               contentColor="#f8fafc"
               testID="student.training.waitingCta"
               style={styles.emptyPrimaryCta}
