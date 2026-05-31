@@ -92,6 +92,35 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.status == request.resource.data.status;
     }
 
+    function planArchiveStateOnlyChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isArchived', 'updatedAt']) &&
+        request.resource.data.updatedAt is string;
+    }
+
+    function hasEndedNutritionistConnectionForPlan(studentUid, professionalUid) {
+      return signedIn() &&
+        (request.auth.uid == studentUid || request.auth.uid == professionalUid) &&
+        exists(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)) &&
+        exists(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)) &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.status == 'ended' &&
+        getAfter(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)).data.studentAuthUid == studentUid &&
+        getAfter(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)).data.professionalAuthUid == professionalUid &&
+        getAfter(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)).data.specialty == 'nutritionist' &&
+        getAfter(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)).data.status == 'ended';
+    }
+
+    function hasEndedFitnessCoachConnectionForPlan(studentUid, professionalUid) {
+      return signedIn() &&
+        (request.auth.uid == studentUid || request.auth.uid == professionalUid) &&
+        exists(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)) &&
+        exists(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)) &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.status == 'ended' &&
+        getAfter(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.studentAuthUid == studentUid &&
+        getAfter(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.professionalAuthUid == professionalUid &&
+        getAfter(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.specialty == 'fitness_coach' &&
+        getAfter(/databases/$(database)/documents/connections/$(getAfter(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.status == 'ended';
+    }
+
     match /userProfiles/{userId} {
       allow read, delete: if isUid(userId);
       allow create: if isUid(userId) && request.resource.data.authUid == request.auth.uid;
@@ -123,6 +152,32 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.professionalAuthUid == request.auth.uid;
     }
 
+    function nutritionIdentityUnchanged() {
+      return request.resource.data.id == resource.data.id &&
+        request.resource.data.studentAuthUid == resource.data.studentAuthUid &&
+        request.resource.data.ownerProfessionalUid == resource.data.ownerProfessionalUid &&
+        request.resource.data.sourceKind == resource.data.sourceKind &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function canArchiveAssignedNutritionPlanOnConnectionEnd() {
+      return resource.data.sourceKind == 'assigned' &&
+        nutritionIdentityUnchanged() &&
+        planArchiveStateOnlyChanged() &&
+        request.resource.data.isArchived == true &&
+        hasEndedNutritionistConnectionForPlan(resource.data.studentAuthUid, resource.data.ownerProfessionalUid);
+    }
+
+    function canRestoreSelfManagedNutritionPlanOnConnectionEnd() {
+      return resource.data.sourceKind == 'self_managed' &&
+        resource.data.ownerProfessionalUid == null &&
+        resource.data.studentAuthUid != request.auth.uid &&
+        nutritionIdentityUnchanged() &&
+        planArchiveStateOnlyChanged() &&
+        request.resource.data.isArchived == false &&
+        hasEndedNutritionistConnectionForPlan(resource.data.studentAuthUid, request.auth.uid);
+    }
+
     match /nutritionPlans/{planId} {
       allow read: if signedIn() && (
         resource.data.studentAuthUid == request.auth.uid ||
@@ -132,7 +187,13 @@ service cloud.firestore {
         request.resource.data.studentAuthUid == request.auth.uid ||
         request.resource.data.ownerProfessionalUid == request.auth.uid
       );
-      allow update, delete: if signedIn() && (
+      allow update: if signedIn() && (
+        resource.data.studentAuthUid == request.auth.uid ||
+        resource.data.ownerProfessionalUid == request.auth.uid ||
+        canArchiveAssignedNutritionPlanOnConnectionEnd() ||
+        canRestoreSelfManagedNutritionPlanOnConnectionEnd()
+      );
+      allow delete: if signedIn() && (
         resource.data.studentAuthUid == request.auth.uid ||
         resource.data.ownerProfessionalUid == request.auth.uid
       );
@@ -197,6 +258,24 @@ service cloud.firestore {
         hasActiveFitnessCoachTrackingAccess(resource.data.studentAuthUid);
     }
 
+    function canArchiveAssignedTrainingPlanOnConnectionEnd() {
+      return resource.data.sourceKind == 'assigned' &&
+        trainingIdentityUnchanged() &&
+        planArchiveStateOnlyChanged() &&
+        request.resource.data.isArchived == true &&
+        hasEndedFitnessCoachConnectionForPlan(resource.data.studentAuthUid, resource.data.ownerProfessionalUid);
+    }
+
+    function canRestoreSelfManagedTrainingPlanOnConnectionEnd() {
+      return resource.data.sourceKind == 'self_managed' &&
+        resource.data.ownerProfessionalUid == null &&
+        resource.data.studentAuthUid != request.auth.uid &&
+        trainingIdentityUnchanged() &&
+        planArchiveStateOnlyChanged() &&
+        request.resource.data.isArchived == false &&
+        hasEndedFitnessCoachConnectionForPlan(resource.data.studentAuthUid, request.auth.uid);
+    }
+
     function canDeleteSelfManagedTrainingPlan() {
       return resource.data.studentAuthUid == request.auth.uid &&
         resource.data.ownerProfessionalUid == null &&
@@ -228,7 +307,9 @@ service cloud.firestore {
       allow update: if signedIn() && (
         canUpdateSelfManagedTrainingPlan() ||
         canUpdateProfessionalLibraryTrainingPlan() ||
-        canUpdateAssignedTrainingPlan()
+        canUpdateAssignedTrainingPlan() ||
+        canArchiveAssignedTrainingPlanOnConnectionEnd() ||
+        canRestoreSelfManagedTrainingPlanOnConnectionEnd()
       );
       allow delete: if signedIn() && (
         canDeleteSelfManagedTrainingPlan() ||

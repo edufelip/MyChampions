@@ -79,6 +79,10 @@ function getTrackingAccessRef(firestore: Firestore, connection: FirestoreConnect
   );
 }
 
+function getPlanCollectionForSpecialty(connection: FirestoreConnection) {
+  return connection.specialty === 'fitness_coach' ? 'trainingPlans' : 'nutritionPlans';
+}
+
 function buildTrackingAccessRecord(connection: FirestoreConnection, status: 'active' | 'ended') {
   return {
     connectionId: connection.id,
@@ -206,7 +210,7 @@ export async function confirmPendingConnection(
       }
 
       // Archive student self-managed plans for this connection specialty
-      const targetCollection = data.specialty === 'nutritionist' ? 'nutritionPlans' : 'trainingPlans';
+      const targetCollection = getPlanCollectionForSpecialty(data);
       const selfManagedQuery = query(
         collection(firestore, targetCollection),
         where('studentAuthUid', '==', data.studentAuthUid),
@@ -256,6 +260,25 @@ export async function endConnection(
         throw new ConnectionSourceError('graphql', 'Permission denied for connection end.');
       }
 
+      const targetCollection = getPlanCollectionForSpecialty(data);
+      const assignedQuery = query(
+        collection(firestore, targetCollection),
+        where('studentAuthUid', '==', data.studentAuthUid),
+        where('ownerProfessionalUid', '==', data.professionalAuthUid),
+        where('sourceKind', '==', 'assigned'),
+        where('isArchived', '==', false)
+      );
+      const selfManagedQuery = query(
+        collection(firestore, targetCollection),
+        where('studentAuthUid', '==', data.studentAuthUid),
+        where('sourceKind', '==', 'self_managed'),
+        where('isArchived', '==', true)
+      );
+      const [assignedSnaps, selfManagedSnaps] = await Promise.all([
+        getDocs(assignedQuery),
+        getDocs(selfManagedQuery),
+      ]);
+
       tx.update(ref, {
         status: 'ended',
         endedAt: nowIso(),
@@ -263,6 +286,14 @@ export async function endConnection(
       });
 
       tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
+
+      assignedSnaps.forEach((docSnap) => {
+        tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso() });
+      });
+
+      selfManagedSnaps.forEach((docSnap) => {
+        tx.update(docSnap.ref, { isArchived: false, updatedAt: nowIso() });
+      });
     });
   } catch (error) {
     throw normalizeConnectionSourceError(error);

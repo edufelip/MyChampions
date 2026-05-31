@@ -6,6 +6,7 @@ let currentSpecialty: 'nutritionist' | 'fitness_coach' = 'nutritionist';
 let currentStatus = 'pending_confirmation';
 let queriedCollection: string | null = null;
 let queryClauses: any[] = [];
+let planQueryCalls: Array<{ collection: string; clauses: any[] }> = [];
 let txUpdates: Array<{ ref: any; data: any }> = [];
 let txSets: Array<{ ref: any; data: any; options?: any }> = [];
 
@@ -30,6 +31,53 @@ const mockQuery = (colRef: any, ...clauses: any[]) => {
 
 const mockGetDocs = async (q: any) => {
   if (q.colRef && (q.colRef.path === 'nutritionPlans' || q.colRef.path === 'trainingPlans')) {
+    planQueryCalls.push({ collection: q.colRef.path, clauses: q.clauses });
+    const sourceKind = q.clauses.find((clause: any) => clause.field === 'sourceKind')?.value;
+    const isArchived = q.clauses.find((clause: any) => clause.field === 'isArchived')?.value;
+
+    if (sourceKind === 'assigned' && isArchived === false) {
+      return {
+        empty: false,
+        docs: [
+          {
+            id: 'assigned-plan-123',
+            ref: { type: 'doc_ref', path: `${q.colRef.path}/assigned-plan-123` },
+            data: () => ({
+              id: 'assigned-plan-123',
+              sourceKind: 'assigned',
+              isArchived: false,
+              studentAuthUid: 'student-456',
+              ownerProfessionalUid: 'prof-789'
+            })
+          }
+        ],
+        forEach(cb: any) {
+          this.docs.forEach(cb);
+        }
+      } as any;
+    }
+
+    if (sourceKind === 'self_managed' && isArchived === true) {
+      return {
+        empty: false,
+        docs: [
+          {
+            id: 'self-managed-plan-123',
+            ref: { type: 'doc_ref', path: `${q.colRef.path}/self-managed-plan-123` },
+            data: () => ({
+              id: 'self-managed-plan-123',
+              sourceKind: 'self_managed',
+              isArchived: true,
+              studentAuthUid: 'student-456'
+            })
+          }
+        ],
+        forEach(cb: any) {
+          this.docs.forEach(cb);
+        }
+      } as any;
+    }
+
     return {
       empty: false,
       docs: [
@@ -113,6 +161,7 @@ test('TDD: confirmPendingConnection archives self_managed nutrition plans for nu
   currentStatus = 'pending_confirmation';
   queriedCollection = null;
   queryClauses = [];
+  planQueryCalls = [];
   txUpdates = [];
   txSets = [];
 
@@ -163,6 +212,7 @@ test('TDD: confirmPendingConnection archives self_managed training plans for fit
   currentStatus = 'pending_confirmation';
   queriedCollection = null;
   queryClauses = [];
+  planQueryCalls = [];
   txUpdates = [];
   txSets = [];
 
@@ -210,6 +260,7 @@ test('TDD: confirmPendingConnection archives self_managed training plans for fit
 test('TDD: endConnection marks tracking access ended for connection specialty', async (t) => {
   currentSpecialty = 'nutritionist';
   currentStatus = 'active';
+  planQueryCalls = [];
   txUpdates = [];
   txSets = [];
 
@@ -229,6 +280,54 @@ test('TDD: endConnection marks tracking access ended for connection specialty', 
   assert.equal(accessSet.data.connectionId, 'conn-123');
   assert.equal(accessSet.data.status, 'ended');
   assert.deepEqual(accessSet.options, { merge: true });
+});
+
+test('TDD: endConnection archives assigned training plan and restores self-managed training plan for fitness_coach', async (t) => {
+  currentSpecialty = 'fitness_coach';
+  currentStatus = 'active';
+  queriedCollection = null;
+  queryClauses = [];
+  planQueryCalls = [];
+  txUpdates = [];
+  txSets = [];
+
+  const mockDeps = {
+    getFirestoreInstance: () => ({}) as any,
+    getCurrentAuthUid: () => 'student-456',
+  };
+
+  await endConnection('conn-123', mockDeps);
+
+  assert.equal(planQueryCalls.length, 2, 'Should query assigned and self-managed training plans');
+  assert.ok(
+    planQueryCalls.every((call) => call.collection === 'trainingPlans'),
+    'Should query trainingPlans for fitness coach connections'
+  );
+
+  const assignedQuery = planQueryCalls.find((call) => (
+    call.clauses.some((clause) => clause.field === 'sourceKind' && clause.value === 'assigned')
+  ));
+  assert.ok(assignedQuery, 'Should query active assigned training plans');
+  assert.ok(assignedQuery.clauses.some((clause) => clause.field === 'studentAuthUid' && clause.value === 'student-456'));
+  assert.ok(assignedQuery.clauses.some((clause) => clause.field === 'ownerProfessionalUid' && clause.value === 'prof-789'));
+  assert.ok(assignedQuery.clauses.some((clause) => clause.field === 'isArchived' && clause.value === false));
+
+  const selfManagedQuery = planQueryCalls.find((call) => (
+    call.clauses.some((clause) => clause.field === 'sourceKind' && clause.value === 'self_managed')
+  ));
+  assert.ok(selfManagedQuery, 'Should query archived self-managed training plans');
+  assert.ok(selfManagedQuery.clauses.some((clause) => clause.field === 'studentAuthUid' && clause.value === 'student-456'));
+  assert.ok(selfManagedQuery.clauses.some((clause) => clause.field === 'isArchived' && clause.value === true));
+
+  const assignedUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/assigned-plan-123');
+  assert.ok(assignedUpdate, 'Should archive assigned training plan');
+  assert.equal(assignedUpdate.data.isArchived, true);
+  assert.ok(assignedUpdate.data.updatedAt, 'Assigned plan updatedAt should be set');
+
+  const selfManagedUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/self-managed-plan-123');
+  assert.ok(selfManagedUpdate, 'Should restore archived self-managed training plan');
+  assert.equal(selfManagedUpdate.data.isArchived, false);
+  assert.ok(selfManagedUpdate.data.updatedAt, 'Self-managed plan updatedAt should be set');
 });
 
 // Restore original implementations at the end of the test file

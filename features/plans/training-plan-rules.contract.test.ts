@@ -34,6 +34,17 @@ test('trainingPlans rules require active fitness coach access for assigned write
   assert.match(rules, /hasActiveFitnessCoachTrackingAccess\(resource\.data\.studentAuthUid\)/);
 });
 
+test('trainingPlans rules allow connection-end archive and self-managed restore writes', () => {
+  assert.match(rules, /function hasEndedFitnessCoachConnectionForPlan\(studentUid, professionalUid\)/);
+  assert.match(rules, /function planArchiveStateOnlyChanged\(\)/);
+  assert.match(rules, /function canArchiveAssignedTrainingPlanOnConnectionEnd\(\)/);
+  assert.match(rules, /function canRestoreSelfManagedTrainingPlanOnConnectionEnd\(\)/);
+  assert.match(rules, /request\.resource\.data\.isArchived == true/);
+  assert.match(rules, /request\.resource\.data\.isArchived == false/);
+  assert.match(rules, /hasEndedFitnessCoachConnectionForPlan\(resource\.data\.studentAuthUid, resource\.data\.ownerProfessionalUid\)/);
+  assert.match(rules, /hasEndedFitnessCoachConnectionForPlan\(resource\.data\.studentAuthUid, request\.auth\.uid\)/);
+});
+
 test('trainingPlans rules distinguish self-managed and professional library creates', () => {
   assert.match(rules, /function canCreateSelfManagedTrainingPlan\(\)/);
   assert.match(rules, /request\.resource\.data\.sourceKind == 'self_managed'/);
