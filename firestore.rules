@@ -163,7 +163,8 @@ service cloud.firestore {
       return request.resource.data.studentAuthUid == request.auth.uid &&
         request.resource.data.ownerProfessionalUid == request.auth.uid &&
         request.resource.data.sourceKind == 'predefined' &&
-        request.resource.data.isDraft == false &&
+        (request.resource.data.isDraft == false ||
+          request.resource.data.isDraft == true) &&
         request.resource.data.isArchived == false;
     }
 
@@ -196,6 +197,24 @@ service cloud.firestore {
         hasActiveFitnessCoachTrackingAccess(resource.data.studentAuthUid);
     }
 
+    function canDeleteSelfManagedTrainingPlan() {
+      return resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.ownerProfessionalUid == null &&
+        resource.data.sourceKind == 'self_managed';
+    }
+
+    function canDeleteProfessionalLibraryTrainingPlan() {
+      return resource.data.ownerProfessionalUid == request.auth.uid &&
+        resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.sourceKind == 'predefined';
+    }
+
+    function canDeleteAssignedTrainingPlan() {
+      return resource.data.ownerProfessionalUid == request.auth.uid &&
+        resource.data.sourceKind == 'assigned' &&
+        hasActiveFitnessCoachTrackingAccess(resource.data.studentAuthUid);
+    }
+
     match /trainingPlans/{planId} {
       allow read: if signedIn() && (
         resource.data.ownerProfessionalUid == request.auth.uid ||
@@ -212,9 +231,9 @@ service cloud.firestore {
         canUpdateAssignedTrainingPlan()
       );
       allow delete: if signedIn() && (
-        canUpdateSelfManagedTrainingPlan() ||
-        canUpdateProfessionalLibraryTrainingPlan() ||
-        canUpdateAssignedTrainingPlan()
+        canDeleteSelfManagedTrainingPlan() ||
+        canDeleteProfessionalLibraryTrainingPlan() ||
+        canDeleteAssignedTrainingPlan()
       );
     }
 
