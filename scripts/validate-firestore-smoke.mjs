@@ -76,12 +76,14 @@ async function call(url, { method = 'GET', body } = {}) {
 const docPath = `${base}/smokeChecks/${testId}`;
 const connectionPath = `${base}/connections/${testId}`;
 const nutritionPlanPath = `${base}/nutritionPlans/${testId}`;
+const workoutLogPath = `${base}/workoutLogs/${testId}`;
+
 
 info(`project=${projectId} variant=${variant}`);
 info(`actorUid=${actorUid}`);
 
 try {
-  info('step 1/8: create smoke profile document');
+  info('step 1/10: create smoke profile document');
   await call(docPath, {
     method: 'PATCH',
     body: {
@@ -94,10 +96,10 @@ try {
   });
   cleanupPaths.push(docPath);
 
-  info('step 2/8: read smoke profile document');
+  info('step 2/10: read smoke profile document');
   await call(docPath);
 
-  info('step 3/8: create smoke connection (pending_confirmation)');
+  info('step 3/10: create smoke connection (pending_confirmation)');
   await call(connectionPath, {
     method: 'PATCH',
     body: {
@@ -114,7 +116,7 @@ try {
   });
   cleanupPaths.push(connectionPath);
 
-  info('step 4/8: transition connection -> active');
+  info('step 4/10: transition connection -> active');
   await call(`${connectionPath}?updateMask.fieldPaths=status&updateMask.fieldPaths=updatedAt`, {
     method: 'PATCH',
     body: {
@@ -125,7 +127,7 @@ try {
     },
   });
 
-  info('step 5/8: transition connection -> ended');
+  info('step 5/10: transition connection -> ended');
   await call(
     `${connectionPath}?updateMask.fieldPaths=status&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=canceledReason`,
     {
@@ -140,7 +142,7 @@ try {
     }
   );
 
-  info('step 6/8: create smoke nutrition plan document');
+  info('step 6/10: create smoke nutrition plan document');
   await call(nutritionPlanPath, {
     method: 'PATCH',
     body: {
@@ -163,10 +165,28 @@ try {
   });
   cleanupPaths.push(nutritionPlanPath);
 
-  info('step 7/8: read smoke nutrition plan document');
+  info('step 7/10: read smoke nutrition plan document');
   await call(nutritionPlanPath);
 
-  info('step 8/8: cleanup smoke documents');
+  info('step 8/10: create smoke workout log document');
+  await call(workoutLogPath, {
+    method: 'PATCH',
+    body: {
+      fields: {
+        id: { stringValue: testId },
+        ownerUid: { stringValue: actorUid },
+        sessionId: { stringValue: testId },
+        sessionName: { stringValue: 'Smoke Session' },
+        createdAt: { stringValue: createdAtIso },
+      },
+    },
+  });
+  cleanupPaths.push(workoutLogPath);
+
+  info('step 9/10: read smoke workout log document');
+  await call(workoutLogPath);
+
+  info('step 10/10: cleanup smoke documents');
 } finally {
   for (const path of cleanupPaths.reverse()) {
     try {
