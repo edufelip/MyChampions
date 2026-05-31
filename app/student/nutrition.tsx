@@ -8,8 +8,11 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
+import { logAssignedMealPortion, getTodayPortionLogs } from '@/features/nutrition/custom-meal-source';
 
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -60,6 +63,66 @@ export default function StudentNutritionScreen() {
   const hasActiveNutritionAssignment = assignedNutritionPlan !== null;
   const hasSelfManagedPlan = selfManagedNutritionPlan !== null;
 
+  const { state: builderState, loadPlan } = useNutritionPlanBuilder(Boolean(currentUser), 'student-assigned');
+  const [loggedMealIds, setLoggedMealIds] = useState<string[]>([]);
+  const [expandedMealIds, setExpandedMealIds] = useState<string[]>([]);
+  const [isLoggingMealId, setIsLoggingMealId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (assignedNutritionPlan) {
+      loadPlan(assignedNutritionPlan.id);
+    }
+  }, [assignedNutritionPlan, loadPlan]);
+
+  useEffect(() => {
+    if (currentUser) {
+      getTodayPortionLogs()
+        .then((logs) => {
+          const ids = logs.map((log) => log.mealId);
+          setLoggedMealIds(ids);
+        })
+        .catch((err) => {
+          console.error('Error loading today portion logs:', err);
+        });
+    }
+  }, [currentUser]);
+
+  const toggleMealExpand = (mealId: string) => {
+    setExpandedMealIds((prev) =>
+      prev.includes(mealId) ? prev.filter((id) => id !== mealId) : [...prev, mealId]
+    );
+  };
+
+  const handleLogMeal = async (meal: { id: string; name: string; items: any[] }) => {
+    if (isWriteLocked || loggedMealIds.includes(meal.id)) return;
+    setIsLoggingMealId(meal.id);
+    try {
+      const snapshot = {
+        calories: 0,
+        carbs: 0,
+        proteins: 0,
+        fats: 0,
+      };
+      for (const item of meal.items || []) {
+        snapshot.calories += Number(item.calories || 0);
+        snapshot.carbs += Number(item.carbs || 0);
+        snapshot.proteins += Number(item.proteins || 0);
+        snapshot.fats += Number(item.fats || 0);
+      }
+      snapshot.calories = Math.round(snapshot.calories);
+      snapshot.carbs = Math.round(snapshot.carbs);
+      snapshot.proteins = Math.round(snapshot.proteins);
+      snapshot.fats = Math.round(snapshot.fats);
+
+      await logAssignedMealPortion(meal.id, meal.name, snapshot);
+      setLoggedMealIds((prev) => [...prev, meal.id]);
+    } catch (err) {
+      console.error('Failed to log meal portion:', err);
+    } finally {
+      setIsLoggingMealId(null);
+    }
+  };
+
   return (
     <DsScreen scheme={scheme} testID="student.nutrition.screen">
       <Stack.Screen options={{ title: t('student.nutrition.title'), headerShown: false }} />
@@ -82,6 +145,178 @@ export default function StudentNutritionScreen() {
             </DsCard>
           ) : hasActiveNutritionAssignment ? (
             <>
+              {builderState.kind === 'loading' ? (
+                <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.planDetailsLoading">
+                  <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+                </DsCard>
+              ) : builderState.kind === 'ready' ? (
+                <>
+                  <DsCard scheme={scheme} style={styles.macroCard} testID="student.nutrition.macroCard">
+                    <View style={styles.macroHeaderRow}>
+                      <View style={[styles.macroIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+                        <MaterialIcons color={theme.color.accentPrimary} name="local-fire-department" size={24} />
+                      </View>
+                      <View style={styles.macroHeaderTextWrap}>
+                        <Text style={[styles.macroHeaderSubtitle, { color: theme.color.textSecondary }]}>
+                          {t('student.nutrition.target_dashboard.title')}
+                        </Text>
+                        <Text style={[styles.macroHeaderTitle, { color: theme.color.textPrimary }]}>
+                          {`${Math.round(builderState.plan.caloriesTarget || 0)} kcal`}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.macroGrid}>
+                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                        <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
+                          {t('common.nutrition.carbs')}
+                        </Text>
+                        <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
+                          {`${Math.round(builderState.plan.carbsTarget || 0)}g`}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                        <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
+                          {t('common.nutrition.proteins')}
+                        </Text>
+                        <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
+                          {`${Math.round(builderState.plan.proteinsTarget || 0)}g`}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                        <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
+                          {t('common.nutrition.fats')}
+                        </Text>
+                        <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
+                          {`${Math.round(builderState.plan.fatsTarget || 0)}g`}
+                        </Text>
+                      </View>
+                    </View>
+                  </DsCard>
+
+                  <View style={styles.mealsSection} testID="student.nutrition.mealsSection">
+                    <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+                      {t('student.nutrition.meals.title')}
+                    </Text>
+
+                    {builderState.plan.meals && builderState.plan.meals.length > 0 ? (
+                      builderState.plan.meals.map((meal) => {
+                        const isExpanded = expandedMealIds.includes(meal.id);
+                        const isLogged = loggedMealIds.includes(meal.id);
+                        const isLogging = isLoggingMealId === meal.id;
+
+                        let mealCal = 0;
+                        let mealCarbs = 0;
+                        let mealProt = 0;
+                        let mealFats = 0;
+                        for (const item of meal.items || []) {
+                          mealCal += Number(item.calories || 0);
+                          mealCarbs += Number(item.carbs || 0);
+                          mealProt += Number(item.proteins || 0);
+                          mealFats += Number(item.fats || 0);
+                        }
+
+                        return (
+                          <DsCard
+                            key={meal.id}
+                            scheme={scheme}
+                            style={styles.mealCard}
+                            testID={`student.nutrition.mealCard.${meal.id}`}
+                          >
+                            <Pressable
+                              accessibilityRole="button"
+                              onPress={() => toggleMealExpand(meal.id)}
+                              style={styles.mealHeaderPressable}
+                            >
+                              <View style={styles.mealHeaderLeft}>
+                                <Text style={[styles.mealName, { color: theme.color.textPrimary }]}>
+                                  {meal.name}
+                                </Text>
+                                <Text style={[styles.mealSummaryText, { color: theme.color.textSecondary }]}>
+                                  {`${Math.round(mealCal)} kcal · ${Math.round(mealCarbs)}g C · ${Math.round(mealProt)}g P · ${Math.round(mealFats)}g F`}
+                                </Text>
+                              </View>
+
+                              <View style={styles.mealHeaderRight}>
+                                {isLogged ? (
+                                  <View style={[styles.loggedBadge, { backgroundColor: theme.color.successSoft }]}>
+                                    <MaterialIcons color={theme.color.success} name="check-circle" size={16} />
+                                    <Text style={[styles.loggedBadgeText, { color: theme.color.success }]}>
+                                      {t('student.nutrition.meal.logged_badge')}
+                                    </Text>
+                                  </View>
+                                ) : (
+                                  <DsPillButton
+                                    scheme={scheme}
+                                    disabled={isWriteLocked}
+                                    label={t('student.nutrition.meal.log_button')}
+                                    loading={isLogging}
+                                    onPress={() => handleLogMeal(meal)}
+                                    style={styles.logButton}
+                                    testID={`student.nutrition.logMealButton.${meal.id}`}
+                                  />
+                                )}
+                                <MaterialIcons
+                                  color={theme.color.textSecondary}
+                                  name={isExpanded ? 'expand-less' : 'expand-more'}
+                                  size={24}
+                                  style={styles.expandIcon}
+                                />
+                              </View>
+                            </Pressable>
+
+                            {isExpanded && (
+                              <View style={styles.mealDetails} testID={`student.nutrition.mealDetails.${meal.id}`}>
+                                <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
+                                
+                                <Text style={[styles.detailsLabel, { color: theme.color.textSecondary }]}>
+                                  {t('student.nutrition.meal.items_label')}
+                                </Text>
+
+                                {meal.items && meal.items.length > 0 ? (
+                                  <View style={styles.itemsList}>
+                                    {meal.items.map((item) => (
+                                      <View key={item.id} style={styles.itemRow}>
+                                        <View style={styles.itemDot} />
+                                        <View style={styles.itemInfo}>
+                                          <Text style={[styles.itemName, { color: theme.color.textPrimary }]}>
+                                            {item.name}
+                                          </Text>
+                                          {Boolean(item.quantity) && (
+                                            <Text style={[styles.itemQuantity, { color: theme.color.textSecondary }]}>
+                                              {item.quantity}
+                                            </Text>
+                                          )}
+                                          {Boolean(item.notes) && (
+                                            <Text style={[styles.itemNotes, { color: theme.color.textSecondary }]}>
+                                              {item.notes}
+                                            </Text>
+                                          )}
+                                        </View>
+                                      </View>
+                                    ))}
+                                  </View>
+                                ) : (
+                                  <Text style={[styles.noItemsText, { color: theme.color.textTertiary }]}>
+                                    No food items.
+                                  </Text>
+                                )}
+                              </View>
+                            )}
+                          </DsCard>
+                        );
+                      })
+                    ) : (
+                      <Text style={[styles.noMealsText, { color: theme.color.textSecondary }]}>
+                        No meals planned for today.
+                      </Text>
+                    )}
+                  </View>
+                </>
+              ) : null}
+
               <WaterWidget waterHook={waterHook} scheme={scheme} t={t} isWriteLocked={isWriteLocked} />
 
               <ReadOnlyNoticeCard
@@ -660,5 +895,162 @@ const styles = StyleSheet.create({
   writeLockText: {
     ...DsTypography.caption,
     marginTop: DsSpace.sm,
+  },
+  macroCard: {
+    gap: 12,
+  },
+  macroHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 4,
+  },
+  macroIconWrap: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  macroHeaderTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  macroHeaderSubtitle: {
+    ...DsTypography.micro,
+  },
+  macroHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: Fonts.rounded,
+  },
+  macroGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  macroItem: {
+    flex: 1,
+    borderRadius: DsRadius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    gap: 2,
+  },
+  macroLabel: {
+    ...DsTypography.micro,
+  },
+  macroValue: {
+    ...DsTypography.button,
+    fontSize: 14,
+  },
+  mealsSection: {
+    gap: 12,
+    marginTop: DsSpace.xs,
+  },
+  sectionTitle: {
+    ...DsTypography.cardTitle,
+    fontFamily: Fonts.rounded,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  mealCard: {
+    padding: DsSpace.sm,
+    gap: DsSpace.sm,
+  },
+  mealHeaderPressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  mealHeaderLeft: {
+    flex: 1,
+    gap: 2,
+    marginRight: 12,
+  },
+  mealHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mealName: {
+    ...DsTypography.button,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  mealSummaryText: {
+    ...DsTypography.caption,
+  },
+  loggedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: DsRadius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  loggedBadgeText: {
+    ...DsTypography.micro,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  logButton: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: DsRadius.pill,
+  },
+  expandIcon: {
+    marginLeft: 4,
+  },
+  mealDetails: {
+    marginTop: DsSpace.xs,
+    gap: DsSpace.xs,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    marginBottom: DsSpace.xs,
+  },
+  detailsLabel: {
+    ...DsTypography.micro,
+    marginBottom: DsSpace.xxs,
+  },
+  itemsList: {
+    gap: DsSpace.xs,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  itemDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#1ea95a',
+    marginTop: 7,
+  },
+  itemInfo: {
+    flex: 1,
+    gap: 1,
+  },
+  itemName: {
+    ...DsTypography.body,
+    fontWeight: '500',
+  },
+  itemQuantity: {
+    ...DsTypography.caption,
+  },
+  itemNotes: {
+    ...DsTypography.caption,
+    fontStyle: 'italic',
+  },
+  noItemsText: {
+    ...DsTypography.caption,
+  },
+  noMealsText: {
+    ...DsTypography.caption,
+    textAlign: 'center',
+    marginVertical: DsSpace.md,
   },
 });

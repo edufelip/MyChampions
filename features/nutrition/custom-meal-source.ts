@@ -59,7 +59,7 @@ type FirestoreMealShareLink = {
   createdAt: string;
 };
 
-type FirestorePortionLog = {
+export type FirestorePortionLog = {
   id: string;
   ownerUid: string;
   mealId: string;
@@ -425,6 +425,60 @@ export async function logPortionFromSource(
         loggedAt: nowIso(),
       } satisfies FirestorePortionLog);
     });
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
+  }
+}
+
+export async function logAssignedMealPortion(
+  mealId: string,
+  name: string,
+  snapshot: {
+    calories: number;
+    carbs: number;
+    proteins: number;
+    fats: number;
+  },
+  deps = defaultDeps
+): Promise<void> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+    const id = generateId('portion_log');
+    const timestamp = nowIso();
+    
+    await runTransaction(firestore, async (tx) => {
+      tx.set(doc(firestore, 'portionLogs', id), {
+        id,
+        ownerUid: uid,
+        mealId,
+        consumedGrams: 0,
+        snapshot,
+        loggedAt: timestamp,
+      } satisfies FirestorePortionLog);
+    });
+  } catch (error) {
+    throw normalizeCustomMealSourceError(error);
+  }
+}
+
+export async function getTodayPortionLogs(deps = defaultDeps): Promise<FirestorePortionLog[]> {
+  try {
+    const firestore = deps.getFirestoreInstance();
+    const uid = deps.getCurrentAuthUid();
+    
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayStartIso = todayStart.toISOString();
+
+    const q = query(
+      collection(firestore, 'portionLogs'),
+      where('ownerUid', '==', uid),
+      where('loggedAt', '>=', todayStartIso)
+    );
+
+    const snap = await getDocs(q);
+    return snap.docs.map((docSnap) => docSnap.data() as FirestorePortionLog);
   } catch (error) {
     throw normalizeCustomMealSourceError(error);
   }
