@@ -3,9 +3,11 @@ import assert from 'node:assert';
 
 // 1. Setup dynamic variables that the test mock will use
 let currentSpecialty: 'nutritionist' | 'fitness_coach' = 'nutritionist';
+let currentStatus = 'pending_confirmation';
 let queriedCollection: string | null = null;
 let queryClauses: any[] = [];
 let txUpdates: Array<{ ref: any; data: any }> = [];
+let txSets: Array<{ ref: any; data: any; options?: any }> = [];
 
 // 2. Define the mock functions
 const mockDoc = (db: any, path: string, ...segments: string[]) => {
@@ -62,7 +64,7 @@ const mockRunTransaction = async (db: any, updateFunction: any) => {
             studentAuthUid: 'student-456',
             professionalAuthUid: 'prof-789',
             specialty: currentSpecialty,
-            status: 'pending_confirmation'
+            status: currentStatus
           })
         } as any;
       }
@@ -71,7 +73,9 @@ const mockRunTransaction = async (db: any, updateFunction: any) => {
     update: (ref: any, data: any) => {
       txUpdates.push({ ref, data });
     },
-    set: () => {},
+    set: (ref: any, data: any, options?: any) => {
+      txSets.push({ ref, data, options });
+    },
     delete: () => {}
   } as any;
 
@@ -101,14 +105,16 @@ require.cache[firestorePath] = {
 } as any;
 
 // 4. NOW import the module under test
-const { confirmPendingConnection } = require('./connection-source');
+const { confirmPendingConnection, endConnection } = require('./connection-source');
 
 test('TDD: confirmPendingConnection archives self_managed nutrition plans for nutritionist specialty', async (t) => {
 
   currentSpecialty = 'nutritionist';
+  currentStatus = 'pending_confirmation';
   queriedCollection = null;
   queryClauses = [];
   txUpdates = [];
+  txSets = [];
 
   const mockDeps = {
     getFirestoreInstance: () => ({}) as any,
@@ -141,14 +147,24 @@ test('TDD: confirmPendingConnection archives self_managed nutrition plans for nu
   assert.ok(planUpdate, 'Should update the nutrition plan');
   assert.equal(planUpdate.data.isArchived, true, 'isArchived should be set to true');
   assert.ok(planUpdate.data.updatedAt, 'updatedAt should be set');
+
+  const accessSet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/nutritionists/prof-789');
+  assert.ok(accessSet, 'Should create nutritionist tracking access document');
+  assert.equal(accessSet.data.connectionId, 'conn-123');
+  assert.equal(accessSet.data.studentAuthUid, 'student-456');
+  assert.equal(accessSet.data.professionalAuthUid, 'prof-789');
+  assert.equal(accessSet.data.specialty, 'nutritionist');
+  assert.equal(accessSet.data.status, 'active');
 });
 
 test('TDD: confirmPendingConnection archives self_managed training plans for fitness_coach specialty', async (t) => {
 
   currentSpecialty = 'fitness_coach';
+  currentStatus = 'pending_confirmation';
   queriedCollection = null;
   queryClauses = [];
   txUpdates = [];
+  txSets = [];
 
   const mockDeps = {
     getFirestoreInstance: () => ({}) as any,
@@ -181,6 +197,38 @@ test('TDD: confirmPendingConnection archives self_managed training plans for fit
   assert.ok(planUpdate, 'Should update the training plan');
   assert.equal(planUpdate.data.isArchived, true, 'isArchived should be set to true');
   assert.ok(planUpdate.data.updatedAt, 'updatedAt should be set');
+
+  const accessSet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/fitnessCoaches/prof-789');
+  assert.ok(accessSet, 'Should create fitness coach tracking access document');
+  assert.equal(accessSet.data.connectionId, 'conn-123');
+  assert.equal(accessSet.data.studentAuthUid, 'student-456');
+  assert.equal(accessSet.data.professionalAuthUid, 'prof-789');
+  assert.equal(accessSet.data.specialty, 'fitness_coach');
+  assert.equal(accessSet.data.status, 'active');
+});
+
+test('TDD: endConnection marks tracking access ended for connection specialty', async (t) => {
+  currentSpecialty = 'nutritionist';
+  currentStatus = 'active';
+  txUpdates = [];
+  txSets = [];
+
+  const mockDeps = {
+    getFirestoreInstance: () => ({}) as any,
+    getCurrentAuthUid: () => 'student-456',
+  };
+
+  await endConnection('conn-123', mockDeps);
+
+  const connUpdate = txUpdates.find(u => u.ref.path === 'connections/conn-123');
+  assert.ok(connUpdate, 'Connection update should be called');
+  assert.equal(connUpdate.data.status, 'ended');
+
+  const accessSet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/nutritionists/prof-789');
+  assert.ok(accessSet, 'Should mark nutritionist tracking access ended');
+  assert.equal(accessSet.data.connectionId, 'conn-123');
+  assert.equal(accessSet.data.status, 'ended');
+  assert.deepEqual(accessSet.options, { merge: true });
 });
 
 // Restore original implementations at the end of the test file

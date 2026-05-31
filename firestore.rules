@@ -22,6 +22,29 @@ service cloud.firestore {
         request.resource.data.lockedRole == resource.data.lockedRole;
     }
 
+    function connectionIdentityUnchanged() {
+      return request.resource.data.id == resource.data.id &&
+        request.resource.data.studentAuthUid == resource.data.studentAuthUid &&
+        request.resource.data.professionalAuthUid == resource.data.professionalAuthUid &&
+        request.resource.data.specialty == resource.data.specialty &&
+        request.resource.data.sourceInviteCodeId == resource.data.sourceInviteCodeId &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function validConnectionStatusTransition() {
+      return (
+        resource.data.status == 'pending_confirmation' &&
+        request.auth.uid == resource.data.professionalAuthUid &&
+        request.resource.data.status == 'active' &&
+        request.resource.data.canceledReason == null &&
+        request.resource.data.endedAt == null
+      ) || (
+        (resource.data.status == 'pending_confirmation' || resource.data.status == 'active') &&
+        request.resource.data.status == 'ended' &&
+        request.resource.data.endedAt is string
+      );
+    }
+
     function ownsPlan(planId) {
       return (
         exists(/databases/$(database)/documents/nutritionPlans/$(planId)) &&
@@ -30,6 +53,43 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/trainingPlans/$(planId)) &&
         get(/databases/$(database)/documents/trainingPlans/$(planId)).data.ownerProfessionalUid == request.auth.uid
       );
+    }
+
+    function hasActiveNutritionistTrackingAccess(ownerUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/trackingAccess/$(ownerUid)/nutritionists/$(request.auth.uid)) &&
+        exists(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/nutritionists/$(request.auth.uid)).data.connectionId)) &&
+        get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/nutritionists/$(request.auth.uid)).data.status == 'active' &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/nutritionists/$(request.auth.uid)).data.connectionId)).data.status == 'active' &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/nutritionists/$(request.auth.uid)).data.connectionId)).data.studentAuthUid == ownerUid &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/nutritionists/$(request.auth.uid)).data.connectionId)).data.professionalAuthUid == request.auth.uid &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/nutritionists/$(request.auth.uid)).data.connectionId)).data.specialty == 'nutritionist';
+    }
+
+    function hasActiveFitnessCoachTrackingAccess(ownerUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)) &&
+        exists(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)) &&
+        get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.status == 'active' &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)).data.status == 'active' &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)).data.studentAuthUid == ownerUid &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)).data.professionalAuthUid == request.auth.uid &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)).data.specialty == 'fitness_coach';
+    }
+
+    function validTrackingAccessWrite(studentUid, professionalUid, specialty) {
+      return signedIn() &&
+        (request.auth.uid == studentUid || request.auth.uid == professionalUid) &&
+        request.resource.data.studentAuthUid == studentUid &&
+        request.resource.data.professionalAuthUid == professionalUid &&
+        request.resource.data.specialty == specialty &&
+        request.resource.data.connectionId is string &&
+        (request.resource.data.status == 'active' || request.resource.data.status == 'ended') &&
+        exists(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)) &&
+        getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.studentAuthUid == studentUid &&
+        getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.professionalAuthUid == professionalUid &&
+        getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.specialty == specialty &&
+        getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.status == request.resource.data.status;
     }
 
     match /userProfiles/{userId} {
@@ -47,7 +107,10 @@ service cloud.firestore {
     match /connections/{connectionId} {
       allow read: if isConnectionParticipant();
       allow create: if signedIn() && request.resource.data.studentAuthUid == request.auth.uid;
-      allow update, delete: if isConnectionParticipant();
+      allow update: if isConnectionParticipant() &&
+        connectionIdentityUnchanged() &&
+        validConnectionStatusTransition();
+      allow delete: if false;
     }
 
     match /specialties/{specialtyId} {
@@ -102,22 +165,22 @@ service cloud.firestore {
       );
     }
 
-    function hasActiveSpecialtyConnection(ownerUid, specialtyStr) {
-      return signedIn() && exists(/databases/$(database)/documents/connections) && 
-        (
-          getDocs(/databases/$(database)/documents/connections, 
-            where('studentAuthUid', '==', ownerUid),
-            where('professionalAuthUid', '==', request.auth.uid),
-            where('specialty', '==', specialtyStr),
-            where('status', '==', 'active')
-          ).size > 0
-        );
+    match /trackingAccess/{studentUid}/nutritionists/{professionalUid} {
+      allow read: if signedIn() && (request.auth.uid == studentUid || request.auth.uid == professionalUid);
+      allow create, update: if validTrackingAccessWrite(studentUid, professionalUid, 'nutritionist');
+      allow delete: if false;
+    }
+
+    match /trackingAccess/{studentUid}/fitnessCoaches/{professionalUid} {
+      allow read: if signedIn() && (request.auth.uid == studentUid || request.auth.uid == professionalUid);
+      allow create, update: if validTrackingAccessWrite(studentUid, professionalUid, 'fitness_coach');
+      allow delete: if false;
     }
 
     match /waterLogs/{logId} {
       allow read: if signedIn() && (
         resource.data.ownerUid == request.auth.uid ||
-        hasActiveSpecialtyConnection(resource.data.ownerUid, 'nutritionist')
+        hasActiveNutritionistTrackingAccess(resource.data.ownerUid)
       );
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
@@ -126,15 +189,10 @@ service cloud.firestore {
     match /waterGoals/{goalId} {
       allow read: if signedIn() && (
         goalId == request.auth.uid ||
-        hasActiveSpecialtyConnection(goalId, 'nutritionist')
+        hasActiveNutritionistTrackingAccess(goalId)
       );
-      allow create: if signedIn() && (
-        goalId == request.auth.uid && request.resource.data.ownerUid == request.auth.uid
-      );
-      allow update, delete: if signedIn() && (
-        goalId == request.auth.uid ||
-        hasActiveSpecialtyConnection(goalId, 'nutritionist')
-      );
+      allow create: if signedIn() && goalId == request.auth.uid && request.resource.data.ownerUid == goalId;
+      allow update, delete: if signedIn() && goalId == request.auth.uid;
     }
 
     match /customMeals/{mealId} {
@@ -151,7 +209,7 @@ service cloud.firestore {
     match /portionLogs/{logId} {
       allow read: if signedIn() && (
         resource.data.ownerUid == request.auth.uid ||
-        hasActiveSpecialtyConnection(resource.data.ownerUid, 'nutritionist')
+        hasActiveNutritionistTrackingAccess(resource.data.ownerUid)
       );
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
@@ -160,7 +218,7 @@ service cloud.firestore {
     match /workoutLogs/{logId} {
       allow read: if signedIn() && (
         resource.data.ownerUid == request.auth.uid ||
-        hasActiveSpecialtyConnection(resource.data.ownerUid, 'fitness_coach')
+        hasActiveFitnessCoachTrackingAccess(resource.data.ownerUid)
       );
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;

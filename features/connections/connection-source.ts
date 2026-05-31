@@ -68,6 +68,28 @@ const defaultConnectionSourceDeps: ConnectionSourceDeps = {
   getCurrentAuthUid: _getCurrentAuthUid,
 };
 
+function getTrackingAccessRef(firestore: Firestore, connection: FirestoreConnection) {
+  const readerCollection = connection.specialty === 'fitness_coach' ? 'fitnessCoaches' : 'nutritionists';
+  return doc(
+    firestore,
+    'trackingAccess',
+    connection.studentAuthUid,
+    readerCollection,
+    connection.professionalAuthUid
+  );
+}
+
+function buildTrackingAccessRecord(connection: FirestoreConnection, status: 'active' | 'ended') {
+  return {
+    connectionId: connection.id,
+    studentAuthUid: connection.studentAuthUid,
+    professionalAuthUid: connection.professionalAuthUid,
+    specialty: connection.specialty,
+    status,
+    updatedAt: nowIso(),
+  };
+}
+
 function normalizeConnectionSourceError(error: unknown): ConnectionSourceError {
   if (error instanceof ConnectionSourceError) return error;
 
@@ -200,6 +222,8 @@ export async function confirmPendingConnection(
         updatedAt: nowIso(),
       });
 
+      tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'active'), { merge: true });
+
       selfManagedSnaps.forEach((docSnap) => {
         tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso() });
       });
@@ -237,6 +261,8 @@ export async function endConnection(
         endedAt: nowIso(),
         updatedAt: nowIso(),
       });
+
+      tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
     });
   } catch (error) {
     throw normalizeConnectionSourceError(error);
