@@ -4,6 +4,10 @@
 node_modules/
 .npm-cache/
 
+# lockfiles are local; package management should use yarn commands
+package-lock.json
+yarn.lock
+
 # Expo
 .expo/
 dist/
