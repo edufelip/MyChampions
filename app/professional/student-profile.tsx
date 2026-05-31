@@ -47,6 +47,7 @@ import {
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import type { PlanChangeRequest } from '@/features/plans/plan-change-request.logic';
 import { usePlans } from '@/features/plans/use-plans';
+import { usePlansStore } from '@/features/plans/plans-store';
 import {
   getProfessionalStudentAssignmentSnapshot,
   unbindStudentConnections,
@@ -83,7 +84,14 @@ export default function ProfessionalStudentProfileScreen() {
   });
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
-  const { state: plansState, getChangeRequestsForStudent, reviewChangeRequest, bulkAssign } = usePlans(Boolean(currentUser));
+  const {
+    state: plansState,
+    getChangeRequestsForStudent,
+    reviewChangeRequest,
+    bulkAssign,
+    createDraftAssignedPlan,
+    reload: reloadPlans,
+  } = usePlans(Boolean(currentUser));
   const [changeRequests, setChangeRequests] = useState<PlanChangeRequest[]>([]);
   const [changeRequestsLoadError, setChangeRequestsLoadError] = useState<string | null>(null);
   const [changeRequestsActionError, setChangeRequestsActionError] = useState<string | null>(null);
@@ -190,18 +198,80 @@ export default function ProfessionalStudentProfileScreen() {
     setIsPlanPickerVisible(true);
   };
 
+  const deleteNutritionPlanAction = usePlansStore((s) => s.deleteNutritionPlanAction);
+  const deleteTrainingPlanAction = usePlansStore((s) => s.deleteTrainingPlanAction);
+
+  const studentNutritionPlans = plansState.kind === 'ready' 
+    ? plansState.plans.filter(p => p.studentUid === studentId && p.planType === 'nutrition' && !p.isArchived)
+    : [];
+  const draftNutritionPlan = studentNutritionPlans.find(p => p.isDraft) ?? null;
+  const activeNutritionPlan = studentNutritionPlans.find(p => !p.isDraft) ?? null;
+
+  const studentTrainingPlans = plansState.kind === 'ready' 
+    ? plansState.plans.filter(p => p.studentUid === studentId && p.planType === 'training' && !p.isArchived)
+    : [];
+  const draftTrainingPlan = studentTrainingPlans.find(p => p.isDraft) ?? null;
+  const activeTrainingPlan = studentTrainingPlans.find(p => !p.isDraft) ?? null;
+
+  const handleDiscardDraft = useCallback(
+    async (planId: string, planType: 'nutrition' | 'training') => {
+      if (!currentUser) return;
+      setIsAssigning(true);
+      const action = planType === 'nutrition' ? deleteNutritionPlanAction : deleteTrainingPlanAction;
+      const error = await action(Boolean(currentUser), planId);
+      setIsAssigning(false);
+
+      if (error) {
+        Alert.alert(t('pro.plan.discard.error' as any) as string || 'Error discarding draft');
+      } else {
+        Alert.alert(t('pro.plan.discard.success' as any) as string || 'Draft discarded successfully');
+        reloadPlans();
+        void loadAssignments();
+      }
+    },
+    [currentUser, deleteNutritionPlanAction, deleteTrainingPlanAction, t, reloadPlans, loadAssignments]
+  );
+
+  const confirmDiscardDraft = useCallback(
+    (planId: string, planType: 'nutrition' | 'training') => {
+      Alert.alert(
+        t('pro.plan.discard.title') as string,
+        t('pro.plan.discard.body') as string,
+        [
+          { text: t('pro.plan.discard.no') as string, style: 'cancel' },
+          {
+            text: t('pro.plan.discard.yes') as string,
+            style: 'destructive',
+            onPress: () => {
+              void handleDiscardDraft(planId, planType);
+            },
+          },
+        ]
+      );
+    },
+    [handleDiscardDraft, t]
+  );
+
+  const onViewPlan = useCallback((planId: string) => {
+    const plan = plansState.kind === 'ready' ? plansState.plans.find(p => p.id === planId) : null;
+    if (!plan) return;
+    router.push(`/professional/${plan.planType}/plans/${planId}`);
+  }, [plansState, router]);
+
   const handleAssignPlan = async (planId: string) => {
     if (!studentId) return;
     setIsPlanPickerVisible(false);
     setIsAssigning(true);
-    const result = await bulkAssign(planId, [studentId]);
+    const result = await createDraftAssignedPlan(planId, studentId);
     setIsAssigning(false);
 
     if ('error' in result) {
       Alert.alert(t('pro.plan.assign.error') as string);
     } else {
       Alert.alert(t('pro.plan.assign.success') as string);
+      reloadPlans();
       void loadAssignments();
+      router.push(`/professional/${pickerPlanType}/plans/${result.id}`);
     }
   };
 
@@ -268,6 +338,10 @@ export default function ProfessionalStudentProfileScreen() {
         testID="pro.student_profile.nutrition"
         onAssign={() => handleOpenPicker('nutrition')}
         isWriteLocked={isWriteLocked}
+        activePlan={activeNutritionPlan ? { id: activeNutritionPlan.id, name: activeNutritionPlan.name ?? 'Nutrition Plan' } : null}
+        draftPlan={draftNutritionPlan ? { id: draftNutritionPlan.id, name: draftNutritionPlan.name ?? 'Nutrition Plan' } : null}
+        onViewPlan={onViewPlan}
+        onDiscardDraft={(planId) => confirmDiscardDraft(planId, 'nutrition')}
       />
 
       <AssignmentCard
@@ -279,6 +353,10 @@ export default function ProfessionalStudentProfileScreen() {
         testID="pro.student_profile.training"
         onAssign={() => handleOpenPicker('training')}
         isWriteLocked={isWriteLocked}
+        activePlan={activeTrainingPlan ? { id: activeTrainingPlan.id, name: activeTrainingPlan.name ?? 'Training Plan' } : null}
+        draftPlan={draftTrainingPlan ? { id: draftTrainingPlan.id, name: draftTrainingPlan.name ?? 'Training Plan' } : null}
+        onViewPlan={onViewPlan}
+        onDiscardDraft={(planId) => confirmDiscardDraft(planId, 'training')}
       />
 
       {(nutritionStatus === 'active' || trainingStatus === 'active') && !isWriteLocked ? (
@@ -342,6 +420,10 @@ function AssignmentCard({
   testID,
   onAssign,
   isWriteLocked,
+  activePlan,
+  draftPlan,
+  onViewPlan,
+  onDiscardDraft,
 }: {
   specialtyLabel: string;
   status: AssignmentStatus;
@@ -351,29 +433,78 @@ function AssignmentCard({
   testID: string;
   onAssign: () => void;
   isWriteLocked: boolean;
+  activePlan: { id: string; name: string } | null;
+  draftPlan: { id: string; name: string } | null;
+  onViewPlan: (planId: string) => void;
+  onDiscardDraft: (planId: string) => void;
 }) {
-  const statusLabel =
-    status === 'active'
-      ? t('pro.student_profile.assignment.active')
-      : status === 'pending'
-      ? t('pro.student_profile.assignment.pending')
-      : t('pro.student_profile.assignment.none');
+  let statusLabel = '';
+  let statusColor = theme.color.textSecondary;
 
-  const statusColor =
-    status === 'active'
-      ? theme.color.success
-      : status === 'pending'
-      ? theme.color.textSecondary
-      : `${theme.color.textSecondary}99`;
+  if (status === 'active') {
+    if (draftPlan) {
+      statusLabel = t('pro.student_profile.assignment.draft_pending' as any) || 'Draft (Pending Send)';
+      statusColor = theme.color.warning;
+    } else if (activePlan) {
+      const activeText = t('pro.student_profile.assignment.active') || 'Active';
+      statusLabel = `${activeText}: ${activePlan.name}`;
+      statusColor = theme.color.success;
+    } else {
+      statusLabel = t('pro.student_profile.assignment.awaiting' as any) || 'Active (Awaiting Plan)';
+      statusColor = theme.color.textSecondary;
+    }
+  } else if (status === 'pending') {
+    statusLabel = t('pro.student_profile.assignment.pending') || 'Pending Confirmation';
+    statusColor = theme.color.textSecondary;
+  } else {
+    statusLabel = t('pro.student_profile.assignment.none') || 'No Connection';
+    statusColor = theme.color.textSecondary;
+  }
 
-  return (
-    <DsCard scheme={scheme} testID={`${testID}.assignmentCard`}>
-      <View style={styles.assignmentHeader}>
-        <View accessibilityLabel={`${specialtyLabel}: ${statusLabel as string}`} style={{ flex: 1 }}>
-          <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{specialtyLabel}</Text>
-          <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
-        </View>
-        {status === 'none' && !isWriteLocked && (
+  // Determine what buttons to render
+  const renderActions = () => {
+    if (isWriteLocked) return null;
+
+    if (status === 'active') {
+      if (draftPlan) {
+        return (
+          <View style={styles.draftActionsRow}>
+            <DsPillButton
+              scheme={scheme}
+              variant="primary"
+              size="sm"
+              label={t('pro.student_profile.assignment.cta_resume_draft' as any) || 'Resume Draft'}
+              onPress={() => onViewPlan(draftPlan.id)}
+              fullWidth={false}
+              testID={`${testID}.cta_resume_draft`}
+            />
+            <DsPillButton
+              scheme={scheme}
+              variant="outline"
+              size="sm"
+              label={t('pro.student_profile.assignment.cta_discard' as any) || 'Discard'}
+              onPress={() => onDiscardDraft(draftPlan.id)}
+              contentColor={theme.color.danger}
+              style={{ borderColor: theme.color.danger }}
+              fullWidth={false}
+              testID={`${testID}.cta_discard`}
+            />
+          </View>
+        );
+      } else if (activePlan) {
+        return (
+          <DsPillButton
+            scheme={scheme}
+            variant="outline"
+            size="sm"
+            label={t('pro.student_profile.assignment.cta_view_edit' as any) || 'View/Edit Assigned Plan'}
+            onPress={() => onViewPlan(activePlan.id)}
+            fullWidth={false}
+            testID={`${testID}.cta_view_edit`}
+          />
+        );
+      } else {
+        return (
           <DsPillButton
             scheme={scheme}
             variant="outline"
@@ -381,9 +512,44 @@ function AssignmentCard({
             label={t('pro.student_profile.assignment.cta_assign')}
             onPress={onAssign}
             fullWidth={false}
+            testID={`${testID}.cta_assign`}
           />
-        )}
+        );
+      }
+    } else if (status === 'none') {
+      return (
+        <DsPillButton
+          scheme={scheme}
+          variant="outline"
+          size="sm"
+          label={t('pro.student_profile.assignment.cta_assign')}
+          onPress={onAssign}
+          fullWidth={false}
+          testID={`${testID}.cta_assign`}
+        />
+      );
+    }
+    return null;
+  };
+
+  return (
+    <DsCard scheme={scheme} testID={`${testID}.assignmentCard`}>
+      <View style={styles.assignmentHeader}>
+        <View accessibilityLabel={`${specialtyLabel}: ${statusLabel}`} style={{ flex: 1 }}>
+          <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{specialtyLabel}</Text>
+          <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
+        </View>
+        {status !== 'active' || !draftPlan ? (
+          <View style={styles.assignmentCtaContainer}>
+            {renderActions()}
+          </View>
+        ) : null}
       </View>
+      {status === 'active' && draftPlan ? (
+        <View style={styles.draftActionsContainer}>
+          {renderActions()}
+        </View>
+      ) : null}
     </DsCard>
   );
 }
@@ -535,6 +701,17 @@ const styles = StyleSheet.create({
   assignmentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: DsSpace.sm,
+  },
+  assignmentCtaContainer: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  draftActionsContainer: {
+    marginTop: DsSpace.md,
+  },
+  draftActionsRow: {
+    flexDirection: 'row',
     gap: DsSpace.sm,
   },
   // Modal

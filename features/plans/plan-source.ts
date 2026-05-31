@@ -34,6 +34,7 @@ export type Plan = {
   ownerProfessionalUid: string | null;
   studentUid: string;
   isArchived: boolean;
+  isDraft?: boolean;
   name: string | null;
   createdAt: string;
   updatedAt: string;
@@ -225,6 +226,7 @@ function toPlanFromTraining(raw: FirestoreTrainingPlan): Plan {
     ownerProfessionalUid: raw.ownerProfessionalUid ?? null,
     studentUid: raw.studentAuthUid,
     isArchived: raw.isArchived,
+    isDraft: raw.isDraft,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
