@@ -8,23 +8,24 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
-import { ReadOnlyNoticeCard } from '@/components/ds/patterns/ReadOnlyNoticeCard';
 import { WeekStrip, type WeekStripItem } from '@/components/ds/patterns/WeekStrip';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import { DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
+import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
 import { usePlans } from '@/features/plans/use-plans';
+import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
+import { logWorkoutSession, getTodayWorkoutLogs, type FirestoreWorkoutLog } from '@/features/training/workout-log-source';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -78,6 +79,62 @@ export default function StudentTrainingScreen() {
   const hasSelfManagedPlan = selfManagedTrainingPlan !== null;
   const weekStrip = useMemo(() => getWeekStrip(locale), [locale]);
 
+  const { state: builderState, loadPlan } = useTrainingPlanBuilder(Boolean(currentUser), 'student-assigned');
+  const [todayWorkoutLogs, setTodayWorkoutLogs] = useState<FirestoreWorkoutLog[]>([]);
+  const [expandedSessionIds, setExpandedSessionIds] = useState<string[]>([]);
+  const [isLoggingSessionId, setIsLoggingSessionId] = useState<string | null>(null);
+
+  const loggingSessionsRef = useRef(new Set<string>());
+  const loggedSessionIds = todayWorkoutLogs.map((log) => log.sessionId);
+
+  useEffect(() => {
+    if (assignedTrainingPlan) {
+      loadPlan(assignedTrainingPlan.id);
+    }
+  }, [assignedTrainingPlan, loadPlan]);
+
+  useEffect(() => {
+    if (currentUser) {
+      getTodayWorkoutLogs()
+        .then((logs) => {
+          setTodayWorkoutLogs(logs);
+        })
+        .catch((err) => {
+          console.error('Error loading today workout logs:', err);
+        });
+    }
+  }, [currentUser]);
+
+  const toggleSessionExpand = (sessionId: string) => {
+    setExpandedSessionIds((prev) =>
+      prev.includes(sessionId) ? prev.filter((id) => id !== sessionId) : [...prev, sessionId]
+    );
+  };
+
+  const handleLogWorkout = async (sessionId: string, sessionName: string) => {
+    if (isWriteLocked || loggedSessionIds.includes(sessionId) || loggingSessionsRef.current.has(sessionId)) return;
+
+    loggingSessionsRef.current.add(sessionId);
+    setIsLoggingSessionId(sessionId);
+    try {
+      await logWorkoutSession(sessionId, sessionName);
+      const newLog: FirestoreWorkoutLog = {
+        id: Math.random().toString(),
+        ownerUid: currentUser?.uid || '',
+        sessionId,
+        sessionName,
+        createdAt: new Date().toISOString(),
+      };
+      setTodayWorkoutLogs((prev) => [...prev, newLog]);
+    } catch (err) {
+      console.error('Failed to log workout session:', err);
+      Alert.alert(t('common.error.generic'), t('student.training.plan_change.error.unknown') || 'Something went wrong. Try again.');
+    } finally {
+      loggingSessionsRef.current.delete(sessionId);
+      setIsLoggingSessionId(null);
+    }
+  };
+
   return (
     <DsScreen scheme={scheme} testID="student.training.screen">
       <Stack.Screen options={{ title: t('student.training.title'), headerShown: false }} />
@@ -101,23 +158,113 @@ export default function StudentTrainingScreen() {
           </DsCard>
         ) : hasActiveTrainingAssignment ? (
           <View style={styles.sectionStack}>
-            <ReadOnlyNoticeCard
-              scheme={scheme}
-              text={t('student.training.assigned_plan.read_only_notice')}
-              testID="student.training.assignedPlanNotice"
-            />
+            {builderState.kind === 'loading' ? (
+              <DsCard scheme={scheme} style={styles.loadingCard}>
+                <ActivityIndicator color={theme.color.accentPrimary} />
+              </DsCard>
+            ) : builderState.kind === 'ready' && builderState.plan ? (
+              <View style={{ gap: DsSpace.md }}>
+                <Text style={[styles.guidedTitle, { color: theme.color.textPrimary }]}>
+                  {t('student.training.session.title')}
+                </Text>
+                {builderState.plan.sessions && builderState.plan.sessions.length > 0 ? (
+                  builderState.plan.sessions.map((session) => {
+                    const isExpanded = expandedSessionIds.includes(session.id);
+                    const isLogged = loggedSessionIds.includes(session.id);
+                    const isLoggingThis = isLoggingSessionId === session.id;
 
-            <DsCard scheme={scheme} style={styles.sessionCard} testID="student.training.sessionSummary">
-              <View style={[styles.sessionIconBubble, { backgroundColor: theme.color.warningSoft }]}>
-                <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={34} />
+                    return (
+                      <DsCard scheme={scheme} key={session.id} style={styles.workoutCard} testID={`student.training.sessionCard-${session.id}`}>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => toggleSessionExpand(session.id)}
+                          style={styles.workoutHeaderRow}
+                        >
+                          <View style={styles.workoutHeaderLeft}>
+                            <View style={[styles.workoutIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+                              <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={24} />
+                            </View>
+                            <View style={styles.workoutTitleBlock}>
+                              <Text style={[styles.workoutTitle, { color: theme.color.textPrimary }]}>
+                                {session.name}
+                              </Text>
+                              <Text style={[styles.workoutSubtitle, { color: theme.color.textSecondary }]}>
+                                {t('student.training.exercise_count', { count: session.items?.length || 0 })}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={styles.workoutHeaderRight}>
+                            <DsPillButton
+                              scheme={scheme}
+                              disabled={isWriteLocked || isLogged}
+                              loading={isLoggingThis}
+                              label={isLogged ? t('student.training.cta_logged') : t('student.training.cta_log')}
+                              leftIcon={
+                                isLogged ? (
+                                  <MaterialIcons color={theme.color.success} name="check-circle" size={18} />
+                                ) : undefined
+                              }
+                              onPress={() => handleLogWorkout(session.id, session.name)}
+                              variant={isLogged ? 'outline' : 'primary'}
+                              style={styles.logButton}
+                              testID={`student.training.logBtn-${session.id}`}
+                            />
+                            <MaterialIcons
+                              color={theme.color.textSecondary}
+                              name={isExpanded ? 'expand-less' : 'expand-more'}
+                              size={24}
+                              style={{ marginLeft: 4 }}
+                            />
+                          </View>
+                        </Pressable>
+
+                        {isExpanded && (
+                          <View style={[styles.exerciseList, { borderTopColor: theme.color.border }]}>
+                            {session.items && session.items.length > 0 ? (
+                              session.items.map((item, idx) => (
+                                <View
+                                  key={item.id}
+                                  style={[
+                                    styles.exerciseItem,
+                                    idx > 0 && { borderTopWidth: 1, borderTopColor: theme.color.border },
+                                  ]}
+                                >
+                                  <View style={styles.exerciseHeader}>
+                                    <View style={[styles.itemDot, { backgroundColor: theme.color.accentPrimary }]} />
+                                    <Text style={[styles.exerciseName, { color: theme.color.textPrimary }]}>
+                                      {item.name}
+                                    </Text>
+                                  </View>
+                                  {item.quantity ? (
+                                    <Text style={[styles.exerciseQty, { color: theme.color.textSecondary }]}>
+                                      {item.quantity}
+                                    </Text>
+                                  ) : null}
+                                  {item.notes ? (
+                                    <Text style={[styles.exerciseNotes, { color: theme.color.textSecondary }]}>
+                                      {item.notes}
+                                    </Text>
+                                  ) : null}
+                                </View>
+                              ))
+                            ) : (
+                              <Text style={[styles.noExercisesText, { color: theme.color.textSecondary }]}>
+                                {t('student.training.no_exercises')}
+                              </Text>
+                            )}
+                          </View>
+                        )}
+                      </DsCard>
+                    );
+                  })
+                ) : (
+                  <Text style={[styles.noExercisesText, { color: theme.color.textSecondary }]}>
+                    {t('student.training.no_sessions')}
+                  </Text>
+                )}
               </View>
-              <Text style={[styles.sessionTitle, { color: theme.color.textPrimary }]}>
-                {t('student.training.session.title')}
-              </Text>
-              <Text style={[styles.sessionBody, { color: theme.color.textSecondary }]}>
-                {t('student.training.session.body')}
-              </Text>
-            </DsCard>
+            ) : null}
 
             <PlanChangeRequestCard
               scheme={scheme}
@@ -338,29 +485,10 @@ const styles = StyleSheet.create({
     ...DsTypography.button,
     fontSize: 14,
   },
-  sessionCard: {
-    alignItems: 'center',
-    gap: DsSpace.sm,
-    paddingVertical: 22,
-  },
-  sessionIconBubble: {
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderRadius: 38,
-    height: 76,
-    justifyContent: 'center',
-    width: 76,
-  },
-  sessionTitle: {
+  guidedTitle: {
     ...DsTypography.cardTitle,
+    fontSize: 20,
     fontFamily: Fonts.rounded,
-    fontSize: 24,
-    textAlign: 'center',
-  },
-  sessionBody: {
-    ...DsTypography.body,
-    maxWidth: 300,
-    textAlign: 'center',
   },
   selfManagedHeader: {
     alignItems: 'center',
@@ -387,5 +515,87 @@ const styles = StyleSheet.create({
   },
   selfManagedCta: {
     marginTop: DsSpace.xs,
+  },
+  workoutCard: {
+    padding: DsSpace.md,
+    gap: DsSpace.xs,
+  },
+  workoutHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  workoutHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DsSpace.sm,
+    flex: 1,
+    marginRight: 8,
+  },
+  workoutIconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+  },
+  workoutTitleBlock: {
+    gap: 2,
+    flex: 1,
+  },
+  workoutTitle: {
+    ...DsTypography.cardTitle,
+    fontSize: 16,
+  },
+  workoutSubtitle: {
+    ...DsTypography.micro,
+  },
+  workoutHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logButton: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+  },
+  exerciseList: {
+    marginTop: DsSpace.md,
+    paddingTop: DsSpace.md,
+    borderTopWidth: 1,
+    gap: DsSpace.md,
+  },
+  exerciseItem: {
+    gap: 4,
+    paddingVertical: DsSpace.xs,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  itemDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+  exerciseName: {
+    ...DsTypography.body,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  exerciseQty: {
+    ...DsTypography.caption,
+    marginLeft: 16,
+    fontWeight: '600',
+  },
+  exerciseNotes: {
+    ...DsTypography.caption,
+    marginLeft: 16,
+    fontStyle: 'italic',
+  },
+  noExercisesText: {
+    ...DsTypography.caption,
+    textAlign: 'center',
+    paddingVertical: DsSpace.md,
   },
 });
