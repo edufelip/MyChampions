@@ -138,18 +138,83 @@ service cloud.firestore {
       );
     }
 
+    function trainingIdentityUnchanged() {
+      return request.resource.data.id == resource.data.id &&
+        request.resource.data.studentAuthUid == resource.data.studentAuthUid &&
+        request.resource.data.ownerProfessionalUid == resource.data.ownerProfessionalUid &&
+        request.resource.data.sourceKind == resource.data.sourceKind &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isPublishedForStudentRead() {
+      return resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.isDraft != true;
+    }
+
+    function canCreateSelfManagedTrainingPlan() {
+      return request.resource.data.studentAuthUid == request.auth.uid &&
+        request.resource.data.ownerProfessionalUid == null &&
+        request.resource.data.sourceKind == 'self_managed' &&
+        request.resource.data.isDraft == false &&
+        request.resource.data.isArchived == false;
+    }
+
+    function canCreateProfessionalLibraryTrainingPlan() {
+      return request.resource.data.studentAuthUid == request.auth.uid &&
+        request.resource.data.ownerProfessionalUid == request.auth.uid &&
+        request.resource.data.sourceKind == 'predefined' &&
+        request.resource.data.isDraft == false &&
+        request.resource.data.isArchived == false;
+    }
+
+    function canCreateAssignedTrainingPlan() {
+      return request.resource.data.ownerProfessionalUid == request.auth.uid &&
+        request.resource.data.studentAuthUid != request.auth.uid &&
+        request.resource.data.sourceKind == 'assigned' &&
+        request.resource.data.isArchived == false &&
+        hasActiveFitnessCoachTrackingAccess(request.resource.data.studentAuthUid);
+    }
+
+    function canUpdateSelfManagedTrainingPlan() {
+      return resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.ownerProfessionalUid == null &&
+        resource.data.sourceKind == 'self_managed' &&
+        trainingIdentityUnchanged();
+    }
+
+    function canUpdateProfessionalLibraryTrainingPlan() {
+      return resource.data.ownerProfessionalUid == request.auth.uid &&
+        resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.sourceKind == 'predefined' &&
+        trainingIdentityUnchanged();
+    }
+
+    function canUpdateAssignedTrainingPlan() {
+      return resource.data.ownerProfessionalUid == request.auth.uid &&
+        resource.data.sourceKind == 'assigned' &&
+        trainingIdentityUnchanged() &&
+        hasActiveFitnessCoachTrackingAccess(resource.data.studentAuthUid);
+    }
+
     match /trainingPlans/{planId} {
       allow read: if signedIn() && (
-        resource.data.studentAuthUid == request.auth.uid ||
-        resource.data.ownerProfessionalUid == request.auth.uid
+        resource.data.ownerProfessionalUid == request.auth.uid ||
+        isPublishedForStudentRead()
       );
       allow create: if signedIn() && (
-        request.resource.data.studentAuthUid == request.auth.uid ||
-        request.resource.data.ownerProfessionalUid == request.auth.uid
+        canCreateSelfManagedTrainingPlan() ||
+        canCreateProfessionalLibraryTrainingPlan() ||
+        canCreateAssignedTrainingPlan()
       );
-      allow update, delete: if signedIn() && (
-        resource.data.studentAuthUid == request.auth.uid ||
-        resource.data.ownerProfessionalUid == request.auth.uid
+      allow update: if signedIn() && (
+        canUpdateSelfManagedTrainingPlan() ||
+        canUpdateProfessionalLibraryTrainingPlan() ||
+        canUpdateAssignedTrainingPlan()
+      );
+      allow delete: if signedIn() && (
+        canUpdateSelfManagedTrainingPlan() ||
+        canUpdateProfessionalLibraryTrainingPlan() ||
+        canUpdateAssignedTrainingPlan()
       );
     }
 
