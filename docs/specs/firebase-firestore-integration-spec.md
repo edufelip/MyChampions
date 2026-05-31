@@ -22,6 +22,7 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - `specialties/{specialtyId}` and `credentials/{specialtyId}`.
 - `nutritionPlans/{planId}` and `trainingPlans/{planId}`.
 - `planChangeRequests/{requestId}`.
+- `trackingAccess/{studentUid}/nutritionists/{professionalUid}` and `trackingAccess/{studentUid}/fitnessCoaches/{professionalUid}`: rules-compatible materialized access records created from active connections for professional tracking-log reads.
 - `starterTemplates/{templateId}` (optional remote templates; local fallback allowed).
 - `waterLogs/{uid_dateKey}` and `waterGoals/{uid}`.
 - `customMeals/{mealId}`, `mealShareLinks/{shareToken}`, `portionLogs/{logId}`.
@@ -33,6 +34,7 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - Reads/writes must be restricted to the authenticated user context and role-specific ownership.
 - Role-lock is immutable after first successful set.
 - Connection transitions are validated in source-layer transactions.
+- Professional reads of student tracking data are authorized through `trackingAccess` documents that point to the matching active `connections/{connectionId}` document. Firestore rules must not use collection queries for connection lookup.
 
 ## Role-Lock Routing Contract
 1. Resolve Firebase Auth session.

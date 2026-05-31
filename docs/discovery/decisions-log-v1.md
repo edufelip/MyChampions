@@ -382,5 +382,7 @@
   - Removed `Validate Data Connect runtime config` steps from: `android-pr.yml`, `ios-pr.yml`, `firebase-distribution-android.yml`, `firebase-distribution-ios.yml`, `android-release.yml`, and `ios-release.yml`.
   - CI Firebase/App Distribution/TestFlight signing and environment checks remain unchanged; only the deprecated Data Connect preflight was removed.
 
+- `D-175`: Professional read access to student tracking logs is materialized through Firestore `trackingAccess/{studentUid}/nutritionists/{professionalUid}` and `trackingAccess/{studentUid}/fitnessCoaches/{professionalUid}` documents created/ended with connection transitions. Firestore Security Rules validate those exact documents and their linked `connections/{connectionId}` records; rules must not attempt collection queries for active-connection lookup.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
