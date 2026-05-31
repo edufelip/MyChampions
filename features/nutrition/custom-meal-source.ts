@@ -432,7 +432,6 @@ export async function logPortionFromSource(
 
 export async function logAssignedMealPortion(
   mealId: string,
-  name: string,
   snapshot: {
     calories: number;
     carbs: number;

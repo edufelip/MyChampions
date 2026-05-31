@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import { logAssignedMealPortion, getTodayPortionLogs } from '@/features/nutrition/custom-meal-source';
+import { logAssignedMealPortion, getTodayPortionLogs, type FirestorePortionLog } from '@/features/nutrition/custom-meal-source';
 
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -64,9 +64,31 @@ export default function StudentNutritionScreen() {
   const hasSelfManagedPlan = selfManagedNutritionPlan !== null;
 
   const { state: builderState, loadPlan } = useNutritionPlanBuilder(Boolean(currentUser), 'student-assigned');
-  const [loggedMealIds, setLoggedMealIds] = useState<string[]>([]);
+  const [todayPortionLogs, setTodayPortionLogs] = useState<FirestorePortionLog[]>([]);
   const [expandedMealIds, setExpandedMealIds] = useState<string[]>([]);
   const [isLoggingMealId, setIsLoggingMealId] = useState<string | null>(null);
+
+  const loggedMealIds = todayPortionLogs.map((log) => log.mealId);
+
+  const todayConsumed = {
+    calories: 0,
+    carbs: 0,
+    proteins: 0,
+    fats: 0,
+  };
+
+  for (const log of todayPortionLogs) {
+    todayConsumed.calories += Number(log.snapshot?.calories || 0);
+    todayConsumed.carbs += Number(log.snapshot?.carbs || 0);
+    todayConsumed.proteins += Number(log.snapshot?.proteins || 0);
+    todayConsumed.fats += Number(log.snapshot?.fats || 0);
+  }
+
+  const getProgressWidth = (consumed: number, target: number) => {
+    if (!target) return '0%';
+    const pct = Math.min((consumed / target) * 100, 100);
+    return `${pct}%`;
+  };
 
   useEffect(() => {
     if (assignedNutritionPlan) {
@@ -78,8 +100,7 @@ export default function StudentNutritionScreen() {
     if (currentUser) {
       getTodayPortionLogs()
         .then((logs) => {
-          const ids = logs.map((log) => log.mealId);
-          setLoggedMealIds(ids);
+          setTodayPortionLogs(logs);
         })
         .catch((err) => {
           console.error('Error loading today portion logs:', err);
@@ -114,8 +135,17 @@ export default function StudentNutritionScreen() {
       snapshot.proteins = Math.round(snapshot.proteins);
       snapshot.fats = Math.round(snapshot.fats);
 
-      await logAssignedMealPortion(meal.id, meal.name, snapshot);
-      setLoggedMealIds((prev) => [...prev, meal.id]);
+      await logAssignedMealPortion(meal.id, snapshot);
+      
+      const newLog: FirestorePortionLog = {
+        id: Math.random().toString(),
+        ownerUid: currentUser?.uid || '',
+        mealId: meal.id,
+        consumedGrams: 0,
+        snapshot,
+        loggedAt: new Date().toISOString(),
+      };
+      setTodayPortionLogs((prev) => [...prev, newLog]);
     } catch (err) {
       console.error('Failed to log meal portion:', err);
     } finally {
@@ -161,9 +191,13 @@ export default function StudentNutritionScreen() {
                           {t('student.nutrition.target_dashboard.title')}
                         </Text>
                         <Text style={[styles.macroHeaderTitle, { color: theme.color.textPrimary }]}>
-                          {`${Math.round(builderState.plan.caloriesTarget || 0)} kcal`}
+                          {`${Math.round(todayConsumed.calories)} / ${Math.round(builderState.plan.caloriesTarget || 0)} kcal`}
                         </Text>
                       </View>
+                    </View>
+
+                    <View style={[styles.progressBarTrack, { backgroundColor: theme.color.surfaceMuted }]}>
+                      <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.calories, builderState.plan.caloriesTarget), backgroundColor: theme.color.accentPrimary }]} />
                     </View>
 
                     <View style={styles.macroGrid}>
@@ -172,8 +206,11 @@ export default function StudentNutritionScreen() {
                           {t('common.nutrition.carbs')}
                         </Text>
                         <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
-                          {`${Math.round(builderState.plan.carbsTarget || 0)}g`}
+                          {`${Math.round(todayConsumed.carbs)}/${Math.round(builderState.plan.carbsTarget || 0)}g`}
                         </Text>
+                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
+                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.carbs, builderState.plan.carbsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        </View>
                       </View>
 
                       <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
@@ -181,8 +218,11 @@ export default function StudentNutritionScreen() {
                           {t('common.nutrition.proteins')}
                         </Text>
                         <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
-                          {`${Math.round(builderState.plan.proteinsTarget || 0)}g`}
+                          {`${Math.round(todayConsumed.proteins)}/${Math.round(builderState.plan.proteinsTarget || 0)}g`}
                         </Text>
+                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
+                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.proteins, builderState.plan.proteinsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        </View>
                       </View>
 
                       <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
@@ -190,8 +230,11 @@ export default function StudentNutritionScreen() {
                           {t('common.nutrition.fats')}
                         </Text>
                         <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
-                          {`${Math.round(builderState.plan.fatsTarget || 0)}g`}
+                          {`${Math.round(todayConsumed.fats)}/${Math.round(builderState.plan.fatsTarget || 0)}g`}
                         </Text>
+                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
+                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.fats, builderState.plan.fatsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        </View>
                       </View>
                     </View>
                   </DsCard>
@@ -319,11 +362,7 @@ export default function StudentNutritionScreen() {
 
               <WaterWidget waterHook={waterHook} scheme={scheme} t={t} isWriteLocked={isWriteLocked} />
 
-              <ReadOnlyNoticeCard
-                scheme={scheme}
-                testID="student.nutrition.assignedPlanNotice"
-                text={t('student.nutrition.assigned_plan.read_only_notice')}
-              />
+
 
               <PlanChangeRequestCard
                 scheme={scheme}
@@ -895,6 +934,16 @@ const styles = StyleSheet.create({
   writeLockText: {
     ...DsTypography.caption,
     marginTop: DsSpace.sm,
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
   },
   macroCard: {
     gap: 12,
