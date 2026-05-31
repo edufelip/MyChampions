@@ -192,7 +192,7 @@ function normalizeProfileSourceError(error: unknown): ProfileSourceError {
   switch (classifyFirestoreError(error)) {
     case 'network':
       return new ProfileSourceError('network', (error as Error)?.message ?? 'Network error.');
-    case 'unauthenticated':
+    case 'permission':
       return new ProfileSourceError('unauthenticated', (error as Error)?.message ?? 'Unauthenticated.');
     case 'configuration':
       return new ProfileSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');

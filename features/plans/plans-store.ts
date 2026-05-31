@@ -930,6 +930,9 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         plan: {
           id: 'new',
           name: '',
+          sourceKind: 'self_managed',
+          ownerProfessionalUid: null,
+          studentAuthUid: '',
           sessions: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

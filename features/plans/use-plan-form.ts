@@ -2,6 +2,9 @@ import { useCallback, useState, useRef, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import type { TranslationBinding } from '@/localization';
+
+type TFn = TranslationBinding['t'];
 
 type UsePlanFormOptions<T extends Record<string, any>> = {
   initialValues: T;
@@ -9,7 +12,7 @@ type UsePlanFormOptions<T extends Record<string, any>> = {
   onSave: (values: T) => Promise<{ id?: string; error?: any } | any>;
   onSuccess?: (id?: string) => void;
   onClearDraft?: () => void;
-  t: (key: string) => string;
+  t: TFn;
 };
 
 export function usePlanForm<T extends Record<string, any>>({

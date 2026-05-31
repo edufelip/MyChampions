@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import { shallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 
 import type {
   NutritionPlanInput,
@@ -20,7 +20,7 @@ import type {
   PlanBuilderErrorReason,
 } from './plan-builder.logic';
 import type { TrainingPlanDetail, FoodSearchResult } from './plan-builder-source';
-import { usePlansStore, type PlansStoreState } from './plans-store';
+import { usePlansStore } from './plans-store';
 import {
   markNutritionBuilderMutating,
   markTrainingBuilderMutating,
@@ -32,9 +32,7 @@ import {
 export type { FoodSearchResult, FoodSearchState, NutritionBuilderState, TrainingBuilderState };
 export { markNutritionBuilderMutating, markTrainingBuilderMutating };
 
-function usePlansStoreSelector<T>(selector: (state: PlansStoreState) => T): T {
-  return usePlansStore(selector);
-}
+
 
 export type UseNutritionPlanBuilderResult = {
   state: NutritionBuilderState;
@@ -91,8 +89,8 @@ export function useNutritionPlanBuilder(
     deletePlanFromStore,
     runFoodSearch,
     validateInput,
-  } = usePlansStoreSelector(
-    (s) => ({
+  } = usePlansStore(
+    useShallow((s) => ({
       syncAuthContext: s.syncAuthContext,
       state: s.nutritionBuilderState,
       foodSearchState: s.foodSearchState,
@@ -111,8 +109,7 @@ export function useNutritionPlanBuilder(
       deletePlanFromStore: s.deleteNutritionPlanAction,
       runFoodSearch: s.runFoodSearch,
       validateInput: s.validateNutritionInput,
-    }),
-    shallow
+    }))
   );
 
   useEffect(() => {
@@ -256,8 +253,8 @@ export function useTrainingPlanBuilder(
     deletePlanFromStore,
     validateInput,
     validateSessionItem,
-  } = usePlansStoreSelector(
-    (s) => ({
+  } = usePlansStore(
+    useShallow((s) => ({
       syncAuthContext: s.syncAuthContext,
       state: s.trainingBuilderState,
       resetTrainingBuilder: s.resetTrainingBuilder,
@@ -275,8 +272,7 @@ export function useTrainingPlanBuilder(
       deletePlanFromStore: s.deleteTrainingPlanAction,
       validateInput: s.validateTrainingInput,
       validateSessionItem: s.validateTrainingSessionItem,
-    }),
-    shallow
+    }))
   );
 
   useEffect(() => {

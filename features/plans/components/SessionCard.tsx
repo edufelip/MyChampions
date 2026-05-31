@@ -5,6 +5,9 @@ import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/desig
 import { Fonts } from '@/constants/theme';
 import type { TrainingSession, TrainingSessionItem } from '@/features/plans/plan-builder.logic';
 import { useExerciseThumbnail } from '@/features/plans/use-exercise-thumbnail';
+import type { TranslationBinding } from '@/localization';
+
+type TFn = TranslationBinding['t'];
 
 type SessionCardProps = {
   session: TrainingSession;
@@ -19,7 +22,7 @@ type SessionCardProps = {
     danger: string;
   };
   theme: DsTheme;
-  t: (key: string) => string;
+  t: TFn;
   tr: (pro: string, student: string) => string;
   /**
    * Stable parent callbacks — SessionCard binds session.id internally so that

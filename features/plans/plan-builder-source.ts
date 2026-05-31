@@ -71,6 +71,7 @@ export type NutritionPlanDetail = {
   proteinsTarget: number;
   fatsTarget: number;
   meals: NutritionMeal[];
+  isDraft?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -82,6 +83,7 @@ export type TrainingPlanDetail = {
   ownerProfessionalUid: string | null;
   studentAuthUid: string;
   sessions: TrainingSession[];
+  isDraft?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -273,6 +275,7 @@ function mapNutritionPlanDetail(raw: FirestoreNutritionPlan | null | undefined):
     proteinsTarget: raw.proteinsTarget ?? 0,
     fatsTarget: raw.fatsTarget ?? 0,
     meals,
+    isDraft: raw.isDraft || undefined,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
@@ -301,6 +304,7 @@ function mapTrainingPlanDetail(raw: FirestoreTrainingPlan | null | undefined): T
     ownerProfessionalUid: raw.ownerProfessionalUid ?? null,
     studentAuthUid: raw.studentAuthUid,
     sessions,
+    isDraft: raw.isDraft || undefined,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };

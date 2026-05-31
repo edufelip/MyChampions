@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 
 import { getCurrentAuthUid as _getCurrentAuthUid, getFirestoreInstance as _getFirestoreInstance, nowIso, generateId } from '../firestore';
-import { classifyFirestoreError } from '../firestore-error';
+import { classifyFirestoreError, type FirestoreErrorKind } from '../firestore-error';
 
 export type FirestoreWorkoutLog = {
   id: string;
@@ -34,8 +34,8 @@ const defaultDeps: WorkoutLogSourceDeps = {
 };
 
 export class WorkoutLogSourceError extends Error {
-  code: string;
-  constructor(code: string, message: string) {
+  code: FirestoreErrorKind;
+  constructor(code: FirestoreErrorKind, message: string) {
     super(message);
     this.code = code;
     this.name = 'WorkoutLogSourceError';
@@ -43,8 +43,8 @@ export class WorkoutLogSourceError extends Error {
 }
 
 function normalizeError(error: any): WorkoutLogSourceError {
-  const classified = classifyFirestoreError(error);
-  return new WorkoutLogSourceError(classified.code, classified.message);
+  const kind = classifyFirestoreError(error);
+  return new WorkoutLogSourceError(kind, (error as Error)?.message ?? 'Workout log operation failed.');
 }
 
 export async function logWorkoutSession(

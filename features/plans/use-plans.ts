@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import { shallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 
 import type {
   PlanType,
@@ -59,7 +59,7 @@ export function usePlans(
     bulkAssignFromStore,
     createDraftAssignedPlanFromStore,
   } = usePlansStore(
-    (s) => ({
+    useShallow((s) => ({
       state: s.plansState,
       plansInvalidation: s.invalidation.plans,
       syncAuthContext: s.syncAuthContext,
@@ -70,8 +70,7 @@ export function usePlans(
       getChangeRequestsForStudentFromStore: s.getChangeRequestsForStudent,
       bulkAssignFromStore: s.bulkAssign,
       createDraftAssignedPlanFromStore: s.createDraftAssignedPlan,
-    }),
-    shallow
+    }))
   );
 
   const reload = useCallback(() => {

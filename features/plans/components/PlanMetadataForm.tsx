@@ -4,6 +4,9 @@ import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
 import { DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import type { validateNutritionPlanInput } from '@/features/plans/plan-builder.logic';
+import type { TranslationBinding } from '@/localization';
+
+type TFn = TranslationBinding['t'];
 
 type PlanMetadataFormProps = {
   palette: {
@@ -12,7 +15,7 @@ type PlanMetadataFormProps = {
     danger: string;
   };
   theme: DsTheme;
-  t: (key: string) => string;
+  t: TFn;
   tr: (pro: string, student: string) => string;
   name: string;
   hydrationGoalMl: string;
