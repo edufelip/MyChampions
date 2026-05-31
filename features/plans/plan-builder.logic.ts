@@ -90,6 +90,34 @@ export type TrainingPlanInput = {
   name: string;
 };
 
+export type TrainingPlanCreationMode = 'professional_library' | 'self_managed';
+
+export function resolveTrainingPlanCreationMetadata(
+  authUid: string,
+  mode: TrainingPlanCreationMode
+): {
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  sourceKind: 'predefined' | 'self_managed';
+  isDraft: false;
+} {
+  if (mode === 'self_managed') {
+    return {
+      ownerProfessionalUid: null,
+      studentAuthUid: authUid,
+      sourceKind: 'self_managed',
+      isDraft: false,
+    };
+  }
+
+  return {
+    ownerProfessionalUid: authUid,
+    studentAuthUid: authUid,
+    sourceKind: 'predefined',
+    isDraft: false,
+  };
+}
+
 export type TrainingPlanValidationErrors = {
   name?: 'required' | 'too_short';
 };

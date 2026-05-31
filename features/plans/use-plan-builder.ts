@@ -18,6 +18,7 @@ import type {
   TrainingPlanValidationErrors,
   TrainingSessionItemValidationErrors,
   PlanBuilderErrorReason,
+  TrainingPlanCreationMode,
 } from './plan-builder.logic';
 import type { TrainingPlanDetail, FoodSearchResult } from './plan-builder-source';
 import { usePlansStore } from './plans-store';
@@ -208,13 +209,17 @@ export type UseTrainingPlanBuilderResult = {
   state: TrainingBuilderState;
   loadPlan: (planId: string) => void;
   initNewPlan: () => void;
-  createPlan: (input: TrainingPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
+  createPlan: (
+    input: TrainingPlanInput,
+    mode?: TrainingPlanCreationMode
+  ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   savePlan: (planId: string, input: TrainingPlanInput, publish?: boolean) => Promise<PlanBuilderErrorReason | null>;
   savePlanWithSessions: (
     planId: string,
     input: TrainingPlanInput,
     sessions: TrainingSession[],
-    publish?: boolean
+    publish?: boolean,
+    mode?: TrainingPlanCreationMode
   ) => Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }>;
   addSession: (
     planId: string,
@@ -291,7 +296,8 @@ export function useTrainingPlanBuilder(
   );
 
   const createPlan = useCallback(
-    (input: TrainingPlanInput) => createPlanFromStore(isAuthenticated, input),
+    (input: TrainingPlanInput, mode?: TrainingPlanCreationMode) =>
+      createPlanFromStore(isAuthenticated, input, mode),
     [createPlanFromStore, isAuthenticated]
   );
 
@@ -301,8 +307,13 @@ export function useTrainingPlanBuilder(
   );
 
   const savePlanWithSessions = useCallback(
-    (planId: string, input: TrainingPlanInput, sessions: TrainingSession[], publish?: boolean) =>
-      savePlanWithSessionsFromStore(isAuthenticated, planId, input, sessions, publish),
+    (
+      planId: string,
+      input: TrainingPlanInput,
+      sessions: TrainingSession[],
+      publish?: boolean,
+      mode?: TrainingPlanCreationMode
+    ) => savePlanWithSessionsFromStore(isAuthenticated, planId, input, sessions, publish, mode),
     [isAuthenticated, savePlanWithSessionsFromStore]
   );
 

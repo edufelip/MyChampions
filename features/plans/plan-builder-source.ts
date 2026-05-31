@@ -26,6 +26,7 @@ import type {
   NutritionMealItem,
   NutritionMealItemInput,
   TrainingPlanInput,
+  TrainingPlanCreationMode,
   TrainingSession,
   TrainingSessionInput,
   TrainingSessionItem,
@@ -38,6 +39,7 @@ import {
   coalesceTemplateDescription,
   calculateTotalsFromItems,
   calculateTotalsFromMeals,
+  resolveTrainingPlanCreationMetadata,
 } from './plan-builder.logic';
 import type { PlanType } from './plan-change-request.logic';
 
@@ -720,6 +722,7 @@ export async function deleteTrainingPlan(
 
 export async function createTrainingPlan(
   input: TrainingPlanInput,
+  mode: TrainingPlanCreationMode = 'professional_library',
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<TrainingPlanDetail> {
   try {
@@ -727,14 +730,12 @@ export async function createTrainingPlan(
     const uid = deps.getCurrentAuthUid();
     const id = generateId('training_plan');
     const timestamp = nowIso();
+    const metadata = resolveTrainingPlanCreationMetadata(uid, mode);
 
     const plan: FirestoreTrainingPlan = {
       id,
-      ownerProfessionalUid: uid,
-      studentAuthUid: uid,
-      sourceKind: 'predefined',
+      ...metadata,
       isArchived: false,
-      isDraft: false,
       name: input.name.trim(),
       sessions: [],
       createdAt: timestamp,

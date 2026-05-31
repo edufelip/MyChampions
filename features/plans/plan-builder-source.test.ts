@@ -20,6 +20,7 @@ import {
   deriveStarterTemplatePlanType,
   coalesceTemplateDescription,
   resolveTrainingDraftCreationInput,
+  resolveTrainingPlanCreationMetadata,
 } from './plan-builder.logic';
 
 // ─── deriveStarterTemplatePlanType ────────────────────────────────────────────
@@ -202,5 +203,25 @@ describe('resolveTrainingDraftCreationInput', () => {
     const result = resolveTrainingDraftCreationInput({ name: 'Upper Body' });
     assert.equal(result.error, undefined);
     assert.deepEqual(result.input, { name: 'Upper Body' });
+  });
+});
+
+describe('resolveTrainingPlanCreationMetadata', () => {
+  it('returns Professional Library Plan metadata for professional builder mode', () => {
+    assert.deepEqual(resolveTrainingPlanCreationMetadata('pro-1', 'professional_library'), {
+      ownerProfessionalUid: 'pro-1',
+      studentAuthUid: 'pro-1',
+      sourceKind: 'predefined',
+      isDraft: false,
+    });
+  });
+
+  it('returns Self-Managed Plan metadata for student builder mode', () => {
+    assert.deepEqual(resolveTrainingPlanCreationMetadata('student-1', 'self_managed'), {
+      ownerProfessionalUid: null,
+      studentAuthUid: 'student-1',
+      sourceKind: 'self_managed',
+      isDraft: false,
+    });
   });
 });

@@ -68,6 +68,7 @@ import {
   type TrainingPlanValidationErrors,
   type TrainingSessionItemValidationErrors,
   type PlanBuilderErrorReason,
+  type TrainingPlanCreationMode,
 } from './plan-builder.logic';
 import {
   getCachedNutritionPlan,
@@ -230,7 +231,8 @@ export type PlansStoreState = {
   initNewTrainingPlan: () => void;
   createTrainingPlanAction: (
     isAuthenticated: boolean,
-    input: TrainingPlanInput
+    input: TrainingPlanInput,
+    mode?: TrainingPlanCreationMode
   ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   saveTrainingPlanAction: (
     isAuthenticated: boolean,
@@ -243,7 +245,8 @@ export type PlansStoreState = {
     planId: string,
     input: TrainingPlanInput,
     sessions: TrainingSession[],
-    publish?: boolean
+    publish?: boolean,
+    mode?: TrainingPlanCreationMode
   ) => Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }>;
   addTrainingSessionAction: (
     isAuthenticated: boolean,
@@ -941,7 +944,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     });
   },
 
-  createTrainingPlanAction: async (isAuthenticated, input) => {
+  createTrainingPlanAction: async (isAuthenticated, input, mode = 'professional_library') => {
     if (!isAuthenticated) return { error: 'unknown' };
 
     const errors = validateTrainingPlanInput(input);
@@ -949,7 +952,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
 
     set({ trainingBuilderState: { kind: 'saving' } });
     try {
-      const plan = await createTrainingPlan(input);
+      const plan = await createTrainingPlan(input, mode);
       set((state) => ({
         trainingBuilderState: { kind: 'ready', plan },
         invalidation: {
@@ -957,14 +960,16 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
           plans: state.invalidation.plans + 1,
         },
       }));
-      optimisticUpdatePredefinedPlan({
-        id: plan.id,
-        name: plan.name,
-        planType: 'training',
-        ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
-        createdAt: plan.createdAt,
-        updatedAt: plan.updatedAt,
-      });
+      if (plan.sourceKind === 'predefined') {
+        optimisticUpdatePredefinedPlan({
+          id: plan.id,
+          name: plan.name,
+          planType: 'training',
+          ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
+          createdAt: plan.createdAt,
+          updatedAt: plan.updatedAt,
+        });
+      }
       return { id: plan.id };
     } catch (err) {
       const reason = normalizePlanBuilderError(err);
@@ -1000,7 +1005,14 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  saveTrainingPlanWithSessionsAction: async (isAuthenticated, planId, input, sessions, publish) => {
+  saveTrainingPlanWithSessionsAction: async (
+    isAuthenticated,
+    planId,
+    input,
+    sessions,
+    publish,
+    mode = 'professional_library'
+  ) => {
     if (!isAuthenticated) return { error: 'unknown' };
 
     const errors = validateTrainingPlanInput(input);
@@ -1012,7 +1024,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     try {
       let currentPlanId = planId;
       if (planId === 'new') {
-        const created = await createTrainingPlan(input);
+        const created = await createTrainingPlan(input, mode);
         currentPlanId = created.id;
       }
 
@@ -1027,14 +1039,16 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         },
       }));
 
-      optimisticUpdatePredefinedPlan({
-        id: updated.id,
-        name: updated.name,
-        planType: 'training',
-        ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt,
-      });
+      if (updated.sourceKind === 'predefined') {
+        optimisticUpdatePredefinedPlan({
+          id: updated.id,
+          name: updated.name,
+          planType: 'training',
+          ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
+          createdAt: updated.createdAt,
+          updatedAt: updated.updatedAt,
+        });
+      }
 
       return { id: currentPlanId, plan: updated };
     } catch (err) {

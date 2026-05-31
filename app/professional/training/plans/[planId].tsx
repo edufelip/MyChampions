@@ -95,6 +95,7 @@ export default function TrainingPlanBuilderScreen() {
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
   const isDraftAssignment = state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
+  const creationMode = isStudentBuilder ? 'self_managed' : 'professional_library';
 
   const initialValues = useMemo(() => ({
     name: state.kind === 'ready' ? state.plan.name : '',
@@ -118,7 +119,7 @@ export default function TrainingPlanBuilderScreen() {
     validate: validateInput,
     t,
     onSave: async (formValues) => {
-      return savePlanWithSessions(planId ?? 'new', formValues, draftSessions, isDraftAssignment);
+      return savePlanWithSessions(planId ?? 'new', formValues, draftSessions, isDraftAssignment, creationMode);
     },
     onSuccess: (id) => {
       // After a successful save, we want to go back to the library.
