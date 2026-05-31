@@ -14,6 +14,9 @@ const professionalLibraryCreateRules = rules.match(
 const trainingPlansDeleteRules = trainingPlansRules.match(
   /allow delete: if signedIn\(\) && \([\s\S]*?\n      \);/
 )?.[0] ?? '';
+const endedFitnessCoachConnectionHelper = rules.match(
+  /function hasEndedFitnessCoachConnectionForPlan\(studentUid, professionalUid\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
 
 test('trainingPlans rules hide draft assigned plans from students', () => {
   assert.match(rules, /function isPublishedForStudentRead\(\)/);
@@ -43,6 +46,25 @@ test('trainingPlans rules allow connection-end archive and self-managed restore 
   assert.match(rules, /request\.resource\.data\.isArchived == false/);
   assert.match(rules, /hasEndedFitnessCoachConnectionForPlan\(resource\.data\.studentAuthUid, resource\.data\.ownerProfessionalUid\)/);
   assert.match(rules, /hasEndedFitnessCoachConnectionForPlan\(resource\.data\.studentAuthUid, request\.auth\.uid\)/);
+});
+
+test('trainingPlans connection-end rules require active before-state and ended after-state', () => {
+  assert.match(
+    endedFitnessCoachConnectionHelper,
+    /get\(\/databases\/\$\(database\)\/documents\/trackingAccess\/\$\(studentUid\)\/fitnessCoaches\/\$\(professionalUid\)\)\.data\.status == 'active'/
+  );
+  assert.match(
+    endedFitnessCoachConnectionHelper,
+    /get\(\/databases\/\$\(database\)\/documents\/connections\/\$\(get\(\/databases\/\$\(database\)\/documents\/trackingAccess\/\$\(studentUid\)\/fitnessCoaches\/\$\(professionalUid\)\)\.data\.connectionId\)\)\.data\.status == 'active'/
+  );
+  assert.match(
+    endedFitnessCoachConnectionHelper,
+    /getAfter\(\/databases\/\$\(database\)\/documents\/trackingAccess\/\$\(studentUid\)\/fitnessCoaches\/\$\(professionalUid\)\)\.data\.status == 'ended'/
+  );
+  assert.match(
+    endedFitnessCoachConnectionHelper,
+    /getAfter\(\/databases\/\$\(database\)\/documents\/connections\/\$\(getAfter\(\/databases\/\$\(database\)\/documents\/trackingAccess\/\$\(studentUid\)\/fitnessCoaches\/\$\(professionalUid\)\)\.data\.connectionId\)\)\.data\.status == 'ended'/
+  );
 });
 
 test('trainingPlans rules distinguish self-managed and professional library creates', () => {

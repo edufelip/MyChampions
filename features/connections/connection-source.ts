@@ -83,6 +83,17 @@ function getPlanCollectionForSpecialty(connection: FirestoreConnection) {
   return connection.specialty === 'fitness_coach' ? 'trainingPlans' : 'nutritionPlans';
 }
 
+function getPlanSortTimestamp(plan: unknown) {
+  const data = typeof (plan as { data?: unknown })?.data === 'function'
+    ? (plan as { data: () => { updatedAt?: unknown; createdAt?: unknown } }).data()
+    : {};
+  const updatedAt = typeof data.updatedAt === 'string' ? Date.parse(data.updatedAt) : NaN;
+  if (!Number.isNaN(updatedAt)) return updatedAt;
+
+  const createdAt = typeof data.createdAt === 'string' ? Date.parse(data.createdAt) : NaN;
+  return Number.isNaN(createdAt) ? 0 : createdAt;
+}
+
 function buildTrackingAccessRecord(connection: FirestoreConnection, status: 'active' | 'ended') {
   return {
     connectionId: connection.id,
@@ -291,9 +302,12 @@ export async function endConnection(
         tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso() });
       });
 
-      selfManagedSnaps.forEach((docSnap) => {
-        tx.update(docSnap.ref, { isArchived: false, updatedAt: nowIso() });
-      });
+      const latestSelfManagedSnap = [...selfManagedSnaps.docs]
+        .sort((a, b) => getPlanSortTimestamp(b) - getPlanSortTimestamp(a))[0];
+
+      if (latestSelfManagedSnap) {
+        tx.update(latestSelfManagedSnap.ref, { isArchived: false, updatedAt: nowIso() });
+      }
     });
   } catch (error) {
     throw normalizeConnectionSourceError(error);

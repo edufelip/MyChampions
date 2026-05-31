@@ -68,7 +68,21 @@ const mockGetDocs = async (q: any) => {
               id: 'self-managed-plan-123',
               sourceKind: 'self_managed',
               isArchived: true,
-              studentAuthUid: 'student-456'
+              studentAuthUid: 'student-456',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-02-01T00:00:00.000Z'
+            })
+          },
+          {
+            id: 'older-self-managed-plan-123',
+            ref: { type: 'doc_ref', path: `${q.colRef.path}/older-self-managed-plan-123` },
+            data: () => ({
+              id: 'older-self-managed-plan-123',
+              sourceKind: 'self_managed',
+              isArchived: true,
+              studentAuthUid: 'student-456',
+              createdAt: '2026-01-15T00:00:00.000Z',
+              updatedAt: '2026-01-20T00:00:00.000Z'
             })
           }
         ],
@@ -328,6 +342,9 @@ test('TDD: endConnection archives assigned training plan and restores self-manag
   assert.ok(selfManagedUpdate, 'Should restore archived self-managed training plan');
   assert.equal(selfManagedUpdate.data.isArchived, false);
   assert.ok(selfManagedUpdate.data.updatedAt, 'Self-managed plan updatedAt should be set');
+
+  const olderSelfManagedUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/older-self-managed-plan-123');
+  assert.equal(olderSelfManagedUpdate, undefined, 'Should not restore older archived self-managed training plans');
 });
 
 // Restore original implementations at the end of the test file
