@@ -89,7 +89,7 @@ export default function TrainingPlanBuilderScreen() {
     validateInput,
   } = useTrainingPlanBuilder(Boolean(currentUser), `${pathname}:plan:${planId ?? 'new'}`);
 
-  const { bulkAssign } = usePlans(Boolean(currentUser), { fetchOnMount: false });
+  const { createDraftAssignedPlan } = usePlans(Boolean(currentUser), { fetchOnMount: false });
 
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
@@ -473,16 +473,18 @@ export default function TrainingPlanBuilderScreen() {
     setIsStudentPickerVisible(false);
     setIsAssigning(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const result = await bulkAssign(planId, [studentUid]);
+
+    const result = await createDraftAssignedPlan(planId, studentUid);
     setIsAssigning(false);
 
     if ('error' in result) {
       Alert.alert(t('pro.plan.assign.error') as string);
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(t('pro.plan.assign.success') as string);
+      return;
     }
-  }, [bulkAssign, planId, t]);
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.push(`/professional/training/plans/${result.id}`);
+  }, [createDraftAssignedPlan, planId, router, t]);
 
   const handleOpenExerciseSearch = useCallback((sessionId: string) => {
     if (isBusy) return;
