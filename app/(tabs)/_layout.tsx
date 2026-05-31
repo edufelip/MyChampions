@@ -182,8 +182,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ── Legacy Expo starter screens — hidden from product nav ────────── */}
-      <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
 }

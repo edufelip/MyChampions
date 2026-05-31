@@ -9,7 +9,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View, type DimensionValue } from 'react-native';
 
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import { logAssignedMealPortion, getTodayPortionLogs, type FirestorePortionLog } from '@/features/nutrition/custom-meal-source';
@@ -18,7 +18,6 @@ import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/p
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
-import { ReadOnlyNoticeCard } from '@/components/ds/patterns/ReadOnlyNoticeCard';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -86,17 +85,18 @@ export default function StudentNutritionScreen() {
     todayConsumed.fats += Number(log.snapshot?.fats || 0);
   }
 
-  const getProgressWidth = (consumed: number, target: number) => {
+  const getProgressWidth = (consumed: number, target: number): DimensionValue => {
     if (!target) return '0%';
     const pct = Math.min((consumed / target) * 100, 100);
-    return `${pct}%`;
+    return `${pct}%` as DimensionValue;
   };
 
+  const assignedNutritionPlanId = assignedNutritionPlan?.id;
   useEffect(() => {
-    if (assignedNutritionPlan) {
-      loadPlan(assignedNutritionPlan.id);
+    if (assignedNutritionPlanId) {
+      loadPlan(assignedNutritionPlanId);
     }
-  }, [assignedNutritionPlan, loadPlan]);
+  }, [assignedNutritionPlanId, loadPlan]);
 
   useEffect(() => {
     if (currentUser) {

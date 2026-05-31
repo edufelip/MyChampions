@@ -88,7 +88,6 @@ export default function ProfessionalStudentProfileScreen() {
     state: plansState,
     getChangeRequestsForStudent,
     reviewChangeRequest,
-    bulkAssign,
     createDraftAssignedPlan,
     reload: reloadPlans,
   } = usePlans(Boolean(currentUser));
