@@ -244,6 +244,10 @@ export const enUS = {
     "You don't have a personalized workout plan yet. Hire a personal trainer to receive a routine tailored to your goals.",
   'student.training.empty.cta': 'Hire a trainer',
   'student.training.empty.self_guided_cta': 'Create my workout plan',
+  'student.training.waiting.title': 'Your coach is preparing your plan',
+  'student.training.waiting.body':
+    'Your fitness coach connection is active. You will see your training sessions here once your coach sends the plan.',
+  'student.training.waiting.cta': 'View my coach',
   'student.training.plan_change.cta': 'Request plan change',
   'student.training.plan_change.title': 'Request a plan change',
   'student.training.plan_change.label': 'What would you like to change?',

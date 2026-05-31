@@ -255,6 +255,10 @@ export const ptBR: Record<TranslationKey, string> = {
     'Você ainda não possui um plano de treino personalizado. Contrate um personal trainer para receber uma rotina feita sob medida para seus objetivos.',
   'student.training.empty.cta': 'Contratar personal',
   'student.training.empty.self_guided_cta': 'Criar meu plano de treino',
+  'student.training.waiting.title': 'Seu treinador está preparando seu plano',
+  'student.training.waiting.body':
+    'Sua conexão com o treinador está ativa. Você verá suas sessões de treino aqui quando o plano for enviado.',
+  'student.training.waiting.cta': 'Ver meu treinador',
   'student.training.plan_change.cta': 'Solicitar mudança no plano',
   'student.training.plan_change.title': 'Solicitar mudança no plano',
   'student.training.plan_change.label': 'O que você gostaria de mudar?',

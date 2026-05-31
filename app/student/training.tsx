@@ -20,6 +20,7 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { useConnections } from '@/features/connections/use-connections';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
@@ -68,15 +69,22 @@ export default function StudentTrainingScreen() {
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
+  const { state: connectionsState } = useConnections(Boolean(currentUser));
 
   const trainingPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'training' && !p.isArchived) : [];
-  
-  const assignedTrainingPlan = trainingPlans.find(plan => plan.sourceKind === 'assigned') ?? null;
+
+  const assignedTrainingPlan = trainingPlans.find(plan => plan.sourceKind === 'assigned' && !plan.isDraft) ?? null;
   const selfManagedTrainingPlan =
     trainingPlans.find(plan => isSelfGuidedPlan(plan, currentUser?.uid ?? null)) ?? null;
+  const hasActiveFitnessCoachConnection =
+    connectionsState.kind === 'ready' &&
+    connectionsState.connections.some(
+      (connection) => connection.specialty === 'fitness_coach' && connection.status === 'active'
+    );
 
   const hasActiveTrainingAssignment = assignedTrainingPlan !== null;
   const hasSelfManagedPlan = selfManagedTrainingPlan !== null;
+  const isWaitingForCoachPlan = hasActiveFitnessCoachConnection && !hasActiveTrainingAssignment;
   const weekStrip = useMemo(() => getWeekStrip(locale), [locale]);
 
   const { state: builderState, loadPlan } = useTrainingPlanBuilder(Boolean(currentUser), 'student-assigned');
@@ -286,6 +294,55 @@ export default function StudentTrainingScreen() {
                 errorNetwork: 'student.training.plan_change.error.network',
                 errorUnknown: 'student.training.plan_change.error.unknown',
               }}
+            />
+          </View>
+        ) : isWaitingForCoachPlan ? (
+          <View style={styles.emptyStateWrap} testID="student.training.waitingForCoachPlan">
+            <View style={styles.emptyHero}>
+              <View
+                style={[
+                  styles.emptyGlow,
+                  {
+                    backgroundColor:
+                      scheme === 'dark' ? 'rgba(30, 169, 90, 0.10)' : 'rgba(19, 236, 73, 0.12)',
+                  },
+                ]}
+              />
+
+              <View
+                style={[
+                  styles.emptyMainTile,
+                  DsShadow.floating,
+                  {
+                    backgroundColor: theme.color.surface,
+                    shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                  },
+                ]}>
+                <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
+              </View>
+
+              <View style={[styles.emptyAccentTile, DsShadow.soft, { backgroundColor: '#13ec49' }]}>
+                <MaterialIcons color="#102215" name="fitness-center" size={34} />
+              </View>
+            </View>
+
+            <View style={styles.emptyCopyBlock}>
+              <Text style={[styles.emptyTitle, { color: theme.color.textPrimary }]}>
+                {t('student.training.waiting.title')}
+              </Text>
+              <Text style={[styles.emptyBody, { color: theme.color.textSecondary }]}>
+                {t('student.training.waiting.body')}
+              </Text>
+            </View>
+
+            <DsPillButton
+              scheme={scheme}
+              label={t('student.training.waiting.cta')}
+              onPress={() => router.push('/student/professionals')}
+              contentColor="#f8fafc"
+              testID="student.training.waitingCta"
+              style={styles.emptyPrimaryCta}
+              leftIcon={<MaterialIcons color="#f8fafc" name="person" size={20} />}
             />
           </View>
         ) : hasSelfManagedPlan ? (
