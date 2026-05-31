@@ -84,7 +84,14 @@ export default function StudentTrainingScreen() {
 
   const hasActiveTrainingAssignment = assignedTrainingPlan !== null;
   const hasSelfManagedPlan = selfManagedTrainingPlan !== null;
-  const isConnectionsLoading = Boolean(currentUser) && connectionsState.kind === 'loading';
+  const isConnectionsPending = Boolean(currentUser) && (connectionsState.kind === 'idle' || connectionsState.kind === 'loading');
+  const hasConnectionsError = Boolean(currentUser) && connectionsState.kind === 'error';
+  const loadErrorMessage =
+    plansState.kind === 'error'
+      ? plansState.message
+      : connectionsState.kind === 'error'
+        ? connectionsState.message
+        : null;
   const isWaitingForCoachPlan = hasActiveFitnessCoachConnection && !hasActiveTrainingAssignment;
   const shouldShowPlanCalendar = hasActiveTrainingAssignment || (hasSelfManagedPlan && !isWaitingForCoachPlan);
   const weekStrip = useMemo(() => getWeekStrip(locale), [locale]);
@@ -162,9 +169,15 @@ export default function StudentTrainingScreen() {
 
         {shouldShowPlanCalendar ? <WeekStrip scheme={scheme} items={weekStrip} /> : null}
 
-        {plansState.kind === 'loading' || isConnectionsLoading ? (
+        {plansState.kind === 'loading' || isConnectionsPending ? (
           <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.plansLoading">
             <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+          </DsCard>
+        ) : plansState.kind === 'error' || hasConnectionsError ? (
+          <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.loadError">
+            <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
+              {loadErrorMessage ?? t('common.error.generic')}
+            </Text>
           </DsCard>
         ) : hasActiveTrainingAssignment ? (
           <View style={styles.sectionStack}>
@@ -468,6 +481,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 140,
+  },
+  loadErrorText: {
+    ...DsTypography.caption,
+    textAlign: 'center',
   },
   sectionStack: {
     gap: DsSpace.md,
