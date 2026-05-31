@@ -82,6 +82,7 @@ export default function NutritionPlanBuilderScreen() {
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
+  const isDraftAssignment = state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
 
   const initialValues = useMemo(() => ({
     name: state.kind === 'ready' ? state.plan.name : '',
@@ -104,7 +105,7 @@ export default function NutritionPlanBuilderScreen() {
       if (isNew || isStarterClone) {
         return createPlan(formValues);
       }
-      return savePlan(planId!, formValues);
+      return savePlan(planId!, formValues, isDraftAssignment);
     },
     onSuccess: (id) => {
       // After a successful save, we want to go back to the library.
@@ -322,7 +323,7 @@ export default function NutritionPlanBuilderScreen() {
             variant="primary"
             size="sm"
             fullWidth={false}
-            label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
+            label={isDraftAssignment ? t('pro.plan.cta.assign_and_send') : tr('pro.plan.cta.save', 'student.plan.cta.save')}
             onPress={handleSave}
             disabled={!isDirty || isSaving}
             loading={isSaving}
@@ -341,6 +342,14 @@ export default function NutritionPlanBuilderScreen() {
           )}
         </View>
       </View>
+
+      {isDraftAssignment && (
+        <BuilderAlertBanner
+          message={t('pro.plan.draft_banner.nutrition')}
+          backgroundColor={palette.tint}
+          textColor={theme.color.surface}
+        />
+      )}
 
       <BuilderGuidanceCard
         theme={theme}

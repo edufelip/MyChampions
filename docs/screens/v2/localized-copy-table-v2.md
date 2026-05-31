@@ -405,6 +405,9 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.cta.add_session` | SC-208 | Add session CTA | Add session | Adicionar sessão | Añadir sesión | |
 | `pro.plan.cta.add_item` | SC-208 | Add session item CTA | Add item | Adicionar item | Añadir ítem | |
 | `pro.plan.cta.save` | SC-207/208 | Save CTA | Save plan | Salvar plano | Guardar plan | |
+| `pro.plan.cta.assign_and_send` | SC-207/208 | Draft Publish CTA | Assign & Send | Salvar e Enviar | Asignar y Enviar | |
+| `pro.plan.draft_banner.nutrition` | SC-207 | Draft Nutrition Banner | Draft Assignment: Customize this nutrition plan for the student before sending. | Rascunho de Atribuição: Personalize este plano de nutrição para o aluno antes de enviar. | Borrador de Asignación: Personaliza este plan de nutrición para el alumno antes de enviar. | |
+| `pro.plan.draft_banner.training` | SC-208 | Draft Training Banner | Draft Assignment: Customize this workout routine for the student before sending. | Rascunho de Atribuição: Personalize este treino para o aluno antes de enviar. | Borrador de Asignación: Personaliza este entrenamiento para el alumno antes de enviar. | |
 | `pro.plan.cta.assign` | SC-207/208 | Assign CTA | Assign to student | Atribuir ao aluno | Asignar al alumno | |
 | `pro.plan.cta.bulk_assign` | SC-207/208 | Bulk assign CTA | Bulk assign | Atribuição em massa | Asignación masiva | D-082 |
 | `pro.plan.predefined.label` | SC-207/208 | Predefined plan badge | Predefined | Predefinido | Predefinido | |

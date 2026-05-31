@@ -43,7 +43,7 @@ export type UseNutritionPlanBuilderResult = {
   loadPlan: (planId: string) => void;
   initNewPlan: () => void;
   createPlan: (input: NutritionPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
-  savePlan: (planId: string, input: NutritionPlanInput) => Promise<PlanBuilderErrorReason | null>;
+  savePlan: (planId: string, input: NutritionPlanInput, publish?: boolean) => Promise<PlanBuilderErrorReason | null>;
   addMeal: (
     planId: string,
     meal: NutritionMealInput,
@@ -137,7 +137,7 @@ export function useNutritionPlanBuilder(
   );
 
   const savePlan = useCallback(
-    (planId: string, input: NutritionPlanInput) => savePlanFromStore(isAuthenticated, planId, input),
+    (planId: string, input: NutritionPlanInput, publish?: boolean) => savePlanFromStore(isAuthenticated, planId, input, publish),
     [isAuthenticated, savePlanFromStore]
   );
 
@@ -212,11 +212,12 @@ export type UseTrainingPlanBuilderResult = {
   loadPlan: (planId: string) => void;
   initNewPlan: () => void;
   createPlan: (input: TrainingPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
-  savePlan: (planId: string, input: TrainingPlanInput) => Promise<PlanBuilderErrorReason | null>;
+  savePlan: (planId: string, input: TrainingPlanInput, publish?: boolean) => Promise<PlanBuilderErrorReason | null>;
   savePlanWithSessions: (
     planId: string,
     input: TrainingPlanInput,
-    sessions: TrainingSession[]
+    sessions: TrainingSession[],
+    publish?: boolean
   ) => Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }>;
   addSession: (
     planId: string,
@@ -299,13 +300,13 @@ export function useTrainingPlanBuilder(
   );
 
   const savePlan = useCallback(
-    (planId: string, input: TrainingPlanInput) => savePlanFromStore(isAuthenticated, planId, input),
+    (planId: string, input: TrainingPlanInput, publish?: boolean) => savePlanFromStore(isAuthenticated, planId, input, publish),
     [isAuthenticated, savePlanFromStore]
   );
 
   const savePlanWithSessions = useCallback(
-    (planId: string, input: TrainingPlanInput, sessions: TrainingSession[]) =>
-      savePlanWithSessionsFromStore(isAuthenticated, planId, input, sessions),
+    (planId: string, input: TrainingPlanInput, sessions: TrainingSession[], publish?: boolean) =>
+      savePlanWithSessionsFromStore(isAuthenticated, planId, input, sessions, publish),
     [isAuthenticated, savePlanWithSessionsFromStore]
   );
 

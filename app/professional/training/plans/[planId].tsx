@@ -26,6 +26,7 @@ import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
 import { StudentPickerModal } from '@/components/ds/patterns/StudentPickerModal';
 import { ExerciseSearchModal } from '@/components/ds/patterns/ExerciseSearchModal';
 import { SessionCard } from '@/features/plans/components/SessionCard';
+import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
 import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
 import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
 
@@ -93,6 +94,7 @@ export default function TrainingPlanBuilderScreen() {
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
+  const isDraftAssignment = state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
 
   const initialValues = useMemo(() => ({
     name: state.kind === 'ready' ? state.plan.name : '',
@@ -116,7 +118,7 @@ export default function TrainingPlanBuilderScreen() {
     validate: validateInput,
     t,
     onSave: async (formValues) => {
-      return savePlanWithSessions(planId ?? 'new', formValues, draftSessions);
+      return savePlanWithSessions(planId ?? 'new', formValues, draftSessions, isDraftAssignment);
     },
     onSuccess: (id) => {
       // After a successful save, we want to go back to the library.
@@ -541,6 +543,14 @@ export default function TrainingPlanBuilderScreen() {
         </View>
       </View>
 
+      {isDraftAssignment && (
+        <BuilderAlertBanner
+          message={t('pro.plan.draft_banner.training')}
+          backgroundColor={palette.tint}
+          textColor={theme.color.surface}
+        />
+      )}
+
       <BuilderGuidanceCard
         theme={theme}
         visible={showGuidance}
@@ -729,7 +739,7 @@ export default function TrainingPlanBuilderScreen() {
         <DsPillButton
           scheme={scheme}
           variant="primary"
-          label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
+          label={isDraftAssignment ? t('pro.plan.cta.assign_and_send') : tr('pro.plan.cta.save', 'student.plan.cta.save')}
           onPress={handleSaveDraft}
           disabled={!hasUnsavedChanges || isSaving || isMutating}
           loading={isSaving}
