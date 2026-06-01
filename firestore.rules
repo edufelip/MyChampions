@@ -257,16 +257,57 @@ service cloud.firestore {
       return resource.data.studentAuthUid == request.auth.uid &&
         resource.data.ownerProfessionalUid == null &&
         resource.data.sourceKind == 'self_managed' &&
+        resource.data.isArchived == false &&
+        !hasActiveNutritionistSpecialtyForStudent(resource.data.studentAuthUid) &&
         planArchiveMetadataUnchanged() &&
         nutritionIdentityUnchanged();
     }
 
-    function canUpdateProfessionalOwnedNutritionPlan() {
+    function isPublishedNutritionPlanForStudentRead() {
+      return resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.isDraft != true;
+    }
+
+    function canCreateSelfManagedNutritionPlan() {
+      return request.resource.data.studentAuthUid == request.auth.uid &&
+        request.resource.data.ownerProfessionalUid == null &&
+        request.resource.data.sourceKind == 'self_managed' &&
+        request.resource.data.isDraft == false &&
+        request.resource.data.isArchived == false &&
+        !hasActiveNutritionistSpecialtyForStudent(request.auth.uid);
+    }
+
+    function canCreateProfessionalLibraryNutritionPlan() {
+      return request.resource.data.studentAuthUid == request.auth.uid &&
+        request.resource.data.ownerProfessionalUid == request.auth.uid &&
+        request.resource.data.sourceKind == 'predefined' &&
+        (request.resource.data.isDraft == false ||
+          request.resource.data.isDraft == true) &&
+        request.resource.data.isArchived == false;
+    }
+
+    function canCreateAssignedNutritionPlan() {
+      return request.resource.data.ownerProfessionalUid == request.auth.uid &&
+        request.resource.data.studentAuthUid != request.auth.uid &&
+        request.resource.data.sourceKind == 'assigned' &&
+        request.resource.data.isArchived == false &&
+        hasActiveNutritionistTrackingAccess(request.resource.data.studentAuthUid);
+    }
+
+    function canUpdateProfessionalLibraryNutritionPlan() {
       return resource.data.ownerProfessionalUid == request.auth.uid &&
+        resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.sourceKind == 'predefined' &&
+        nutritionIdentityUnchanged() &&
+        planArchiveMetadataUnchanged();
+    }
+
+    function canUpdateAssignedNutritionPlan() {
+      return resource.data.ownerProfessionalUid == request.auth.uid &&
+        resource.data.sourceKind == 'assigned' &&
         nutritionIdentityUnchanged() &&
         planArchiveMetadataUnchanged() &&
-        (resource.data.sourceKind == 'predefined' ||
-          hasActiveNutritionistTrackingAccess(resource.data.studentAuthUid));
+        hasActiveNutritionistTrackingAccess(resource.data.studentAuthUid);
     }
 
     function canArchiveSelfManagedNutritionPlanOnConnectionActivation() {
@@ -290,25 +331,46 @@ service cloud.firestore {
         hasEndedNutritionistConnectionForPlan(resource.data.studentAuthUid);
     }
 
+    function canDeleteSelfManagedNutritionPlan() {
+      return resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.ownerProfessionalUid == null &&
+        resource.data.sourceKind == 'self_managed';
+    }
+
+    function canDeleteProfessionalLibraryNutritionPlan() {
+      return resource.data.ownerProfessionalUid == request.auth.uid &&
+        resource.data.studentAuthUid == request.auth.uid &&
+        resource.data.sourceKind == 'predefined';
+    }
+
+    function canDeleteAssignedNutritionPlan() {
+      return resource.data.ownerProfessionalUid == request.auth.uid &&
+        resource.data.sourceKind == 'assigned' &&
+        hasActiveNutritionistTrackingAccess(resource.data.studentAuthUid);
+    }
+
     match /nutritionPlans/{planId} {
       allow read: if signedIn() && (
-        resource.data.studentAuthUid == request.auth.uid ||
-        resource.data.ownerProfessionalUid == request.auth.uid
+        resource.data.ownerProfessionalUid == request.auth.uid ||
+        isPublishedNutritionPlanForStudentRead()
       );
       allow create: if signedIn() && (
-        request.resource.data.studentAuthUid == request.auth.uid ||
-        request.resource.data.ownerProfessionalUid == request.auth.uid
+        canCreateSelfManagedNutritionPlan() ||
+        canCreateProfessionalLibraryNutritionPlan() ||
+        canCreateAssignedNutritionPlan()
       );
       allow update: if signedIn() && (
         canUpdateSelfManagedNutritionPlan() ||
-        canUpdateProfessionalOwnedNutritionPlan() ||
+        canUpdateProfessionalLibraryNutritionPlan() ||
+        canUpdateAssignedNutritionPlan() ||
         canArchiveSelfManagedNutritionPlanOnConnectionActivation() ||
         canArchiveAssignedNutritionPlanOnConnectionEnd() ||
         canRestoreSelfManagedNutritionPlanOnConnectionEnd()
       );
       allow delete: if signedIn() && (
-        resource.data.studentAuthUid == request.auth.uid ||
-        resource.data.ownerProfessionalUid == request.auth.uid
+        canDeleteSelfManagedNutritionPlan() ||
+        canDeleteProfessionalLibraryNutritionPlan() ||
+        canDeleteAssignedNutritionPlan()
       );
     }
 

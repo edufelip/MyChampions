@@ -49,8 +49,29 @@ const nutritionPlansRules = rules.slice(
   rules.indexOf('match /nutritionPlans/{planId}'),
   rules.indexOf('function trainingIdentityUnchanged()')
 );
-const professionalNutritionUpdateHelper = rules.match(
-  /function canUpdateProfessionalOwnedNutritionPlan\(\) \{[\s\S]*?\n    \}/
+const selfManagedNutritionCreateHelper = rules.match(
+  /function canCreateSelfManagedNutritionPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const professionalLibraryNutritionCreateHelper = rules.match(
+  /function canCreateProfessionalLibraryNutritionPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const assignedNutritionCreateHelper = rules.match(
+  /function canCreateAssignedNutritionPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const selfManagedNutritionUpdateHelper = rules.match(
+  /function canUpdateSelfManagedNutritionPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const professionalLibraryNutritionUpdateHelper = rules.match(
+  /function canUpdateProfessionalLibraryNutritionPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const assignedNutritionUpdateHelper = rules.match(
+  /function canUpdateAssignedNutritionPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const nutritionPlansDeleteRules = nutritionPlansRules.match(
+  /allow delete: if signedIn\(\) && \([\s\S]*?\n      \);/
+)?.[0] ?? '';
+const nutritionPlansUpdateRules = nutritionPlansRules.match(
+  /allow update: if signedIn\(\) && \([\s\S]*?\n      \);/
 )?.[0] ?? '';
 const assignedNutritionArchiveHelper = rules.match(
   /function canArchiveAssignedNutritionPlanOnConnectionEnd\(\) \{[\s\S]*?\n    \}/
@@ -161,15 +182,73 @@ test('trainingPlans normal professional updates preserve lifecycle archive state
 });
 
 test('nutritionPlans professional updates preserve lifecycle archive state', () => {
-  assert.match(rules, /function canUpdateProfessionalOwnedNutritionPlan\(\)/);
+  assert.match(rules, /function canUpdateProfessionalLibraryNutritionPlan\(\)/);
+  assert.match(rules, /function canUpdateAssignedNutritionPlan\(\)/);
   assert.doesNotMatch(
-    nutritionPlansRules,
+    nutritionPlansUpdateRules,
     /resource\.data\.ownerProfessionalUid == request\.auth\.uid\s*\|\|/
   );
   assert.match(
-    professionalNutritionUpdateHelper,
+    professionalLibraryNutritionUpdateHelper,
     /planArchiveMetadataUnchanged\(\)/
   );
+  assert.match(
+    assignedNutritionUpdateHelper,
+    /planArchiveMetadataUnchanged\(\)/
+  );
+});
+
+test('nutritionPlans rules hide draft assigned plans from students', () => {
+  assert.match(rules, /function isPublishedNutritionPlanForStudentRead\(\)/);
+  assert.match(nutritionPlansRules, /isPublishedNutritionPlanForStudentRead\(\)/);
+  assert.match(rules, /resource\.data\.isDraft != true/);
+});
+
+test('nutritionPlans self-managed creates and normal updates require no active nutritionist specialty sentinel', () => {
+  assert.match(rules, /function hasActiveNutritionistSpecialtyForStudent\(studentUid\)/);
+  assert.match(
+    activeNutritionistSpecialtyHelper,
+    /trackingAccess\/\$\(studentUid\)\/activeSpecialties\/nutritionist/
+  );
+  assert.match(activeNutritionistSpecialtyHelper, /\.data\.status == 'active'/);
+  assert.match(selfManagedNutritionCreateHelper, /!hasActiveNutritionistSpecialtyForStudent\(request\.auth\.uid\)/);
+  assert.match(selfManagedNutritionUpdateHelper, /!hasActiveNutritionistSpecialtyForStudent\(resource\.data\.studentAuthUid\)/);
+  assert.match(selfManagedNutritionUpdateHelper, /resource\.data\.isArchived == false/);
+});
+
+test('nutritionPlans rules distinguish self-managed, professional library, and assigned creates', () => {
+  assert.match(rules, /function canCreateSelfManagedNutritionPlan\(\)/);
+  assert.match(selfManagedNutritionCreateHelper, /request\.resource\.data\.sourceKind == 'self_managed'/);
+  assert.match(rules, /function canCreateProfessionalLibraryNutritionPlan\(\)/);
+  assert.match(professionalLibraryNutritionCreateHelper, /request\.resource\.data\.sourceKind == 'predefined'/);
+  assert.match(rules, /function canCreateAssignedNutritionPlan\(\)/);
+  assert.match(assignedNutritionCreateHelper, /request\.resource\.data\.sourceKind == 'assigned'/);
+  assert.match(assignedNutritionCreateHelper, /hasActiveNutritionistTrackingAccess\(request\.resource\.data\.studentAuthUid\)/);
+});
+
+test('nutritionPlans professional library create allows saved and draft predefined plans', () => {
+  assert.match(
+    professionalLibraryNutritionCreateHelper,
+    /\(request\.resource\.data\.isDraft == false \|\|\s*request\.resource\.data\.isDraft == true\)/
+  );
+});
+
+test('nutritionPlans assigned updates require active nutritionist access', () => {
+  assert.match(rules, /function canUpdateAssignedNutritionPlan\(\)/);
+  assert.match(assignedNutritionUpdateHelper, /resource\.data\.sourceKind == 'assigned'/);
+  assert.match(assignedNutritionUpdateHelper, /hasActiveNutritionistTrackingAccess\(resource\.data\.studentAuthUid\)/);
+});
+
+test('nutritionPlans delete uses delete-specific source-kind helpers', () => {
+  assert.match(rules, /function canDeleteSelfManagedNutritionPlan\(\)/);
+  assert.match(rules, /function canDeleteProfessionalLibraryNutritionPlan\(\)/);
+  assert.match(rules, /function canDeleteAssignedNutritionPlan\(\)/);
+  assert.match(nutritionPlansDeleteRules, /canDeleteSelfManagedNutritionPlan\(\)/);
+  assert.match(nutritionPlansDeleteRules, /canDeleteProfessionalLibraryNutritionPlan\(\)/);
+  assert.match(nutritionPlansDeleteRules, /canDeleteAssignedNutritionPlan\(\)/);
+  assert.doesNotMatch(nutritionPlansDeleteRules, /canUpdateSelfManagedNutritionPlan\(\)/);
+  assert.doesNotMatch(nutritionPlansDeleteRules, /canUpdateProfessionalLibraryNutritionPlan\(\)/);
+  assert.doesNotMatch(nutritionPlansDeleteRules, /canUpdateAssignedNutritionPlan\(\)/);
 });
 
 test('trainingPlans connection activation archive rules require pending before-state and active after-state', () => {
