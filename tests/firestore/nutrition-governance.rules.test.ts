@@ -108,6 +108,49 @@ test('professional can update published assigned NutritionPlan with active nutri
   }));
 });
 
+test('assigned NutritionPlan owner cannot update without active nutritionist tracking access', async () => {
+  await seedDoc(testEnv, 'nutritionPlans/assigned-existing', nutritionPlan({
+    id: 'assigned-existing',
+    ownerProfessionalUid: 'nutritionist-uid',
+    sourceKind: 'assigned',
+    isDraft: false,
+  }));
+
+  await assertFails(updateDoc(doc(authedDb(testEnv, 'nutritionist-uid'), 'nutritionPlans/assigned-existing'), {
+    title: 'Blocked assigned update',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  }));
+});
+
+test('professional cannot create assigned NutritionPlan without boolean draft state', async () => {
+  await seedActiveNutritionistAccess(testEnv, 'student-uid', 'nutritionist-uid');
+
+  const payload = nutritionPlan({
+    id: 'assigned-missing-draft',
+    ownerProfessionalUid: 'nutritionist-uid',
+    sourceKind: 'assigned',
+    isDraft: false,
+  });
+  delete (payload as { isDraft?: boolean }).isDraft;
+
+  await assertFails(setDoc(doc(authedDb(testEnv, 'nutritionist-uid'), 'nutritionPlans/assigned-missing-draft'), payload));
+});
+
+test('professional cannot update assigned NutritionPlan to malformed draft state', async () => {
+  await seedActiveNutritionistAccess(testEnv, 'student-uid', 'nutritionist-uid');
+  await seedDoc(testEnv, 'nutritionPlans/assigned-existing', nutritionPlan({
+    id: 'assigned-existing',
+    ownerProfessionalUid: 'nutritionist-uid',
+    sourceKind: 'assigned',
+    isDraft: false,
+  }));
+
+  await assertFails(updateDoc(doc(authedDb(testEnv, 'nutritionist-uid'), 'nutritionPlans/assigned-existing'), {
+    isDraft: 'nope',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  }));
+});
+
 test('unrelated professional cannot update assigned NutritionPlan', async () => {
   await seedActiveNutritionistAccess(testEnv, 'student-uid', 'nutritionist-uid');
   await seedDoc(testEnv, 'nutritionPlans/assigned-existing', nutritionPlan({

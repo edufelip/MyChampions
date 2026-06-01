@@ -290,6 +290,7 @@ service cloud.firestore {
       return request.resource.data.ownerProfessionalUid == request.auth.uid &&
         request.resource.data.studentAuthUid != request.auth.uid &&
         request.resource.data.sourceKind == 'assigned' &&
+        (request.resource.data.isDraft == false || request.resource.data.isDraft == true) &&
         request.resource.data.isArchived == false &&
         hasActiveNutritionistTrackingAccess(request.resource.data.studentAuthUid);
     }
@@ -305,6 +306,7 @@ service cloud.firestore {
     function canUpdateAssignedNutritionPlan() {
       return resource.data.ownerProfessionalUid == request.auth.uid &&
         resource.data.sourceKind == 'assigned' &&
+        (request.resource.data.isDraft == false || request.resource.data.isDraft == true) &&
         nutritionIdentityUnchanged() &&
         planArchiveMetadataUnchanged() &&
         hasActiveNutritionistTrackingAccess(resource.data.studentAuthUid);
