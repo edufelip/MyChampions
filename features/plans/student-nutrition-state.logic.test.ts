@@ -1,7 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveStudentNutritionState } from './student-nutrition-state.logic';
+import {
+  resolveStudentNutritionDisplayState,
+  resolveStudentNutritionState,
+} from './student-nutrition-state.logic';
 import type { Plan } from './plan-source';
 
 function plan(overrides: Partial<Plan>): Plan {
@@ -62,6 +65,44 @@ describe('resolveStudentNutritionState', () => {
         plans: [],
       }).kind,
       'empty'
+    );
+  });
+});
+
+describe('resolveStudentNutritionDisplayState', () => {
+  it('keeps usable assigned plan content visible when connection loading fails', () => {
+    assert.equal(
+      resolveStudentNutritionDisplayState({
+        hasCurrentUser: true,
+        plansKind: 'ready',
+        connectionsKind: 'error',
+        nutritionKind: 'assigned',
+      }),
+      'content'
+    );
+  });
+
+  it('keeps usable self-managed plan content visible when connection loading fails', () => {
+    assert.equal(
+      resolveStudentNutritionDisplayState({
+        hasCurrentUser: true,
+        plansKind: 'ready',
+        connectionsKind: 'error',
+        nutritionKind: 'self_managed',
+      }),
+      'content'
+    );
+  });
+
+  it('shows a load error when no usable nutrition plan exists and connections fail', () => {
+    assert.equal(
+      resolveStudentNutritionDisplayState({
+        hasCurrentUser: true,
+        plansKind: 'ready',
+        connectionsKind: 'error',
+        nutritionKind: 'empty',
+      }),
+      'load_error'
     );
   });
 });

@@ -28,7 +28,10 @@ import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
-import { resolveStudentNutritionState } from '@/features/plans/student-nutrition-state.logic';
+import {
+  resolveStudentNutritionDisplayState,
+  resolveStudentNutritionState,
+} from '@/features/plans/student-nutrition-state.logic';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -68,14 +71,12 @@ export default function StudentNutritionScreen() {
   });
   const assignedNutritionPlan = nutritionState.kind === 'assigned' ? nutritionState.assignedPlan : null;
   const selfManagedNutritionPlan = nutritionState.kind === 'self_managed' ? nutritionState.selfManagedPlan : null;
-  const isConnectionsPending = Boolean(currentUser) && (connectionsState.kind === 'idle' || connectionsState.kind === 'loading');
-  const hasConnectionsError = Boolean(currentUser) && connectionsState.kind === 'error';
-  const loadErrorMessage =
-    plansState.kind === 'error'
-      ? plansState.message
-      : connectionsState.kind === 'error'
-        ? connectionsState.message
-        : null;
+  const nutritionDisplayState = resolveStudentNutritionDisplayState({
+    hasCurrentUser: Boolean(currentUser),
+    plansKind: plansState.kind,
+    connectionsKind: connectionsState.kind,
+    nutritionKind: nutritionState.kind,
+  });
 
   const { state: builderState, loadPlan } = useNutritionPlanBuilder(Boolean(currentUser), 'student-assigned');
   const [todayPortionLogs, setTodayPortionLogs] = useState<FirestorePortionLog[]>([]);
@@ -180,13 +181,13 @@ export default function StudentNutritionScreen() {
         ) : null}
 
         <View style={styles.sectionStack}>
-          {plansState.kind === 'loading' || isConnectionsPending ? (
+          {nutritionDisplayState === 'loading' ? (
             <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.plansLoading">
               <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
             </DsCard>
-          ) : plansState.kind === 'error' || hasConnectionsError ? (
+          ) : nutritionDisplayState === 'load_error' ? (
             <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.loadError">
-              <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>{loadErrorMessage ?? t('common.error.generic')}</Text>
+              <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
             </DsCard>
           ) : nutritionState.kind === 'assigned' && assignedNutritionPlan ? (
             <>
