@@ -66,6 +66,22 @@
         { "fieldPath": "ownerProfessionalUid", "order": "ASCENDING" },
         { "fieldPath": "sourceKind", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "waterLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "dateKey", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "portionLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "loggedAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

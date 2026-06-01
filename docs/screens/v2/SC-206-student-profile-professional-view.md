@@ -49,7 +49,7 @@
   - Plan change request records linked to assigned plan contexts.
   - Student-owned water logs for nutrition tracking review.
   - Student-owned portion logs for nutrition tracking review.
-  - Derived nutrition tracking review state: today's water progress, today's meal check-off summary, and recent portion summaries.
+  - Derived nutrition tracking review state: today's water progress, seven-day hydration summary, today's meal check-off summary, and recent portion summaries.
   - Consent grant flag.
 - Outputs:
   - Assignment confirmation/unbind actions.
