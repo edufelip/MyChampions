@@ -433,6 +433,9 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.food_search.empty` | SC-207 | Empty food search | No foods found. Try a different search term. | Nenhum alimento encontrado. Tente outro termo. | No se encontraron alimentos. Prueba otro término. | |
 | `pro.plan.food_search.error` | SC-207 | Generic food-search error | Food search unavailable. Try again. | Busca de alimentos indisponível. Tente novamente. | Búsqueda de alimentos no disponible. Inténtalo de nuevo. | |
 | `pro.plan.food_search.error.quota` | SC-207 | Rate-limit error | Food search is temporarily rate-limited. Try again soon. | A busca de alimentos está temporariamente limitada. Tente novamente em instantes. | La búsqueda de alimentos está temporalmente limitada. Inténtalo de nuevo en breve. | 429 + quota_exceeded |
+| `pro.plan.error.reason` | SC-207 | Save error reason template | Reason: {reason} | Motivo: {reason} | Motivo: {reason} | Meal builder save error detail |
+| `pro.plan.meal.not_found` | SC-207 | Missing meal fallback | Meal not found | Refeição não encontrada | Comida no encontrada | Direct meal-builder route fallback |
+| `pro.plan.meal.go_back` | SC-207 | Missing meal fallback CTA | Go Back | Voltar | Volver | Direct meal-builder route fallback |
 | `pro.plan.custom_meal.section` | SC-207 | CustomMeal picker section | Saved custom meals | Refeições personalizadas salvas | Comidas personalizadas guardadas | CustomMeal snapshot picker |
 | `pro.plan.custom_meal.empty` | SC-207 | Empty CustomMeal picker state | No saved custom meals yet. | Ainda não há refeições personalizadas salvas. | Aún no hay comidas personalizadas guardadas. | CustomMeal snapshot picker |
 | `pro.plan.custom_meal.badge` | SC-207 | Selected CustomMeal snapshot badge | Snapshot | Snapshot | Snapshot | Indicates copied plan snapshot, not live meal reference |

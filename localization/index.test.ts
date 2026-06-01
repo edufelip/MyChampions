@@ -69,3 +69,9 @@ test('SC-206 Locale: tracking review numeric templates resolve in all locales', 
     '320 kcal · 40 g carb. · 20 g prot. · 8 g grasa'
   );
 });
+
+test('SC-207 Locale: meal builder fallback copy resolves in all locales', () => {
+  assert.equal(t('en-US', 'pro.plan.error.reason', { reason: 'network' }), 'Reason: network');
+  assert.equal(t('pt-BR', 'pro.plan.meal.not_found'), 'Refeição não encontrada');
+  assert.equal(t('es-ES', 'pro.plan.meal.go_back'), 'Volver');
+});

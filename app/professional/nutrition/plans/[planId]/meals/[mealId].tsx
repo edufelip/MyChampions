@@ -158,14 +158,14 @@ export default function NutritionMealBuilderScreen() {
     if (error) {
       Alert.alert(
         tr('pro.plan.error.save', 'student.plan.error.save'),
-        `Reason: ${error}`
+        t('pro.plan.error.reason', { reason: error }) as string
       );
     } else {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setAddItemForm({ kind: 'closed' });
       clearFoodSearch();
     }
-  }, [isBusy, addItemForm, state, addItem, planId, mealId, tr, clearFoodSearch]);
+  }, [isBusy, addItemForm, state, addItem, planId, mealId, tr, clearFoodSearch, t]);
 
   const handleRemoveItem = useCallback(
     (itemId: string) => {
@@ -235,8 +235,8 @@ export default function NutritionMealBuilderScreen() {
   if (!meal && state.kind === 'ready') {
     return (
       <DsScreen scheme={scheme} contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
-        <Text style={{ color: palette.text }}>Meal not found</Text>
-        <DsPillButton scheme={scheme} label="Go Back" onPress={() => router.back()} />
+        <Text style={{ color: palette.text }}>{t('pro.plan.meal.not_found')}</Text>
+        <DsPillButton scheme={scheme} label={t('pro.plan.meal.go_back') as string} onPress={() => router.back()} />
       </DsScreen>
     );
   }
