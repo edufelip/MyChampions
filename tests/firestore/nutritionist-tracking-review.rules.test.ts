@@ -68,6 +68,77 @@ test('unrelated nutritionist cannot read student water or portion logs', async (
   await assertFails(getDoc(doc(db, 'portionLogs/portion-log-1')));
 });
 
+test('student can create pending invite-backed nutritionist connection', async () => {
+  await seedDoc(testEnv, 'inviteCodeLookups/NUT123', {
+    scope: 'invite_code_lookup',
+    codeValue: 'NUT123',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    inviteCodeId: 'nutritionist',
+    status: 'active',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  await seedDoc(testEnv, 'professionals/nutritionist-uid/inviteCodes/nutritionist', {
+    scope: 'professional_specialty',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    codeValue: 'NUT123',
+    status: 'active',
+    rotatedAt: null,
+    expiresAt: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+
+  await assertSucceeds(setDoc(doc(authedDb(testEnv, 'student-uid'), 'connections/pending-invite'), {
+    id: 'pending-invite',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+    status: 'pending_confirmation',
+    canceledReason: null,
+    endedAt: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }));
+});
+
+test('student cannot forge active nutritionist connection and tracking access', async () => {
+  const db = authedDb(testEnv, 'student-uid');
+  const forgedConnection = {
+    id: 'forged-active',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+    status: 'active',
+    canceledReason: null,
+    endedAt: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+  };
+
+  await assertFails(setDoc(doc(db, 'connections/forged-active'), forgedConnection));
+  await seedDoc(testEnv, 'connections/forged-active', forgedConnection);
+
+  await assertFails(setDoc(doc(db, 'trackingAccess/student-uid/nutritionists/nutritionist-uid'), {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'forged-active',
+    status: 'active',
+  }));
+  await assertFails(setDoc(doc(db, 'trackingAccess/student-uid/activeSpecialties/nutritionist'), {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'forged-active',
+    status: 'active',
+  }));
+});
+
 async function seedTrackingLogs() {
   await seedDoc(testEnv, 'waterLogs/student-uid_2026-06-01', {
     id: 'student-uid_2026-06-01',

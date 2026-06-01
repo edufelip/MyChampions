@@ -46,6 +46,33 @@ service cloud.firestore {
       );
     }
 
+    function validConnectionCreate(connectionId) {
+      return signedIn() &&
+        request.resource.data.id == connectionId &&
+        request.resource.data.studentAuthUid == request.auth.uid &&
+        request.resource.data.professionalAuthUid is string &&
+        request.resource.data.professionalAuthUid != request.auth.uid &&
+        (request.resource.data.specialty == 'nutritionist' || request.resource.data.specialty == 'fitness_coach') &&
+        request.resource.data.status == 'pending_confirmation' &&
+        request.resource.data.canceledReason == null &&
+        request.resource.data.endedAt == null &&
+        request.resource.data.sourceInviteCodeId == request.resource.data.specialty &&
+        request.resource.data.sourceInviteCodeValue is string &&
+        exists(/databases/$(database)/documents/inviteCodeLookups/$(request.resource.data.sourceInviteCodeValue)) &&
+        exists(/databases/$(database)/documents/professionals/$(request.resource.data.professionalAuthUid)/inviteCodes/$(request.resource.data.specialty)) &&
+        get(/databases/$(database)/documents/inviteCodeLookups/$(request.resource.data.sourceInviteCodeValue)).data.scope == 'invite_code_lookup' &&
+        get(/databases/$(database)/documents/inviteCodeLookups/$(request.resource.data.sourceInviteCodeValue)).data.codeValue == request.resource.data.sourceInviteCodeValue &&
+        get(/databases/$(database)/documents/inviteCodeLookups/$(request.resource.data.sourceInviteCodeValue)).data.professionalAuthUid == request.resource.data.professionalAuthUid &&
+        get(/databases/$(database)/documents/inviteCodeLookups/$(request.resource.data.sourceInviteCodeValue)).data.specialty == request.resource.data.specialty &&
+        get(/databases/$(database)/documents/inviteCodeLookups/$(request.resource.data.sourceInviteCodeValue)).data.inviteCodeId == request.resource.data.sourceInviteCodeId &&
+        get(/databases/$(database)/documents/inviteCodeLookups/$(request.resource.data.sourceInviteCodeValue)).data.status == 'active' &&
+        get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalAuthUid)/inviteCodes/$(request.resource.data.specialty)).data.scope == 'professional_specialty' &&
+        get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalAuthUid)/inviteCodes/$(request.resource.data.specialty)).data.professionalAuthUid == request.resource.data.professionalAuthUid &&
+        get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalAuthUid)/inviteCodes/$(request.resource.data.specialty)).data.specialty == request.resource.data.specialty &&
+        get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalAuthUid)/inviteCodes/$(request.resource.data.specialty)).data.codeValue == request.resource.data.sourceInviteCodeValue &&
+        get(/databases/$(database)/documents/professionals/$(request.resource.data.professionalAuthUid)/inviteCodes/$(request.resource.data.specialty)).data.status == 'active';
+    }
+
     function ownsPlan(planId) {
       return (
         exists(/databases/$(database)/documents/nutritionPlans/$(planId)) &&
@@ -92,7 +119,10 @@ service cloud.firestore {
 
     function validTrackingAccessWrite(studentUid, professionalUid, specialty) {
       return signedIn() &&
-        (request.auth.uid == studentUid || request.auth.uid == professionalUid) &&
+        (
+          (request.resource.data.status == 'active' && request.auth.uid == professionalUid) ||
+          (request.resource.data.status == 'ended' && (request.auth.uid == studentUid || request.auth.uid == professionalUid))
+        ) &&
         request.resource.data.studentAuthUid == studentUid &&
         request.resource.data.professionalAuthUid == professionalUid &&
         request.resource.data.specialty == specialty &&
@@ -107,7 +137,10 @@ service cloud.firestore {
 
     function validActiveSpecialtyWriteFieldsAndConnection(studentUid, specialtyId) {
       return signedIn() &&
-        (request.auth.uid == studentUid || request.auth.uid == request.resource.data.professionalAuthUid) &&
+        (
+          (request.resource.data.status == 'active' && request.auth.uid == request.resource.data.professionalAuthUid) ||
+          (request.resource.data.status == 'ended' && (request.auth.uid == studentUid || request.auth.uid == request.resource.data.professionalAuthUid))
+        ) &&
         request.resource.data.studentAuthUid == studentUid &&
         request.resource.data.professionalAuthUid is string &&
         request.resource.data.specialty == specialtyId &&
@@ -254,7 +287,7 @@ service cloud.firestore {
 
     match /connections/{connectionId} {
       allow read: if isConnectionParticipant();
-      allow create: if signedIn() && request.resource.data.studentAuthUid == request.auth.uid;
+      allow create: if validConnectionCreate(connectionId);
       allow update: if isConnectionParticipant() &&
         connectionIdentityUnchanged() &&
         validConnectionStatusTransition();
