@@ -382,15 +382,15 @@ Commit: `fix(connections): route professional unbind through lifecycle`
 - Modify: localization files for locked copy if needed
 - Test: route/specialty logic tests if extractable
 
-- [ ] **Step 1: Write failing logic test**
+- [x] **Step 1: Write failing logic test**
 
 Add a pure resolver that says Nutrition tab/screen is available only to Students or Professionals with `nutritionist` Specialty.
 
-- [ ] **Step 2: Implement tab/screen gate**
+- [x] **Step 2: Implement tab/screen gate**
 
 Hide or lock the nutrition surface for non-nutritionist Professionals. Direct routes should redirect or show locked state.
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 Run:
 

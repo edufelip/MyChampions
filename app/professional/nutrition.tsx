@@ -15,7 +15,7 @@
 import { useCallback } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Redirect, Stack, useRouter } from 'expo-router';
 
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -25,6 +25,8 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import type { PredefinedPlan } from '@/features/plans/plan-source';
 import { usePlans } from '@/features/plans/use-plans';
+import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -36,8 +38,13 @@ export default function ProNutritionLibraryScreen() {
   const theme = getDsTheme(scheme);
   const { t } = useTranslation();
   const router = useRouter();
-  const { currentUser } = useAuthSession();
-  const { state, reload } = usePlans(Boolean(currentUser));
+  const { currentUser, lockedRole } = useAuthSession();
+  const { state: specialtiesState } = useSpecialties(Boolean(currentUser) && lockedRole === 'professional');
+  const canUseNutrition = canAccessNutritionSurface({
+    role: lockedRole,
+    specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+  });
+  const { state, reload } = usePlans(Boolean(currentUser) && canUseNutrition);
 
   const nutritionPlans: PredefinedPlan[] =
     state.kind === 'ready' ? state.predefinedPlans.filter((p) => p.planType === 'nutrition') : [];
@@ -53,6 +60,23 @@ export default function ProNutritionLibraryScreen() {
     ),
     [router, t, theme]
   );
+
+  if (specialtiesState.kind === 'loading' || specialtiesState.kind === 'idle') {
+    return (
+      <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>
+        <Stack.Screen options={{ title: t('pro.library.nutrition.title'), headerShown: false }} />
+        <ActivityIndicator
+          style={styles.loader}
+          accessibilityLabel={t('a11y.loading.default')}
+          color={theme.color.accentPrimary}
+        />
+      </DsScreen>
+    );
+  }
+
+  if (!canUseNutrition) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   return (
     <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>

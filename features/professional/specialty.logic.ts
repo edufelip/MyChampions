@@ -5,6 +5,8 @@
  * BR-234, BR-235, BR-236, BR-237
  */
 
+import type { RoleIntent } from '../auth/role-selection.logic';
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type Specialty = 'nutritionist' | 'fitness_coach';
@@ -41,6 +43,11 @@ export type SpecialtyActionErrorReason =
   | 'configuration'
   | 'unknown';
 
+export type NutritionSurfaceAccessInput = {
+  role: RoleIntent | null;
+  specialties: SpecialtyRecord[];
+};
+
 export type CredentialInput = {
   registryId: string;
   authority: string;
@@ -58,6 +65,15 @@ export type CredentialValidationErrors = {
 export function normalizeSpecialty(raw: unknown): Specialty | null {
   if (raw === 'nutritionist' || raw === 'fitness_coach') return raw;
   return null;
+}
+
+export function canAccessNutritionSurface(input: NutritionSurfaceAccessInput): boolean {
+  if (input.role === 'student') return true;
+  if (input.role !== 'professional') return false;
+
+  return input.specialties.some(
+    (record) => record.specialty === 'nutritionist' && record.isActive
+  );
 }
 
 /**

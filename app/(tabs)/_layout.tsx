@@ -20,6 +20,8 @@ import { getDsTheme } from '@/constants/design-system';
 import type { RoleIntent } from '@/features/auth/role-selection.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { resolveTabShellState } from '@/features/auth/tab-shell.logic';
+import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -64,6 +66,7 @@ export default function TabLayout() {
     establishedUid: establishedUidRef.current,
     establishedRole,
   });
+  const { state: specialtiesState } = useSpecialties(Boolean(currentUser) && effectiveRole === 'professional');
 
   useEffect(() => {
     if (!__DEV__) return;
@@ -85,6 +88,10 @@ export default function TabLayout() {
 
   const isPro = effectiveRole === 'professional';
   const isStudent = effectiveRole === 'student';
+  const canUseNutrition = canAccessNutritionSurface({
+    role: effectiveRole,
+    specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+  });
 
   return (
     <Tabs
@@ -140,7 +147,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="fork.knife" color={color} />
           ),
-          href: effectiveRole ? undefined : null,
+          href: canUseNutrition ? undefined : null,
         }}
       />
 

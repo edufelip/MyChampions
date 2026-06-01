@@ -66,7 +66,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans until sent/published.
 - Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.
 - Assigned create/send/bulk assignment requires active nutritionist Connection and nutrition-scoped targets.
-- Professionals without nutritionist Specialty cannot access this route.
+- Professionals without nutritionist Specialty cannot access this route; their Nutrition tab is hidden and direct `/professional/nutrition` entry redirects to the dashboard.
 - Professionals cannot add Student-owned CustomMeals into assigned plans unless shared/imported first; assigned meals use stable snapshots.
 - Meal add/remove/item mutations must not clear already rendered builder content while the request is still pending; UI remains visible until the mutation resolves.
 
@@ -177,6 +177,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
 | `features/plans/plan-builder-source.ts` | Firestore source ops: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `searchFoods` |
 | `features/plans/use-plan-builder.ts` | React hook `useNutritionPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
+| `features/professional/nutrition-specialty-gate.logic.test.ts` | Pure resolver coverage for Student access and Professional nutritionist Specialty gate |
 | `app/professional/nutrition.tsx` | Plan library list screen |
 | `app/professional/nutrition/plans/[planId].tsx` | Plan builder screen |
 
