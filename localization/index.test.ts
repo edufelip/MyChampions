@@ -75,3 +75,11 @@ test('SC-207 Locale: meal builder fallback copy resolves in all locales', () => 
   assert.equal(t('pt-BR', 'pro.plan.meal.not_found'), 'Refeição não encontrada');
   assert.equal(t('es-ES', 'pro.plan.meal.go_back'), 'Volver');
 });
+
+test('SC-206 Locale: assignment draft controls resolve in all locales', () => {
+  assert.equal(t('en-US', 'pro.student_profile.assignment.draft_pending'), 'Draft pending send');
+  assert.equal(t('pt-BR', 'pro.student_profile.assignment.cta_resume_draft'), 'Retomar rascunho');
+  assert.equal(t('es-ES', 'pro.student_profile.assignment.cta_view_edit'), 'Ver/editar plan asignado');
+  assert.equal(t('en-US', 'pro.plan.discard.success'), 'Draft discarded successfully.');
+  assert.equal(t('pt-BR', 'pro.plan.discard.error'), 'Não foi possível descartar o rascunho.');
+});

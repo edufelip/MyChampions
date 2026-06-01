@@ -235,9 +235,9 @@ export default function ProfessionalStudentProfileScreen() {
       setIsAssigning(false);
 
       if (error) {
-        Alert.alert(t('pro.plan.discard.error' as any) as string || 'Error discarding draft');
+        Alert.alert(t('pro.plan.discard.error') as string);
       } else {
-        Alert.alert(t('pro.plan.discard.success' as any) as string || 'Draft discarded successfully');
+        Alert.alert(t('pro.plan.discard.success') as string);
         reloadPlans();
         void loadAssignments();
       }
@@ -612,21 +612,21 @@ function AssignmentCard({
 
   if (status === 'active') {
     if (draftPlan) {
-      statusLabel = t('pro.student_profile.assignment.draft_pending' as any) || 'Draft (Pending Send)';
+      statusLabel = t('pro.student_profile.assignment.draft_pending') as string;
       statusColor = theme.color.warning;
     } else if (activePlan) {
-      const activeText = t('pro.student_profile.assignment.active') || 'Active';
+      const activeText = t('pro.student_profile.assignment.active') as string;
       statusLabel = `${activeText}: ${activePlan.name}`;
       statusColor = theme.color.success;
     } else {
-      statusLabel = t('pro.student_profile.assignment.awaiting' as any) || 'Active (Awaiting Plan)';
+      statusLabel = t('pro.student_profile.assignment.awaiting') as string;
       statusColor = theme.color.textSecondary;
     }
   } else if (status === 'pending') {
-    statusLabel = t('pro.student_profile.assignment.pending') || 'Pending Confirmation';
+    statusLabel = t('pro.student_profile.assignment.pending') as string;
     statusColor = theme.color.textSecondary;
   } else {
-    statusLabel = t('pro.student_profile.assignment.none') || 'No Connection';
+    statusLabel = t('pro.student_profile.assignment.none') as string;
     statusColor = theme.color.textSecondary;
   }
 
@@ -642,7 +642,7 @@ function AssignmentCard({
               scheme={scheme}
               variant="primary"
               size="sm"
-              label={t('pro.student_profile.assignment.cta_resume_draft' as any) || 'Resume Draft'}
+              label={t('pro.student_profile.assignment.cta_resume_draft') as string}
               onPress={() => onViewPlan(draftPlan.id)}
               fullWidth={false}
               testID={`${testID}.cta_resume_draft`}
@@ -651,7 +651,7 @@ function AssignmentCard({
               scheme={scheme}
               variant="outline"
               size="sm"
-              label={t('pro.student_profile.assignment.cta_discard' as any) || 'Discard'}
+              label={t('pro.student_profile.assignment.cta_discard') as string}
               onPress={() => onDiscardDraft(draftPlan.id)}
               contentColor={theme.color.danger}
               style={{ borderColor: theme.color.danger }}
@@ -666,7 +666,7 @@ function AssignmentCard({
             scheme={scheme}
             variant="outline"
             size="sm"
-            label={t('pro.student_profile.assignment.cta_view_edit' as any) || 'View/Edit Assigned Plan'}
+            label={t('pro.student_profile.assignment.cta_view_edit') as string}
             onPress={() => onViewPlan(activePlan.id)}
             fullWidth={false}
             testID={`${testID}.cta_view_edit`}

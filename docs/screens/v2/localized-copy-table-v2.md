@@ -368,6 +368,17 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `settings.account.delete.error.network` | SC-213 | Inline error | Couldn't connect. Check your connection and try again. | Não foi possível conectar. Verifique sua conexão e tente novamente. | No se pudo conectar. Comprueba tu conexión e inténtalo de nuevo. | |
 | `settings.account.delete.error.unknown` | SC-213 | Inline error | Something went wrong. Try again. | Algo deu errado. Tente novamente. | Algo salió mal. Inténtalo de nuevo. | |
 | `settings.account.delete.error.already_requested` | SC-213 | Inline error | A deletion request is already in progress. | Uma solicitação de exclusão já está em andamento. | Ya hay una solicitud de eliminación en curso. | |
+| `pro.student_profile.assignment.active` | SC-206 | Assignment status | Active | Ativo | Activo | Prefix before assigned plan name when plan exists |
+| `pro.student_profile.assignment.pending` | SC-206 | Assignment status | Pending confirmation | Aguardando confirmação | Esperando confirmación | |
+| `pro.student_profile.assignment.none` | SC-206 | Assignment status | No active assignment | Sem atribuição ativa | Sin asignación activa | |
+| `pro.student_profile.assignment.draft_pending` | SC-206 | Draft status | Draft pending send | Rascunho pendente de envio | Borrador pendiente de envío | |
+| `pro.student_profile.assignment.awaiting` | SC-206 | Active status without plan | Active, awaiting plan | Ativo, aguardando plano | Activo, esperando plan | |
+| `pro.student_profile.assignment.cta_assign` | SC-206 | Assignment CTA | Assign plan | Atribuir plano | Asignar plan | |
+| `pro.student_profile.assignment.cta_resume_draft` | SC-206 | Draft CTA | Resume draft | Retomar rascunho | Retomar borrador | |
+| `pro.student_profile.assignment.cta_discard` | SC-206 | Draft CTA | Discard | Descartar | Descartar | |
+| `pro.student_profile.assignment.cta_view_edit` | SC-206 | Assigned plan CTA | View/edit assigned plan | Ver/editar plano atribuído | Ver/editar plan asignado | |
+| `pro.plan.discard.success` | SC-206 | Draft discard success | Draft discarded successfully. | Rascunho descartado com sucesso. | Borrador descartado correctamente. | |
+| `pro.plan.discard.error` | SC-206 | Draft discard error | Could not discard draft. | Não foi possível descartar o rascunho. | No se pudo descartar el borrador. | |
 | `common.error.retry` | Common | Generic error action | Try again | Tentar novamente | Intentar de nuevo | Shared utility string |
 | `common.loading.default` | Common | Generic loading text | Loading... | Carregando... | Cargando... | Shared utility string |
 | `common.empty.no_data` | Common | Generic empty text | Nothing here yet. | Ainda não há nada aqui. | Aún no hay nada aquí. | Use only when screen-specific copy is unavailable |
