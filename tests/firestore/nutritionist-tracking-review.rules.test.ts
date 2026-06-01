@@ -1,6 +1,6 @@
 import test, { after, before, beforeEach } from 'node:test';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import {
   authedDb,
   clearRulesData,
@@ -103,6 +103,113 @@ test('student can create pending invite-backed nutritionist connection', async (
     createdAt: '2026-06-01T00:00:00.000Z',
     updatedAt: '2026-06-01T00:00:00.000Z',
   }));
+});
+
+test('student cannot end nutritionist connection without lifecycle side effects', async () => {
+  await seedActiveNutritionistAccess(testEnv, 'student-uid', 'nutritionist-uid');
+  await seedDoc(testEnv, 'trackingAccess/student-uid/activeSpecialties/nutritionist', {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'student-uid-nutritionist-uid-nutritionist',
+    status: 'active',
+  });
+
+  await assertFails(updateDoc(
+    doc(authedDb(testEnv, 'student-uid'), 'connections/student-uid-nutritionist-uid-nutritionist'),
+    {
+      status: 'ended',
+      endedAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    }
+  ));
+});
+
+test('student can end nutritionist connection with lifecycle side effects', async () => {
+  await seedActiveNutritionistAccess(testEnv, 'student-uid', 'nutritionist-uid');
+  await seedDoc(testEnv, 'trackingAccess/student-uid/activeSpecialties/nutritionist', {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'student-uid-nutritionist-uid-nutritionist',
+    status: 'active',
+  });
+
+  const db = authedDb(testEnv, 'student-uid');
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'connections/student-uid-nutritionist-uid-nutritionist'), {
+    status: 'ended',
+    endedAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  batch.set(doc(db, 'trackingAccess/student-uid/nutritionists/nutritionist-uid'), {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'student-uid-nutritionist-uid-nutritionist',
+    status: 'ended',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }, { merge: true });
+  batch.set(doc(db, 'trackingAccess/student-uid/activeSpecialties/nutritionist'), {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'student-uid-nutritionist-uid-nutritionist',
+    status: 'ended',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }, { merge: true });
+
+  await assertSucceeds(batch.commit());
+});
+
+test('student cannot read assigned nutrition plan after lifecycle connection end', async () => {
+  await seedActiveNutritionistAccess(testEnv, 'student-uid', 'nutritionist-uid');
+  await seedDoc(testEnv, 'trackingAccess/student-uid/activeSpecialties/nutritionist', {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'student-uid-nutritionist-uid-nutritionist',
+    status: 'active',
+  });
+  await seedDoc(testEnv, 'nutritionPlans/assigned-published', {
+    id: 'assigned-published',
+    studentAuthUid: 'student-uid',
+    ownerProfessionalUid: 'nutritionist-uid',
+    sourceKind: 'assigned',
+    isDraft: false,
+    isArchived: false,
+    lifecycleConnectionId: null,
+    title: 'Assigned Nutrition',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  });
+
+  const db = authedDb(testEnv, 'student-uid');
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'connections/student-uid-nutritionist-uid-nutritionist'), {
+    status: 'ended',
+    endedAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  batch.set(doc(db, 'trackingAccess/student-uid/nutritionists/nutritionist-uid'), {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'student-uid-nutritionist-uid-nutritionist',
+    status: 'ended',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }, { merge: true });
+  batch.set(doc(db, 'trackingAccess/student-uid/activeSpecialties/nutritionist'), {
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'nutritionist-uid',
+    specialty: 'nutritionist',
+    connectionId: 'student-uid-nutritionist-uid-nutritionist',
+    status: 'ended',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }, { merge: true });
+  await assertSucceeds(batch.commit());
+
+  await assertFails(getDoc(doc(db, 'nutritionPlans/assigned-published')));
 });
 
 test('student cannot forge active nutritionist connection and tracking access', async () => {

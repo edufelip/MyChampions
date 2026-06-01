@@ -37,6 +37,7 @@ test('student cannot read draft assigned NutritionPlan', async () => {
 });
 
 test('student can read published assigned NutritionPlan', async () => {
+  await seedActiveNutritionistAccess(testEnv, 'student-uid', 'nutritionist-uid');
   await seedDoc(testEnv, 'nutritionPlans/assigned-published', nutritionPlan({
     id: 'assigned-published',
     ownerProfessionalUid: 'nutritionist-uid',

@@ -32,17 +32,53 @@ service cloud.firestore {
         request.resource.data.createdAt == resource.data.createdAt;
     }
 
-    function validConnectionStatusTransition() {
+    function validConnectionStatusTransition(connectionId) {
       return (
         resource.data.status == 'pending_confirmation' &&
         request.auth.uid == resource.data.professionalAuthUid &&
         request.resource.data.status == 'active' &&
         request.resource.data.canceledReason == null &&
-        request.resource.data.endedAt == null
+        request.resource.data.endedAt == null &&
+        validConnectionTrackingAccessAfter(connectionId, 'active') &&
+        validConnectionActiveSpecialtyAfter(connectionId, 'active')
       ) || (
         (resource.data.status == 'pending_confirmation' || resource.data.status == 'active') &&
         request.resource.data.status == 'ended' &&
-        request.resource.data.endedAt is string
+        request.resource.data.endedAt is string &&
+        validConnectionTrackingAccessAfter(connectionId, 'ended') &&
+        validConnectionActiveSpecialtyAfter(connectionId, 'ended')
+      );
+    }
+
+    function validConnectionTrackingAccessAfter(connectionId, status) {
+      return (
+        resource.data.specialty == 'nutritionist' &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/nutritionists/$(resource.data.professionalAuthUid)).data.studentAuthUid == resource.data.studentAuthUid &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/nutritionists/$(resource.data.professionalAuthUid)).data.professionalAuthUid == resource.data.professionalAuthUid &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/nutritionists/$(resource.data.professionalAuthUid)).data.specialty == resource.data.specialty &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/nutritionists/$(resource.data.professionalAuthUid)).data.connectionId == connectionId &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/nutritionists/$(resource.data.professionalAuthUid)).data.status == status
+      ) || (
+        resource.data.specialty == 'fitness_coach' &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/fitnessCoaches/$(resource.data.professionalAuthUid)).data.studentAuthUid == resource.data.studentAuthUid &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/fitnessCoaches/$(resource.data.professionalAuthUid)).data.professionalAuthUid == resource.data.professionalAuthUid &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/fitnessCoaches/$(resource.data.professionalAuthUid)).data.specialty == resource.data.specialty &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/fitnessCoaches/$(resource.data.professionalAuthUid)).data.connectionId == connectionId &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/fitnessCoaches/$(resource.data.professionalAuthUid)).data.status == status
+      );
+    }
+
+    function validConnectionActiveSpecialtyAfter(connectionId, status) {
+      return (
+        status == 'ended' &&
+        exists(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/activeSpecialties/$(resource.data.specialty)) &&
+        get(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/activeSpecialties/$(resource.data.specialty)).data.connectionId != connectionId
+      ) || (
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/activeSpecialties/$(resource.data.specialty)).data.studentAuthUid == resource.data.studentAuthUid &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/activeSpecialties/$(resource.data.specialty)).data.professionalAuthUid == resource.data.professionalAuthUid &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/activeSpecialties/$(resource.data.specialty)).data.specialty == resource.data.specialty &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/activeSpecialties/$(resource.data.specialty)).data.connectionId == connectionId &&
+        getAfter(/databases/$(database)/documents/trackingAccess/$(resource.data.studentAuthUid)/activeSpecialties/$(resource.data.specialty)).data.status == status
       );
     }
 
@@ -103,6 +139,28 @@ service cloud.firestore {
         get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)).data.studentAuthUid == ownerUid &&
         get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)).data.professionalAuthUid == request.auth.uid &&
         get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)).data.specialty == 'fitness_coach';
+    }
+
+    function hasActiveNutritionistConnectionForStudentAndProfessional(studentUid, professionalUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)) &&
+        exists(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)) &&
+        get(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.status == 'active' &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)).data.status == 'active' &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)).data.studentAuthUid == studentUid &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)).data.professionalAuthUid == professionalUid &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/nutritionists/$(professionalUid)).data.connectionId)).data.specialty == 'nutritionist';
+    }
+
+    function hasActiveFitnessCoachConnectionForStudentAndProfessional(studentUid, professionalUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)) &&
+        exists(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)) &&
+        get(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.status == 'active' &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.status == 'active' &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.studentAuthUid == studentUid &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.professionalAuthUid == professionalUid &&
+        get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.specialty == 'fitness_coach';
     }
 
     function hasActiveNutritionistSpecialtyForStudent(studentUid) {
@@ -290,7 +348,7 @@ service cloud.firestore {
       allow create: if validConnectionCreate(connectionId);
       allow update: if isConnectionParticipant() &&
         connectionIdentityUnchanged() &&
-        validConnectionStatusTransition();
+        validConnectionStatusTransition(connectionId);
       allow delete: if false;
     }
 
@@ -334,7 +392,11 @@ service cloud.firestore {
 
     function isPublishedNutritionPlanForStudentRead() {
       return resource.data.studentAuthUid == request.auth.uid &&
-        resource.data.isDraft != true;
+        resource.data.isDraft != true &&
+        (
+          resource.data.sourceKind != 'assigned' ||
+          hasActiveNutritionistConnectionForStudentAndProfessional(resource.data.studentAuthUid, resource.data.ownerProfessionalUid)
+        );
     }
 
     function canCreateSelfManagedNutritionPlan() {
@@ -455,7 +517,11 @@ service cloud.firestore {
 
     function isPublishedForStudentRead() {
       return resource.data.studentAuthUid == request.auth.uid &&
-        resource.data.isDraft != true;
+        resource.data.isDraft != true &&
+        (
+          resource.data.sourceKind != 'assigned' ||
+          hasActiveFitnessCoachConnectionForStudentAndProfessional(resource.data.studentAuthUid, resource.data.ownerProfessionalUid)
+        );
     }
 
     function canCreateSelfManagedTrainingPlan() {
