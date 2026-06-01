@@ -7,6 +7,7 @@ import {
   resolveDisplayInviteCode,
   isPendingCapReached,
   normalizeInviteCodeActionError,
+  shouldCancelPendingConnectionForRotatedInvite,
   type InviteCode,
 } from './connection-invite.logic';
 
@@ -31,6 +32,7 @@ test('normalizeInviteCodeStatus returns null for unknown values', () => {
 const activeCode: InviteCode = {
   id: 'c1',
   codeValue: 'ABC123',
+  specialty: 'nutritionist',
   status: 'active',
   rotatedAt: null,
   expiresAt: null,
@@ -109,4 +111,49 @@ test('normalizeInviteCodeActionError returns unknown for unrecognized error', ()
   assert.equal(normalizeInviteCodeActionError(null), 'unknown');
   assert.equal(normalizeInviteCodeActionError('boom'), 'unknown');
   assert.equal(normalizeInviteCodeActionError({ message: 'something else' }), 'unknown');
+});
+
+// --- shouldCancelPendingConnectionForRotatedInvite ---
+
+test('shouldCancelPendingConnectionForRotatedInvite only matches same specialty and source code', () => {
+  const rotated = {
+    id: 'nutritionist',
+    codeValue: 'NUT123',
+    specialty: 'nutritionist' as const,
+  };
+
+  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
+    status: 'pending_confirmation',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+  }, rotated), true);
+
+  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
+    status: 'pending_confirmation',
+    specialty: 'fitness_coach',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+  }, rotated), false);
+
+  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
+    status: 'pending_confirmation',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'fitness_coach',
+    sourceInviteCodeValue: 'NUT123',
+  }, rotated), false);
+
+  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
+    status: 'pending_confirmation',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'OLD123',
+  }, rotated), false);
+
+  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
+    status: 'active',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+  }, rotated), false);
 });

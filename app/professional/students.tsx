@@ -70,7 +70,7 @@ export default function ProfessionalStudentsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { currentUser } = useAuthSession();
-  const { state: inviteCodeState } = useInviteCode(Boolean(currentUser));
+  const { state: inviteCodeState } = useInviteCode(Boolean(currentUser), 'nutritionist');
   const { state: plansState, bulkAssign } = usePlans(Boolean(currentUser));
 
   const networkStatus = useNetworkStatus();

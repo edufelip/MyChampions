@@ -19,6 +19,7 @@ import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _ge
 import { classifyFirestoreError } from '../firestore-error';
 import {
   normalizeInviteCodeStatus,
+  shouldCancelPendingConnectionForRotatedInvite,
   type InviteCode,
 } from './connection-invite.logic';
 import {
@@ -54,6 +55,7 @@ export class ProfessionalSourceError extends Error {
 
 type FirestoreInviteCode = {
   professionalAuthUid: string;
+  specialty: Specialty;
   codeValue: string;
   status: 'active' | 'rotated' | 'revoked';
   rotatedAt: string | null;
@@ -90,6 +92,8 @@ type FirestoreConnection = {
   specialty: string;
   professionalAuthUid: string;
   studentAuthUid: string;
+  sourceInviteCodeId?: string | null;
+  sourceInviteCodeValue?: string | null;
 };
 
 type FirestoreUserProfile = {
@@ -176,24 +180,30 @@ function normalizeProfessionalSourceError(error: unknown): ProfessionalSourceErr
   }
 }
 
-function inviteRef(firestore: Firestore, professionalUid: string) {
-  return doc(firestore, 'inviteCodes', professionalUid);
+export function buildInviteCodePath(professionalUid: string, specialty: Specialty): [string, string, string, string] {
+  return ['professionals', professionalUid, 'inviteCodes', specialty];
+}
+
+function inviteRef(firestore: Firestore, professionalUid: string, specialty: Specialty) {
+  return doc(firestore, ...buildInviteCodePath(professionalUid, specialty));
 }
 
 export async function getOrCreateActiveInviteCode(
+  specialty: Specialty,
   deps = defaultDeps
 ): Promise<InviteCode | null> {
   try {
     const firestore = deps.getFirestoreInstance();
     const professionalUid = deps.getCurrentAuthUid();
 
-    const ref = inviteRef(firestore, professionalUid);
+    const ref = inviteRef(firestore, professionalUid, specialty);
     const snapshot = await getDoc(ref);
 
     if (!snapshot.exists()) {
       const timestamp = nowIso();
       const created: FirestoreInviteCode = {
         professionalAuthUid: professionalUid,
+        specialty,
         codeValue: deps.generateInviteCode(),
         status: 'active',
         rotatedAt: null,
@@ -205,8 +215,9 @@ export async function getOrCreateActiveInviteCode(
         tx.set(ref, created);
       });
       return {
-        id: professionalUid,
+        id: specialty,
         codeValue: created.codeValue,
+        specialty,
         status: 'active',
         rotatedAt: null,
         expiresAt: null,
@@ -221,6 +232,7 @@ export async function getOrCreateActiveInviteCode(
     return {
       id: snapshot.id,
       codeValue: data.codeValue,
+      specialty,
       status,
       rotatedAt: data.rotatedAt ?? null,
       expiresAt: data.expiresAt ?? null,
@@ -231,20 +243,24 @@ export async function getOrCreateActiveInviteCode(
   }
 }
 
-export async function rotateInviteCode(deps = defaultDeps): Promise<InviteCode> {
+export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps): Promise<InviteCode> {
   try {
     const firestore = deps.getFirestoreInstance();
     const professionalUid = deps.getCurrentAuthUid();
 
-    const ref = inviteRef(firestore, professionalUid);
+    const ref = inviteRef(firestore, professionalUid, specialty);
     const now = nowIso();
+    let rotatedCodeValue: string | null = null;
 
     await runTransaction(firestore, async (tx) => {
       const currentSnap = await tx.get(ref);
+      const nextCodeValue = deps.generateInviteCode();
       if (!currentSnap.exists()) {
+        rotatedCodeValue = nextCodeValue;
         tx.set(ref, {
           professionalAuthUid: professionalUid,
-          codeValue: deps.generateInviteCode(),
+          specialty,
+          codeValue: nextCodeValue,
           status: 'active',
           rotatedAt: now,
           expiresAt: null,
@@ -252,8 +268,10 @@ export async function rotateInviteCode(deps = defaultDeps): Promise<InviteCode> 
           updatedAt: now,
         } satisfies FirestoreInviteCode);
       } else {
+        const current = currentSnap.data() as FirestoreInviteCode;
+        rotatedCodeValue = current.codeValue;
         tx.update(ref, {
-          codeValue: deps.generateInviteCode(),
+          codeValue: nextCodeValue,
           status: 'active',
           rotatedAt: now,
           updatedAt: now,
@@ -263,10 +281,19 @@ export async function rotateInviteCode(deps = defaultDeps): Promise<InviteCode> 
       const pending = await getDocs(query(
         collection(firestore, 'connections'),
         where('professionalAuthUid', '==', professionalUid),
+        where('specialty', '==', specialty),
         where('status', '==', 'pending_confirmation')
       ));
 
       for (const pendingDoc of pending.docs) {
+        if (!rotatedCodeValue || !shouldCancelPendingConnectionForRotatedInvite(pendingDoc.data() as FirestoreConnection, {
+          id: specialty,
+          codeValue: rotatedCodeValue,
+          specialty,
+        })) {
+          continue;
+        }
+
         tx.update(pendingDoc.ref, {
           status: 'ended',
           canceledReason: 'code_rotated',
@@ -276,7 +303,7 @@ export async function rotateInviteCode(deps = defaultDeps): Promise<InviteCode> 
       }
     });
 
-    const code = await getOrCreateActiveInviteCode(deps);
+    const code = await getOrCreateActiveInviteCode(specialty, deps);
     if (!code) {
       throw new ProfessionalSourceError('invalid_response', 'rotateInviteCode succeeded but fetch returned no code.');
     }

@@ -11,6 +11,7 @@ export type InviteCodeStatus = 'active' | 'rotated' | 'revoked';
 export type InviteCode = {
   id: string;
   codeValue: string;
+  specialty: 'nutritionist' | 'fitness_coach';
   status: InviteCodeStatus;
   rotatedAt: string | null;
   expiresAt: string | null;
@@ -47,6 +48,21 @@ export function resolveDisplayInviteCode(code: InviteCode | null): DisplayInvite
 
 export function isPendingCapReached(pendingCount: number): boolean {
   return pendingCount >= MAX_PENDING_REQUESTS;
+}
+
+export function shouldCancelPendingConnectionForRotatedInvite(
+  connection: {
+    status: string;
+    specialty: string;
+    sourceInviteCodeId?: string | null;
+    sourceInviteCodeValue?: string | null;
+  },
+  rotatedInvite: { id: string; codeValue: string; specialty: 'nutritionist' | 'fitness_coach' }
+): boolean {
+  return connection.status === 'pending_confirmation' &&
+    connection.specialty === rotatedInvite.specialty &&
+    connection.sourceInviteCodeId === rotatedInvite.id &&
+    connection.sourceInviteCodeValue === rotatedInvite.codeValue;
 }
 
 export function normalizeInviteCodeActionError(error: unknown): InviteCodeActionErrorReason {

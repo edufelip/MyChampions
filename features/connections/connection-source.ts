@@ -4,6 +4,7 @@
 
 import {
   collection,
+  collectionGroup,
   doc,
   getDocs,
   limit,
@@ -20,6 +21,7 @@ import {
   normalizeCanceledReason,
   normalizeConnectionSpecialty,
   type ConnectionRecord,
+  type ConnectionSpecialty,
 } from './connection.logic';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
@@ -44,6 +46,7 @@ type FirestoreConnection = {
   professionalAuthUid: string;
   studentAuthUid: string;
   sourceInviteCodeId?: string | null;
+  sourceInviteCodeValue?: string | null;
   createdAt: string;
   updatedAt: string;
   endedAt?: string | null;
@@ -51,12 +54,35 @@ type FirestoreConnection = {
 
 type FirestoreInviteCode = {
   professionalAuthUid: string;
+  specialty: ConnectionSpecialty;
   codeValue: string;
   status: 'active' | 'rotated' | 'revoked';
   createdAt: string;
   updatedAt: string;
   rotatedAt?: string | null;
 };
+
+export function buildPendingConnectionFromInvite(input: {
+  connectionId: string;
+  studentUid: string;
+  inviteDocId: string;
+  invite: Pick<FirestoreInviteCode, 'professionalAuthUid' | 'specialty' | 'codeValue'>;
+  timestamp: string;
+}): FirestoreConnection {
+  return {
+    id: input.connectionId,
+    studentAuthUid: input.studentUid,
+    professionalAuthUid: input.invite.professionalAuthUid,
+    specialty: input.invite.specialty,
+    status: 'pending_confirmation',
+    canceledReason: null,
+    sourceInviteCodeId: input.inviteDocId,
+    sourceInviteCodeValue: input.invite.codeValue,
+    createdAt: input.timestamp,
+    updatedAt: input.timestamp,
+    endedAt: null,
+  };
+}
 
 export type ConnectionSourceDeps = {
   getFirestoreInstance: () => Firestore;
@@ -136,14 +162,27 @@ export async function submitInviteCode(
     const firestore = deps.getFirestoreInstance();
     const studentUid = deps.getCurrentAuthUid();
 
-    const inviteSnapshot = await getDocs(
+    let inviteSnapshot = await getDocs(
       query(
-        collection(firestore, 'inviteCodes'),
+        collectionGroup(firestore, 'inviteCodes'),
         where('codeValue', '==', code.trim()),
+        where('specialty', '==', 'nutritionist'),
         where('status', '==', 'active'),
         limit(1)
       )
     );
+
+    if (inviteSnapshot.empty) {
+      inviteSnapshot = await getDocs(
+        query(
+          collectionGroup(firestore, 'inviteCodes'),
+          where('codeValue', '==', code.trim()),
+          where('specialty', '==', 'fitness_coach'),
+          where('status', '==', 'active'),
+          limit(1)
+        )
+      );
+    }
 
     if (inviteSnapshot.empty) {
       throw new ConnectionSourceError('graphql', 'Invite code not found.');
@@ -152,9 +191,13 @@ export async function submitInviteCode(
     const inviteDoc = inviteSnapshot.docs[0];
     const invite = inviteDoc.data() as FirestoreInviteCode;
     const professionalUid = invite.professionalAuthUid;
+    const inviteSpecialty = normalizeConnectionSpecialty(invite.specialty ?? inviteDoc.id);
 
     if (!professionalUid) {
       throw new ConnectionSourceError('invalid_response', 'Invite code has no professional owner.');
+    }
+    if (!inviteSpecialty) {
+      throw new ConnectionSourceError('invalid_response', 'Invite code has no valid specialty.');
     }
 
     const existing = await getDocs(
@@ -162,7 +205,7 @@ export async function submitInviteCode(
         collection(firestore, 'connections'),
         where('studentAuthUid', '==', studentUid),
         where('professionalAuthUid', '==', professionalUid),
-        where('specialty', '==', 'nutritionist')
+        where('specialty', '==', inviteSpecialty)
       )
     );
 
@@ -188,16 +231,13 @@ export async function submitInviteCode(
 
     await runTransaction(firestore, async (tx) => {
       tx.set(doc(firestore, 'connections', connectionId), {
-        id: connectionId,
-        studentAuthUid: studentUid,
-        professionalAuthUid: professionalUid,
-        specialty: 'nutritionist',
-        status: 'pending_confirmation',
-        canceledReason: null,
-        sourceInviteCodeId: inviteDoc.id,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        endedAt: null,
+        ...buildPendingConnectionFromInvite({
+          connectionId,
+          studentUid,
+          inviteDocId: inviteDoc.id,
+          invite: { ...invite, specialty: inviteSpecialty },
+          timestamp,
+        }),
       } satisfies FirestoreConnection);
     });
 

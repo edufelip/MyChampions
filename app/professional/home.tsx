@@ -59,7 +59,7 @@ export default function ProfessionalHomeScreen() {
     lastSyncedAtIso: null,
   });
 
-  const { state: codeState, rotate } = useInviteCode(Boolean(currentUser));
+  const { state: codeState, rotate } = useInviteCode(Boolean(currentUser), 'nutritionist');
   const { entitlementStatus, activeStudentCount } = useSubscription(Boolean(currentUser));
   const subState = resolveSubscriptionState({
     activeStudentCount,

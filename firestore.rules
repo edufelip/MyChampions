@@ -28,6 +28,7 @@ service cloud.firestore {
         request.resource.data.professionalAuthUid == resource.data.professionalAuthUid &&
         request.resource.data.specialty == resource.data.specialty &&
         request.resource.data.sourceInviteCodeId == resource.data.sourceInviteCodeId &&
+        request.resource.data.get('sourceInviteCodeValue', null) == resource.data.get('sourceInviteCodeValue', null) &&
         request.resource.data.createdAt == resource.data.createdAt;
     }
 
@@ -211,9 +212,22 @@ service cloud.firestore {
     }
 
     match /inviteCodes/{professionalUid} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /professionals/{professionalUid}/inviteCodes/{specialty} {
       allow read: if signedIn() && (professionalUid == request.auth.uid || resource.data.status == 'active');
-      allow create, update: if isUid(professionalUid) && request.resource.data.professionalAuthUid == request.auth.uid;
+      allow create, update: if isUid(professionalUid) &&
+        (specialty == 'nutritionist' || specialty == 'fitness_coach') &&
+        request.resource.data.professionalAuthUid == request.auth.uid &&
+        request.resource.data.specialty == specialty;
       allow delete: if isUid(professionalUid);
+    }
+
+    match /{path=**}/inviteCodes/{specialty} {
+      allow list: if signedIn() &&
+        resource.data.status == 'active' &&
+        (resource.data.specialty == 'nutritionist' || resource.data.specialty == 'fitness_coach');
     }
 
     match /connections/{connectionId} {

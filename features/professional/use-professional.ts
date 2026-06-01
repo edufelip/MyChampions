@@ -53,7 +53,7 @@ export type UseInviteCodeResult = {
   rotate: () => Promise<InviteCodeActionErrorReason | null>;
 };
 
-export function useInviteCode(isAuthenticated: boolean): UseInviteCodeResult {
+export function useInviteCode(isAuthenticated: boolean, specialty: Specialty): UseInviteCodeResult {
   const [state, setState] = useState<InviteCodeLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
@@ -64,14 +64,14 @@ export function useInviteCode(isAuthenticated: boolean): UseInviteCodeResult {
 
     setState({ kind: 'loading' });
 
-    void getOrCreateActiveInviteCode()
+    void getOrCreateActiveInviteCode(specialty)
       .then((code) => {
         setState({ kind: 'ready', code, displayCode: resolveDisplayInviteCode(code) });
       })
       .catch((err: Error) => {
         setState({ kind: 'error', message: err.message });
       });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, specialty]);
 
   useEffect(() => {
     load();
@@ -81,13 +81,13 @@ export function useInviteCode(isAuthenticated: boolean): UseInviteCodeResult {
     if (!isAuthenticated) return 'configuration';
 
     try {
-      await rotateInviteCode();
+      await rotateInviteCode(specialty);
       load();
       return null;
     } catch (err) {
       return normalizeInviteCodeActionError(err);
     }
-  }, [isAuthenticated, load]);
+  }, [isAuthenticated, load, specialty]);
 
   return { state, reload: load, rotate };
 }
