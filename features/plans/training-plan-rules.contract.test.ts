@@ -33,6 +33,9 @@ const activeSpecialtiesRules = rules.slice(
   rules.indexOf('match /trackingAccess/{studentUid}/activeSpecialties/{specialtyId}'),
   rules.indexOf('match /waterLogs/{logId}')
 );
+const activeSpecialtyUpdateHelper = rules.match(
+  /function validActiveSpecialtyUpdate\(studentUid, specialtyId\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
 const professionalLibraryTrainingUpdateHelper = rules.match(
   /function canUpdateProfessionalLibraryTrainingPlan\(\) \{[\s\S]*?\n    \}/
 )?.[0] ?? '';
@@ -129,12 +132,27 @@ test('trackingAccess active specialty sentinel rules mirror referenced connectio
     activeNutritionistSpecialtyHelper,
     /trackingAccess\/\$\(studentUid\)\/activeSpecialties\/nutritionist/
   );
-  assert.match(rules, /function validActiveSpecialtyWrite\(studentUid, specialtyId\)/);
+  assert.match(rules, /function validActiveSpecialtyWriteFieldsAndConnection\(studentUid, specialtyId\)/);
   assert.match(activeSpecialtiesRules, /allow read: if signedIn\(\) && \(request\.auth\.uid == studentUid \|\| request\.auth\.uid == resource\.data\.professionalAuthUid\)/);
-  assert.match(activeSpecialtiesRules, /allow create, update: if validActiveSpecialtyWrite\(studentUid, specialtyId\)/);
+  assert.match(activeSpecialtiesRules, /allow create: if validActiveSpecialtyCreate\(studentUid, specialtyId\)/);
+  assert.match(activeSpecialtiesRules, /allow update: if validActiveSpecialtyUpdate\(studentUid, specialtyId\)/);
   assert.match(activeSpecialtiesRules, /allow delete: if false/);
   assert.match(rules, /getAfter\(\/databases\/\$\(database\)\/documents\/connections\/\$\(request\.resource\.data\.connectionId\)\)\.data\.status == request\.resource\.data\.status/);
   assert.match(rules, /request\.resource\.data\.specialty == specialtyId/);
+});
+
+test('trackingAccess active specialty sentinel update preserves existing connection ownership', () => {
+  assert.match(rules, /function validActiveSpecialtyCreate\(studentUid, specialtyId\)/);
+  assert.match(rules, /function validActiveSpecialtyUpdate\(studentUid, specialtyId\)/);
+  assert.match(activeSpecialtyUpdateHelper, /resource\.data\.connectionId == request\.resource\.data\.connectionId/);
+  assert.match(
+    activeSpecialtyUpdateHelper,
+    /request\.resource\.data\.status == 'ended'[\s\S]*resource\.data\.connectionId == request\.resource\.data\.connectionId/
+  );
+  assert.match(
+    activeSpecialtyUpdateHelper,
+    /request\.resource\.data\.status == 'active'[\s\S]*\(resource\.data\.status != 'active' \|\| resource\.data\.connectionId == request\.resource\.data\.connectionId\)/
+  );
 });
 
 test('trainingPlans normal professional updates preserve lifecycle archive state', () => {
