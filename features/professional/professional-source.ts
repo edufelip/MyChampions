@@ -10,7 +10,6 @@ import {
   limit,
   query,
   runTransaction,
-  updateDoc,
   where,
   type Firestore,
 } from 'firebase/firestore';
@@ -34,6 +33,7 @@ import {
   type ConnectionSpecialty,
   type ConnectionStatus,
 } from '../connections/connection.logic';
+import { endConnection } from '../connections/connection-source';
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
@@ -696,14 +696,9 @@ export async function unbindStudentConnections(
     );
 
     if (snapshot.empty) return;
-    const timestamp = nowIso();
     await Promise.all(
       snapshot.docs.map((item) =>
-        updateDoc(item.ref, {
-          status: 'ended',
-          endedAt: timestamp,
-          updatedAt: timestamp,
-        })
+        endConnection(item.id, deps)
       )
     );
   } catch (error) {

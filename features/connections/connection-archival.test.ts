@@ -9,6 +9,7 @@ let queryClauses: any[] = [];
 let planQueryCalls: Array<{ collection: string; clauses: any[] }> = [];
 let txUpdates: Array<{ ref: any; data: any }> = [];
 let txSets: Array<{ ref: any; data: any; options?: any }> = [];
+let directUpdates: Array<{ ref: any; data: any }> = [];
 let activeSpecialtyData: any | null = null;
 
 // 2. Define the mock functions
@@ -31,6 +32,29 @@ const mockQuery = (colRef: any, ...clauses: any[]) => {
 };
 
 const mockGetDocs = async (q: any) => {
+  if (q.colRef && q.colRef.path === 'connections') {
+    return {
+      empty: false,
+      size: 1,
+      docs: [
+        {
+          id: 'conn-123',
+          ref: { type: 'doc_ref', path: 'connections/conn-123' },
+          data: () => ({
+            id: 'conn-123',
+            studentAuthUid: 'student-456',
+            professionalAuthUid: 'prof-789',
+            specialty: currentSpecialty,
+            status: currentStatus
+          })
+        }
+      ],
+      forEach(cb: any) {
+        this.docs.forEach(cb);
+      }
+    } as any;
+  }
+
   if (q.colRef && (q.colRef.path === 'nutritionPlans' || q.colRef.path === 'trainingPlans')) {
     planQueryCalls.push({ collection: q.colRef.path, clauses: q.clauses });
     const sourceKind = q.clauses.find((clause: any) => clause.field === 'sourceKind')?.value;
@@ -154,6 +178,10 @@ const mockRunTransaction = async (db: any, updateFunction: any) => {
   return txUpdates;
 };
 
+const mockUpdateDoc = async (ref: any, data: any) => {
+  directUpdates.push({ ref, data });
+};
+
 // 3. Intercept 'firebase/firestore' in require.cache before importing 'connection-source'
 const firestorePath = require.resolve('firebase/firestore');
 const originalFirestore = require(firestorePath);
@@ -166,6 +194,7 @@ const mockedFirestore = {
   query: mockQuery,
   getDocs: mockGetDocs,
   runTransaction: mockRunTransaction,
+  updateDoc: mockUpdateDoc,
 };
 
 require.cache[firestorePath] = {
@@ -177,6 +206,7 @@ require.cache[firestorePath] = {
 
 // 4. NOW import the module under test
 const { confirmPendingConnection, endConnection } = require('./connection-source');
+const { unbindStudentConnections } = require('../professional/professional-source');
 
 test('TDD: confirmPendingConnection archives self_managed nutrition plans for nutritionist specialty', async (t) => {
 
@@ -422,6 +452,61 @@ test('TDD: endConnection archives assigned training plan and restores self-manag
 
   const otherConnectionUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/self-managed-plan-123');
   assert.equal(otherConnectionUpdate, undefined, 'Should not restore newer archived self-managed plan from another connection');
+});
+
+test('TDD: professional unbind uses shared connection-end lifecycle semantics', async () => {
+  currentSpecialty = 'nutritionist';
+  currentStatus = 'active';
+  activeSpecialtyData = {
+    connectionId: 'conn-123',
+    studentAuthUid: 'student-456',
+    professionalAuthUid: 'prof-789',
+    specialty: 'nutritionist',
+    status: 'active'
+  };
+  queriedCollection = null;
+  queryClauses = [];
+  planQueryCalls = [];
+  txUpdates = [];
+  txSets = [];
+  directUpdates = [];
+
+  const mockDeps = {
+    getFirestoreInstance: () => ({}) as any,
+    getCurrentAuthUid: () => 'prof-789',
+    generateInviteCode: () => 'INVITE',
+  };
+
+  await unbindStudentConnections('student-456', mockDeps);
+
+  assert.equal(directUpdates.length, 0, 'Professional unbind should not directly update connection status');
+
+  const connUpdate = txUpdates.find(u => u.ref.path === 'connections/conn-123');
+  assert.ok(connUpdate, 'Shared lifecycle should update the connection inside a transaction');
+  assert.equal(connUpdate.data.status, 'ended');
+
+  const accessSet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/nutritionists/prof-789');
+  assert.ok(accessSet, 'Shared lifecycle should mark nutritionist tracking access ended');
+  assert.equal(accessSet.data.connectionId, 'conn-123');
+  assert.equal(accessSet.data.status, 'ended');
+
+  const specialtySet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/activeSpecialties/nutritionist');
+  assert.ok(specialtySet, 'Shared lifecycle should update owned active specialty sentinel');
+  assert.equal(specialtySet.data.connectionId, 'conn-123');
+  assert.equal(specialtySet.data.status, 'ended');
+
+  const assignedUpdate = txUpdates.find((u) => u.ref.path === 'nutritionPlans/assigned-plan-123');
+  assert.ok(assignedUpdate, 'Shared lifecycle should archive assigned nutrition plan');
+  assert.equal(assignedUpdate.data.isArchived, true);
+  assert.equal(assignedUpdate.data.lifecycleConnectionId, 'conn-123');
+
+  const selfManagedUpdate = txUpdates.find((u) => u.ref.path === 'nutritionPlans/older-self-managed-plan-123');
+  assert.ok(selfManagedUpdate, 'Shared lifecycle should restore latest same-connection self-managed nutrition plan');
+  assert.equal(selfManagedUpdate.data.isArchived, false);
+  assert.equal(selfManagedUpdate.data.lifecycleConnectionId, 'conn-123');
+
+  const otherConnectionUpdate = txUpdates.find((u) => u.ref.path === 'nutritionPlans/self-managed-plan-123');
+  assert.equal(otherConnectionUpdate, undefined, 'Shared lifecycle should not restore self-managed plans tied to another connection');
 });
 
 // Restore original implementations at the end of the test file
