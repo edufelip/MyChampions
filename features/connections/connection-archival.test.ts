@@ -210,6 +210,7 @@ test('TDD: confirmPendingConnection archives self_managed nutrition plans for nu
   assert.ok(planUpdate, 'Should update the nutrition plan');
   assert.equal(planUpdate.data.isArchived, true, 'isArchived should be set to true');
   assert.ok(planUpdate.data.updatedAt, 'updatedAt should be set');
+  assert.equal(planUpdate.data.lifecycleConnectionId, 'conn-123', 'lifecycleConnectionId should be set');
 
   const accessSet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/nutritionists/prof-789');
   assert.ok(accessSet, 'Should create nutritionist tracking access document');
@@ -261,6 +262,7 @@ test('TDD: confirmPendingConnection archives self_managed training plans for fit
   assert.ok(planUpdate, 'Should update the training plan');
   assert.equal(planUpdate.data.isArchived, true, 'isArchived should be set to true');
   assert.ok(planUpdate.data.updatedAt, 'updatedAt should be set');
+  assert.equal(planUpdate.data.lifecycleConnectionId, 'conn-123', 'lifecycleConnectionId should be set');
 
   const accessSet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/fitnessCoaches/prof-789');
   assert.ok(accessSet, 'Should create fitness coach tracking access document');
@@ -337,11 +339,13 @@ test('TDD: endConnection archives assigned training plan and restores self-manag
   assert.ok(assignedUpdate, 'Should archive assigned training plan');
   assert.equal(assignedUpdate.data.isArchived, true);
   assert.ok(assignedUpdate.data.updatedAt, 'Assigned plan updatedAt should be set');
+  assert.equal(assignedUpdate.data.lifecycleConnectionId, 'conn-123');
 
   const selfManagedUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/self-managed-plan-123');
   assert.ok(selfManagedUpdate, 'Should restore archived self-managed training plan');
   assert.equal(selfManagedUpdate.data.isArchived, false);
   assert.ok(selfManagedUpdate.data.updatedAt, 'Self-managed plan updatedAt should be set');
+  assert.equal(selfManagedUpdate.data.lifecycleConnectionId, 'conn-123');
 
   const olderSelfManagedUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/older-self-managed-plan-123');
   assert.equal(olderSelfManagedUpdate, undefined, 'Should not restore older archived self-managed training plans');

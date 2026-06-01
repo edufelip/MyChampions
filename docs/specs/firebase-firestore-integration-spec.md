@@ -35,6 +35,8 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - Role-lock is immutable after first successful set.
 - Connection transitions are validated in source-layer transactions.
 - Professional reads of student tracking data are authorized through `trackingAccess` documents that point to the matching active `connections/{connectionId}` document. Firestore rules must not use collection queries for connection lookup.
+- Plan lifecycle archive/restore writes set `lifecycleConnectionId` on the affected `nutritionPlans/{planId}` or `trainingPlans/{planId}` document. Firestore rules use that marker to validate the exact `connections/{connectionId}` before/after transition with `get()` and `getAfter()`.
+- Normal plan edits preserve `isArchived` and `lifecycleConnectionId`; only connection activation/end lifecycle writes may change archive state.
 
 ## Role-Lock Routing Contract
 1. Resolve Firebase Auth session.

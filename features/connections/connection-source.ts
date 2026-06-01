@@ -240,7 +240,7 @@ export async function confirmPendingConnection(
       tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'active'), { merge: true });
 
       selfManagedSnaps.forEach((docSnap) => {
-        tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso() });
+        tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso(), lifecycleConnectionId: connectionId });
       });
     });
 
@@ -299,14 +299,14 @@ export async function endConnection(
       tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
 
       assignedSnaps.forEach((docSnap) => {
-        tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso() });
+        tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso(), lifecycleConnectionId: connectionId });
       });
 
       const latestSelfManagedSnap = [...selfManagedSnaps.docs]
         .sort((a, b) => getPlanSortTimestamp(b) - getPlanSortTimestamp(a))[0];
 
       if (latestSelfManagedSnap) {
-        tx.update(latestSelfManagedSnap.ref, { isArchived: false, updatedAt: nowIso() });
+        tx.update(latestSelfManagedSnap.ref, { isArchived: false, updatedAt: nowIso(), lifecycleConnectionId: connectionId });
       }
     });
   } catch (error) {

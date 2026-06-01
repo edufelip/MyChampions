@@ -15,7 +15,44 @@ const trainingPlansDeleteRules = trainingPlansRules.match(
   /allow delete: if signedIn\(\) && \([\s\S]*?\n      \);/
 )?.[0] ?? '';
 const endedFitnessCoachConnectionHelper = rules.match(
-  /function hasEndedFitnessCoachConnectionForPlan\(studentUid, professionalUid\) \{[\s\S]*?\n    \}/
+  /function hasEndedFitnessCoachConnectionForPlan\(studentUid\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const selfManagedTrainingUpdateHelper = rules.match(
+  /function canUpdateSelfManagedTrainingPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const professionalLibraryTrainingUpdateHelper = rules.match(
+  /function canUpdateProfessionalLibraryTrainingPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const assignedTrainingUpdateHelper = rules.match(
+  /function canUpdateAssignedTrainingPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const activatedFitnessCoachConnectionHelper = rules.match(
+  /function hasActivatedFitnessCoachConnectionForPlan\(studentUid\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const nutritionPlansRules = rules.slice(
+  rules.indexOf('match /nutritionPlans/{planId}'),
+  rules.indexOf('function trainingIdentityUnchanged()')
+);
+const professionalNutritionUpdateHelper = rules.match(
+  /function canUpdateProfessionalOwnedNutritionPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const assignedNutritionArchiveHelper = rules.match(
+  /function canArchiveAssignedNutritionPlanOnConnectionEnd\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const selfManagedNutritionActivationArchiveHelper = rules.match(
+  /function canArchiveSelfManagedNutritionPlanOnConnectionActivation\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const selfManagedNutritionRestoreHelper = rules.match(
+  /function canRestoreSelfManagedNutritionPlanOnConnectionEnd\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const assignedTrainingArchiveHelper = rules.match(
+  /function canArchiveAssignedTrainingPlanOnConnectionEnd\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const selfManagedTrainingActivationArchiveHelper = rules.match(
+  /function canArchiveSelfManagedTrainingPlanOnConnectionActivation\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const selfManagedTrainingRestoreHelper = rules.match(
+  /function canRestoreSelfManagedTrainingPlanOnConnectionEnd\(\) \{[\s\S]*?\n    \}/
 )?.[0] ?? '';
 
 test('trainingPlans rules hide draft assigned plans from students', () => {
@@ -38,32 +75,90 @@ test('trainingPlans rules require active fitness coach access for assigned write
 });
 
 test('trainingPlans rules allow connection-end archive and self-managed restore writes', () => {
-  assert.match(rules, /function hasEndedFitnessCoachConnectionForPlan\(studentUid, professionalUid\)/);
-  assert.match(rules, /function planArchiveStateOnlyChanged\(\)/);
+  assert.match(rules, /function hasEndedFitnessCoachConnectionForPlan\(studentUid\)/);
+  assert.match(rules, /function planLifecycleStateOnlyChanged\(\)/);
+  assert.match(rules, /lifecycleConnectionId/);
   assert.match(rules, /function canArchiveAssignedTrainingPlanOnConnectionEnd\(\)/);
   assert.match(rules, /function canRestoreSelfManagedTrainingPlanOnConnectionEnd\(\)/);
   assert.match(rules, /request\.resource\.data\.isArchived == true/);
   assert.match(rules, /request\.resource\.data\.isArchived == false/);
-  assert.match(rules, /hasEndedFitnessCoachConnectionForPlan\(resource\.data\.studentAuthUid, resource\.data\.ownerProfessionalUid\)/);
-  assert.match(rules, /hasEndedFitnessCoachConnectionForPlan\(resource\.data\.studentAuthUid, request\.auth\.uid\)/);
+  assert.match(rules, /hasEndedFitnessCoachConnectionForPlan\(resource\.data\.studentAuthUid\)/);
+});
+
+test('trainingPlans normal self-managed updates preserve lifecycle archive state', () => {
+  assert.match(rules, /function planLifecycleMarkerUnchanged\(\)/);
+  assert.match(
+    rules,
+    /request\.resource\.data\.get\('lifecycleConnectionId', null\) == resource\.data\.get\('lifecycleConnectionId', null\)/
+  );
+  assert.match(rules, /function planArchiveMetadataUnchanged\(\)/);
+  assert.match(
+    selfManagedTrainingUpdateHelper,
+    /planArchiveMetadataUnchanged\(\)/
+  );
+});
+
+test('trainingPlans normal professional updates preserve lifecycle archive state', () => {
+  assert.match(professionalLibraryTrainingUpdateHelper, /planArchiveMetadataUnchanged\(\)/);
+  assert.match(assignedTrainingUpdateHelper, /planArchiveMetadataUnchanged\(\)/);
+});
+
+test('nutritionPlans professional updates preserve lifecycle archive state', () => {
+  assert.match(rules, /function canUpdateProfessionalOwnedNutritionPlan\(\)/);
+  assert.doesNotMatch(
+    nutritionPlansRules,
+    /resource\.data\.ownerProfessionalUid == request\.auth\.uid\s*\|\|/
+  );
+  assert.match(
+    professionalNutritionUpdateHelper,
+    /planArchiveMetadataUnchanged\(\)/
+  );
+});
+
+test('trainingPlans connection activation archive rules require pending before-state and active after-state', () => {
+  assert.match(rules, /function canArchiveSelfManagedTrainingPlanOnConnectionActivation\(\)/);
+  assert.match(
+    activatedFitnessCoachConnectionHelper,
+    /get\(\/databases\/\$\(database\)\/documents\/connections\/\$\(request\.resource\.data\.lifecycleConnectionId\)\)\.data\.status == 'pending_confirmation'/
+  );
+  assert.match(
+    activatedFitnessCoachConnectionHelper,
+    /getAfter\(\/databases\/\$\(database\)\/documents\/connections\/\$\(request\.resource\.data\.lifecycleConnectionId\)\)\.data\.status == 'active'/
+  );
 });
 
 test('trainingPlans connection-end rules require active before-state and ended after-state', () => {
   assert.match(
     endedFitnessCoachConnectionHelper,
-    /get\(\/databases\/\$\(database\)\/documents\/trackingAccess\/\$\(studentUid\)\/fitnessCoaches\/\$\(professionalUid\)\)\.data\.status == 'active'/
+    /get\(\/databases\/\$\(database\)\/documents\/connections\/\$\(request\.resource\.data\.lifecycleConnectionId\)\)\.data\.status == 'active'/
   );
   assert.match(
     endedFitnessCoachConnectionHelper,
-    /get\(\/databases\/\$\(database\)\/documents\/connections\/\$\(get\(\/databases\/\$\(database\)\/documents\/trackingAccess\/\$\(studentUid\)\/fitnessCoaches\/\$\(professionalUid\)\)\.data\.connectionId\)\)\.data\.status == 'active'/
+    /getAfter\(\/databases\/\$\(database\)\/documents\/connections\/\$\(request\.resource\.data\.lifecycleConnectionId\)\)\.data\.status == 'ended'/
   );
   assert.match(
     endedFitnessCoachConnectionHelper,
-    /getAfter\(\/databases\/\$\(database\)\/documents\/trackingAccess\/\$\(studentUid\)\/fitnessCoaches\/\$\(professionalUid\)\)\.data\.status == 'ended'/
+    /request\.auth\.uid == get\(\/databases\/\$\(database\)\/documents\/connections\/\$\(request\.resource\.data\.lifecycleConnectionId\)\)\.data\.studentAuthUid \|\|\s*request\.auth\.uid == get\(\/databases\/\$\(database\)\/documents\/connections\/\$\(request\.resource\.data\.lifecycleConnectionId\)\)\.data\.professionalAuthUid/
   );
+});
+
+test('plan lifecycle archive helpers require unarchived source plans', () => {
+  assert.match(assignedNutritionArchiveHelper, /resource\.data\.isArchived == false/);
+  assert.match(selfManagedNutritionActivationArchiveHelper, /resource\.data\.isArchived == false/);
+  assert.match(assignedTrainingArchiveHelper, /resource\.data\.isArchived == false/);
+  assert.match(selfManagedTrainingActivationArchiveHelper, /resource\.data\.isArchived == false/);
+});
+
+test('plan lifecycle restore helpers require archived source with matching marker', () => {
+  assert.match(selfManagedNutritionRestoreHelper, /resource\.data\.isArchived == true/);
   assert.match(
-    endedFitnessCoachConnectionHelper,
-    /getAfter\(\/databases\/\$\(database\)\/documents\/connections\/\$\(getAfter\(\/databases\/\$\(database\)\/documents\/trackingAccess\/\$\(studentUid\)\/fitnessCoaches\/\$\(professionalUid\)\)\.data\.connectionId\)\)\.data\.status == 'ended'/
+    selfManagedNutritionRestoreHelper,
+    /resource\.data\.get\('lifecycleConnectionId', null\) == request\.resource\.data\.lifecycleConnectionId/
+  );
+  assert.match(selfManagedTrainingRestoreHelper, /resource\.data\.isArchived == true/);
+  assert.match(
+    selfManagedTrainingRestoreHelper,
+    /resource\.data\.get\('lifecycleConnectionId', null\) == request\.resource\.data\.lifecycleConnectionId/
   );
 });
 

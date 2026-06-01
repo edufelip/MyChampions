@@ -384,5 +384,7 @@
 
 - `D-175`: Professional read access to student tracking logs is materialized through Firestore `trackingAccess/{studentUid}/nutritionists/{professionalUid}` and `trackingAccess/{studentUid}/fitnessCoaches/{professionalUid}` documents created/ended with connection transitions. Firestore Security Rules validate those exact documents and their linked `connections/{connectionId}` records; rules must not attempt collection queries for active-connection lookup.
 
+- `D-176`: Plan archive/restore lifecycle writes are authorized through a rule-visible `lifecycleConnectionId` marker on the affected plan document. Source-layer connection activation/end transactions set the marker alongside `isArchived` changes; Firestore rules validate the referenced connection's before/after status with `get()`/`getAfter()` and require normal plan edits to preserve both `isArchived` and `lifecycleConnectionId`.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
