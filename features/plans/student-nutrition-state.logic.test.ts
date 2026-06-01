@@ -94,6 +94,18 @@ describe('resolveStudentNutritionDisplayState', () => {
     );
   });
 
+  it('keeps self-managed plan content behind loading while connections are unresolved', () => {
+    assert.equal(
+      resolveStudentNutritionDisplayState({
+        hasCurrentUser: true,
+        plansKind: 'ready',
+        connectionsKind: 'loading',
+        nutritionKind: 'self_managed',
+      }),
+      'loading'
+    );
+  });
+
   it('shows a load error when no usable nutrition plan exists and connections fail', () => {
     assert.equal(
       resolveStudentNutritionDisplayState({

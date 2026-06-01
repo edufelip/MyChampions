@@ -51,9 +51,10 @@ export function resolveStudentNutritionDisplayState({
   if (plansKind === 'idle' || plansKind === 'loading') return 'loading';
   if (plansKind === 'error') return 'load_error';
 
-  if (nutritionKind === 'assigned' || nutritionKind === 'self_managed') return 'content';
+  if (nutritionKind === 'assigned') return 'content';
 
   if (hasCurrentUser && (connectionsKind === 'idle' || connectionsKind === 'loading')) return 'loading';
+  if (nutritionKind === 'self_managed') return 'content';
   if (hasCurrentUser && connectionsKind === 'error') return 'load_error';
 
   return 'content';
