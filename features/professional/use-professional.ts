@@ -53,11 +53,11 @@ export type UseInviteCodeResult = {
   rotate: () => Promise<InviteCodeActionErrorReason | null>;
 };
 
-export function useInviteCode(isAuthenticated: boolean, specialty: Specialty): UseInviteCodeResult {
+export function useInviteCode(isAuthenticated: boolean, specialty: Specialty | null): UseInviteCodeResult {
   const [state, setState] = useState<InviteCodeLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !specialty) {
       setState({ kind: 'idle' });
       return;
     }
@@ -78,7 +78,7 @@ export function useInviteCode(isAuthenticated: boolean, specialty: Specialty): U
   }, [load]);
 
   const rotate = useCallback(async (): Promise<InviteCodeActionErrorReason | null> => {
-    if (!isAuthenticated) return 'configuration';
+    if (!isAuthenticated || !specialty) return 'configuration';
 
     try {
       await rotateInviteCode(specialty);

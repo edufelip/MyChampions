@@ -65,6 +65,15 @@ export function shouldCancelPendingConnectionForRotatedInvite(
     connection.sourceInviteCodeValue === rotatedInvite.codeValue;
 }
 
+export function resolvePrimaryInviteCodeSpecialty(
+  specialties: Array<{ specialty: 'nutritionist' | 'fitness_coach'; isActive: boolean; [key: string]: unknown }>
+): 'nutritionist' | 'fitness_coach' | null {
+  const activeSpecialties = specialties.filter((specialty) => specialty.isActive);
+  if (activeSpecialties.some((specialty) => specialty.specialty === 'nutritionist')) return 'nutritionist';
+  if (activeSpecialties.some((specialty) => specialty.specialty === 'fitness_coach')) return 'fitness_coach';
+  return null;
+}
+
 export function normalizeInviteCodeActionError(error: unknown): InviteCodeActionErrorReason {
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code: unknown }).code) : null;

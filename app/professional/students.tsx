@@ -52,7 +52,8 @@ import {
   getProfessionalStudentRoster,
   type ProfessionalStudentRosterItem,
 } from '@/features/professional/professional-source';
-import { useInviteCode } from '@/features/professional/use-professional';
+import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
+import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
@@ -70,7 +71,10 @@ export default function ProfessionalStudentsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { currentUser } = useAuthSession();
-  const { state: inviteCodeState } = useInviteCode(Boolean(currentUser), 'nutritionist');
+  const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
+  const inviteSpecialty =
+    specialtiesState.kind === 'ready' ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties) : null;
+  const { state: inviteCodeState } = useInviteCode(Boolean(currentUser), inviteSpecialty);
   const { state: plansState, bulkAssign } = usePlans(Boolean(currentUser));
 
   const networkStatus = useNetworkStatus();

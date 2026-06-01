@@ -5,6 +5,7 @@ import { collectionGroup, doc, getDocs, limit, query, setDoc, where } from 'fire
 import {
   authedDb,
   clearRulesData,
+  seedDoc,
   setupRulesTestEnvironment,
 } from './rules-test-helpers';
 
@@ -22,7 +23,19 @@ after(async () => {
   await testEnv.cleanup();
 });
 
-const inviteCode = {
+const scopedInviteCode = {
+  scope: 'professional_specialty',
+  professionalAuthUid: 'professional-uid',
+  specialty: 'nutritionist',
+  codeValue: 'NUT123',
+  status: 'active',
+  rotatedAt: null,
+  expiresAt: null,
+  createdAt: '2026-06-01T00:00:00.000Z',
+  updatedAt: '2026-06-01T00:00:00.000Z',
+};
+
+const legacyInviteCode = {
   professionalAuthUid: 'professional-uid',
   specialty: 'nutritionist',
   codeValue: 'NUT123',
@@ -34,23 +47,36 @@ const inviteCode = {
 };
 
 test('old top-level inviteCodes writes are denied', async () => {
-  await assertFails(setDoc(doc(authedDb(testEnv, 'professional-uid'), 'inviteCodes/professional-uid'), inviteCode));
+  await assertFails(setDoc(doc(authedDb(testEnv, 'professional-uid'), 'inviteCodes/professional-uid'), legacyInviteCode));
 });
 
 test('professional can write own specialty-scoped invite code', async () => {
   await assertSucceeds(setDoc(
     doc(authedDb(testEnv, 'professional-uid'), 'professionals/professional-uid/inviteCodes/nutritionist'),
-    inviteCode
+    scopedInviteCode
   ));
 });
 
 test('student can resolve active specialty-scoped invite code with collection group lookup', async () => {
   await assertSucceeds(setDoc(
     doc(authedDb(testEnv, 'professional-uid'), 'professionals/professional-uid/inviteCodes/nutritionist'),
-    inviteCode
+    scopedInviteCode
   ));
 
   await assertSucceeds(getDocs(query(
+    collectionGroup(authedDb(testEnv, 'student-uid'), 'inviteCodes'),
+    where('codeValue', '==', 'NUT123'),
+    where('scope', '==', 'professional_specialty'),
+    where('specialty', '==', 'nutritionist'),
+    where('status', '==', 'active'),
+    limit(1)
+  )));
+});
+
+test('student cannot resolve old top-level invite code with collection group lookup', async () => {
+  await seedDoc(testEnv, 'inviteCodes/professional-uid', legacyInviteCode);
+
+  await assertFails(getDocs(query(
     collectionGroup(authedDb(testEnv, 'student-uid'), 'inviteCodes'),
     where('codeValue', '==', 'NUT123'),
     where('specialty', '==', 'nutritionist'),

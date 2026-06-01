@@ -54,6 +54,7 @@ export class ProfessionalSourceError extends Error {
 }
 
 type FirestoreInviteCode = {
+  scope: 'professional_specialty';
   professionalAuthUid: string;
   specialty: Specialty;
   codeValue: string;
@@ -202,6 +203,7 @@ export async function getOrCreateActiveInviteCode(
     if (!snapshot.exists()) {
       const timestamp = nowIso();
       const created: FirestoreInviteCode = {
+        scope: 'professional_specialty',
         professionalAuthUid: professionalUid,
         specialty,
         codeValue: deps.generateInviteCode(),
@@ -259,6 +261,7 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
         rotatedCodeValue = nextCodeValue;
         tx.set(ref, {
           professionalAuthUid: professionalUid,
+          scope: 'professional_specialty',
           specialty,
           codeValue: nextCodeValue,
           status: 'active',

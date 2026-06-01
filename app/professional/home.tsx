@@ -30,7 +30,8 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { useInviteCode } from '@/features/professional/use-professional';
+import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
+import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
 import {
   resolveSubscriptionState,
   isPlanUpdateLocked,
@@ -59,7 +60,10 @@ export default function ProfessionalHomeScreen() {
     lastSyncedAtIso: null,
   });
 
-  const { state: codeState, rotate } = useInviteCode(Boolean(currentUser), 'nutritionist');
+  const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
+  const inviteSpecialty =
+    specialtiesState.kind === 'ready' ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties) : null;
+  const { state: codeState, rotate } = useInviteCode(Boolean(currentUser), inviteSpecialty);
   const { entitlementStatus, activeStudentCount } = useSubscription(Boolean(currentUser));
   const subState = resolveSubscriptionState({
     activeStudentCount,

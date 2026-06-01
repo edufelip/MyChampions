@@ -219,6 +219,7 @@ service cloud.firestore {
       allow read: if signedIn() && (professionalUid == request.auth.uid || resource.data.status == 'active');
       allow create, update: if isUid(professionalUid) &&
         (specialty == 'nutritionist' || specialty == 'fitness_coach') &&
+        request.resource.data.scope == 'professional_specialty' &&
         request.resource.data.professionalAuthUid == request.auth.uid &&
         request.resource.data.specialty == specialty;
       allow delete: if isUid(professionalUid);
@@ -226,6 +227,7 @@ service cloud.firestore {
 
     match /{path=**}/inviteCodes/{specialty} {
       allow list: if signedIn() &&
+        resource.data.scope == 'professional_specialty' &&
         resource.data.status == 'active' &&
         (resource.data.specialty == 'nutritionist' || resource.data.specialty == 'fitness_coach');
     }

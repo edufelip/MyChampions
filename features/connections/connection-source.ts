@@ -53,6 +53,7 @@ type FirestoreConnection = {
 };
 
 type FirestoreInviteCode = {
+  scope?: 'professional_specialty';
   professionalAuthUid: string;
   specialty: ConnectionSpecialty;
   codeValue: string;
@@ -166,6 +167,7 @@ export async function submitInviteCode(
       query(
         collectionGroup(firestore, 'inviteCodes'),
         where('codeValue', '==', code.trim()),
+        where('scope', '==', 'professional_specialty'),
         where('specialty', '==', 'nutritionist'),
         where('status', '==', 'active'),
         limit(1)
@@ -177,6 +179,7 @@ export async function submitInviteCode(
         query(
           collectionGroup(firestore, 'inviteCodes'),
           where('codeValue', '==', code.trim()),
+          where('scope', '==', 'professional_specialty'),
           where('specialty', '==', 'fitness_coach'),
           where('status', '==', 'active'),
           limit(1)
@@ -188,7 +191,20 @@ export async function submitInviteCode(
       throw new ConnectionSourceError('graphql', 'Invite code not found.');
     }
 
-    const inviteDoc = inviteSnapshot.docs[0];
+    const inviteDoc = inviteSnapshot.docs.find((candidate) => {
+      const data = candidate.data() as FirestoreInviteCode;
+      const specialty = normalizeConnectionSpecialty(data.specialty ?? candidate.id);
+      return Boolean(
+        specialty &&
+          data.professionalAuthUid &&
+          isSpecialtyScopedInviteCodePath(candidate.ref.path, data.professionalAuthUid, specialty)
+      );
+    });
+
+    if (!inviteDoc) {
+      throw new ConnectionSourceError('graphql', 'Invite code not found.');
+    }
+
     const invite = inviteDoc.data() as FirestoreInviteCode;
     const professionalUid = invite.professionalAuthUid;
     const inviteSpecialty = normalizeConnectionSpecialty(invite.specialty ?? inviteDoc.id);
@@ -245,6 +261,14 @@ export async function submitInviteCode(
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }
+}
+
+export function isSpecialtyScopedInviteCodePath(
+  path: string,
+  professionalUid: string,
+  specialty: ConnectionSpecialty
+): boolean {
+  return path === `professionals/${professionalUid}/inviteCodes/${specialty}`;
 }
 
 export async function confirmPendingConnection(

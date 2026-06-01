@@ -7,6 +7,7 @@ import {
   resolveDisplayInviteCode,
   isPendingCapReached,
   normalizeInviteCodeActionError,
+  resolvePrimaryInviteCodeSpecialty,
   shouldCancelPendingConnectionForRotatedInvite,
   type InviteCode,
 } from './connection-invite.logic';
@@ -156,4 +157,24 @@ test('shouldCancelPendingConnectionForRotatedInvite only matches same specialty 
     sourceInviteCodeId: 'nutritionist',
     sourceInviteCodeValue: 'NUT123',
   }, rotated), false);
+});
+
+// --- resolvePrimaryInviteCodeSpecialty ---
+
+test('resolvePrimaryInviteCodeSpecialty uses fitness coach when that is the only active specialty', () => {
+  assert.equal(
+    resolvePrimaryInviteCodeSpecialty([
+      { id: 'fitness_coach', specialty: 'fitness_coach', isActive: true, credential: null },
+    ]),
+    'fitness_coach'
+  );
+});
+
+test('resolvePrimaryInviteCodeSpecialty returns null when there are no active specialties', () => {
+  assert.equal(
+    resolvePrimaryInviteCodeSpecialty([
+      { id: 'nutritionist', specialty: 'nutritionist', isActive: false, credential: null },
+    ]),
+    null
+  );
 });
