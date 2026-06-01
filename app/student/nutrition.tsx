@@ -64,6 +64,12 @@ export default function StudentNutritionScreen() {
     connectionsState.connections.some(
       (connection) => connection.specialty === 'nutritionist' && connection.status === 'active'
     );
+  const activeNutritionistConnection =
+    connectionsState.kind === 'ready'
+      ? connectionsState.connections.find(
+          (connection) => connection.specialty === 'nutritionist' && connection.status === 'active'
+        ) ?? null
+      : null;
   const nutritionState = resolveStudentNutritionState({
     currentUserUid: currentUser?.uid ?? null,
     hasActiveNutritionistConnection,
@@ -145,7 +151,13 @@ export default function StudentNutritionScreen() {
         fats: Math.round(totals.fats),
       };
 
-      await logAssignedMealPortion(meal.id, snapshot);
+      await logAssignedMealPortion(meal.id, snapshot, {
+        planId: assignedNutritionPlan?.id ?? null,
+        planType: assignedNutritionPlan ? 'nutrition' : null,
+        sourceKind: assignedNutritionPlan?.sourceKind ?? null,
+        ownerProfessionalUid: assignedNutritionPlan?.ownerProfessionalUid ?? null,
+        connectionId: activeNutritionistConnection?.id ?? null,
+      });
       
       const newLog: FirestorePortionLog = {
         id: Math.random().toString(),
@@ -154,6 +166,11 @@ export default function StudentNutritionScreen() {
         consumedGrams: 0,
         snapshot,
         loggedAt: new Date().toISOString(),
+        planId: assignedNutritionPlan?.id ?? null,
+        planType: assignedNutritionPlan ? 'nutrition' : null,
+        sourceKind: assignedNutritionPlan?.sourceKind ?? null,
+        ownerProfessionalUid: assignedNutritionPlan?.ownerProfessionalUid ?? null,
+        connectionId: activeNutritionistConnection?.id ?? null,
       };
       setTodayPortionLogs((prev) => [...prev, newLog]);
     } catch (err) {

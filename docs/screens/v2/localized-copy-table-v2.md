@@ -158,6 +158,15 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.nutrition.water.personal_goal` | SC-209 | Goal ownership badge | Personal Goal | Meta Pessoal | Objetivo Personal | BL-104 |
 | `student.nutrition.water.nutritionist_goal` | SC-209 | Goal ownership badge | Goal set by Nutritionist | Meta definida pelo Nutricionista | Objetivo definido por tu Nutricionista | BL-104 |
 | `student.nutrition.water.cta_log` | SC-209 | Hydration primary action | Log Intake | Registrar Consumo | Registrar Consumo | BL-104 |
+| `pro.student_profile.tracking_review.title` | SC-206 | Nutrition tracking review title | Nutrition tracking review | Revisão de acompanhamento nutricional | Revisión del seguimiento nutricional | Read-only nutritionist review |
+| `pro.student_profile.tracking_review.read_only` | SC-206 | Tracking review read-only helper | Read-only student-owned tracking logs. | Registros de acompanhamento do aluno em modo somente leitura. | Registros de seguimiento del alumno en modo de solo lectura. | Reinforces BR-335/BR-336 |
+| `pro.student_profile.tracking_review.loading` | SC-206 | Tracking review loading state | Loading tracking review... | Carregando revisão de acompanhamento... | Cargando revisión de seguimiento... | |
+| `pro.student_profile.tracking_review.error` | SC-206 | Tracking review load error | Could not load nutrition tracking. Try again. | Não foi possível carregar o acompanhamento nutricional. Tente novamente. | No se pudo cargar el seguimiento nutricional. Inténtalo de nuevo. | |
+| `pro.student_profile.tracking_review.water_today` | SC-206 | Today water section label | Today water progress | Progresso de água de hoje | Progreso de agua de hoy | |
+| `pro.student_profile.tracking_review.meals_today` | SC-206 | Today meal check-offs label | Today meal check-offs | Refeições marcadas hoje | Comidas marcadas hoy | |
+| `pro.student_profile.tracking_review.recent_portions` | SC-206 | Recent portion logs label | Recent portion logs | Registros de porções recentes | Registros de porciones recientes | |
+| `pro.student_profile.tracking_review.empty_meals` | SC-206 | Empty today meal check-offs | No meals checked off today. | Nenhuma refeição marcada hoje. | No hay comidas marcadas hoy. | |
+| `pro.student_profile.tracking_review.empty_portions` | SC-206 | Empty recent portion logs | No portion logs in the last seven days. | Nenhum registro de porção nos últimos sete dias. | No hay registros de porciones en los últimos siete días. | |
 | `student.nutrition.water.log.label` | SC-209 | Hydration intake label | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
 | `student.nutrition.water.log.placeholder` | SC-209 | Hydration intake placeholder | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
 | `student.nutrition.water.goal_defined_in_plan` | SC-209 | Hydration helper | Water goal is defined in your nutrition plan. | A meta de água é definida no seu plano alimentar. | El objetivo de agua se define en tu plan de nutrición. | BL-104 |

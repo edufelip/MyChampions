@@ -53,6 +53,10 @@ import {
   unbindStudentConnections,
 } from '@/features/professional/professional-source';
 import {
+  getStudentTrackingReview,
+  type StudentTrackingReview,
+} from '@/features/professional/student-tracking-review-source';
+import {
   isPlanUpdateLocked,
   resolveSubscriptionState,
 } from '@/features/subscription/subscription.logic';
@@ -64,6 +68,10 @@ import { PlanPickerModal } from '@/components/ds/patterns/PlanPickerModal';
 
 type AssignmentStatus = 'active' | 'pending' | 'none';
 type TFn = ReturnType<typeof useTranslation>['t'];
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default function ProfessionalStudentProfileScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -94,6 +102,8 @@ export default function ProfessionalStudentProfileScreen() {
   const [changeRequests, setChangeRequests] = useState<PlanChangeRequest[]>([]);
   const [changeRequestsLoadError, setChangeRequestsLoadError] = useState<string | null>(null);
   const [changeRequestsActionError, setChangeRequestsActionError] = useState<string | null>(null);
+  const [trackingReview, setTrackingReview] = useState<StudentTrackingReview | null>(null);
+  const [trackingReviewError, setTrackingReviewError] = useState<string | null>(null);
 
   const [isPlanPickerVisible, setIsPlanPickerVisible] = useState(false);
   const [pickerPlanType, setPickerPlanType] = useState<'nutrition' | 'training'>('training');
@@ -205,6 +215,10 @@ export default function ProfessionalStudentProfileScreen() {
     : [];
   const draftNutritionPlan = studentNutritionPlans.find(p => p.isDraft) ?? null;
   const activeNutritionPlan = studentNutritionPlans.find(p => !p.isDraft) ?? null;
+  const activeNutritionHydrationGoalMl =
+    activeNutritionPlan && 'hydrationGoalMl' in activeNutritionPlan && typeof activeNutritionPlan.hydrationGoalMl === 'number'
+      ? activeNutritionPlan.hydrationGoalMl
+      : null;
 
   const studentTrainingPlans = plansState.kind === 'ready' 
     ? plansState.plans.filter(p => p.studentUid === studentId && p.planType === 'training' && !p.isArchived)
@@ -273,6 +287,30 @@ export default function ProfessionalStudentProfileScreen() {
       router.push(`/professional/${pickerPlanType}/plans/${result.id}`);
     }
   };
+
+  const loadTrackingReview = useCallback(async () => {
+    if (!studentId || nutritionStatus !== 'active') {
+      setTrackingReview(null);
+      setTrackingReviewError(null);
+      return;
+    }
+
+    setTrackingReviewError(null);
+    try {
+      const review = await getStudentTrackingReview(studentId, {
+        todayKey: todayKey(),
+        waterGoalMl: activeNutritionHydrationGoalMl,
+      });
+      setTrackingReview(review);
+    } catch {
+      setTrackingReview(null);
+      setTrackingReviewError(t('pro.student_profile.tracking_review.error') as string);
+    }
+  }, [activeNutritionHydrationGoalMl, nutritionStatus, studentId, t]);
+
+  useEffect(() => {
+    void loadTrackingReview();
+  }, [loadTrackingReview]);
 
   return (
     <DsScreen scheme={scheme} testID="pro.student_profile.screen" contentContainerStyle={styles.content}>
@@ -343,6 +381,16 @@ export default function ProfessionalStudentProfileScreen() {
         onDiscardDraft={(planId) => confirmDiscardDraft(planId, 'nutrition')}
       />
 
+      {nutritionStatus === 'active' ? (
+        <TrackingReviewCard
+          review={trackingReview}
+          error={trackingReviewError}
+          scheme={scheme}
+          theme={theme}
+          t={t}
+        />
+      ) : null}
+
       <AssignmentCard
         specialtyLabel={t('pro.student_profile.specialty.fitness_coach') as string}
         status={trainingStatus}
@@ -407,6 +455,114 @@ export default function ProfessionalStudentProfileScreen() {
         t={t}
       />
     </DsScreen>
+  );
+}
+
+function TrackingReviewCard({
+  review,
+  error,
+  scheme,
+  theme,
+  t,
+}: {
+  review: StudentTrackingReview | null;
+  error: string | null;
+  scheme: 'light' | 'dark';
+  theme: DsTheme;
+  t: TFn;
+}) {
+  return (
+    <DsCard scheme={scheme} testID="pro.student_profile.trackingReview" style={styles.cardWithGap}>
+      <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}> 
+        {t('pro.student_profile.tracking_review.title')}
+      </Text>
+      <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+        {t('pro.student_profile.tracking_review.read_only')}
+      </Text>
+
+      {error ? (
+        <View accessibilityLiveRegion="polite">
+          <Text style={[styles.errorText, { color: theme.color.danger }]}>{error}</Text>
+        </View>
+      ) : !review ? (
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+          {t('pro.student_profile.tracking_review.loading')}
+        </Text>
+      ) : (
+        <>
+          <View style={[styles.trackingPanel, { borderColor: theme.color.border }]}> 
+            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}> 
+              {t('pro.student_profile.tracking_review.water_today')}
+            </Text>
+            <Text style={[styles.trackingValue, { color: theme.color.textPrimary }]}> 
+              {review.todayWater.goalMl
+                ? `${review.todayWater.totalMl}/${review.todayWater.goalMl} ml (${review.todayWater.progressPercent}%)`
+                : `${review.todayWater.totalMl} ml`}
+            </Text>
+          </View>
+
+          <View style={styles.hydrationSummaryRow}>
+            {review.sevenDayHydration.map((day) => (
+              <View
+                key={day.dateKey}
+                style={[
+                  styles.hydrationDayPill,
+                  {
+                    backgroundColor: day.goalMet ? theme.color.successSoft : theme.color.surfaceMuted,
+                    borderColor: day.goalMet ? theme.color.success : theme.color.border,
+                  },
+                ]}>
+                <Text style={[styles.hydrationDayText, { color: theme.color.textPrimary }]}> 
+                  {day.dateKey.slice(5)}
+                </Text>
+                <Text style={[styles.hydrationMlText, { color: theme.color.textSecondary }]}> 
+                  {`${day.totalMl} ml`}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.trackingListBlock}>
+            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}> 
+              {t('pro.student_profile.tracking_review.meals_today')}
+            </Text>
+            {review.todayMealCheckOffs.length === 0 ? (
+              <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+                {t('pro.student_profile.tracking_review.empty_meals')}
+              </Text>
+            ) : (
+              review.todayMealCheckOffs.map((meal) => (
+                <Text key={`${meal.mealId}-${meal.loggedAt}`} style={[styles.meta, { color: theme.color.textPrimary }]}> 
+                  {`${meal.mealId} · ${meal.calories} kcal`}
+                </Text>
+              ))
+            )}
+          </View>
+
+          <View style={styles.trackingListBlock}>
+            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}> 
+              {t('pro.student_profile.tracking_review.recent_portions')}
+            </Text>
+            {review.recentPortionLogs.length === 0 ? (
+              <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+                {t('pro.student_profile.tracking_review.empty_portions')}
+              </Text>
+            ) : (
+              review.recentPortionLogs.slice(0, 7).map((log) => (
+                <View key={log.id} style={[styles.portionRow, { borderColor: theme.color.border }]}> 
+                  <Text style={[styles.meta, { color: theme.color.textPrimary }]}> 
+                    {`${log.loggedAt.slice(0, 10)} · ${log.mealId}`}
+                  </Text>
+                  <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+                    {`${log.snapshot.calories} kcal · ${log.snapshot.carbs}g C · ${log.snapshot.proteins}g P · ${log.snapshot.fats}g F`}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        </>
+      )}
+    </DsCard>
   );
 }
 
@@ -675,6 +831,47 @@ const styles = StyleSheet.create({
   },
   requestText: {
     ...DsTypography.body,
+  },
+  trackingPanel: {
+    borderRadius: DsRadius.md,
+    borderWidth: 1,
+    gap: DsSpace.xs,
+    padding: DsSpace.sm,
+  },
+  trackingLabel: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
+  trackingValue: {
+    ...DsTypography.body,
+    fontWeight: '800',
+  },
+  hydrationSummaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: DsSpace.xs,
+  },
+  hydrationDayPill: {
+    borderRadius: DsRadius.md,
+    borderWidth: 1,
+    paddingHorizontal: DsSpace.sm,
+    paddingVertical: DsSpace.xs,
+  },
+  hydrationDayText: {
+    ...DsTypography.caption,
+    fontWeight: '800',
+  },
+  hydrationMlText: {
+    ...DsTypography.caption,
+  },
+  trackingListBlock: {
+    gap: DsSpace.xs,
+  },
+  portionRow: {
+    borderRadius: DsRadius.md,
+    borderWidth: 1,
+    gap: 2,
+    padding: DsSpace.sm,
   },
   requestActions: {
     flexDirection: 'row',

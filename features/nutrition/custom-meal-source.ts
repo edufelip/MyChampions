@@ -72,7 +72,43 @@ export type FirestorePortionLog = {
     fats: number;
   };
   loggedAt: string;
+  planId?: string | null;
+  planType?: 'nutrition' | null;
+  sourceKind?: 'assigned' | 'predefined' | 'self_managed' | null;
+  ownerProfessionalUid?: string | null;
+  connectionId?: string | null;
 };
+
+export type AssignedMealPortionLogProvenance = {
+  planId?: string | null;
+  planType?: 'nutrition' | null;
+  sourceKind?: 'assigned' | 'predefined' | 'self_managed' | null;
+  ownerProfessionalUid?: string | null;
+  connectionId?: string | null;
+};
+
+export function buildAssignedMealPortionLog(input: {
+  id: string;
+  ownerUid: string;
+  mealId: string;
+  snapshot: FirestorePortionLog['snapshot'];
+  loggedAt: string;
+  provenance?: AssignedMealPortionLogProvenance;
+}): FirestorePortionLog {
+  return {
+    id: input.id,
+    ownerUid: input.ownerUid,
+    mealId: input.mealId,
+    consumedGrams: 0,
+    snapshot: input.snapshot,
+    loggedAt: input.loggedAt,
+    planId: input.provenance?.planId ?? null,
+    planType: input.provenance?.planType ?? null,
+    sourceKind: input.provenance?.sourceKind ?? null,
+    ownerProfessionalUid: input.provenance?.ownerProfessionalUid ?? null,
+    connectionId: input.provenance?.connectionId ?? null,
+  };
+}
 
 export type CustomMealSourceDeps = {
   getFirestoreInstance: () => Firestore;
@@ -439,6 +475,7 @@ export async function logAssignedMealPortion(
     proteins: number;
     fats: number;
   },
+  provenance?: AssignedMealPortionLogProvenance,
   deps = defaultDeps
 ): Promise<void> {
   try {
@@ -447,14 +484,14 @@ export async function logAssignedMealPortion(
     const id = generateId('portion_log');
     const timestamp = nowIso();
     
-    await setDoc(doc(firestore, 'portionLogs', id), {
+    await setDoc(doc(firestore, 'portionLogs', id), buildAssignedMealPortionLog({
       id,
       ownerUid: uid,
       mealId,
-      consumedGrams: 0,
       snapshot,
       loggedAt: timestamp,
-    } satisfies FirestorePortionLog);
+      provenance,
+    }));
   } catch (error) {
     throw normalizeCustomMealSourceError(error);
   }

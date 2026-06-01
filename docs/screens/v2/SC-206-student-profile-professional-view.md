@@ -60,6 +60,13 @@
 - Water-goal changes are authored inside nutrition plan builder/assignment flows, not directly in SC-206.
 - Professional unbind and Student unbind must both invoke the same connection-end lifecycle: archive assigned plans, restore latest tied Self-Managed Plan if present, and create no replacement plan.
 
+## Copy Draft (Current)
+- Nutrition tracking review title: `Nutrition tracking review`
+- Nutrition tracking read-only helper: `Read-only student-owned tracking logs.`
+- Today water label: `Today water progress`
+- Today meal check-offs label: `Today meal check-offs`
+- Recent portions label: `Recent portion logs`
+
 ## Links
 - Functional requirement: FR-106, FR-107, FR-108, FR-121, FR-123, FR-124, FR-125, FR-130, FR-131, FR-185, FR-211
 - Use case: UC-002.2, UC-002.3, UC-002.5, UC-002.6, UC-002.13
