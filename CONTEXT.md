@@ -48,7 +48,7 @@ Authored by a Professional (assigned plan) or by the Student themselves (self-ma
 Same governance as NutritionPlan. No fixed domain workout fields enforced by the app beyond storage metadata.
 
 **Draft Assigned Plan**
-An assigned plan document (`sourceKind: 'assigned'`) created in a draft state (`isDraft: true`). Scoped to a specific student connection, owned by the professional, and invisible to the student until published (`isDraft` updated to `false`).
+A student-specific assigned plan being customized by a Professional before it is sent to the Student. It is scoped to one Student and one Specialty, remains invisible to the Student while in draft, and cannot be the Effective Plan until the Professional sends it.
 
 **Effective Plan**
 The plan that governs a Student's active tracking for a given Specialty. Assigned plan takes precedence over self-managed plan while the Connection is active. Draft assigned plans are invisible to the Student and cannot be the Effective Plan. When a Connection ends, the assigned plan is archived and becomes read-only history, and the latest self-managed plan (if one exists) becomes the Effective Plan. If no self-managed plan exists, the Student enters the empty-state for that Specialty — no scaffold is auto-generated.
