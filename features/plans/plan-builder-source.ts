@@ -20,6 +20,9 @@ import { getFirebaseAuth } from '../auth/firebase';
 import { searchFoodsFromSource } from '../nutrition/food-search-source';
 
 import type {
+  CustomMealPlanSnapshot,
+} from '../nutrition/custom-meal.logic';
+import type {
   NutritionPlanInput,
   NutritionPlanCreationMode,
   NutritionMeal,
@@ -103,6 +106,8 @@ type FirestoreNutritionItem = {
   carbs?: number;
   proteins?: number;
   fats?: number;
+  sourceKind?: 'manual' | 'food_search' | 'custom_meal';
+  customMealSnapshot?: CustomMealPlanSnapshot;
 };
 
 type FirestoreNutritionMeal = {
@@ -255,16 +260,18 @@ function mapNutritionPlanDetail(raw: FirestoreNutritionPlan | null | undefined):
   const meals: NutritionMeal[] = (raw.meals ?? []).map((meal) => ({
     id: meal.id,
     name: meal.mealName,
-    items: (meal.items ?? []).map((item) => ({
-      id: item.id,
-      name: item.foodName,
-      quantity: item.quantity ?? '',
-      notes: item.notes ?? '',
-      calories: item.calories,
-      carbs: item.carbs,
-      proteins: item.proteins,
-      fats: item.fats,
-    })),
+      items: (meal.items ?? []).map((item) => ({
+        id: item.id,
+        name: item.foodName,
+        quantity: item.quantity ?? '',
+        notes: item.notes ?? '',
+        calories: item.calories,
+        carbs: item.carbs,
+        proteins: item.proteins,
+        fats: item.fats,
+        sourceKind: item.sourceKind,
+        customMealSnapshot: item.customMealSnapshot,
+      })),
   }));
 
   return {
@@ -462,7 +469,9 @@ export async function removeNutritionMeal(
           calories: i.calories,
           carbs: i.carbs,
           proteins: i.proteins,
-          fats: i.fats
+          fats: i.fats,
+          sourceKind: i.sourceKind,
+          customMealSnapshot: i.customMealSnapshot,
         }))
       }));
 
@@ -541,6 +550,8 @@ export async function addNutritionMealItem(
         if (item.carbs != null) newItem.carbs = item.carbs;
         if (item.proteins != null) newItem.proteins = item.proteins;
         if (item.fats != null) newItem.fats = item.fats;
+        if (item.sourceKind) newItem.sourceKind = item.sourceKind;
+        if (item.customMealSnapshot) newItem.customMealSnapshot = item.customMealSnapshot;
 
         itemAdded = true;
         return {
@@ -565,7 +576,9 @@ export async function addNutritionMealItem(
           calories: i.calories,
           carbs: i.carbs,
           proteins: i.proteins,
-          fats: i.fats
+          fats: i.fats,
+          sourceKind: i.sourceKind,
+          customMealSnapshot: i.customMealSnapshot,
         }))
       }));
 
@@ -591,6 +604,8 @@ export async function addNutritionMealItem(
       carbs: item.carbs,
       proteins: item.proteins,
       fats: item.fats,
+      sourceKind: item.sourceKind,
+      customMealSnapshot: item.customMealSnapshot,
     };
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);

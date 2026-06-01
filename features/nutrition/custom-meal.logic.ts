@@ -75,6 +75,16 @@ export type SharedMealSnapshot = {
   fats: number;
 };
 
+export type CustomMealPlanSnapshot = {
+  name: string;
+  servingGrams: number;
+  calories: number;
+  carbs: number;
+  proteins: number;
+  fats: number;
+  sourceKind: 'custom_meal';
+};
+
 export type MealActionErrorReason =
   | 'not_found'
   | 'validation'
@@ -193,6 +203,19 @@ export function buildSharedMealSnapshot(meal: CustomMeal): SharedMealSnapshot {
     carbs: meal.carbs,
     proteins: meal.proteins,
     fats: meal.fats,
+  };
+}
+
+/** Extracts a NutritionPlan-safe snapshot without reusable meal identifiers or owner fields. */
+export function buildCustomMealPlanSnapshot(meal: CustomMeal): CustomMealPlanSnapshot {
+  return {
+    name: meal.name,
+    servingGrams: meal.totalGrams,
+    calories: meal.calories,
+    carbs: meal.carbs,
+    proteins: meal.proteins,
+    fats: meal.fats,
+    sourceKind: 'custom_meal',
   };
 }
 

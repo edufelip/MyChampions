@@ -8,6 +8,8 @@
  */
 
 import type { PlanType } from './plan-change-request.logic';
+import type { CustomMeal, CustomMealPlanSnapshot } from '../nutrition/custom-meal.logic';
+import { buildCustomMealPlanSnapshot } from '../nutrition/custom-meal.logic';
 
 export type { PlanType };
 
@@ -25,6 +27,8 @@ export type NutritionMealItemInput = {
   carbs?: number | null;
   proteins?: number | null;
   fats?: number | null;
+  sourceKind?: 'manual' | 'food_search' | 'custom_meal';
+  customMealSnapshot?: CustomMealPlanSnapshot;
 };
 
 export type NutritionMealItem = NutritionMealItemInput & {
@@ -345,6 +349,8 @@ export function sanitizeNutritionMealItemInput(input: {
   carbs?: string | number | null;
   proteins?: string | number | null;
   fats?: string | number | null;
+  sourceKind?: 'manual' | 'food_search' | 'custom_meal';
+  customMealSnapshot?: CustomMealPlanSnapshot;
 }): NutritionMealItemInput {
   const parse = (v: string | number | null | undefined): number | null => {
     if (v == null) return null;
@@ -377,6 +383,25 @@ export function sanitizeNutritionMealItemInput(input: {
     carbs: c,
     proteins: p,
     fats: f,
+    sourceKind: input.sourceKind,
+    customMealSnapshot: input.customMealSnapshot,
+  };
+}
+
+export function buildNutritionMealItemInputFromCustomMealSnapshot(
+  meal: CustomMeal
+): NutritionMealItemInput {
+  const snapshot = buildCustomMealPlanSnapshot(meal);
+  return {
+    name: snapshot.name,
+    quantity: `${snapshot.servingGrams}g`,
+    notes: '',
+    calories: snapshot.calories,
+    carbs: snapshot.carbs,
+    proteins: snapshot.proteins,
+    fats: snapshot.fats,
+    sourceKind: snapshot.sourceKind,
+    customMealSnapshot: snapshot,
   };
 }
 

@@ -28,6 +28,7 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNutritionPlanBuilder, type FoodSearchResult } from '@/features/plans/use-plan-builder';
+import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import { resolveNutritionSurfaceGate } from '@/features/professional/specialty.logic';
 import { useSpecialties } from '@/features/professional/use-professional';
 import {
@@ -35,7 +36,12 @@ import {
   createBuilderRoleTranslator,
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
-import { calculateTotalsFromItems, sanitizeNutritionMealItemInput } from '@/features/plans/plan-builder.logic';
+import {
+  buildNutritionMealItemInputFromCustomMealSnapshot,
+  calculateTotalsFromItems,
+  sanitizeNutritionMealItemInput,
+} from '@/features/plans/plan-builder.logic';
+import type { CustomMealPlanSnapshot } from '@/features/nutrition/custom-meal.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -56,6 +62,8 @@ type AddItemFormState =
       proteins?: string;
       fats?: string;
       selectedFood?: FoodSearchResult;
+      selectedCustomMealName?: string;
+      customMealSnapshot?: CustomMealPlanSnapshot;
     };
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -101,6 +109,7 @@ export default function NutritionMealBuilderScreen() {
     Boolean(currentUser) && nutritionGate === 'allow',
     `${pathname}:meal:${planId ?? 'unknown'}:${mealId ?? 'unknown'}`
   );
+  const { state: customMealsState } = useCustomMeals(Boolean(currentUser) && nutritionGate === 'allow');
   const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
   const isInitialLoading = state.kind === 'loading';
   const isBusy = isMutating;
@@ -128,7 +137,7 @@ export default function NutritionMealBuilderScreen() {
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleAddItem = useCallback(async () => {
     if (isBusy || addItemForm.kind !== 'open' || state.kind !== 'ready' || !mealId) return;
-    const { name, quantity, notes, calories, carbs, proteins, fats } = addItemForm;
+    const { name, quantity, notes, calories, carbs, proteins, fats, customMealSnapshot } = addItemForm;
     if (!name.trim()) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -141,6 +150,8 @@ export default function NutritionMealBuilderScreen() {
       carbs,
       proteins,
       fats,
+      sourceKind: customMealSnapshot ? 'custom_meal' : addItemForm.selectedFood ? 'food_search' : 'manual',
+      customMealSnapshot,
     });
 
     const { error } = await addItem(planId!, mealId, sanitized);
@@ -302,6 +313,9 @@ export default function NutritionMealBuilderScreen() {
             foodQuery={addItemForm.foodQuery}
             foodSearchState={foodSearchState}
             selectedFood={addItemForm.selectedFood}
+            customMeals={customMealsState.kind === 'ready' ? customMealsState.meals : []}
+            isCustomMealsLoading={customMealsState.kind === 'loading'}
+            selectedCustomMealName={addItemForm.selectedCustomMealName}
             isInteractionLocked={isBusy}
             onNameChange={(v) =>
               setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, name: v } : prev))
@@ -350,6 +364,8 @@ export default function NutritionMealBuilderScreen() {
                 prev.kind === 'open' ? { 
                   ...prev, 
                   selectedFood: undefined, 
+                  selectedCustomMealName: undefined,
+                  customMealSnapshot: undefined,
                   foodQuery: '',
                   name: '',
                   quantity: '',
@@ -361,12 +377,52 @@ export default function NutritionMealBuilderScreen() {
                 } : prev
               )
             }
+            onSelectCustomMeal={(customMeal) => {
+              const item = buildNutritionMealItemInputFromCustomMealSnapshot(customMeal);
+              setAddItemForm((prev) =>
+                prev.kind === 'open'
+                  ? {
+                      ...prev,
+                      selectedFood: undefined,
+                      selectedCustomMealName: item.name,
+                      customMealSnapshot: item.customMealSnapshot,
+                      foodQuery: '',
+                      name: item.name,
+                      quantity: item.quantity,
+                      notes: item.notes,
+                      calories: item.calories?.toString(),
+                      carbs: item.carbs?.toString(),
+                      proteins: item.proteins?.toString(),
+                      fats: item.fats?.toString(),
+                    }
+                  : prev
+              );
+            }}
+            onClearCustomMeal={() =>
+              setAddItemForm((prev) =>
+                prev.kind === 'open'
+                  ? {
+                      ...prev,
+                      selectedCustomMealName: undefined,
+                      customMealSnapshot: undefined,
+                      name: '',
+                      quantity: '',
+                      calories: undefined,
+                      carbs: undefined,
+                      proteins: undefined,
+                      fats: undefined,
+                    }
+                  : prev
+              )
+            }
             onSelectFood={(food) =>
               setAddItemForm((prev) =>
                 prev.kind === 'open'
                   ? {
                       ...prev,
                       selectedFood: food,
+                      selectedCustomMealName: undefined,
+                      customMealSnapshot: undefined,
                       name: food.name,
                       calories: food.caloriesPer100g.toString(),
                       carbs: food.carbsPer100g.toString(),

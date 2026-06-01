@@ -6,6 +6,7 @@ import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsRadius, DsShadow, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import type { CustomMeal } from '@/features/nutrition/custom-meal.logic';
 import type { FoodSearchState, FoodSearchResult } from '@/features/plans/use-plan-builder';
 
 import { type TranslationKey } from '@/localization';
@@ -28,6 +29,9 @@ type AddItemFormProps = {
   foodQuery: string;
   foodSearchState: FoodSearchState;
   selectedFood?: FoodSearchResult;
+  customMeals?: CustomMeal[];
+  isCustomMealsLoading?: boolean;
+  selectedCustomMealName?: string;
   isInteractionLocked?: boolean;
   onNameChange: (v: string) => void;
   onQuantityChange: (v: string) => void;
@@ -39,6 +43,8 @@ type AddItemFormProps = {
   onSearch: () => void;
   onSelectFood: (food: FoodSearchResult) => void;
   onClearFood: () => void;
+  onSelectCustomMeal?: (meal: CustomMeal) => void;
+  onClearCustomMeal?: () => void;
   onAdd: () => void;
   onClose: () => void;
   style?: any;
@@ -58,6 +64,9 @@ export const AddItemForm = React.memo(({
   foodQuery,
   foodSearchState,
   selectedFood,
+  customMeals = [],
+  isCustomMealsLoading = false,
+  selectedCustomMealName,
   isInteractionLocked = false,
   onNameChange,
   onQuantityChange,
@@ -69,15 +78,19 @@ export const AddItemForm = React.memo(({
   onSearch,
   onSelectFood,
   onClearFood,
+  onSelectCustomMeal,
+  onClearCustomMeal,
   onAdd,
   onClose,
   style,
 }: AddItemFormProps) => {
   const scheme = theme.color.canvas === '#102215' ? 'dark' : 'light';
+  const hasSelectedCustomMeal = Boolean(selectedCustomMealName);
+  const hasSelectedSource = Boolean(selectedFood || selectedCustomMealName);
 
   return (
-    <Animated.View 
-      entering={FadeIn.duration(300)} 
+    <Animated.View
+      entering={FadeIn.duration(300)}
       exiting={FadeOut.duration(200)}
       style={[styles.container, { backgroundColor: theme.color.surface }, style]}
     >
@@ -90,8 +103,44 @@ export const AddItemForm = React.memo(({
         </Pressable>
       </View>
 
+      {onSelectCustomMeal && !hasSelectedSource && (
+        <View style={styles.customMealSection}>
+          <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
+            {t('pro.plan.custom_meal.section')}
+          </Text>
+          {isCustomMealsLoading ? (
+            <ActivityIndicator color={palette.tint} style={styles.inlineLoader} />
+          ) : customMeals.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.customMealList}>
+              {customMeals.map((meal) => (
+                <Pressable
+                  key={meal.id}
+                  style={[styles.customMealChip, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}
+                  onPress={() => onSelectCustomMeal(meal)}
+                  disabled={isInteractionLocked}
+                >
+                  <Text style={[styles.customMealName, { color: palette.text }]} numberOfLines={1}>
+                    {meal.name}
+                  </Text>
+                  <Text style={[styles.customMealMacros, { color: palette.icon }]}>
+                    {meal.calories} {t('common.nutrition.calories')} •{' '}
+                    {t('common.nutrition.carbs')}:{meal.carbs}{' '}
+                    {t('common.nutrition.proteins')}:{meal.proteins}{' '}
+                    {t('common.nutrition.fats')}:{meal.fats}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={[styles.customMealEmpty, { color: palette.icon }]}>
+              {t('pro.plan.custom_meal.empty')}
+            </Text>
+          )}
+        </View>
+      )}
+
       {/* Search Input or Selected Food Indicator */}
-      {!selectedFood ? (
+      {!hasSelectedSource ? (
         <View style={[styles.searchRow, { backgroundColor: theme.color.surfaceMuted }]}>
           <IconSymbol name="magnifyingglass" size={18} color={palette.icon} />
           <TextInput
@@ -115,10 +164,20 @@ export const AddItemForm = React.memo(({
           <View style={styles.selectedFoodInfo}>
             <IconSymbol name="checkmark.circle.fill" size={18} color={palette.tint} />
             <Text style={[styles.selectedFoodText, { color: palette.text }]} numberOfLines={1}>
-              {selectedFood.name}
+              {selectedFood?.name ?? selectedCustomMealName}
             </Text>
+            {hasSelectedCustomMeal && (
+              <Text style={[styles.sourceBadge, { color: palette.tint }]}>
+                {t('pro.plan.custom_meal.badge')}
+              </Text>
+            )}
           </View>
-          <Pressable onPress={onClearFood} disabled={isInteractionLocked} hitSlop={8} style={styles.clearFoodBtn}>
+          <Pressable
+            onPress={hasSelectedCustomMeal ? onClearCustomMeal : onClearFood}
+            disabled={isInteractionLocked}
+            hitSlop={8}
+            style={styles.clearFoodBtn}
+          >
             <Text style={[styles.clearFoodText, { color: theme.color.danger }]}>
               {t('common.cta.clear') || 'Clear'}
             </Text>
@@ -127,7 +186,7 @@ export const AddItemForm = React.memo(({
       )}
 
       {/* Search Results */}
-      {!selectedFood && (
+      {!hasSelectedSource && (
         <View style={styles.resultsWrap}>
           {foodSearchState.kind === 'searching' && (
             <ActivityIndicator color={palette.tint} style={styles.loader} />
@@ -207,7 +266,7 @@ export const AddItemForm = React.memo(({
               keyboardType="decimal-pad"
               placeholder="0"
               placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood && !isInteractionLocked}
+              editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
             />
           </View>
           <View style={[styles.field, { flex: 1 }]}>
@@ -221,7 +280,7 @@ export const AddItemForm = React.memo(({
               keyboardType="decimal-pad"
               placeholder="0"
               placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood && !isInteractionLocked}
+              editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
             />
           </View>
           <View style={[styles.field, { flex: 1 }]}>
@@ -235,7 +294,7 @@ export const AddItemForm = React.memo(({
               keyboardType="decimal-pad"
               placeholder="0"
               placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood && !isInteractionLocked}
+              editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
             />
           </View>
         </View>
@@ -351,6 +410,38 @@ const styles = StyleSheet.create({
     ...DsTypography.body,
     fontWeight: '600',
     flexShrink: 1,
+  },
+  sourceBadge: {
+    ...DsTypography.micro,
+    fontWeight: '700',
+  },
+  customMealSection: {
+    gap: DsSpace.xs,
+  },
+  customMealList: {
+    gap: DsSpace.xs,
+    paddingVertical: 2,
+  },
+  customMealChip: {
+    width: 180,
+    borderWidth: 1,
+    borderRadius: DsRadius.md,
+    padding: DsSpace.sm,
+    gap: 2,
+  },
+  customMealName: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
+  customMealMacros: {
+    ...DsTypography.micro,
+  },
+  customMealEmpty: {
+    ...DsTypography.caption,
+  },
+  inlineLoader: {
+    alignSelf: 'flex-start',
+    marginVertical: DsSpace.xs,
   },
   clearFoodBtn: {
     paddingVertical: DsSpace.xs,
