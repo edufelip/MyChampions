@@ -496,8 +496,14 @@ function TrackingReviewCard({
             </Text>
             <Text style={[styles.trackingValue, { color: theme.color.textPrimary }]}> 
               {review.todayWater.goalMl
-                ? `${review.todayWater.totalMl}/${review.todayWater.goalMl} ml (${review.todayWater.progressPercent}%)`
-                : `${review.todayWater.totalMl} ml`}
+                ? t('pro.student_profile.tracking_review.water_progress_value', {
+                    total: review.todayWater.totalMl,
+                    goal: review.todayWater.goalMl,
+                    percent: review.todayWater.progressPercent!,
+                  })
+                : t('pro.student_profile.tracking_review.water_total_value', {
+                    total: review.todayWater.totalMl,
+                  })}
             </Text>
           </View>
 
@@ -516,7 +522,7 @@ function TrackingReviewCard({
                   {day.dateKey.slice(5)}
                 </Text>
                 <Text style={[styles.hydrationMlText, { color: theme.color.textSecondary }]}> 
-                  {`${day.totalMl} ml`}
+                  {t('pro.student_profile.tracking_review.water_total_value', { total: day.totalMl })}
                 </Text>
               </View>
             ))}
@@ -533,7 +539,10 @@ function TrackingReviewCard({
             ) : (
               review.todayMealCheckOffs.map((meal) => (
                 <Text key={`${meal.mealId}-${meal.loggedAt}`} style={[styles.meta, { color: theme.color.textPrimary }]}> 
-                  {`${meal.mealId} · ${meal.calories} kcal`}
+                  {t('pro.student_profile.tracking_review.meal_calories_value', {
+                    mealId: meal.mealId,
+                    calories: meal.calories,
+                  })}
                 </Text>
               ))
             )}
@@ -554,7 +563,12 @@ function TrackingReviewCard({
                     {`${log.loggedAt.slice(0, 10)} · ${log.mealId}`}
                   </Text>
                   <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
-                    {`${log.snapshot.calories} kcal · ${log.snapshot.carbs}g C · ${log.snapshot.proteins}g P · ${log.snapshot.fats}g F`}
+                    {t('pro.student_profile.tracking_review.portion_macros_value', {
+                      calories: log.snapshot.calories,
+                      carbs: log.snapshot.carbs,
+                      proteins: log.snapshot.proteins,
+                      fats: log.snapshot.fats,
+                    })}
                   </Text>
                 </View>
               ))

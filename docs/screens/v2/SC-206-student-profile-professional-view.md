@@ -69,6 +69,7 @@
 - Today water label: `Today water progress`
 - Today meal check-offs label: `Today meal check-offs`
 - Recent portions label: `Recent portion logs`
+- Numeric tracking review values use localized templates for water units, meal calories, and macro labels from `pro.student_profile.tracking_review.*_value` keys.
 
 ## Links
 - Functional requirement: FR-106, FR-107, FR-108, FR-121, FR-123, FR-124, FR-125, FR-130, FR-131, FR-185, FR-211
