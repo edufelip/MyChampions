@@ -1,7 +1,7 @@
 # SC-206 Student Profile (Professional View) (V2)
 
 ## Route
-- `/professional/students/:studentId`
+- `/professional/student-profile?studentId=<id>`
 
 ## Objective
 - Enable per-student assignment oversight and plan authoring/assignment workflows.
@@ -45,8 +45,11 @@
 - Inputs:
   - Student profile context.
   - Assignment lifecycle state.
-- Plan records (assigned/self-managed/archived).
+  - Plan records (assigned/self-managed/archived).
   - Plan change request records linked to assigned plan contexts.
+  - Student-owned water logs for nutrition tracking review.
+  - Student-owned portion logs for nutrition tracking review.
+  - Derived nutrition tracking review state: today's water progress, today's meal check-off summary, and recent portion summaries.
   - Consent grant flag.
 - Outputs:
   - Assignment confirmation/unbind actions.

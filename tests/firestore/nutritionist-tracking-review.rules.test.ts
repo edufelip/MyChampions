@@ -1,6 +1,6 @@
 import test, { after, before, beforeEach } from 'node:test';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import {
   authedDb,
   clearRulesData,
@@ -32,13 +32,15 @@ test('active nutritionist can read student water and portion logs for review', a
   await assertSucceeds(getDoc(doc(db, 'portionLogs/portion-log-1')));
 });
 
-test('nutritionist cannot mutate student water or portion logs', async () => {
+test('nutritionist cannot create, update, or delete student water or portion logs', async () => {
   await seedActiveNutritionistAccess(testEnv, 'student-uid', 'nutritionist-uid');
   await seedTrackingLogs();
 
   const db = authedDb(testEnv, 'nutritionist-uid');
   await assertFails(updateDoc(doc(db, 'waterLogs/student-uid_2026-06-01'), { totalMl: 2500 }));
   await assertFails(updateDoc(doc(db, 'portionLogs/portion-log-1'), { consumedGrams: 100 }));
+  await assertFails(deleteDoc(doc(db, 'waterLogs/student-uid_2026-06-01')));
+  await assertFails(deleteDoc(doc(db, 'portionLogs/portion-log-1')));
   await assertFails(setDoc(doc(db, 'waterLogs/pro-created'), {
     id: 'pro-created',
     ownerUid: 'student-uid',
