@@ -45,6 +45,34 @@ export type NutritionPlanInput = {
   hydrationGoalMl: string;
 };
 
+export type NutritionPlanCreationMode = 'professional_library' | 'self_managed';
+
+export function resolveNutritionPlanCreationMetadata(
+  authUid: string,
+  mode: NutritionPlanCreationMode
+): {
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  sourceKind: 'predefined' | 'self_managed';
+  isDraft: false;
+} {
+  if (mode === 'self_managed') {
+    return {
+      ownerProfessionalUid: null,
+      studentAuthUid: authUid,
+      sourceKind: 'self_managed',
+      isDraft: false,
+    };
+  }
+
+  return {
+    ownerProfessionalUid: authUid,
+    studentAuthUid: authUid,
+    sourceKind: 'predefined',
+    isDraft: false,
+  };
+}
+
 export type NutritionPlanValidationErrors = {
   name?: 'required' | 'too_short';
   hydrationGoalMl?: 'required' | 'must_be_positive';

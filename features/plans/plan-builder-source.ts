@@ -21,6 +21,7 @@ import { searchFoodsFromSource } from '../nutrition/food-search-source';
 
 import type {
   NutritionPlanInput,
+  NutritionPlanCreationMode,
   NutritionMeal,
   NutritionMealInput,
   NutritionMealItem,
@@ -39,6 +40,7 @@ import {
   coalesceTemplateDescription,
   calculateTotalsFromItems,
   calculateTotalsFromMeals,
+  resolveNutritionPlanCreationMetadata,
   resolveTrainingPlanCreationMetadata,
 } from './plan-builder.logic';
 import type { PlanType } from './plan-change-request.logic';
@@ -314,6 +316,7 @@ function mapTrainingPlanDetail(raw: FirestoreTrainingPlan | null | undefined): T
 
 export async function createNutritionPlan(
   input: NutritionPlanInput,
+  mode: NutritionPlanCreationMode = 'professional_library',
   deps: PlanBuilderSourceDeps = defaultDeps
 ): Promise<NutritionPlanDetail> {
   try {
@@ -321,15 +324,13 @@ export async function createNutritionPlan(
     const uid = deps.getCurrentAuthUid();
     const id = generateId('nutrition_plan');
     const timestamp = nowIso();
+    const metadata = resolveNutritionPlanCreationMetadata(uid, mode);
 
     const hydrationGoalMl = parseInt(input.hydrationGoalMl.trim(), 10);
     const plan: FirestoreNutritionPlan = {
       id,
-      ownerProfessionalUid: uid,
-      studentAuthUid: uid,
-      sourceKind: 'predefined',
+      ...metadata,
       isArchived: false,
-      isDraft: false,
       name: input.name.trim(),
       hydrationGoalMl: Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
       caloriesTarget: 0,

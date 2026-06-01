@@ -58,6 +58,7 @@ import {
   validateTrainingSessionItemInput,
   normalizePlanBuilderError,
   type NutritionPlanInput,
+  type NutritionPlanCreationMode,
   type NutritionMealInput,
   type NutritionMealItemInput,
   type NutritionPlanValidationErrors,
@@ -178,7 +179,8 @@ export type PlansStoreState = {
   initNewNutritionPlan: () => void;
   createNutritionPlanAction: (
     isAuthenticated: boolean,
-    input: NutritionPlanInput
+    input: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   saveNutritionPlanAction: (
     isAuthenticated: boolean,
@@ -190,7 +192,8 @@ export type PlansStoreState = {
     isAuthenticated: boolean,
     planId: string,
     meal: NutritionMealInput,
-    planInput?: NutritionPlanInput
+    planInput?: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeNutritionMealAction: (
     isAuthenticated: boolean,
@@ -207,7 +210,8 @@ export type PlansStoreState = {
     planId: string,
     mealId: string,
     item: NutritionMealItemInput,
-    planInput?: NutritionPlanInput
+    planInput?: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeNutritionItemAction: (
     isAuthenticated: boolean,
@@ -528,7 +532,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     });
   },
 
-  createNutritionPlanAction: async (isAuthenticated, input) => {
+  createNutritionPlanAction: async (isAuthenticated, input, mode = 'professional_library') => {
     if (!isAuthenticated) return { error: 'unknown' };
 
     const errors = validateNutritionPlanInput(input);
@@ -538,7 +542,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
 
     set({ nutritionBuilderState: { kind: 'saving' } });
     try {
-      const plan = await createNutritionPlan(input);
+      const plan = await createNutritionPlan(input, mode);
       set((state) => ({
         nutritionBuilderState: { kind: 'ready', plan },
         invalidation: {
@@ -546,14 +550,16 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
           plans: state.invalidation.plans + 1,
         },
       }));
-      optimisticUpdatePredefinedPlan({
-        id: plan.id,
-        name: plan.name,
-        planType: 'nutrition',
-        ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
-        createdAt: plan.createdAt,
-        updatedAt: plan.updatedAt,
-      });
+      if (plan.sourceKind === 'predefined') {
+        optimisticUpdatePredefinedPlan({
+          id: plan.id,
+          name: plan.name,
+          planType: 'nutrition',
+          ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
+          createdAt: plan.createdAt,
+          updatedAt: plan.updatedAt,
+        });
+      }
       return { id: plan.id };
     } catch (err) {
       const reason = normalizePlanBuilderError(err);
@@ -603,7 +609,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  addNutritionMealAction: async (isAuthenticated, planId, meal, planInput) => {
+  addNutritionMealAction: async (isAuthenticated, planId, meal, planInput, mode) => {
     if (!isAuthenticated) return { planId, error: 'unknown' };
 
     const previousState = get().nutritionBuilderState;
@@ -614,7 +620,8 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
       if (planId === 'new') {
         const res = await get().createNutritionPlanAction(
           isAuthenticated,
-          planInput ?? { name: 'Untitled', hydrationGoalMl: '' }
+          planInput ?? { name: 'Untitled', hydrationGoalMl: '' },
+          mode
         );
         if ('error' in res) {
           return { planId, error: res.error };
@@ -731,7 +738,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  addNutritionItemAction: async (isAuthenticated, planId, mealId, item, planInput) => {
+  addNutritionItemAction: async (isAuthenticated, planId, mealId, item, planInput, mode) => {
     if (!isAuthenticated) return { planId, error: 'unknown' };
 
     const previousState = get().nutritionBuilderState;
@@ -742,7 +749,8 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
       if (planId === 'new') {
         const res = await get().createNutritionPlanAction(
           isAuthenticated,
-          planInput ?? { name: 'Untitled', hydrationGoalMl: '' }
+          planInput ?? { name: 'Untitled', hydrationGoalMl: '' },
+          mode
         );
         if ('error' in res) return { planId, error: res.error };
         currentPlanId = res.id;

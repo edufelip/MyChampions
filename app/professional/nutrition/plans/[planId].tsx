@@ -83,6 +83,7 @@ export default function NutritionPlanBuilderScreen() {
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
   const isDraftAssignment = state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
+  const creationMode = isStudentBuilder ? 'self_managed' : 'professional_library';
 
   const initialValues = useMemo(() => ({
     name: state.kind === 'ready' ? state.plan.name : '',
@@ -103,7 +104,7 @@ export default function NutritionPlanBuilderScreen() {
     t,
     onSave: async (formValues) => {
       if (isNew || isStarterClone) {
-        return createPlan(formValues);
+        return createPlan(formValues, creationMode);
       }
       return savePlan(planId!, formValues, isDraftAssignment);
     },
@@ -196,7 +197,8 @@ export default function NutritionPlanBuilderScreen() {
     const { planId: realId, error } = await addMeal(
       state.plan.id,
       { name: mealName },
-      { name: values.name, hydrationGoalMl: values.hydrationGoalMl }
+      { name: values.name, hydrationGoalMl: values.hydrationGoalMl },
+      creationMode
     );
     
     if (error) {
@@ -211,7 +213,7 @@ export default function NutritionPlanBuilderScreen() {
         router.replace(`${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${realId}` as any);
       }
     }
-  }, [isBusy, addMealForm, state, addMeal, values.name, values.hydrationGoalMl, tr, setIsDirty, isNew, isStudentBuilder, router]);
+  }, [isBusy, addMealForm, state, addMeal, values.name, values.hydrationGoalMl, creationMode, tr, setIsDirty, isNew, isStudentBuilder, router]);
 
   const handleRemoveMeal = useCallback(
     (mealId: string) => {

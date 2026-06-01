@@ -5,6 +5,7 @@ import {
   calculateTotalsFromItems,
   isStarterTemplate,
   deriveStarterTemplatePlanType,
+  resolveNutritionPlanCreationMetadata,
 } from './plan-builder.logic';
 
 test('calculateTotalsFromItems sums numeric macros', () => {
@@ -38,4 +39,22 @@ test('deriveStarterTemplatePlanType identifies plan types correctly', () => {
   assert.equal(deriveStarterTemplatePlanType('starter_nutrition_abc'), 'nutrition');
   assert.equal(deriveStarterTemplatePlanType('starter_training_xyz'), 'training');
   assert.equal(deriveStarterTemplatePlanType('my_plan'), null);
+});
+
+test('resolveNutritionPlanCreationMetadata returns Professional Library Plan metadata for professional builder mode', () => {
+  assert.deepEqual(resolveNutritionPlanCreationMetadata('pro-1', 'professional_library'), {
+    ownerProfessionalUid: 'pro-1',
+    studentAuthUid: 'pro-1',
+    sourceKind: 'predefined',
+    isDraft: false,
+  });
+});
+
+test('resolveNutritionPlanCreationMetadata returns Self-Managed Plan metadata for student builder mode', () => {
+  assert.deepEqual(resolveNutritionPlanCreationMetadata('student-1', 'self_managed'), {
+    ownerProfessionalUid: null,
+    studentAuthUid: 'student-1',
+    sourceKind: 'self_managed',
+    isDraft: false,
+  });
 });

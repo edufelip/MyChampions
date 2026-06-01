@@ -11,6 +11,7 @@ import type {
   NutritionMealInput,
   NutritionMealItemInput,
   NutritionPlanValidationErrors,
+  NutritionPlanCreationMode,
   TrainingPlanInput,
   TrainingSession,
   TrainingSessionInput,
@@ -41,12 +42,16 @@ export type UseNutritionPlanBuilderResult = {
   clearFoodSearch: () => void;
   loadPlan: (planId: string) => void;
   initNewPlan: () => void;
-  createPlan: (input: NutritionPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
+  createPlan: (
+    input: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
+  ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   savePlan: (planId: string, input: NutritionPlanInput, publish?: boolean) => Promise<PlanBuilderErrorReason | null>;
   addMeal: (
     planId: string,
     meal: NutritionMealInput,
-    planInput?: NutritionPlanInput
+    planInput?: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeMeal: (planId: string, mealId: string) => Promise<PlanBuilderErrorReason | null>;
   reorderMeals: (planId: string, mealIds: string[]) => Promise<PlanBuilderErrorReason | null>;
@@ -54,7 +59,8 @@ export type UseNutritionPlanBuilderResult = {
     planId: string,
     mealId: string,
     item: NutritionMealItemInput,
-    planInput?: NutritionPlanInput
+    planInput?: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeItem: (planId: string, mealId: string, itemId: string) => Promise<PlanBuilderErrorReason | null>;
   reorderItems: (
@@ -130,7 +136,8 @@ export function useNutritionPlanBuilder(
   );
 
   const createPlan = useCallback(
-    (input: NutritionPlanInput) => createPlanFromStore(isAuthenticated, input),
+    (input: NutritionPlanInput, mode?: NutritionPlanCreationMode) =>
+      createPlanFromStore(isAuthenticated, input, mode),
     [createPlanFromStore, isAuthenticated]
   );
 
@@ -140,8 +147,12 @@ export function useNutritionPlanBuilder(
   );
 
   const addMeal = useCallback(
-    (planId: string, meal: NutritionMealInput, planInput?: NutritionPlanInput) =>
-      addMealFromStore(isAuthenticated, planId, meal, planInput),
+    (
+      planId: string,
+      meal: NutritionMealInput,
+      planInput?: NutritionPlanInput,
+      mode?: NutritionPlanCreationMode
+    ) => addMealFromStore(isAuthenticated, planId, meal, planInput, mode),
     [addMealFromStore, isAuthenticated]
   );
 
@@ -156,8 +167,13 @@ export function useNutritionPlanBuilder(
   );
 
   const addItem = useCallback(
-    (planId: string, mealId: string, item: NutritionMealItemInput, planInput?: NutritionPlanInput) =>
-      addItemFromStore(isAuthenticated, planId, mealId, item, planInput),
+    (
+      planId: string,
+      mealId: string,
+      item: NutritionMealItemInput,
+      planInput?: NutritionPlanInput,
+      mode?: NutritionPlanCreationMode
+    ) => addItemFromStore(isAuthenticated, planId, mealId, item, planInput, mode),
     [addItemFromStore, isAuthenticated]
   );
 
