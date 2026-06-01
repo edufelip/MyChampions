@@ -300,6 +300,10 @@ export async function endConnection(
         getDocs(assignedQuery),
         getDocs(selfManagedQuery),
       ]);
+      const activeSpecialtyRef = getActiveSpecialtyRef(firestore, data);
+      const activeSpecialtySnap = await tx.get(activeSpecialtyRef);
+      const canEndActiveSpecialty = !activeSpecialtySnap.exists()
+        || activeSpecialtySnap.data()?.connectionId === connectionId;
 
       tx.update(ref, {
         status: 'ended',
@@ -308,7 +312,9 @@ export async function endConnection(
       });
 
       tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
-      tx.set(getActiveSpecialtyRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
+      if (canEndActiveSpecialty) {
+        tx.set(activeSpecialtyRef, buildTrackingAccessRecord(data, 'ended'), { merge: true });
+      }
 
       assignedSnaps.forEach((docSnap) => {
         tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso(), lifecycleConnectionId: connectionId });

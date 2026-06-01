@@ -9,6 +9,7 @@ let queryClauses: any[] = [];
 let planQueryCalls: Array<{ collection: string; clauses: any[] }> = [];
 let txUpdates: Array<{ ref: any; data: any }> = [];
 let txSets: Array<{ ref: any; data: any; options?: any }> = [];
+let activeSpecialtyData: any | null = null;
 
 // 2. Define the mock functions
 const mockDoc = (db: any, path: string, ...segments: string[]) => {
@@ -130,6 +131,12 @@ const mockRunTransaction = async (db: any, updateFunction: any) => {
             specialty: currentSpecialty,
             status: currentStatus
           })
+        } as any;
+      }
+      if (ref.path === `trackingAccess/student-456/activeSpecialties/${currentSpecialty}`) {
+        return {
+          exists: () => activeSpecialtyData !== null,
+          data: () => activeSpecialtyData
         } as any;
       }
       throw new Error(`Ref not found in mock: ${ref.path}`);
@@ -325,6 +332,43 @@ test('TDD: endConnection marks tracking access ended for connection specialty', 
   assert.equal(specialtySet.data.specialty, 'nutritionist');
   assert.equal(specialtySet.data.status, 'ended');
   assert.deepEqual(specialtySet.options, { merge: true });
+});
+
+test('TDD: endConnection leaves active specialty sentinel untouched when owned by another connection', async (t) => {
+  t.after(() => {
+    activeSpecialtyData = null;
+  });
+  currentSpecialty = 'fitness_coach';
+  currentStatus = 'active';
+  activeSpecialtyData = {
+    connectionId: 'conn-current',
+    studentAuthUid: 'student-456',
+    professionalAuthUid: 'prof-current',
+    specialty: 'fitness_coach',
+    status: 'active'
+  };
+  planQueryCalls = [];
+  txUpdates = [];
+  txSets = [];
+
+  const mockDeps = {
+    getFirestoreInstance: () => ({}) as any,
+    getCurrentAuthUid: () => 'student-456',
+  };
+
+  await endConnection('conn-123', mockDeps);
+
+  const connUpdate = txUpdates.find(u => u.ref.path === 'connections/conn-123');
+  assert.ok(connUpdate, 'Connection update should still be called');
+  assert.equal(connUpdate.data.status, 'ended');
+
+  const accessSet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/fitnessCoaches/prof-789');
+  assert.ok(accessSet, 'Connection-specific tracking access should still be marked ended');
+  assert.equal(accessSet.data.connectionId, 'conn-123');
+  assert.equal(accessSet.data.status, 'ended');
+
+  const specialtySet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/activeSpecialties/fitness_coach');
+  assert.equal(specialtySet, undefined, 'Should not overwrite active specialty sentinel owned by another connection');
 });
 
 test('TDD: endConnection archives assigned training plan and restores self-managed training plan for fitness_coach', async (t) => {
