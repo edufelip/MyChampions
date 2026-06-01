@@ -8,7 +8,7 @@
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
 ## Objective
-Let fitness coaches create and edit fully customizable named predefined training plans stored in their private library. Plans consist of sessions; each session holds custom exercise items (name, quantity/sets-reps, optional notes). Plans can be assigned to individual students or bulk-assigned.
+Let fitness coaches create and edit fully customizable named Professional Library Plans stored in their private library. Plans consist of sessions; each session holds custom exercise items (name, quantity/sets-reps, optional notes). Professional Library Plans can be assigned to individual students or bulk-assigned.
 
 ## Design Structure (D-134)
 - Library route (`/professional/training`) uses `DsScreen` shell, DS card surfaces, and DS typography/spacing tokens with the SC-204 professional surface baseline (hero header + contextual helper).
@@ -26,7 +26,7 @@ Let fitness coaches create and edit fully customizable named predefined training
 ## User Actions
 
 ### Plan Library (`/professional/training`)
-- View list of existing predefined training plans.
+- View list of existing Professional Library Plans.
 - Create a new plan (navigates to builder with `planId = 'new'`).
 - Open an existing plan (navigates to builder with the plan's UUID).
 
@@ -42,8 +42,8 @@ Let fitness coaches create and edit fully customizable named predefined training
 - Save plan (create or update) as a single persistence step that writes the current local draft to Firestore.
 - Delete plan; after a successful delete, show the blocking loading scrim and then return the user to the training library.
 - If the user attempts to leave with unsaved local changes, show a discard-confirmation dialog before navigation.
-- Assign plan to a student.
-- Bulk-assign plan to multiple students with per-student fine-tune step.
+- Assign plan to a single student by creating a draft assigned copy, routing the Professional into the builder to fine-tune that Student-specific copy, then publishing it with `Assign & Send`.
+- Bulk-assign plan to multiple students only as an explicit send-unchanged action; if per-student fine-tuning is needed, each Student receives an independent draft assigned copy before publishing.
 
 ## Exercise Service Search Integration
 
@@ -86,8 +86,12 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 - Plan name is required and must be at least 2 characters (BR-293).
 - Session name is required when adding a session; session notes are optional.
 - Exercise item name is required (BR-294); quantity and notes are optional.
-- Bulk assignment produces independent per-student plan copies; later library edits do not mutate assigned copies (BR-283, D-082).
+- Single-student assignment creates an independent draft assigned copy before the plan is visible to the Student.
+- Draft assigned plans are completely invisible to the Student, including title, sessions, and exercise items; the Student may only see a generic waiting-for-plan state until publish.
+- Bulk assignment produces independent per-student plan copies; later Professional Library Plan edits do not mutate assigned copies (BR-283, D-082). Bulk assignment may publish immediately only when the Professional explicitly chooses a send-unchanged flow.
 - Assigned plans are read-only for students (D-006, D-013).
+- Published assigned plans remain editable by the owning Professional while the matching `fitness_coach` Connection is active; edits apply directly to the Student-visible plan until a separate audit/change-history workflow is introduced.
+- When the matching `fitness_coach` Connection ends, the assigned training plan becomes read-only history and Professional write access stops.
 - No fixed mandatory fields beyond name for session items (D-013).
 - Session add/remove/reorder and item add/remove/reorder are local draft edits only; Firestore is not called until the user presses `Save`.
 - If local draft edits exist, back navigation must require explicit discard confirmation before leaving the screen.

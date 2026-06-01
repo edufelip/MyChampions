@@ -35,8 +35,14 @@ A Connection request submitted by a Student using an InviteCode, awaiting Profes
 
 ## Plans
 
+**Professional Library Plan**
+A reusable plan authored by a Professional as part of their private plan library. It is not a Student's Effective Plan by itself. To govern a Student, it must be copied into an assigned plan for that Student.
+
+**Self-Managed Plan**
+A plan authored by a Student for their own use when they do not have an active Professional Connection for that Specialty. Self-managed plans are editable by the Student while self-management is allowed and are superseded by assigned plans when professional care becomes active.
+
 **NutritionPlan**
-Authored by a Professional (assigned plan) or by the Student themselves (self-managed plan). Assigned plans are read-only to the Student. Self-managed plans are archived immediately when a professional connection becomes active for the same Specialty. When a Connection ends (by either party), the assigned plan for that Specialty is automatically archived and the Student's self-managed plan (if one exists) is restored as the Effective Plan.
+Authored by a Professional (assigned plan) or by the Student themselves (self-managed plan). Assigned plans are read-only to the Student. Self-managed plans are archived immediately when a professional connection becomes active for the same Specialty. When a Connection ends (by either party), the assigned plan for that Specialty is automatically archived and the Student's latest self-managed plan (if one exists) is restored as the Effective Plan.
 
 **TrainingPlan**
 Same governance as NutritionPlan. No fixed domain workout fields enforced by the app beyond storage metadata.
@@ -45,7 +51,7 @@ Same governance as NutritionPlan. No fixed domain workout fields enforced by the
 An assigned plan document (`sourceKind: 'assigned'`) created in a draft state (`isDraft: true`). Scoped to a specific student connection, owned by the professional, and invisible to the student until published (`isDraft` updated to `false`).
 
 **Effective Plan**
-The plan that governs a Student's active tracking for a given Specialty. Assigned plan takes precedence over self-managed plan while the Connection is active. Draft assigned plans are invisible to the Student and cannot be the Effective Plan. When a Connection ends, the assigned plan is archived and the most recent self-managed plan (if one exists) becomes the Effective Plan. If no self-managed plan exists, the Student enters the empty-state for that Specialty — no scaffold is auto-generated.
+The plan that governs a Student's active tracking for a given Specialty. Assigned plan takes precedence over self-managed plan while the Connection is active. Draft assigned plans are invisible to the Student and cannot be the Effective Plan. When a Connection ends, the assigned plan is archived and becomes read-only history, and the latest self-managed plan (if one exists) becomes the Effective Plan. If no self-managed plan exists, the Student enters the empty-state for that Specialty — no scaffold is auto-generated.
 
 **PlanChangeRequest**
 An advisory request authored by a Student asking their Professional to change something in an assigned plan. Does not grant the Student edit rights. Lifecycle: `pending → reviewed | dismissed`. The Professional resolves the request separately by editing the plan directly. A PlanChangeRequest survives Connection end — it remains `pending` until the Professional explicitly reviews or dismisses it.
