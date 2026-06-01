@@ -44,7 +44,7 @@
 - `BR-238`: Professional may remove specialty only when that specialty has no active or pending students and at least one specialty remains on account.
 - `BR-239`: Credential records are stored per specialty, with max one `professional_registry` credential per specialty in MVP.
 - `BR-240`: Student-visible credential info is limited to currently assigned professionals and field scope is constrained to `registry_id`, `authority`, and `country`.
-- `BR-241`: Professional invite codes are persistent by default and scoped per Specialty under `professionals/{professionalUid}/inviteCodes/{specialty}`; each Specialty code is independently revocable/regenerable and regeneration auto-cancels pending requests tied to that code's Specialty only.
+- `BR-241`: Professional invite codes are persistent by default and scoped per Specialty under `professionals/{professionalUid}/inviteCodes/{specialty}`; each Specialty code is independently revocable/regenerable, regeneration auto-cancels pending requests tied to that code's Specialty only, and Specialty removal deletes the scoped code/lookup so stale codes cannot create or activate Connections.
 - `BR-242`: Pending connection requests awaiting professional action are capped at 10 unique Students per professional; one Student with two specialty-scoped pending requests counts once.
 - `BR-243`: Professional dashboard must show active and pending counts separately.
 - `BR-244`: Wrong-role route access is hard-blocked and redirected to role home.

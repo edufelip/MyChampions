@@ -6,6 +6,7 @@ import {
   clearRulesData,
   seedActiveNutritionistAccess,
   seedDoc,
+  seedProfessionalRoleAndSpecialty,
   setupRulesTestEnvironment,
 } from './rules-test-helpers';
 
@@ -69,6 +70,7 @@ test('unrelated nutritionist cannot read student water or portion logs', async (
 });
 
 test('student can create pending invite-backed nutritionist connection', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'nutritionist-uid', 'nutritionist');
   await seedDoc(testEnv, 'inviteCodeLookups/NUT123', {
     scope: 'invite_code_lookup',
     codeValue: 'NUT123',

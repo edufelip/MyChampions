@@ -39,8 +39,8 @@ Specify the target domain behavior for role-based journeys, professional assignm
 7. Optional specialty-scoped `professional_registry` credentials may be submitted or skipped in MVP.
 8. Professionals may add specialties later; removal is blocked if active or pending students exist in that specialty or if no specialty would remain.
 9. Professional shares a Specialty-scoped invite code with student to initiate assignment.
-10. Invite code is persistent by default, can be revoked/regenerated, and is stored under `professionals/{professionalUid}/inviteCodes/{specialty}`; regenerating code invalidates that Specialty code and auto-cancels pending requests tied to it. The old top-level shape is replaced without compatibility because the app is not live.
-11. Student submits invite code and assignment enters pending state only if pending-cap constraints pass.
+10. Invite code is persistent by default, can be revoked/regenerated, and is stored under `professionals/{professionalUid}/inviteCodes/{specialty}`; regenerating code invalidates that Specialty code and auto-cancels pending requests tied to it, while Specialty removal deletes the scoped invite code and lookup. The old top-level shape is replaced without compatibility because the app is not live.
+11. Student submits invite code and assignment enters pending state only if pending-cap constraints pass and the Professional still has the matching active Specialty.
 12. Pending requests are capped at 10 unique Students per professional.
 13. Professional confirmation is required before assignment becomes active.
 14. Student connections to professionals are validated by specialty uniqueness constraints.

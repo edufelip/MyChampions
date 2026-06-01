@@ -1,6 +1,6 @@
 import test, { after, before, beforeEach } from 'node:test';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 import {
   authedDb,
@@ -122,6 +122,53 @@ test('student cannot create invite code lookup index', async () => {
     doc(authedDb(testEnv, 'student-uid'), 'inviteCodeLookups/NUT123'),
     { ...inviteCodeLookup, professionalAuthUid: 'student-uid' }
   ));
+});
+
+test('student cannot create connection from stale invite after specialty removal', async () => {
+  await seedDoc(testEnv, 'userProfiles/professional-uid', {
+    authUid: 'professional-uid',
+    lockedRole: 'professional',
+  });
+  await seedDoc(testEnv, 'inviteCodeLookups/NUT123', inviteCodeLookup);
+  await seedDoc(testEnv, 'professionals/professional-uid/inviteCodes/nutritionist', scopedInviteCode);
+
+  await assertFails(setDoc(doc(authedDb(testEnv, 'student-uid'), 'connections/stale-invite'), {
+    id: 'stale-invite',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+    status: 'pending_confirmation',
+    canceledReason: null,
+    endedAt: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }));
+});
+
+test('professional can cancel pending connection when invite code rotates', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'professional-uid', 'nutritionist');
+  await seedDoc(testEnv, 'connections/pending-rotated', {
+    id: 'pending-rotated',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+    status: 'pending_confirmation',
+    canceledReason: null,
+    endedAt: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+
+  await assertSucceeds(updateDoc(doc(authedDb(testEnv, 'professional-uid'), 'connections/pending-rotated'), {
+    status: 'ended',
+    canceledReason: 'code_rotated',
+    endedAt: '2026-06-01T00:01:00.000Z',
+    updatedAt: '2026-06-01T00:01:00.000Z',
+  }));
 });
 
 test('professional cannot overwrite another professionals invite code lookup index', async () => {

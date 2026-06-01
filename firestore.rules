@@ -39,11 +39,19 @@ service cloud.firestore {
         request.resource.data.status == 'active' &&
         request.resource.data.canceledReason == null &&
         request.resource.data.endedAt == null &&
+        hasActiveProfessionalSpecialty(resource.data.professionalAuthUid, resource.data.specialty) &&
         validConnectionTrackingAccessAfter(connectionId, 'active') &&
         validConnectionActiveSpecialtyAfter(connectionId, 'active')
       ) || (
+        resource.data.status == 'pending_confirmation' &&
+        request.auth.uid == resource.data.professionalAuthUid &&
+        request.resource.data.status == 'ended' &&
+        request.resource.data.canceledReason == 'code_rotated' &&
+        request.resource.data.endedAt is string
+      ) || (
         (resource.data.status == 'pending_confirmation' || resource.data.status == 'active') &&
         request.resource.data.status == 'ended' &&
+        request.resource.data.canceledReason == null &&
         request.resource.data.endedAt is string &&
         validConnectionTrackingAccessAfter(connectionId, 'ended') &&
         validConnectionActiveSpecialtyAfter(connectionId, 'ended')
@@ -89,6 +97,7 @@ service cloud.firestore {
         request.resource.data.professionalAuthUid is string &&
         request.resource.data.professionalAuthUid != request.auth.uid &&
         (request.resource.data.specialty == 'nutritionist' || request.resource.data.specialty == 'fitness_coach') &&
+        hasActiveProfessionalSpecialty(request.resource.data.professionalAuthUid, request.resource.data.specialty) &&
         request.resource.data.status == 'pending_confirmation' &&
         request.resource.data.canceledReason == null &&
         request.resource.data.endedAt == null &&

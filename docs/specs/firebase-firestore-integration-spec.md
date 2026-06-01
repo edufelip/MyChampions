@@ -18,7 +18,7 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 ## Collection Model (App-Facing)
 - `userProfiles/{uid}`: role lock, account basics, terms acceptance metadata.
 - `professionals/{professionalUid}/inviteCodes/{specialty}`: canonical active invite code lifecycle, scoped per Specialty (`nutritionist` or `fitness_coach`) and marked with `scope = professional_specialty`. The old top-level `inviteCodes/{professionalUid}` shape is replaced before release; no compatibility path is required because the app is not live.
-- `inviteCodeLookups/{codeValue}`: student-readable active invite-code lookup index maintained atomically with scoped Professional invite records. Lookup documents use `scope = invite_code_lookup`, carry the owning Professional UID, Specialty, canonical invite code id, status, and code value, and are deleted/replaced on rotation so old codes cannot create pending Connections.
+- `inviteCodeLookups/{codeValue}`: student-readable active invite-code lookup index maintained atomically with scoped Professional invite records. Lookup documents use `scope = invite_code_lookup`, carry the owning Professional UID, Specialty, canonical invite code id, status, and code value, and are deleted/replaced on rotation or Specialty removal so old codes cannot create pending Connections.
 - `connections/{connectionId}`: student-professional lifecycle state.
 - `specialties/{specialtyId}` and `credentials/{specialtyId}`.
 - `nutritionPlans/{planId}` and `trainingPlans/{planId}`.
@@ -39,7 +39,7 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - Connection transitions are validated in source-layer transactions.
 - Professional reads of student tracking data are authorized through `trackingAccess` documents that point to the matching active `connections/{connectionId}` document. Firestore rules must not use collection queries for connection lookup.
 - Professional specialty documents use deterministic ids, `specialties/{professionalUid}_{specialty}`, so Firestore rules can prove `userProfiles/{uid}.lockedRole == 'professional'` and active matching Specialty before allowing scoped invite-code or professional-library plan writes.
-- `professionals/{professionalUid}/inviteCodes/{specialty}`, `inviteCodeLookups/{codeValue}`, and professional-library `nutritionPlans`/`trainingPlans` writes require the caller to be a Professional with the matching active Specialty.
+- `professionals/{professionalUid}/inviteCodes/{specialty}`, `inviteCodeLookups/{codeValue}`, pending Connection create/activation, and professional-library `nutritionPlans`/`trainingPlans` writes require the matching Professional to have the active Specialty.
 - Student self-managed training creates and normal edits are blocked while `trackingAccess/{studentUid}/activeSpecialties/fitness_coach` has `status='active'`; ending the connection that owns the sentinel marks it `ended` before self-managed restore writes complete.
 - Student self-managed nutrition creates and normal edits are blocked while `trackingAccess/{studentUid}/activeSpecialties/nutritionist` has `status='active'`; the student sees a waiting state until a published assigned NutritionPlan exists.
 - Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans. Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.

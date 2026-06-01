@@ -37,7 +37,7 @@
 - `D-034`: Professionals can add specialties after onboarding; specialty removal is blocked when active or pending students exist in that specialty or when it would leave zero specialties.
 - `D-035`: Credential records are separate per specialty, type `professional_registry`, max one per specialty in MVP, and skippable in no-regulator contexts.
 - `D-036`: Students can view credential info only for currently assigned professionals, limited to `registry_id`, `authority`, and `country`.
-- `D-037`: Professional invite code is persistent by default, revocable/regenerable on demand, and only one active code exists per professional; regeneration invalidates old code and auto-cancels pending requests created from it.
+- `D-037`: Professional invite code is persistent by default, revocable/regenerable on demand, and only one active code exists per Professional Specialty; regeneration invalidates the old Specialty code and auto-cancels pending requests created from it, while Specialty removal deletes the scoped code and lookup.
 - `D-038`: Professional pending connection requests are capped at 10.
 - `D-039`: Professional dashboard shows active and pending counts separately.
 - `D-040`: Wrong-role route access is hard-blocked with redirect to role home.

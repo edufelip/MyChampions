@@ -499,6 +499,15 @@ export async function removeProfessionalSpecialty(
     }
 
     await runTransaction(firestore, async (tx) => {
+      const inviteRef = doc(firestore, 'professionals', professionalUid, 'inviteCodes', specialtyDoc.specialty);
+      const inviteSnap = await tx.get(inviteRef);
+
+      if (inviteSnap.exists()) {
+        const invite = inviteSnap.data() as FirestoreInviteCode;
+        tx.delete(doc(firestore, 'inviteCodeLookups', invite.codeValue));
+        tx.delete(inviteRef);
+      }
+
       tx.delete(doc(firestore, 'specialties', specialtyId));
     });
   } catch (error) {
