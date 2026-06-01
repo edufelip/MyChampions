@@ -65,6 +65,16 @@ type FirestoreInviteCode = {
   updatedAt: string;
 };
 
+type FirestoreInviteCodeLookup = {
+  scope: 'invite_code_lookup';
+  codeValue: string;
+  professionalAuthUid: string;
+  specialty: Specialty;
+  inviteCodeId: Specialty;
+  status: 'active' | 'rotated' | 'revoked';
+  updatedAt: string;
+};
+
 type FirestoreSpecialty = {
   id: string;
   professionalAuthUid: string;
@@ -185,8 +195,28 @@ export function buildInviteCodePath(professionalUid: string, specialty: Specialt
   return ['professionals', professionalUid, 'inviteCodes', specialty];
 }
 
+export function buildInviteCodeLookupPath(codeValue: string): [string, string] {
+  return ['inviteCodeLookups', codeValue];
+}
+
 function inviteRef(firestore: Firestore, professionalUid: string, specialty: Specialty) {
   return doc(firestore, ...buildInviteCodePath(professionalUid, specialty));
+}
+
+function inviteLookupRef(firestore: Firestore, codeValue: string) {
+  return doc(firestore, ...buildInviteCodeLookupPath(codeValue));
+}
+
+function buildInviteCodeLookupRecord(invite: FirestoreInviteCode): FirestoreInviteCodeLookup {
+  return {
+    scope: 'invite_code_lookup',
+    codeValue: invite.codeValue,
+    professionalAuthUid: invite.professionalAuthUid,
+    specialty: invite.specialty,
+    inviteCodeId: invite.specialty,
+    status: invite.status,
+    updatedAt: invite.updatedAt,
+  };
 }
 
 export async function getOrCreateActiveInviteCode(
@@ -215,6 +245,7 @@ export async function getOrCreateActiveInviteCode(
       };
       await runTransaction(firestore, async (tx) => {
         tx.set(ref, created);
+        tx.set(inviteLookupRef(firestore, created.codeValue), buildInviteCodeLookupRecord(created));
       });
       return {
         id: specialty,
@@ -230,6 +261,12 @@ export async function getOrCreateActiveInviteCode(
     const data = snapshot.data() as FirestoreInviteCode;
     const status = normalizeInviteCodeStatus(data.status);
     if (!status) return null;
+
+    if (status === 'active') {
+      await runTransaction(firestore, async (tx) => {
+        tx.set(inviteLookupRef(firestore, data.codeValue), buildInviteCodeLookupRecord({ ...data, status }));
+      });
+    }
 
     return {
       id: snapshot.id,
@@ -260,8 +297,8 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
       if (!currentSnap.exists()) {
         rotatedCodeValue = nextCodeValue;
         tx.set(ref, {
-          professionalAuthUid: professionalUid,
           scope: 'professional_specialty',
+          professionalAuthUid: professionalUid,
           specialty,
           codeValue: nextCodeValue,
           status: 'active',
@@ -270,15 +307,36 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
           createdAt: now,
           updatedAt: now,
         } satisfies FirestoreInviteCode);
+        tx.set(inviteLookupRef(firestore, nextCodeValue), buildInviteCodeLookupRecord({
+          scope: 'professional_specialty',
+          professionalAuthUid: professionalUid,
+          specialty,
+          codeValue: nextCodeValue,
+          status: 'active',
+          rotatedAt: now,
+          expiresAt: null,
+          createdAt: now,
+          updatedAt: now,
+        }));
       } else {
         const current = currentSnap.data() as FirestoreInviteCode;
         rotatedCodeValue = current.codeValue;
+        tx.delete(inviteLookupRef(firestore, current.codeValue));
         tx.update(ref, {
           codeValue: nextCodeValue,
           status: 'active',
           rotatedAt: now,
           updatedAt: now,
         });
+        tx.set(inviteLookupRef(firestore, nextCodeValue), buildInviteCodeLookupRecord({
+          ...current,
+          scope: 'professional_specialty',
+          specialty,
+          codeValue: nextCodeValue,
+          status: 'active',
+          rotatedAt: now,
+          updatedAt: now,
+        }));
       }
 
       const pending = await getDocs(query(

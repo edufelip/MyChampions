@@ -4,10 +4,9 @@
 
 import {
   collection,
-  collectionGroup,
   doc,
+  getDoc,
   getDocs,
-  limit,
   query,
   runTransaction,
   where,
@@ -53,7 +52,7 @@ type FirestoreConnection = {
 };
 
 type FirestoreInviteCode = {
-  scope?: 'professional_specialty';
+  scope: 'professional_specialty';
   professionalAuthUid: string;
   specialty: ConnectionSpecialty;
   codeValue: string;
@@ -61,6 +60,15 @@ type FirestoreInviteCode = {
   createdAt: string;
   updatedAt: string;
   rotatedAt?: string | null;
+};
+
+type FirestoreInviteCodeLookup = {
+  scope: 'invite_code_lookup';
+  codeValue: string;
+  professionalAuthUid: string;
+  specialty: ConnectionSpecialty;
+  inviteCodeId: ConnectionSpecialty;
+  status: 'active' | 'rotated' | 'revoked';
 };
 
 export function buildPendingConnectionFromInvite(input: {
@@ -162,59 +170,30 @@ export async function submitInviteCode(
   try {
     const firestore = deps.getFirestoreInstance();
     const studentUid = deps.getCurrentAuthUid();
+    const trimmedCode = code.trim();
 
-    let inviteSnapshot = await getDocs(
-      query(
-        collectionGroup(firestore, 'inviteCodes'),
-        where('codeValue', '==', code.trim()),
-        where('scope', '==', 'professional_specialty'),
-        where('specialty', '==', 'nutritionist'),
-        where('status', '==', 'active'),
-        limit(1)
-      )
-    );
-
-    if (inviteSnapshot.empty) {
-      inviteSnapshot = await getDocs(
-        query(
-          collectionGroup(firestore, 'inviteCodes'),
-          where('codeValue', '==', code.trim()),
-          where('scope', '==', 'professional_specialty'),
-          where('specialty', '==', 'fitness_coach'),
-          where('status', '==', 'active'),
-          limit(1)
-        )
-      );
-    }
-
-    if (inviteSnapshot.empty) {
+    const lookupRef = doc(firestore, 'inviteCodeLookups', trimmedCode);
+    const lookupSnap = await getDoc(lookupRef);
+    if (!lookupSnap.exists()) {
       throw new ConnectionSourceError('graphql', 'Invite code not found.');
     }
 
-    const inviteDoc = inviteSnapshot.docs.find((candidate) => {
-      const data = candidate.data() as FirestoreInviteCode;
-      const specialty = normalizeConnectionSpecialty(data.specialty ?? candidate.id);
-      return Boolean(
-        specialty &&
-          data.professionalAuthUid &&
-          isSpecialtyScopedInviteCodePath(candidate.ref.path, data.professionalAuthUid, specialty)
-      );
-    });
+    const lookup = lookupSnap.data() as FirestoreInviteCodeLookup;
+    const professionalUid = lookup.professionalAuthUid;
+    const inviteSpecialty = normalizeConnectionSpecialty(lookup.specialty);
 
-    if (!inviteDoc) {
+    if (
+      lookup.scope !== 'invite_code_lookup' ||
+      lookup.codeValue !== trimmedCode ||
+      lookup.status !== 'active' ||
+      !professionalUid ||
+      !inviteSpecialty ||
+      lookup.inviteCodeId !== inviteSpecialty
+    ) {
       throw new ConnectionSourceError('graphql', 'Invite code not found.');
     }
 
-    const invite = inviteDoc.data() as FirestoreInviteCode;
-    const professionalUid = invite.professionalAuthUid;
-    const inviteSpecialty = normalizeConnectionSpecialty(invite.specialty ?? inviteDoc.id);
-
-    if (!professionalUid) {
-      throw new ConnectionSourceError('invalid_response', 'Invite code has no professional owner.');
-    }
-    if (!inviteSpecialty) {
-      throw new ConnectionSourceError('invalid_response', 'Invite code has no valid specialty.');
-    }
+    const inviteRef = doc(firestore, 'professionals', professionalUid, 'inviteCodes', inviteSpecialty);
 
     const existing = await getDocs(
       query(
@@ -246,11 +225,37 @@ export async function submitInviteCode(
     const timestamp = nowIso();
 
     await runTransaction(firestore, async (tx) => {
+      const [transactionLookupSnap, inviteSnap] = await Promise.all([
+        tx.get(lookupRef),
+        tx.get(inviteRef),
+      ]);
+      if (!transactionLookupSnap.exists() || !inviteSnap.exists()) {
+        throw new ConnectionSourceError('graphql', 'Invite code not found.');
+      }
+
+      const transactionLookup = transactionLookupSnap.data() as FirestoreInviteCodeLookup;
+      const invite = inviteSnap.data() as FirestoreInviteCode;
+      if (
+        transactionLookup.scope !== 'invite_code_lookup' ||
+        transactionLookup.codeValue !== trimmedCode ||
+        transactionLookup.status !== 'active' ||
+        transactionLookup.professionalAuthUid !== professionalUid ||
+        transactionLookup.specialty !== inviteSpecialty ||
+        transactionLookup.inviteCodeId !== inviteSpecialty ||
+        invite.scope !== 'professional_specialty' ||
+        invite.professionalAuthUid !== professionalUid ||
+        invite.specialty !== inviteSpecialty ||
+        invite.codeValue !== trimmedCode ||
+        invite.status !== 'active'
+      ) {
+        throw new ConnectionSourceError('graphql', 'Invite code not found.');
+      }
+
       tx.set(doc(firestore, 'connections', connectionId), {
         ...buildPendingConnectionFromInvite({
           connectionId,
           studentUid,
-          inviteDocId: inviteDoc.id,
+          inviteDocId: inviteSpecialty,
           invite: { ...invite, specialty: inviteSpecialty },
           timestamp,
         }),
@@ -261,14 +266,6 @@ export async function submitInviteCode(
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }
-}
-
-export function isSpecialtyScopedInviteCodePath(
-  path: string,
-  professionalUid: string,
-  specialty: ConnectionSpecialty
-): boolean {
-  return path === `professionals/${professionalUid}/inviteCodes/${specialty}`;
 }
 
 export async function confirmPendingConnection(

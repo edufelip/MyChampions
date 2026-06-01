@@ -21,7 +21,7 @@
     "lint": "expo lint",
     "test": "yarn test:unit",
     "test:unit": "tsx --test features/**/*.test.ts localization/**/*.test.ts",
-    "test:rules": "firebase emulators:exec --project demo-mychampions --only firestore \"yarn tsx --test tests/firestore/**/*.test.ts\"",
+    "test:rules": "firebase emulators:exec --project demo-mychampions --only firestore \"yarn tsx --test --test-concurrency=1 tests/firestore/**/*.test.ts\"",
     "test:all": "yarn test:unit && yarn test:rules",
     "test:e2e:build:ios": "detox build -c ios.sim.release",
     "test:e2e:ios": "detox test -c ios.sim.release",

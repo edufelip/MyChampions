@@ -226,10 +226,30 @@ service cloud.firestore {
     }
 
     match /{path=**}/inviteCodes/{specialty} {
-      allow list: if signedIn() &&
-        resource.data.scope == 'professional_specialty' &&
+      allow list: if false;
+    }
+
+    match /inviteCodeLookups/{codeValue} {
+      allow get: if signedIn() &&
+        resource.data.scope == 'invite_code_lookup' &&
+        resource.data.codeValue == codeValue &&
         resource.data.status == 'active' &&
+        resource.data.inviteCodeId == resource.data.specialty &&
         (resource.data.specialty == 'nutritionist' || resource.data.specialty == 'fitness_coach');
+      allow create: if signedIn() &&
+        request.resource.data.scope == 'invite_code_lookup' &&
+        request.resource.data.codeValue == codeValue &&
+        request.resource.data.professionalAuthUid == request.auth.uid &&
+        request.resource.data.inviteCodeId == request.resource.data.specialty &&
+        (request.resource.data.specialty == 'nutritionist' || request.resource.data.specialty == 'fitness_coach');
+      allow update: if signedIn() &&
+        resource.data.professionalAuthUid == request.auth.uid &&
+        request.resource.data.scope == 'invite_code_lookup' &&
+        request.resource.data.codeValue == codeValue &&
+        request.resource.data.professionalAuthUid == request.auth.uid &&
+        request.resource.data.inviteCodeId == request.resource.data.specialty &&
+        (request.resource.data.specialty == 'nutritionist' || request.resource.data.specialty == 'fitness_coach');
+      allow delete: if signedIn() && resource.data.professionalAuthUid == request.auth.uid;
     }
 
     match /connections/{connectionId} {
