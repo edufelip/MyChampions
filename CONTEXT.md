@@ -40,7 +40,7 @@ A reusable plan authored by a Professional as part of their private plan library
 A plan authored by a Student for their own use when they do not have an active Professional Connection for that Specialty. Self-managed plans are editable by the Student while self-management is allowed and are superseded by assigned plans when professional care becomes active.
 
 **NutritionPlan**
-Authored by a Professional (assigned plan) or by the Student themselves (self-managed plan). Assigned plans are read-only to the Student. Self-managed plans are archived immediately when a professional connection becomes active for the same Specialty. When a Connection ends (by either party), the assigned plan for that Specialty is automatically archived and the Student's latest self-managed plan (if one exists) is restored as the Effective Plan.
+Authored by a Professional (assigned plan) or by the Student themselves (self-managed plan). Assigned plans are read-only to the Student. Self-managed plans are archived immediately when a professional connection becomes active for the same Specialty. When a Connection ends (by either party), the assigned plan for that Specialty is automatically archived and the latest self-managed plan associated with that ended professional-care period (if one exists) is restored as the Effective Plan.
 
 **TrainingPlan**
 Same governance as NutritionPlan. No fixed domain workout fields enforced by the app beyond storage metadata.
