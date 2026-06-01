@@ -166,7 +166,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Edge Cases
 - Food service unavailable/rate-limited: source call returns typed error and UI surfaces fallback copy.
-- If assignment becomes inactive mid-edit: block assign action; plan save remains available.
+- If assignment becomes inactive mid-edit: block assigning and saving assigned-plan changes; only independent Professional Library Plan edits remain available.
 - Editing a predefined plan after it has been bulk-assigned does not mutate already assigned student copies (D-082, BR-283).
 - If a Student opens self-managed create/edit while an active nutritionist Connection exists, block save and return to the waiting nutrition state.
 
