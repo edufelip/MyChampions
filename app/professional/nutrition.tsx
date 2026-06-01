@@ -25,7 +25,7 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import type { PredefinedPlan } from '@/features/plans/plan-source';
 import { usePlans } from '@/features/plans/use-plans';
-import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
+import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
 import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -40,11 +40,12 @@ export default function ProNutritionLibraryScreen() {
   const router = useRouter();
   const { currentUser, lockedRole } = useAuthSession();
   const { state: specialtiesState } = useSpecialties(Boolean(currentUser) && lockedRole === 'professional');
-  const canUseNutrition = canAccessNutritionSurface({
+  const nutritionGate = resolveProfessionalNutritionRouteGate({
     role: lockedRole,
     specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+    specialtiesStatus: specialtiesState.kind,
   });
-  const { state, reload } = usePlans(Boolean(currentUser) && canUseNutrition);
+  const { state, reload } = usePlans(Boolean(currentUser) && nutritionGate === 'allow');
 
   const nutritionPlans: PredefinedPlan[] =
     state.kind === 'ready' ? state.predefinedPlans.filter((p) => p.planType === 'nutrition') : [];
@@ -61,7 +62,7 @@ export default function ProNutritionLibraryScreen() {
     [router, t, theme]
   );
 
-  if (specialtiesState.kind === 'loading' || specialtiesState.kind === 'idle') {
+  if (nutritionGate === 'loading') {
     return (
       <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: t('pro.library.nutrition.title'), headerShown: false }} />
@@ -74,7 +75,7 @@ export default function ProNutritionLibraryScreen() {
     );
   }
 
-  if (!canUseNutrition) {
+  if (nutritionGate === 'redirect') {
     return <Redirect href="/(tabs)" />;
   }
 

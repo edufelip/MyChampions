@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { canAccessNutritionSurface, resolveNutritionSurfaceGate } from './specialty.logic';
+import {
+  canAccessNutritionSurface,
+  resolveNutritionSurfaceGate,
+  resolveProfessionalNutritionRouteGate,
+} from './specialty.logic';
 
 test('allows students to access nutrition regardless of professional specialties', () => {
   assert.equal(
@@ -64,6 +68,28 @@ test('allows student nutrition routes without professional specialties', () => {
       role: 'student',
       specialties: [],
       specialtiesStatus: 'idle',
+    }),
+    'allow'
+  );
+});
+
+test('redirects students away from professional nutrition routes', () => {
+  assert.equal(
+    resolveProfessionalNutritionRouteGate({
+      role: 'student',
+      specialties: [],
+      specialtiesStatus: 'idle',
+    }),
+    'redirect'
+  );
+});
+
+test('allows active nutritionist professionals to use professional nutrition routes', () => {
+  assert.equal(
+    resolveProfessionalNutritionRouteGate({
+      role: 'professional',
+      specialties: [{ id: 'nutritionist', specialty: 'nutritionist', isActive: true, credential: null }],
+      specialtiesStatus: 'ready',
     }),
     'allow'
   );

@@ -90,6 +90,19 @@ export function resolveNutritionSurfaceGate(
   return canAccessNutritionSurface(input) ? 'allow' : 'redirect';
 }
 
+export function resolveProfessionalNutritionRouteGate(
+  input: NutritionSurfaceAccessInput & { specialtiesStatus: NutritionSurfaceGateStatus }
+): NutritionSurfaceGateDecision {
+  if (input.role !== 'professional') return 'redirect';
+  if (input.specialtiesStatus === 'idle' || input.specialtiesStatus === 'loading') return 'loading';
+
+  return input.specialties.some(
+    (record) => record.specialty === 'nutritionist' && record.isActive
+  )
+    ? 'allow'
+    : 'redirect';
+}
+
 /**
  * Determines if a specialty can be removed.
  * Block reasons (BR-234, D-062):

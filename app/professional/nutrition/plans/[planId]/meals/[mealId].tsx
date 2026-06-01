@@ -29,7 +29,7 @@ import { useAuthSession } from '@/features/auth/auth-session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNutritionPlanBuilder, type FoodSearchResult } from '@/features/plans/use-plan-builder';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
-import { resolveNutritionSurfaceGate } from '@/features/professional/specialty.logic';
+import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
 import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
@@ -87,7 +87,7 @@ export default function NutritionMealBuilderScreen() {
     Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional'
   );
   const nutritionGate = shouldGateProfessionalNutrition
-    ? resolveNutritionSurfaceGate({
+    ? resolveProfessionalNutritionRouteGate({
         role: lockedRole,
         specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
         specialtiesStatus: specialtiesState.kind,

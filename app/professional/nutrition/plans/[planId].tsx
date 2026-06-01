@@ -32,7 +32,7 @@ import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constan
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import { resolveNutritionSurfaceGate } from '@/features/professional/specialty.logic';
+import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
 import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
@@ -71,7 +71,7 @@ export default function NutritionPlanBuilderScreen() {
     Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional'
   );
   const nutritionGate = shouldGateProfessionalNutrition
-    ? resolveNutritionSurfaceGate({
+    ? resolveProfessionalNutritionRouteGate({
         role: lockedRole,
         specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
         specialtiesStatus: specialtiesState.kind,
