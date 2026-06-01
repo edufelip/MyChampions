@@ -4,6 +4,7 @@
  */
 import { useCallback, useLayoutEffect, useState, useMemo } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   LayoutAnimation,
   Pressable,
@@ -11,7 +12,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
@@ -27,6 +28,8 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNutritionPlanBuilder, type FoodSearchResult } from '@/features/plans/use-plan-builder';
+import { resolveNutritionSurfaceGate } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
@@ -69,8 +72,19 @@ export default function NutritionMealBuilderScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const { planId, mealId } = useLocalSearchParams<{ planId: string, mealId: string }>();
-  const { currentUser } = useAuthSession();
+  const { currentUser, lockedRole } = useAuthSession();
   const isStudentBuilder = pathname.startsWith('/student/');
+  const shouldGateProfessionalNutrition = !isStudentBuilder;
+  const { state: specialtiesState } = useSpecialties(
+    Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional'
+  );
+  const nutritionGate = shouldGateProfessionalNutrition
+    ? resolveNutritionSurfaceGate({
+        role: lockedRole,
+        specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+        specialtiesStatus: specialtiesState.kind,
+      })
+    : 'allow';
 
   const tr = useMemo(() => createBuilderRoleTranslator(isStudentBuilder, t), [isStudentBuilder, t]);
 
@@ -84,7 +98,7 @@ export default function NutritionMealBuilderScreen() {
     foodSearchState,
     clearFoodSearch,
   } = useNutritionPlanBuilder(
-    Boolean(currentUser),
+    Boolean(currentUser) && nutritionGate === 'allow',
     `${pathname}:meal:${planId ?? 'unknown'}:${mealId ?? 'unknown'}`
   );
   const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
@@ -93,10 +107,14 @@ export default function NutritionMealBuilderScreen() {
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
+    if (nutritionGate !== 'allow') {
+      return;
+    }
+
     if (planId) {
       loadPlan(planId);
     }
-  }, [planId, loadPlan]);
+  }, [planId, loadPlan, nutritionGate]);
 
   const meal = useMemo(() => {
     if (state.kind !== 'ready') return null;
@@ -189,6 +207,19 @@ export default function NutritionMealBuilderScreen() {
   const handleOpenAddItem = useCallback(() => {
     setAddItemForm({ kind: 'open', name: '', quantity: '', notes: '', foodQuery: '' });
   }, []);
+
+  if (nutritionGate === 'loading') {
+    return (
+      <DsScreen scheme={scheme} contentContainerStyle={[styles.content, styles.centeredContent]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+      </DsScreen>
+    );
+  }
+
+  if (nutritionGate === 'redirect') {
+    return <Redirect href="/(tabs)" />;
+  }
 
   if (!meal && state.kind === 'ready') {
     return (
@@ -436,6 +467,7 @@ function TotalChip({ label, value, palette }: { label: string, value: string, pa
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 100 },
+  centeredContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
   backButton: { marginBottom: 0 },
   titleSection: { gap: DsSpace.xs, paddingHorizontal: DsSpace.xs, marginBottom: DsSpace.sm },

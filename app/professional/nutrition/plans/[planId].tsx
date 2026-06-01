@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   LayoutAnimation,
   Pressable,
@@ -12,7 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -31,6 +32,8 @@ import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constan
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
+import { resolveNutritionSurfaceGate } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
@@ -61,8 +64,19 @@ export default function NutritionPlanBuilderScreen() {
   const navigation = useNavigation<any>();
   const pathname = usePathname();
   const { planId } = useLocalSearchParams<{ planId: string }>();
-  const { currentUser } = useAuthSession();
+  const { currentUser, lockedRole } = useAuthSession();
   const isStudentBuilder = pathname.startsWith('/student/');
+  const shouldGateProfessionalNutrition = !isStudentBuilder;
+  const { state: specialtiesState } = useSpecialties(
+    Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional'
+  );
+  const nutritionGate = shouldGateProfessionalNutrition
+    ? resolveNutritionSurfaceGate({
+        role: lockedRole,
+        specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+        specialtiesStatus: specialtiesState.kind,
+      })
+    : 'allow';
 
   const tr = useMemo(() => createBuilderRoleTranslator(isStudentBuilder, t), [isStudentBuilder, t]);
 
@@ -77,7 +91,10 @@ export default function NutritionPlanBuilderScreen() {
     deletePlan,
     initNewPlan,
     validateInput,
-  } = useNutritionPlanBuilder(Boolean(currentUser), `${pathname}:plan:${planId ?? 'new'}`);
+  } = useNutritionPlanBuilder(
+    Boolean(currentUser) && nutritionGate === 'allow',
+    `${pathname}:plan:${planId ?? 'new'}`
+  );
 
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
@@ -166,12 +183,16 @@ export default function NutritionPlanBuilderScreen() {
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
+    if (nutritionGate !== 'allow') {
+      return;
+    }
+
     if (isNew) {
       initNewPlan();
     } else if (!isStarterClone && planId) {
       loadPlan(planId);
     }
-  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan]);
+  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan, nutritionGate]);
 
   useEffect(() => {
     if (!shouldNavigateAfterDelete || isDeletingPlan) {
@@ -302,6 +323,19 @@ export default function NutritionPlanBuilderScreen() {
       ]
     );
   }, [isBusy, isNew, planId, deletePlan, t, tr]);
+
+  if (nutritionGate === 'loading') {
+    return (
+      <DsScreen scheme={scheme} contentContainerStyle={[styles.content, styles.centeredContent]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+      </DsScreen>
+    );
+  }
+
+  if (nutritionGate === 'redirect') {
+    return <Redirect href="/(tabs)" />;
+  }
 
   return (
     <DsScreen
@@ -617,6 +651,7 @@ function MealRow({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 60 },
+  centeredContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
   backButton: { marginBottom: 0 },
   itemsInsetWrapper: { borderRadius: DsRadius.lg, padding: 0, overflow: 'hidden', ...DsShadow.soft, backgroundColor: 'white' }, // Explicit fallback for surface

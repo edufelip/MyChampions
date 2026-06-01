@@ -2,6 +2,7 @@
 
 ## Route
 - `/professional/nutrition/plans/:planId` — builder/editor for a specific plan.
+- `/professional/nutrition/plans/:planId/meals/:mealId` — meal-item builder for a meal inside a nutrition plan.
 - `/professional/nutrition` (tab) — plan library list with create and open CTAs.
 - Shared student self-guided alias: `/student/nutrition/plans/:planId` (same builder engine with student-branded titles/actions).
 
@@ -180,6 +181,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | `features/professional/nutrition-specialty-gate.logic.test.ts` | Pure resolver coverage for Student access and Professional nutritionist Specialty gate |
 | `app/professional/nutrition.tsx` | Plan library list screen |
 | `app/professional/nutrition/plans/[planId].tsx` | Plan builder screen |
+| `app/professional/nutrition/plans/[planId]/meals/[mealId].tsx` | Meal builder screen |
 
 ## Links
 | Artifact | IDs |

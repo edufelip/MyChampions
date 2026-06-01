@@ -48,6 +48,10 @@ export type NutritionSurfaceAccessInput = {
   specialties: SpecialtyRecord[];
 };
 
+export type NutritionSurfaceGateStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+export type NutritionSurfaceGateDecision = 'allow' | 'loading' | 'redirect';
+
 export type CredentialInput = {
   registryId: string;
   authority: string;
@@ -74,6 +78,16 @@ export function canAccessNutritionSurface(input: NutritionSurfaceAccessInput): b
   return input.specialties.some(
     (record) => record.specialty === 'nutritionist' && record.isActive
   );
+}
+
+export function resolveNutritionSurfaceGate(
+  input: NutritionSurfaceAccessInput & { specialtiesStatus: NutritionSurfaceGateStatus }
+): NutritionSurfaceGateDecision {
+  if (input.role === 'professional' && (input.specialtiesStatus === 'idle' || input.specialtiesStatus === 'loading')) {
+    return 'loading';
+  }
+
+  return canAccessNutritionSurface(input) ? 'allow' : 'redirect';
 }
 
 /**
