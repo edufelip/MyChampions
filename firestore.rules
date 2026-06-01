@@ -401,7 +401,7 @@ service cloud.firestore {
     }
 
     match /specialties/{specialtyId} {
-      allow read, delete: if signedIn() && resource.data.professionalAuthUid == request.auth.uid;
+      allow read: if signedIn() && resource.data.professionalAuthUid == request.auth.uid;
       allow create: if signedIn() &&
         hasProfessionalRole(request.auth.uid) &&
         request.resource.data.professionalAuthUid == request.auth.uid &&
@@ -410,9 +410,12 @@ service cloud.firestore {
       allow update: if signedIn() &&
         hasProfessionalRole(request.auth.uid) &&
         resource.data.professionalAuthUid == request.auth.uid &&
+        resource.data.isActive == false &&
+        request.resource.data.isActive == true &&
         request.resource.data.professionalAuthUid == request.auth.uid &&
         request.resource.data.specialty == resource.data.specialty &&
         specialtyId == request.auth.uid + '_' + resource.data.specialty;
+      allow delete: if false;
     }
 
     match /credentials/{credentialId} {

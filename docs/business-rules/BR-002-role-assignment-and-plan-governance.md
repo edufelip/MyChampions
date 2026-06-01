@@ -41,7 +41,7 @@
 - `BR-235`: Social login with matching email links provider identity into existing account.
 - `BR-236`: Role-selection route is bypassed for accounts with locked role and must auto-redirect to role home.
 - `BR-237`: Professional may add specialties post-onboarding.
-- `BR-238`: Professional may remove specialty only when that specialty has no active or pending students and at least one specialty remains on account.
+- `BR-238`: Professional may remove specialty only through the governed backend removal path, and only when that specialty has no active or pending students and at least one specialty remains on account; direct client Firestore deletion/deactivation is blocked.
 - `BR-239`: Credential records are stored per specialty, with max one `professional_registry` credential per specialty in MVP.
 - `BR-240`: Student-visible credential info is limited to currently assigned professionals and field scope is constrained to `registry_id`, `authority`, and `country`.
 - `BR-241`: Professional invite codes are persistent by default and scoped per Specialty under `professionals/{professionalUid}/inviteCodes/{specialty}`; each Specialty code is independently revocable/regenerable, regeneration auto-cancels pending requests tied to that code's Specialty only, and Specialty removal deletes the scoped code/lookup so stale codes cannot create or activate Connections.

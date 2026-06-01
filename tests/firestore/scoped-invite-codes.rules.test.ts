@@ -1,6 +1,6 @@
 import test, { after, before, beforeEach } from 'node:test';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 import {
   authedDb,
@@ -89,6 +89,21 @@ test('professional cannot write invite code for inactive specialty', async () =>
     doc(authedDb(testEnv, 'professional-uid'), 'professionals/professional-uid/inviteCodes/nutritionist'),
     scopedInviteCode
   ));
+});
+
+test('professional cannot directly delete specialty and bypass governed removal', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'professional-uid', 'nutritionist');
+
+  await assertFails(deleteDoc(doc(authedDb(testEnv, 'professional-uid'), 'specialties/professional-uid_nutritionist')));
+});
+
+test('professional cannot directly deactivate specialty and bypass governed removal', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'professional-uid', 'nutritionist');
+
+  await assertFails(updateDoc(doc(authedDb(testEnv, 'professional-uid'), 'specialties/professional-uid_nutritionist'), {
+    isActive: false,
+    updatedAt: '2026-06-01T00:01:00.000Z',
+  }));
 });
 
 test('student can resolve active invite code through lookup index', async () => {

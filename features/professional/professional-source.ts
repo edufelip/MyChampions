@@ -136,14 +136,42 @@ export type SpecialtyBlockerCounts = {
 export type ProfessionalSourceDeps = {
   getFirestoreInstance: () => Firestore;
   getCurrentAuthUid: () => string;
+  getCurrentIdToken: () => Promise<string>;
+  getRemoveSpecialtyFunctionUrl: () => string;
+  fetchFn: typeof fetch;
   generateInviteCode: () => string;
 };
 
 const defaultDeps: ProfessionalSourceDeps = {
   getFirestoreInstance: _getFirestoreInstance,
   getCurrentAuthUid: _getCurrentAuthUid,
+  getCurrentIdToken: defaultGetCurrentIdToken,
+  getRemoveSpecialtyFunctionUrl: defaultGetRemoveSpecialtyFunctionUrl,
+  fetchFn: fetch,
   generateInviteCode: () => Math.random().toString(36).slice(2, 8).toUpperCase(),
 };
+
+function defaultGetRemoveSpecialtyFunctionUrl(): string {
+  const url = process.env['EXPO_PUBLIC_REMOVE_SPECIALTY_FUNCTION_URL'];
+  if (!url) {
+    throw new ProfessionalSourceError(
+      'configuration',
+      'Specialty removal Cloud Function URL is not configured. Set EXPO_PUBLIC_REMOVE_SPECIALTY_FUNCTION_URL.'
+    );
+  }
+  return url;
+}
+
+async function defaultGetCurrentIdToken(): Promise<string> {
+  const { getFirebaseAuth } = require('../auth/firebase') as {
+    getFirebaseAuth: () => { currentUser: { getIdToken?: () => Promise<string> } | null };
+  };
+  const user = getFirebaseAuth().currentUser;
+  if (!user?.getIdToken) {
+    throw new ProfessionalSourceError('configuration', 'No authenticated user found.');
+  }
+  return user.getIdToken();
+}
 
 function summarizeStudentConnections(
   rows: Array<{ status: ConnectionStatus; specialty: ConnectionSpecialty }>
@@ -203,6 +231,56 @@ export function buildInviteCodePath(professionalUid: string, specialty: Specialt
 
 export function buildInviteCodeLookupPath(codeValue: string): [string, string] {
   return ['inviteCodeLookups', codeValue];
+}
+
+export async function requestRemoveSpecialty(
+  specialtyId: string,
+  deps: Pick<ProfessionalSourceDeps, 'getCurrentIdToken' | 'getRemoveSpecialtyFunctionUrl' | 'fetchFn'>
+): Promise<void> {
+  let idToken: string;
+  try {
+    idToken = await deps.getCurrentIdToken();
+  } catch (error) {
+    throw normalizeProfessionalSourceError(error);
+  }
+
+  let response: Response;
+  try {
+    response = await deps.fetchFn(deps.getRemoveSpecialtyFunctionUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ specialtyId }),
+    });
+  } catch {
+    throw new ProfessionalSourceError('network', 'Network request to remove Specialty failed.');
+  }
+
+  if (response.status === 200 || response.status === 204) return;
+
+  let body: { error?: unknown } = {};
+  try {
+    body = (await response.json()) as { error?: unknown };
+  } catch {
+    body = {};
+  }
+
+  if (body.error === 'last_specialty') {
+    throw new ProfessionalSourceError('graphql', 'Cannot remove the last active Specialty.');
+  }
+  if (response.status === 409 || body.error === 'removal_blocked') {
+    throw new ProfessionalSourceError('graphql', 'Specialty removal blocked by active/pending students.');
+  }
+  if (response.status === 404 || body.error === 'not_found') {
+    throw new ProfessionalSourceError('graphql', 'Specialty not found.');
+  }
+  if (response.status === 401 || response.status === 403 || body.error === 'unauthenticated' || body.error === 'forbidden') {
+    throw new ProfessionalSourceError('graphql', 'Specialty removal is not authorized.');
+  }
+
+  throw new ProfessionalSourceError('invalid_response', `Unexpected Specialty removal response: ${response.status}.`);
 }
 
 function inviteRef(firestore: Firestore, professionalUid: string, specialty: Specialty) {
@@ -498,18 +576,7 @@ export async function removeProfessionalSpecialty(
       throw new ProfessionalSourceError('graphql', 'Specialty removal blocked by active/pending students.');
     }
 
-    await runTransaction(firestore, async (tx) => {
-      const inviteRef = doc(firestore, 'professionals', professionalUid, 'inviteCodes', specialtyDoc.specialty);
-      const inviteSnap = await tx.get(inviteRef);
-
-      if (inviteSnap.exists()) {
-        const invite = inviteSnap.data() as FirestoreInviteCode;
-        tx.delete(doc(firestore, 'inviteCodeLookups', invite.codeValue));
-        tx.delete(inviteRef);
-      }
-
-      tx.delete(doc(firestore, 'specialties', specialtyId));
-    });
+    await requestRemoveSpecialty(specialtyId, deps);
   } catch (error) {
     throw normalizeProfessionalSourceError(error);
   }

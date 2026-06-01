@@ -3,6 +3,7 @@
  *
  * Functions exported:
  *  - analyzeMealPhoto : OpenAI GPT-4o Vision meal macro analysis proxy (D-106–D-110, BL-108)
+ *  - removeProfessionalSpecialty : governed Professional Specialty removal with invite cleanup
  *
  * Security model (both functions):
  *  - Caller must supply a valid Firebase Auth ID token: Authorization: Bearer <token>.
@@ -103,6 +104,128 @@ export const analyzeMealPhoto = onRequest(
         return;
       }
       const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// removeProfessionalSpecialty — governed specialty removal
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function isSupportedSpecialty(value: unknown): value is 'nutritionist' | 'fitness_coach' {
+  return value === 'nutritionist' || value === 'fitness_coach';
+}
+
+export const removeProfessionalSpecialty = onRequest(
+  {
+    cors: false,
+    region: 'us-central1',
+    timeoutSeconds: 30,
+    memory: '256MiB',
+  },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'method_not_allowed' });
+      return;
+    }
+
+    const decoded = await verifyAuthHeader(req.headers['authorization'] ?? '');
+    if (!decoded) {
+      res.status(401).json({ error: 'unauthenticated' });
+      return;
+    }
+
+    const { specialtyId } = req.body as { specialtyId?: unknown };
+    if (typeof specialtyId !== 'string' || !specialtyId.trim()) {
+      res.status(400).json({ error: 'bad_request', message: 'specialtyId is required' });
+      return;
+    }
+
+    const db = admin.firestore();
+    const specialtyRef = db.collection('specialties').doc(specialtyId.trim());
+
+    try {
+      await db.runTransaction(async (tx) => {
+        const specialtySnap = await tx.get(specialtyRef);
+        if (!specialtySnap.exists) {
+          throw new Error('not_found');
+        }
+
+        const specialty = specialtySnap.data() as {
+          professionalAuthUid?: unknown;
+          specialty?: unknown;
+        };
+        if (specialty.professionalAuthUid !== decoded.uid) {
+          throw new Error('forbidden');
+        }
+        if (!isSupportedSpecialty(specialty.specialty)) {
+          throw new Error('invalid_specialty');
+        }
+
+        const activeSpecialties = await tx.get(db.collection('specialties')
+          .where('professionalAuthUid', '==', decoded.uid)
+          .where('isActive', '==', true)
+          .limit(2));
+        if (specialtySnap.get('isActive') === true && activeSpecialties.size <= 1) {
+          throw new Error('last_specialty');
+        }
+
+        const activeConnections = await tx.get(db.collection('connections')
+          .where('professionalAuthUid', '==', decoded.uid)
+          .where('specialty', '==', specialty.specialty)
+          .where('status', '==', 'active')
+          .limit(1));
+        const pendingConnections = await tx.get(db.collection('connections')
+          .where('professionalAuthUid', '==', decoded.uid)
+          .where('specialty', '==', specialty.specialty)
+          .where('status', '==', 'pending_confirmation')
+          .limit(1));
+
+        if (!activeConnections.empty || !pendingConnections.empty) {
+          throw new Error('removal_blocked');
+        }
+
+        const inviteRef = db.collection('professionals')
+          .doc(decoded.uid)
+          .collection('inviteCodes')
+          .doc(specialty.specialty);
+        const inviteSnap = await tx.get(inviteRef);
+
+        if (inviteSnap.exists) {
+          const invite = inviteSnap.data() as { codeValue?: unknown };
+          if (typeof invite.codeValue === 'string' && invite.codeValue) {
+            tx.delete(db.collection('inviteCodeLookups').doc(invite.codeValue));
+          }
+          tx.delete(inviteRef);
+        }
+
+        tx.delete(specialtyRef);
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message === 'not_found') {
+        res.status(404).json({ error: 'not_found' });
+        return;
+      }
+      if (message === 'forbidden') {
+        res.status(403).json({ error: 'forbidden' });
+        return;
+      }
+      if (message === 'removal_blocked') {
+        res.status(409).json({ error: 'removal_blocked' });
+        return;
+      }
+      if (message === 'last_specialty') {
+        res.status(409).json({ error: 'last_specialty' });
+        return;
+      }
+      if (message === 'invalid_specialty') {
+        res.status(500).json({ error: 'invalid_specialty' });
+        return;
+      }
       res.status(500).json({ error: message });
     }
   }

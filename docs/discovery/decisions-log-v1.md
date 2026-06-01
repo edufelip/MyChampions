@@ -34,7 +34,7 @@
 - `D-031`: Create-account requires name, email, password, password confirmation, reveal-password controls, and password policy (8+ chars, uppercase, number, special char, no emoji).
 - `D-032`: Email is globally unique per account, and social login with same email links to existing account.
 - `D-033`: Role-selection route auto-redirects when role is already locked.
-- `D-034`: Professionals can add specialties after onboarding; specialty removal is blocked when active or pending students exist in that specialty or when it would leave zero specialties.
+- `D-034`: Professionals can add specialties after onboarding; specialty removal uses the authenticated `removeProfessionalSpecialty` Cloud Function and is blocked when active or pending students exist in that specialty or when it would leave zero specialties. Direct client Firestore deletion/deactivation of Specialty documents is blocked.
 - `D-035`: Credential records are separate per specialty, type `professional_registry`, max one per specialty in MVP, and skippable in no-regulator contexts.
 - `D-036`: Students can view credential info only for currently assigned professionals, limited to `registry_id`, `authority`, and `country`.
 - `D-037`: Professional invite code is persistent by default, revocable/regenerable on demand, and only one active code exists per Professional Specialty; regeneration invalidates the old Specialty code and auto-cancels pending requests created from it, while Specialty removal deletes the scoped code and lookup.

@@ -37,7 +37,7 @@ Specify the target domain behavior for role-based journeys, professional assignm
 5. Accounts with locked role bypass role-selection and are auto-routed to role home.
 6. Professional onboarding captures specialty profile (nutritionist, fitness coach, or both).
 7. Optional specialty-scoped `professional_registry` credentials may be submitted or skipped in MVP.
-8. Professionals may add specialties later; removal is blocked if active or pending students exist in that specialty or if no specialty would remain.
+8. Professionals may add specialties later; removal uses the authenticated backend removal path and is blocked if active or pending students exist in that specialty or if no specialty would remain.
 9. Professional shares a Specialty-scoped invite code with student to initiate assignment.
 10. Invite code is persistent by default, can be revoked/regenerated, and is stored under `professionals/{professionalUid}/inviteCodes/{specialty}`; regenerating code invalidates that Specialty code and auto-cancels pending requests tied to it, while Specialty removal deletes the scoped invite code and lookup. The old top-level shape is replaced without compatibility because the app is not live.
 11. Student submits invite code and assignment enters pending state only if pending-cap constraints pass and the Professional still has the matching active Specialty.
