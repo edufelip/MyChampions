@@ -88,6 +88,14 @@ type FirestoreTrainingPlan = {
   updatedAt: string;
 };
 
+type FirestorePlanVisibilityInput = {
+  planType: PlanType;
+  sourceKind: PlanSourceKind;
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  isDraft?: boolean;
+};
+
 type FirestorePlanChangeRequest = {
   id: string;
   planId: string;
@@ -232,6 +240,16 @@ function toPlanFromTraining(raw: FirestoreTrainingPlan): Plan {
   };
 }
 
+export function shouldExposePlanInMyPlans(raw: FirestorePlanVisibilityInput, currentUid: string): boolean {
+  return !(
+    raw.planType === 'nutrition' &&
+    raw.studentAuthUid === currentUid &&
+    raw.ownerProfessionalUid !== currentUid &&
+    raw.sourceKind === 'assigned' &&
+    raw.isDraft === true
+  );
+}
+
 export async function getMyPlans(deps = defaultDeps): Promise<Plan[]> {
   try {
     const firestore = deps.getFirestoreInstance();
@@ -247,6 +265,7 @@ export async function getMyPlans(deps = defaultDeps): Promise<Plan[]> {
     const unique = new Map<string, Plan>();
     for (const snap of [...asStudentNutrition.docs, ...asOwnerNutrition.docs]) {
       const raw = snap.data() as FirestoreNutritionPlan;
+      if (!shouldExposePlanInMyPlans({ ...raw, planType: 'nutrition' }, uid)) continue;
       unique.set(`nutrition:${snap.id}`, toNutritionPlan(raw));
     }
     for (const snap of [...asStudentTraining.docs, ...asOwnerTraining.docs]) {

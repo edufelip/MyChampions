@@ -207,6 +207,10 @@ export const enUS = {
     'To receive a personalized meal plan and reach your goals, you need support from a qualified professional.',
   'student.nutrition.empty.cta': 'Hire a nutritionist',
   'student.nutrition.empty.self_guided_cta': 'Create my meal plan',
+  'student.nutrition.waiting.title': 'Your nutritionist is preparing your plan',
+  'student.nutrition.waiting.body':
+    'Your nutritionist connection is active. You will see your meal plan here once it is sent.',
+  'student.nutrition.waiting.cta': 'View my nutritionist',
 
   'student.nutrition.water.title': 'Water intake',
   'student.nutrition.water.personal_goal': 'Personal Goal',

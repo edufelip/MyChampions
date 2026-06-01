@@ -22,6 +22,7 @@ import {
   resolveTrainingDraftCreationInput,
   resolveTrainingPlanCreationMetadata,
 } from './plan-builder.logic';
+import { shouldExposePlanInMyPlans } from './plan-source';
 
 // ─── deriveStarterTemplatePlanType ────────────────────────────────────────────
 
@@ -223,5 +224,39 @@ describe('resolveTrainingPlanCreationMetadata', () => {
       sourceKind: 'self_managed',
       isDraft: false,
     });
+  });
+});
+
+describe('shouldExposePlanInMyPlans', () => {
+  it('hides draft assigned nutrition plans from the assigned student', () => {
+    assert.equal(
+      shouldExposePlanInMyPlans(
+        {
+          planType: 'nutrition',
+          sourceKind: 'assigned',
+          studentAuthUid: 'student-1',
+          ownerProfessionalUid: 'pro-1',
+          isDraft: true,
+        },
+        'student-1'
+      ),
+      false
+    );
+  });
+
+  it('keeps draft assigned nutrition plans visible to the owner professional', () => {
+    assert.equal(
+      shouldExposePlanInMyPlans(
+        {
+          planType: 'nutrition',
+          sourceKind: 'assigned',
+          studentAuthUid: 'student-1',
+          ownerProfessionalUid: 'pro-1',
+          isDraft: true,
+        },
+        'pro-1'
+      ),
+      true
+    );
   });
 });

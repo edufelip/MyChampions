@@ -217,6 +217,10 @@ export const esES: Record<TranslationKey, string> = {
     'Para recibir un plan alimentario personalizado y alcanzar tus objetivos, necesitas el acompañamiento de un profesional cualificado.',
   'student.nutrition.empty.cta': 'Contratar nutricionista',
   'student.nutrition.empty.self_guided_cta': 'Crear mi plan de alimentación',
+  'student.nutrition.waiting.title': 'Tu nutricionista está preparando tu plan',
+  'student.nutrition.waiting.body':
+    'Tu conexión con el nutricionista está activa. Verás tu plan alimentario aquí cuando sea enviado.',
+  'student.nutrition.waiting.cta': 'Ver mi nutricionista',
   'student.nutrition.water.title': 'Ingesta de agua',
   'student.nutrition.water.personal_goal': 'Objetivo Personal',
   'student.nutrition.water.nutritionist_goal': 'Objetivo definido por tu Nutricionista',

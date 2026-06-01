@@ -23,11 +23,12 @@ import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { useConnections } from '@/features/connections/use-connections';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
-import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
+import { resolveStudentNutritionState } from '@/features/plans/student-nutrition-state.logic';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -53,15 +54,28 @@ export default function StudentNutritionScreen() {
 
   const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
   const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
+  const { state: connectionsState } = useConnections(Boolean(currentUser));
 
-  const nutritionPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'nutrition' && !p.isArchived) : [];
-
-  const assignedNutritionPlan = nutritionPlans.find(plan => plan.sourceKind === 'assigned') ?? null;
-  const selfManagedNutritionPlan =
-    nutritionPlans.find((plan) => isSelfGuidedPlan(plan, currentUser?.uid ?? null)) ?? null;
-
-  const hasActiveNutritionAssignment = assignedNutritionPlan !== null;
-  const hasSelfManagedPlan = selfManagedNutritionPlan !== null;
+  const hasActiveNutritionistConnection =
+    connectionsState.kind === 'ready' &&
+    connectionsState.connections.some(
+      (connection) => connection.specialty === 'nutritionist' && connection.status === 'active'
+    );
+  const nutritionState = resolveStudentNutritionState({
+    currentUserUid: currentUser?.uid ?? null,
+    hasActiveNutritionistConnection,
+    plans: plansState.kind === 'ready' ? plansState.plans : [],
+  });
+  const assignedNutritionPlan = nutritionState.kind === 'assigned' ? nutritionState.assignedPlan : null;
+  const selfManagedNutritionPlan = nutritionState.kind === 'self_managed' ? nutritionState.selfManagedPlan : null;
+  const isConnectionsPending = Boolean(currentUser) && (connectionsState.kind === 'idle' || connectionsState.kind === 'loading');
+  const hasConnectionsError = Boolean(currentUser) && connectionsState.kind === 'error';
+  const loadErrorMessage =
+    plansState.kind === 'error'
+      ? plansState.message
+      : connectionsState.kind === 'error'
+        ? connectionsState.message
+        : null;
 
   const { state: builderState, loadPlan } = useNutritionPlanBuilder(Boolean(currentUser), 'student-assigned');
   const [todayPortionLogs, setTodayPortionLogs] = useState<FirestorePortionLog[]>([]);
@@ -166,11 +180,15 @@ export default function StudentNutritionScreen() {
         ) : null}
 
         <View style={styles.sectionStack}>
-          {plansState.kind === 'loading' ? (
+          {plansState.kind === 'loading' || isConnectionsPending ? (
             <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.plansLoading">
               <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
             </DsCard>
-          ) : hasActiveNutritionAssignment ? (
+          ) : plansState.kind === 'error' || hasConnectionsError ? (
+            <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.loadError">
+              <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>{loadErrorMessage ?? t('common.error.generic')}</Text>
+            </DsCard>
+          ) : nutritionState.kind === 'assigned' && assignedNutritionPlan ? (
             <>
               {builderState.kind === 'loading' ? (
                 <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.planDetailsLoading">
@@ -383,7 +401,50 @@ export default function StudentNutritionScreen() {
                 }}
               />
             </>
-          ) : hasSelfManagedPlan ? (
+          ) : nutritionState.kind === 'waiting' ? (
+            <View style={styles.emptyStateWrap} testID="student.nutrition.waitingForNutritionistPlan">
+              <View style={styles.emptyHero}>
+                <View
+                  style={[
+                    styles.emptyGlow,
+                    {
+                      backgroundColor:
+                        scheme === 'dark' ? 'rgba(30, 169, 90, 0.14)' : 'rgba(19, 236, 73, 0.16)',
+                    },
+                  ]}
+                />
+
+                <View
+                  style={[
+                    styles.emptyIllustrationCard,
+                    DsShadow.floating,
+                    {
+                      backgroundColor: theme.color.surface,
+                      borderColor: scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
+                      shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                    },
+                  ]}>
+                  <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
+                </View>
+              </View>
+
+              <View style={styles.emptyCopyBlock}>
+                <Text style={[styles.emptyTitle, { color: theme.color.textPrimary }]}>{t('student.nutrition.waiting.title')}</Text>
+                <Text style={[styles.emptyBody, { color: theme.color.textSecondary }]}>{t('student.nutrition.waiting.body')}</Text>
+              </View>
+
+              <DsPillButton
+                scheme={scheme}
+                disabled={isWriteLocked}
+                label={t('student.nutrition.waiting.cta')}
+                onPress={() => router.push('/student/professionals')}
+                contentColor="#f8fafc"
+                testID="student.nutrition.waitingCta"
+                style={styles.emptyPrimaryCta}
+                leftIcon={<MaterialIcons color="#f8fafc" name="person" size={20} />}
+              />
+            </View>
+          ) : nutritionState.kind === 'self_managed' && selfManagedNutritionPlan ? (
              <>
               <WaterWidget waterHook={waterHook} scheme={scheme} t={t} isWriteLocked={isWriteLocked} />
 
@@ -680,6 +741,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 120,
+  },
+  loadErrorText: {
+    ...DsTypography.caption,
+    textAlign: 'center',
   },
   emptyStateWrap: {
     alignItems: 'center',
