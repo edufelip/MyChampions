@@ -282,6 +282,16 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.specialty == 'nutritionist';
     }
 
+    function hasExistingEndedNutritionistConnectionForPlan(studentUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.studentAuthUid ||
+          request.auth.uid == get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.professionalAuthUid) &&
+        get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.status == 'ended' &&
+        get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.studentAuthUid == studentUid &&
+        get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.specialty == 'nutritionist';
+    }
+
     function hasEndedFitnessCoachConnectionForPlan(studentUid) {
       return signedIn() &&
         exists(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)) &&
@@ -294,6 +304,16 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.studentAuthUid == studentUid &&
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.professionalAuthUid == get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.professionalAuthUid &&
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.specialty == 'fitness_coach';
+    }
+
+    function hasExistingEndedFitnessCoachConnectionForPlan(studentUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.studentAuthUid ||
+          request.auth.uid == get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.professionalAuthUid) &&
+        get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.status == 'ended' &&
+        get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.studentAuthUid == studentUid &&
+        get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.specialty == 'fitness_coach';
     }
 
     match /userProfiles/{userId} {
@@ -377,7 +397,8 @@ service cloud.firestore {
         resource.data.isArchived == false &&
         request.resource.data.isArchived == true &&
         resource.data.ownerProfessionalUid == get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.professionalAuthUid &&
-        hasEndedNutritionistConnectionForPlan(resource.data.studentAuthUid);
+        (hasEndedNutritionistConnectionForPlan(resource.data.studentAuthUid) ||
+          hasExistingEndedNutritionistConnectionForPlan(resource.data.studentAuthUid));
     }
 
     function canUpdateSelfManagedNutritionPlan() {
@@ -461,7 +482,8 @@ service cloud.firestore {
         resource.data.isArchived == true &&
         request.resource.data.isArchived == false &&
         resource.data.get('lifecycleConnectionId', null) == request.resource.data.lifecycleConnectionId &&
-        hasEndedNutritionistConnectionForPlan(resource.data.studentAuthUid);
+        (hasEndedNutritionistConnectionForPlan(resource.data.studentAuthUid) ||
+          hasExistingEndedNutritionistConnectionForPlan(resource.data.studentAuthUid));
     }
 
     function canDeleteSelfManagedNutritionPlan() {
@@ -495,10 +517,10 @@ service cloud.firestore {
       allow update: if signedIn() && (
         canUpdateSelfManagedNutritionPlan() ||
         canUpdateProfessionalLibraryNutritionPlan() ||
-        canUpdateAssignedNutritionPlan() ||
         canArchiveSelfManagedNutritionPlanOnConnectionActivation() ||
         canArchiveAssignedNutritionPlanOnConnectionEnd() ||
-        canRestoreSelfManagedNutritionPlanOnConnectionEnd()
+        canRestoreSelfManagedNutritionPlanOnConnectionEnd() ||
+        canUpdateAssignedNutritionPlan()
       );
       allow delete: if signedIn() && (
         canDeleteSelfManagedNutritionPlan() ||
@@ -583,7 +605,8 @@ service cloud.firestore {
         resource.data.isArchived == false &&
         request.resource.data.isArchived == true &&
         resource.data.ownerProfessionalUid == get(/databases/$(database)/documents/connections/$(request.resource.data.lifecycleConnectionId)).data.professionalAuthUid &&
-        hasEndedFitnessCoachConnectionForPlan(resource.data.studentAuthUid);
+        (hasEndedFitnessCoachConnectionForPlan(resource.data.studentAuthUid) ||
+          hasExistingEndedFitnessCoachConnectionForPlan(resource.data.studentAuthUid));
     }
 
     function canArchiveSelfManagedTrainingPlanOnConnectionActivation() {
@@ -604,7 +627,8 @@ service cloud.firestore {
         resource.data.isArchived == true &&
         request.resource.data.isArchived == false &&
         resource.data.get('lifecycleConnectionId', null) == request.resource.data.lifecycleConnectionId &&
-        hasEndedFitnessCoachConnectionForPlan(resource.data.studentAuthUid);
+        (hasEndedFitnessCoachConnectionForPlan(resource.data.studentAuthUid) ||
+          hasExistingEndedFitnessCoachConnectionForPlan(resource.data.studentAuthUid));
     }
 
     function canDeleteSelfManagedTrainingPlan() {
@@ -638,10 +662,10 @@ service cloud.firestore {
       allow update: if signedIn() && (
         canUpdateSelfManagedTrainingPlan() ||
         canUpdateProfessionalLibraryTrainingPlan() ||
-        canUpdateAssignedTrainingPlan() ||
         canArchiveSelfManagedTrainingPlanOnConnectionActivation() ||
         canArchiveAssignedTrainingPlanOnConnectionEnd() ||
-        canRestoreSelfManagedTrainingPlanOnConnectionEnd()
+        canRestoreSelfManagedTrainingPlanOnConnectionEnd() ||
+        canUpdateAssignedTrainingPlan()
       );
       allow delete: if signedIn() && (
         canDeleteSelfManagedTrainingPlan() ||
