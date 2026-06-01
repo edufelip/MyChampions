@@ -49,6 +49,14 @@ export type PredefinedPlan = {
   updatedAt: string;
 };
 
+export type AssignmentRequiredSpecialty = 'nutritionist' | 'fitness_coach';
+
+export type PlanAssignmentTargetValidation = {
+  isValid: boolean;
+  requiredSpecialty: AssignmentRequiredSpecialty;
+  invalidStudentUids: string[];
+};
+
 export type NutritionPlan = Plan & {
   isDraft: boolean;
   hydrationGoalMl: number | null;
@@ -182,6 +190,32 @@ export class PlanSourceError extends Error {
   }
 }
 
+export function getRequiredAssignmentSpecialty(planType: PlanType): AssignmentRequiredSpecialty {
+  return planType === 'nutrition' ? 'nutritionist' : 'fitness_coach';
+}
+
+export function validatePlanAssignmentTargets({
+  planType,
+  targetStudentUids,
+  activeStudentUids,
+}: {
+  planType: PlanType;
+  targetStudentUids: string[];
+  activeStudentUids: string[];
+}): PlanAssignmentTargetValidation {
+  const requiredSpecialty = getRequiredAssignmentSpecialty(planType);
+  const activeTargets = new Set(activeStudentUids.filter(Boolean));
+  const invalidStudentUids = [...new Set(targetStudentUids.filter(Boolean))].filter(
+    (uid) => !activeTargets.has(uid)
+  );
+
+  return {
+    isValid: invalidStudentUids.length === 0,
+    requiredSpecialty,
+    invalidStudentUids,
+  };
+}
+
 export type PlanSourceDeps = {
   getFirestoreInstance: () => Firestore;
   getCurrentAuthUid: () => string;
@@ -191,6 +225,54 @@ const defaultDeps: PlanSourceDeps = {
   getFirestoreInstance: _getFirestoreInstance,
   getCurrentAuthUid: _getCurrentAuthUid,
 };
+
+async function getActiveConnectionStudentUids(
+  firestore: Firestore,
+  professionalUid: string,
+  planType: PlanType,
+  studentUids: string[]
+): Promise<string[]> {
+  const requiredSpecialty = getRequiredAssignmentSpecialty(planType);
+  const uniqueStudentUids = [...new Set(studentUids.filter(Boolean))];
+  const activeStudentUids: string[] = [];
+
+  await Promise.all(
+    uniqueStudentUids.map(async (studentUid) => {
+      const snapshot = await getDocs(
+        query(
+          collection(firestore, 'connections'),
+          where('professionalAuthUid', '==', professionalUid),
+          where('studentAuthUid', '==', studentUid),
+          where('specialty', '==', requiredSpecialty),
+          where('status', '==', 'active')
+        )
+      );
+
+      if (!snapshot.empty) {
+        activeStudentUids.push(studentUid);
+      }
+    })
+  );
+
+  return activeStudentUids;
+}
+
+async function assertActiveAssignmentTargets(
+  firestore: Firestore,
+  professionalUid: string,
+  planType: PlanType,
+  studentUids: string[]
+): Promise<void> {
+  const activeStudentUids = await getActiveConnectionStudentUids(firestore, professionalUid, planType, studentUids);
+  const validation = validatePlanAssignmentTargets({ planType, targetStudentUids: studentUids, activeStudentUids });
+
+  if (!validation.isValid) {
+    throw new PlanSourceError(
+      'configuration',
+      `No active assignment for ${validation.requiredSpecialty}: ${validation.invalidStudentUids.join(', ')}`
+    );
+  }
+}
 
 function normalizePlanSourceError(error: unknown): PlanSourceError {
   if (error instanceof PlanSourceError) return error;
@@ -363,6 +445,9 @@ export async function bulkAssignPredefinedPlan(
     }
 
     const uniqueStudentUids = [...new Set(studentUids)].filter((uid) => Boolean(uid));
+    const sourcePlanType: PlanType = nutritionSourceSnap.exists() ? 'nutrition' : 'training';
+    await assertActiveAssignmentTargets(firestore, professionalUid, sourcePlanType, uniqueStudentUids);
+
     const timestamp = nowIso();
     let batch = writeBatch(firestore);
     let writesInBatch = 0;
@@ -430,6 +515,25 @@ export async function createDraftAssignedPlan(
     const professionalUid = deps.getCurrentAuthUid();
     const timestamp = nowIso();
     let newPlanId = '';
+
+    const [nutritionSourceSnap, trainingSourceSnap] = await Promise.all([
+      getDoc(doc(firestore, 'nutritionPlans', predefinedPlanId)),
+      getDoc(doc(firestore, 'trainingPlans', predefinedPlanId)),
+    ]);
+    if (!nutritionSourceSnap.exists() && !trainingSourceSnap.exists()) {
+      throw new PlanSourceError('graphql', 'Predefined plan not found.');
+    }
+    const sourcePlanType: PlanType = nutritionSourceSnap.exists() ? 'nutrition' : 'training';
+    const source = nutritionSourceSnap.exists()
+      ? (nutritionSourceSnap.data() as FirestoreNutritionPlan)
+      : (trainingSourceSnap.data() as FirestoreTrainingPlan);
+    if (source.sourceKind !== 'predefined') {
+      throw new PlanSourceError('invalid_response', 'Only predefined plans can be assigned.');
+    }
+    if (source.ownerProfessionalUid !== professionalUid) {
+      throw new PlanSourceError('configuration', 'Cannot assign a plan owned by another professional.');
+    }
+    await assertActiveAssignmentTargets(firestore, professionalUid, sourcePlanType, [studentUid]);
 
     await runTransaction(firestore, async (tx) => {
       const nutritionRef = doc(firestore, 'nutritionPlans', predefinedPlanId);

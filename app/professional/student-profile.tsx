@@ -515,18 +515,6 @@ function AssignmentCard({
           />
         );
       }
-    } else if (status === 'none') {
-      return (
-        <DsPillButton
-          scheme={scheme}
-          variant="outline"
-          size="sm"
-          label={t('pro.student_profile.assignment.cta_assign')}
-          onPress={onAssign}
-          fullWidth={false}
-          testID={`${testID}.cta_assign`}
-        />
-      );
     }
     return null;
   };

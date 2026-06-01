@@ -47,7 +47,10 @@ import {
 } from '@/features/offline/offline.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { resolveStudentRosterViewState } from '@/features/professional/students-screen.logic';
+import {
+  filterBulkAssignmentStudentsByPlanType,
+  resolveStudentRosterViewState,
+} from '@/features/professional/students-screen.logic';
 import {
   getProfessionalStudentRoster,
   type ProfessionalStudentRosterItem,
@@ -62,6 +65,7 @@ import { PlanPickerModal } from '@/components/ds/patterns/PlanPickerModal';
 type StudentRow = ProfessionalStudentRosterItem;
 
 type FilterKind = 'all' | 'active' | 'pending';
+type BulkPlanType = 'nutrition' | 'training';
 type TFn = ReturnType<typeof useTranslation>['t'];
 
 export default function ProfessionalStudentsScreen() {
@@ -93,6 +97,7 @@ export default function ProfessionalStudentsScreen() {
   
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedStudentUids, setSelectedStudentUids] = useState<string[]>([]);
+  const [bulkPlanType, setBulkPlanType] = useState<BulkPlanType>('nutrition');
   const [isPlanPickerVisible, setIsPlanPickerVisible] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
@@ -150,6 +155,16 @@ export default function ProfessionalStudentsScreen() {
       }),
     [debouncedSearch, filter, students]
   );
+  const assignmentVisible = useMemo(
+    () => (isSelectionMode ? filterBulkAssignmentStudentsByPlanType(visible, bulkPlanType) : visible),
+    [bulkPlanType, isSelectionMode, visible]
+  );
+
+  useEffect(() => {
+    if (!isSelectionMode) return;
+    const eligibleUids = new Set(assignmentVisible.map((student) => student.studentAuthUid));
+    setSelectedStudentUids((prev) => prev.filter((uid) => eligibleUids.has(uid)));
+  }, [assignmentVisible, isSelectionMode]);
 
   const viewState = resolveStudentRosterViewState({
     hasLoadedOnce,
@@ -238,6 +253,7 @@ export default function ProfessionalStudentsScreen() {
               label={isSelectionMode ? (t('pro.students.bulk_assign.cancel') as string) : (t('pro.students.bulk_assign.cta') as string)}
               onPress={() => {
                 setIsSelectionMode(!isSelectionMode);
+                setBulkPlanType('nutrition');
                 setSelectedStudentUids([]);
               }}
               fullWidth={false}
@@ -355,7 +371,7 @@ export default function ProfessionalStudentsScreen() {
               />
             ) : (
               <FlatList
-                data={visible}
+                data={assignmentVisible}
                 extraData={{ isSelectionMode, selectedStudentUids }}
                 keyExtractor={(item) => item.studentAuthUid}
                 renderItem={({ item }) => (
@@ -397,13 +413,33 @@ export default function ProfessionalStudentsScreen() {
             )}
           </DsCard>
 
-          {isSelectionMode && selectedStudentUids.length > 0 && (
+          {isSelectionMode && (
             <View style={styles.bulkActionContainer}>
-              <DsPillButton
-                scheme={scheme}
-                label={(t('pro.students.bulk_assign.cta_confirm') as string).replace('{count}', String(selectedStudentUids.length))}
-                onPress={() => setIsPlanPickerVisible(true)}
-              />
+              <View style={styles.bulkPlanTypeRow}>
+                <DsPillButton
+                  scheme={scheme}
+                  variant={bulkPlanType === 'nutrition' ? 'primary' : 'outline'}
+                  size="xs"
+                  label={t('pro.students.specialty.nutritionist') as string}
+                  onPress={() => setBulkPlanType('nutrition')}
+                  fullWidth={false}
+                />
+                <DsPillButton
+                  scheme={scheme}
+                  variant={bulkPlanType === 'training' ? 'primary' : 'outline'}
+                  size="xs"
+                  label={t('pro.students.specialty.fitness_coach') as string}
+                  onPress={() => setBulkPlanType('training')}
+                  fullWidth={false}
+                />
+              </View>
+              {selectedStudentUids.length > 0 ? (
+                <DsPillButton
+                  scheme={scheme}
+                  label={(t('pro.students.bulk_assign.cta_confirm') as string).replace('{count}', String(selectedStudentUids.length))}
+                  onPress={() => setIsPlanPickerVisible(true)}
+                />
+              ) : null}
             </View>
           )}
         </>
@@ -414,6 +450,7 @@ export default function ProfessionalStudentsScreen() {
         onClose={() => setIsPlanPickerVisible(false)}
         onSelect={handleBulkAssign}
         plansState={plansState}
+        planType={bulkPlanType}
         scheme={scheme}
         theme={theme}
         t={t}
@@ -765,6 +802,11 @@ const styles = StyleSheet.create({
     left: DsSpace.lg,
     right: DsSpace.lg,
     backgroundColor: 'transparent',
+    gap: DsSpace.sm,
+  },
+  bulkPlanTypeRow: {
+    flexDirection: 'row',
+    gap: DsSpace.sm,
   },
   // Modal
   modalOverlay: {

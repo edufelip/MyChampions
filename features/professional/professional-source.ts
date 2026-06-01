@@ -116,6 +116,8 @@ export type ProfessionalStudentRosterItem = {
   displayName: string;
   specialty: ConnectionSpecialty;
   assignmentStatus: 'active' | 'pending';
+  nutritionStatus: 'active' | 'pending' | 'none';
+  trainingStatus: 'active' | 'pending' | 'none';
 };
 
 export type ProfessionalStudentAssignmentSnapshot = {
@@ -613,6 +615,8 @@ export async function getProfessionalStudentRoster(
           displayName,
           specialty: summary.representativeSpecialty,
           assignmentStatus: summary.assignmentStatus,
+          nutritionStatus: summary.nutritionStatus,
+          trainingStatus: summary.trainingStatus,
         } satisfies ProfessionalStudentRosterItem;
       })
     );

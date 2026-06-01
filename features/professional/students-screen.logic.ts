@@ -1,5 +1,10 @@
 export type StudentRosterViewState = 'hero_empty' | 'list_shell';
 
+type BulkAssignableStudent = {
+  nutritionStatus: 'active' | 'pending' | 'none';
+  trainingStatus: 'active' | 'pending' | 'none';
+};
+
 export type ResolveStudentRosterViewStateInput = {
   hasLoadedOnce: boolean;
   isLoading: boolean;
@@ -18,4 +23,15 @@ export function resolveStudentRosterViewState(
   }
 
   return 'list_shell';
+}
+
+export function filterBulkAssignmentStudentsByPlanType<T extends BulkAssignableStudent>(
+  students: T[],
+  planType: 'nutrition' | 'training'
+): T[] {
+  return students.filter((student) =>
+    planType === 'nutrition'
+      ? student.nutritionStatus === 'active'
+      : student.trainingStatus === 'active'
+  );
 }
