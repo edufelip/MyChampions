@@ -386,5 +386,7 @@
 
 - `D-176`: Plan archive/restore lifecycle writes are authorized through a rule-visible `lifecycleConnectionId` marker on the affected plan document. Source-layer connection activation/end transactions set the marker alongside `isArchived` changes; Firestore rules validate the referenced connection's before/after status with `get()`/`getAfter()` and require normal plan edits to preserve both `isArchived` and `lifecycleConnectionId`.
 
+- `D-177`: Active specialty state is also materialized per student at `trackingAccess/{studentUid}/activeSpecialties/{specialty}`. Firestore rules use the exact `fitness_coach` sentinel to block student self-managed training creates and normal edits while an active coach connection exists; connection end marks the sentinel `ended` and restores only archived self-managed plans whose `lifecycleConnectionId` matches the ending connection.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

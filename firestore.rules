@@ -77,6 +77,18 @@ service cloud.firestore {
         get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(ownerUid)/fitnessCoaches/$(request.auth.uid)).data.connectionId)).data.specialty == 'fitness_coach';
     }
 
+    function hasActiveNutritionistSpecialtyForStudent(studentUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/trackingAccess/$(studentUid)/activeSpecialties/nutritionist) &&
+        get(/databases/$(database)/documents/trackingAccess/$(studentUid)/activeSpecialties/nutritionist).data.status == 'active';
+    }
+
+    function hasActiveFitnessCoachSpecialtyForStudent(studentUid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/trackingAccess/$(studentUid)/activeSpecialties/fitness_coach) &&
+        get(/databases/$(database)/documents/trackingAccess/$(studentUid)/activeSpecialties/fitness_coach).data.status == 'active';
+    }
+
     function validTrackingAccessWrite(studentUid, professionalUid, specialty) {
       return signedIn() &&
         (request.auth.uid == studentUid || request.auth.uid == professionalUid) &&
@@ -89,6 +101,21 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.studentAuthUid == studentUid &&
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.professionalAuthUid == professionalUid &&
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.specialty == specialty &&
+        getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.status == request.resource.data.status;
+    }
+
+    function validActiveSpecialtyWrite(studentUid, specialtyId) {
+      return signedIn() &&
+        (request.auth.uid == studentUid || request.auth.uid == request.resource.data.professionalAuthUid) &&
+        request.resource.data.studentAuthUid == studentUid &&
+        request.resource.data.professionalAuthUid is string &&
+        request.resource.data.specialty == specialtyId &&
+        request.resource.data.connectionId is string &&
+        (request.resource.data.status == 'active' || request.resource.data.status == 'ended') &&
+        exists(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)) &&
+        getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.studentAuthUid == studentUid &&
+        getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.professionalAuthUid == request.resource.data.professionalAuthUid &&
+        getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.specialty == specialtyId &&
         getAfter(/databases/$(database)/documents/connections/$(request.resource.data.connectionId)).data.status == request.resource.data.status;
     }
 
@@ -287,7 +314,8 @@ service cloud.firestore {
         request.resource.data.ownerProfessionalUid == null &&
         request.resource.data.sourceKind == 'self_managed' &&
         request.resource.data.isDraft == false &&
-        request.resource.data.isArchived == false;
+        request.resource.data.isArchived == false &&
+        !hasActiveFitnessCoachSpecialtyForStudent(request.auth.uid);
     }
 
     function canCreateProfessionalLibraryTrainingPlan() {
@@ -311,6 +339,8 @@ service cloud.firestore {
       return resource.data.studentAuthUid == request.auth.uid &&
         resource.data.ownerProfessionalUid == null &&
         resource.data.sourceKind == 'self_managed' &&
+        resource.data.isArchived == false &&
+        !hasActiveFitnessCoachSpecialtyForStudent(resource.data.studentAuthUid) &&
         planArchiveMetadataUnchanged() &&
         trainingIdentityUnchanged();
     }
@@ -426,6 +456,12 @@ service cloud.firestore {
     match /trackingAccess/{studentUid}/fitnessCoaches/{professionalUid} {
       allow read: if signedIn() && (request.auth.uid == studentUid || request.auth.uid == professionalUid);
       allow create, update: if validTrackingAccessWrite(studentUid, professionalUid, 'fitness_coach');
+      allow delete: if false;
+    }
+
+    match /trackingAccess/{studentUid}/activeSpecialties/{specialtyId} {
+      allow read: if signedIn() && (request.auth.uid == studentUid || request.auth.uid == resource.data.professionalAuthUid);
+      allow create, update: if validActiveSpecialtyWrite(studentUid, specialtyId);
       allow delete: if false;
     }
 

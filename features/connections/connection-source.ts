@@ -79,6 +79,16 @@ function getTrackingAccessRef(firestore: Firestore, connection: FirestoreConnect
   );
 }
 
+function getActiveSpecialtyRef(firestore: Firestore, connection: FirestoreConnection) {
+  return doc(
+    firestore,
+    'trackingAccess',
+    connection.studentAuthUid,
+    'activeSpecialties',
+    connection.specialty
+  );
+}
+
 function getPlanCollectionForSpecialty(connection: FirestoreConnection) {
   return connection.specialty === 'fitness_coach' ? 'trainingPlans' : 'nutritionPlans';
 }
@@ -238,6 +248,7 @@ export async function confirmPendingConnection(
       });
 
       tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'active'), { merge: true });
+      tx.set(getActiveSpecialtyRef(firestore, data), buildTrackingAccessRecord(data, 'active'), { merge: true });
 
       selfManagedSnaps.forEach((docSnap) => {
         tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso(), lifecycleConnectionId: connectionId });
@@ -297,12 +308,14 @@ export async function endConnection(
       });
 
       tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
+      tx.set(getActiveSpecialtyRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
 
       assignedSnaps.forEach((docSnap) => {
         tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso(), lifecycleConnectionId: connectionId });
       });
 
       const latestSelfManagedSnap = [...selfManagedSnaps.docs]
+        .filter((docSnap) => docSnap.data()?.lifecycleConnectionId === connectionId)
         .sort((a, b) => getPlanSortTimestamp(b) - getPlanSortTimestamp(a))[0];
 
       if (latestSelfManagedSnap) {

@@ -69,8 +69,9 @@ const mockGetDocs = async (q: any) => {
               sourceKind: 'self_managed',
               isArchived: true,
               studentAuthUid: 'student-456',
+              lifecycleConnectionId: 'other-conn',
               createdAt: '2026-01-01T00:00:00.000Z',
-              updatedAt: '2026-02-01T00:00:00.000Z'
+              updatedAt: '2026-03-01T00:00:00.000Z'
             })
           },
           {
@@ -81,6 +82,7 @@ const mockGetDocs = async (q: any) => {
               sourceKind: 'self_managed',
               isArchived: true,
               studentAuthUid: 'student-456',
+              lifecycleConnectionId: 'conn-123',
               createdAt: '2026-01-15T00:00:00.000Z',
               updatedAt: '2026-01-20T00:00:00.000Z'
             })
@@ -219,6 +221,15 @@ test('TDD: confirmPendingConnection archives self_managed nutrition plans for nu
   assert.equal(accessSet.data.professionalAuthUid, 'prof-789');
   assert.equal(accessSet.data.specialty, 'nutritionist');
   assert.equal(accessSet.data.status, 'active');
+
+  const specialtySet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/activeSpecialties/nutritionist');
+  assert.ok(specialtySet, 'Should create nutritionist active specialty sentinel');
+  assert.equal(specialtySet.data.connectionId, 'conn-123');
+  assert.equal(specialtySet.data.studentAuthUid, 'student-456');
+  assert.equal(specialtySet.data.professionalAuthUid, 'prof-789');
+  assert.equal(specialtySet.data.specialty, 'nutritionist');
+  assert.equal(specialtySet.data.status, 'active');
+  assert.deepEqual(specialtySet.options, { merge: true });
 });
 
 test('TDD: confirmPendingConnection archives self_managed training plans for fitness_coach specialty', async (t) => {
@@ -271,6 +282,15 @@ test('TDD: confirmPendingConnection archives self_managed training plans for fit
   assert.equal(accessSet.data.professionalAuthUid, 'prof-789');
   assert.equal(accessSet.data.specialty, 'fitness_coach');
   assert.equal(accessSet.data.status, 'active');
+
+  const specialtySet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/activeSpecialties/fitness_coach');
+  assert.ok(specialtySet, 'Should create fitness coach active specialty sentinel');
+  assert.equal(specialtySet.data.connectionId, 'conn-123');
+  assert.equal(specialtySet.data.studentAuthUid, 'student-456');
+  assert.equal(specialtySet.data.professionalAuthUid, 'prof-789');
+  assert.equal(specialtySet.data.specialty, 'fitness_coach');
+  assert.equal(specialtySet.data.status, 'active');
+  assert.deepEqual(specialtySet.options, { merge: true });
 });
 
 test('TDD: endConnection marks tracking access ended for connection specialty', async (t) => {
@@ -296,6 +316,15 @@ test('TDD: endConnection marks tracking access ended for connection specialty', 
   assert.equal(accessSet.data.connectionId, 'conn-123');
   assert.equal(accessSet.data.status, 'ended');
   assert.deepEqual(accessSet.options, { merge: true });
+
+  const specialtySet = txSets.find(u => u.ref.path === 'trackingAccess/student-456/activeSpecialties/nutritionist');
+  assert.ok(specialtySet, 'Should mark nutritionist active specialty sentinel ended');
+  assert.equal(specialtySet.data.connectionId, 'conn-123');
+  assert.equal(specialtySet.data.studentAuthUid, 'student-456');
+  assert.equal(specialtySet.data.professionalAuthUid, 'prof-789');
+  assert.equal(specialtySet.data.specialty, 'nutritionist');
+  assert.equal(specialtySet.data.status, 'ended');
+  assert.deepEqual(specialtySet.options, { merge: true });
 });
 
 test('TDD: endConnection archives assigned training plan and restores self-managed training plan for fitness_coach', async (t) => {
@@ -341,14 +370,14 @@ test('TDD: endConnection archives assigned training plan and restores self-manag
   assert.ok(assignedUpdate.data.updatedAt, 'Assigned plan updatedAt should be set');
   assert.equal(assignedUpdate.data.lifecycleConnectionId, 'conn-123');
 
-  const selfManagedUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/self-managed-plan-123');
+  const selfManagedUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/older-self-managed-plan-123');
   assert.ok(selfManagedUpdate, 'Should restore archived self-managed training plan');
   assert.equal(selfManagedUpdate.data.isArchived, false);
   assert.ok(selfManagedUpdate.data.updatedAt, 'Self-managed plan updatedAt should be set');
   assert.equal(selfManagedUpdate.data.lifecycleConnectionId, 'conn-123');
 
-  const olderSelfManagedUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/older-self-managed-plan-123');
-  assert.equal(olderSelfManagedUpdate, undefined, 'Should not restore older archived self-managed training plans');
+  const otherConnectionUpdate = txUpdates.find((u) => u.ref.path === 'trainingPlans/self-managed-plan-123');
+  assert.equal(otherConnectionUpdate, undefined, 'Should not restore newer archived self-managed plan from another connection');
 });
 
 // Restore original implementations at the end of the test file

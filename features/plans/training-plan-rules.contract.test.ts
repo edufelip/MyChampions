@@ -20,6 +20,19 @@ const endedFitnessCoachConnectionHelper = rules.match(
 const selfManagedTrainingUpdateHelper = rules.match(
   /function canUpdateSelfManagedTrainingPlan\(\) \{[\s\S]*?\n    \}/
 )?.[0] ?? '';
+const selfManagedTrainingCreateHelper = rules.match(
+  /function canCreateSelfManagedTrainingPlan\(\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const activeFitnessCoachSpecialtyHelper = rules.match(
+  /function hasActiveFitnessCoachSpecialtyForStudent\(studentUid\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const activeNutritionistSpecialtyHelper = rules.match(
+  /function hasActiveNutritionistSpecialtyForStudent\(studentUid\) \{[\s\S]*?\n    \}/
+)?.[0] ?? '';
+const activeSpecialtiesRules = rules.slice(
+  rules.indexOf('match /trackingAccess/{studentUid}/activeSpecialties/{specialtyId}'),
+  rules.indexOf('match /waterLogs/{logId}')
+);
 const professionalLibraryTrainingUpdateHelper = rules.match(
   /function canUpdateProfessionalLibraryTrainingPlan\(\) \{[\s\S]*?\n    \}/
 )?.[0] ?? '';
@@ -96,6 +109,32 @@ test('trainingPlans normal self-managed updates preserve lifecycle archive state
     selfManagedTrainingUpdateHelper,
     /planArchiveMetadataUnchanged\(\)/
   );
+});
+
+test('trainingPlans self-managed creates and normal updates require no active fitness coach specialty sentinel', () => {
+  assert.match(rules, /function hasActiveFitnessCoachSpecialtyForStudent\(studentUid\)/);
+  assert.match(
+    activeFitnessCoachSpecialtyHelper,
+    /trackingAccess\/\$\(studentUid\)\/activeSpecialties\/fitness_coach/
+  );
+  assert.match(activeFitnessCoachSpecialtyHelper, /\.data\.status == 'active'/);
+  assert.match(selfManagedTrainingCreateHelper, /!hasActiveFitnessCoachSpecialtyForStudent\(request\.auth\.uid\)/);
+  assert.match(selfManagedTrainingUpdateHelper, /!hasActiveFitnessCoachSpecialtyForStudent\(resource\.data\.studentAuthUid\)/);
+  assert.match(selfManagedTrainingUpdateHelper, /resource\.data\.isArchived == false/);
+});
+
+test('trackingAccess active specialty sentinel rules mirror referenced connection after-state', () => {
+  assert.match(rules, /function hasActiveNutritionistSpecialtyForStudent\(studentUid\)/);
+  assert.match(
+    activeNutritionistSpecialtyHelper,
+    /trackingAccess\/\$\(studentUid\)\/activeSpecialties\/nutritionist/
+  );
+  assert.match(rules, /function validActiveSpecialtyWrite\(studentUid, specialtyId\)/);
+  assert.match(activeSpecialtiesRules, /allow read: if signedIn\(\) && \(request\.auth\.uid == studentUid \|\| request\.auth\.uid == resource\.data\.professionalAuthUid\)/);
+  assert.match(activeSpecialtiesRules, /allow create, update: if validActiveSpecialtyWrite\(studentUid, specialtyId\)/);
+  assert.match(activeSpecialtiesRules, /allow delete: if false/);
+  assert.match(rules, /getAfter\(\/databases\/\$\(database\)\/documents\/connections\/\$\(request\.resource\.data\.connectionId\)\)\.data\.status == request\.resource\.data\.status/);
+  assert.match(rules, /request\.resource\.data\.specialty == specialtyId/);
 });
 
 test('trainingPlans normal professional updates preserve lifecycle archive state', () => {

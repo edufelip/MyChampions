@@ -23,6 +23,7 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - `nutritionPlans/{planId}` and `trainingPlans/{planId}`.
 - `planChangeRequests/{requestId}`.
 - `trackingAccess/{studentUid}/nutritionists/{professionalUid}` and `trackingAccess/{studentUid}/fitnessCoaches/{professionalUid}`: rules-compatible materialized access records created from active connections for professional tracking-log reads.
+- `trackingAccess/{studentUid}/activeSpecialties/{specialty}`: per-student exact specialty sentinel (`nutritionist` or `fitness_coach`) created/ended with connection transitions for rules-compatible self-managed write gating.
 - `starterTemplates/{templateId}` (optional remote templates; local fallback allowed).
 - `waterLogs/{uid_dateKey}` and `waterGoals/{uid}`.
 - `customMeals/{mealId}`, `mealShareLinks/{shareToken}`, `portionLogs/{logId}`.
@@ -35,6 +36,7 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - Role-lock is immutable after first successful set.
 - Connection transitions are validated in source-layer transactions.
 - Professional reads of student tracking data are authorized through `trackingAccess` documents that point to the matching active `connections/{connectionId}` document. Firestore rules must not use collection queries for connection lookup.
+- Student self-managed training creates and normal edits are blocked while `trackingAccess/{studentUid}/activeSpecialties/fitness_coach` has `status='active'`; connection end marks the sentinel `ended` before self-managed restore writes complete.
 - Plan lifecycle archive/restore writes set `lifecycleConnectionId` on the affected `nutritionPlans/{planId}` or `trainingPlans/{planId}` document. Firestore rules use that marker to validate the exact `connections/{connectionId}` before/after transition with `get()` and `getAfter()`.
 - Normal plan edits preserve `isArchived` and `lifecycleConnectionId`; only connection activation/end lifecycle writes may change archive state.
 
