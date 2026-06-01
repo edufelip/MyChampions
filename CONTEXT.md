@@ -26,8 +26,6 @@ A relationship between one Professional and one Student scoped to a single Speci
 **InviteCode**
 A persistent, scoped code issued by a Professional for a specific Specialty (`nutritionist` or `fitness_coach`). A Professional with both Specialties holds two separate InviteCodes — one per Specialty. Each code has its own lifecycle (active/rotated/revoked) and is rotated independently. A Student submits a code to request a Connection for the Specialty that code represents. To connect under both Specialties, the Professional shares two codes and the Student submits both.
 
-**Current implementation gap (2026-05-30):** `inviteCodes/{professionalUid}` is a single Firestore document with no `specialty` field. Decided storage shape: subcollection `professionals/{professionalUid}/inviteCodes/{specialty}` — one document per Specialty, keyed by the specialty string for direct `doc('nutritionist')` / `doc('fitness_coach')` access without queries. Each document has its own independent lifecycle.
-
 **PendingRequest**
 A Connection request submitted by a Student using an InviteCode, awaiting Professional confirmation. Scoped to the Specialty of the InviteCode used. Cap: 10 unique pending Students per Professional — a Student with two simultaneous PendingRequests (one per Specialty) counts as one toward the cap. Rotation of an InviteCode cancels only PendingRequests tied to that code's Specialty — cross-specialty PendingRequests from the same Student are unaffected.
 
@@ -57,14 +55,14 @@ The plan that governs a Student's active tracking for a given Specialty. Assigne
 An advisory request authored by a Student asking their Professional to change something in an assigned plan. Does not grant the Student edit rights. Lifecycle: `pending → reviewed | dismissed`. The Professional resolves the request separately by editing the plan directly. A PlanChangeRequest survives Connection end — it remains `pending` until the Professional explicitly reviews or dismisses it.
 
 **CustomMeal**
-A user-owned, reusable meal record with proportional macro scaling per portion. Shareable via copy-on-save link — the recipient gets an independent copy at save time, owned by them. The sharer's original is unaffected. Sharing is identity-agnostic: a Professional sharing a meal with a Student follows the same model as any user sharing with any other user. Connection end has no effect on already-copied meals.
+A user-owned, reusable meal record or recipe with proportional macro scaling per portion. Shareable via copy-on-save link — the recipient gets an independent copy at save time, owned by them. The sharer's original is unaffected. Sharing is identity-agnostic: a Professional sharing a meal with a Student follows the same model as any user sharing with any other user. A CustomMeal can be used as part of a NutritionPlan meal, but it is not assigned to a Student outside a NutritionPlan. Connection end has no effect on already-copied meals.
 
 ---
 
 ## Tracking & Visibility
 
 **TrackingLog**
-Daily adherence records authored by the Student (meal logs, workout logs). Owned by the Student — not scoped to any plan or Connection. A Professional's read access is scoped by Specialty: an active `nutritionist` Connection grants read access to `mealLogs` only; an active `fitness_coach` Connection grants read access to `workoutLogs` only. Read access expires when the Connection for that Specialty ends. A dual-specialty Professional with both Connections active can read both log types, but each access path is independently revoked when its Specialty Connection ends.
+Daily adherence records authored by the Student (meal logs, workout logs). Owned by the Student. A TrackingLog may carry plan or Connection provenance when it records adherence to a specific plan, but that provenance does not transfer ownership or make the log part of the plan. A Professional's read access is scoped by Specialty: an active `nutritionist` Connection grants read access to nutrition tracking logs only; an active `fitness_coach` Connection grants read access to workout tracking logs only. Read access expires when the Connection for that Specialty ends. A dual-specialty Professional with both Connections active can read both log types, but each access path is independently revoked when its Specialty Connection ends.
 
 **StudentRosterSummary**
 Aggregate counts shown on the Professional dashboard. Counts are by unique Students, not by Connection records. A Student with two active Connections (one per Specialty) counts as one active student. Fields: `activeCount`, `pendingCount`. No Specialty breakdown on the dashboard — the roster view handles per-specialty filtering.

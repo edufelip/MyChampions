@@ -112,6 +112,15 @@
 | TC-317 | SC-208 Locale Normalization | App locale is `pt-BR`, `es-ES`, and unknown locale (e.g. `de-DE`) | Execute exercise search in each locale | Proxy body sends `lang=pt`, `lang=es`, and fallback `lang=en` respectively |
 | TC-318 | SC-208 No Client Upstream Key Exposure | Build app binary and inspect runtime env references | Search for upstream YMove API key variables/usages | No client-exposed upstream key exists; app still searches through proxy |
 | TC-319 | SC-208 Legacy ymoveId Read Compatibility | Existing training plan items were saved with `ymoveId` only | Open and render existing training plan sessions | Thumbnail/search detail resolution still works via fallback from `ymoveId` while new writes persist `exerciseId` |
+| TC-320 | Nutrition Self-Managed Source | Student has no active nutritionist | Create nutrition plan | Plan is saved as Self-Managed, not predefined/Professional Library |
+| TC-321 | Nutrition Waiting State | Student has active nutritionist and no published assigned plan | Open nutrition tracking | Waiting state is shown; self-managed create/edit is blocked |
+| TC-322 | Draft Assigned Nutrition Hidden | Nutritionist has draft assigned plan for student | Student opens nutrition tracking | Draft is not visible and is not effective |
+| TC-323 | Assigned Nutrition Edit Window | Owning nutritionist has active connection to student | Edit published assigned nutrition plan | Edit succeeds while connection remains active |
+| TC-324 | Nutrition Assignment Connection Guard | Professional selects students without active nutritionist connection | Assign or bulk assign nutrition plan | Invalid targets are blocked |
+| TC-325 | Nutrition Connection End Lifecycle | Active nutritionist connection with assigned plan and tied archived self-managed plan | Student or professional unbinds | Assigned plan archives; tied self-managed plan restores; no plan is auto-created |
+| TC-326 | Nutrition Specialty Route Gate | Professional lacks nutritionist Specialty | Open nutrition tab/routes | Access is blocked or hidden |
+| TC-327 | Nutrition Tracking Read-Only Review | Active nutritionist opens Student Profile | Review tracking logs | Logs are visible read-only and remain Student-owned |
+| TC-328 | CustomMeal Snapshot Boundary | Professional assigns nutrition plan using Student-owned CustomMeal without import/share | Attempt to add meal | Action is blocked unless shared/imported; plan/log uses snapshot |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.

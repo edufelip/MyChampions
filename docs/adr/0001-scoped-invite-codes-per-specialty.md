@@ -8,7 +8,7 @@ A Professional with two Specialties must be able to invite a Student to one Spec
 - Option A (rejected): one neutral code, Student chooses specialty at submission. Simpler code management for the Professional but loses the Professional's intent — they should control which specialties a Student can connect under.
 
 **Consequences:**
-- `inviteCodes/{professionalUid}` top-level single-document model must be migrated to the subcollection shape.
+- `inviteCodes/{professionalUid}` top-level single-document model must be replaced by the subcollection shape before release; no compatibility migration is required because the app is not live.
 - `rotateInviteCode` must be scoped to a single Specialty — it currently cancels all pending connections for the Professional regardless of specialty (bug).
 - `isPendingCapReached` counts raw PendingRequest documents; must be rewritten to count unique pending Students instead (cap is 10 unique students, not 10 documents).
 - Firestore security rules that read from `inviteCodes` must be updated to query the subcollection path.

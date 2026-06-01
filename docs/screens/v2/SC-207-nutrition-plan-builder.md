@@ -8,7 +8,7 @@
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
 ## Objective
-Let nutritionists create and edit named predefined nutrition plans (calorie/macro targets + food item list) stored in their private library. Plans can be assigned to individual students or bulk-assigned.
+Let nutritionists create and edit named predefined nutrition plans (calorie/macro targets + food item list) stored in their private library, then create student-specific assigned drafts for connected Students. Student route aliases create Self-Managed Plans, not predefined plans.
 
 ## Design Structure (D-134)
 - Library route (`/professional/nutrition`) uses `DsScreen` as shell with DS spacing/typography tokens and the SC-204 professional surface baseline (hero header + contextual helper).
@@ -39,8 +39,9 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Search foods via VPS food-search microservice integration (`https://foodservice.eduwaldo.com/searchFoods`).
 - Save plan (create or update).
 - Delete plan; after a successful delete, show the blocking loading scrim and then return the user to the nutrition library.
-- Assign plan to a student.
-- Bulk-assign plan to multiple students with per-student fine-tune step.
+- Assign plan to a student with an active nutritionist Connection.
+- Bulk-assign plan to active nutritionist-connected Students with per-student fine-tune step.
+- Send/publish assigned drafts when ready.
 
 ## States
 
@@ -62,6 +63,11 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Carbs, proteins, and fats targets must each be zero or greater if provided (BR-292).
 - Bulk assignment produces independent per-student plan copies; later library edits do not mutate assigned copies (BR-283, D-082).
 - Assigned plans are read-only for students (D-006).
+- Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans until sent/published.
+- Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.
+- Assigned create/send/bulk assignment requires active nutritionist Connection and nutrition-scoped targets.
+- Professionals without nutritionist Specialty cannot access this route.
+- Professionals cannot add Student-owned CustomMeals into assigned plans unless shared/imported first; assigned meals use stable snapshots.
 - Meal add/remove/item mutations must not clear already rendered builder content while the request is still pending; UI remains visible until the mutation resolves.
 
 ## Data Contract
@@ -101,7 +107,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 ### Source Operations
 | Operation | Description |
 |---|---|
-| `createNutritionPlan` | Create new plan in professional's library |
+| `createNutritionPlan` | Create new professional-library, assigned-draft, or student self-managed plan according to route context |
 | `updateNutritionPlan` | Update plan name and macro targets |
 | `getNutritionPlanDetail` | Load plan with items |
 | `addNutritionMealItem` | Add food item to plan |
@@ -162,6 +168,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 - Food service unavailable/rate-limited: source call returns typed error and UI surfaces fallback copy.
 - If assignment becomes inactive mid-edit: block assign action; plan save remains available.
 - Editing a predefined plan after it has been bulk-assigned does not mutate already assigned student copies (D-082, BR-283).
+- If a Student opens self-managed create/edit while an active nutritionist Connection exists, block save and return to the waiting nutrition state.
 
 ## Implementation Files
 | File | Purpose |
@@ -179,7 +186,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Functional requirements | FR-240, FR-241, FR-242, FR-243, FR-247, FR-248, FR-223, FR-224, FR-225, FR-226 |
 | Use case | UC-002.14, UC-002.20 |
 | Acceptance criteria | AC-256, AC-264, AC-265 |
-| Business rules | BR-281, BR-282, BR-283, BR-291, BR-292 |
+| Business rules | BR-281, BR-282, BR-283, BR-291, BR-292, BR-328, BR-331, BR-332, BR-334, BR-337 |
 | Test cases | TC-268, TC-269, TC-270, TC-275, TC-276, TC-280 |
 | Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114, D-173 |
 | Backlog | BL-106 |

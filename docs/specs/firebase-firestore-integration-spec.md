@@ -17,10 +17,11 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 
 ## Collection Model (App-Facing)
 - `userProfiles/{uid}`: role lock, account basics, terms acceptance metadata.
-- `inviteCodes/{professionalUid}`: active invite code lifecycle.
+- `professionals/{professionalUid}/inviteCodes/{specialty}`: active invite code lifecycle, scoped per Specialty (`nutritionist` or `fitness_coach`). The old top-level `inviteCodes/{professionalUid}` shape is replaced before release; no compatibility path is required because the app is not live.
 - `connections/{connectionId}`: student-professional lifecycle state.
 - `specialties/{specialtyId}` and `credentials/{specialtyId}`.
 - `nutritionPlans/{planId}` and `trainingPlans/{planId}`.
+- `trackingLogs/{logId}` or domain-specific tracking collections: Student-owned adherence records that may carry plan/connection provenance.
 - `planChangeRequests/{requestId}`.
 - `trackingAccess/{studentUid}/nutritionists/{professionalUid}` and `trackingAccess/{studentUid}/fitnessCoaches/{professionalUid}`: rules-compatible materialized access records created from active connections for professional tracking-log reads.
 - `trackingAccess/{studentUid}/activeSpecialties/{specialty}`: per-student exact specialty sentinel (`nutritionist` or `fitness_coach`) created/ended with connection transitions for rules-compatible self-managed write gating and one-active-professional-per-specialty enforcement.
@@ -37,9 +38,14 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - Connection transitions are validated in source-layer transactions.
 - Professional reads of student tracking data are authorized through `trackingAccess` documents that point to the matching active `connections/{connectionId}` document. Firestore rules must not use collection queries for connection lookup.
 - Student self-managed training creates and normal edits are blocked while `trackingAccess/{studentUid}/activeSpecialties/fitness_coach` has `status='active'`; ending the connection that owns the sentinel marks it `ended` before self-managed restore writes complete.
+- Student self-managed nutrition creates and normal edits are blocked while `trackingAccess/{studentUid}/activeSpecialties/nutritionist` has `status='active'`; the student sees a waiting state until a published assigned NutritionPlan exists.
+- Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans. Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.
+- Assigned NutritionPlan create/send/bulk assignment requires an active nutritionist Connection to every target Student and nutrition-scoped targets.
 - Active specialty sentinel updates preserve the owning `connectionId`: an active sentinel cannot be overwritten by a different active connection, and ending a different/older connection skips the sentinel update so the current active sentinel is not marked ended.
 - Plan lifecycle archive/restore writes set `lifecycleConnectionId` on the affected `nutritionPlans/{planId}` or `trainingPlans/{planId}` document. Firestore rules use that marker to validate the exact `connections/{connectionId}` before/after transition with `get()` and `getAfter()`.
 - Normal plan edits preserve `isArchived` and `lifecycleConnectionId`; only connection activation/end lifecycle writes may change archive state.
+- Connection end, whether initiated by Professional or Student, archives assigned plans for the ending Connection and restores the latest Self-Managed Plan tied to that Connection when one exists. No replacement plan is auto-created.
+- CustomMeals are user-owned reusable meals/recipes. NutritionPlans and TrackingLogs store stable snapshots/provenance rather than live cross-user CustomMeal references.
 
 ## Role-Lock Routing Contract
 1. Resolve Firebase Auth session.

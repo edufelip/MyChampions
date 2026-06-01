@@ -18,6 +18,7 @@
   - View student assignment status by specialty.
   - Assign or update nutrition plan.
   - Assign or update training plan.
+  - Review nutrition tracking in read-only mode when connected as nutritionist.
   - Review student-submitted plan change requests.
   - Confirm pending invite-based assignment.
   - Unbind assignment.
@@ -37,6 +38,8 @@
 - Archived self-managed plans visible only with student consent.
 - If professional entitlement is inactive while above cap, plan assignment/update actions are locked.
 - Plan change requests are advisory and must not grant direct student edit rights to assigned plans.
+- Nutrition tracking review is read-only; TrackingLogs remain Student-owned even when plan/connection provenance is shown.
+- Nutrition plan assignment/update requires an active nutritionist Connection; route actions are unavailable to Professionals without nutritionist Specialty.
 
 ## Data Contract
 - Inputs:
@@ -55,11 +58,12 @@
 - Consent revoked after professional opens history should hide further access.
 - When entitlement lock is active, screen remains readable but all write CTAs are disabled with lock explanation.
 - Water-goal changes are authored inside nutrition plan builder/assignment flows, not directly in SC-206.
+- Professional unbind and Student unbind must both invoke the same connection-end lifecycle: archive assigned plans, restore latest tied Self-Managed Plan if present, and create no replacement plan.
 
 ## Links
 - Functional requirement: FR-106, FR-107, FR-108, FR-121, FR-123, FR-124, FR-125, FR-130, FR-131, FR-185, FR-211
 - Use case: UC-002.2, UC-002.3, UC-002.5, UC-002.6, UC-002.13
 - Acceptance criteria: AC-203, AC-204, AC-205, AC-214, AC-216, AC-217, AC-218, AC-222, AC-255, AC-311
-- Business rules: BR-203, BR-204, BR-205, BR-213, BR-215, BR-216, BR-217, BR-222, BR-223, BR-247, BR-269
+- Business rules: BR-203, BR-204, BR-205, BR-213, BR-215, BR-216, BR-217, BR-222, BR-223, BR-247, BR-269, BR-332, BR-333, BR-335, BR-336
 - Test cases: TC-204, TC-205, TC-214, TC-216, TC-217, TC-218, TC-219, TC-223, TC-259, TC-310
 - Diagram: docs/diagrams/domain-relationships.md

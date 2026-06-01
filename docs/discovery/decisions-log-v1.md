@@ -388,5 +388,10 @@
 
 - `D-177`: Active specialty state is also materialized per student at `trackingAccess/{studentUid}/activeSpecialties/{specialty}`. Firestore rules use the exact `fitness_coach` sentinel to block student self-managed training creates and normal edits while an active coach connection exists; active updates refuse overwrite by a different active connection, ended updates require the existing sentinel to reference the same `connectionId`, and connection end restores only archived self-managed plans whose `lifecycleConnectionId` matches the ending connection.
 
+- `D-178`: Nutritionist governance mirrors training governance before release. Student-created NutritionPlans are Self-Managed Plans, active nutritionist Connections block Student self-managed nutrition create/edit, draft assigned NutritionPlans are invisible to Students, and published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.
+- `D-179`: Assigned NutritionPlan creation/send/bulk assignment requires an active nutritionist Connection to each target Student and nutrition-scoped targets. Connection end archives assigned NutritionPlans and restores the latest Self-Managed NutritionPlan tied to the ending Connection if present; no plan is auto-created. Professional and Student unbinds use the same lifecycle semantics.
+- `D-180`: InviteCodes are Specialty-scoped at `professionals/{professionalUid}/inviteCodes/{specialty}`. The old `inviteCodes/{professionalUid}` shape is replaced with no compatibility migration because the app is not live.
+- `D-181`: Nutritionist review is read-only on Professional Student Profile. TrackingLogs remain Student-owned but may carry plan/connection provenance. CustomMeals are user-owned reusable meals/recipes; NutritionPlans and TrackingLogs store stable snapshots/provenance, and Professionals cannot add Student-owned CustomMeals into assigned plans unless shared/imported first.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

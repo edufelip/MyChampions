@@ -61,17 +61,17 @@
 - Trigger: Student requests or accepts professional connection.
 - Preconditions: Student authenticated.
 - Main flow:
-  1. Professional generates and shares invite code with student.
+  1. Professional generates and shares a Specialty-scoped invite code.
   2. Student enters invite code in app.
   3. System validates one-active-professional-per-specialty rule.
-  4. System validates pending-request capacity (<= 10 pending for professional).
+  4. System validates pending-request capacity (<= 10 unique pending Students for professional).
   5. System transitions assignment from `invited` to `pending_confirmation`.
   6. Professional confirms assignment.
   7. System transitions assignment from `pending_confirmation` to `active` when valid.
 - Expected result: Student is linked to one active professional per specialty.
 - Alternate flow:
-  - Professional can revoke/regenerate invite code when leakage is suspected.
-  - When invite code is regenerated, pending requests created from superseded code are auto-canceled.
+  - Professional can revoke/regenerate an invite code when leakage is suspected.
+  - When a Specialty code is regenerated, pending requests created from that superseded Specialty code are auto-canceled; other Specialty requests remain unchanged.
 - Additional result:
   - Student-facing professional credential snippet for active assignments exposes only `registry_id`, `authority`, and `country`.
 
@@ -82,9 +82,10 @@
 - Main flow:
   1. Student opens self-plan flow.
   2. Student defines macro/calorie targets and meals or training sessions.
-  3. Student tracks daily adherence.
+  3. Nutrition plans created here are saved as Self-Managed Plans.
+  4. Student tracks daily adherence.
 - Alternate flow:
-  - If a professional assignment becomes active for that specialty, system archives the self-managed plan.
+  - If a professional assignment becomes active for that specialty, system archives the self-managed plan and blocks further self-managed create/edit while active.
   - Professional can review archived self-managed plan only when student allows access.
 - Expected result: Student can progress without a professional relationship.
 
@@ -94,9 +95,11 @@
 - Preconditions: Active assignment exists.
 - Main flow:
   1. User ends assignment per policy.
-  2. System marks assignment inactive.
-  3. System retains relationship and plan history.
-- Expected result: Historical records remain accessible for auditing and continuity.
+  2. System applies the same connection-end lifecycle whether the Student or Professional initiated the unbind.
+  3. System archives assigned plans for that Connection.
+  4. System restores the latest Self-Managed Plan tied to the ending Connection if one exists.
+  5. System retains relationship and plan history.
+- Expected result: Historical records remain accessible for auditing and continuity; no replacement plan is auto-created.
 
 ## UC-002.6 Professional Student-Cap Subscription Gate
 - Primary actor: Professional.
@@ -263,6 +266,17 @@
   4. Professional fine-tunes each student draft as needed.
   5. Professional confirms assignments.
 - Expected result: Multiple students receive independent assigned plan copies with optional per-student adjustments.
+- Nutrition assignment constraint: for NutritionPlans, every target Student must have an active nutritionist Connection and nutrition-scoped target; draft assigned plans remain hidden until sent/published.
+
+## UC-002.20b Nutritionist Review Of Student Tracking
+- Primary actor: Professional with nutritionist Specialty.
+- Trigger: Professional opens Student Profile.
+- Preconditions: Active nutritionist Connection exists.
+- Main flow:
+  1. Professional opens the Student Profile.
+  2. App shows nutrition tracking logs in read-only mode.
+  3. Logs remain Student-owned and may show plan/connection provenance.
+- Expected result: Nutritionist can review adherence without owning or mutating Student tracking logs.
 
 ## UC-002.22 SC-208 Exercise Search Via Proxy Service
 - Primary actor: Professional.

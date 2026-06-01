@@ -88,8 +88,8 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-176`: Credential data shall be stored separately per specialty, with at most one `professional_registry` credential record per specialty in MVP.
 - `FR-177`: In countries or contexts without applicable professional registry, professionals may skip credential submission.
 - `FR-178`: Students shall only see credential information for professionals with whom they have an active assignment context, and MVP fields are limited to `registry_id`, `authority`, and `country`.
-- `FR-179`: Professional invite code shall be persistent (non-expiring by default), revocable/regenerable by professional action, and represented by one active forever-code at a time; regenerating a code invalidates the superseded code and auto-cancels pending requests created from that superseded code.
-- `FR-180`: A professional may have at most 10 pending connection requests awaiting accept/deny.
+- `FR-179`: Professional invite codes shall be persistent (non-expiring by default), revocable/regenerable by professional action, scoped per Specialty, and stored under `professionals/{professionalUid}/inviteCodes/{specialty}`; regenerating a code invalidates that Specialty code and auto-cancels pending requests created from it.
+- `FR-180`: A professional may have at most 10 unique Students with pending connection requests awaiting accept/deny.
 - `FR-181`: Professional dashboards shall display active and pending student counts as separate values.
 - `FR-182`: Wrong-role route access shall be hard blocked and redirected to the role-appropriate home.
 - `FR-183`: MVP offline behavior shall support read-only cached content; write operations require connectivity.
@@ -166,6 +166,16 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-254`: SC-208 exercise search/detail requests shall route through the exercise proxy microservice (`https://exerciseservice.eduwaldo.com/proxy`) instead of direct upstream client calls.
 - `FR-255`: Exercise proxy requests shall include normalized language (`en`, `pt`, `es`; fallback `en`) and `x-request-id` header; response `x-request-id` shall be captured for diagnostics.
 - `FR-256`: The mobile client shall never include or expose the upstream YMove API key; key injection must be server-side in the exercise proxy.
+- `FR-257`: Student-created NutritionPlans shall persist as Self-Managed Plans, not Professional Library/predefined plans.
+- `FR-258`: Active nutritionist Connections shall block Student Self-Managed NutritionPlan create/edit and show a waiting state until a published assigned plan exists.
+- `FR-259`: Draft assigned NutritionPlans shall be invisible to Students and shall not become Effective Plans.
+- `FR-260`: Published assigned NutritionPlans shall remain editable by the owning Professional while the matching active nutritionist Connection exists.
+- `FR-261`: Assigned NutritionPlan create/send/bulk assignment shall require an active nutritionist Connection to each target Student and nutrition-scoped targets.
+- `FR-262`: Connection end shall archive assigned NutritionPlans and restore the latest Self-Managed NutritionPlan tied to the ending Connection when present, without auto-creating a replacement plan.
+- `FR-263`: Nutrition tab/routes shall be unavailable to Professionals without nutritionist Specialty.
+- `FR-264`: Professional Student Profile shall expose nutrition tracking review as read-only.
+- `FR-265`: TrackingLogs shall remain Student-owned while allowing plan/connection provenance.
+- `FR-266`: NutritionPlans and TrackingLogs shall store stable CustomMeal snapshots/provenance; Professionals cannot add Student-owned CustomMeals into assigned plans unless shared/imported first.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

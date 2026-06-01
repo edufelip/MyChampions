@@ -22,7 +22,7 @@
 - `BR-219`: A professional can manage up to 10 active students without paid subscription.
 - `BR-220`: Active student count above 10 is blocked unless professional subscription entitlement is active.
 - `BR-221`: Subscription entitlement lifecycle is controlled by store billing and synchronized through RevenueCat.
-- `BR-222`: Either side of an active assignment can unbind at any time.
+- `BR-222`: Either side of an active assignment can unbind at any time; Professional and Student unbinds use the same connection-end lifecycle semantics.
 - `BR-223`: A replacement assignment in the same specialty cannot be simultaneously active; previous binding must be ended first.
 - `BR-224`: Training plans are professional-defined and fully customizable; app enforces no fixed domain workout fields beyond storage metadata.
 - `BR-225`: Release eligibility requires compliance with Apple/Google store policies for payments, privacy, account deletion, and data disclosures.
@@ -44,8 +44,8 @@
 - `BR-238`: Professional may remove specialty only when that specialty has no active or pending students and at least one specialty remains on account.
 - `BR-239`: Credential records are stored per specialty, with max one `professional_registry` credential per specialty in MVP.
 - `BR-240`: Student-visible credential info is limited to currently assigned professionals and field scope is constrained to `registry_id`, `authority`, and `country`.
-- `BR-241`: Professional invite code is persistent by default, revocable/regenerable on demand, and only one active code exists per professional at a time; regeneration invalidates the old code and auto-cancels pending requests tied to that old code.
-- `BR-242`: Pending connection requests awaiting professional action are capped at 10 per professional.
+- `BR-241`: Professional invite codes are persistent by default and scoped per Specialty under `professionals/{professionalUid}/inviteCodes/{specialty}`; each Specialty code is independently revocable/regenerable and regeneration auto-cancels pending requests tied to that code's Specialty only.
+- `BR-242`: Pending connection requests awaiting professional action are capped at 10 unique Students per professional; one Student with two specialty-scoped pending requests counts once.
 - `BR-243`: Professional dashboard must show active and pending counts separately.
 - `BR-244`: Wrong-role route access is hard-blocked and redirected to role home.
 - `BR-245`: Offline mode allows read-only cached access; writes are blocked until connectivity is restored.
@@ -112,6 +112,16 @@
 - `BR-304`: Proxy requests must include normalized language code (`en`, `pt`, `es`, fallback `en`) and client-generated `x-request-id` for correlation.
 - `BR-305`: Upstream YMove API keys are server-side only; no client build/runtime variable may expose that key.
 - `BR-306`: Training session items persist only stable exercise identifiers (`exerciseId`); pre-signed media URLs are never persisted.
+- `BR-328`: Student-created NutritionPlans are Self-Managed Plans, not Professional Library/predefined plans owned by the same user.
+- `BR-329`: Active nutritionist Connections block Student Self-Managed NutritionPlan create/edit; Student nutrition surfaces show a waiting state until a published assigned plan exists.
+- `BR-330`: Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans.
+- `BR-331`: Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.
+- `BR-332`: Assigned NutritionPlan creation/send/bulk assignment requires an active nutritionist Connection to each target Student and nutrition-scoped targets.
+- `BR-333`: Connection end archives assigned NutritionPlans and restores the latest Self-Managed NutritionPlan tied to the ending Connection if present; no plan is auto-created.
+- `BR-334`: Professionals without nutritionist Specialty cannot access nutrition tab/routes.
+- `BR-335`: Nutritionist tracking review on the Professional Student Profile is read-only.
+- `BR-336`: TrackingLogs remain Student-owned but may carry plan/connection provenance for review and audit.
+- `BR-337`: CustomMeals are user-owned reusable meals/recipes; NutritionPlans and TrackingLogs carry stable snapshots/provenance, and Professionals cannot add Student-owned CustomMeals into assigned plans unless the meal is shared/imported first.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

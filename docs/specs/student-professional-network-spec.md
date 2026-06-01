@@ -13,8 +13,9 @@ Specify the target domain behavior for role-based journeys, professional assignm
 - Student: user consuming assigned or self-managed plans.
 - Professional: nutritionist, fitness coach, or dual-specialty account.
 - Active assignment: current linked relationship for a specialty.
-- Plan template: reusable base plan created by a professional.
-- Customized plan: student-specific adaptation of a template.
+- Professional Library Plan: reusable base plan created by a professional.
+- Assigned Plan: student-specific adaptation sent by a professional.
+- Self-Managed Plan: plan authored by a Student while no active professional Connection exists for that Specialty.
 
 ## Inputs And Outputs
 - Inputs:
@@ -37,17 +38,17 @@ Specify the target domain behavior for role-based journeys, professional assignm
 6. Professional onboarding captures specialty profile (nutritionist, fitness coach, or both).
 7. Optional specialty-scoped `professional_registry` credentials may be submitted or skipped in MVP.
 8. Professionals may add specialties later; removal is blocked if active or pending students exist in that specialty or if no specialty would remain.
-9. Professional shares invite code with student to initiate assignment.
-10. Invite code is persistent by default, can be revoked/regenerated, and only one active code exists at a time; regenerating code invalidates the old code and auto-cancels pending requests tied to it.
+9. Professional shares a Specialty-scoped invite code with student to initiate assignment.
+10. Invite code is persistent by default, can be revoked/regenerated, and is stored under `professionals/{professionalUid}/inviteCodes/{specialty}`; regenerating code invalidates that Specialty code and auto-cancels pending requests tied to it. The old top-level shape is replaced without compatibility because the app is not live.
 11. Student submits invite code and assignment enters pending state only if pending-cap constraints pass.
-12. Pending requests are capped at 10 per professional.
+12. Pending requests are capped at 10 unique Students per professional.
 13. Professional confirmation is required before assignment becomes active.
 14. Student connections to professionals are validated by specialty uniqueness constraints.
 15. Professionals can manage many students and issue customized plans.
 16. Professionally assigned plans are read-only for students.
 17. Students can track daily progress against assigned nutrition/training context.
-18. Students lacking active professionals can use self-managed planning for missing specialties.
-19. When assignment activates for a specialty, existing self-managed plan in that specialty is archived.
+18. Students lacking active professionals can use self-managed planning for missing specialties; Student-created NutritionPlans are Self-Managed Plans, not Professional Library/predefined plans.
+19. When assignment activates for a specialty, existing self-managed plan in that specialty is archived and further self-managed create/edit is blocked while active.
 20. Professional review of archived self-managed plan requires student consent.
 21. Ended assignments retain relationship and plan history.
 22. Students never require paid subscription entitlement.
@@ -91,13 +92,20 @@ Specify the target domain behavior for role-based journeys, professional assignm
 58. Core screens support accessibility baseline for dynamic text scaling, screen-reader labels, logical focus order, and contrast.
 59. Hydration tracking scope includes water only, with daily intake logging, effective-goal completion, and streaks.
 60. Water goals are authored in nutrition plan creation/edit flows: self-guided students define personal hydration goals and assigned nutritionists define override goals in assigned plan authoring.
-61. Professionals can create named predefined nutrition/training plans and bulk assign them to multiple students.
+61. Professionals can create named predefined nutrition/training plans and bulk assign them to multiple eligible students.
 62. Bulk assignment supports per-student fine-tuning and produces independent assigned copies.
+63. Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans until published.
+64. Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.
+65. Assigned NutritionPlan creation/send/bulk assignment requires an active nutritionist Connection to each target Student and nutrition-scoped targets.
+66. Connection end archives assigned NutritionPlans and restores the latest Self-Managed NutritionPlan tied to the ending Connection if present; no plan is auto-created.
+67. Nutrition tab/routes are gated for Professionals without nutritionist Specialty.
+68. Nutritionist tracking review is read-only on Professional Student Profile; TrackingLogs remain Student-owned but may carry plan/connection provenance.
+69. CustomMeals are user-owned reusable meals/recipes; plans and logs use stable snapshots/provenance, and Student-owned CustomMeals require share/import before Professional use in assigned plans.
 
 ## Error Handling And Edge Cases
 - Attempting second active professional in same specialty is rejected.
 - Relationship transitions must enforce lifecycle-state validity (`invited`, `pending_confirmation`, `active`, `ended`).
-- Conflicts between assigned and self-managed plans require deterministic precedence policy.
+- Active assigned published plans take precedence over self-managed plans; draft assigned plans are ignored for Student visibility/effective-plan selection.
 
 ## Invariants And Guarantees
 - At most one active nutritionist per student.
@@ -115,6 +123,7 @@ Specify the target domain behavior for role-based journeys, professional assignm
 - Assignment transitions are deterministic: `invited` -> `pending_confirmation` -> `active` -> `ended`.
 - Professional pending-request queue cannot exceed 10.
 - Specialty-removal rules always preserve at least one specialty on professional accounts and block removal when active or pending students exist in that specialty.
+- Professional and Student unbind actions share the same connection-end lifecycle semantics.
 
 ## Non-Goals
 - Billing provider technical details.

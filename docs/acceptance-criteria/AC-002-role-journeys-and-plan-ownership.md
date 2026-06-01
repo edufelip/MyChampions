@@ -40,8 +40,8 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-234`: Professionals can add specialties after onboarding.
 - `AC-235`: Specialty removal is blocked when specialty has active or pending students, or removal would leave zero specialties.
 - `AC-236`: Professional credential data is optional, specialty-scoped, and limited to one `professional_registry` record per specialty in MVP.
-- `AC-237`: Invite code is persistent by default, revocable/regenerable by professional, with only one active code at a time; regenerating code invalidates old code and auto-cancels pending requests created from that old code.
-- `AC-238`: Pending professional connection requests are capped at 10.
+- `AC-237`: Invite codes are persistent by default, revocable/regenerable by professional, and scoped one active code per Specialty under `professionals/{professionalUid}/inviteCodes/{specialty}`; regenerating a code invalidates that Specialty code and auto-cancels pending requests created from it.
+- `AC-238`: Pending professional connection requests are capped at 10 unique Students.
 - `AC-239`: Wrong-role route access is hard-blocked and redirected to role home.
 - `AC-240`: Student-visible credential info is available only for currently assigned professionals and includes only `registry_id`, `authority`, and `country`.
 - `AC-241`: Professional dashboard shows active and pending student counts separately.
@@ -74,6 +74,16 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-525`: SC-208 exercise search/detail requests must be sent to the exercise proxy endpoint (`https://exerciseservice.eduwaldo.com/proxy`) rather than direct upstream endpoints from mobile.
 - `AC-526`: Exercise proxy calls include normalized `lang` and client-generated `x-request-id`, and app diagnostics capture response `x-request-id`.
 - `AC-527`: The upstream YMove API key is never present in client binary/runtime variables; exercise search succeeds through proxy-only integration.
+- `AC-528`: Student-created NutritionPlans are saved as Self-Managed Plans, never same-user predefined/Professional Library plans.
+- `AC-529`: With an active nutritionist Connection and no published assigned NutritionPlan, Student nutrition shows a waiting state and blocks self-managed plan create/edit.
+- `AC-530`: Draft assigned NutritionPlans are hidden from Students and never selected as Effective Plan.
+- `AC-531`: Published assigned NutritionPlans can be edited by their owning Professional while the matching active nutritionist Connection exists.
+- `AC-532`: Nutrition assignment and bulk assignment fail unless each target has an active nutritionist Connection and the target scope is nutrition.
+- `AC-533`: Ending a nutritionist Connection archives assigned NutritionPlans and restores the latest tied Self-Managed NutritionPlan if one exists; no plan is auto-created.
+- `AC-534`: Professionals without nutritionist Specialty cannot access nutrition tab/routes.
+- `AC-535`: Professional Student Profile displays nutrition tracking review as read-only.
+- `AC-536`: TrackingLogs stay Student-owned and expose only plan/connection provenance needed for review.
+- `AC-537`: Assigned NutritionPlans use stable meal snapshots; Professionals cannot insert Student-owned CustomMeals unless the meal has been shared/imported first.
 - `AC-266`: After successful sign-in or create-account, users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted.
 - `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
 - `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.
@@ -107,6 +117,19 @@ Feature: Role-based onboarding and care assignments
     Given a student has no active nutritionist
     When the student creates a nutrition plan
     Then the plan is saved as student self-managed
+
+  Scenario: Active nutritionist waits for published assigned plan
+    Given a student has an active nutritionist connection
+    And no published assigned nutrition plan exists
+    When the student opens nutrition tracking
+    Then self-managed nutrition plan create and edit actions are blocked
+    And the student sees a waiting state
+
+  Scenario: Draft assigned nutrition plan hidden from student
+    Given a nutritionist has a draft assigned nutrition plan for a student
+    When the student opens nutrition tracking
+    Then the draft plan is not visible
+    And it is not used as the effective nutrition plan
 
   Scenario: Connection requires professional confirmation
     Given a professional sends an invite code
@@ -277,6 +300,19 @@ Feature: Role-based onboarding and care assignments
     And fine-tunes each student draft before confirm
     Then each student receives an independent assigned copy
     And later edits to predefined source do not mutate assigned student copies
+
+  Scenario: Nutrition assignment requires active nutritionist connection
+    Given a professional has a predefined nutrition plan
+    When they assign or bulk assign it to students without active nutritionist connections
+    Then assignment is blocked for those targets
+
+  Scenario: Nutritionist connection end restores self-managed plan
+    Given a student has an active nutritionist connection and assigned nutrition plan
+    And an archived self-managed nutrition plan tied to that connection exists
+    When either side unbinds the connection
+    Then the assigned nutrition plan is archived
+    And the tied self-managed nutrition plan becomes effective
+    And no replacement plan is auto-created
 
   Scenario: Terms gate blocks onboarding continuation until acceptance
     Given a user has just authenticated
