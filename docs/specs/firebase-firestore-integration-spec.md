@@ -38,6 +38,8 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - Role-lock is immutable after first successful set.
 - Connection transitions are validated in source-layer transactions.
 - Professional reads of student tracking data are authorized through `trackingAccess` documents that point to the matching active `connections/{connectionId}` document. Firestore rules must not use collection queries for connection lookup.
+- Professional specialty documents use deterministic ids, `specialties/{professionalUid}_{specialty}`, so Firestore rules can prove `userProfiles/{uid}.lockedRole == 'professional'` and active matching Specialty before allowing scoped invite-code or professional-library plan writes.
+- `professionals/{professionalUid}/inviteCodes/{specialty}`, `inviteCodeLookups/{codeValue}`, and professional-library `nutritionPlans`/`trainingPlans` writes require the caller to be a Professional with the matching active Specialty.
 - Student self-managed training creates and normal edits are blocked while `trackingAccess/{studentUid}/activeSpecialties/fitness_coach` has `status='active'`; ending the connection that owns the sentinel marks it `ended` before self-managed restore writes complete.
 - Student self-managed nutrition creates and normal edits are blocked while `trackingAccess/{studentUid}/activeSpecialties/nutritionist` has `status='active'`; the student sees a waiting state until a published assigned NutritionPlan exists.
 - Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans. Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.

@@ -14,7 +14,7 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 
-import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso, generateId } from '../firestore';
+import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso } from '../firestore';
 import { classifyFirestoreError } from '../firestore-error';
 import {
   normalizeInviteCodeStatus,
@@ -191,6 +191,10 @@ function normalizeProfessionalSourceError(error: unknown): ProfessionalSourceErr
     default:
       return new ProfessionalSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected professional source error.');
   }
+}
+
+function buildSpecialtyId(professionalUid: string, specialty: Specialty): string {
+  return `${professionalUid}_${specialty}`;
 }
 
 export function buildInviteCodePath(professionalUid: string, specialty: Specialty): [string, string, string, string] {
@@ -443,7 +447,7 @@ export async function addProfessionalSpecialty(
       return { id: docSnap.id, specialty };
     }
 
-    const id = generateId('specialty');
+    const id = buildSpecialtyId(professionalUid, specialty);
     const timestamp = nowIso();
     await runTransaction(firestore, async (tx) => {
       tx.set(doc(firestore, 'specialties', id), {

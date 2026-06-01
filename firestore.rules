@@ -163,6 +163,20 @@ service cloud.firestore {
         get(/databases/$(database)/documents/connections/$(get(/databases/$(database)/documents/trackingAccess/$(studentUid)/fitnessCoaches/$(professionalUid)).data.connectionId)).data.specialty == 'fitness_coach';
     }
 
+    function hasProfessionalRole(uid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/userProfiles/$(uid)) &&
+        get(/databases/$(database)/documents/userProfiles/$(uid)).data.lockedRole == 'professional';
+    }
+
+    function hasActiveProfessionalSpecialty(uid, specialty) {
+      return hasProfessionalRole(uid) &&
+        exists(/databases/$(database)/documents/specialties/$(uid + '_' + specialty)) &&
+        get(/databases/$(database)/documents/specialties/$(uid + '_' + specialty)).data.professionalAuthUid == uid &&
+        get(/databases/$(database)/documents/specialties/$(uid + '_' + specialty)).data.specialty == specialty &&
+        get(/databases/$(database)/documents/specialties/$(uid + '_' + specialty)).data.isActive == true;
+    }
+
     function hasActiveNutritionistSpecialtyForStudent(studentUid) {
       return signedIn() &&
         exists(/databases/$(database)/documents/trackingAccess/$(studentUid)/activeSpecialties/nutritionist) &&
@@ -329,11 +343,12 @@ service cloud.firestore {
     match /professionals/{professionalUid}/inviteCodes/{specialty} {
       allow read: if signedIn() && (professionalUid == request.auth.uid || resource.data.status == 'active');
       allow create, update: if isUid(professionalUid) &&
+        hasActiveProfessionalSpecialty(request.auth.uid, specialty) &&
         (specialty == 'nutritionist' || specialty == 'fitness_coach') &&
         request.resource.data.scope == 'professional_specialty' &&
         request.resource.data.professionalAuthUid == request.auth.uid &&
         request.resource.data.specialty == specialty;
-      allow delete: if isUid(professionalUid);
+      allow delete: if isUid(professionalUid) && hasActiveProfessionalSpecialty(request.auth.uid, resource.data.specialty);
     }
 
     match /{path=**}/inviteCodes/{specialty} {
@@ -348,6 +363,7 @@ service cloud.firestore {
         resource.data.inviteCodeId == resource.data.specialty &&
         (resource.data.specialty == 'nutritionist' || resource.data.specialty == 'fitness_coach');
       allow create: if signedIn() &&
+        hasActiveProfessionalSpecialty(request.auth.uid, request.resource.data.specialty) &&
         request.resource.data.scope == 'invite_code_lookup' &&
         request.resource.data.codeValue == codeValue &&
         request.resource.data.professionalAuthUid == request.auth.uid &&
@@ -355,12 +371,15 @@ service cloud.firestore {
         (request.resource.data.specialty == 'nutritionist' || request.resource.data.specialty == 'fitness_coach');
       allow update: if signedIn() &&
         resource.data.professionalAuthUid == request.auth.uid &&
+        hasActiveProfessionalSpecialty(request.auth.uid, request.resource.data.specialty) &&
         request.resource.data.scope == 'invite_code_lookup' &&
         request.resource.data.codeValue == codeValue &&
         request.resource.data.professionalAuthUid == request.auth.uid &&
         request.resource.data.inviteCodeId == request.resource.data.specialty &&
         (request.resource.data.specialty == 'nutritionist' || request.resource.data.specialty == 'fitness_coach');
-      allow delete: if signedIn() && resource.data.professionalAuthUid == request.auth.uid;
+      allow delete: if signedIn() &&
+        resource.data.professionalAuthUid == request.auth.uid &&
+        hasActiveProfessionalSpecialty(request.auth.uid, resource.data.specialty);
     }
 
     match /connections/{connectionId} {
@@ -373,8 +392,18 @@ service cloud.firestore {
     }
 
     match /specialties/{specialtyId} {
-      allow read, update, delete: if signedIn() && resource.data.professionalAuthUid == request.auth.uid;
-      allow create: if signedIn() && request.resource.data.professionalAuthUid == request.auth.uid;
+      allow read, delete: if signedIn() && resource.data.professionalAuthUid == request.auth.uid;
+      allow create: if signedIn() &&
+        hasProfessionalRole(request.auth.uid) &&
+        request.resource.data.professionalAuthUid == request.auth.uid &&
+        (request.resource.data.specialty == 'nutritionist' || request.resource.data.specialty == 'fitness_coach') &&
+        specialtyId == request.auth.uid + '_' + request.resource.data.specialty;
+      allow update: if signedIn() &&
+        hasProfessionalRole(request.auth.uid) &&
+        resource.data.professionalAuthUid == request.auth.uid &&
+        request.resource.data.professionalAuthUid == request.auth.uid &&
+        request.resource.data.specialty == resource.data.specialty &&
+        specialtyId == request.auth.uid + '_' + resource.data.specialty;
     }
 
     match /credentials/{credentialId} {
@@ -433,6 +462,7 @@ service cloud.firestore {
       return request.resource.data.studentAuthUid == request.auth.uid &&
         request.resource.data.ownerProfessionalUid == request.auth.uid &&
         request.resource.data.sourceKind == 'predefined' &&
+        hasActiveProfessionalSpecialty(request.auth.uid, 'nutritionist') &&
         (request.resource.data.isDraft == false ||
           request.resource.data.isDraft == true) &&
         request.resource.data.isArchived == false;
@@ -451,6 +481,7 @@ service cloud.firestore {
       return resource.data.ownerProfessionalUid == request.auth.uid &&
         resource.data.studentAuthUid == request.auth.uid &&
         resource.data.sourceKind == 'predefined' &&
+        hasActiveProfessionalSpecialty(request.auth.uid, 'nutritionist') &&
         nutritionIdentityUnchanged() &&
         planArchiveMetadataUnchanged();
     }
@@ -495,7 +526,8 @@ service cloud.firestore {
     function canDeleteProfessionalLibraryNutritionPlan() {
       return resource.data.ownerProfessionalUid == request.auth.uid &&
         resource.data.studentAuthUid == request.auth.uid &&
-        resource.data.sourceKind == 'predefined';
+        resource.data.sourceKind == 'predefined' &&
+        hasActiveProfessionalSpecialty(request.auth.uid, 'nutritionist');
     }
 
     function canDeleteAssignedNutritionPlan() {
@@ -559,6 +591,7 @@ service cloud.firestore {
       return request.resource.data.studentAuthUid == request.auth.uid &&
         request.resource.data.ownerProfessionalUid == request.auth.uid &&
         request.resource.data.sourceKind == 'predefined' &&
+        hasActiveProfessionalSpecialty(request.auth.uid, 'fitness_coach') &&
         (request.resource.data.isDraft == false ||
           request.resource.data.isDraft == true) &&
         request.resource.data.isArchived == false;
@@ -586,6 +619,7 @@ service cloud.firestore {
       return resource.data.ownerProfessionalUid == request.auth.uid &&
         resource.data.studentAuthUid == request.auth.uid &&
         resource.data.sourceKind == 'predefined' &&
+        hasActiveProfessionalSpecialty(request.auth.uid, 'fitness_coach') &&
         planArchiveMetadataUnchanged() &&
         trainingIdentityUnchanged();
     }
@@ -640,7 +674,8 @@ service cloud.firestore {
     function canDeleteProfessionalLibraryTrainingPlan() {
       return resource.data.ownerProfessionalUid == request.auth.uid &&
         resource.data.studentAuthUid == request.auth.uid &&
-        resource.data.sourceKind == 'predefined';
+        resource.data.sourceKind == 'predefined' &&
+        hasActiveProfessionalSpecialty(request.auth.uid, 'fitness_coach');
     }
 
     function canDeleteAssignedTrainingPlan() {

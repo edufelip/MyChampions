@@ -8,6 +8,7 @@ import {
   seedActiveNutritionistAccess,
   seedActiveNutritionistSpecialty,
   seedDoc,
+  seedProfessionalRoleAndSpecialty,
   setupRulesTestEnvironment,
 } from './rules-test-helpers';
 
@@ -107,6 +108,45 @@ test('professional can update published assigned NutritionPlan with active nutri
     title: 'Updated assigned title',
     updatedAt: '2026-01-02T00:00:00.000Z',
   }));
+});
+
+test('student cannot create professional library NutritionPlan', async () => {
+  await seedDoc(testEnv, 'userProfiles/student-uid', {
+    authUid: 'student-uid',
+    lockedRole: 'student',
+  });
+
+  await assertFails(setDoc(doc(authedDb(testEnv, 'student-uid'), 'nutritionPlans/student-predefined'), nutritionPlan({
+    id: 'student-predefined',
+    studentAuthUid: 'student-uid',
+    ownerProfessionalUid: 'student-uid',
+    sourceKind: 'predefined',
+    isDraft: false,
+  })));
+});
+
+test('fitness coach cannot create professional library NutritionPlan', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'coach-uid', 'fitness_coach');
+
+  await assertFails(setDoc(doc(authedDb(testEnv, 'coach-uid'), 'nutritionPlans/coach-predefined'), nutritionPlan({
+    id: 'coach-predefined',
+    studentAuthUid: 'coach-uid',
+    ownerProfessionalUid: 'coach-uid',
+    sourceKind: 'predefined',
+    isDraft: false,
+  })));
+});
+
+test('active nutritionist can create professional library NutritionPlan', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'nutritionist-uid', 'nutritionist');
+
+  await assertSucceeds(setDoc(doc(authedDb(testEnv, 'nutritionist-uid'), 'nutritionPlans/nutritionist-predefined'), nutritionPlan({
+    id: 'nutritionist-predefined',
+    studentAuthUid: 'nutritionist-uid',
+    ownerProfessionalUid: 'nutritionist-uid',
+    sourceKind: 'predefined',
+    isDraft: false,
+  })));
 });
 
 test('assigned NutritionPlan owner cannot update without active nutritionist tracking access', async () => {

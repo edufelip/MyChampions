@@ -91,3 +91,22 @@ export async function seedActiveNutritionistSpecialty(
     status: 'active',
   });
 }
+
+export async function seedProfessionalRoleAndSpecialty(
+  testEnv: RulesTestEnvironment,
+  professionalUid: string,
+  specialty: 'nutritionist' | 'fitness_coach'
+): Promise<void> {
+  await seedDoc(testEnv, `userProfiles/${professionalUid}`, {
+    authUid: professionalUid,
+    lockedRole: 'professional',
+  });
+  await seedDoc(testEnv, `specialties/${professionalUid}_${specialty}`, {
+    id: `${professionalUid}_${specialty}`,
+    professionalAuthUid: professionalUid,
+    specialty,
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  });
+}

@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   authedDb,
   clearRulesData,
+  seedProfessionalRoleAndSpecialty,
   seedDoc,
   setupRulesTestEnvironment,
 } from './rules-test-helpers';
@@ -61,7 +62,30 @@ test('old top-level inviteCodes writes are denied', async () => {
 });
 
 test('professional can write own specialty-scoped invite code', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'professional-uid', 'nutritionist');
+
   await assertSucceeds(setDoc(
+    doc(authedDb(testEnv, 'professional-uid'), 'professionals/professional-uid/inviteCodes/nutritionist'),
+    scopedInviteCode
+  ));
+});
+
+test('student cannot write own specialty-scoped invite code', async () => {
+  await seedDoc(testEnv, 'userProfiles/student-uid', {
+    authUid: 'student-uid',
+    lockedRole: 'student',
+  });
+
+  await assertFails(setDoc(
+    doc(authedDb(testEnv, 'student-uid'), 'professionals/student-uid/inviteCodes/nutritionist'),
+    { ...scopedInviteCode, professionalAuthUid: 'student-uid' }
+  ));
+});
+
+test('professional cannot write invite code for inactive specialty', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'professional-uid', 'fitness_coach');
+
+  await assertFails(setDoc(
     doc(authedDb(testEnv, 'professional-uid'), 'professionals/professional-uid/inviteCodes/nutritionist'),
     scopedInviteCode
   ));
@@ -80,9 +104,23 @@ test('student cannot resolve old top-level invite code directly', async () => {
 });
 
 test('professional can maintain own invite code lookup index', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'professional-uid', 'nutritionist');
+
   await assertSucceeds(setDoc(
     doc(authedDb(testEnv, 'professional-uid'), 'inviteCodeLookups/NUT123'),
     inviteCodeLookup
+  ));
+});
+
+test('student cannot create invite code lookup index', async () => {
+  await seedDoc(testEnv, 'userProfiles/student-uid', {
+    authUid: 'student-uid',
+    lockedRole: 'student',
+  });
+
+  await assertFails(setDoc(
+    doc(authedDb(testEnv, 'student-uid'), 'inviteCodeLookups/NUT123'),
+    { ...inviteCodeLookup, professionalAuthUid: 'student-uid' }
   ));
 });
 
