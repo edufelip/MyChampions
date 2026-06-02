@@ -109,6 +109,14 @@ export function isPendingStudentCapReached(
   return pendingStudentUids.size > cap;
 }
 
+export function getExistingInviteConnectionConflict(
+  connections: Array<{ status?: string | null }>
+): 'active' | 'pending' | null {
+  if (connections.some((connection) => connection.status === 'active')) return 'active';
+  if (connections.some((connection) => connection.status === 'pending_confirmation')) return 'pending';
+  return null;
+}
+
 export type ConnectionSourceDeps = {
   getFirestoreInstance: () => Firestore;
   getCurrentAuthUid: () => string;
@@ -220,9 +228,14 @@ export async function submitInviteCode(
       )
     );
 
-    const hasActive = existing.docs.some((d) => (d.data() as FirestoreConnection).status === 'active');
-    if (hasActive) {
+    const existingConflict = getExistingInviteConnectionConflict(
+      existing.docs.map((d) => d.data() as FirestoreConnection)
+    );
+    if (existingConflict === 'active') {
       throw new ConnectionSourceError('graphql', 'Already connected.');
+    }
+    if (existingConflict === 'pending') {
+      throw new ConnectionSourceError('graphql', 'Pending request already exists.');
     }
 
     const pendingConnections = await getDocs(

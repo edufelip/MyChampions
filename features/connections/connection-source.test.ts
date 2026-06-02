@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildPendingConnectionFromInvite, isPendingStudentCapReached } from './connection-source';
+import {
+  buildPendingConnectionFromInvite,
+  getExistingInviteConnectionConflict,
+  isPendingStudentCapReached,
+} from './connection-source';
 
 test('submitInviteCode creates a pending connection with the specialty from the invite code', () => {
   const connection = buildPendingConnectionFromInvite({
@@ -41,4 +45,10 @@ test('pending cap counts unique students, not specialty-scoped request documents
   assert.equal(isPendingStudentCapReached(pendingConnections, 'student-1'), false);
   assert.equal(isPendingStudentCapReached(pendingConnections, 'student-10'), false);
   assert.equal(isPendingStudentCapReached(pendingConnections, 'student-11', 9), true);
+});
+
+test('existing invite connection conflict treats active and pending as blockers', () => {
+  assert.equal(getExistingInviteConnectionConflict([{ status: 'pending_confirmation' }]), 'pending');
+  assert.equal(getExistingInviteConnectionConflict([{ status: 'active' }]), 'active');
+  assert.equal(getExistingInviteConnectionConflict([{ status: 'ended' }]), null);
 });
