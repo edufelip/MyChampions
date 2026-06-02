@@ -284,7 +284,9 @@ Cover:
 - `getOrCreateActiveInviteCode('nutritionist')` path is `professionals/{uid}/inviteCodes/nutritionist`.
 - `getOrCreateActiveInviteCode('fitness_coach')` path is `professionals/{uid}/inviteCodes/fitness_coach`.
 - `submitInviteCode` creates a Connection with the specialty from the invite code.
+- `submitInviteCode` uses deterministic duplicate guards and ten fixed pending-student slots so concurrent submissions cannot bypass duplicate or unique-student pending-cap checks.
 - `rotateInviteCode(specialty)` only cancels pending requests for the same specialty/code.
+- Pending confirmation, denial/end, and code-rotation cancellation release pending guard/slot state only when the referenced Connection leaves `pending_confirmation`.
 - old top-level `inviteCodes/{professionalUid}` writes are denied by rules.
 
 - [ ] **Step 2: Implement specialty-scoped source functions**

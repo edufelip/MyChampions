@@ -163,6 +163,15 @@ const mockRunTransaction = async (db: any, updateFunction: any) => {
           data: () => activeSpecialtyData
         } as any;
       }
+      if (
+        ref.path.startsWith('connectionInviteGuards/') ||
+        ref.path === 'professionals/prof-789/pendingStudents/student-456'
+      ) {
+        return {
+          exists: () => false,
+          data: () => null
+        } as any;
+      }
       throw new Error(`Ref not found in mock: ${ref.path}`);
     },
     update: (ref: any, data: any) => {

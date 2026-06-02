@@ -4,6 +4,7 @@
 
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -11,6 +12,7 @@ import {
   runTransaction,
   where,
   type Firestore,
+  type Transaction,
 } from 'firebase/firestore';
 
 import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso } from '../firestore';
@@ -22,6 +24,12 @@ import {
   type ConnectionRecord,
   type ConnectionSpecialty,
 } from './connection.logic';
+import {
+  buildPendingInviteGuardId,
+  getPendingStudentConnectionField,
+  shouldReleasePendingStudentSlot,
+  type PendingStudentOccupancy,
+} from './pending-invite-guards';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -135,8 +143,9 @@ export async function requestSubmitInviteCode(
   }
 
   let response: Response;
+  const endpoint = deps.getSubmitInviteFunctionUrl();
   try {
-    response = await deps.fetchFn(deps.getSubmitInviteFunctionUrl(), {
+    response = await deps.fetchFn(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -237,6 +246,94 @@ function getActiveSpecialtyRef(firestore: Firestore, connection: FirestoreConnec
   );
 }
 
+function getPendingInviteGuardRef(firestore: Firestore, connection: FirestoreConnection) {
+  const specialty = normalizeConnectionSpecialty(connection.specialty);
+  if (!specialty) return null;
+  return doc(
+    firestore,
+    'connectionInviteGuards',
+    buildPendingInviteGuardId(connection.professionalAuthUid, connection.studentAuthUid, specialty)
+  );
+}
+
+function getPendingStudentRef(firestore: Firestore, connection: FirestoreConnection) {
+  return doc(
+    firestore,
+    'professionals',
+    connection.professionalAuthUid,
+    'pendingStudents',
+    connection.studentAuthUid
+  );
+}
+
+function getPendingStudentSlotRef(firestore: Firestore, professionalUid: string, slotId: string) {
+  return doc(firestore, 'professionals', professionalUid, 'pendingStudentSlots', slotId);
+}
+
+export async function buildPendingInviteRelease(
+  firestore: Firestore,
+  tx: Transaction,
+  connection: FirestoreConnection
+): Promise<{
+  guardRef: ReturnType<typeof doc> | null;
+  pendingStudentRef: ReturnType<typeof doc> | null;
+  pendingStudentField: 'nutritionistConnectionId' | 'fitnessCoachConnectionId' | null;
+  releaseSlotRef: ReturnType<typeof doc> | null;
+}> {
+  if (connection.status !== 'pending_confirmation') {
+    return { guardRef: null, pendingStudentRef: null, pendingStudentField: null, releaseSlotRef: null };
+  }
+
+  const specialty = normalizeConnectionSpecialty(connection.specialty);
+  const guardRef = getPendingInviteGuardRef(firestore, connection);
+  const guardSnap = guardRef ? await tx.get(guardRef) : null;
+  const existingGuardRef = guardSnap?.exists() ? guardRef : null;
+  if (!specialty) {
+    return { guardRef: existingGuardRef, pendingStudentRef: null, pendingStudentField: null, releaseSlotRef: null };
+  }
+
+  const pendingStudentRef = getPendingStudentRef(firestore, connection);
+  const pendingStudentSnap = await tx.get(pendingStudentRef);
+  if (!pendingStudentSnap.exists()) {
+    return { guardRef: existingGuardRef, pendingStudentRef: null, pendingStudentField: null, releaseSlotRef: null };
+  }
+
+  const pendingStudent = pendingStudentSnap.data() as PendingStudentOccupancy & { slotId?: string | null };
+  const pendingStudentField = getPendingStudentConnectionField(specialty);
+  if (pendingStudent[pendingStudentField] !== connection.id) {
+    return { guardRef: existingGuardRef, pendingStudentRef: null, pendingStudentField: null, releaseSlotRef: null };
+  }
+
+  const slotId = typeof pendingStudent.slotId === 'string' ? pendingStudent.slotId : '';
+  const releaseSlotRef = slotId && shouldReleasePendingStudentSlot(pendingStudent, connection.id)
+    ? getPendingStudentSlotRef(firestore, connection.professionalAuthUid, slotId)
+    : null;
+
+  return { guardRef: existingGuardRef, pendingStudentRef, pendingStudentField, releaseSlotRef };
+}
+
+export function applyPendingInviteRelease(
+  tx: Transaction,
+  release: Awaited<ReturnType<typeof buildPendingInviteRelease>>,
+  timestamp: string
+) {
+  if (release.guardRef) {
+    tx.delete(release.guardRef);
+  }
+  if (release.pendingStudentRef && release.pendingStudentField) {
+    tx.update(release.pendingStudentRef, {
+      [release.pendingStudentField]: deleteField(),
+      updatedAt: timestamp,
+    });
+  }
+  if (release.releaseSlotRef) {
+    tx.update(release.releaseSlotRef, {
+      studentAuthUid: null,
+      updatedAt: timestamp,
+    });
+  }
+}
+
 function getPlanCollectionForSpecialty(connection: FirestoreConnection) {
   return connection.specialty === 'fitness_coach' ? 'trainingPlans' : 'nutritionPlans';
 }
@@ -323,19 +420,22 @@ export async function confirmPendingConnection(
         where('isArchived', '==', false)
       );
       const selfManagedSnaps = await getDocs(selfManagedQuery);
+      const timestamp = nowIso();
+      const pendingRelease = await buildPendingInviteRelease(firestore, tx, data);
 
       tx.update(ref, {
         status: 'active',
         canceledReason: null,
         endedAt: null,
-        updatedAt: nowIso(),
+        updatedAt: timestamp,
       });
+      applyPendingInviteRelease(tx, pendingRelease, timestamp);
 
       tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'active'), { merge: true });
       tx.set(getActiveSpecialtyRef(firestore, data), buildTrackingAccessRecord(data, 'active'), { merge: true });
 
       selfManagedSnaps.forEach((docSnap) => {
-        tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso(), lifecycleConnectionId: connectionId });
+        tx.update(docSnap.ref, { isArchived: true, updatedAt: timestamp, lifecycleConnectionId: connectionId });
       });
     });
 
@@ -388,12 +488,15 @@ export async function endConnection(
       const activeSpecialtySnap = await tx.get(activeSpecialtyRef);
       const canEndActiveSpecialty = !activeSpecialtySnap.exists()
         || activeSpecialtySnap.data()?.connectionId === connectionId;
+      const timestamp = nowIso();
+      const pendingRelease = await buildPendingInviteRelease(firestore, tx, data);
 
       tx.update(ref, {
         status: 'ended',
-        endedAt: nowIso(),
-        updatedAt: nowIso(),
+        endedAt: timestamp,
+        updatedAt: timestamp,
       });
+      applyPendingInviteRelease(tx, pendingRelease, timestamp);
 
       tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
       if (canEndActiveSpecialty) {
@@ -401,7 +504,7 @@ export async function endConnection(
       }
 
       assignedSnaps.forEach((docSnap) => {
-        tx.update(docSnap.ref, { isArchived: true, updatedAt: nowIso(), lifecycleConnectionId: connectionId });
+        tx.update(docSnap.ref, { isArchived: true, updatedAt: timestamp, lifecycleConnectionId: connectionId });
       });
 
       const latestSelfManagedSnap = [...selfManagedSnaps.docs]
@@ -409,7 +512,7 @@ export async function endConnection(
         .sort((a, b) => getPlanSortTimestamp(b) - getPlanSortTimestamp(a))[0];
 
       if (latestSelfManagedSnap) {
-        tx.update(latestSelfManagedSnap.ref, { isArchived: false, updatedAt: nowIso(), lifecycleConnectionId: connectionId });
+        tx.update(latestSelfManagedSnap.ref, { isArchived: false, updatedAt: timestamp, lifecycleConnectionId: connectionId });
       }
     });
   } catch (error) {

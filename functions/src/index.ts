@@ -18,6 +18,13 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 
 import { callOpenAIVision, OpenAIHelperError } from './openai-helpers';
+import {
+  buildPendingInviteGuardId,
+  getPendingStudentConnectionField,
+  PENDING_STUDENT_SLOT_IDS,
+  selectPendingStudentSlot,
+  type PendingStudentOccupancy,
+} from './invite-guards';
 
 // ─── Firebase Admin init ──────────────────────────────────────────────────────
 
@@ -175,6 +182,11 @@ export const submitInviteCode = onRequest(
 
     try {
       const connectionId = await db.runTransaction(async (tx) => {
+        const profileSnap = await tx.get(db.collection('userProfiles').doc(decoded.uid));
+        if (!profileSnap.exists || profileSnap.get('lockedRole') !== 'student') {
+          throw new Error('forbidden');
+        }
+
         const lookupRef = db.collection('inviteCodeLookups').doc(trimmedCode);
         const lookupSnap = await tx.get(lookupRef);
         if (!lookupSnap.exists) throw new Error('not_found');
@@ -200,6 +212,10 @@ export const submitInviteCode = onRequest(
 
         const professionalUid = lookup.professionalAuthUid;
         const specialty = lookup.specialty;
+        if (professionalUid === decoded.uid) {
+          throw new Error('forbidden');
+        }
+
         const inviteRef = db.collection('professionals').doc(professionalUid).collection('inviteCodes').doc(specialty);
         const specialtyRef = db.collection('specialties').doc(`${professionalUid}_${specialty}`);
         const [inviteSnap, specialtySnap] = await Promise.all([
@@ -228,37 +244,81 @@ export const submitInviteCode = onRequest(
           throw new Error('not_found');
         }
 
+        const guardRef = db.collection('connectionInviteGuards').doc(
+          buildPendingInviteGuardId(professionalUid, decoded.uid, specialty)
+        );
+        const pendingStudentRef = db.collection('professionals').doc(professionalUid)
+          .collection('pendingStudents').doc(decoded.uid);
+        const slotRefs = PENDING_STUDENT_SLOT_IDS.map((slotId) => db.collection('professionals').doc(professionalUid)
+          .collection('pendingStudentSlots').doc(slotId));
+
         const existingConnections = await tx.get(db.collection('connections')
           .where('studentAuthUid', '==', decoded.uid)
           .where('professionalAuthUid', '==', professionalUid)
           .where('specialty', '==', specialty));
+        const [guardSnap, pendingStudentSnap, ...slotSnaps] = await Promise.all([
+          tx.get(guardRef),
+          tx.get(pendingStudentRef),
+          ...slotRefs.map((slotRef) => tx.get(slotRef)),
+        ]);
+
         const hasActive = existingConnections.docs.some((docSnap) => docSnap.get('status') === 'active');
         const hasPending = existingConnections.docs.some((docSnap) => docSnap.get('status') === 'pending_confirmation');
         if (hasActive) throw new Error('already_connected');
-        if (hasPending) throw new Error('pending_already_exists');
+        if (hasPending || guardSnap.exists) throw new Error('pending_already_exists');
 
-        const pendingConnections = await tx.get(db.collection('connections')
-          .where('professionalAuthUid', '==', professionalUid)
-          .where('status', '==', 'pending_confirmation'));
-        const pendingStudentUids = new Set(
-          pendingConnections.docs
-            .map((docSnap) => docSnap.get('studentAuthUid'))
-            .filter((uid): uid is string => typeof uid === 'string' && uid.length > 0)
-        );
-        pendingStudentUids.add(decoded.uid);
-        if (pendingStudentUids.size > 10) {
-          throw new Error('pending_cap_reached');
-        }
+        const pendingStudentField = getPendingStudentConnectionField(specialty);
+        const pendingStudent = pendingStudentSnap.exists
+          ? pendingStudentSnap.data() as PendingStudentOccupancy & { slotId?: string | null; createdAt?: string | null }
+          : null;
+        if (pendingStudent?.[pendingStudentField]) throw new Error('pending_already_exists');
+
+        const selectedSlotId = selectPendingStudentSlot({
+          currentOccupancy: pendingStudent,
+          slots: slotSnaps.map((slotSnap) => ({
+            slotId: slotSnap.id,
+            studentAuthUid: slotSnap.exists ? slotSnap.get('studentAuthUid') : null,
+          })),
+        });
+        if (!selectedSlotId) throw new Error('pending_cap_reached');
 
         const connectionRef = db.collection('connections').doc();
+        const timestamp = new Date().toISOString();
         tx.set(connectionRef, buildConnectionFromInvite({
           connectionId: connectionRef.id,
           studentUid: decoded.uid,
           professionalUid,
           specialty,
           codeValue: trimmedCode,
-          timestamp: new Date().toISOString(),
+          timestamp,
         }));
+        tx.set(guardRef, {
+          id: guardRef.id,
+          connectionId: connectionRef.id,
+          professionalAuthUid: professionalUid,
+          studentAuthUid: decoded.uid,
+          specialty,
+          status: 'pending_confirmation',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        });
+        tx.set(pendingStudentRef, {
+          id: decoded.uid,
+          professionalAuthUid: professionalUid,
+          studentAuthUid: decoded.uid,
+          slotId: selectedSlotId,
+          nutritionistConnectionId: pendingStudent?.nutritionistConnectionId ?? null,
+          fitnessCoachConnectionId: pendingStudent?.fitnessCoachConnectionId ?? null,
+          [pendingStudentField]: connectionRef.id,
+          createdAt: pendingStudent?.createdAt ?? timestamp,
+          updatedAt: timestamp,
+        }, { merge: true });
+        tx.set(db.collection('professionals').doc(professionalUid).collection('pendingStudentSlots').doc(selectedSlotId), {
+          id: selectedSlotId,
+          professionalAuthUid: professionalUid,
+          studentAuthUid: decoded.uid,
+          updatedAt: timestamp,
+        }, { merge: true });
 
         return connectionRef.id;
       });
@@ -282,7 +342,11 @@ export const submitInviteCode = onRequest(
         res.status(409).json({ error: 'pending_cap_reached' });
         return;
       }
-      res.status(500).json({ error: message });
+      if (message === 'forbidden') {
+        res.status(403).json({ error: 'forbidden' });
+        return;
+      }
+      res.status(500).json({ error: 'internal' });
     }
   }
 );
@@ -396,7 +460,7 @@ export const removeProfessionalSpecialty = onRequest(
         res.status(500).json({ error: 'invalid_specialty' });
         return;
       }
-      res.status(500).json({ error: message });
+      res.status(500).json({ error: 'internal' });
     }
   }
 );

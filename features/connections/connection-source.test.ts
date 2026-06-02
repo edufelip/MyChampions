@@ -85,3 +85,16 @@ test('requestSubmitInviteCode maps backend duplicate pending response', async ()
     (error: unknown) => error instanceof Error && error.message.includes('Pending request already exists')
   );
 });
+
+test('requestSubmitInviteCode preserves missing endpoint as configuration error', async () => {
+  await assert.rejects(
+    () => requestSubmitInviteCode('NUT123', {
+      getCurrentIdToken: async () => 'id-token',
+      getSubmitInviteFunctionUrl: () => {
+        throw new Error('Invite submission endpoint is not configured.');
+      },
+      fetchFn: async () => new Response(null, { status: 204 }),
+    }),
+    (error: unknown) => error instanceof Error && error.message.includes('not configured')
+  );
+});

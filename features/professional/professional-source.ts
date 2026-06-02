@@ -33,7 +33,7 @@ import {
   type ConnectionSpecialty,
   type ConnectionStatus,
 } from '../connections/connection.logic';
-import { endConnection } from '../connections/connection-source';
+import { applyPendingInviteRelease, buildPendingInviteRelease, endConnection } from '../connections/connection-source';
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
@@ -100,11 +100,15 @@ type FirestoreCredential = {
 type FirestoreConnection = {
   id: string;
   status: string;
+  canceledReason?: string | null;
   specialty: string;
   professionalAuthUid: string;
   studentAuthUid: string;
   sourceInviteCodeId?: string | null;
   sourceInviteCodeValue?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  endedAt?: string | null;
 };
 
 type FirestoreUserProfile = {
@@ -378,9 +382,10 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
     await runTransaction(firestore, async (tx) => {
       const currentSnap = await tx.get(ref);
       const nextCodeValue = deps.generateInviteCode();
+      let nextInviteRecord: FirestoreInviteCode | null = null;
+      let oldLookupValue: string | null = null;
       if (!currentSnap.exists()) {
-        rotatedCodeValue = nextCodeValue;
-        tx.set(ref, {
+        nextInviteRecord = {
           scope: 'professional_specialty',
           professionalAuthUid: professionalUid,
           specialty,
@@ -390,29 +395,12 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
           expiresAt: null,
           createdAt: now,
           updatedAt: now,
-        } satisfies FirestoreInviteCode);
-        tx.set(inviteLookupRef(firestore, nextCodeValue), buildInviteCodeLookupRecord({
-          scope: 'professional_specialty',
-          professionalAuthUid: professionalUid,
-          specialty,
-          codeValue: nextCodeValue,
-          status: 'active',
-          rotatedAt: now,
-          expiresAt: null,
-          createdAt: now,
-          updatedAt: now,
-        }));
+        } satisfies FirestoreInviteCode;
       } else {
         const current = currentSnap.data() as FirestoreInviteCode;
         rotatedCodeValue = current.codeValue;
-        tx.delete(inviteLookupRef(firestore, current.codeValue));
-        tx.update(ref, {
-          codeValue: nextCodeValue,
-          status: 'active',
-          rotatedAt: now,
-          updatedAt: now,
-        });
-        tx.set(inviteLookupRef(firestore, nextCodeValue), buildInviteCodeLookupRecord({
+        oldLookupValue = current.codeValue;
+        nextInviteRecord = {
           ...current,
           scope: 'professional_specialty',
           specialty,
@@ -420,7 +408,7 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
           status: 'active',
           rotatedAt: now,
           updatedAt: now,
-        }));
+        } satisfies FirestoreInviteCode;
       }
 
       const pending = await getDocs(query(
@@ -430,6 +418,7 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
         where('status', '==', 'pending_confirmation')
       ));
 
+      const pendingReleases = [];
       for (const pendingDoc of pending.docs) {
         if (!rotatedCodeValue || !shouldCancelPendingConnectionForRotatedInvite(pendingDoc.data() as FirestoreConnection, {
           id: specialty,
@@ -438,15 +427,34 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
         })) {
           continue;
         }
+        pendingReleases.push({
+          pendingDoc,
+          release: await buildPendingInviteRelease(firestore, tx, pendingDoc.data() as FirestoreConnection),
+        });
+      }
 
+      if (oldLookupValue) {
+        tx.delete(inviteLookupRef(firestore, oldLookupValue));
+      }
+      if (nextInviteRecord) {
+        tx.set(ref, nextInviteRecord, { merge: true });
+        tx.set(inviteLookupRef(firestore, nextInviteRecord.codeValue), buildInviteCodeLookupRecord(nextInviteRecord));
+      }
+
+      for (const { pendingDoc, release } of pendingReleases) {
         tx.update(pendingDoc.ref, {
           status: 'ended',
           canceledReason: 'code_rotated',
           endedAt: now,
           updatedAt: now,
         });
+        applyPendingInviteRelease(tx, release, now);
       }
     });
+
+    if (rotatedCodeValue) {
+      await cancelPendingConnectionsForRotatedCode(firestore, professionalUid, specialty, rotatedCodeValue, now);
+    }
 
     const code = await getOrCreateActiveInviteCode(specialty, deps);
     if (!code) {
@@ -455,6 +463,46 @@ export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps)
     return code;
   } catch (error) {
     throw normalizeProfessionalSourceError(error);
+  }
+}
+
+async function cancelPendingConnectionsForRotatedCode(
+  firestore: Firestore,
+  professionalUid: string,
+  specialty: Specialty,
+  rotatedCodeValue: string,
+  timestamp: string
+): Promise<void> {
+  const pending = await getDocs(query(
+    collection(firestore, 'connections'),
+    where('professionalAuthUid', '==', professionalUid),
+    where('specialty', '==', specialty),
+    where('status', '==', 'pending_confirmation')
+  ));
+
+  for (const pendingDoc of pending.docs) {
+    await runTransaction(firestore, async (tx) => {
+      const pendingSnap = await tx.get(pendingDoc.ref);
+      if (!pendingSnap.exists()) return;
+
+      const pendingConnection = pendingSnap.data() as FirestoreConnection;
+      if (!shouldCancelPendingConnectionForRotatedInvite(pendingConnection, {
+        id: specialty,
+        codeValue: rotatedCodeValue,
+        specialty,
+      })) {
+        return;
+      }
+
+      const release = await buildPendingInviteRelease(firestore, tx, pendingConnection);
+      tx.update(pendingDoc.ref, {
+        status: 'ended',
+        canceledReason: 'code_rotated',
+        endedAt: timestamp,
+        updatedAt: timestamp,
+      });
+      applyPendingInviteRelease(tx, release, timestamp);
+    });
   }
 }
 

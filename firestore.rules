@@ -40,6 +40,7 @@ service cloud.firestore {
         request.resource.data.canceledReason == null &&
         request.resource.data.endedAt == null &&
         hasActiveProfessionalSpecialty(resource.data.professionalAuthUid, resource.data.specialty) &&
+        validPendingInviteStateReleasedAfter(connectionId) &&
         validConnectionTrackingAccessAfter(connectionId, 'active') &&
         validConnectionActiveSpecialtyAfter(connectionId, 'active')
       ) || (
@@ -47,15 +48,126 @@ service cloud.firestore {
         request.auth.uid == resource.data.professionalAuthUid &&
         request.resource.data.status == 'ended' &&
         request.resource.data.canceledReason == 'code_rotated' &&
-        request.resource.data.endedAt is string
+        request.resource.data.endedAt is string &&
+        validPendingInviteStateReleasedAfter(connectionId)
       ) || (
         (resource.data.status == 'pending_confirmation' || resource.data.status == 'active') &&
         request.resource.data.status == 'ended' &&
         request.resource.data.canceledReason == null &&
         request.resource.data.endedAt is string &&
+        (resource.data.status != 'pending_confirmation' || validPendingInviteStateReleasedAfter(connectionId)) &&
         validConnectionTrackingAccessAfter(connectionId, 'ended') &&
         validConnectionActiveSpecialtyAfter(connectionId, 'ended')
       );
+    }
+
+    function pendingInviteGuardPath() {
+      return /databases/$(database)/documents/connectionInviteGuards/$(resource.data.professionalAuthUid + '_' + resource.data.studentAuthUid + '_' + resource.data.specialty);
+    }
+
+    function pendingStudentPath() {
+      return /databases/$(database)/documents/professionals/$(resource.data.professionalAuthUid)/pendingStudents/$(resource.data.studentAuthUid);
+    }
+
+    function pendingStudentSlotPath(slotId) {
+      return /databases/$(database)/documents/professionals/$(resource.data.professionalAuthUid)/pendingStudentSlots/$(slotId);
+    }
+
+    function validPendingInviteStateReleasedAfter(connectionId) {
+      return (!exists(pendingInviteGuardPath()) || !existsAfter(pendingInviteGuardPath())) &&
+        validPendingStudentStateReleasedAfter(connectionId);
+    }
+
+    function validPendingStudentStateReleasedAfter(connectionId) {
+      return !exists(pendingStudentPath()) || (
+        (
+          resource.data.specialty == 'nutritionist' &&
+          get(pendingStudentPath()).data.get('nutritionistConnectionId', null) == connectionId &&
+          getAfter(pendingStudentPath()).data.get('nutritionistConnectionId', null) == null &&
+          (
+            get(pendingStudentPath()).data.get('fitnessCoachConnectionId', null) is string ||
+            getAfter(pendingStudentSlotPath(get(pendingStudentPath()).data.slotId)).data.studentAuthUid == null
+          )
+        ) || (
+          resource.data.specialty == 'fitness_coach' &&
+          get(pendingStudentPath()).data.get('fitnessCoachConnectionId', null) == connectionId &&
+          getAfter(pendingStudentPath()).data.get('fitnessCoachConnectionId', null) == null &&
+          (
+            get(pendingStudentPath()).data.get('nutritionistConnectionId', null) is string ||
+            getAfter(pendingStudentSlotPath(get(pendingStudentPath()).data.slotId)).data.studentAuthUid == null
+          )
+        ) || (
+          resource.data.specialty == 'nutritionist' &&
+          get(pendingStudentPath()).data.get('nutritionistConnectionId', null) != connectionId
+        ) || (
+          resource.data.specialty == 'fitness_coach' &&
+          get(pendingStudentPath()).data.get('fitnessCoachConnectionId', null) != connectionId
+        )
+      );
+    }
+
+    function validReleasedPendingConnection(connectionId, professionalUid, studentUid, specialty) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/connections/$(connectionId)) &&
+        get(/databases/$(database)/documents/connections/$(connectionId)).data.status == 'pending_confirmation' &&
+        get(/databases/$(database)/documents/connections/$(connectionId)).data.professionalAuthUid == professionalUid &&
+        get(/databases/$(database)/documents/connections/$(connectionId)).data.studentAuthUid == studentUid &&
+        get(/databases/$(database)/documents/connections/$(connectionId)).data.specialty == specialty &&
+        getAfter(/databases/$(database)/documents/connections/$(connectionId)).data.professionalAuthUid == professionalUid &&
+        getAfter(/databases/$(database)/documents/connections/$(connectionId)).data.studentAuthUid == studentUid &&
+        getAfter(/databases/$(database)/documents/connections/$(connectionId)).data.specialty == specialty &&
+        (getAfter(/databases/$(database)/documents/connections/$(connectionId)).data.status == 'active' ||
+          getAfter(/databases/$(database)/documents/connections/$(connectionId)).data.status == 'ended');
+    }
+
+    function validPendingStudentRelease(professionalUid, studentUid) {
+      return signedIn() &&
+        (request.auth.uid == professionalUid || request.auth.uid == studentUid) &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.professionalAuthUid == professionalUid &&
+        request.resource.data.studentAuthUid == studentUid &&
+        request.resource.data.slotId == resource.data.slotId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedAt is string &&
+        (
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nutritionistConnectionId', 'updatedAt']) &&
+            resource.data.nutritionistConnectionId is string &&
+            request.resource.data.get('nutritionistConnectionId', null) == null &&
+            request.resource.data.get('fitnessCoachConnectionId', null) == resource.data.get('fitnessCoachConnectionId', null) &&
+            validReleasedPendingConnection(resource.data.nutritionistConnectionId, professionalUid, studentUid, 'nutritionist')
+          ) || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fitnessCoachConnectionId', 'updatedAt']) &&
+            resource.data.fitnessCoachConnectionId is string &&
+            request.resource.data.get('fitnessCoachConnectionId', null) == null &&
+            request.resource.data.get('nutritionistConnectionId', null) == resource.data.get('nutritionistConnectionId', null) &&
+            validReleasedPendingConnection(resource.data.fitnessCoachConnectionId, professionalUid, studentUid, 'fitness_coach')
+          )
+        );
+    }
+
+    function validPendingStudentSlotRelease(professionalUid) {
+      return signedIn() &&
+        (request.auth.uid == professionalUid || request.auth.uid == resource.data.studentAuthUid) &&
+        resource.data.professionalAuthUid == professionalUid &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.professionalAuthUid == professionalUid &&
+        request.resource.data.studentAuthUid == null &&
+        request.resource.data.updatedAt is string &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentAuthUid', 'updatedAt']) &&
+        getAfter(/databases/$(database)/documents/professionals/$(professionalUid)/pendingStudents/$(resource.data.studentAuthUid)).data.get('nutritionistConnectionId', null) == null &&
+        getAfter(/databases/$(database)/documents/professionals/$(professionalUid)/pendingStudents/$(resource.data.studentAuthUid)).data.get('fitnessCoachConnectionId', null) == null;
+    }
+
+    function validPendingInviteGuardRelease() {
+      return signedIn() &&
+        (request.auth.uid == resource.data.professionalAuthUid || request.auth.uid == resource.data.studentAuthUid) &&
+        validReleasedPendingConnection(
+          resource.data.connectionId,
+          resource.data.professionalAuthUid,
+          resource.data.studentAuthUid,
+          resource.data.specialty
+        );
     }
 
     function validConnectionTrackingAccessAfter(connectionId, status) {
@@ -358,6 +470,25 @@ service cloud.firestore {
         request.resource.data.professionalAuthUid == request.auth.uid &&
         request.resource.data.specialty == specialty;
       allow delete: if isUid(professionalUid) && hasActiveProfessionalSpecialty(request.auth.uid, resource.data.specialty);
+    }
+
+    match /professionals/{professionalUid}/pendingStudents/{studentUid} {
+      allow read: if signedIn() && (request.auth.uid == professionalUid || request.auth.uid == studentUid);
+      allow create, delete: if false;
+      allow update: if validPendingStudentRelease(professionalUid, studentUid);
+    }
+
+    match /professionals/{professionalUid}/pendingStudentSlots/{slotId} {
+      allow read: if signedIn() && request.auth.uid == professionalUid;
+      allow create, delete: if false;
+      allow update: if validPendingStudentSlotRelease(professionalUid);
+    }
+
+    match /connectionInviteGuards/{guardId} {
+      allow read: if signedIn() &&
+        (request.auth.uid == resource.data.professionalAuthUid || request.auth.uid == resource.data.studentAuthUid);
+      allow create, update: if false;
+      allow delete: if validPendingInviteGuardRelease();
     }
 
     match /{path=**}/inviteCodes/{specialty} {

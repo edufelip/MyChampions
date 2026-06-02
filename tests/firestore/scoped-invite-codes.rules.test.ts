@@ -1,6 +1,6 @@
 import test, { after, before, beforeEach } from 'node:test';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, runTransaction, setDoc, updateDoc } from 'firebase/firestore';
 
 import {
   authedDb,
@@ -183,6 +183,118 @@ test('professional can cancel pending connection when invite code rotates', asyn
     canceledReason: 'code_rotated',
     endedAt: '2026-06-01T00:01:00.000Z',
     updatedAt: '2026-06-01T00:01:00.000Z',
+  }));
+});
+
+test('professional cannot cancel guarded pending connection without releasing invite guard state', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'professional-uid', 'nutritionist');
+  await seedDoc(testEnv, 'connections/pending-rotated', {
+    id: 'pending-rotated',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+    status: 'pending_confirmation',
+    canceledReason: null,
+    endedAt: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  await seedDoc(testEnv, 'connectionInviteGuards/professional-uid_student-uid_nutritionist', {
+    id: 'professional-uid_student-uid_nutritionist',
+    connectionId: 'pending-rotated',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    specialty: 'nutritionist',
+    status: 'pending_confirmation',
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  await seedDoc(testEnv, 'professionals/professional-uid/pendingStudents/student-uid', {
+    id: 'student-uid',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    slotId: 'slot_01',
+    nutritionistConnectionId: 'pending-rotated',
+    fitnessCoachConnectionId: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  await seedDoc(testEnv, 'professionals/professional-uid/pendingStudentSlots/slot_01', {
+    id: 'slot_01',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+
+  await assertFails(updateDoc(doc(authedDb(testEnv, 'professional-uid'), 'connections/pending-rotated'), {
+    status: 'ended',
+    canceledReason: 'code_rotated',
+    endedAt: '2026-06-01T00:01:00.000Z',
+    updatedAt: '2026-06-01T00:01:00.000Z',
+  }));
+});
+
+test('professional can release pending invite guard and slot when invite code rotates', async () => {
+  await seedProfessionalRoleAndSpecialty(testEnv, 'professional-uid', 'nutritionist');
+  await seedDoc(testEnv, 'connections/pending-rotated', {
+    id: 'pending-rotated',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    specialty: 'nutritionist',
+    sourceInviteCodeId: 'nutritionist',
+    sourceInviteCodeValue: 'NUT123',
+    status: 'pending_confirmation',
+    canceledReason: null,
+    endedAt: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  await seedDoc(testEnv, 'connectionInviteGuards/professional-uid_student-uid_nutritionist', {
+    id: 'professional-uid_student-uid_nutritionist',
+    connectionId: 'pending-rotated',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    specialty: 'nutritionist',
+    status: 'pending_confirmation',
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  await seedDoc(testEnv, 'professionals/professional-uid/pendingStudents/student-uid', {
+    id: 'student-uid',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    slotId: 'slot_01',
+    nutritionistConnectionId: 'pending-rotated',
+    fitnessCoachConnectionId: null,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+  await seedDoc(testEnv, 'professionals/professional-uid/pendingStudentSlots/slot_01', {
+    id: 'slot_01',
+    studentAuthUid: 'student-uid',
+    professionalAuthUid: 'professional-uid',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  });
+
+  const db = authedDb(testEnv, 'professional-uid');
+  await assertSucceeds(runTransaction(db, async (tx) => {
+    tx.update(doc(db, 'connections/pending-rotated'), {
+      status: 'ended',
+      canceledReason: 'code_rotated',
+      endedAt: '2026-06-01T00:01:00.000Z',
+      updatedAt: '2026-06-01T00:01:00.000Z',
+    });
+    tx.delete(doc(db, 'connectionInviteGuards/professional-uid_student-uid_nutritionist'));
+    tx.update(doc(db, 'professionals/professional-uid/pendingStudents/student-uid'), {
+      nutritionistConnectionId: null,
+      updatedAt: '2026-06-01T00:01:00.000Z',
+    });
+    tx.update(doc(db, 'professionals/professional-uid/pendingStudentSlots/slot_01'), {
+      studentAuthUid: null,
+      updatedAt: '2026-06-01T00:01:00.000Z',
+    });
   }));
 });
 
