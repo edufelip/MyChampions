@@ -71,6 +71,8 @@ type FirestoreInviteCodeLookup = {
   status: 'active' | 'rotated' | 'revoked';
 };
 
+const MAX_PENDING_STUDENTS = 10;
+
 export function buildPendingConnectionFromInvite(input: {
   connectionId: string;
   studentUid: string;
@@ -91,6 +93,20 @@ export function buildPendingConnectionFromInvite(input: {
     updatedAt: input.timestamp,
     endedAt: null,
   };
+}
+
+export function isPendingStudentCapReached(
+  pendingConnections: Array<{ studentAuthUid?: string | null }>,
+  nextStudentUid: string,
+  cap = MAX_PENDING_STUDENTS
+): boolean {
+  const pendingStudentUids = new Set(
+    pendingConnections
+      .map((connection) => connection.studentAuthUid)
+      .filter((uid): uid is string => typeof uid === 'string' && uid.length > 0)
+  );
+  pendingStudentUids.add(nextStudentUid);
+  return pendingStudentUids.size > cap;
 }
 
 export type ConnectionSourceDeps = {
@@ -209,15 +225,18 @@ export async function submitInviteCode(
       throw new ConnectionSourceError('graphql', 'Already connected.');
     }
 
-    const pendingCount = (await getDocs(
+    const pendingConnections = await getDocs(
       query(
         collection(firestore, 'connections'),
         where('professionalAuthUid', '==', professionalUid),
         where('status', '==', 'pending_confirmation')
       )
-    )).size;
+    );
 
-    if (pendingCount >= 10) {
+    if (isPendingStudentCapReached(
+      pendingConnections.docs.map((d) => d.data() as FirestoreConnection),
+      studentUid
+    )) {
       throw new ConnectionSourceError('graphql', 'Pending cap reached.');
     }
 
