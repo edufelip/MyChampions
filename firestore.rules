@@ -393,7 +393,7 @@ service cloud.firestore {
 
     match /connections/{connectionId} {
       allow read: if isConnectionParticipant();
-      allow create: if validConnectionCreate(connectionId);
+      allow create: if false;
       allow update: if isConnectionParticipant() &&
         connectionIdentityUnchanged() &&
         validConnectionStatusTransition(connectionId);

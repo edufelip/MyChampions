@@ -13,7 +13,7 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 
-import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso, generateId } from '../firestore';
+import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso } from '../firestore';
 import { classifyFirestoreError } from '../firestore-error';
 import {
   normalizeConnectionStatus,
@@ -117,15 +117,104 @@ export function getExistingInviteConnectionConflict(
   return null;
 }
 
+type SubmitInviteRequestDeps = {
+  getCurrentIdToken: () => Promise<string>;
+  getSubmitInviteFunctionUrl: () => string;
+  fetchFn: typeof fetch;
+};
+
+export async function requestSubmitInviteCode(
+  code: string,
+  deps: SubmitInviteRequestDeps
+): Promise<{ connectionId: string; status: 'pending_confirmation' }> {
+  let idToken: string;
+  try {
+    idToken = await deps.getCurrentIdToken();
+  } catch (error) {
+    throw normalizeConnectionSourceError(error);
+  }
+
+  let response: Response;
+  try {
+    response = await deps.fetchFn(deps.getSubmitInviteFunctionUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ code }),
+    });
+  } catch {
+    throw new ConnectionSourceError('network', 'Network request to submit invite code failed.');
+  }
+
+  let body: { connectionId?: unknown; status?: unknown; error?: unknown } = {};
+  try {
+    body = (await response.json()) as { connectionId?: unknown; status?: unknown; error?: unknown };
+  } catch {
+    body = {};
+  }
+
+  if (response.status === 200 && typeof body.connectionId === 'string' && body.status === 'pending_confirmation') {
+    return { connectionId: body.connectionId, status: 'pending_confirmation' };
+  }
+
+  if (body.error === 'not_found') {
+    throw new ConnectionSourceError('graphql', 'Invite code not found.');
+  }
+  if (body.error === 'already_connected') {
+    throw new ConnectionSourceError('graphql', 'Already connected.');
+  }
+  if (body.error === 'pending_already_exists') {
+    throw new ConnectionSourceError('graphql', 'Pending request already exists.');
+  }
+  if (body.error === 'pending_cap_reached') {
+    throw new ConnectionSourceError('graphql', 'Pending cap reached.');
+  }
+  if (response.status === 401 || response.status === 403 || body.error === 'unauthenticated' || body.error === 'forbidden') {
+    throw new ConnectionSourceError('graphql', 'Invite submission is not authorized.');
+  }
+
+  throw new ConnectionSourceError('invalid_response', `Unexpected invite submission response: ${response.status}.`);
+}
+
 export type ConnectionSourceDeps = {
   getFirestoreInstance: () => Firestore;
   getCurrentAuthUid: () => string;
+  getCurrentIdToken?: () => Promise<string>;
+  getSubmitInviteFunctionUrl?: () => string;
+  fetchFn?: typeof fetch;
 };
 
 const defaultConnectionSourceDeps: ConnectionSourceDeps = {
   getFirestoreInstance: _getFirestoreInstance,
   getCurrentAuthUid: _getCurrentAuthUid,
+  getCurrentIdToken: defaultGetCurrentIdToken,
+  getSubmitInviteFunctionUrl: defaultGetSubmitInviteFunctionUrl,
+  fetchFn: fetch,
 };
+
+function defaultGetSubmitInviteFunctionUrl(): string {
+  const url = process.env['EXPO_PUBLIC_SUBMIT_INVITE_FUNCTION_URL'];
+  if (!url) {
+    throw new ConnectionSourceError(
+      'configuration',
+      'Invite submission Cloud Function URL is not configured. Set EXPO_PUBLIC_SUBMIT_INVITE_FUNCTION_URL.'
+    );
+  }
+  return url;
+}
+
+async function defaultGetCurrentIdToken(): Promise<string> {
+  const { getFirebaseAuth } = require('../auth/firebase') as {
+    getFirebaseAuth: () => { currentUser: { getIdToken?: () => Promise<string> } | null };
+  };
+  const user = getFirebaseAuth().currentUser;
+  if (!user?.getIdToken) {
+    throw new ConnectionSourceError('configuration', 'No authenticated user found.');
+  }
+  return user.getIdToken();
+}
 
 function getTrackingAccessRef(firestore: Firestore, connection: FirestoreConnection) {
   const readerCollection = connection.specialty === 'fitness_coach' ? 'fitnessCoaches' : 'nutritionists';
@@ -192,109 +281,11 @@ export async function submitInviteCode(
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<{ connectionId: string; status: 'pending_confirmation' }> {
   try {
-    const firestore = deps.getFirestoreInstance();
-    const studentUid = deps.getCurrentAuthUid();
-    const trimmedCode = code.trim();
-
-    const lookupRef = doc(firestore, 'inviteCodeLookups', trimmedCode);
-    const lookupSnap = await getDoc(lookupRef);
-    if (!lookupSnap.exists()) {
-      throw new ConnectionSourceError('graphql', 'Invite code not found.');
-    }
-
-    const lookup = lookupSnap.data() as FirestoreInviteCodeLookup;
-    const professionalUid = lookup.professionalAuthUid;
-    const inviteSpecialty = normalizeConnectionSpecialty(lookup.specialty);
-
-    if (
-      lookup.scope !== 'invite_code_lookup' ||
-      lookup.codeValue !== trimmedCode ||
-      lookup.status !== 'active' ||
-      !professionalUid ||
-      !inviteSpecialty ||
-      lookup.inviteCodeId !== inviteSpecialty
-    ) {
-      throw new ConnectionSourceError('graphql', 'Invite code not found.');
-    }
-
-    const inviteRef = doc(firestore, 'professionals', professionalUid, 'inviteCodes', inviteSpecialty);
-
-    const existing = await getDocs(
-      query(
-        collection(firestore, 'connections'),
-        where('studentAuthUid', '==', studentUid),
-        where('professionalAuthUid', '==', professionalUid),
-        where('specialty', '==', inviteSpecialty)
-      )
-    );
-
-    const existingConflict = getExistingInviteConnectionConflict(
-      existing.docs.map((d) => d.data() as FirestoreConnection)
-    );
-    if (existingConflict === 'active') {
-      throw new ConnectionSourceError('graphql', 'Already connected.');
-    }
-    if (existingConflict === 'pending') {
-      throw new ConnectionSourceError('graphql', 'Pending request already exists.');
-    }
-
-    const pendingConnections = await getDocs(
-      query(
-        collection(firestore, 'connections'),
-        where('professionalAuthUid', '==', professionalUid),
-        where('status', '==', 'pending_confirmation')
-      )
-    );
-
-    if (isPendingStudentCapReached(
-      pendingConnections.docs.map((d) => d.data() as FirestoreConnection),
-      studentUid
-    )) {
-      throw new ConnectionSourceError('graphql', 'Pending cap reached.');
-    }
-
-    const connectionId = generateId('conn');
-    const timestamp = nowIso();
-
-    await runTransaction(firestore, async (tx) => {
-      const [transactionLookupSnap, inviteSnap] = await Promise.all([
-        tx.get(lookupRef),
-        tx.get(inviteRef),
-      ]);
-      if (!transactionLookupSnap.exists() || !inviteSnap.exists()) {
-        throw new ConnectionSourceError('graphql', 'Invite code not found.');
-      }
-
-      const transactionLookup = transactionLookupSnap.data() as FirestoreInviteCodeLookup;
-      const invite = inviteSnap.data() as FirestoreInviteCode;
-      if (
-        transactionLookup.scope !== 'invite_code_lookup' ||
-        transactionLookup.codeValue !== trimmedCode ||
-        transactionLookup.status !== 'active' ||
-        transactionLookup.professionalAuthUid !== professionalUid ||
-        transactionLookup.specialty !== inviteSpecialty ||
-        transactionLookup.inviteCodeId !== inviteSpecialty ||
-        invite.scope !== 'professional_specialty' ||
-        invite.professionalAuthUid !== professionalUid ||
-        invite.specialty !== inviteSpecialty ||
-        invite.codeValue !== trimmedCode ||
-        invite.status !== 'active'
-      ) {
-        throw new ConnectionSourceError('graphql', 'Invite code not found.');
-      }
-
-      tx.set(doc(firestore, 'connections', connectionId), {
-        ...buildPendingConnectionFromInvite({
-          connectionId,
-          studentUid,
-          inviteDocId: inviteSpecialty,
-          invite: { ...invite, specialty: inviteSpecialty },
-          timestamp,
-        }),
-      } satisfies FirestoreConnection);
+    return await requestSubmitInviteCode(code.trim(), {
+      getCurrentIdToken: deps.getCurrentIdToken ?? defaultGetCurrentIdToken,
+      getSubmitInviteFunctionUrl: deps.getSubmitInviteFunctionUrl ?? defaultGetSubmitInviteFunctionUrl,
+      fetchFn: deps.fetchFn ?? fetch,
     });
-
-    return { connectionId, status: 'pending_confirmation' };
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }

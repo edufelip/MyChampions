@@ -90,7 +90,11 @@ export function normalizeInviteSubmitError(error: unknown): InviteSubmitErrorRea
     if (code === 'CODE_EXPIRED' || message?.toLowerCase().includes('invite code expired')) {
       return 'code_expired';
     }
-    if (code === 'ALREADY_CONNECTED' || message?.toLowerCase().includes('already connected')) {
+    if (
+      code === 'ALREADY_CONNECTED' ||
+      message?.toLowerCase().includes('already connected') ||
+      message?.toLowerCase().includes('pending request already exists')
+    ) {
       return 'already_connected';
     }
     if (

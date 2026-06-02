@@ -5,6 +5,7 @@ import {
   buildPendingConnectionFromInvite,
   getExistingInviteConnectionConflict,
   isPendingStudentCapReached,
+  requestSubmitInviteCode,
 } from './connection-source';
 
 test('submitInviteCode creates a pending connection with the specialty from the invite code', () => {
@@ -51,4 +52,36 @@ test('existing invite connection conflict treats active and pending as blockers'
   assert.equal(getExistingInviteConnectionConflict([{ status: 'pending_confirmation' }]), 'pending');
   assert.equal(getExistingInviteConnectionConflict([{ status: 'active' }]), 'active');
   assert.equal(getExistingInviteConnectionConflict([{ status: 'ended' }]), null);
+});
+
+test('requestSubmitInviteCode calls governed backend endpoint with auth token', async () => {
+  let capturedUrl = '';
+  let capturedInit: RequestInit | undefined;
+
+  const result = await requestSubmitInviteCode('NUT123', {
+    getCurrentIdToken: async () => 'id-token',
+    getSubmitInviteFunctionUrl: () => 'https://example.com/submitInviteCode',
+    fetchFn: async (url, init) => {
+      capturedUrl = String(url);
+      capturedInit = init;
+      return new Response(JSON.stringify({ connectionId: 'conn-1', status: 'pending_confirmation' }), { status: 200 });
+    },
+  });
+
+  assert.deepEqual(result, { connectionId: 'conn-1', status: 'pending_confirmation' });
+  assert.equal(capturedUrl, 'https://example.com/submitInviteCode');
+  assert.equal(capturedInit?.method, 'POST');
+  assert.equal((capturedInit?.headers as Record<string, string>).Authorization, 'Bearer id-token');
+  assert.equal(capturedInit?.body, JSON.stringify({ code: 'NUT123' }));
+});
+
+test('requestSubmitInviteCode maps backend duplicate pending response', async () => {
+  await assert.rejects(
+    () => requestSubmitInviteCode('NUT123', {
+      getCurrentIdToken: async () => 'id-token',
+      getSubmitInviteFunctionUrl: () => 'https://example.com/submitInviteCode',
+      fetchFn: async () => new Response(JSON.stringify({ error: 'pending_already_exists' }), { status: 409 }),
+    }),
+    (error: unknown) => error instanceof Error && error.message.includes('Pending request already exists')
+  );
 });

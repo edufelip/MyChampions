@@ -69,7 +69,7 @@ test('unrelated nutritionist cannot read student water or portion logs', async (
   await assertFails(getDoc(doc(db, 'portionLogs/portion-log-1')));
 });
 
-test('student can create pending invite-backed nutritionist connection', async () => {
+test('student cannot directly create pending invite-backed nutritionist connection', async () => {
   await seedProfessionalRoleAndSpecialty(testEnv, 'nutritionist-uid', 'nutritionist');
   await seedDoc(testEnv, 'inviteCodeLookups/NUT123', {
     scope: 'invite_code_lookup',
@@ -92,7 +92,7 @@ test('student can create pending invite-backed nutritionist connection', async (
     updatedAt: '2026-06-01T00:00:00.000Z',
   });
 
-  await assertSucceeds(setDoc(doc(authedDb(testEnv, 'student-uid'), 'connections/pending-invite'), {
+  await assertFails(setDoc(doc(authedDb(testEnv, 'student-uid'), 'connections/pending-invite'), {
     id: 'pending-invite',
     studentAuthUid: 'student-uid',
     professionalAuthUid: 'nutritionist-uid',

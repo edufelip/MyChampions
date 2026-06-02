@@ -3,7 +3,7 @@
 ## Confirmed Decisions
 - `D-001`: Role is fixed per account; switching role requires creating a new account with a different email.
 - `D-002`: Professional credential capture is optional; no credential-verification workflow is included in MVP.
-- `D-003`: Professional-student connection uses invite code.
+- `D-003`: Professional-student connection uses invite code; invite submission is handled by the authenticated `submitInviteCode` Cloud Function so pending Connection creation, duplicate checks, and pending-cap checks are enforced server-side.
 - `D-004`: Assignment activation requires professional confirmation after student submits invite code.
 - `D-005`: Relationship and plan history are retained after termination.
 - `D-006`: Student cannot edit professionally assigned plans (read-only).

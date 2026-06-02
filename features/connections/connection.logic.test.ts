@@ -217,6 +217,13 @@ test('normalizeInviteSubmitError maps ALREADY_CONNECTED code', () => {
   );
 });
 
+test('normalizeInviteSubmitError maps duplicate pending request to already connected', () => {
+  assert.equal(
+    normalizeInviteSubmitError({ message: 'Pending request already exists.' }),
+    'already_connected'
+  );
+});
+
 test('normalizeInviteSubmitError maps PENDING_CAP_REACHED code', () => {
   assert.equal(
     normalizeInviteSubmitError({ code: 'PENDING_CAP_REACHED' }),

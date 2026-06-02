@@ -19,7 +19,7 @@ Define the implementation contract for app-domain persistence in Firebase Cloud 
 - `userProfiles/{uid}`: role lock, account basics, terms acceptance metadata.
 - `professionals/{professionalUid}/inviteCodes/{specialty}`: canonical active invite code lifecycle, scoped per Specialty (`nutritionist` or `fitness_coach`) and marked with `scope = professional_specialty`. The old top-level `inviteCodes/{professionalUid}` shape is replaced before release; no compatibility path is required because the app is not live.
 - `inviteCodeLookups/{codeValue}`: student-readable active invite-code lookup index maintained atomically with scoped Professional invite records. Lookup documents use `scope = invite_code_lookup`, carry the owning Professional UID, Specialty, canonical invite code id, status, and code value, and are deleted/replaced on rotation or Specialty removal so old codes cannot create pending Connections.
-- `connections/{connectionId}`: student-professional lifecycle state.
+- `connections/{connectionId}`: student-professional lifecycle state. Pending Connection creation from invite submission is performed through the authenticated `submitInviteCode` Cloud Function; direct client Connection creates are denied by Firestore rules.
 - `specialties/{specialtyId}` and `credentials/{specialtyId}`.
 - `nutritionPlans/{planId}` and `trainingPlans/{planId}`.
 - `trackingLogs/{logId}` or domain-specific tracking collections: Student-owned adherence records that may carry plan/connection provenance.
