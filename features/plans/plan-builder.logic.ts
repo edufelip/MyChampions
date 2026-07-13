@@ -1,13 +1,15 @@
 /**
  * Plan builder logic — nutrition and training plan creation/editing,
  * plus pure food-search API response normalization helpers.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-111–D-114, FR-240–FR-248, BR-291–BR-296,
  *       AC-207, AC-208, AC-256, AC-264, AC-265,
  *       TC-275–TC-280, TC-281
  */
 
 import type { PlanType } from './plan-change-request.logic';
+import type { CustomMeal, CustomMealPlanSnapshot } from '../nutrition/custom-meal.logic';
+import { buildCustomMealPlanSnapshot } from '../nutrition/custom-meal.logic';
 
 export type { PlanType };
 
@@ -25,6 +27,8 @@ export type NutritionMealItemInput = {
   carbs?: number | null;
   proteins?: number | null;
   fats?: number | null;
+  sourceKind?: 'manual' | 'food_search' | 'custom_meal';
+  customMealSnapshot?: CustomMealPlanSnapshot;
 };
 
 export type NutritionMealItem = NutritionMealItemInput & {
@@ -45,6 +49,34 @@ export type NutritionPlanInput = {
   hydrationGoalMl: string;
 };
 
+export type NutritionPlanCreationMode = 'professional_library' | 'self_managed';
+
+export function resolveNutritionPlanCreationMetadata(
+  authUid: string,
+  mode: NutritionPlanCreationMode
+): {
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  sourceKind: 'predefined' | 'self_managed';
+  isDraft: false;
+} {
+  if (mode === 'self_managed') {
+    return {
+      ownerProfessionalUid: null,
+      studentAuthUid: authUid,
+      sourceKind: 'self_managed',
+      isDraft: false,
+    };
+  }
+
+  return {
+    ownerProfessionalUid: authUid,
+    studentAuthUid: authUid,
+    sourceKind: 'predefined',
+    isDraft: false,
+  };
+}
+
 export type NutritionPlanValidationErrors = {
   name?: 'required' | 'too_short';
   hydrationGoalMl?: 'required' | 'must_be_positive';
@@ -61,7 +93,7 @@ export type TrainingSessionItemInput = {
   quantity: string; // optional, e.g. "3 sets x 10 reps"
   notes: string;
   /**
-   * Stable upstream exercise UUID. Only this ID is persisted to Firestore.
+   * Stable upstream exercise UUID. Only this ID is persisted to plan storage.
    * Video/thumbnail URLs must never be stored — they expire after 48 hours.
    * Fetch fresh URLs on demand through the exercise proxy service.
    */
@@ -89,6 +121,34 @@ export type TrainingSession = TrainingSessionInput & {
 export type TrainingPlanInput = {
   name: string;
 };
+
+export type TrainingPlanCreationMode = 'professional_library' | 'self_managed';
+
+export function resolveTrainingPlanCreationMetadata(
+  authUid: string,
+  mode: TrainingPlanCreationMode
+): {
+  ownerProfessionalUid: string | null;
+  studentAuthUid: string;
+  sourceKind: 'predefined' | 'self_managed';
+  isDraft: false;
+} {
+  if (mode === 'self_managed') {
+    return {
+      ownerProfessionalUid: null,
+      studentAuthUid: authUid,
+      sourceKind: 'self_managed',
+      isDraft: false,
+    };
+  }
+
+  return {
+    ownerProfessionalUid: authUid,
+    studentAuthUid: authUid,
+    sourceKind: 'predefined',
+    isDraft: false,
+  };
+}
 
 export type TrainingPlanValidationErrors = {
   name?: 'required' | 'too_short';
@@ -289,6 +349,8 @@ export function sanitizeNutritionMealItemInput(input: {
   carbs?: string | number | null;
   proteins?: string | number | null;
   fats?: string | number | null;
+  sourceKind?: 'manual' | 'food_search' | 'custom_meal';
+  customMealSnapshot?: CustomMealPlanSnapshot;
 }): NutritionMealItemInput {
   const parse = (v: string | number | null | undefined): number | null => {
     if (v == null) return null;
@@ -321,6 +383,25 @@ export function sanitizeNutritionMealItemInput(input: {
     carbs: c,
     proteins: p,
     fats: f,
+    sourceKind: input.sourceKind,
+    customMealSnapshot: input.customMealSnapshot,
+  };
+}
+
+export function buildNutritionMealItemInputFromCustomMealSnapshot(
+  meal: CustomMeal
+): NutritionMealItemInput {
+  const snapshot = buildCustomMealPlanSnapshot(meal);
+  return {
+    name: snapshot.name,
+    quantity: `${snapshot.servingGrams}g`,
+    notes: '',
+    calories: snapshot.calories,
+    carbs: snapshot.carbs,
+    proteins: snapshot.proteins,
+    fats: snapshot.fats,
+    sourceKind: snapshot.sourceKind,
+    customMealSnapshot: snapshot,
   };
 }
 

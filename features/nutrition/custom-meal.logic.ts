@@ -1,6 +1,6 @@
 /**
  * Custom meal and portion logging logic.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-017, D-021, D-027, D-029, FR-137–FR-162
  * BR-301–BR-327
  */
@@ -73,6 +73,16 @@ export type SharedMealSnapshot = {
   carbs: number;
   proteins: number;
   fats: number;
+};
+
+export type CustomMealPlanSnapshot = {
+  name: string;
+  servingGrams: number;
+  calories: number;
+  carbs: number;
+  proteins: number;
+  fats: number;
+  sourceKind: 'custom_meal';
 };
 
 export type MealActionErrorReason =
@@ -193,6 +203,19 @@ export function buildSharedMealSnapshot(meal: CustomMeal): SharedMealSnapshot {
     carbs: meal.carbs,
     proteins: meal.proteins,
     fats: meal.fats,
+  };
+}
+
+/** Extracts a NutritionPlan-safe snapshot without reusable meal identifiers or owner fields. */
+export function buildCustomMealPlanSnapshot(meal: CustomMeal): CustomMealPlanSnapshot {
+  return {
+    name: meal.name,
+    servingGrams: meal.totalGrams,
+    calories: meal.calories,
+    carbs: meal.carbs,
+    proteins: meal.proteins,
+    fats: meal.fats,
+    sourceKind: 'custom_meal',
   };
 }
 

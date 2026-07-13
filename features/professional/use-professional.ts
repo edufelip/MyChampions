@@ -1,7 +1,7 @@
 /**
  * React hook for professional invite code and specialty operations.
  * Wraps professional-source for UI consumption.
- * No Firebase/Firestore concerns in screen components.
+ * No backend persistence concerns in screen components.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -37,13 +37,13 @@ export type InviteCodeLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; code: InviteCode | null; displayCode: DisplayInviteCode };
+  | { kind: 'ready'; code: InviteCode | null; displayCode: DisplayInviteCode; lastSyncedAtIso: string };
 
 export type SpecialtiesLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; specialties: SpecialtyRecord[] };
+  | { kind: 'ready'; specialties: SpecialtyRecord[]; lastSyncedAtIso: string };
 
 // ─── Invite code hook ─────────────────────────────────────────────────────────
 
@@ -53,41 +53,46 @@ export type UseInviteCodeResult = {
   rotate: () => Promise<InviteCodeActionErrorReason | null>;
 };
 
-export function useInviteCode(isAuthenticated: boolean): UseInviteCodeResult {
+export function useInviteCode(isAuthenticated: boolean, specialty: Specialty | null): UseInviteCodeResult {
   const [state, setState] = useState<InviteCodeLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !specialty) {
       setState({ kind: 'idle' });
       return;
     }
 
     setState({ kind: 'loading' });
 
-    void getOrCreateActiveInviteCode()
+    void getOrCreateActiveInviteCode(specialty)
       .then((code) => {
-        setState({ kind: 'ready', code, displayCode: resolveDisplayInviteCode(code) });
+        setState({
+          kind: 'ready',
+          code,
+          displayCode: resolveDisplayInviteCode(code),
+          lastSyncedAtIso: new Date().toISOString(),
+        });
       })
       .catch((err: Error) => {
         setState({ kind: 'error', message: err.message });
       });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, specialty]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const rotate = useCallback(async (): Promise<InviteCodeActionErrorReason | null> => {
-    if (!isAuthenticated) return 'configuration';
+    if (!isAuthenticated || !specialty) return 'configuration';
 
     try {
-      await rotateInviteCode();
+      await rotateInviteCode(specialty);
       load();
       return null;
     } catch (err) {
       return normalizeInviteCodeActionError(err);
     }
-  }, [isAuthenticated, load]);
+  }, [isAuthenticated, load, specialty]);
 
   return { state, reload: load, rotate };
 }
@@ -105,7 +110,10 @@ export type UseSpecialtiesResult = {
   getRemovalBlockerCounts: (
     specialty: Specialty
   ) => Promise<{ activeCount: number; pendingCount: number } | null>;
-  addSpecialty: (specialty: Specialty) => Promise<SpecialtyActionErrorReason | null>;
+  addSpecialty: (specialty: Specialty) => Promise<{
+    error: SpecialtyActionErrorReason | null;
+    record: { id: string; specialty: Specialty } | null;
+  }>;
   removeSpecialty: (specialtyId: string) => Promise<SpecialtyActionErrorReason | null>;
   upsertCredential: (
     specialtyId: string,
@@ -126,7 +134,7 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
 
     void getProfessionalSpecialties()
       .then((specialties) => {
-        setState({ kind: 'ready', specialties });
+        setState({ kind: 'ready', specialties, lastSyncedAtIso: new Date().toISOString() });
       })
       .catch((err: Error) => {
         setState({ kind: 'error', message: err.message });
@@ -171,15 +179,20 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
   );
 
   const addSpecialty = useCallback(
-    async (specialty: Specialty): Promise<SpecialtyActionErrorReason | null> => {
-      if (!isAuthenticated) return 'unknown';
+    async (
+      specialty: Specialty
+    ): Promise<{
+      error: SpecialtyActionErrorReason | null;
+      record: { id: string; specialty: Specialty } | null;
+    }> => {
+      if (!isAuthenticated) return { error: 'unknown', record: null };
 
       try {
-        await addProfessionalSpecialty(specialty);
+        const record = await addProfessionalSpecialty(specialty);
         load();
-        return null;
+        return { error: null, record };
       } catch (err) {
-        return normalizeSpecialtyActionError(err);
+        return { error: normalizeSpecialtyActionError(err), record: null };
       }
     },
     [isAuthenticated, load]

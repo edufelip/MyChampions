@@ -9,10 +9,5 @@ export function isSelfGuidedPlan(
   currentUserUid: string | null | undefined
 ): boolean {
   if (!currentUserUid) return false;
-  if (plan.sourceKind === 'self_managed') return true;
-  return (
-    plan.sourceKind === 'predefined' &&
-    plan.ownerProfessionalUid === currentUserUid &&
-    plan.studentUid === currentUserUid
-  );
+  return plan.sourceKind === 'self_managed';
 }

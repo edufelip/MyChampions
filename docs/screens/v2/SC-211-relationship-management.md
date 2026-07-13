@@ -47,6 +47,7 @@
 - Regenerating invite code auto-cancels pending requests created from superseded code.
 - Auto-canceled pending requests caused by code rotation must show explicit reason and reconnect action to affected students.
 - QR scan payload must execute same validation pipeline as manual invite entry.
+- QR scan must not open a black or unrecoverable scanner on camera-less devices; show inline camera-unavailable guidance and keep manual entry usable.
 - Known invite failures must show reason-specific actionable copy.
 - Accessibility baseline applies for text scaling, focus order, contrast, and readable status semantics.
 

@@ -4,16 +4,15 @@
  *        /nutrition/custom-meals/new  (create mode)
  *
  * Create or edit a custom meal with all nutrition fields, optional ingredient
- * cost, image upload (Firebase Cloud Storage), and recipe share-link generation.
+ * cost, image upload through the MyChampions server, and recipe share-link generation.
  *
  * AI meal photo analysis (BL-108): camera CTA pre-fills form fields with
  * AI-estimated macros. Uses expo-image-picker (camera + library) and
  * expo-image-manipulator for client-side JPEG compression (FR-230, BR-287).
- * Image upload pipeline: pick → compress → uploadBytesResumable → getDownloadURL
+ * Image upload pipeline: pick → compress → server media upload → returned media URL
  * (BL-007, D-053, D-057, D-073, D-130, D-131). Progress/retry UI wired to real
  * upload state machine via useImageUpload hook.
- * Share link generation is deferred — source layer is stubbed.
- * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Share link generation uses the MyChampions server custom-meal share endpoint.
  *
  * Docs: docs/screens/v2/SC-214-custom-meal-builder.md
  *       docs/screens/v2/SC-219-ai-meal-photo-analysis.md
@@ -36,6 +35,9 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  InputAccessoryView,
+  Keyboard,
+  Platform,
   Pressable,
   Share,
   StyleSheet,
@@ -68,6 +70,7 @@ import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -85,6 +88,7 @@ type Palette = {
   onAccent: string;
 };
 type TFn = ReturnType<typeof useTranslation>['t'];
+const MEAL_BUILDER_KEYBOARD_ACCESSORY_ID = 'meal-builder-keyboard-accessory';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -115,7 +119,7 @@ export default function CustomMealBuilderScreen() {
     hasAiAccess,
     isLoading: isSubscriptionLoading,
     openAiPaywall,
-  } = useSubscription(Boolean(currentUser));
+  } = useSubscription(currentUser?.uid ?? null);
 
   // ── AI photo analysis ──────────────────────────────────────────────────────
   const analysis = useMealPhotoAnalysis(currentUser);
@@ -151,13 +155,13 @@ export default function CustomMealBuilderScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // savedMealId is set after a successful create — enables share CTA
+  // Existing meals can generate share links through the server-backed source.
   const [savedMealId, setSavedMealId] = useState<string | null>(
     isCreateMode ? null : (mealId ?? null)
   );
 
   // ── Image upload (BL-007, D-073, D-130, D-131) ────────────────────────────
-  // Replaces stub: real Firebase Cloud Storage upload with progress tracking.
+  // Server-backed custom meal image upload with progress tracking.
   const {
     uploadState: imageUpload,
     pickAndUpload,
@@ -179,9 +183,12 @@ export default function CustomMealBuilderScreen() {
   }, [customMealsState, hydrateExisting, isCreateMode, mealId]);
 
   const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    customMealsState.kind === 'ready' ? customMealsState.lastSyncedAtIso : null,
+  ]);
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
     networkStatus,
-    lastSyncedAtIso: null,
+    lastSyncedAtIso,
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
@@ -217,7 +224,7 @@ export default function CustomMealBuilderScreen() {
         // For now mark as saved so share CTA activates.
         setSavedMealId('__saved__');
       }
-      router.back();
+      router.replace('/(tabs)/nutrition/custom-meals');
     }
   }
 
@@ -244,7 +251,9 @@ export default function CustomMealBuilderScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      automaticallyAdjustKeyboardInsets
       contentContainerStyle={styles.content}
+      keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
       testID="meal.builder.screen">
       <Stack.Screen options={{ title: screenTitle, headerShown: false }} />
@@ -253,12 +262,12 @@ export default function CustomMealBuilderScreen() {
         scheme={scheme}
         onPress={() => {
           if (router.canGoBack()) {
-            router.back();
-            return;
-          }
+          router.back();
+          return;
+        }
 
-          router.replace('/(tabs)/recipes');
-        }}
+          router.replace('/(tabs)/nutrition/custom-meals');
+      }}
         accessibilityLabel={t('auth.role.cta_back') as string}
         style={styles.backButton}
         testID="meal.builder.backButton"
@@ -411,6 +420,22 @@ export default function CustomMealBuilderScreen() {
             {t('meal.builder.cta_share')}
           </Text>
         </Pressable>
+      ) : null}
+
+      {Platform.OS === 'ios' ? (
+        <InputAccessoryView nativeID={MEAL_BUILDER_KEYBOARD_ACCESSORY_ID}>
+          <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={Keyboard.dismiss}
+              style={styles.keyboardDoneButton}
+              testID="meal.builder.keyboard.done">
+              <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
+                {t('common.cta.done')}
+              </Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
       ) : null}
     </DsScreen>
   );
@@ -724,6 +749,7 @@ function FormField({
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
+        inputAccessoryViewID={MEAL_BUILDER_KEYBOARD_ACCESSORY_ID}
         accessibilityLabel={label}
         testID={`${testID}.input`}
       />
@@ -783,7 +809,7 @@ function resolveFieldError(
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 16 },
+  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 240, gap: 16 },
   backButton: { marginBottom: -2 },
   helper: { fontSize: 13, lineHeight: 20 },
   fieldGroup: { gap: 4 },
@@ -832,6 +858,19 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   outlineButtonText: { fontSize: 15, fontWeight: '600' },
+  keyboardAccessory: {
+    alignItems: 'flex-end',
+    borderTopColor: '#D8DEE7',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  keyboardDoneButton: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  keyboardDoneText: { fontSize: 16, fontWeight: '700' },
   sectionTitle: {
     fontFamily: Fonts?.rounded ?? 'normal',
     fontSize: 16,

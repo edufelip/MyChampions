@@ -4,13 +4,14 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import { shallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 
 import type {
   NutritionPlanInput,
   NutritionMealInput,
   NutritionMealItemInput,
   NutritionPlanValidationErrors,
+  NutritionPlanCreationMode,
   TrainingPlanInput,
   TrainingSession,
   TrainingSessionInput,
@@ -18,9 +19,10 @@ import type {
   TrainingPlanValidationErrors,
   TrainingSessionItemValidationErrors,
   PlanBuilderErrorReason,
+  TrainingPlanCreationMode,
 } from './plan-builder.logic';
 import type { TrainingPlanDetail, FoodSearchResult } from './plan-builder-source';
-import { usePlansStore, type PlansStoreState } from './plans-store';
+import { usePlansStore } from './plans-store';
 import {
   markNutritionBuilderMutating,
   markTrainingBuilderMutating,
@@ -32,9 +34,7 @@ import {
 export type { FoodSearchResult, FoodSearchState, NutritionBuilderState, TrainingBuilderState };
 export { markNutritionBuilderMutating, markTrainingBuilderMutating };
 
-function usePlansStoreSelector<T>(selector: (state: PlansStoreState) => T): T {
-  return usePlansStore(selector);
-}
+
 
 export type UseNutritionPlanBuilderResult = {
   state: NutritionBuilderState;
@@ -42,12 +42,16 @@ export type UseNutritionPlanBuilderResult = {
   clearFoodSearch: () => void;
   loadPlan: (planId: string) => void;
   initNewPlan: () => void;
-  createPlan: (input: NutritionPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
-  savePlan: (planId: string, input: NutritionPlanInput) => Promise<PlanBuilderErrorReason | null>;
+  createPlan: (
+    input: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
+  ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
+  savePlan: (planId: string, input: NutritionPlanInput, publish?: boolean) => Promise<PlanBuilderErrorReason | null>;
   addMeal: (
     planId: string,
     meal: NutritionMealInput,
-    planInput?: NutritionPlanInput
+    planInput?: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeMeal: (planId: string, mealId: string) => Promise<PlanBuilderErrorReason | null>;
   reorderMeals: (planId: string, mealIds: string[]) => Promise<PlanBuilderErrorReason | null>;
@@ -55,7 +59,8 @@ export type UseNutritionPlanBuilderResult = {
     planId: string,
     mealId: string,
     item: NutritionMealItemInput,
-    planInput?: NutritionPlanInput
+    planInput?: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeItem: (planId: string, mealId: string, itemId: string) => Promise<PlanBuilderErrorReason | null>;
   reorderItems: (
@@ -91,8 +96,8 @@ export function useNutritionPlanBuilder(
     deletePlanFromStore,
     runFoodSearch,
     validateInput,
-  } = usePlansStoreSelector(
-    (s) => ({
+  } = usePlansStore(
+    useShallow((s) => ({
       syncAuthContext: s.syncAuthContext,
       state: s.nutritionBuilderState,
       foodSearchState: s.foodSearchState,
@@ -111,8 +116,7 @@ export function useNutritionPlanBuilder(
       deletePlanFromStore: s.deleteNutritionPlanAction,
       runFoodSearch: s.runFoodSearch,
       validateInput: s.validateNutritionInput,
-    }),
-    shallow
+    }))
   );
 
   useEffect(() => {
@@ -132,18 +136,23 @@ export function useNutritionPlanBuilder(
   );
 
   const createPlan = useCallback(
-    (input: NutritionPlanInput) => createPlanFromStore(isAuthenticated, input),
+    (input: NutritionPlanInput, mode?: NutritionPlanCreationMode) =>
+      createPlanFromStore(isAuthenticated, input, mode),
     [createPlanFromStore, isAuthenticated]
   );
 
   const savePlan = useCallback(
-    (planId: string, input: NutritionPlanInput) => savePlanFromStore(isAuthenticated, planId, input),
+    (planId: string, input: NutritionPlanInput, publish?: boolean) => savePlanFromStore(isAuthenticated, planId, input, publish),
     [isAuthenticated, savePlanFromStore]
   );
 
   const addMeal = useCallback(
-    (planId: string, meal: NutritionMealInput, planInput?: NutritionPlanInput) =>
-      addMealFromStore(isAuthenticated, planId, meal, planInput),
+    (
+      planId: string,
+      meal: NutritionMealInput,
+      planInput?: NutritionPlanInput,
+      mode?: NutritionPlanCreationMode
+    ) => addMealFromStore(isAuthenticated, planId, meal, planInput, mode),
     [addMealFromStore, isAuthenticated]
   );
 
@@ -158,8 +167,13 @@ export function useNutritionPlanBuilder(
   );
 
   const addItem = useCallback(
-    (planId: string, mealId: string, item: NutritionMealItemInput, planInput?: NutritionPlanInput) =>
-      addItemFromStore(isAuthenticated, planId, mealId, item, planInput),
+    (
+      planId: string,
+      mealId: string,
+      item: NutritionMealItemInput,
+      planInput?: NutritionPlanInput,
+      mode?: NutritionPlanCreationMode
+    ) => addItemFromStore(isAuthenticated, planId, mealId, item, planInput, mode),
     [addItemFromStore, isAuthenticated]
   );
 
@@ -211,12 +225,17 @@ export type UseTrainingPlanBuilderResult = {
   state: TrainingBuilderState;
   loadPlan: (planId: string) => void;
   initNewPlan: () => void;
-  createPlan: (input: TrainingPlanInput) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
-  savePlan: (planId: string, input: TrainingPlanInput) => Promise<PlanBuilderErrorReason | null>;
+  createPlan: (
+    input: TrainingPlanInput,
+    mode?: TrainingPlanCreationMode
+  ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
+  savePlan: (planId: string, input: TrainingPlanInput, publish?: boolean) => Promise<PlanBuilderErrorReason | null>;
   savePlanWithSessions: (
     planId: string,
     input: TrainingPlanInput,
-    sessions: TrainingSession[]
+    sessions: TrainingSession[],
+    publish?: boolean,
+    mode?: TrainingPlanCreationMode
   ) => Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }>;
   addSession: (
     planId: string,
@@ -255,8 +274,8 @@ export function useTrainingPlanBuilder(
     deletePlanFromStore,
     validateInput,
     validateSessionItem,
-  } = usePlansStoreSelector(
-    (s) => ({
+  } = usePlansStore(
+    useShallow((s) => ({
       syncAuthContext: s.syncAuthContext,
       state: s.trainingBuilderState,
       resetTrainingBuilder: s.resetTrainingBuilder,
@@ -274,8 +293,7 @@ export function useTrainingPlanBuilder(
       deletePlanFromStore: s.deleteTrainingPlanAction,
       validateInput: s.validateTrainingInput,
       validateSessionItem: s.validateTrainingSessionItem,
-    }),
-    shallow
+    }))
   );
 
   useEffect(() => {
@@ -294,18 +312,24 @@ export function useTrainingPlanBuilder(
   );
 
   const createPlan = useCallback(
-    (input: TrainingPlanInput) => createPlanFromStore(isAuthenticated, input),
+    (input: TrainingPlanInput, mode?: TrainingPlanCreationMode) =>
+      createPlanFromStore(isAuthenticated, input, mode),
     [createPlanFromStore, isAuthenticated]
   );
 
   const savePlan = useCallback(
-    (planId: string, input: TrainingPlanInput) => savePlanFromStore(isAuthenticated, planId, input),
+    (planId: string, input: TrainingPlanInput, publish?: boolean) => savePlanFromStore(isAuthenticated, planId, input, publish),
     [isAuthenticated, savePlanFromStore]
   );
 
   const savePlanWithSessions = useCallback(
-    (planId: string, input: TrainingPlanInput, sessions: TrainingSession[]) =>
-      savePlanWithSessionsFromStore(isAuthenticated, planId, input, sessions),
+    (
+      planId: string,
+      input: TrainingPlanInput,
+      sessions: TrainingSession[],
+      publish?: boolean,
+      mode?: TrainingPlanCreationMode
+    ) => savePlanWithSessionsFromStore(isAuthenticated, planId, input, sessions, publish, mode),
     [isAuthenticated, savePlanWithSessionsFromStore]
   );
 

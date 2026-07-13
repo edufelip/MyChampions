@@ -5,6 +5,9 @@ import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/desig
 import { Fonts } from '@/constants/theme';
 import type { TrainingSession, TrainingSessionItem } from '@/features/plans/plan-builder.logic';
 import { useExerciseThumbnail } from '@/features/plans/use-exercise-thumbnail';
+import type { TranslationBinding } from '@/localization';
+
+type TFn = TranslationBinding['t'];
 
 type SessionCardProps = {
   session: TrainingSession;
@@ -19,7 +22,7 @@ type SessionCardProps = {
     danger: string;
   };
   theme: DsTheme;
-  t: (key: string) => string;
+  t: TFn;
   tr: (pro: string, student: string) => string;
   /**
    * Stable parent callbacks — SessionCard binds session.id internally so that
@@ -33,6 +36,7 @@ type SessionCardProps = {
   isInteractionLocked?: boolean;
   onMoveSession?: (index: number, direction: 'up' | 'down') => void;
   onMoveItem?: (sessionId: string, itemId: string, direction: 'up' | 'down') => void;
+  testIDPrefix?: string;
 };
 
 // ─── SessionItemRow ───────────────────────────────────────────────────────────
@@ -71,6 +75,7 @@ const SessionItemRow = React.memo(function SessionItemRow({
 
   return (
     <View
+      testID={`pro.training_plan.itemRow.${toTestIDSegment(item.name)}`}
       style={[
         styles.itemRow,
         index < totalItems - 1 && { borderBottomWidth: 1, borderBottomColor: theme.color.border },
@@ -97,7 +102,12 @@ const SessionItemRow = React.memo(function SessionItemRow({
         <Text style={[styles.itemName, { color: palette.text }]}>{item.name}</Text>
         <View style={styles.itemMetaRow}>
           {item.quantity ? (
-            <Text style={[styles.itemMeta, { color: palette.icon }]}>{item.quantity}</Text>
+            <Text
+              style={[styles.itemMeta, { color: palette.icon }]}
+              testID={`pro.training_plan.itemRow.${toTestIDSegment(item.name)}.quantity`}
+            >
+              {item.quantity}
+            </Text>
           ) : (
             <Text style={[styles.itemMeta, { color: palette.icon, fontStyle: 'italic' }]}>
               {tr('pro.plan.training.item.no_sets', 'student.plan.training.item.no_sets')}
@@ -116,6 +126,7 @@ const SessionItemRow = React.memo(function SessionItemRow({
           accessibilityLabel={`Remove ${item.name}`}
           hitSlop={8}
           style={styles.removeBtnWrapper}
+          testID={`pro.training_plan.itemRow.${toTestIDSegment(item.name)}.remove`}
         >
           <IconSymbol name="minus.circle" size={20} color={palette.icon} />
         </Pressable>
@@ -141,6 +152,7 @@ export const SessionCard = React.memo(({
   isInteractionLocked,
   onMoveSession,
   onMoveItem,
+  testIDPrefix = 'pro.training_plan',
 }: SessionCardProps) => {
   const { id: sessionId } = session;
   const isFirst = sessionIndex === 0;
@@ -156,7 +168,10 @@ export const SessionCard = React.memo(({
   const handleMoveItemDown = useCallback((itemId: string) => onMoveItem?.(sessionId, itemId, 'down'), [onMoveItem, sessionId]);
 
   return (
-    <View style={[styles.sessionCard, { backgroundColor: theme.color.surface }]}>
+    <View
+      style={[styles.sessionCard, { backgroundColor: theme.color.surface }]}
+      testID={`${testIDPrefix}.sessionRow.${toTestIDSegment(session.name)}`}
+    >
       {/* Session header */}
       <View style={styles.sessionHeader}>
         {isSortMode && (
@@ -224,6 +239,7 @@ export const SessionCard = React.memo(({
           disabled={isInteractionLocked}
           accessibilityRole="button"
           accessibilityLabel={t('pro.plan.cta.add_item')}
+          testID={`${testIDPrefix}.sessionRow.${toTestIDSegment(session.name)}.addItem`}
         >
           <IconSymbol name="plus.circle.fill" size={18} color={palette.tint} />
           <Text style={[styles.addItemBtnText, { color: palette.tint }]}>
@@ -234,6 +250,10 @@ export const SessionCard = React.memo(({
     </View>
   );
 });
+
+function toTestIDSegment(value: string): string {
+  return value.trim().replace(/[^A-Za-z0-9_-]+/g, '_');
+}
 
 const styles = StyleSheet.create({
   sessionCard: {

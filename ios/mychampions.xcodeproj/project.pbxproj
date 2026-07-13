@@ -145,7 +145,6 @@
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				D4B9A6A72FEA100B00F10001 /* [Firebase] Select GoogleService plist */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				09787286B482D4B057C8153B /* [CP] Embed Pods Frameworks */,
 			);
@@ -167,8 +166,8 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
+						DevelopmentTeam = L4N9Z3Z82V;
 						LastSwiftMigration = 1250;
-						DevelopmentTeam = "L4N9Z3Z82V";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -270,12 +269,17 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-mychampions/Pods-mychampions-resources.sh",
-				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/AppAuth/AppAuthCore_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoLocalization/ExpoLocalization_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GTMAppAuth/GTMAppAuth_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher/GTMSessionFetcher_Core_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleSignIn/GoogleSignIn.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/PurchasesHybridCommon/PurchasesHybridCommon.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly/RCT-Folly_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle",
@@ -289,12 +293,17 @@
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoApplication_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AppAuthCore_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoLocalization_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GTMAppAuth_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GTMSessionFetcher_Core_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleSignIn.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleUtilities_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FBLPromises_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/PurchasesHybridCommon.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RCT-Folly_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNCAsyncStorage_resources.bundle",
@@ -335,30 +344,6 @@
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-mychampions/expo-configure-project.sh\"\n";
 		};
-		D4B9A6A72FEA100B00F10001 /* [Firebase] Select GoogleService plist */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(PROJECT_DIR)/mychampions/GoogleService-Info.plist",
-				"$(PROJECT_DIR)/mychampions/GoogleService-Info-Dev.plist",
-				"$(PROJECT_DIR)/mychampions/GoogleService-Info-Prod.plist",
-				"$(PROJECT_DIR)/GoogleService-Info.plist",
-				"$(PROJECT_DIR)/GoogleService-Info-Dev.plist",
-				"$(PROJECT_DIR)/GoogleService-Info-Prod.plist",
-				"$(PROJECT_DIR)/../GoogleService-Info.plist",
-				"$(PROJECT_DIR)/../GoogleService-Info-Dev.plist",
-				"$(PROJECT_DIR)/../GoogleService-Info-Prod.plist",
-			);
-			name = "[Firebase] Select GoogleService plist";
-			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/GoogleService-Info.plist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\n\nENVIRONMENT=\"${EXPO_PUBLIC_ENV:-}\"\nif [ -z \"$ENVIRONMENT\" ]; then\n  case \"${CONFIGURATION:-}\" in\n    Debug|Dev|DevRelease|*Dev*|*Debug*)\n      ENVIRONMENT=\"dev\"\n      ;;\n    *)\n      ENVIRONMENT=\"production\"\n      ;;\n  esac\nfi\n\ncase \"$ENVIRONMENT\" in\n  prod|production)\n    CANDIDATE_NAMES=\"GoogleService-Info.plist GoogleService-Info-Prod.plist\"\n    ;;\n  dev)\n    CANDIDATE_NAMES=\"GoogleService-Info-Dev.plist GoogleService-Info.plist\"\n    ;;\n  *)\n    echo \"Unknown EXPO_PUBLIC_ENV: $ENVIRONMENT (expected dev|prod|production)\" >&2\n    exit 1\n    ;;\n esac\n\nSOURCE_PLIST=\"\"\nfor BASE_DIR in \"${PROJECT_DIR}/mychampions\" \"${PROJECT_DIR}\" \"${PROJECT_DIR}/..\"; do\n  for FILE_NAME in $CANDIDATE_NAMES; do\n    CANDIDATE_PATH=\"${BASE_DIR}/${FILE_NAME}\"\n    if [ -f \"$CANDIDATE_PATH\" ]; then\n      SOURCE_PLIST=\"$CANDIDATE_PATH\"\n      break 2\n    fi\n  done\ndone\n\nif [ -z \"$SOURCE_PLIST\" ]; then\n  echo \"GoogleService plist not found for env '$ENVIRONMENT'. Looked for: $CANDIDATE_NAMES under ${PROJECT_DIR}/mychampions, ${PROJECT_DIR}, ${PROJECT_DIR}/..\" >&2\n  exit 1\nfi\n\nDEST_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nmkdir -p \"$(dirname \"$DEST_PATH\")\"\ncp \"$SOURCE_PLIST\" \"$DEST_PATH\"\necho \"Using GoogleService plist: $SOURCE_PLIST\"\n";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -382,7 +367,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = mychampions/mychampions.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L4N9Z3Z82V;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -408,9 +396,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-				DEVELOPMENT_TEAM = "L4N9Z3Z82V";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Debug;
 		};
@@ -422,7 +407,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = mychampions/mychampions.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L4N9Z3Z82V;
 				INFOPLIST_FILE = mychampions/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -442,9 +430,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-				DEVELOPMENT_TEAM = "L4N9Z3Z82V";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Release;
 		};

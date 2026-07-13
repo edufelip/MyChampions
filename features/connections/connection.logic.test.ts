@@ -217,6 +217,13 @@ test('normalizeInviteSubmitError maps ALREADY_CONNECTED code', () => {
   );
 });
 
+test('normalizeInviteSubmitError maps duplicate pending request to already connected', () => {
+  assert.equal(
+    normalizeInviteSubmitError({ message: 'Pending request already exists.' }),
+    'already_connected'
+  );
+});
+
 test('normalizeInviteSubmitError maps PENDING_CAP_REACHED code', () => {
   assert.equal(
     normalizeInviteSubmitError({ code: 'PENDING_CAP_REACHED' }),
@@ -240,7 +247,7 @@ test('normalizeInviteSubmitError maps NETWORK_ERROR code to network', () => {
 
 test('normalizeInviteSubmitError maps config message to configuration', () => {
   assert.equal(
-    normalizeInviteSubmitError({ message: 'Firestore is not configured' }),
+    normalizeInviteSubmitError({ message: 'MyChampions server endpoint is not configured' }),
     'configuration'
   );
 });
@@ -282,6 +289,13 @@ test('normalizeConnectionActionError maps message containing cannot transition',
   );
 });
 
+test('normalizeConnectionActionError maps professional subscription cap failures', () => {
+  assert.equal(
+    normalizeConnectionActionError({ message: 'Professional subscription required.' }),
+    'subscription_required'
+  );
+});
+
 test('normalizeConnectionActionError maps NETWORK_ERROR to network', () => {
   assert.equal(
     normalizeConnectionActionError({ code: 'NETWORK_ERROR' }),
@@ -298,7 +312,7 @@ test('normalizeConnectionActionError maps message containing network to network'
 
 test('normalizeConnectionActionError maps message containing endpoint to configuration', () => {
   assert.equal(
-    normalizeConnectionActionError({ message: 'Firestore is not configured' }),
+    normalizeConnectionActionError({ message: 'MyChampions server endpoint is not configured' }),
     'configuration'
   );
 });

@@ -14,6 +14,9 @@ test('markTrainingBuilderMutating keeps current plan visible while mutation runs
     plan: {
       id: 'plan_1',
       name: 'Strength',
+      sourceKind: 'self_managed' as const,
+      ownerProfessionalUid: null,
+      studentAuthUid: 'test-student-uid',
       sessions: [
         {
           id: 'session_1',

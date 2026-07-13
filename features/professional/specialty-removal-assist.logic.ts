@@ -111,7 +111,6 @@ export function buildActionMetadata(
         action: 'add_specialty',
         label: 'pro.specialty.removal_assist.add_specialty',
         description: 'pro.specialty.removal_assist.add_specialty_desc',
-        navigationTarget: '/professional/settings/specialties',
         priority: 'primary',
       };
   }

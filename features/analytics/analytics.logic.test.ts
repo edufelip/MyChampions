@@ -13,6 +13,9 @@ import {
   buildInviteSubmitFailed,
   buildInvitePendingCreated,
   buildInvitePendingCanceled,
+  buildInvitePendingConfirmed,
+  buildInvitePendingDenied,
+  buildInvitePendingBulkDenied,
   redactEventProperties,
 } from './analytics.logic';
 
@@ -113,6 +116,34 @@ test('buildInvitePendingCanceled produces correct event with reason_code', () =>
   const event = buildInvitePendingCanceled();
   assert.equal(event.name, 'invite.pending.canceled');
   assert.equal(event.properties.reason_code, 'code_rotated_canceled');
+});
+
+test('buildInvitePendingConfirmed produces professional confirmation analytics event', () => {
+  const event = buildInvitePendingConfirmed();
+  assert.equal(event.name, 'invite.pending.confirmed');
+  assert.equal(event.properties.surface, 'relationship_management');
+  assert.equal(event.properties.step, 'confirm');
+  assert.equal(event.properties.result, 'success');
+  assert.equal(event.properties.role_context, 'professional');
+});
+
+test('buildInvitePendingDenied produces professional deny analytics event', () => {
+  const event = buildInvitePendingDenied();
+  assert.equal(event.name, 'invite.pending.denied');
+  assert.equal(event.properties.surface, 'relationship_management');
+  assert.equal(event.properties.step, 'deny');
+  assert.equal(event.properties.result, 'success');
+  assert.equal(event.properties.role_context, 'professional');
+});
+
+test('buildInvitePendingBulkDenied produces professional bulk deny analytics event', () => {
+  const event = buildInvitePendingBulkDenied(3);
+  assert.equal(event.name, 'invite.pending.bulk_denied');
+  assert.equal(event.properties.surface, 'relationship_management');
+  assert.equal(event.properties.step, 'bulk_deny');
+  assert.equal(event.properties.result, 'success');
+  assert.equal(event.properties.role_context, 'professional');
+  assert.equal(event.properties.pending_count, 3);
 });
 
 // --- redactEventProperties ---

@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import { shallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 
 import type {
   PlanType,
@@ -37,6 +37,10 @@ export type UsePlansResult = {
     predefinedPlanId: string,
     studentUids: string[]
   ) => Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }>;
+  createDraftAssignedPlan: (
+    predefinedPlanId: string,
+    studentUid: string
+  ) => Promise<{ id: string } | { error: PlanChangeRequestErrorReason }>;
 };
 
 export function usePlans(
@@ -53,8 +57,9 @@ export function usePlans(
     reviewChangeRequestFromStore,
     getChangeRequestsForStudentFromStore,
     bulkAssignFromStore,
+    createDraftAssignedPlanFromStore,
   } = usePlansStore(
-    (s) => ({
+    useShallow((s) => ({
       state: s.plansState,
       plansInvalidation: s.invalidation.plans,
       syncAuthContext: s.syncAuthContext,
@@ -64,8 +69,8 @@ export function usePlans(
       reviewChangeRequestFromStore: s.reviewChangeRequest,
       getChangeRequestsForStudentFromStore: s.getChangeRequestsForStudent,
       bulkAssignFromStore: s.bulkAssign,
-    }),
-    shallow
+      createDraftAssignedPlanFromStore: s.createDraftAssignedPlan,
+    }))
   );
 
   const reload = useCallback(() => {
@@ -115,6 +120,13 @@ export function usePlans(
     [bulkAssignFromStore, isAuthenticated]
   );
 
+  const createDraftAssignedPlan = useCallback(
+    (predefinedPlanId: string, studentUid: string) => {
+      return createDraftAssignedPlanFromStore(isAuthenticated, predefinedPlanId, studentUid);
+    },
+    [createDraftAssignedPlanFromStore, isAuthenticated]
+  );
+
   return {
     state,
     reload,
@@ -123,5 +135,6 @@ export function usePlans(
     reviewChangeRequest,
     getChangeRequestsForStudent,
     bulkAssign,
+    createDraftAssignedPlan,
   };
 }

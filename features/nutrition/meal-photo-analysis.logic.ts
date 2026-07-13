@@ -1,6 +1,6 @@
 /**
  * AI meal photo macronutrient analysis logic.
- * Pure functions, no Firebase or network dependencies.
+ * Pure functions, no provider or network dependencies.
  * Refs: BL-108, D-106–D-110, FR-229–FR-239
  * BR-286–BR-290, AC-513–AC-519, TC-271–TC-274
  */
@@ -29,7 +29,7 @@ export type PhotoAnalysisErrorReason =
   | 'unauthenticated'
   | 'unknown';
 
-// Raw shape returned by Cloud Function — may be untrusted/malformed
+// Raw shape returned by the server analyzer endpoint; may be untrusted/malformed.
 export type RawAnalysisResponse = {
   calories?: unknown;
   carbs?: unknown;
@@ -61,7 +61,7 @@ export function isValidMacroEstimate(estimate: MacroEstimate): boolean {
 // ─── Response parsing ─────────────────────────────────────────────────────────
 
 /**
- * Parses the raw Cloud Function response into a typed MacroEstimate.
+ * Parses the raw server analyzer response into a typed MacroEstimate.
  * Returns null if the response shape is invalid or contains sentinel error field.
  * Rounds all macro values to 1 decimal place for clean form display.
  */
@@ -174,7 +174,7 @@ export function normalizePhotoAnalysisError(error: unknown): PhotoAnalysisErrorR
       code === 'unauthenticated' ||
       msg?.includes('unauthenticated') ||
       msg?.includes('unauthorized') ||
-      msg?.includes('id token')
+      msg?.includes('access token')
     ) {
       return 'unauthenticated';
     }
@@ -196,30 +196,4 @@ export function normalizePhotoAnalysisError(error: unknown): PhotoAnalysisErrorR
     }
   }
   return 'unknown';
-}
-
-// ─── Prompt builder ───────────────────────────────────────────────────────────
-
-/**
- * Returns the system prompt sent to GPT-4o Vision via the Cloud Function.
- * Keeping this pure and testable allows changing the prompt without touching
- * the source/network layer.
- */
-export function buildAnalysisSystemPrompt(): string {
-  return (
-    'You are a professional nutritionist. ' +
-    'Given a photo of a meal, estimate the macronutrients with high accuracy. ' +
-    'Respond ONLY with valid JSON matching this exact shape: ' +
-    '{ "calories": number, "carbs": number, "proteins": number, "fats": number, ' +
-    '"totalGrams": number, "confidence": "high" | "medium" | "low" }. ' +
-    'All values must be non-negative numbers. totalGrams must be positive. ' +
-    'If the image does not contain a recognizable meal, respond: { "error": "unrecognizable_image" }.'
-  );
-}
-
-/**
- * Returns the user-facing prompt text paired with the image attachment.
- */
-export function buildAnalysisUserPrompt(): string {
-  return 'Analyze this meal photo and estimate its macronutrients.';
 }

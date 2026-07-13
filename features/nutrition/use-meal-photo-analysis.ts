@@ -14,8 +14,9 @@ import { Alert } from 'react-native';
 import { useCallback, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import type { User } from 'firebase/auth';
 
+import type { AuthUser } from '@/features/auth/auth-user';
+import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
 import { analyzeMealPhoto, PhotoAnalysisSourceError } from './meal-photo-analysis-source';
 import {
   mapMacroEstimateToMealInput,
@@ -33,13 +34,36 @@ const MAX_DIMENSION_PX = 1600;
 /** JPEG compression quality (0–1). Targets ≤ 1.5 MB for typical meal photos. */
 const JPEG_QUALITY = 0.75;
 
+const E2E_MEAL_ANALYSIS_ESTIMATE: MacroEstimate = {
+  calories: 520,
+  carbs: 45,
+  proteins: 38,
+  fats: 16,
+  totalGrams: 350,
+  confidence: 'high',
+};
+
+function getE2EMealAnalysisEstimate(): MacroEstimate | null {
+  const override = resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+
+  if (!override || process.env.EXPO_PUBLIC_E2E_MEAL_ANALYSIS_FIXTURE !== 'success') {
+    return null;
+  }
+
+  return E2E_MEAL_ANALYSIS_ESTIMATE;
+}
+
 // ─── State machine ────────────────────────────────────────────────────────────
 
 export type PhotoAnalysisState =
   | { kind: 'idle' }
   | { kind: 'capturing' }                        // native camera/picker is open
   | { kind: 'compressing' }                      // client-side image compression
-  | { kind: 'analyzing' }                        // awaiting Cloud Function response
+  | { kind: 'analyzing' }                        // awaiting server analyzer response
   | { kind: 'done'; estimate: MacroEstimate }    // result ready; fields pre-filled
   | { kind: 'error'; reason: PhotoAnalysisErrorReason };
 
@@ -50,12 +74,12 @@ export type UseMealPhotoAnalysisResult = {
   state: PhotoAnalysisState;
   /**
    * Initiates the full pipeline: opens an action sheet for camera or library,
-   * compresses the selected image, and sends it to the Cloud Function.
+   * compresses the selected image, and sends it to the server analyzer.
    * Sets state through capturing → compressing → analyzing → done | error.
    */
   startCapture: () => void;
   /**
-   * Sends a base64-encoded JPEG image to the Cloud Function proxy for analysis.
+   * Sends a base64-encoded JPEG image to the server analyzer for analysis.
    * Sets state to 'compressing' → 'analyzing' → 'done' | 'error'.
    * Exposed for direct injection in integration tests.
    */
@@ -107,7 +131,7 @@ async function compressImageUri(uri: string, width: number, height: number): Pro
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useMealPhotoAnalysis(user: User | null): UseMealPhotoAnalysisResult {
+export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysisResult {
   const [state, setState] = useState<PhotoAnalysisState>({ kind: 'idle' });
 
   // ── Core analyze step (exposed for direct injection in tests) ──────────────
@@ -138,6 +162,12 @@ export function useMealPhotoAnalysis(user: User | null): UseMealPhotoAnalysisRes
 
   // ── Full pipeline: pick → compress → analyze ───────────────────────────────
   const startCapture = useCallback(() => {
+    const e2eEstimate = getE2EMealAnalysisEstimate();
+    if (e2eEstimate) {
+      setState({ kind: 'done', estimate: e2eEstimate });
+      return;
+    }
+
     /**
      * Present an action sheet so the user can choose camera or photo library.
      * The entire async pipeline runs inside the callback — state transitions

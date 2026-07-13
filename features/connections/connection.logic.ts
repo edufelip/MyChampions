@@ -30,6 +30,7 @@ export type InviteSubmitErrorReason =
 export type ConnectionActionErrorReason =
   | 'connection_not_found'
   | 'invalid_transition'
+  | 'subscription_required'
   | 'network'
   | 'configuration'
   | 'unknown';
@@ -90,7 +91,11 @@ export function normalizeInviteSubmitError(error: unknown): InviteSubmitErrorRea
     if (code === 'CODE_EXPIRED' || message?.toLowerCase().includes('invite code expired')) {
       return 'code_expired';
     }
-    if (code === 'ALREADY_CONNECTED' || message?.toLowerCase().includes('already connected')) {
+    if (
+      code === 'ALREADY_CONNECTED' ||
+      message?.toLowerCase().includes('already connected') ||
+      message?.toLowerCase().includes('pending request already exists')
+    ) {
       return 'already_connected';
     }
     if (
@@ -131,6 +136,13 @@ export function normalizeConnectionActionError(
       message?.toLowerCase().includes('cannot transition')
     ) {
       return 'invalid_transition';
+    }
+    if (
+      code === 'SUBSCRIPTION_REQUIRED' ||
+      message?.toLowerCase().includes('professional subscription required') ||
+      message?.toLowerCase().includes('subscription required')
+    ) {
+      return 'subscription_required';
     }
     if (code === 'NETWORK_ERROR' || message?.toLowerCase().includes('network')) {
       return 'network';

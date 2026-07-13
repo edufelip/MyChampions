@@ -8,23 +8,32 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View, type DimensionValue } from 'react-native';
+
+import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
+import { logAssignedMealPortion, getTodayPortionLogs, type PortionLog } from '@/features/nutrition/custom-meal-source';
+import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/plan-builder.logic';
 
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
-import { ReadOnlyNoticeCard } from '@/components/ds/patterns/ReadOnlyNoticeCard';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { useConnections } from '@/features/connections/use-connections';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
-import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
+import {
+  resolveStudentNutritionDisplayState,
+  resolveStudentNutritionState,
+} from '@/features/plans/student-nutrition-state.logic';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -42,26 +51,158 @@ export default function StudentNutritionScreen() {
   const { currentUser } = useAuthSession();
 
   const networkStatus = useNetworkStatus();
+  const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
+  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
+  const { state: connectionsState } = useConnections(Boolean(currentUser));
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    waterHook.state.kind === 'ready' ? waterHook.state.lastSyncedAtIso : null,
+    plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
+    connectionsState.kind === 'ready' ? connectionsState.lastSyncedAtIso : null,
+  ]);
   const offlineDisplay = resolveOfflineDisplayState({
     networkStatus,
-    lastSyncedAtIso: null,
+    lastSyncedAtIso,
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
-  const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
-  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
+  const hasActiveNutritionistConnection =
+    connectionsState.kind === 'ready' &&
+    connectionsState.connections.some(
+      (connection) => connection.specialty === 'nutritionist' && connection.status === 'active'
+    );
+  const activeNutritionistConnection =
+    connectionsState.kind === 'ready'
+      ? connectionsState.connections.find(
+          (connection) => connection.specialty === 'nutritionist' && connection.status === 'active'
+        ) ?? null
+      : null;
+  const nutritionState = resolveStudentNutritionState({
+    currentUserUid: currentUser?.uid ?? null,
+    hasActiveNutritionistConnection,
+    plans: plansState.kind === 'ready' ? plansState.plans : [],
+  });
+  const assignedNutritionPlan = nutritionState.kind === 'assigned' ? nutritionState.assignedPlan : null;
+  const selfManagedNutritionPlan = nutritionState.kind === 'self_managed' ? nutritionState.selfManagedPlan : null;
+  const nutritionDisplayState = resolveStudentNutritionDisplayState({
+    hasCurrentUser: Boolean(currentUser),
+    plansKind: plansState.kind,
+    connectionsKind: connectionsState.kind,
+    nutritionKind: nutritionState.kind,
+  });
 
-  const nutritionPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'nutrition' && !p.isArchived) : [];
+  const { state: builderState, loadPlan } = useNutritionPlanBuilder(Boolean(currentUser), 'student-assigned');
+  const [todayPortionLogs, setTodayPortionLogs] = useState<PortionLog[]>([]);
+  const [expandedMealIds, setExpandedMealIds] = useState<string[]>([]);
+  const [isLoggingMealId, setIsLoggingMealId] = useState<string | null>(null);
+  const [screenFocusKey, setScreenFocusKey] = useState(0);
 
-  const assignedNutritionPlan = nutritionPlans.find(plan => plan.sourceKind === 'assigned') ?? null;
-  const selfManagedNutritionPlan =
-    nutritionPlans.find((plan) => isSelfGuidedPlan(plan, currentUser?.uid ?? null)) ?? null;
+  const loggingMealsRef = useRef(new Set<string>());
+  const loggedMealIds = todayPortionLogs.map((log) => log.mealId);
 
-  const hasActiveNutritionAssignment = assignedNutritionPlan !== null;
-  const hasSelfManagedPlan = selfManagedNutritionPlan !== null;
+  const todayConsumed = {
+    calories: 0,
+    carbs: 0,
+    proteins: 0,
+    fats: 0,
+  };
+
+  for (const log of todayPortionLogs) {
+    todayConsumed.calories += Number(log.snapshot?.calories || 0);
+    todayConsumed.carbs += Number(log.snapshot?.carbs || 0);
+    todayConsumed.proteins += Number(log.snapshot?.proteins || 0);
+    todayConsumed.fats += Number(log.snapshot?.fats || 0);
+  }
+
+  const getProgressWidth = (consumed: number, target: number): DimensionValue => {
+    if (!target) return '0%';
+    const pct = Math.min((consumed / target) * 100, 100);
+    return `${pct}%` as DimensionValue;
+  };
+
+  const assignedNutritionPlanId = assignedNutritionPlan?.id;
+  useEffect(() => {
+    if (assignedNutritionPlanId) {
+      loadPlan(assignedNutritionPlanId);
+    }
+  }, [assignedNutritionPlanId, loadPlan]);
+
+  useEffect(() => {
+    if (currentUser) {
+      getTodayPortionLogs()
+        .then((logs) => {
+          setTodayPortionLogs(logs);
+        })
+        .catch((err) => {
+          console.error('Error loading today portion logs:', err);
+      });
+    }
+  }, [currentUser]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setScreenFocusKey((current) => current + 1);
+    }, [])
+  );
+
+  const toggleMealExpand = (mealId: string) => {
+    setExpandedMealIds((prev) =>
+      prev.includes(mealId) ? prev.filter((id) => id !== mealId) : [...prev, mealId]
+    );
+  };
+
+  const handleLogMeal = async (meal: NutritionMeal) => {
+    if (isWriteLocked || loggedMealIds.includes(meal.id) || loggingMealsRef.current.has(meal.id)) return;
+
+    loggingMealsRef.current.add(meal.id);
+    setIsLoggingMealId(meal.id);
+    try {
+      const totals = calculateTotalsFromItems(meal.items || []);
+      const snapshot = {
+        calories: Math.round(totals.calories),
+        carbs: Math.round(totals.carbs),
+        proteins: Math.round(totals.proteins),
+        fats: Math.round(totals.fats),
+      };
+
+      await logAssignedMealPortion(meal.id, snapshot, {
+        planId: assignedNutritionPlan?.id ?? null,
+        planType: assignedNutritionPlan ? 'nutrition' : null,
+        sourceKind: assignedNutritionPlan?.sourceKind ?? null,
+        ownerProfessionalUid: assignedNutritionPlan?.ownerProfessionalUid ?? null,
+        connectionId: activeNutritionistConnection?.id ?? null,
+      });
+
+      const newLog: PortionLog = {
+        id: Math.random().toString(),
+        ownerUid: currentUser?.uid || '',
+        mealId: meal.id,
+        consumedGrams: 0,
+        snapshot,
+        loggedAt: new Date().toISOString(),
+        planId: assignedNutritionPlan?.id ?? null,
+        planType: assignedNutritionPlan ? 'nutrition' : null,
+        sourceKind: assignedNutritionPlan?.sourceKind ?? null,
+        ownerProfessionalUid: assignedNutritionPlan?.ownerProfessionalUid ?? null,
+        connectionId: activeNutritionistConnection?.id ?? null,
+      };
+      setTodayPortionLogs((prev) => [...prev, newLog]);
+    } catch (err) {
+      console.error('Failed to log meal portion:', err);
+      Alert.alert(t('common.error.generic'), t('student.nutrition.plan_change.error.unknown') || 'Something went wrong. Try again.');
+    } finally {
+      loggingMealsRef.current.delete(meal.id);
+      setIsLoggingMealId(null);
+    }
+  };
 
   return (
-    <DsScreen scheme={scheme} testID="student.nutrition.screen">
+    <DsScreen
+      key={`student-nutrition-${screenFocusKey}`}
+      keyboardDismissMode="interactive"
+      keyboardShouldPersistTaps="handled"
+      scheme={scheme}
+      testID="student.nutrition.screen"
+    >
       <Stack.Screen options={{ title: t('student.nutrition.title'), headerShown: false }} />
 
       <View style={styles.shell}>
@@ -76,19 +217,211 @@ export default function StudentNutritionScreen() {
         ) : null}
 
         <View style={styles.sectionStack}>
-          {plansState.kind === 'loading' ? (
+          {nutritionDisplayState === 'loading' ? (
             <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.plansLoading">
               <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
             </DsCard>
-          ) : hasActiveNutritionAssignment ? (
+          ) : nutritionDisplayState === 'load_error' ? (
+            <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.loadError">
+              <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
+            </DsCard>
+          ) : nutritionState.kind === 'assigned' && assignedNutritionPlan ? (
             <>
+              {builderState.kind === 'loading' ? (
+                <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.planDetailsLoading">
+                  <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+                </DsCard>
+              ) : builderState.kind === 'error' ? (
+                <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.planDetailsError">
+                  <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
+                </DsCard>
+              ) : builderState.kind === 'ready' ? (
+                <>
+                  <DsCard scheme={scheme} style={styles.macroCard} testID="student.nutrition.macroCard">
+                    <View style={styles.macroHeaderRow}>
+                      <View style={[styles.macroIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+                        <MaterialIcons color={theme.color.accentPrimary} name="local-fire-department" size={24} />
+                      </View>
+                      <View style={styles.macroHeaderTextWrap}>
+                        <Text style={[styles.macroHeaderSubtitle, { color: theme.color.textSecondary }]}>
+                          {t('student.nutrition.target_dashboard.title')}
+                        </Text>
+                        <Text style={[styles.macroHeaderTitle, { color: theme.color.textPrimary }]}>
+                          {`${Math.round(todayConsumed.calories)} / ${Math.round(builderState.plan.caloriesTarget || 0)} kcal`}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={[styles.progressBarTrack, { backgroundColor: theme.color.surfaceMuted }]}>
+                      <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.calories, builderState.plan.caloriesTarget), backgroundColor: theme.color.accentPrimary }]} />
+                    </View>
+
+                    <View style={styles.macroGrid}>
+                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                        <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
+                          {t('common.nutrition.carbs')}
+                        </Text>
+                        <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
+                          {`${Math.round(todayConsumed.carbs)}/${Math.round(builderState.plan.carbsTarget || 0)}g`}
+                        </Text>
+                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
+                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.carbs, builderState.plan.carbsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        </View>
+                      </View>
+
+                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                        <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
+                          {t('common.nutrition.proteins')}
+                        </Text>
+                        <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
+                          {`${Math.round(todayConsumed.proteins)}/${Math.round(builderState.plan.proteinsTarget || 0)}g`}
+                        </Text>
+                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
+                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.proteins, builderState.plan.proteinsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        </View>
+                      </View>
+
+                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                        <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
+                          {t('common.nutrition.fats')}
+                        </Text>
+                        <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
+                          {`${Math.round(todayConsumed.fats)}/${Math.round(builderState.plan.fatsTarget || 0)}g`}
+                        </Text>
+                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
+                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.fats, builderState.plan.fatsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        </View>
+                      </View>
+                    </View>
+                  </DsCard>
+
+                  <View style={styles.mealsSection} testID="student.nutrition.mealsSection">
+                    <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+                      {t('student.nutrition.meals.title')}
+                    </Text>
+
+                    {builderState.plan.meals && builderState.plan.meals.length > 0 ? (
+                      builderState.plan.meals.map((meal) => {
+                        const isExpanded = expandedMealIds.includes(meal.id);
+                        const isLogged = loggedMealIds.includes(meal.id);
+                        const isLogging = isLoggingMealId === meal.id;
+
+                        let mealCal = 0;
+                        let mealCarbs = 0;
+                        let mealProt = 0;
+                        let mealFats = 0;
+                        for (const item of meal.items || []) {
+                          mealCal += Number(item.calories || 0);
+                          mealCarbs += Number(item.carbs || 0);
+                          mealProt += Number(item.proteins || 0);
+                          mealFats += Number(item.fats || 0);
+                        }
+
+                        return (
+                          <DsCard
+                            key={meal.id}
+                            scheme={scheme}
+                            style={styles.mealCard}
+                            testID={`student.nutrition.mealCard.${meal.id}`}
+                          >
+                            <Pressable
+                              accessibilityRole="button"
+                              onPress={() => toggleMealExpand(meal.id)}
+                              style={styles.mealHeaderPressable}
+                            >
+                              <View style={styles.mealHeaderLeft}>
+                                <Text style={[styles.mealName, { color: theme.color.textPrimary }]}>
+                                  {meal.name}
+                                </Text>
+                                <Text style={[styles.mealSummaryText, { color: theme.color.textSecondary }]}>
+                                  {`${Math.round(mealCal)} kcal · ${Math.round(mealCarbs)}g C · ${Math.round(mealProt)}g P · ${Math.round(mealFats)}g F`}
+                                </Text>
+                              </View>
+
+                              <View style={styles.mealHeaderRight}>
+                                {isLogged ? (
+                                  <View
+                                    style={[styles.loggedBadge, { backgroundColor: theme.color.successSoft }]}
+                                    testID={`student.nutrition.loggedMealBadge.${meal.id}`}
+                                  >
+                                    <MaterialIcons color={theme.color.success} name="check-circle" size={16} />
+                                    <Text style={[styles.loggedBadgeText, { color: theme.color.success }]}>
+                                      {t('student.nutrition.meal.logged_badge')}
+                                    </Text>
+                                  </View>
+                                ) : (
+                                  <DsPillButton
+                                    scheme={scheme}
+                                    disabled={isWriteLocked}
+                                    label={t('student.nutrition.meal.log_button')}
+                                    loading={isLogging}
+                                    onPress={() => handleLogMeal(meal)}
+                                    style={styles.logButton}
+                                    testID={`student.nutrition.logMealButton.${meal.id}`}
+                                  />
+                                )}
+                                <MaterialIcons
+                                  color={theme.color.textSecondary}
+                                  name={isExpanded ? 'expand-less' : 'expand-more'}
+                                  size={24}
+                                  style={styles.expandIcon}
+                                />
+                              </View>
+                            </Pressable>
+
+                            {isExpanded && (
+                              <View style={styles.mealDetails} testID={`student.nutrition.mealDetails.${meal.id}`}>
+                                <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
+
+                                <Text style={[styles.detailsLabel, { color: theme.color.textSecondary }]}>
+                                  {t('student.nutrition.meal.items_label')}
+                                </Text>
+
+                                {meal.items && meal.items.length > 0 ? (
+                                  <View style={styles.itemsList}>
+                                    {meal.items.map((item) => (
+                                      <View key={item.id} style={styles.itemRow}>
+                                        <View style={[styles.itemDot, { backgroundColor: theme.color.accentPrimary }]} />
+                                        <View style={styles.itemInfo}>
+                                          <Text style={[styles.itemName, { color: theme.color.textPrimary }]}>
+                                            {item.name}
+                                          </Text>
+                                          {Boolean(item.quantity) && (
+                                            <Text style={[styles.itemQuantity, { color: theme.color.textSecondary }]}>
+                                              {item.quantity}
+                                            </Text>
+                                          )}
+                                          {Boolean(item.notes) && (
+                                            <Text style={[styles.itemNotes, { color: theme.color.textSecondary }]}>
+                                              {item.notes}
+                                            </Text>
+                                          )}
+                                        </View>
+                                      </View>
+                                    ))}
+                                  </View>
+                                ) : (
+                                  <Text style={[styles.noItemsText, { color: theme.color.textTertiary }]}>
+                                    No food items.
+                                  </Text>
+                                )}
+                              </View>
+                            )}
+                          </DsCard>
+                        );
+                      })
+                    ) : (
+                      <Text style={[styles.noMealsText, { color: theme.color.textSecondary }]}>
+                        No meals planned for today.
+                      </Text>
+                    )}
+                  </View>
+                </>
+              ) : null}
+
               <WaterWidget waterHook={waterHook} scheme={scheme} t={t} isWriteLocked={isWriteLocked} />
 
-              <ReadOnlyNoticeCard
-                scheme={scheme}
-                testID="student.nutrition.assignedPlanNotice"
-                text={t('student.nutrition.assigned_plan.read_only_notice')}
-              />
+
 
               <PlanChangeRequestCard
                 scheme={scheme}
@@ -112,7 +445,50 @@ export default function StudentNutritionScreen() {
                 }}
               />
             </>
-          ) : hasSelfManagedPlan ? (
+          ) : nutritionState.kind === 'waiting' ? (
+            <View style={styles.emptyStateWrap} testID="student.nutrition.waitingForNutritionistPlan">
+              <View style={styles.emptyHero}>
+                <View
+                  style={[
+                    styles.emptyGlow,
+                    {
+                      backgroundColor:
+                        scheme === 'dark' ? 'rgba(30, 169, 90, 0.14)' : 'rgba(19, 236, 73, 0.16)',
+                    },
+                  ]}
+                />
+
+                <View
+                  style={[
+                    styles.emptyIllustrationCard,
+                    DsShadow.floating,
+                    {
+                      backgroundColor: theme.color.surface,
+                      borderColor: scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
+                      shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                    },
+                  ]}>
+                  <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
+                </View>
+              </View>
+
+              <View style={styles.emptyCopyBlock}>
+                <Text style={[styles.emptyTitle, { color: theme.color.textPrimary }]}>{t('student.nutrition.waiting.title')}</Text>
+                <Text style={[styles.emptyBody, { color: theme.color.textSecondary }]}>{t('student.nutrition.waiting.body')}</Text>
+              </View>
+
+              <DsPillButton
+                scheme={scheme}
+                disabled={isWriteLocked}
+                label={t('student.nutrition.waiting.cta')}
+                onPress={() => router.push('/student/professionals')}
+                contentColor="#f8fafc"
+                testID="student.nutrition.waitingCta"
+                style={styles.emptyPrimaryCta}
+                leftIcon={<MaterialIcons color="#f8fafc" name="person" size={20} />}
+              />
+            </View>
+          ) : nutritionState.kind === 'self_managed' && selfManagedNutritionPlan ? (
              <>
               <WaterWidget waterHook={waterHook} scheme={scheme} t={t} isWriteLocked={isWriteLocked} />
 
@@ -224,7 +600,7 @@ export default function StudentNutritionScreen() {
                   { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
                 ]}
                 testID="student.nutrition.emptySelfGuidedCta">
-                <Text style={[styles.emptyTertiaryText, { color: theme.color.textSecondary }]}> 
+                <Text style={[styles.emptyTertiaryText, { color: theme.color.textSecondary }]}>
                   {t('student.nutrition.empty.self_guided_cta')}
                 </Text>
               </Pressable>
@@ -303,7 +679,10 @@ function WaterWidget({
             <View style={styles.waterHeaderLeft}>
               <View style={styles.waterValueRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={[styles.waterValue, { color: theme.color.textPrimary }, isMutating && { opacity: 0.5 }]}>
+                  <Text
+                    style={[styles.waterValue, { color: theme.color.textPrimary }, isMutating && { opacity: 0.5 }]}
+                    testID="student.nutrition.waterWidget.consumedValue"
+                  >
                     {String(consumed)}
                   </Text>
                   {isMutating && (
@@ -319,7 +698,7 @@ function WaterWidget({
               </View>
             </View>
 
-            <View style={[styles.waterIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}> 
+            <View style={[styles.waterIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
               <MaterialIcons color={theme.color.accentCyan} name="water-drop" size={32} />
             </View>
           </View>
@@ -334,8 +713,10 @@ function WaterWidget({
                     setIntakeRaw(value);
                     setIntakeError(null);
                   }}
+                  onSubmitEditing={Keyboard.dismiss}
                   placeholder={t('student.nutrition.water.log.placeholder')}
                   placeholderTextColor={theme.color.textSecondary}
+                  returnKeyType="done"
                   style={[
                     styles.textInput,
                     {
@@ -363,7 +744,12 @@ function WaterWidget({
 
               {intakeError ? (
                 <View accessibilityLiveRegion="polite">
-                  <Text style={[styles.inlineError, { color: theme.color.danger }]}>{intakeError}</Text>
+                  <Text
+                    style={[styles.inlineError, { color: theme.color.danger }]}
+                    testID="student.nutrition.waterWidget.intakeError"
+                  >
+                    {intakeError}
+                  </Text>
                 </View>
               ) : null}
               <Text style={[styles.writeLockText, { color: theme.color.textSecondary }]}>
@@ -409,6 +795,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 120,
+  },
+  loadErrorText: {
+    ...DsTypography.caption,
+    textAlign: 'center',
   },
   emptyStateWrap: {
     alignItems: 'center',
@@ -660,5 +1050,170 @@ const styles = StyleSheet.create({
   writeLockText: {
     ...DsTypography.caption,
     marginTop: DsSpace.sm,
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  macroCard: {
+    gap: 12,
+  },
+  macroHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 4,
+  },
+  macroIconWrap: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  macroHeaderTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  macroHeaderSubtitle: {
+    ...DsTypography.micro,
+  },
+  macroHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: Fonts.rounded,
+  },
+  macroGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  macroItem: {
+    flex: 1,
+    borderRadius: DsRadius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    gap: 2,
+  },
+  macroLabel: {
+    ...DsTypography.micro,
+  },
+  macroValue: {
+    ...DsTypography.button,
+    fontSize: 14,
+  },
+  mealsSection: {
+    gap: 12,
+    marginTop: DsSpace.xs,
+  },
+  sectionTitle: {
+    ...DsTypography.cardTitle,
+    fontFamily: Fonts.rounded,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  mealCard: {
+    padding: DsSpace.sm,
+    gap: DsSpace.sm,
+  },
+  mealHeaderPressable: {
+    alignItems: 'stretch',
+    gap: DsSpace.sm,
+  },
+  mealHeaderLeft: {
+    gap: 2,
+  },
+  mealHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    justifyContent: 'space-between',
+  },
+  mealName: {
+    ...DsTypography.button,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  mealSummaryText: {
+    ...DsTypography.caption,
+  },
+  loggedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: DsRadius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  loggedBadgeText: {
+    ...DsTypography.micro,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  logButton: {
+    flex: 1,
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: DsRadius.pill,
+  },
+  expandIcon: {
+    marginLeft: 4,
+  },
+  mealDetails: {
+    marginTop: DsSpace.xs,
+    gap: DsSpace.xs,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    marginBottom: DsSpace.xs,
+  },
+  detailsLabel: {
+    ...DsTypography.micro,
+    marginBottom: DsSpace.xxs,
+  },
+  itemsList: {
+    gap: DsSpace.xs,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  itemDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+  },
+  itemInfo: {
+    flex: 1,
+    gap: 1,
+  },
+  itemName: {
+    ...DsTypography.body,
+    fontWeight: '500',
+  },
+  itemQuantity: {
+    ...DsTypography.caption,
+  },
+  itemNotes: {
+    ...DsTypography.caption,
+    fontStyle: 'italic',
+  },
+  noItemsText: {
+    ...DsTypography.caption,
+  },
+  noMealsText: {
+    ...DsTypography.caption,
+    textAlign: 'center',
+    marginVertical: DsSpace.md,
   },
 });

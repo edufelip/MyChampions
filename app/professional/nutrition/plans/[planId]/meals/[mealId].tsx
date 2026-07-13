@@ -2,8 +2,9 @@
  * SC-207 Nutrition Meal Builder
  * Route: /professional/nutrition/plans/:planId/meals/:mealId
  */
-import { useCallback, useLayoutEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   LayoutAnimation,
   Pressable,
@@ -11,7 +12,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
@@ -27,12 +28,20 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNutritionPlanBuilder, type FoodSearchResult } from '@/features/plans/use-plan-builder';
+import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
+import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
-import { calculateTotalsFromItems, sanitizeNutritionMealItemInput } from '@/features/plans/plan-builder.logic';
+import {
+  buildNutritionMealItemInputFromCustomMealSnapshot,
+  calculateTotalsFromItems,
+  sanitizeNutritionMealItemInput,
+} from '@/features/plans/plan-builder.logic';
+import type { CustomMealPlanSnapshot } from '@/features/nutrition/custom-meal.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -53,6 +62,8 @@ type AddItemFormState =
       proteins?: string;
       fats?: string;
       selectedFood?: FoodSearchResult;
+      selectedCustomMealName?: string;
+      customMealSnapshot?: CustomMealPlanSnapshot;
     };
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -69,8 +80,19 @@ export default function NutritionMealBuilderScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const { planId, mealId } = useLocalSearchParams<{ planId: string, mealId: string }>();
-  const { currentUser } = useAuthSession();
+  const { currentUser, lockedRole } = useAuthSession();
   const isStudentBuilder = pathname.startsWith('/student/');
+  const shouldGateProfessionalNutrition = !isStudentBuilder;
+  const { state: specialtiesState } = useSpecialties(
+    Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional'
+  );
+  const nutritionGate = shouldGateProfessionalNutrition
+    ? resolveProfessionalNutritionRouteGate({
+        role: lockedRole,
+        specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+        specialtiesStatus: specialtiesState.kind,
+      })
+    : 'allow';
 
   const tr = useMemo(() => createBuilderRoleTranslator(isStudentBuilder, t), [isStudentBuilder, t]);
 
@@ -84,19 +106,24 @@ export default function NutritionMealBuilderScreen() {
     foodSearchState,
     clearFoodSearch,
   } = useNutritionPlanBuilder(
-    Boolean(currentUser),
+    Boolean(currentUser) && nutritionGate === 'allow',
     `${pathname}:meal:${planId ?? 'unknown'}:${mealId ?? 'unknown'}`
   );
+  const { state: customMealsState } = useCustomMeals(Boolean(currentUser) && nutritionGate === 'allow');
   const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
   const isInitialLoading = state.kind === 'loading';
   const isBusy = isMutating;
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
+    if (nutritionGate !== 'allow') {
+      return;
+    }
+
     if (planId) {
       loadPlan(planId);
     }
-  }, [planId, loadPlan]);
+  }, [planId, loadPlan, nutritionGate]);
 
   const meal = useMemo(() => {
     if (state.kind !== 'ready') return null;
@@ -107,10 +134,24 @@ export default function NutritionMealBuilderScreen() {
   const [addItemForm, setAddItemForm] = useState<AddItemFormState>({ kind: 'closed' });
   const [isSortMode, setIsSortMode] = useState(false);
 
+  useEffect(() => {
+    if (addItemForm.kind !== 'open') return;
+    if (addItemForm.selectedFood || addItemForm.customMealSnapshot) return;
+
+    const query = addItemForm.foodQuery.trim();
+    if (query.length < 2) return;
+
+    const timeout = setTimeout(() => {
+      searchFoods(query);
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [addItemForm, searchFoods]);
+
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleAddItem = useCallback(async () => {
     if (isBusy || addItemForm.kind !== 'open' || state.kind !== 'ready' || !mealId) return;
-    const { name, quantity, notes, calories, carbs, proteins, fats } = addItemForm;
+    const { name, quantity, notes, calories, carbs, proteins, fats, customMealSnapshot } = addItemForm;
     if (!name.trim()) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -123,20 +164,22 @@ export default function NutritionMealBuilderScreen() {
       carbs,
       proteins,
       fats,
+      sourceKind: customMealSnapshot ? 'custom_meal' : addItemForm.selectedFood ? 'food_search' : 'manual',
+      customMealSnapshot,
     });
 
     const { error } = await addItem(planId!, mealId, sanitized);
     if (error) {
       Alert.alert(
         tr('pro.plan.error.save', 'student.plan.error.save'),
-        `Reason: ${error}`
+        t('pro.plan.error.reason', { reason: error }) as string
       );
     } else {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setAddItemForm({ kind: 'closed' });
       clearFoodSearch();
     }
-  }, [isBusy, addItemForm, state, addItem, planId, mealId, tr, clearFoodSearch]);
+  }, [isBusy, addItemForm, state, addItem, planId, mealId, tr, clearFoodSearch, t]);
 
   const handleRemoveItem = useCallback(
     (itemId: string) => {
@@ -147,7 +190,7 @@ export default function NutritionMealBuilderScreen() {
 
       Alert.alert(
         t('common.cta.delete') as string,
-        (t('pro.plan.delete.body') as string).replace('{name}', itemName),
+        (t('pro.plan.item.delete.body') as string).replace('{name}', itemName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -190,11 +233,24 @@ export default function NutritionMealBuilderScreen() {
     setAddItemForm({ kind: 'open', name: '', quantity: '', notes: '', foodQuery: '' });
   }, []);
 
+  if (nutritionGate === 'loading') {
+    return (
+      <DsScreen scheme={scheme} contentContainerStyle={[styles.content, styles.centeredContent]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+      </DsScreen>
+    );
+  }
+
+  if (nutritionGate === 'redirect') {
+    return <Redirect href="/(tabs)" />;
+  }
+
   if (!meal && state.kind === 'ready') {
     return (
       <DsScreen scheme={scheme} contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
-        <Text style={{ color: palette.text }}>Meal not found</Text>
-        <DsPillButton scheme={scheme} label="Go Back" onPress={() => router.back()} />
+        <Text style={{ color: palette.text }}>{t('pro.plan.meal.not_found')}</Text>
+        <DsPillButton scheme={scheme} label={t('pro.plan.meal.go_back') as string} onPress={() => router.back()} />
       </DsScreen>
     );
   }
@@ -205,6 +261,7 @@ export default function NutritionMealBuilderScreen() {
     <DsScreen
       scheme={scheme}
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}
+      testID="pro.nutrition_meal.screen"
     >
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -215,6 +272,7 @@ export default function NutritionMealBuilderScreen() {
           onPress={() => router.back()}
           accessibilityLabel={t('auth.role.cta_back') as string}
           style={styles.backButton}
+          testID="pro.nutrition_meal.backButton"
         />
         <View style={{ flexDirection: 'row', gap: DsSpace.sm }}>
           {meal && meal.items.length > 1 && (
@@ -242,10 +300,10 @@ export default function NutritionMealBuilderScreen() {
       <View style={styles.titleSection}>
         <Text style={[styles.screenTitle, { color: palette.text }]}>{meal?.name}</Text>
         <View style={styles.totalsRow}>
-          <TotalChip label={t('common.nutrition.calories')} value={`${totals.calories} kcal`} palette={palette} />
-          <TotalChip label={t('common.nutrition.carbs')} value={`${totals.carbs}g`} palette={palette} />
-          <TotalChip label={t('common.nutrition.proteins')} value={`${totals.proteins}g`} palette={palette} />
-          <TotalChip label={t('common.nutrition.fats')} value={`${totals.fats}g`} palette={palette} />
+          <TotalChip label={t('common.nutrition.calories')} value={`${totals.calories} kcal`} palette={palette} testID="pro.nutrition_meal.total.calories" />
+          <TotalChip label={t('common.nutrition.carbs')} value={`${totals.carbs}g`} palette={palette} testID="pro.nutrition_meal.total.carbs" />
+          <TotalChip label={t('common.nutrition.proteins')} value={`${totals.proteins}g`} palette={palette} testID="pro.nutrition_meal.total.proteins" />
+          <TotalChip label={t('common.nutrition.fats')} value={`${totals.fats}g`} palette={palette} testID="pro.nutrition_meal.total.fats" />
         </View>
       </View>
 
@@ -271,6 +329,9 @@ export default function NutritionMealBuilderScreen() {
             foodQuery={addItemForm.foodQuery}
             foodSearchState={foodSearchState}
             selectedFood={addItemForm.selectedFood}
+            customMeals={customMealsState.kind === 'ready' ? customMealsState.meals : []}
+            isCustomMealsLoading={customMealsState.kind === 'loading'}
+            selectedCustomMealName={addItemForm.selectedCustomMealName}
             isInteractionLocked={isBusy}
             onNameChange={(v) =>
               setAddItemForm((prev) => (prev.kind === 'open' ? { ...prev, name: v } : prev))
@@ -319,6 +380,8 @@ export default function NutritionMealBuilderScreen() {
                 prev.kind === 'open' ? { 
                   ...prev, 
                   selectedFood: undefined, 
+                  selectedCustomMealName: undefined,
+                  customMealSnapshot: undefined,
                   foodQuery: '',
                   name: '',
                   quantity: '',
@@ -330,12 +393,52 @@ export default function NutritionMealBuilderScreen() {
                 } : prev
               )
             }
+            onSelectCustomMeal={(customMeal) => {
+              const item = buildNutritionMealItemInputFromCustomMealSnapshot(customMeal);
+              setAddItemForm((prev) =>
+                prev.kind === 'open'
+                  ? {
+                      ...prev,
+                      selectedFood: undefined,
+                      selectedCustomMealName: item.name,
+                      customMealSnapshot: item.customMealSnapshot,
+                      foodQuery: '',
+                      name: item.name,
+                      quantity: item.quantity,
+                      notes: item.notes,
+                      calories: item.calories?.toString(),
+                      carbs: item.carbs?.toString(),
+                      proteins: item.proteins?.toString(),
+                      fats: item.fats?.toString(),
+                    }
+                  : prev
+              );
+            }}
+            onClearCustomMeal={() =>
+              setAddItemForm((prev) =>
+                prev.kind === 'open'
+                  ? {
+                      ...prev,
+                      selectedCustomMealName: undefined,
+                      customMealSnapshot: undefined,
+                      name: '',
+                      quantity: '',
+                      calories: undefined,
+                      carbs: undefined,
+                      proteins: undefined,
+                      fats: undefined,
+                    }
+                  : prev
+              )
+            }
             onSelectFood={(food) =>
               setAddItemForm((prev) =>
                 prev.kind === 'open'
                   ? {
                       ...prev,
                       selectedFood: food,
+                      selectedCustomMealName: undefined,
+                      customMealSnapshot: undefined,
                       name: food.name,
                       calories: food.caloriesPer100g.toString(),
                       carbs: food.carbsPer100g.toString(),
@@ -349,6 +452,7 @@ export default function NutritionMealBuilderScreen() {
             onAdd={handleAddItem}
             onClose={handleCloseAddItem}
             style={{ top: '100%', left: 0, right: 0, marginTop: 16 }}
+            testIDPrefix="pro.nutrition_item"
           />
         )}
       </View>
@@ -359,10 +463,10 @@ export default function NutritionMealBuilderScreen() {
             <IconSymbol name="fork.knife" size={40} color={palette.icon} />
           </View>
           <Text style={[styles.emptyTitle, { color: palette.text }]}>
-            No foods added yet
+            {t('pro.plan.meal.empty.title')}
           </Text>
           <Text style={[styles.emptyText, { color: palette.icon }]}>
-            Search and add foods to this meal to build your plan.
+            {t('pro.plan.meal.empty.body')}
           </Text>
         </View>
       )}
@@ -390,6 +494,7 @@ export default function NutritionMealBuilderScreen() {
               isFirstInList={index === 0}
               isLastInList={index === meal.items.length - 1}
               isInteractionLocked={isBusy}
+              testID={`pro.nutrition_meal.foodRow.${toTestIDSegment(item.name)}`}
             />
           ))}
         </View>
@@ -403,6 +508,7 @@ export default function NutritionMealBuilderScreen() {
           disabled={isBusy}
           accessibilityRole="button"
           accessibilityLabel={t('pro.plan.cta.add_food')}
+          testID="pro.nutrition_meal.addFood"
         >
           <IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />
           <Text style={[styles.addSessionBtnText, { color: palette.tint }]}>
@@ -424,18 +530,23 @@ export default function NutritionMealBuilderScreen() {
   );
 }
 
-function TotalChip({ label, value, palette }: { label: string, value: string, palette: any }) {
+function TotalChip({ label, value, palette, testID }: { label: string, value: string, palette: any, testID?: string }) {
   return (
     <View style={styles.totalChip}>
       <Text style={[styles.totalLabel, { color: palette.icon }]}>{label}</Text>
-      <Text style={[styles.totalValue, { color: palette.text }]}>{value}</Text>
+      <Text style={[styles.totalValue, { color: palette.text }]} testID={testID}>{value}</Text>
     </View>
   );
+}
+
+function toTestIDSegment(value: string): string {
+  return value.trim().replace(/[^A-Za-z0-9_-]+/g, '_');
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 100 },
+  centeredContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
   backButton: { marginBottom: 0 },
   titleSection: { gap: DsSpace.xs, paddingHorizontal: DsSpace.xs, marginBottom: DsSpace.sm },

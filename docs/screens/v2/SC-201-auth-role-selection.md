@@ -56,11 +56,11 @@
     - Professional -> `/professional/specialty` (SC-202 onboarding specialty setup).
   - Error handling distinguishes role persistence failure (`auth.role.error.save_failed`) from post-save navigation failure (`auth.role.error.navigation_failed`).
   - Continue action is blocked when no authenticated session is available and routes to sign-in with `auth.role.error.auth_required`.
-  - Profile hydration contract is read-first and upsert-only-if-missing: auth bootstrap reads existing Firestore profile first, skips upsert when profile exists, and only upserts/re-reads when profile is absent. This preserves persisted `lockedRole` across app relaunch.
+  - Profile hydration contract is server-backed and upsert-on-hydrate: auth bootstrap calls MyChampions server profile endpoints and maps `lockedRole` / terms state from the returned profile. This preserves persisted `lockedRole` for local server sessions.
   - Role-lock persistence includes defensive profile upsert fallback and multi-step read-after-write retries with server-only confirmation reads; role-selection continues only after persisted role is confirmed by `getMyProfile` (no mutation-ack fallback on unconfirmed reads).
   - Dev diagnostics emit deterministic pre-lock and per-retry confirmation snapshot logs (`exists`, `lockedRole`, `uid mismatch`) to isolate connector-side non-persistence.
   - Route auto-bypass for locked-role accounts is enforced by global auth guard in `app/_layout.tsx`.
-  - Authentication session source is Firebase Auth; role-lock profile source is now Firestore-backed via `features/auth/profile-source.ts` (remote-only reads/writes).
+  - Authentication session source is explicit E2E or MyChampions local server auth; role-lock profile source is now MyChampions server-backed via `features/auth/profile-source.ts`.
   - Visual layout is aligned with Stitch role-selection reference (`0e872419a1ff45b39fbc89d7c3592c44`) using the same playful auth system as SC-217/SC-218:
     - Soft canvas background with decorative blobs.
     - Hero area: circular brand badge matching SC-217/SC-218 treatment.
@@ -91,7 +91,7 @@
 - If authenticated user closes and reopens app before role is persisted, app must keep user locked on `/auth/role-selection` and block tab/home access.
 - If session expires while this screen is open, Continue remains disabled and user is redirected to sign-in when pressed.
 - If user signs out and a different account signs in, role-lock session state must reset before profile hydration; new account cannot inherit prior account role context.
-- Hydrated role-lock must only be accepted when returned profile `authUid` matches the active Firebase Auth UID; mismatches are treated as unlocked-role state.
+- Hydrated role-lock must only be accepted for the authenticated MyChampions server session; mismatched or missing server auth keeps the route locked to the unauthenticated/role-selection safe path.
 
 ## Links
 - Functional requirement: FR-102, FR-118, FR-135, FR-136, FR-173, FR-203, FR-206, FR-207, FR-208, FR-217

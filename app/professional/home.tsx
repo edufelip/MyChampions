@@ -9,7 +9,7 @@
  *  - CTAs to student roster and subscription (card)
  *  - Offline read-only banner + write-lock feedback
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
@@ -30,7 +30,13 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { useInviteCode } from '@/features/professional/use-professional';
+import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
+import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
+import {
+  buildProfessionalPlanChangeNotificationSummary,
+  type ProfessionalPlanChangeNotificationSummary,
+} from '@/features/plans/plan-change-request.logic';
+import { getProfessionalPlanChangeRequests } from '@/features/plans/plan-source';
 import {
   resolveSubscriptionState,
   isPlanUpdateLocked,
@@ -41,9 +47,17 @@ import {
   type OfflineDisplayState,
   type StaleElapsed,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+
+const emptyPlanChangeNotificationSummary: ProfessionalPlanChangeNotificationSummary = {
+  pendingCount: 0,
+  latestRequest: null,
+  affectedStudentUids: [],
+  planTypes: [],
+};
 
 export default function ProfessionalHomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -53,14 +67,25 @@ export default function ProfessionalHomeScreen() {
   const router = useRouter();
   const { currentUser } = useAuthSession();
 
+  const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
+  const inviteSpecialty =
+    specialtiesState.kind === 'ready' ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties) : null;
+  const { state: codeState, rotate } = useInviteCode(Boolean(currentUser), inviteSpecialty);
+  const {
+    entitlementStatus,
+    activeStudentCount,
+    lastSyncedAtIso: subscriptionSyncedAtIso,
+  } = useSubscription(currentUser?.uid ?? null, { loadProfessionalActiveStudentCount: true });
   const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    specialtiesState.kind === 'ready' ? specialtiesState.lastSyncedAtIso : null,
+    codeState.kind === 'ready' ? codeState.lastSyncedAtIso : null,
+    subscriptionSyncedAtIso,
+  ]);
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
     networkStatus,
-    lastSyncedAtIso: null,
+    lastSyncedAtIso,
   });
-
-  const { state: codeState, rotate } = useInviteCode(Boolean(currentUser));
-  const { entitlementStatus, activeStudentCount } = useSubscription(Boolean(currentUser));
   const subState = resolveSubscriptionState({
     activeStudentCount,
     entitlementStatus,
@@ -68,6 +93,32 @@ export default function ProfessionalHomeScreen() {
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   const [rotateError, setRotateError] = useState<string | null>(null);
+  const [planChangeNotification, setPlanChangeNotification] =
+    useState<ProfessionalPlanChangeNotificationSummary>(emptyPlanChangeNotificationSummary);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setPlanChangeNotification(emptyPlanChangeNotificationSummary);
+      return;
+    }
+
+    let isActive = true;
+    getProfessionalPlanChangeRequests()
+      .then((requests) => {
+        if (isActive) {
+          setPlanChangeNotification(buildProfessionalPlanChangeNotificationSummary(requests));
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setPlanChangeNotification(emptyPlanChangeNotificationSummary);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentUser]);
 
   function confirmRotate() {
     Alert.alert(
@@ -184,12 +235,49 @@ export default function ProfessionalHomeScreen() {
         />
         <StatCard
           label={t('pro.home.pending_requests') as string}
-          value="—"
+          value={String(planChangeNotification.pendingCount)}
           scheme={scheme}
           iconName="schedule-send"
           testID="pro.home.pendingRequests"
         />
       </View>
+
+      {planChangeNotification.latestRequest ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            router.push(
+              `/professional/student-profile?studentId=${encodeURIComponent(
+                planChangeNotification.latestRequest?.studentUid ?? ''
+              )}`
+            );
+          }}
+          style={[
+            styles.planChangeNotificationCard,
+            {
+              backgroundColor: theme.color.accentPrimarySoft,
+              borderColor: theme.color.accentPrimary,
+            },
+          ]}
+          testID="pro.home.planChangeNotification">
+          <View style={[styles.planChangeNotificationIcon, { backgroundColor: theme.color.accentPrimary }]}>
+            <MaterialIcons name="notifications-active" size={18} color="#FFFFFF" />
+          </View>
+          <View style={styles.planChangeNotificationCopy}>
+            <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
+              {t('pro.home.plan_change_notification.title')}
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
+              {(t('pro.home.plan_change_notification.body') as string)
+                .replace('{count}', String(planChangeNotification.pendingCount))
+                .replace('{studentUid}', planChangeNotification.latestRequest.studentUid)}
+            </Text>
+          </View>
+          <Text style={[styles.planChangeNotificationCta, { color: theme.color.accentPrimary }]}>
+            {t('pro.home.plan_change_notification.cta')}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <DsCard scheme={scheme} testID="pro.home.inviteCodeCard" style={styles.inviteCard} variant="muted">
         <View style={styles.cardHeader}>
@@ -446,6 +534,29 @@ const styles = StyleSheet.create({
   },
   meta: { ...DsTypography.caption },
   errorText: { ...DsTypography.caption },
+  planChangeNotificationCard: {
+    alignItems: 'center',
+    borderRadius: DsRadius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+    padding: DsSpace.md,
+  },
+  planChangeNotificationIcon: {
+    alignItems: 'center',
+    borderRadius: DsRadius.pill,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  planChangeNotificationCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  planChangeNotificationCta: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
   subscriptionCard: {
     borderRadius: DsRadius.xl,
     height: 120,

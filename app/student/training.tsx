@@ -8,11 +8,10 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
-import { ReadOnlyNoticeCard } from '@/components/ds/patterns/ReadOnlyNoticeCard';
 import { WeekStrip, type WeekStripItem } from '@/components/ds/patterns/WeekStrip';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
@@ -21,10 +20,14 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { useConnections } from '@/features/connections/use-connections';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
 import { usePlans } from '@/features/plans/use-plans';
+import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
+import { logWorkoutSession, getTodayWorkoutLogs, type WorkoutLog } from '@/features/training/workout-log-source';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -60,26 +63,106 @@ export default function StudentTrainingScreen() {
   const router = useRouter();
 
   const networkStatus = useNetworkStatus();
+  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
+  const { state: connectionsState } = useConnections(Boolean(currentUser));
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
+    connectionsState.kind === 'ready' ? connectionsState.lastSyncedAtIso : null,
+  ]);
   const offlineDisplay = resolveOfflineDisplayState({
     networkStatus,
-    lastSyncedAtIso: null,
+    lastSyncedAtIso,
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
-  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
-
   const trainingPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'training' && !p.isArchived) : [];
-  
-  const assignedTrainingPlan = trainingPlans.find(plan => plan.sourceKind === 'assigned') ?? null;
+
+  const assignedTrainingPlan = trainingPlans.find(plan => plan.sourceKind === 'assigned' && !plan.isDraft) ?? null;
   const selfManagedTrainingPlan =
     trainingPlans.find(plan => isSelfGuidedPlan(plan, currentUser?.uid ?? null)) ?? null;
+  const hasActiveFitnessCoachConnection =
+    connectionsState.kind === 'ready' &&
+    connectionsState.connections.some(
+      (connection) => connection.specialty === 'fitness_coach' && connection.status === 'active'
+    );
 
   const hasActiveTrainingAssignment = assignedTrainingPlan !== null;
   const hasSelfManagedPlan = selfManagedTrainingPlan !== null;
+  const isConnectionsPending = Boolean(currentUser) && (connectionsState.kind === 'idle' || connectionsState.kind === 'loading');
+  const hasConnectionsError = Boolean(currentUser) && connectionsState.kind === 'error';
+  const loadErrorMessage =
+    plansState.kind === 'error'
+      ? plansState.message
+      : connectionsState.kind === 'error'
+        ? connectionsState.message
+        : null;
+  const isWaitingForCoachPlan = hasActiveFitnessCoachConnection && !hasActiveTrainingAssignment;
+  const shouldShowPlanCalendar = hasActiveTrainingAssignment || (hasSelfManagedPlan && !isWaitingForCoachPlan);
   const weekStrip = useMemo(() => getWeekStrip(locale), [locale]);
 
+  const { state: builderState, loadPlan } = useTrainingPlanBuilder(Boolean(currentUser), 'student-assigned');
+  const [todayWorkoutLogs, setTodayWorkoutLogs] = useState<WorkoutLog[]>([]);
+  const [expandedSessionIds, setExpandedSessionIds] = useState<string[]>([]);
+  const [isLoggingSessionId, setIsLoggingSessionId] = useState<string | null>(null);
+
+  const loggingSessionsRef = useRef(new Set<string>());
+  const loggedSessionIds = todayWorkoutLogs.map((log) => log.sessionId);
+
+  useEffect(() => {
+    if (assignedTrainingPlan) {
+      loadPlan(assignedTrainingPlan.id);
+    }
+  }, [assignedTrainingPlan, loadPlan]);
+
+  useEffect(() => {
+    if (currentUser) {
+      getTodayWorkoutLogs()
+        .then((logs) => {
+          setTodayWorkoutLogs(logs);
+        })
+        .catch((err) => {
+          console.error('Error loading today workout logs:', err);
+        });
+    }
+  }, [currentUser]);
+
+  const toggleSessionExpand = (sessionId: string) => {
+    setExpandedSessionIds((prev) =>
+      prev.includes(sessionId) ? prev.filter((id) => id !== sessionId) : [...prev, sessionId]
+    );
+  };
+
+  const handleLogWorkout = async (sessionId: string, sessionName: string) => {
+    if (isWriteLocked || loggedSessionIds.includes(sessionId) || loggingSessionsRef.current.has(sessionId)) return;
+
+    loggingSessionsRef.current.add(sessionId);
+    setIsLoggingSessionId(sessionId);
+    try {
+      await logWorkoutSession(sessionId, sessionName);
+      const newLog: WorkoutLog = {
+        id: Math.random().toString(),
+        ownerUid: currentUser?.uid || '',
+        sessionId,
+        sessionName,
+        createdAt: new Date().toISOString(),
+      };
+      setTodayWorkoutLogs((prev) => [...prev, newLog]);
+    } catch (err) {
+      console.error('Failed to log workout session:', err);
+      Alert.alert(t('common.error.generic'), t('student.training.plan_change.error.unknown') || 'Something went wrong. Try again.');
+    } finally {
+      loggingSessionsRef.current.delete(sessionId);
+      setIsLoggingSessionId(null);
+    }
+  };
+
   return (
-    <DsScreen scheme={scheme} testID="student.training.screen">
+    <DsScreen
+      scheme={scheme}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      testID="student.training.screen"
+    >
       <Stack.Screen options={{ title: t('student.training.title'), headerShown: false }} />
 
       <View style={[styles.shell, { backgroundColor: theme.color.shell }]}>
@@ -93,31 +176,146 @@ export default function StudentTrainingScreen() {
           <DsOfflineBanner scheme={scheme} text={t('offline.banner')} testID="student.training.offlineBanner" />
         ) : null}
 
-        {hasActiveTrainingAssignment || hasSelfManagedPlan ? <WeekStrip scheme={scheme} items={weekStrip} /> : null}
+        {shouldShowPlanCalendar ? (
+          <WeekStrip scheme={scheme} items={weekStrip} testID="student.training.weekStrip" />
+        ) : null}
 
-        {plansState.kind === 'loading' ? (
+        {plansState.kind === 'loading' || (isConnectionsPending && !hasSelfManagedPlan) ? (
           <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.plansLoading">
             <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
           </DsCard>
+        ) : plansState.kind === 'error' || (hasConnectionsError && !hasSelfManagedPlan) ? (
+          <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.loadError">
+            <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
+              {loadErrorMessage ?? t('common.error.generic')}
+            </Text>
+          </DsCard>
         ) : hasActiveTrainingAssignment ? (
           <View style={styles.sectionStack}>
-            <ReadOnlyNoticeCard
-              scheme={scheme}
-              text={t('student.training.assigned_plan.read_only_notice')}
-              testID="student.training.assignedPlanNotice"
-            />
+            {builderState.kind === 'loading' ? (
+              <DsCard scheme={scheme} style={styles.loadingCard}>
+                <ActivityIndicator color={theme.color.accentPrimary} />
+              </DsCard>
+            ) : builderState.kind === 'error' ? (
+              <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.planDetailsError">
+                <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
+                  {builderState.message || t('common.error.generic')}
+                </Text>
+              </DsCard>
+            ) : builderState.kind === 'ready' && builderState.plan ? (
+              <View style={{ gap: DsSpace.md }} testID="student.training.assignedSessionList">
+                <Text style={[styles.guidedTitle, { color: theme.color.textPrimary }]}>
+                  {t('student.training.session.title')}
+                </Text>
+                {builderState.plan.sessions && builderState.plan.sessions.length > 0 ? (
+                  builderState.plan.sessions.map((session) => {
+                    const isExpanded = expandedSessionIds.includes(session.id);
+                    const isLogged = loggedSessionIds.includes(session.id);
+                    const isLoggingThis = isLoggingSessionId === session.id;
 
-            <DsCard scheme={scheme} style={styles.sessionCard} testID="student.training.sessionSummary">
-              <View style={[styles.sessionIconBubble, { backgroundColor: theme.color.warningSoft }]}>
-                <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={34} />
+                    return (
+                      <DsCard scheme={scheme} key={session.id} style={styles.workoutCard} testID={`student.training.sessionCard-${session.id}`}>
+                        <View style={styles.workoutHeaderRow}>
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => toggleSessionExpand(session.id)}
+                            style={({ pressed }) => [
+                              styles.workoutHeaderLeft,
+                              { opacity: pressed ? 0.72 : 1 },
+                            ]}
+                          >
+                            <View style={[styles.workoutIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+                              <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={24} />
+                            </View>
+                            <View style={styles.workoutTitleBlock}>
+                              <Text style={[styles.workoutTitle, { color: theme.color.textPrimary }]}>
+                                {session.name}
+                              </Text>
+                              <Text style={[styles.workoutSubtitle, { color: theme.color.textSecondary }]}>
+                                {t('student.training.exercise_count', { count: session.items?.length || 0 })}
+                              </Text>
+                            </View>
+                          </Pressable>
+
+                          <View style={styles.workoutHeaderRight}>
+                            <DsPillButton
+                              scheme={scheme}
+                              disabled={isWriteLocked || isLogged}
+                              fullWidth={false}
+                              loading={isLoggingThis}
+                              label={isLogged ? t('student.training.cta_logged') : t('student.training.cta_log')}
+                              leftIcon={
+                                isLogged ? (
+                                  <MaterialIcons color={theme.color.success} name="check-circle" size={18} />
+                                ) : undefined
+                              }
+                              onPress={() => handleLogWorkout(session.id, session.name)}
+                              variant={isLogged ? 'outline' : 'primary'}
+                              style={styles.logButton}
+                              testID={`student.training.logBtn-${session.id}`}
+                            />
+                            <Pressable
+                              accessibilityRole="button"
+                              hitSlop={10}
+                              onPress={() => toggleSessionExpand(session.id)}
+                              testID={`student.training.expandBtn-${session.id}`}
+                            >
+                              <MaterialIcons
+                                color={theme.color.textSecondary}
+                                name={isExpanded ? 'expand-less' : 'expand-more'}
+                                size={24}
+                                style={{ marginLeft: 4 }}
+                              />
+                            </Pressable>
+                          </View>
+                        </View>
+
+                        {isExpanded && (
+                          <View style={[styles.exerciseList, { borderTopColor: theme.color.border }]}>
+                            {session.items && session.items.length > 0 ? (
+                              session.items.map((item, idx) => (
+                                <View
+                                  key={item.id}
+                                  style={[
+                                    styles.exerciseItem,
+                                    idx > 0 && { borderTopWidth: 1, borderTopColor: theme.color.border },
+                                  ]}
+                                >
+                                  <View style={styles.exerciseHeader}>
+                                    <View style={[styles.itemDot, { backgroundColor: theme.color.accentPrimary }]} />
+                                    <Text style={[styles.exerciseName, { color: theme.color.textPrimary }]}>
+                                      {item.name}
+                                    </Text>
+                                  </View>
+                                  {item.quantity ? (
+                                    <Text style={[styles.exerciseQty, { color: theme.color.textSecondary }]}>
+                                      {item.quantity}
+                                    </Text>
+                                  ) : null}
+                                  {item.notes ? (
+                                    <Text style={[styles.exerciseNotes, { color: theme.color.textSecondary }]}>
+                                      {item.notes}
+                                    </Text>
+                                  ) : null}
+                                </View>
+                              ))
+                            ) : (
+                              <Text style={[styles.noExercisesText, { color: theme.color.textSecondary }]}>
+                                {t('student.training.no_exercises')}
+                              </Text>
+                            )}
+                          </View>
+                        )}
+                      </DsCard>
+                    );
+                  })
+                ) : (
+                  <Text style={[styles.noExercisesText, { color: theme.color.textSecondary }]}>
+                    {t('student.training.no_sessions')}
+                  </Text>
+                )}
               </View>
-              <Text style={[styles.sessionTitle, { color: theme.color.textPrimary }]}>
-                {t('student.training.session.title')}
-              </Text>
-              <Text style={[styles.sessionBody, { color: theme.color.textSecondary }]}>
-                {t('student.training.session.body')}
-              </Text>
-            </DsCard>
+            ) : null}
 
             <PlanChangeRequestCard
               scheme={scheme}
@@ -139,6 +337,56 @@ export default function StudentTrainingScreen() {
                 errorNetwork: 'student.training.plan_change.error.network',
                 errorUnknown: 'student.training.plan_change.error.unknown',
               }}
+            />
+          </View>
+        ) : isWaitingForCoachPlan ? (
+          <View style={styles.emptyStateWrap} testID="student.training.waitingForCoachPlan">
+            <View style={styles.emptyHero}>
+              <View
+                style={[
+                  styles.emptyGlow,
+                  {
+                    backgroundColor:
+                      scheme === 'dark' ? 'rgba(30, 169, 90, 0.10)' : 'rgba(19, 236, 73, 0.12)',
+                  },
+                ]}
+              />
+
+              <View
+                style={[
+                  styles.emptyMainTile,
+                  DsShadow.floating,
+                  {
+                    backgroundColor: theme.color.surface,
+                    shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                  },
+                ]}>
+                <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
+              </View>
+
+              <View style={[styles.emptyAccentTile, DsShadow.soft, { backgroundColor: '#13ec49' }]}>
+                <MaterialIcons color="#102215" name="fitness-center" size={34} />
+              </View>
+            </View>
+
+            <View style={styles.emptyCopyBlock}>
+              <Text style={[styles.emptyTitle, { color: theme.color.textPrimary }]}>
+                {t('student.training.waiting.title')}
+              </Text>
+              <Text style={[styles.emptyBody, { color: theme.color.textSecondary }]}>
+                {t('student.training.waiting.body')}
+              </Text>
+            </View>
+
+            <DsPillButton
+              scheme={scheme}
+              label={t('student.training.waiting.cta')}
+              onPress={() => router.push('/student/professionals')}
+              disabled={isWriteLocked}
+              contentColor="#f8fafc"
+              testID="student.training.waitingCta"
+              style={styles.emptyPrimaryCta}
+              leftIcon={<MaterialIcons color="#f8fafc" name="person" size={20} />}
             />
           </View>
         ) : hasSelfManagedPlan ? (
@@ -226,7 +474,7 @@ export default function StudentTrainingScreen() {
                 { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
               ]}
               testID="student.training.emptySelfGuidedCta">
-              <Text style={[styles.emptySecondaryCtaText, { color: theme.color.textSecondary }]}> 
+              <Text style={[styles.emptySecondaryCtaText, { color: theme.color.textSecondary }]}>
                 {t('student.training.empty.self_guided_cta')}
               </Text>
             </Pressable>
@@ -261,6 +509,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 140,
+  },
+  loadErrorText: {
+    ...DsTypography.caption,
+    textAlign: 'center',
   },
   sectionStack: {
     gap: DsSpace.md,
@@ -338,29 +590,10 @@ const styles = StyleSheet.create({
     ...DsTypography.button,
     fontSize: 14,
   },
-  sessionCard: {
-    alignItems: 'center',
-    gap: DsSpace.sm,
-    paddingVertical: 22,
-  },
-  sessionIconBubble: {
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderRadius: 38,
-    height: 76,
-    justifyContent: 'center',
-    width: 76,
-  },
-  sessionTitle: {
+  guidedTitle: {
     ...DsTypography.cardTitle,
+    fontSize: 20,
     fontFamily: Fonts.rounded,
-    fontSize: 24,
-    textAlign: 'center',
-  },
-  sessionBody: {
-    ...DsTypography.body,
-    maxWidth: 300,
-    textAlign: 'center',
   },
   selfManagedHeader: {
     alignItems: 'center',
@@ -387,5 +620,87 @@ const styles = StyleSheet.create({
   },
   selfManagedCta: {
     marginTop: DsSpace.xs,
+  },
+  workoutCard: {
+    padding: DsSpace.md,
+    gap: DsSpace.xs,
+  },
+  workoutHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  workoutHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DsSpace.sm,
+    flex: 1,
+    marginRight: 8,
+  },
+  workoutIconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+  },
+  workoutTitleBlock: {
+    gap: 2,
+    flex: 1,
+  },
+  workoutTitle: {
+    ...DsTypography.cardTitle,
+    fontSize: 16,
+  },
+  workoutSubtitle: {
+    ...DsTypography.micro,
+  },
+  workoutHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logButton: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+  },
+  exerciseList: {
+    marginTop: DsSpace.md,
+    paddingTop: DsSpace.md,
+    borderTopWidth: 1,
+    gap: DsSpace.md,
+  },
+  exerciseItem: {
+    gap: 4,
+    paddingVertical: DsSpace.xs,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  itemDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+  exerciseName: {
+    ...DsTypography.body,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  exerciseQty: {
+    ...DsTypography.caption,
+    marginLeft: 16,
+    fontWeight: '600',
+  },
+  exerciseNotes: {
+    ...DsTypography.caption,
+    marginLeft: 16,
+    fontStyle: 'italic',
+  },
+  noExercisesText: {
+    ...DsTypography.caption,
+    textAlign: 'center',
+    paddingVertical: DsSpace.md,
   },
 });

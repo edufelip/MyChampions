@@ -1,6 +1,6 @@
 /**
  * Connection invite code logic — professional-side operations.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-037, D-064, FR-179, FR-180, BR-241, BR-242
  */
 
@@ -11,6 +11,7 @@ export type InviteCodeStatus = 'active' | 'rotated' | 'revoked';
 export type InviteCode = {
   id: string;
   codeValue: string;
+  specialty: 'nutritionist' | 'fitness_coach';
   status: InviteCodeStatus;
   rotatedAt: string | null;
   expiresAt: string | null;
@@ -47,6 +48,30 @@ export function resolveDisplayInviteCode(code: InviteCode | null): DisplayInvite
 
 export function isPendingCapReached(pendingCount: number): boolean {
   return pendingCount >= MAX_PENDING_REQUESTS;
+}
+
+export function shouldCancelPendingConnectionForRotatedInvite(
+  connection: {
+    status: string;
+    specialty: string;
+    sourceInviteCodeId?: string | null;
+    sourceInviteCodeValue?: string | null;
+  },
+  rotatedInvite: { id: string; codeValue: string; specialty: 'nutritionist' | 'fitness_coach' }
+): boolean {
+  return connection.status === 'pending_confirmation' &&
+    connection.specialty === rotatedInvite.specialty &&
+    connection.sourceInviteCodeId === rotatedInvite.id &&
+    connection.sourceInviteCodeValue === rotatedInvite.codeValue;
+}
+
+export function resolvePrimaryInviteCodeSpecialty(
+  specialties: Array<{ specialty: 'nutritionist' | 'fitness_coach'; isActive: boolean; [key: string]: unknown }>
+): 'nutritionist' | 'fitness_coach' | null {
+  const activeSpecialties = specialties.filter((specialty) => specialty.isActive);
+  if (activeSpecialties.some((specialty) => specialty.specialty === 'nutritionist')) return 'nutritionist';
+  if (activeSpecialties.some((specialty) => specialty.specialty === 'fitness_coach')) return 'fitness_coach';
+  return null;
 }
 
 export function normalizeInviteCodeActionError(error: unknown): InviteCodeActionErrorReason {

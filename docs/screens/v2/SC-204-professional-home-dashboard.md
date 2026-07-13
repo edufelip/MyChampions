@@ -14,6 +14,7 @@
   - Open pending requests queue with search/filter/bulk deny tools.
 - Secondary:
   - View active and pending student counts separately.
+  - Review latest pending student plan-change request notification.
   - Open subscription management screen when near/over cap.
   - Open custom meal library/builder for professional self-tracking and recipe-sharing workflows.
   - Navigate via bottom tabs: dashboard, students, nutrition, training, account/settings.
@@ -39,6 +40,7 @@
 - Pending connection requests are capped at 10 awaiting accept/deny.
 - If entitlement is inactive while above cap, plan update actions for students are locked.
 - Pending queue actions support search/filter and bulk deny without bypassing lifecycle constraints.
+- Pending plan-change requests submitted by students must surface on professional home as a local in-app notification and deep link to that student's profile for review.
 - Pre-lapse entitlement warning must be visible before lock state when risk is detected.
 - When offline, dashboard must show persistent read-only banner and explicit write-lock reasons for blocked actions.
 - Accessibility baseline applies for text scaling, focus order, contrast, and screen-reader labels on dashboard controls.
@@ -51,6 +53,7 @@
 - Outputs:
   - Navigation to roster, student profile, subscription, custom meal flows, and confirmation actions.
   - Separate count widgets for active students and pending requests.
+  - Server-backed pending plan-change request count and latest request summary from `GET /professional/plan-change-requests?status=pending`.
   - Lock-state flags for disabled student-plan update actions.
   - Pre-lapse warning banner data with renew/restore CTA metadata.
 

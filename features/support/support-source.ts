@@ -1,86 +1,121 @@
 /**
- * Firestore source for support messages.
+ * Server-backed source for support messages.
  */
 
-import {
-  addDoc,
-  collection,
-  type Firestore,
-} from 'firebase/firestore';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
-
-import { getFirestoreInstance, nowIso } from '@/features/firestore';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getCurrentServerAccessToken } from '../auth/server-auth-source';
 import {
   SupportSourceError,
   type SupportMessageInput,
-  type SupportMessageStatus,
 } from './support.logic';
 
 export interface SupportSourceDeps {
-  getFirestore: () => Firestore;
-  getCurrentUser: () => { uid: string; email: string | null; displayName: string | null } | null;
-  getCurrentUserRole: () => string | null;
+  fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+  getCurrentAccessToken: () => Promise<string | null>;
+  getServerBaseUrl: () => string | undefined;
   getAppVersion: () => string;
   getPlatform: () => 'ios' | 'android' | 'web';
-  now: () => string;
+}
+
+function resolveSupportSourceE2EOverride() {
+  return resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+}
+
+function resolveServerBaseUrl(): string | undefined {
+  let expoExtra: unknown;
+  try {
+    const Constants = require('expo-constants') as {
+      default?: { expoConfig?: { extra?: unknown } };
+      expoConfig?: { extra?: unknown };
+    };
+    expoExtra = (Constants.default ?? Constants).expoConfig?.extra;
+  } catch {
+    expoExtra = undefined;
+  }
+
+  const extra = (expoExtra ?? {}) as {
+    server?: {
+      baseUrl?: string;
+    };
+  };
+  return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
 }
 
 export function makeDeps(): SupportSourceDeps {
   return {
-    getFirestore: getFirestoreInstance,
-    getCurrentUser: () => {
-      const { getFirebaseAuth } = require('@/features/auth/firebase');
-      const user = getFirebaseAuth().currentUser;
-      if (!user) return null;
-      return {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-      };
+    fetch: globalThis.fetch.bind(globalThis),
+    getCurrentAccessToken: async () => {
+      const serverAccessToken = getCurrentServerAccessToken();
+      if (serverAccessToken) return serverAccessToken;
+
+      const e2eSourceOverride = resolveSupportSourceE2EOverride();
+      if (e2eSourceOverride) return e2eSourceOverride.idToken;
+
+      return null;
     },
-    getCurrentUserRole: () => {
-      // We could use useAuthSession but source layers should be pure or use direct SDKs/Storage
-      // In this project, AuthSession handles hydration and exposes lockedRole.
-      // For the source layer, we'll try to get it from our profile hydration context or similar if available,
-      // but since we want to avoid complex circular deps, we can pass it from the hook or just use a simple lookup.
-      return null; // Will be passed from the hook/caller if we want it robust
+    getServerBaseUrl: resolveServerBaseUrl,
+    getAppVersion: () => {
+      const Constants = require('expo-constants').default;
+      return (Constants.expoConfig?.version as string) ?? 'unknown';
     },
-    getAppVersion: () => (Constants.expoConfig?.version as string) ?? '—',
-    getPlatform: () => (Platform.OS as 'ios' | 'android' | 'web') ?? 'web',
-    now: nowIso,
+    getPlatform: () => {
+      const { Platform } = require('react-native');
+      return (Platform.OS as 'ios' | 'android' | 'web') ?? 'web';
+    },
   };
+}
+
+async function readSupportResponse(response: Response): Promise<{ id?: string } | null> {
+  try {
+    return (await response.json()) as { id?: string };
+  } catch {
+    return null;
+  }
 }
 
 export async function submitSupportMessage(
   input: SupportMessageInput & { userRole?: string | null },
   deps = makeDeps()
 ): Promise<string> {
-  const user = deps.getCurrentUser();
-  if (!user) throw new SupportSourceError('unknown');
+  const e2eSourceOverride = resolveSupportSourceE2EOverride();
+  if (e2eSourceOverride) {
+    return `support_${e2eSourceOverride.uid}`;
+  }
 
-  const db = deps.getFirestore();
-  const status: SupportMessageStatus = 'pending';
-  const now = deps.now();
+  const baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
+  if (!baseUrl) throw new SupportSourceError('unknown');
+
+  const accessToken = await deps.getCurrentAccessToken();
+  if (!accessToken) throw new SupportSourceError('unknown');
 
   try {
-    const docRef = await addDoc(collection(db, 'supportMessages'), {
-      userId: user.uid,
-      userEmail: user.email,
-      userName: user.displayName,
-      userRole: input.userRole ?? deps.getCurrentUserRole() ?? 'unknown',
-      subject: input.subject.trim(),
-      body: input.body.trim(),
-      status,
-      createdAt: now,
-      updatedAt: now,
-      appVersion: deps.getAppVersion(),
-      platform: deps.getPlatform(),
+    const response = await deps.fetch(`${baseUrl}/support/messages`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        subject: input.subject.trim(),
+        body: input.body.trim(),
+        userRole: input.userRole ?? undefined,
+        appVersion: deps.getAppVersion(),
+        platform: deps.getPlatform(),
+      }),
     });
 
-    return docRef.id;
+    const payload = await readSupportResponse(response);
+    if (!response.ok || typeof payload?.id !== 'string') {
+      throw new SupportSourceError(response.status >= 500 ? 'network' : 'unknown');
+    }
+
+    return payload.id;
   } catch (error) {
-    console.error('Error submitting support message:', error);
+    if (error instanceof SupportSourceError) throw error;
     throw new SupportSourceError('network');
   }
 }

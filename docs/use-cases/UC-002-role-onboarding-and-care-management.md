@@ -61,17 +61,17 @@
 - Trigger: Student requests or accepts professional connection.
 - Preconditions: Student authenticated.
 - Main flow:
-  1. Professional generates and shares invite code with student.
+  1. Professional generates and shares a Specialty-scoped invite code.
   2. Student enters invite code in app.
   3. System validates one-active-professional-per-specialty rule.
-  4. System validates pending-request capacity (<= 10 pending for professional).
+  4. System validates pending-request capacity (<= 10 unique pending Students for professional).
   5. System transitions assignment from `invited` to `pending_confirmation`.
   6. Professional confirms assignment.
   7. System transitions assignment from `pending_confirmation` to `active` when valid.
 - Expected result: Student is linked to one active professional per specialty.
 - Alternate flow:
-  - Professional can revoke/regenerate invite code when leakage is suspected.
-  - When invite code is regenerated, pending requests created from superseded code are auto-canceled.
+  - Professional can revoke/regenerate an invite code when leakage is suspected.
+  - When a Specialty code is regenerated, pending requests created from that superseded Specialty code are auto-canceled; other Specialty requests remain unchanged.
 - Additional result:
   - Student-facing professional credential snippet for active assignments exposes only `registry_id`, `authority`, and `country`.
 
@@ -82,9 +82,10 @@
 - Main flow:
   1. Student opens self-plan flow.
   2. Student defines macro/calorie targets and meals or training sessions.
-  3. Student tracks daily adherence.
+  3. Nutrition plans created here are saved as Self-Managed Plans.
+  4. Student tracks daily adherence.
 - Alternate flow:
-  - If a professional assignment becomes active for that specialty, system archives the self-managed plan.
+  - If a professional assignment becomes active for that specialty, system archives the self-managed plan and blocks further self-managed create/edit while active.
   - Professional can review archived self-managed plan only when student allows access.
 - Expected result: Student can progress without a professional relationship.
 
@@ -94,9 +95,11 @@
 - Preconditions: Active assignment exists.
 - Main flow:
   1. User ends assignment per policy.
-  2. System marks assignment inactive.
-  3. System retains relationship and plan history.
-- Expected result: Historical records remain accessible for auditing and continuity.
+  2. System applies the same connection-end lifecycle whether the Student or Professional initiated the unbind.
+  3. System archives assigned plans for that Connection.
+  4. System restores the latest Self-Managed Plan tied to the ending Connection if one exists.
+  5. System retains relationship and plan history.
+- Expected result: Historical records remain accessible for auditing and continuity; no replacement plan is auto-created.
 
 ## UC-002.6 Professional Student-Cap Subscription Gate
 - Primary actor: Professional.
@@ -144,6 +147,7 @@
   4. Assignment enters `pending_confirmation` when valid.
 - Alternate flow:
   - If QR payload is invalid, app shows actionable error and allows retry/manual entry.
+  - If camera permission is denied or no camera is available, app shows inline guidance and leaves manual invite-code entry available.
 - Expected result: Student can initiate pending assignment with lower entry friction.
 
 ## UC-002.10 Contextual Error Recovery In Auth And Invite
@@ -263,15 +267,26 @@
   4. Professional fine-tunes each student draft as needed.
   5. Professional confirms assignments.
 - Expected result: Multiple students receive independent assigned plan copies with optional per-student adjustments.
+- Nutrition assignment constraint: for NutritionPlans, every target Student must have an active nutritionist Connection and nutrition-scoped target; draft assigned plans remain hidden until sent/published.
 
-## UC-002.22 SC-208 Exercise Search Via Proxy Service
+## UC-002.20b Nutritionist Review Of Student Tracking
+- Primary actor: Professional with nutritionist Specialty.
+- Trigger: Professional opens Student Profile.
+- Preconditions: Active nutritionist Connection exists.
+- Main flow:
+  1. Professional opens the Student Profile.
+  2. App shows nutrition tracking logs in read-only mode.
+  3. Logs remain Student-owned and may show plan/connection provenance.
+- Expected result: Nutritionist can review adherence without owning or mutating Student tracking logs.
+
+## UC-002.22 SC-208 Exercise Search Via MyChampions Server
 - Primary actor: Professional.
 - Trigger: Professional searches and previews exercises while editing a training plan.
 - Preconditions: Professional authenticated and SC-208 is open.
 - Main flow:
   1. Professional opens exercise search in SC-208.
-  2. App calls `POST /proxy` on `https://exerciseservice.eduwaldo.com` with normalized `lang` and generated `x-request-id`.
-  3. Proxy service translates search intent/fields as needed and calls upstream YMove endpoint.
+  2. App calls `POST /integrations/exercise/search` on the MyChampions server with bearer auth, the query, effective locale `lang`, and generated `x-request-id`.
+  3. MyChampions server searches the mirrored local exercise catalog and owns any upstream/provider integration.
   4. App renders localized search results and allows selecting one exercise.
   5. App stores only `exerciseId` in local draft/persistence; URLs are fetched on demand for display.
 - Alternate flow:
@@ -282,7 +297,7 @@
 ## UC-002.21 Accept Terms Before Onboarding Continuation
 - Primary actor: New or returning authenticated user.
 - Trigger: User completes sign-in or create-account.
-- Preconditions: Firebase Auth session is active.
+- Preconditions: Authenticated MyChampions server session is active.
 - Main flow:
   1. App routes user to terms acceptance screen.
   2. User opens legal link and reviews terms.
@@ -302,9 +317,9 @@
   2. App opens device camera (or image picker).
   3. User captures or selects a photo of the meal.
   4. App compresses the photo client-side (≤1.5 MB / ≤1600 px per FR-202 / FR-230).
-  5. App sends compressed base64 image to Firebase Cloud Function proxy (`analyzeMealPhoto`).
-  6. Cloud Function validates Firebase Auth ID token and calls OpenAI GPT-4o Vision.
-  7. Cloud Function returns structured macro estimates (calories, carbs, proteins, fats, totalGrams, confidence).
+  5. App sends compressed base64 image to the MyChampions server analyzer endpoint.
+  6. MyChampions server validates the caller's bearer session and calls the configured meal-photo analyzer provider.
+  7. MyChampions server returns structured macro estimates (calories, carbs, proteins, fats, totalGrams, confidence).
   8. App pre-fills the relevant form fields with the returned estimates.
   9. App displays AI disclaimer: results are estimates and should be verified.
   10. User reviews and optionally edits the pre-filled values.
@@ -312,7 +327,7 @@
   12. User confirms save (SC-214) or log (SC-215).
 - Alternate flows:
   - If camera permission is denied, app shows permission guidance.
-  - If Cloud Function returns an error (network/quota/unrecognizable), app shows reason-specific recoverable error; user can dismiss and fill fields manually.
+  - If the analyzer endpoint returns an error (network/quota/unrecognizable), app shows reason-specific recoverable error; user can dismiss and fill fields manually.
   - If user declines photo attachment in SC-214, meal is saved without image.
 - Expected result: Meal form or quick-log panel is pre-filled with AI-estimated macro values; user confirms and saves/logs.
 

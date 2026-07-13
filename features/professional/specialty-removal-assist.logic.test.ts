@@ -183,7 +183,7 @@ test('BL-011 Metadata: add_specialty for last specialty block', () => {
   const meta = buildActionMetadata('add_specialty', 'nutritionist');
 
   assert.equal(meta.action, 'add_specialty');
-  assert(meta.navigationTarget?.includes('specialties'));
+  assert.equal(meta.navigationTarget, undefined);
   assert.equal(meta.priority, 'primary');
 });
 

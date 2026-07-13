@@ -1,6 +1,6 @@
 /**
  * Plan change request logic — student-originated advisory requests on assigned plans.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-071, FR-211, BR-269, AC-255, TC-259
  */
 
@@ -35,6 +35,13 @@ export type PlanChangeRequestErrorReason =
   | 'network'
   | 'configuration'
   | 'unknown';
+
+export type ProfessionalPlanChangeNotificationSummary = {
+  pendingCount: number;
+  latestRequest: PlanChangeRequest | null;
+  affectedStudentUids: string[];
+  planTypes: PlanType[];
+};
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -81,4 +88,31 @@ export function normalizePlanChangeRequestError(error: unknown): PlanChangeReque
     if (msg?.includes('endpoint') || msg?.includes('config')) return 'configuration';
   }
   return 'unknown';
+}
+
+export function buildProfessionalPlanChangeNotificationSummary(
+  requests: PlanChangeRequest[]
+): ProfessionalPlanChangeNotificationSummary {
+  const pendingRequests = requests
+    .filter((request) => request.status === 'pending')
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  const affectedStudentUids: string[] = [];
+  const planTypes: PlanType[] = [];
+
+  for (const request of pendingRequests) {
+    if (!affectedStudentUids.includes(request.studentUid)) {
+      affectedStudentUids.push(request.studentUid);
+    }
+    if (!planTypes.includes(request.planType)) {
+      planTypes.push(request.planType);
+    }
+  }
+
+  return {
+    pendingCount: pendingRequests.length,
+    latestRequest: pendingRequests[0] ?? null,
+    affectedStudentUids,
+    planTypes,
+  };
 }

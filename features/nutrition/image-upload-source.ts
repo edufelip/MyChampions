@@ -1,9 +1,10 @@
 /**
- * Firebase Cloud Storage image upload source — injectable deps pattern.
+ * Custom meal image upload source — injectable deps pattern.
  * Implements the pick → compress → upload pipeline for meal photos (BL-007, D-053, D-057).
  *
- * Storage path convention: users/{uid}/meals/{mealId}/{filename}
+ * Upload target convention: meals/{mealId}/{filename}
  * - mealId may be 'new' or a UUID during create; use the value passed by the caller.
+ * - authenticated owner identity is derived by the MyChampions server from the bearer token.
  * - filename is generated as a UUID + .jpg (D-029: UUIDv7; we use uuid v4 here
  *   as UUIDv7 requires an additional dependency — acceptable in this context).
  *
@@ -54,12 +55,12 @@ export type ImageUploadSourceDeps = {
    */
   compressImage: (uri: string, width: number, height: number) => Promise<Blob>;
   /**
-   * Uploads a Blob to Firebase Storage at the given path.
+   * Uploads a Blob at the given server-owned upload target.
    * Calls onProgress with progress 0–100 during upload.
    * Returns the public download URL on success.
    */
   uploadBlob: (
-    storagePath: string,
+    uploadTarget: string,
     blob: Blob,
     onProgress: UploadProgressCallback
   ) => Promise<string>;
@@ -69,11 +70,102 @@ export type ImageUploadSourceDeps = {
   generateFilename: () => string;
 };
 
+export type ServerImageUploadDeps = {
+  getServerBaseUrl?: () => string | undefined;
+  getCurrentAccessToken?: () => Promise<string | null>;
+  fetchFn?: typeof fetch;
+};
+
 // ─── Pick result ──────────────────────────────────────────────────────────────
 
 export type PickAndUploadResult =
   | { kind: 'cancelled' }
   | { kind: 'done'; downloadUrl: string };
+
+function parseMealImageUploadTarget(uploadTarget: string): { mealId: string; filename: string } {
+  const match = uploadTarget.match(/^meals\/([^/]+)\/([^/]+)$/);
+  if (!match) {
+    throw new ImageUploadSourceError('unknown', 'Meal image upload target is invalid.');
+  }
+  return {
+    mealId: match[1],
+    filename: match[2],
+  };
+}
+
+function uploadErrorForStatus(status: number): ImageUploadErrorReason {
+  if (status === 401 || status === 403) return 'unauthorized';
+  if (status === 413) return 'file_too_large';
+  if (status === 507) return 'storage_quota';
+  if (status >= 500) return 'network';
+  return 'unknown';
+}
+
+export async function uploadMealImageToServer(
+  uploadTarget: string,
+  blob: Blob,
+  onProgress: UploadProgressCallback,
+  deps: ServerImageUploadDeps
+): Promise<string> {
+  const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+  const accessToken = await deps.getCurrentAccessToken?.();
+  if (!baseUrl) {
+    throw new ImageUploadSourceError('configuration', 'MyChampions server URL is required for image upload.');
+  }
+  if (!accessToken) {
+    throw new ImageUploadSourceError('unauthorized', 'Local server auth is required for image upload.');
+  }
+
+  const { mealId, filename } = parseMealImageUploadTarget(uploadTarget);
+  const requestUrl = `${baseUrl}/nutrition/custom-meal-images/${encodeURIComponent(
+    mealId
+  )}?filename=${encodeURIComponent(filename)}`;
+  const fetchFn = deps.fetchFn ?? fetch;
+
+  onProgress(0);
+
+  let response: Response;
+  try {
+    response = await fetchFn(requestUrl, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        'content-type': blob.type || 'image/jpeg',
+      },
+      body: blob,
+    });
+  } catch (error) {
+    throw new ImageUploadSourceError(
+      'network',
+      `Network request to upload meal image failed: ${String(error)}`
+    );
+  }
+
+  if (!response.ok) {
+    throw new ImageUploadSourceError(
+      uploadErrorForStatus(response.status),
+      `MyChampions server image upload failed with status ${response.status}.`
+    );
+  }
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    throw new ImageUploadSourceError(
+      'unknown',
+      `MyChampions server image upload returned invalid JSON: ${String(error)}`
+    );
+  }
+
+  const url = (payload as { url?: unknown }).url;
+  if (typeof url !== 'string' || url.trim().length === 0) {
+    throw new ImageUploadSourceError('unknown', 'MyChampions server image upload response is missing url.');
+  }
+
+  onProgress(100);
+  return url;
+}
 
 // ─── Core operation ───────────────────────────────────────────────────────────
 
@@ -82,27 +174,21 @@ export type PickAndUploadResult =
  *
  * 1. Calls deps.pickImage() — returns null on cancellation.
  * 2. Compresses the result via deps.compressImage().
- * 3. Uploads the blob to `users/{uid}/meals/{mealId}/{filename}`.
+ * 3. Uploads the blob to `meals/{mealId}/{filename}`.
  * 4. Returns the download URL.
  *
  * Throws ImageUploadSourceError with typed ImageUploadErrorReason on all failure paths.
  * Calls onProgress(0–100) during upload.
  *
- * @param uid      - Firebase Auth UID (route: users/{uid}/meals/…)
  * @param mealId   - Meal ID or 'new' for unsaved meal
  * @param deps     - Injectable dependencies
  * @param onProgress - Progress callback (0–100)
  */
 export async function pickAndUploadMealImage(
-  uid: string,
   mealId: string,
   deps: ImageUploadSourceDeps,
   onProgress: UploadProgressCallback
 ): Promise<PickAndUploadResult> {
-  if (!uid) {
-    throw new ImageUploadSourceError('unauthorized', 'User UID is required for image upload.');
-  }
-
   // Step 1: Pick image
   let picked: { uri: string; width: number; height: number } | null;
   try {
@@ -135,15 +221,15 @@ export async function pickAndUploadMealImage(
 
   // Step 3: Upload
   const filename = deps.generateFilename();
-  const storagePath = `users/${uid}/meals/${mealId}/${filename}`;
+  const uploadTarget = `meals/${mealId}/${filename}`;
 
   let downloadUrl: string;
   try {
-    downloadUrl = await deps.uploadBlob(storagePath, blob, onProgress);
+    downloadUrl = await deps.uploadBlob(uploadTarget, blob, onProgress);
   } catch (err: unknown) {
     if (err instanceof ImageUploadSourceError) throw err;
     const reason = normalizeImageUploadError(err);
-    throw new ImageUploadSourceError(reason, `Upload to Firebase Storage failed: ${String(err)}`);
+    throw new ImageUploadSourceError(reason, `Image upload failed: ${String(err)}`);
   }
 
   return { kind: 'done', downloadUrl };

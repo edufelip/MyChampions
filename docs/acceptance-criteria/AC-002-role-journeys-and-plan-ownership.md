@@ -40,8 +40,8 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-234`: Professionals can add specialties after onboarding.
 - `AC-235`: Specialty removal is blocked when specialty has active or pending students, or removal would leave zero specialties.
 - `AC-236`: Professional credential data is optional, specialty-scoped, and limited to one `professional_registry` record per specialty in MVP.
-- `AC-237`: Invite code is persistent by default, revocable/regenerable by professional, with only one active code at a time; regenerating code invalidates old code and auto-cancels pending requests created from that old code.
-- `AC-238`: Pending professional connection requests are capped at 10.
+- `AC-237`: Invite codes are persistent by default, revocable/regenerable by professional, and scoped one active code per Specialty under `professionals/{professionalUid}/inviteCodes/{specialty}`; regenerating a code invalidates that Specialty code and auto-cancels pending requests created from it.
+- `AC-238`: Pending professional connection requests are capped at 10 unique Students.
 - `AC-239`: Wrong-role route access is hard-blocked and redirected to role home.
 - `AC-240`: Student-visible credential info is available only for currently assigned professionals and includes only `registry_id`, `authority`, and `country`.
 - `AC-241`: Professional dashboard shows active and pending student counts separately.
@@ -71,9 +71,20 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-263`: Hydration tracker provides visible daily completion status and streak progression based on effective water goal.
 - `AC-264`: Professionals can create named predefined nutrition/training plans in a reusable private library.
 - `AC-265`: Professionals can bulk assign predefined plans to multiple students and fine-tune each student copy before finalization; assigned copies remain independent.
-- `AC-525`: SC-208 exercise search/detail requests must be sent to the exercise proxy endpoint (`https://exerciseservice.eduwaldo.com/proxy`) rather than direct upstream endpoints from mobile.
+- `AC-525`: SC-208 exercise search/detail requests must be sent to the exercise catalog service (`POST /catalog/search`, `GET /catalog/exercises/:id`) rather than direct upstream endpoints from mobile.
 - `AC-526`: Exercise proxy calls include normalized `lang` and client-generated `x-request-id`, and app diagnostics capture response `x-request-id`.
 - `AC-527`: The upstream YMove API key is never present in client binary/runtime variables; exercise search succeeds through proxy-only integration.
+- `AC-528`: Student-created NutritionPlans are saved as Self-Managed Plans, never same-user predefined/Professional Library plans.
+- `AC-529`: With an active nutritionist Connection and no published assigned NutritionPlan, Student nutrition shows a waiting state and blocks self-managed plan create/edit.
+- `AC-530`: Draft assigned NutritionPlans are hidden from Students and never selected as Effective Plan.
+- `AC-531`: Published assigned NutritionPlans can be edited by their owning Professional while the matching active nutritionist Connection exists.
+- `AC-532`: Nutrition assignment and bulk assignment fail unless each target has an active nutritionist Connection and the target scope is nutrition.
+- `AC-533`: Ending a nutritionist Connection archives assigned NutritionPlans and restores the latest tied Self-Managed NutritionPlan if one exists; no plan is auto-created.
+- `AC-534`: Professionals without nutritionist Specialty cannot access nutrition tab/routes.
+- `AC-535`: Professional Student Profile displays nutrition tracking review as read-only.
+- `AC-536`: TrackingLogs stay Student-owned and expose only plan/connection provenance needed for review.
+- `AC-537`: Assigned NutritionPlans use stable meal snapshots; Professionals cannot insert Student-owned CustomMeals unless the meal has been shared/imported first.
+- `AC-538`: Students with an active assigned NutritionPlan see calorie/macro targets, assigned meal cards, hydration tracking using the effective assigned goal, meal log completion state, and a plan-change request form tied to the assigned plan context.
 - `AC-266`: After successful sign-in or create-account, users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted.
 - `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
 - `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.
@@ -81,12 +92,12 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-516`: In SC-215, AI macro estimates pre-fill the quick-log grams/nutrition panel for user review and editing before logging.
 - `AC-517`: User can edit all AI-pre-filled fields before confirming; no field is locked or auto-saved after analysis.
 - `AC-518`: AI analysis failure (network, quota, unrecognizable image) surfaces a reason-specific recoverable error; form fields remain available for manual entry.
-- `AC-519`: OpenAI API key is not present in client binary or any client-accessible environment variable; analysis calls route through Firebase Cloud Function proxy with Auth ID token validation.
+- `AC-519`: Meal-photo analyzer provider API key is not present in client binary or any client-accessible environment variable; analysis calls route through the MyChampions server with bearer-token validation.
 - `AC-520`: When an email/password account user taps "Change password" in account settings, a confirmation alert is shown before any email is dispatched.
-- `AC-521`: After confirming the password reset request, the app calls `sendPasswordResetEmail` and the "Change password" row enters a loading state for the duration of the request.
-- `AC-522`: On successful dispatch of the password reset email, the "Change password" row is replaced by an inline success banner confirming the email was sent; the banner persists for the remainder of the session.
-- `AC-523`: On failure to dispatch the password reset email, an inline error message is displayed below the "Change password" row; the row remains actionable so the user can retry.
-- `AC-524`: When an OAuth account user (Google or Apple) taps "Change password", an informational alert is shown noting that the password is managed by the provider; no reset email is sent.
+- `AC-521`: After confirming the password reset request, the app calls the MyChampions server password-reset request endpoint and the "Change password" row enters a loading state for the duration of the request.
+- `AC-522`: On successful acceptance of the password reset request, the "Change password" row is replaced by an inline success banner confirming the request was sent; the banner persists for the remainder of the session.
+- `AC-523`: On failure to submit the password reset request, an inline error message is displayed below the "Change password" row; the row remains actionable so the user can retry.
+- `AC-524`: When an OAuth account user (Google or Apple) taps "Change password", an informational alert is shown noting that the password is managed by the provider; no password reset request is submitted.
 
 ## Gherkin Scenarios
 ```gherkin
@@ -107,6 +118,19 @@ Feature: Role-based onboarding and care assignments
     Given a student has no active nutritionist
     When the student creates a nutrition plan
     Then the plan is saved as student self-managed
+
+  Scenario: Active nutritionist waits for published assigned plan
+    Given a student has an active nutritionist connection
+    And no published assigned nutrition plan exists
+    When the student opens nutrition tracking
+    Then self-managed nutrition plan create and edit actions are blocked
+    And the student sees a waiting state
+
+  Scenario: Draft assigned nutrition plan hidden from student
+    Given a nutritionist has a draft assigned nutrition plan for a student
+    When the student opens nutrition tracking
+    Then the draft plan is not visible
+    And it is not used as the effective nutrition plan
 
   Scenario: Connection requires professional confirmation
     Given a professional sends an invite code
@@ -207,6 +231,7 @@ Feature: Role-based onboarding and care assignments
     Given a professional invite code is available as QR and text
     When student submits invite via QR scan
     Then validation and pending-assignment behavior matches manual entry
+    And camera-denied or camera-unavailable devices show inline guidance and keep manual entry available
 
   Scenario: Contextual auth and invite errors
     Given auth or invite action fails with known reason code
@@ -278,6 +303,19 @@ Feature: Role-based onboarding and care assignments
     Then each student receives an independent assigned copy
     And later edits to predefined source do not mutate assigned student copies
 
+  Scenario: Nutrition assignment requires active nutritionist connection
+    Given a professional has a predefined nutrition plan
+    When they assign or bulk assign it to students without active nutritionist connections
+    Then assignment is blocked for those targets
+
+  Scenario: Nutritionist connection end restores self-managed plan
+    Given a student has an active nutritionist connection and assigned nutrition plan
+    And an archived self-managed nutrition plan tied to that connection exists
+    When either side unbinds the connection
+    Then the assigned nutrition plan is archived
+    And the tied self-managed nutrition plan becomes effective
+    And no replacement plan is auto-created
+
   Scenario: Terms gate blocks onboarding continuation until acceptance
     Given a user has just authenticated
     And the required terms version has not been accepted by this user
@@ -305,9 +343,9 @@ Feature: Role-based onboarding and care assignments
     When user declines to attach the captured photo to the meal
     Then meal saves without an image and no error is shown
 
-  Scenario: OpenAI key never in client binary
+  Scenario: Provider key never in client binary
     Given the app binary is inspected
-    Then no OpenAI API key is present in client code or env config exposed to client
+    Then no meal-photo analyzer provider API key is present in client code or env config exposed to client
 
   Scenario: SC-207 Nutrition plan builder — create named plan
     Given a professional with nutrition specialty opens the plan builder
@@ -343,7 +381,7 @@ Feature: Role-based onboarding and care assignments
     Given a professional is editing the training plan builder
     When they add or remove sessions or exercise items before pressing save
     Then those changes remain local on the screen only
-    And Firestore is updated only after the user presses save
+    And the MyChampions server is updated only after the user presses save
 
   Scenario: SC-208 Training plan builder — discard confirmation on back
     Given a professional has unsaved training plan draft changes
@@ -356,11 +394,11 @@ Feature: Role-based onboarding and care assignments
     Then an editable cloned draft is created
     And the original starter template remains unchanged
 
-  Scenario: SC-208 exercise search uses proxy service
+  Scenario: SC-208 exercise search uses MyChampions server catalog
     Given a professional opens exercise search on SC-208
     When the app performs a search request
-    Then the request is sent to `https://exerciseservice.eduwaldo.com/proxy`
-    And the request includes normalized `lang` and `x-request-id`
+    Then the request is sent to `POST /integrations/exercise/search` on the MyChampions server
+    And the request includes bearer auth, effective-locale `lang`, and `x-request-id`
 
   Scenario: SC-208 upstream key is not shipped in client
     Given the app binary is inspected
@@ -384,13 +422,13 @@ Feature: Role-based onboarding and care assignments
 
   Scenario: Password reset — success inline banner
     Given an email/password account user confirmed the password reset request
-    When sendPasswordResetEmail succeeds
+    When the MyChampions server accepts the password reset request
     Then the "Change password" row is replaced by an inline success banner
     And the banner remains visible for the rest of the session
 
   Scenario: Password reset — error inline message with retry
     Given an email/password account user confirmed the password reset request
-    When sendPasswordResetEmail fails
+    When the MyChampions server password reset request fails
     Then an inline error message is shown below the "Change password" row
     And the row remains actionable for retry
 
@@ -398,5 +436,5 @@ Feature: Role-based onboarding and care assignments
     Given a Google or Apple OAuth account user is on the account settings screen
     When the user taps "Change password"
     Then an informational alert is shown naming the provider
-    And no password reset email is dispatched
+    And no password reset request is submitted
 ```

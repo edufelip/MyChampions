@@ -1,6 +1,8 @@
 import Constants from 'expo-constants';
 
 import {
+  DEFAULT_PRIVACY_POLICY_URL,
+  DEFAULT_TERMS_URL,
   resolvePrivacyPolicyUrl,
   resolveRequiredTermsVersion,
   resolveTermsUrl,
@@ -19,7 +21,7 @@ export function resolveTermsConfigFromExpo(): TermsConfig {
 
   return {
     requiredVersion: resolveRequiredTermsVersion(terms.requiredVersion, 'v1'),
-    termsUrl: resolveTermsUrl(terms.url, 'https://google.com'),
-    privacyPolicyUrl: resolvePrivacyPolicyUrl(terms.privacyPolicyUrl, 'https://google.com'),
+    termsUrl: resolveTermsUrl(terms.url, DEFAULT_TERMS_URL),
+    privacyPolicyUrl: resolvePrivacyPolicyUrl(terms.privacyPolicyUrl, DEFAULT_PRIVACY_POLICY_URL),
   };
 }

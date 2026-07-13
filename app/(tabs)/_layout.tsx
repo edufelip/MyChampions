@@ -20,6 +20,8 @@ import { getDsTheme } from '@/constants/design-system';
 import type { RoleIntent } from '@/features/auth/role-selection.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { resolveTabShellState } from '@/features/auth/tab-shell.logic';
+import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -64,6 +66,7 @@ export default function TabLayout() {
     establishedUid: establishedUidRef.current,
     establishedRole,
   });
+  const { state: specialtiesState } = useSpecialties(Boolean(currentUser) && effectiveRole === 'professional');
 
   useEffect(() => {
     if (!__DEV__) return;
@@ -85,6 +88,10 @@ export default function TabLayout() {
 
   const isPro = effectiveRole === 'professional';
   const isStudent = effectiveRole === 'student';
+  const canUseNutrition = canAccessNutritionSurface({
+    role: effectiveRole,
+    specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+  });
 
   return (
     <Tabs
@@ -98,7 +105,7 @@ export default function TabLayout() {
         sceneStyle: {
           backgroundColor: theme.color.canvas,
         },
-        lazy: false,
+        lazy: true,
         animation: 'fade',
         headerShown: false,
         tabBarButton: HapticTab,
@@ -115,6 +122,7 @@ export default function TabLayout() {
               color={color}
             />
           ),
+          tabBarButtonTestID: 'tabs.home',
           // Always visible — every role has a home/dashboard tab
           href: effectiveRole ? undefined : null,
         }}
@@ -128,6 +136,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.2.fill" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.students',
           href: isPro ? undefined : null,
         }}
       />
@@ -140,7 +149,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="fork.knife" color={color} />
           ),
-          href: effectiveRole ? undefined : null,
+          tabBarButtonTestID: 'tabs.nutrition',
+          href: canUseNutrition ? undefined : null,
         }}
       />
 
@@ -152,6 +162,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="figure.run" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.training',
           href: effectiveRole ? undefined : null,
         }}
       />
@@ -165,6 +176,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="book.closed.fill" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.recipes',
           href: isStudent ? undefined : null,
         }}
       />
@@ -178,12 +190,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.crop.circle.fill" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.account',
           href: effectiveRole ? undefined : null,
         }}
       />
 
-      {/* ── Legacy Expo starter screens — hidden from product nav ────────── */}
-      <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -5,7 +5,10 @@ import {
   calculateTotalsFromItems,
   isStarterTemplate,
   deriveStarterTemplatePlanType,
+  resolveNutritionPlanCreationMetadata,
+  buildNutritionMealItemInputFromCustomMealSnapshot,
 } from './plan-builder.logic';
+import type { CustomMeal } from '../nutrition/custom-meal.logic';
 
 test('calculateTotalsFromItems sums numeric macros', () => {
   const totals = calculateTotalsFromItems([
@@ -38,4 +41,66 @@ test('deriveStarterTemplatePlanType identifies plan types correctly', () => {
   assert.equal(deriveStarterTemplatePlanType('starter_nutrition_abc'), 'nutrition');
   assert.equal(deriveStarterTemplatePlanType('starter_training_xyz'), 'training');
   assert.equal(deriveStarterTemplatePlanType('my_plan'), null);
+});
+
+test('resolveNutritionPlanCreationMetadata returns Professional Library Plan metadata for professional builder mode', () => {
+  assert.deepEqual(resolveNutritionPlanCreationMetadata('pro-1', 'professional_library'), {
+    ownerProfessionalUid: 'pro-1',
+    studentAuthUid: 'pro-1',
+    sourceKind: 'predefined',
+    isDraft: false,
+  });
+});
+
+test('resolveNutritionPlanCreationMetadata returns Self-Managed Plan metadata for student builder mode', () => {
+  assert.deepEqual(resolveNutritionPlanCreationMetadata('student-1', 'self_managed'), {
+    ownerProfessionalUid: null,
+    studentAuthUid: 'student-1',
+    sourceKind: 'self_managed',
+    isDraft: false,
+  });
+});
+
+test('buildNutritionMealItemInputFromCustomMealSnapshot keeps a stable custom meal snapshot after the source meal changes', () => {
+  const sourceMeal: CustomMeal = {
+    id: 'meal-1',
+    name: 'Turkey Bowl',
+    totalGrams: 350,
+    calories: 620,
+    carbs: 68,
+    proteins: 42,
+    fats: 18,
+    ingredientCost: 12,
+    imageUrl: 'https://example.com/turkey.jpg',
+    ownerUid: 'owner-1',
+    createdAt: '2026-06-01T10:00:00.000Z',
+    updatedAt: '2026-06-01T10:00:00.000Z',
+  };
+
+  const item = buildNutritionMealItemInputFromCustomMealSnapshot(sourceMeal);
+
+  sourceMeal.name = 'Edited Turkey Bowl';
+  sourceMeal.calories = 700;
+  sourceMeal.carbs = 80;
+
+  assert.deepEqual(item, {
+    name: 'Turkey Bowl',
+    quantity: '350g',
+    notes: '',
+    calories: 620,
+    carbs: 68,
+    proteins: 42,
+    fats: 18,
+    sourceKind: 'custom_meal',
+    customMealSnapshot: {
+      name: 'Turkey Bowl',
+      servingGrams: 350,
+      calories: 620,
+      carbs: 68,
+      proteins: 42,
+      fats: 18,
+      sourceKind: 'custom_meal',
+    },
+  });
+  assert.equal('customMealId' in item, false);
 });

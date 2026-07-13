@@ -29,6 +29,12 @@ import {
   getDsTheme,
 } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import {
+  buildInvitePendingBulkDenied,
+  buildInvitePendingConfirmed,
+  buildInvitePendingDenied,
+} from '@/features/analytics/analytics.logic';
+import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useAuthSession } from '@/features/auth/auth-session';
 import type { ConnectionRecord } from '@/features/connections/connection.logic';
 import { useConnections } from '@/features/connections/use-connections';
@@ -36,6 +42,7 @@ import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
@@ -47,15 +54,18 @@ export default function ProfessionalPendingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { currentUser } = useAuthSession();
-
-  const networkStatus = useNetworkStatus();
-  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
-    networkStatus,
-    lastSyncedAtIso: null,
-  });
-  const isWriteLocked = offlineDisplay.showOfflineBanner;
+  const { emitEvent } = useAnalytics();
 
   const { state, reload, confirmConnection, unbindConnection } = useConnections(Boolean(currentUser));
+  const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    state.kind === 'ready' ? state.lastSyncedAtIso : null,
+  ]);
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -87,23 +97,27 @@ export default function ProfessionalPendingScreen() {
   const onAccept = useCallback(
     (connectionId: string) => {
       void confirmConnection(connectionId).then((err) => {
-        if (err) {
-          Alert.alert(t('common.error.generic'), t('common.error.retry'));
+        if (!err) {
+          emitEvent(buildInvitePendingConfirmed());
+          return;
         }
+        Alert.alert(t('common.error.generic'), t('common.error.retry'));
       });
     },
-    [confirmConnection, t]
+    [confirmConnection, emitEvent, t]
   );
 
   const onDeny = useCallback(
     (connectionId: string) => {
       void unbindConnection(connectionId).then((err) => {
-        if (err) {
-          Alert.alert(t('common.error.generic'), t('common.error.retry'));
+        if (!err) {
+          emitEvent(buildInvitePendingDenied());
+          return;
         }
+        Alert.alert(t('common.error.generic'), t('common.error.retry'));
       });
     },
-    [unbindConnection, t]
+    [emitEvent, t, unbindConnection]
   );
 
   const onBulkDeny = () => {
@@ -121,7 +135,10 @@ export default function ProfessionalPendingScreen() {
             setIsBulkDenying(true);
             const ids = Array.from(selectedIds);
 
-            await Promise.allSettled(ids.map((id) => unbindConnection(id)));
+            const results = await Promise.all(ids.map((id) => unbindConnection(id)));
+            if (results.every((err) => !err)) {
+              emitEvent(buildInvitePendingBulkDenied(ids.length));
+            }
 
             setSelectedIds(new Set());
             setIsBulkDenying(false);
@@ -286,7 +303,7 @@ function PendingRow({
       </View>
 
       <View style={styles.rowInfo}>
-        <Text style={[styles.rowSpecialty, { color: theme.color.textPrimary }]}> 
+        <Text style={[styles.rowSpecialty, { color: theme.color.textPrimary }]}>
           {connection.specialty === 'nutritionist'
             ? t('pro.students.specialty.nutritionist')
             : t('pro.students.specialty.fitness_coach')}

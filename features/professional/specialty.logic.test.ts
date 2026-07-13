@@ -5,6 +5,7 @@ import {
   normalizeSpecialty,
   checkSpecialtyRemoval,
   validateCredentialInput,
+  resolveOptionalCredentialInput,
   normalizeSpecialtyActionError,
 } from './specialty.logic';
 
@@ -110,6 +111,39 @@ test('validateCredentialInput reports individual missing fields', () => {
     validateCredentialInput({ registryId: 'R', authority: 'A', country: '' }).country,
     'required'
   );
+});
+
+test('resolveOptionalCredentialInput skips persistence when all optional credential fields are blank', () => {
+  const result = resolveOptionalCredentialInput({
+    registryId: '',
+    authority: '  ',
+    country: '',
+  });
+
+  assert.deepEqual(result, { shouldSave: false, errors: {} });
+});
+
+test('resolveOptionalCredentialInput validates partial optional credentials before save', () => {
+  const result = resolveOptionalCredentialInput({
+    registryId: 'CRN-12345',
+    authority: '',
+    country: 'BR',
+  });
+
+  assert.deepEqual(result, {
+    shouldSave: false,
+    errors: { authority: 'required' },
+  });
+});
+
+test('resolveOptionalCredentialInput saves when every credential field is present', () => {
+  const result = resolveOptionalCredentialInput({
+    registryId: 'CRN-12345',
+    authority: 'CFN',
+    country: 'BR',
+  });
+
+  assert.deepEqual(result, { shouldSave: true, errors: {} });
 });
 
 // --- normalizeSpecialtyActionError ---

@@ -23,7 +23,7 @@ export default function ModalScreen() {
         </Text>
 
         <Text style={[styles.body, { color: theme.color.textSecondary }]}>
-          {t('shell.explore.description')}
+          {t('shell.modal.body_description')}
         </Text>
 
         <DsPillButton

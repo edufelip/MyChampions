@@ -39,7 +39,7 @@
 - Credential submission is optional and cannot block onboarding completion.
 - At most one `professional_registry` credential record is accepted per specialty in MVP.
 - Removing a specialty is blocked if that specialty has active or pending students.
-- Active/pending blocker counts are resolved from Firestore connection records scoped to the selected specialty.
+- Active/pending blocker counts are resolved by the MyChampions server from connection records scoped to the selected specialty.
 - Removing a specialty is blocked if it would leave account with zero specialties.
 - Blocked specialty-removal state must expose direct assist actions (view active/pending blockers and queue-management shortcuts).
 - Accessibility baseline applies for text scaling, focus order, contrast, and screen-reader labels.

@@ -52,8 +52,8 @@ describe('normalizeImageUploadError', () => {
     assert.equal(normalizeImageUploadError({ message: 'quota exceeded' }), 'storage_quota');
   });
 
-  it('returns "storage_quota" for storage/quota-exceeded firebase code', () => {
-    assert.equal(normalizeImageUploadError({ code: 'storage/quota-exceeded' }), 'storage_quota');
+  it('returns "storage_quota" for quota_exceeded server code', () => {
+    assert.equal(normalizeImageUploadError({ code: 'quota_exceeded' }), 'storage_quota');
   });
 
   // --- File size limit violations ---
@@ -76,12 +76,22 @@ describe('normalizeImageUploadError', () => {
     assert.equal(normalizeImageUploadError({ message: 'unauthorized access' }), 'unauthorized');
   });
 
-  it('returns "unauthorized" for storage/unauthorized firebase code', () => {
-    assert.equal(normalizeImageUploadError({ code: 'storage/unauthorized' }), 'unauthorized');
+  it('returns "unauthorized" for unauthorized server code', () => {
+    assert.equal(normalizeImageUploadError({ code: 'unauthorized' }), 'unauthorized');
   });
 
   it('returns "unauthorized" for permission denied message', () => {
     assert.equal(normalizeImageUploadError({ message: 'permission denied' }), 'unauthorized');
+  });
+
+  // --- Configuration errors ---
+
+  it('returns "configuration" for missing server URL message', () => {
+    assert.equal(normalizeImageUploadError({ message: 'server URL is not configured' }), 'configuration');
+  });
+
+  it('returns "configuration" for configuration code', () => {
+    assert.equal(normalizeImageUploadError({ code: 'configuration' }), 'configuration');
   });
 
   // --- Unknown fallback ---
@@ -145,6 +155,10 @@ describe('isRetryable', () => {
 
   it('returns false for "unauthorized" (user must re-authenticate)', () => {
     assert.equal(isRetryable('unauthorized'), false);
+  });
+
+  it('returns false for "configuration" (developer must configure server upload)', () => {
+    assert.equal(isRetryable('configuration'), false);
   });
 });
 
@@ -226,6 +240,12 @@ describe('resolveImageUploadDisplay', () => {
   it('failed/unauthorized: errorMessageKey=custom_meal.image.unauthorized, canRetry=false', () => {
     const display = resolveImageUploadDisplay({ kind: 'failed', reason: 'unauthorized' });
     assert.equal(display.errorMessageKey, 'custom_meal.image.unauthorized');
+    assert.equal(display.canRetry, false);
+  });
+
+  it('failed/configuration: errorMessageKey=custom_meal.image.upload_failed, canRetry=false', () => {
+    const display = resolveImageUploadDisplay({ kind: 'failed', reason: 'configuration' });
+    assert.equal(display.errorMessageKey, 'custom_meal.image.upload_failed');
     assert.equal(display.canRetry, false);
   });
 
@@ -318,7 +338,14 @@ describe('ImageUploadState type coverage', () => {
 // ─── Error reasons exhaustiveness ────────────────────────────────────────────
 
 describe('ImageUploadErrorReason exhaustiveness', () => {
-  const reasons: ImageUploadErrorReason[] = ['network', 'storage_quota', 'file_too_large', 'unauthorized', 'unknown'];
+  const reasons: ImageUploadErrorReason[] = [
+    'network',
+    'storage_quota',
+    'file_too_large',
+    'unauthorized',
+    'configuration',
+    'unknown',
+  ];
 
   for (const reason of reasons) {
     it(`isRetryable handles reason="${reason}"`, () => {

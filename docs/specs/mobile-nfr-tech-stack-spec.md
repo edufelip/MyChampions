@@ -22,19 +22,19 @@ Define non-functional architecture constraints and technology options for the mo
   - prod bundle/package id: `com.edufelip.mychampions`
   - dev bundle/package id: `com.edufelip.mychampions.dev`
   - stable app deep-link scheme: `mychampions`
-- Backend platform is Firebase (Auth, Firestore, Cloud Storage).
-- Social auth is implemented through Firebase Auth.
-- Crash reporting is mandatory with Firebase Crashlytics.
+- Backend platform is the MyChampions server backed by Postgres; local development uses the root-level Bun/Elysia server.
+- Social auth uses explicit E2E fixtures first, then native provider-token capture plus the MyChampions server `POST /auth/social/sign-in` boundary; deterministic local MyChampions server social sessions are reserved only for explicit provider-token configuration gaps.
+- Crash reporting provider is not selected in this local migration slice.
 - Non-crash monitoring tooling (for example Sentry) is out of MVP scope.
-- User media (for example recipe images) is stored in Firebase Cloud Storage.
+- User media (for example recipe images) is routed through the MyChampions server; local development stores custom-meal images on the local filesystem.
 - UI styling stack for MVP is NativeWind.
 - Client-side media compression is mandatory before upload.
 - OTA strategy is store-only for MVP (no remote JS bundle delivery channel).
 - CI signing strategy uses platform-native secret management in pipelines.
 - Core MVP screens must meet accessibility baseline (contrast, dynamic text scaling, focus order, screen-reader labels).
 - QA distribution policy:
-  - Release branch builds are distributed through TestFlight.
-  - Pull requests targeting `develop` publish QA builds to Firebase App Distribution.
+  - Release branch iOS builds are distributed through TestFlight.
+  - Pull requests targeting `develop` publish CI build artifacts from native toolchain jobs.
 - Post-compression media constraints:
   - max upload size: `1.5 MB`.
   - max image dimension: `1600 px` on longest side.
@@ -43,10 +43,10 @@ Define non-functional architecture constraints and technology options for the mo
 
 ## Constraints From Platform Docs
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.
-- React Native Firebase requires native code integration, so Expo Go is not enough for this setup.
-- Firebase Auth in React Native requires provider configuration for Apple/Google and deep-link handling where applicable.
-- Firebase Firestore collection schema, indexing, and security-rule authorization strategy must be defined before production traffic.
-- Firebase Cloud Storage upload flows must enforce client compression and storage rule constraints.
+- Native server-backed flows require `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL` and a MyChampions bearer session.
+- Direct Google/Apple token verification requires configured server audiences and deep-link handling before production traffic.
+- MyChampions server routes and Postgres migrations define app-domain persistence and authorization behavior.
+- Server-backed upload flows must enforce client compression and server-side storage validation.
 
 ## Technology Options
 
@@ -90,7 +90,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: React Hook Form + Zod.
 
 ### 5) Local Persistence For Offline Read-Only
-- Option A: Firestore query snapshots + SQLite (`expo-sqlite`) tables.
+- Option A: MyChampions server snapshots + SQLite (`expo-sqlite`) tables.
   - Pros: Reliable structured offline reads, explicit TTL policies.
   - Cons: Additional sync layer complexity.
 - Option B: MMKV/AsyncStorage cache only.
@@ -112,15 +112,15 @@ Define non-functional architecture constraints and technology options for the mo
 
 ## High-Level Architecture (Target)
 1. Expo/React Native client handles UI, routing, and offline read models.
-2. Firebase Auth manages email/password and social identity.
-3. Firebase Firestore enforces domain rules through collection structure and security rules.
-4. Firebase Cloud Storage stores recipe and profile images.
-5. VPS food-search microservice serves nutrition lookup dataset.
+2. MyChampions server and Postgres manage identity and sessions.
+3. MyChampions server enforces domain rules through route guards and Postgres persistence.
+4. MyChampions server stores and serves user media through local storage in development and a future remote storage provider.
+5. MyChampions server proxies nutrition and exercise lookup against local catalog mirrors.
 6. RevenueCat orchestrates professional subscription entitlements.
-7. Firebase Crashlytics captures runtime crashes and non-fatal exceptions.
+7. Crash/non-fatal monitoring provider remains pending.
 
 Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
-Data model and collection/security contract: `docs/specs/firebase-firestore-integration-spec.md`.
+Current local server contract: root-level `server/` plus this migration task card.
 
 ## Suggested Default NFR Targets For MVP
 - App cold start: <= 2.5s median on modern mid-tier devices.
@@ -142,13 +142,9 @@ Data model and collection/security contract: `docs/specs/firebase-firestore-inte
 
 ## References
 - Expo local app builds: https://docs.expo.dev/build-reference/local-builds/
-- Expo Firebase guide: https://docs.expo.dev/guides/using-firebase
-- React Native Firebase (Expo support): https://rnfirebase.io/
-- React Native Firebase Crashlytics: https://rnfirebase.io/crashlytics/usage
-- Firebase Auth for Apple (iOS): https://firebase.google.com/docs/auth/ios/apple
-- Firebase Auth for Google (React Native via SDK/provider): https://firebase.google.com/docs/auth
-- Firebase Firestore: https://firebase.google.com/docs/firestore
-- Firebase Cloud Storage: https://firebase.google.com/docs/storage
+- Expo local builds: https://docs.expo.dev/build-reference/local-builds/
+- Elysia: https://elysiajs.com/
+- Drizzle ORM: https://orm.drizzle.team/
 - Fastlane docs: https://docs.fastlane.tools/
 - GitHub Actions docs: https://docs.github.com/actions
 - Detox docs: https://wix.github.io/Detox/docs/introduction/project-setup/

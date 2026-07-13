@@ -8,7 +8,7 @@
  *  - Tap to open student profile
  *  - Multi-select mode for bulk assignment
  *
- * Data wiring is Firestore-backed via professional-source.
+ * Data wiring is server-backed via professional-source.
  *
  * Docs: docs/screens/v2/SC-205-student-roster.md
  * Refs: D-100, D-134, FR-105, FR-122, FR-210, FR-224, FR-225
@@ -45,14 +45,20 @@ import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { resolveStudentRosterViewState } from '@/features/professional/students-screen.logic';
+import {
+  filterStudentRosterRows,
+  filterBulkAssignmentStudentsByPlanType,
+  resolveStudentRosterViewState,
+} from '@/features/professional/students-screen.logic';
 import {
   getProfessionalStudentRoster,
   type ProfessionalStudentRosterItem,
 } from '@/features/professional/professional-source';
-import { useInviteCode } from '@/features/professional/use-professional';
+import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
+import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
@@ -61,6 +67,7 @@ import { PlanPickerModal } from '@/components/ds/patterns/PlanPickerModal';
 type StudentRow = ProfessionalStudentRosterItem;
 
 type FilterKind = 'all' | 'active' | 'pending';
+type BulkPlanType = 'nutrition' | 'training';
 type TFn = ReturnType<typeof useTranslation>['t'];
 
 export default function ProfessionalStudentsScreen() {
@@ -70,29 +77,39 @@ export default function ProfessionalStudentsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { currentUser } = useAuthSession();
-  const { state: inviteCodeState } = useInviteCode(Boolean(currentUser));
+  const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
+  const inviteSpecialty =
+    specialtiesState.kind === 'ready' ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties) : null;
+  const { state: inviteCodeState } = useInviteCode(Boolean(currentUser), inviteSpecialty);
   const { state: plansState, bulkAssign } = usePlans(Boolean(currentUser));
-
-  const networkStatus = useNetworkStatus();
-  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
-    networkStatus,
-    lastSyncedAtIso: null,
-  });
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filter, setFilter] = useState<FilterKind>('all');
   const [students, setStudents] = useState<StudentRow[]>([]);
+  const [rosterSyncedAtIso, setRosterSyncedAtIso] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(currentUser));
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [loadErrorKey, setLoadErrorKey] = useState<TranslationKey | null>(null);
-  
+
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedStudentUids, setSelectedStudentUids] = useState<string[]>([]);
+  const [bulkPlanType, setBulkPlanType] = useState<BulkPlanType>('nutrition');
   const [isPlanPickerVisible, setIsPlanPickerVisible] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
   const fetchStartedAtRef = useRef<number | null>(null);
+  const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    rosterSyncedAtIso,
+    specialtiesState.kind === 'ready' ? specialtiesState.lastSyncedAtIso : null,
+    inviteCodeState.kind === 'ready' ? inviteCodeState.lastSyncedAtIso : null,
+    plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
+  ]);
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso,
+  });
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -107,6 +124,7 @@ export default function ProfessionalStudentsScreen() {
   const loadRoster = useCallback(async () => {
     if (!currentUser) {
       setStudents([]);
+      setRosterSyncedAtIso(null);
       setIsLoading(false);
       setLoadErrorKey(null);
       setHasLoadedOnce(false);
@@ -119,6 +137,7 @@ export default function ProfessionalStudentsScreen() {
     try {
       const rows = await getProfessionalStudentRoster();
       setStudents(rows);
+      setRosterSyncedAtIso(new Date().toISOString());
     } catch {
       setLoadErrorKey('pro.students.error');
     } finally {
@@ -132,20 +151,19 @@ export default function ProfessionalStudentsScreen() {
   }, [loadRoster]);
 
   const visible = useMemo(
-    () =>
-      students.filter((s) => {
-        const matchesFilter =
-          filter === 'all' ||
-          (filter === 'active' && s.assignmentStatus === 'active') ||
-          (filter === 'pending' && s.assignmentStatus === 'pending');
-
-        const query = debouncedSearch.trim().toLowerCase();
-        const matchesSearch = !query || s.displayName.toLowerCase().includes(query);
-
-        return matchesFilter && matchesSearch;
-      }),
+    () => filterStudentRosterRows(students, { filter, search: debouncedSearch }),
     [debouncedSearch, filter, students]
   );
+  const assignmentVisible = useMemo(
+    () => (isSelectionMode ? filterBulkAssignmentStudentsByPlanType(visible, bulkPlanType) : visible),
+    [bulkPlanType, isSelectionMode, visible]
+  );
+
+  useEffect(() => {
+    if (!isSelectionMode) return;
+    const eligibleUids = new Set(assignmentVisible.map((student) => student.studentAuthUid));
+    setSelectedStudentUids((prev) => prev.filter((uid) => eligibleUids.has(uid)));
+  }, [assignmentVisible, isSelectionMode]);
 
   const viewState = resolveStudentRosterViewState({
     hasLoadedOnce,
@@ -234,9 +252,11 @@ export default function ProfessionalStudentsScreen() {
               label={isSelectionMode ? (t('pro.students.bulk_assign.cancel') as string) : (t('pro.students.bulk_assign.cta') as string)}
               onPress={() => {
                 setIsSelectionMode(!isSelectionMode);
+                setBulkPlanType('nutrition');
                 setSelectedStudentUids([]);
               }}
               fullWidth={false}
+              testID="pro.students.bulkAssignToggle"
             />
           )}
         </View>
@@ -351,9 +371,10 @@ export default function ProfessionalStudentsScreen() {
               />
             ) : (
               <FlatList
-                data={visible}
+                data={assignmentVisible}
                 extraData={{ isSelectionMode, selectedStudentUids }}
                 keyExtractor={(item) => item.studentAuthUid}
+                keyboardShouldPersistTaps="handled"
                 renderItem={({ item }) => (
                   <StudentRowItem
                     student={item}
@@ -393,13 +414,36 @@ export default function ProfessionalStudentsScreen() {
             )}
           </DsCard>
 
-          {isSelectionMode && selectedStudentUids.length > 0 && (
+          {isSelectionMode && (
             <View style={styles.bulkActionContainer}>
-              <DsPillButton
-                scheme={scheme}
-                label={(t('pro.students.bulk_assign.cta_confirm') as string).replace('{count}', String(selectedStudentUids.length))}
-                onPress={() => setIsPlanPickerVisible(true)}
-              />
+              <View style={styles.bulkPlanTypeRow}>
+                <DsPillButton
+                  scheme={scheme}
+                  variant={bulkPlanType === 'nutrition' ? 'primary' : 'outline'}
+                  size="xs"
+                  label={t('pro.students.specialty.nutritionist') as string}
+                  onPress={() => setBulkPlanType('nutrition')}
+                  fullWidth={false}
+                  testID="pro.students.bulk.planType.nutrition"
+                />
+                <DsPillButton
+                  scheme={scheme}
+                  variant={bulkPlanType === 'training' ? 'primary' : 'outline'}
+                  size="xs"
+                  label={t('pro.students.specialty.fitness_coach') as string}
+                  onPress={() => setBulkPlanType('training')}
+                  fullWidth={false}
+                  testID="pro.students.bulk.planType.training"
+                />
+              </View>
+              {selectedStudentUids.length > 0 ? (
+                <DsPillButton
+                  scheme={scheme}
+                  label={(t('pro.students.bulk_assign.cta_confirm') as string).replace('{count}', String(selectedStudentUids.length))}
+                  onPress={() => setIsPlanPickerVisible(true)}
+                  testID="pro.students.bulk.assignSelected"
+                />
+              ) : null}
             </View>
           )}
         </>
@@ -410,7 +454,7 @@ export default function ProfessionalStudentsScreen() {
         onClose={() => setIsPlanPickerVisible(false)}
         onSelect={handleBulkAssign}
         plansState={plansState}
-        scheme={scheme}
+        planType={bulkPlanType}
         theme={theme}
         t={t}
       />
@@ -506,12 +550,12 @@ function StudentRowItem({
         .replace('{status}', statusLabel as string)}
       onPress={onPress}
       style={[
-        styles.row, 
+        styles.row,
         { borderColor: isSelected ? theme.color.accentPrimary : theme.color.border, backgroundColor: theme.color.surface },
         isSelected && { borderWidth: 2 }
       ]}
       testID={`pro.students.row.${student.studentAuthUid}`}>
-      
+
       {isSelectionMode && (
         <View style={[styles.selectionIcon, { backgroundColor: isSelected ? theme.color.accentPrimary : theme.color.surface, borderColor: theme.color.border }]}>
           {isSelected && <MaterialIcons name="check" size={16} color={theme.color.onAccent} />}
@@ -761,6 +805,11 @@ const styles = StyleSheet.create({
     left: DsSpace.lg,
     right: DsSpace.lg,
     backgroundColor: 'transparent',
+    gap: DsSpace.sm,
+  },
+  bulkPlanTypeRow: {
+    flexDirection: 'row',
+    gap: DsSpace.sm,
   },
   // Modal
   modalOverlay: {

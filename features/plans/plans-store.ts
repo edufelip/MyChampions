@@ -4,12 +4,14 @@ import {
   getMyPlans,
   getMyPredefinedPlans,
   bulkAssignPredefinedPlan,
+  createDraftAssignedPlan,
   submitPlanChangeRequest,
   reviewPlanChangeRequest,
   getStudentPlanChangeRequests,
   getCachedPlans,
   getCachedPredefinedPlans,
   getCachedPlansOwnerUid,
+  getCachedPlansSyncedAtIso,
   clearPlanCaches,
   optimisticUpdatePredefinedPlan,
   optimisticDeletePredefinedPlan,
@@ -57,6 +59,7 @@ import {
   validateTrainingSessionItemInput,
   normalizePlanBuilderError,
   type NutritionPlanInput,
+  type NutritionPlanCreationMode,
   type NutritionMealInput,
   type NutritionMealItemInput,
   type NutritionPlanValidationErrors,
@@ -67,6 +70,7 @@ import {
   type TrainingPlanValidationErrors,
   type TrainingSessionItemValidationErrors,
   type PlanBuilderErrorReason,
+  type TrainingPlanCreationMode,
 } from './plan-builder.logic';
 import {
   getCachedNutritionPlan,
@@ -81,13 +85,15 @@ import {
   type NutritionBuilderState,
   type TrainingBuilderState,
 } from './plan-builder-state';
-import { getFirebaseAuth } from '../auth/firebase';
+import { resolvePlansAuthUid } from './plans-auth-source';
+import { getCurrentServerUser } from '../auth/server-auth-source';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 
 export type PlansLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; plans: Plan[]; predefinedPlans: PredefinedPlan[] };
+  | { kind: 'ready'; plans: Plan[]; predefinedPlans: PredefinedPlan[]; lastSyncedAtIso: string };
 
 function buildNutritionMutationErrorState(
   previousState: NutritionBuilderState,
@@ -166,23 +172,31 @@ export type PlansStoreState = {
     predefinedPlanId: string,
     studentUids: string[]
   ) => Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }>;
+  createDraftAssignedPlan: (
+    isAuthenticated: boolean,
+    predefinedPlanId: string,
+    studentUid: string
+  ) => Promise<{ id: string } | { error: PlanChangeRequestErrorReason }>;
   clearFoodSearch: () => void;
   loadNutritionPlan: (isAuthenticated: boolean, planId: string) => Promise<void>;
   initNewNutritionPlan: () => void;
   createNutritionPlanAction: (
     isAuthenticated: boolean,
-    input: NutritionPlanInput
+    input: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   saveNutritionPlanAction: (
     isAuthenticated: boolean,
     planId: string,
-    input: NutritionPlanInput
+    input: NutritionPlanInput,
+    publish?: boolean
   ) => Promise<PlanBuilderErrorReason | null>;
   addNutritionMealAction: (
     isAuthenticated: boolean,
     planId: string,
     meal: NutritionMealInput,
-    planInput?: NutritionPlanInput
+    planInput?: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeNutritionMealAction: (
     isAuthenticated: boolean,
@@ -199,7 +213,8 @@ export type PlansStoreState = {
     planId: string,
     mealId: string,
     item: NutritionMealItemInput,
-    planInput?: NutritionPlanInput
+    planInput?: NutritionPlanInput,
+    mode?: NutritionPlanCreationMode
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeNutritionItemAction: (
     isAuthenticated: boolean,
@@ -223,18 +238,22 @@ export type PlansStoreState = {
   initNewTrainingPlan: () => void;
   createTrainingPlanAction: (
     isAuthenticated: boolean,
-    input: TrainingPlanInput
+    input: TrainingPlanInput,
+    mode?: TrainingPlanCreationMode
   ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   saveTrainingPlanAction: (
     isAuthenticated: boolean,
     planId: string,
-    input: TrainingPlanInput
+    input: TrainingPlanInput,
+    publish?: boolean
   ) => Promise<PlanBuilderErrorReason | null>;
   saveTrainingPlanWithSessionsAction: (
     isAuthenticated: boolean,
     planId: string,
     input: TrainingPlanInput,
-    sessions: TrainingSession[]
+    sessions: TrainingSession[],
+    publish?: boolean,
+    mode?: TrainingPlanCreationMode
   ) => Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }>;
   addTrainingSessionAction: (
     isAuthenticated: boolean,
@@ -282,18 +301,23 @@ function buildInitialPlansState(): PlansLoadState {
   const plans = getCachedPlans();
   const predefinedPlans = getCachedPredefinedPlans();
   const cacheOwnerUid = getCachedPlansOwnerUid();
-  if (uid && cacheOwnerUid && uid === cacheOwnerUid && plans && predefinedPlans) {
-    return { kind: 'ready', plans, predefinedPlans };
+  const cacheSyncedAtIso = getCachedPlansSyncedAtIso();
+  if (uid && cacheOwnerUid && uid === cacheOwnerUid && plans && predefinedPlans && cacheSyncedAtIso) {
+    return { kind: 'ready', plans, predefinedPlans, lastSyncedAtIso: cacheSyncedAtIso };
   }
   return { kind: 'idle' };
 }
 
 function resolveCurrentAuthUid(): string | null {
-  try {
-    return getFirebaseAuth().currentUser?.uid ?? null;
-  } catch {
-    return null;
-  }
+  return resolvePlansAuthUid({
+    getServerUserUid: () => getCurrentServerUser()?.uid ?? null,
+    getE2EUid: () =>
+      resolveE2EAuthSessionSourceOverride({
+        appVariant: process.env.APP_VARIANT,
+        enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+        isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+      })?.uid ?? null,
+  });
 }
 
 export const usePlansStore = create<PlansStoreState>((set, get) => ({
@@ -367,7 +391,8 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
       if (get().authUid !== uid) {
         return;
       }
-      set({ plansState: { kind: 'ready', plans, predefinedPlans } });
+      const lastSyncedAtIso = getCachedPlansSyncedAtIso() ?? new Date().toISOString();
+      set({ plansState: { kind: 'ready', plans, predefinedPlans, lastSyncedAtIso } });
     } catch (err) {
       set({ plansState: { kind: 'error', message: (err as Error).message } });
     }
@@ -416,6 +441,18 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
 
     try {
       const result = await bulkAssignPredefinedPlan(predefinedPlanId, studentUids);
+      await get().loadPlans(isAuthenticated);
+      return result;
+    } catch (err) {
+      return { error: normalizePlanChangeRequestError(err) };
+    }
+  },
+
+  createDraftAssignedPlan: async (isAuthenticated, predefinedPlanId, studentUid) => {
+    if (!isAuthenticated) return { error: 'unknown' };
+
+    try {
+      const result = await createDraftAssignedPlan(predefinedPlanId, studentUid);
       await get().loadPlans(isAuthenticated);
       return result;
     } catch (err) {
@@ -504,7 +541,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     });
   },
 
-  createNutritionPlanAction: async (isAuthenticated, input) => {
+  createNutritionPlanAction: async (isAuthenticated, input, mode = 'professional_library') => {
     if (!isAuthenticated) return { error: 'unknown' };
 
     const errors = validateNutritionPlanInput(input);
@@ -514,7 +551,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
 
     set({ nutritionBuilderState: { kind: 'saving' } });
     try {
-      const plan = await createNutritionPlan(input);
+      const plan = await createNutritionPlan(input, mode);
       set((state) => ({
         nutritionBuilderState: { kind: 'ready', plan },
         invalidation: {
@@ -522,14 +559,16 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
           plans: state.invalidation.plans + 1,
         },
       }));
-      optimisticUpdatePredefinedPlan({
-        id: plan.id,
-        name: plan.name,
-        planType: 'nutrition',
-        ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
-        createdAt: plan.createdAt,
-        updatedAt: plan.updatedAt,
-      });
+      if (plan.sourceKind === 'predefined') {
+        optimisticUpdatePredefinedPlan({
+          id: plan.id,
+          name: plan.name,
+          planType: 'nutrition',
+          ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
+          createdAt: plan.createdAt,
+          updatedAt: plan.updatedAt,
+        });
+      }
       return { id: plan.id };
     } catch (err) {
       const reason = normalizePlanBuilderError(err);
@@ -538,7 +577,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  saveNutritionPlanAction: async (isAuthenticated, planId, input) => {
+  saveNutritionPlanAction: async (isAuthenticated, planId, input, publish) => {
     if (!isAuthenticated) return 'unknown';
 
     const errors = validateNutritionPlanInput(input);
@@ -550,7 +589,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ nutritionBuilderState: markNutritionBuilderMutating(previousState) });
 
     try {
-      await updateNutritionPlan(planId, input);
+      await updateNutritionPlan(planId, input, publish);
       const updated = await getNutritionPlanDetail(planId);
       set((state) => ({
         nutritionBuilderState: { kind: 'ready', plan: updated },
@@ -579,7 +618,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  addNutritionMealAction: async (isAuthenticated, planId, meal, planInput) => {
+  addNutritionMealAction: async (isAuthenticated, planId, meal, planInput, mode) => {
     if (!isAuthenticated) return { planId, error: 'unknown' };
 
     const previousState = get().nutritionBuilderState;
@@ -590,7 +629,8 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
       if (planId === 'new') {
         const res = await get().createNutritionPlanAction(
           isAuthenticated,
-          planInput ?? { name: 'Untitled', hydrationGoalMl: '' }
+          planInput ?? { name: 'Untitled', hydrationGoalMl: '' },
+          mode
         );
         if ('error' in res) {
           return { planId, error: res.error };
@@ -707,7 +747,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  addNutritionItemAction: async (isAuthenticated, planId, mealId, item, planInput) => {
+  addNutritionItemAction: async (isAuthenticated, planId, mealId, item, planInput, mode) => {
     if (!isAuthenticated) return { planId, error: 'unknown' };
 
     const previousState = get().nutritionBuilderState;
@@ -718,7 +758,8 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
       if (planId === 'new') {
         const res = await get().createNutritionPlanAction(
           isAuthenticated,
-          planInput ?? { name: 'Untitled', hydrationGoalMl: '' }
+          planInput ?? { name: 'Untitled', hydrationGoalMl: '' },
+          mode
         );
         if ('error' in res) return { planId, error: res.error };
         currentPlanId = res.id;
@@ -909,6 +950,9 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         plan: {
           id: 'new',
           name: '',
+          sourceKind: 'self_managed',
+          ownerProfessionalUid: null,
+          studentAuthUid: '',
           sessions: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -917,7 +961,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     });
   },
 
-  createTrainingPlanAction: async (isAuthenticated, input) => {
+  createTrainingPlanAction: async (isAuthenticated, input, mode = 'professional_library') => {
     if (!isAuthenticated) return { error: 'unknown' };
 
     const errors = validateTrainingPlanInput(input);
@@ -925,7 +969,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
 
     set({ trainingBuilderState: { kind: 'saving' } });
     try {
-      const plan = await createTrainingPlan(input);
+      const plan = await createTrainingPlan(input, mode);
       set((state) => ({
         trainingBuilderState: { kind: 'ready', plan },
         invalidation: {
@@ -933,14 +977,16 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
           plans: state.invalidation.plans + 1,
         },
       }));
-      optimisticUpdatePredefinedPlan({
-        id: plan.id,
-        name: plan.name,
-        planType: 'training',
-        ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
-        createdAt: plan.createdAt,
-        updatedAt: plan.updatedAt,
-      });
+      if (plan.sourceKind === 'predefined') {
+        optimisticUpdatePredefinedPlan({
+          id: plan.id,
+          name: plan.name,
+          planType: 'training',
+          ownerProfessionalUid: plan.ownerProfessionalUid ?? '',
+          createdAt: plan.createdAt,
+          updatedAt: plan.updatedAt,
+        });
+      }
       return { id: plan.id };
     } catch (err) {
       const reason = normalizePlanBuilderError(err);
@@ -949,7 +995,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  saveTrainingPlanAction: async (isAuthenticated, planId, input) => {
+  saveTrainingPlanAction: async (isAuthenticated, planId, input, publish) => {
     if (!isAuthenticated) return 'unknown';
 
     const errors = validateTrainingPlanInput(input);
@@ -959,7 +1005,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ trainingBuilderState: markTrainingBuilderMutating(previousState) });
 
     try {
-      await updateTrainingPlan(planId, input);
+      await updateTrainingPlan(planId, input, publish);
       const updated = await getTrainingPlanDetail(planId);
       set((state) => ({
         trainingBuilderState: { kind: 'ready', plan: updated },
@@ -976,7 +1022,14 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     }
   },
 
-  saveTrainingPlanWithSessionsAction: async (isAuthenticated, planId, input, sessions) => {
+  saveTrainingPlanWithSessionsAction: async (
+    isAuthenticated,
+    planId,
+    input,
+    sessions,
+    publish,
+    mode = 'professional_library'
+  ) => {
     if (!isAuthenticated) return { error: 'unknown' };
 
     const errors = validateTrainingPlanInput(input);
@@ -988,11 +1041,11 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     try {
       let currentPlanId = planId;
       if (planId === 'new') {
-        const created = await createTrainingPlan(input);
+        const created = await createTrainingPlan(input, mode);
         currentPlanId = created.id;
       }
 
-      await updateTrainingPlanWithSessions(currentPlanId, input, sessions);
+      await updateTrainingPlanWithSessions(currentPlanId, input, sessions, publish);
       const updated = await getTrainingPlanDetail(currentPlanId);
       await setCachedTrainingPlan(updated);
       set((state) => ({
@@ -1003,14 +1056,16 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         },
       }));
 
-      optimisticUpdatePredefinedPlan({
-        id: updated.id,
-        name: updated.name,
-        planType: 'training',
-        ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt,
-      });
+      if (updated.sourceKind === 'predefined') {
+        optimisticUpdatePredefinedPlan({
+          id: updated.id,
+          name: updated.name,
+          planType: 'training',
+          ownerProfessionalUid: updated.ownerProfessionalUid ?? '',
+          createdAt: updated.createdAt,
+          updatedAt: updated.updatedAt,
+        });
+      }
 
       return { id: currentPlanId, plan: updated };
     } catch (err) {
@@ -1120,7 +1175,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ trainingBuilderState: markTrainingBuilderMutating(currentState) });
 
     try {
-      await addTrainingSessionItem(sessionId, item);
+      await addTrainingSessionItem(currentPlanId, sessionId, item);
       const updated = await getTrainingPlanDetail(currentPlanId);
       await setCachedTrainingPlan(updated);
       set((state) => ({
@@ -1176,7 +1231,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ trainingBuilderState: markTrainingBuilderMutating(currentState) });
 
     try {
-      await reorderTrainingSessionItems(sessionId, itemIds);
+      await reorderTrainingSessionItems(currentPlanId, sessionId, itemIds);
       const updated = await getTrainingPlanDetail(currentPlanId);
       await setCachedTrainingPlan(updated);
       set((state) => ({

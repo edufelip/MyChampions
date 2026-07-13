@@ -1,6 +1,5 @@
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import type { usePlans } from '@/features/plans/use-plans';
@@ -14,7 +13,6 @@ export function PlanPickerModal({
   onSelect,
   plansState,
   planType,
-  scheme,
   theme,
   t,
 }: {
@@ -23,7 +21,6 @@ export function PlanPickerModal({
   onSelect: (id: string) => void;
   plansState: ReturnType<typeof usePlans>['state'];
   planType?: 'nutrition' | 'training';
-  scheme: 'light' | 'dark';
   theme: DsTheme;
   t: TFn;
 }) {
@@ -34,13 +31,13 @@ export function PlanPickerModal({
 
   return (
     <Modal visible={isVisible} animationType="slide" transparent>
-      <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>
+      <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]} testID="planPicker.modal">
         <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
               {t('pro.plan.picker.title')}
             </Text>
-            <Pressable onPress={onClose} hitSlop={12}>
+            <Pressable onPress={onClose} hitSlop={12} testID="planPicker.close">
               <Text style={{ color: theme.color.accentPrimary, fontWeight: '600' }}>
                 {t('auth.role.cta_back')}
               </Text>
@@ -60,10 +57,15 @@ export function PlanPickerModal({
 
             {plansState.kind === 'ready' &&
               filteredPlans.map((plan) => (
-                <Pressable
+                <TouchableOpacity
                   key={plan.id}
+                  accessible
+                  accessibilityLabel={`${plan.name}. ${t('pro.plan.picker.cta_assign')}`}
+                  accessibilityRole="button"
                   style={[styles.planRowModal, { borderColor: theme.color.border }]}
-                  onPress={() => onSelect(plan.id)}>
+                  onPress={() => onSelect(plan.id)}
+                  activeOpacity={0.82}
+                  testID={`planPicker.assign.${plan.id}`}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.planNameModal, { color: theme.color.textPrimary }]}>
                       {plan.name}
@@ -74,14 +76,15 @@ export function PlanPickerModal({
                       </Text>
                     )}
                   </View>
-                  <DsPillButton
-                    scheme={scheme}
-                    label={t('pro.plan.picker.cta_assign') as string}
-                    onPress={() => onSelect(plan.id)}
-                    size="xs"
-                    fullWidth={false}
-                  />
-                </Pressable>
+                  <View
+                    pointerEvents="none"
+                    style={[styles.assignPill, { backgroundColor: theme.color.accentPrimary }]}
+                    testID={`planPicker.row.${plan.id}`}>
+                    <Text style={[styles.assignPillText, { color: theme.color.onAccent }]}>
+                      {t('pro.plan.picker.cta_assign') as string}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               ))}
           </ScrollView>
         </View>
@@ -122,6 +125,19 @@ const styles = StyleSheet.create({
     gap: DsSpace.sm,
   },
   planNameModal: { fontWeight: '700', fontSize: 15 },
+  assignPill: {
+    alignItems: 'center',
+    borderRadius: DsRadius.pill,
+    justifyContent: 'center',
+    minHeight: 32,
+    paddingHorizontal: 12,
+  },
+  assignPillText: {
+    ...DsTypography.button,
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   emptyText: {
     ...DsTypography.body,
     padding: DsSpace.xxl,

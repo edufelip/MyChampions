@@ -1,107 +1,91 @@
-# Welcome to your Expo app 👋
+# MyChampions Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo React Native app for MyChampions.
 
 ## Get started
 
 1. Install dependencies
 
    ```bash
-   npm install
+   yarn install
    ```
 
-2. Start the app
+2. Start the local backend from the workspace root
 
    ```bash
-   npx expo start
+   cd ..
+   bun run local:db:up
+   bun run local:dev
    ```
 
-In the output, you'll find options to open the app in a
+3. Start the mobile app
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```bash
+   yarn start
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+For native development builds, use:
 
-## Firebase auth config
-
-Auth flow (email/password, Google, Apple) is wired to Firebase Auth and reads keys from `app.json`:
-
-```json
-{
-  "expo": {
-    "extra": {
-      "firebase": {
-        "apiKey": "...",
-        "authDomain": "...",
-        "projectId": "...",
-        "storageBucket": "...",
-        "messagingSenderId": "...",
-        "appId": "...",
-        "iosClientId": "...",
-        "androidClientId": "...",
-        "webClientId": "..."
-      }
-    }
-  }
-}
+```bash
+yarn ios:dev
+yarn android:dev
 ```
 
-Replace all `REPLACE_ME` values before testing auth providers.
+## Local server config
+
+The mobile app uses the root-level MyChampions server for local auth and app-domain data flows. Mobile runtime code does not require mobile-owned provider project keys, document rules, callable backend functions, or native provider config files.
+
+Copy `.env.example` to `.env` and set:
+
+```bash
+EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=http://localhost:3400
+```
+
+iOS Simulator can use `localhost`. Physical devices need this Mac's LAN IP.
+
+Production release workflows require the `ENV_FILE` secret to set:
+
+```bash
+EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=https://api.mychampions.eduwaldo.com
+```
+
+Both iOS and Android release workflows fail before building when this value is
+missing or different, preventing a production bundle from shipping with the
+local development endpoint.
 
 ## Testing
 
 1. Unit tests
 
    ```bash
-   npm run test:unit
+   yarn test:unit
    ```
 
 2. E2E (Detox) iOS
 
    ```bash
-   npm run test:e2e:build:ios
-   npm run test:e2e:ios
+   yarn test:e2e:build:ios
+   yarn test:e2e:ios
    ```
 
 3. E2E (Detox) Android
 
    ```bash
-   npm run test:e2e:build:android
-   npm run test:e2e:android
+   yarn test:e2e:build:android
+   yarn test:e2e:android
    ```
 
 4. E2E debug variants (optional)
 
+   The iOS Debug test commands start Metro on port `8081` when it is not already running, and leave a pre-existing Metro process alone.
+   The `test:e2e:ios:debug:smoke` command runs unauthenticated auth-entry and authenticated role/connection checks in separate Debug builds so their fixture states cannot conflict. The authenticated connection mode uses deterministic invite, QR, and active-nutrition fixtures without backend mutation.
+
    ```bash
-   npm run test:e2e:build:ios:debug
-   npm run test:e2e:ios:debug
-   npm run test:e2e:build:android:debug
-   npm run test:e2e:android:debug
+   yarn test:e2e:build:ios:debug
+   yarn test:e2e:ios:debug
+   yarn test:e2e:build:android:debug
+   yarn test:e2e:android:debug
    ```
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

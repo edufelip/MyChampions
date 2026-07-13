@@ -59,7 +59,9 @@ export type RawPurchaseResult = {
 
 export type SubscriptionSourceDeps = {
   /** Configures the RevenueCat SDK. Should be called once at app startup. */
-  configure: (apiKey: string) => void;
+  configure: (apiKey: string, appUserId: string) => void;
+  /** Switches the configured RevenueCat SDK to a different authenticated user. */
+  logIn: (appUserId: string) => Promise<void>;
   /** Fetches current customer info. Returns RawCustomerInfo. */
   getCustomerInfo: () => Promise<RawCustomerInfo>;
   /** Purchases a package. Returns RawPurchaseResult. */
@@ -300,11 +302,76 @@ export function normalizeSubscriptionError(error: unknown): SubscriptionErrorRea
  * other subscription source operations. Safe to call multiple times (SDK guards
  * against double-configuration internally, but callers should avoid it).
  *
- * Throws SubscriptionSourceError('configuration') when API key is absent.
+ * Throws SubscriptionSourceError('configuration') when API key or app user ID is absent.
  */
-export function configureRevenueCat(deps: SubscriptionSourceDeps): void {
+export function configureRevenueCat(deps: SubscriptionSourceDeps, appUserId: string): void {
+  const normalizedAppUserId = appUserId.trim();
+  if (!normalizedAppUserId) {
+    throw new SubscriptionSourceError(
+      'configuration',
+      'RevenueCat requires a nonblank self-managed auth UID before SDK configuration.'
+    );
+  }
+
   const apiKey = deps.getApiKey();
-  deps.configure(apiKey);
+  deps.configure(apiKey, normalizedAppUserId);
+}
+
+type RevenueCatIdentityCoordinator = {
+  run<T>(
+    deps: SubscriptionSourceDeps,
+    appUserId: string,
+    operation: () => Promise<T>
+  ): Promise<T>;
+};
+
+/**
+ * Serializes all operations against RevenueCat's process-global SDK. This makes
+ * the SDK finish a user switch before another hook reads, restores, buys, or
+ * opens a paywall for that user.
+ */
+export function createRevenueCatIdentityCoordinator(): RevenueCatIdentityCoordinator {
+  let configured = false;
+  let configuredAppUserId: string | null = null;
+  let tail: Promise<void> = Promise.resolve();
+
+  return {
+    run<T>(deps: SubscriptionSourceDeps, appUserId: string, operation: () => Promise<T>): Promise<T> {
+      const queuedOperation = tail.then(async () => {
+        const normalizedAppUserId = appUserId.trim();
+        if (!normalizedAppUserId) {
+          throw new SubscriptionSourceError(
+            'configuration',
+            'RevenueCat requires a nonblank self-managed auth UID before SDK operations.'
+          );
+        }
+
+        if (!configured) {
+          configureRevenueCat(deps, normalizedAppUserId);
+          configured = true;
+          configuredAppUserId = normalizedAppUserId;
+        } else if (configuredAppUserId !== normalizedAppUserId) {
+          try {
+            await deps.logIn(normalizedAppUserId);
+          } catch (err: unknown) {
+            if (err instanceof SubscriptionSourceError) throw err;
+            const reason = normalizeSubscriptionError(err);
+            throw new SubscriptionSourceError(reason, `RevenueCat logIn failed: ${String(err)}`);
+          }
+          configuredAppUserId = normalizedAppUserId;
+        }
+
+        return operation();
+      });
+
+      // A failed operation must not permanently block later retry attempts.
+      tail = queuedOperation.then(
+        () => undefined,
+        () => undefined
+      );
+      return queuedOperation;
+    },
+  };
 }
 
 /**

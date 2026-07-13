@@ -11,7 +11,6 @@ import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   SafeAreaView,
@@ -57,6 +56,10 @@ export default function StudentProfessionalsScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [pendingUnbindConnectionId, setPendingUnbindConnectionId] = useState<string | null>(null);
+  const [isUnbinding, setIsUnbinding] = useState(false);
+  const [unbindError, setUnbindError] = useState<string | null>(null);
+  const canSubmitInviteCode = Boolean(inviteCode.trim());
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
@@ -69,6 +72,25 @@ export default function StudentProfessionalsScreen() {
       emitEvent(buildInvitePendingCanceled());
     }
   }, [state, emitEvent]);
+
+  const openQrScanner = useCallback(async () => {
+    try {
+      if (getE2EQrInvitePayload()) {
+        setIsQrModalOpen(true);
+        return;
+      }
+
+      const isCameraAvailable = await CameraView.isAvailableAsync();
+      if (!isCameraAvailable) {
+        setSubmitError(t('relationship.qr.camera_unavailable'));
+        return;
+      }
+
+      setIsQrModalOpen(true);
+    } catch {
+      setSubmitError(t('relationship.qr.camera_unavailable'));
+    }
+  }, [t]);
 
   const onSubmitCode = useCallback(
     async (code: string, surface: 'manual' | 'qr') => {
@@ -99,17 +121,19 @@ export default function StudentProfessionalsScreen() {
   );
 
   const onScanQr = useCallback(async () => {
+    setSubmitError(null);
+
     if (cameraPermission?.granted) {
-      setIsQrModalOpen(true);
+      await openQrScanner();
       return;
     }
     const result = await requestCameraPermission();
     if (result.granted) {
-      setIsQrModalOpen(true);
+      await openQrScanner();
     } else {
       setSubmitError(t('relationship.qr.permission_denied'));
     }
-  }, [cameraPermission, requestCameraPermission, t]);
+  }, [cameraPermission, openQrScanner, requestCameraPermission, t]);
 
   const onQrCodeScanned = useCallback(
     (code: string) => {
@@ -120,26 +144,30 @@ export default function StudentProfessionalsScreen() {
   );
 
   const onUnbind = (connectionId: string) => {
-    Alert.alert(
-      t('relationship.unbind.confirm_title'),
-      t('relationship.unbind.confirm_body'),
-      [
-        {
-          text: t('relationship.unbind.confirm_no'),
-          style: 'cancel',
-        },
-        {
-          text: t('relationship.unbind.confirm_yes'),
-          style: 'destructive',
-          onPress: async () => {
-            const err = await unbindConnection(connectionId);
-            if (err) {
-              Alert.alert(t('relationship.unbind.error'));
-            }
-          },
-        },
-      ]
-    );
+    setPendingUnbindConnectionId(connectionId);
+    setUnbindError(null);
+  };
+
+  const cancelUnbind = () => {
+    if (isUnbinding) return;
+    setPendingUnbindConnectionId(null);
+    setUnbindError(null);
+  };
+
+  const confirmUnbind = async () => {
+    if (!pendingUnbindConnectionId || isUnbinding) return;
+
+    setIsUnbinding(true);
+    setUnbindError(null);
+    const err = await unbindConnection(pendingUnbindConnectionId);
+    setIsUnbinding(false);
+
+    if (err) {
+      setUnbindError(t('relationship.unbind.error'));
+      return;
+    }
+
+    setPendingUnbindConnectionId(null);
   };
 
   return (
@@ -201,10 +229,14 @@ export default function StudentProfessionalsScreen() {
               void onSubmitCode(inviteCode, 'manual');
             }}
             loading={isSubmitting}
-            disabled={!inviteCode.trim()}
+            disabled={!canSubmitInviteCode}
             fullWidth={false}
             style={styles.connectButton}
-            testID="student.professionals.connectButton"
+            testID={
+              canSubmitInviteCode
+                ? 'student.professionals.connectButton'
+                : 'student.professionals.connectButton.disabled'
+            }
           />
         </View>
 
@@ -242,16 +274,28 @@ export default function StudentProfessionalsScreen() {
             </Pressable>
           </View>
         ) : state.kind === 'ready' ? (
-          state.displayStates.map((displayState, index) => (
-            <ConnectionCard
-              key={displayState.connectionId}
-              displayState={displayState}
-              onUnbind={onUnbind}
-              scheme={scheme}
-              t={t}
-              testIndex={index}
-            />
-          ))
+          <>
+            {state.displayStates.map((displayState, index) => (
+              <ConnectionCard
+                key={displayState.connectionId}
+                displayState={displayState}
+                onUnbind={onUnbind}
+                scheme={scheme}
+                t={t}
+                testIndex={index}
+              />
+            ))}
+            {pendingUnbindConnectionId ? (
+              <UnbindConfirmationPanel
+                isSubmitting={isUnbinding}
+                error={unbindError}
+                onCancel={cancelUnbind}
+                onConfirm={confirmUnbind}
+                scheme={scheme}
+                t={t}
+              />
+            ) : null}
+          </>
         ) : null}
       </DsScreen>
 
@@ -281,14 +325,36 @@ function QrScannerModal({
 }) {
   const theme = getDsTheme(scheme);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const scannedRef = useRef(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const e2eQrInvitePayload = getE2EQrInvitePayload();
 
   useEffect(() => {
     if (isOpen) {
       scannedRef.current = false;
       setScanError(null);
+      setIsCameraActive(!e2eQrInvitePayload);
     }
+
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
   }, [isOpen]);
+
+  const handleClose = useCallback(() => {
+    scannedRef.current = true;
+    setScanError(null);
+    setIsCameraActive(false);
+
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      onClose();
+    }, 100);
+  }, [onClose]);
 
   const handleBarCodeScanned = useCallback(
     ({ data }: { data: string }) => {
@@ -297,6 +363,7 @@ function QrScannerModal({
       const result = parseQrInvitePayload(data);
       if (result.kind === 'ok') {
         scannedRef.current = true;
+        setIsCameraActive(false);
         onCodeScanned(result.code);
       } else {
         setScanError(t('relationship.qr.invalid_payload'));
@@ -306,19 +373,34 @@ function QrScannerModal({
     [onCodeScanned, t]
   );
 
+  useEffect(() => {
+    if (!isOpen || !e2eQrInvitePayload) return;
+
+    const timer = setTimeout(() => {
+      handleBarCodeScanned({ data: e2eQrInvitePayload });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [e2eQrInvitePayload, handleBarCodeScanned, isOpen]);
+
+  if (!isOpen) return null;
+
   return (
     <Modal
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       transparent={false}
-      visible={isOpen}
+      visible
       testID="student.professionals.qrModal">
       <SafeAreaView style={styles.qrContainer}>
-        <CameraView
-          style={StyleSheet.absoluteFillObject}
-          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={handleBarCodeScanned}
-        />
+        {e2eQrInvitePayload ? null : (
+          <CameraView
+            active={isCameraActive}
+            style={StyleSheet.absoluteFillObject}
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={isCameraActive ? handleBarCodeScanned : undefined}
+          />
+        )}
 
         {scanError ? (
           <View style={styles.qrErrorBanner} testID="student.professionals.qrScanError">
@@ -326,10 +408,27 @@ function QrScannerModal({
           </View>
         ) : null}
 
+        {e2eQrInvitePayload ? (
+          <View style={styles.qrE2ERow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('relationship.cta_scan_qr') as string}
+              onPress={() => handleBarCodeScanned({ data: e2eQrInvitePayload })}
+              style={[styles.qrE2EButton, { backgroundColor: theme.color.accentPrimary }]}
+              testID="student.professionals.qrE2EScanButton">
+              <Text
+                style={[styles.qrE2EText, { color: theme.color.surface }]}
+                testID="student.professionals.qrE2EScanButton.label">
+                {t('relationship.cta_scan_qr')}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <View style={styles.qrCloseRow}>
           <Pressable
             accessibilityRole="button"
-            onPress={onClose}
+            onPress={handleClose}
             style={[styles.qrCloseButton, { backgroundColor: theme.color.surface }]}
             testID="student.professionals.qrCloseButton">
             <Text style={[styles.qrCloseText, { color: theme.color.textPrimary }]}>
@@ -339,6 +438,83 @@ function QrScannerModal({
         </View>
       </SafeAreaView>
     </Modal>
+  );
+}
+
+function getE2EQrInvitePayload(): string | null {
+  const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
+  const appVariant = process.env.APP_VARIANT;
+  const isDevVariant = appVariant === undefined || appVariant === '' || appVariant === 'dev';
+  const isAuthHarnessEnabled = process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true';
+  const payload = process.env.EXPO_PUBLIC_E2E_QR_INVITE_PAYLOAD?.trim();
+
+  if (!isDev || !isDevVariant || !isAuthHarnessEnabled || !payload) {
+    return null;
+  }
+
+  return payload;
+}
+
+function UnbindConfirmationPanel({
+  error,
+  isSubmitting,
+  onCancel,
+  onConfirm,
+  scheme,
+  t,
+}: {
+  error: string | null;
+  isSubmitting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  scheme: 'light' | 'dark';
+  t: (key: TranslationKey) => string;
+}) {
+  const theme = getDsTheme(scheme);
+
+  return (
+    <DsCard
+      scheme={scheme}
+      style={[styles.unbindPanel, { borderColor: theme.color.danger }]}
+      testID="student.professionals.unbindConfirm">
+      <Text style={[styles.cardSpecialty, { color: theme.color.textPrimary }]}>
+        {t('relationship.unbind.confirm_title')}
+      </Text>
+      <Text style={[styles.cardStatus, { color: theme.color.textSecondary }]}>
+        {t('relationship.unbind.confirm_body')}
+      </Text>
+      {error ? (
+        <Text accessibilityRole="alert" style={[styles.inlineError, { color: theme.color.danger }]}>
+          {error}
+        </Text>
+      ) : null}
+      <View style={styles.unbindActions}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={isSubmitting}
+          onPress={onCancel}
+          style={[styles.unbindSecondaryButton, { borderColor: theme.color.border, opacity: isSubmitting ? 0.5 : 1 }]}
+          testID="student.professionals.unbindConfirm.cancel">
+          <Text style={[styles.unbindSecondaryText, { color: theme.color.textPrimary }]}>
+            {t('relationship.unbind.confirm_no')}
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          disabled={isSubmitting}
+          onPress={onConfirm}
+          style={[styles.unbindDangerButton, { backgroundColor: theme.color.danger, opacity: isSubmitting ? 0.5 : 1 }]}
+          testID="student.professionals.unbindConfirm.confirm">
+          {isSubmitting ? (
+            <ActivityIndicator color={theme.color.surface} />
+          ) : (
+            <Text style={[styles.unbindDangerText, { color: theme.color.surface }]}>
+              {t('relationship.unbind.confirm_yes')}
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    </DsCard>
   );
 }
 
@@ -373,7 +549,9 @@ function ConnectionCard({
       </Text>
 
       {displayState.kind === 'pending' ? (
-        <Text style={[styles.cardStatus, { color: theme.color.textSecondary }]}>
+        <Text
+          style={[styles.cardStatus, { color: theme.color.textSecondary }]}
+          testID={`student.professionals.connectionPending.${displayState.connectionId}`}>
           {t('relationship.pending.helper')}
         </Text>
       ) : displayState.kind === 'canceled_code_rotated' ? (
@@ -387,6 +565,13 @@ function ConnectionCard({
           testID={`student.professionals.unbindButton.${testIndex}`}>
           <Text style={[styles.link, { color: theme.color.danger }]}>{t('relationship.unbind.cta')}</Text>
         </Pressable>
+      ) : displayState.kind === 'ended' ? (
+        <Text
+          accessibilityRole="text"
+          style={[styles.cardStatus, { color: theme.color.textSecondary }]}
+          testID={`student.professionals.connectionEnded.${testIndex}`}>
+          {t('relationship.unbind.ended')}
+        </Text>
       ) : null}
     </DsCard>
   );
@@ -432,6 +617,40 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     gap: DsSpace.sm,
     padding: 14,
+  },
+  unbindPanel: {
+    borderWidth: 1.5,
+    gap: DsSpace.sm,
+    padding: 14,
+  },
+  unbindActions: {
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+  },
+  unbindSecondaryButton: {
+    alignItems: 'center',
+    borderRadius: DsRadius.sm,
+    borderWidth: 1.5,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 12,
+  },
+  unbindDangerButton: {
+    alignItems: 'center',
+    borderRadius: DsRadius.sm,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 12,
+  },
+  unbindSecondaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  unbindDangerText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   cardSpecialty: {
     fontSize: 15,
@@ -483,5 +702,26 @@ const styles = StyleSheet.create({
   qrCloseText: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  qrE2ERow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: '45%',
+    zIndex: 20,
+  },
+  qrE2EButton: {
+    borderRadius: DsRadius.sm,
+    minHeight: 56,
+    minWidth: 220,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    zIndex: 21,
+  },
+  qrE2EText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

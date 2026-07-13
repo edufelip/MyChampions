@@ -28,10 +28,11 @@ in-app support access.
 - Display name: `currentUser.displayName` → email prefix → `—`.
 - Email: `currentUser.email`.
 - Role badge pill: "Student" / "Professional" based on `lockedRole`.
+- Compact support icon: opens the same in-app support dialog without requiring the user to scroll to the Support section.
 
 ### 2. Account Section
 - **Email** — display-only row showing the signed-in email.
-- **Change password** — email/password accounts: triggers `sendPasswordResetEmail` with confirmation alert → inline success/error feedback. OAuth accounts (Google/Apple): informational alert noting password is managed by the provider.
+- **Change password** — email/password accounts: shows an inline confirmation panel, then submits a MyChampions server password-reset request → inline success/error feedback. OAuth accounts (Google/Apple): informational alert noting password is managed by the provider.
 - **Language** — in-app language switcher. Tapping navigates to `/settings/language-select` (SC-222). The active locale is read from `LocaleContext`; the language label on this row updates immediately after returning from SC-222. Language override is persisted to `AsyncStorage` and takes effect in the current session — no app restart required.
 
 ### 3. Legal & Privacy Section
@@ -44,18 +45,19 @@ in-app support access.
   - **Disclaimer**: Explains this is for messaging the support team.
   - **Subject**: One-line input (max 50 chars).
   - **Message**: Multi-line input (max 500 chars).
-  - **Submit Button**: Saves message to Firestore `supportMessages` collection.
+  - **Submit Button**: Sends the message to the MyChampions server support endpoint.
+  - **Cancel Button**: Dismisses the dialog without submitting.
   - **Success/Error states**: Inline feedback within the dialog.
 
 ### 5. Sign Out
 - Outlined warning-color button.
-- Confirmation alert before signing out.
-- Calls `clearSession()` + `signOut(getFirebaseAuth())`.
+- Inline confirmation panel before signing out.
+- Calls `signOutFromSource()` + `clearSession()`, which clears the local server auth session.
 
 ### 6. Danger Zone
 - Danger-tinted background group.
 - Body copy explaining data retention policy.
-- **Request account deletion** — destructive button; confirmation alert → `deleteAccountAndDataFromSource()` → `signOut()`; inline success/error feedback; disabled when offline.
+- **Request account deletion** — destructive button; inline confirmation panel → `deleteAccountAndDataFromSource()` → `signOutFromSource()` → `clearSession()`; inline success/error feedback when the user remains on the screen; disabled when offline. The MyChampions server removes direct account-owned local rows and rewrites retained relationship/history rows to a `deleted_account_*` pseudonym so the deleted auth UID is not preserved.
 
 ### 7. App Version Footer
 - Subtle centered text: "Version {app version}" from `Constants.expoConfig.version`.
@@ -66,7 +68,9 @@ in-app support access.
 - Password reset pending: row shows loading state.
 - Password reset success: inline success banner replaces the row.
 - Password reset error: inline error text below the row.
+- Sign-out confirmation: inline warning panel shows Cancel and Sign out actions.
 - Delete pending: CTA disabled.
+- Delete confirmation: inline danger panel shows Cancel and Delete account actions.
 - Delete success: inline success banner replaces the CTA.
 - Delete error: inline error text above the CTA.
 
@@ -83,10 +87,10 @@ in-app support access.
   - `useNetworkStatus()`: connectivity state.
   - `useLocale()`: `activeLocale` (current effective locale for the language row label).
 - Outputs:
-  - `deleteAccountAndDataFromSource()` + `signOut()`: account deletion.
-  - `sendPasswordResetEmail()`: password reset email.
+  - `deleteAccountAndDataFromSource()` + `signOutFromSource()`: account deletion.
+  - `requestPasswordResetFromSource()`: password reset request.
   - `router.push('/settings/language-select')`: navigates to SC-222 for language selection.
-  - `Linking.openURL()`: external URLs and mailto.
+  - `router.push('/shared/webview')`: opens legal URLs in the shared in-app WebView screen.
 
 ## Edge Cases
 - `currentUser.displayName` is null for some accounts → fall back to email prefix.

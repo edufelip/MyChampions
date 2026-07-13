@@ -16,6 +16,8 @@ Professional-only subscription tier and store-policy readiness for release.
 - `AC-310`: Account deletion removes direct personal identifiers from retained historical records and keeps only anonymized/pseudonymized minimum data required for legal, billing, security, and continuity constraints.
 - `AC-311`: If a professional is above cap with inactive entitlement, new activations and student-plan update actions are locked until entitlement is restored.
 - `AC-312`: Professionals receive pre-lapse warning with clear renew/restore path before entitlement lock is applied.
+- `AC-313`: RevenueCat SDK operations are bound to the current self-managed server auth UID; an account switch finishes before the next SDK operation, and stale entitlement results cannot synchronize to another server account.
+- `AC-314`: A production mobile release fails before native compilation unless its platform Google OAuth client ID and matching public RevenueCat SDK key are present and correctly prefixed.
 
 ## Gherkin Scenarios
 ```gherkin
@@ -60,4 +62,10 @@ Feature: Monetization and policy compliance
     When professional opens dashboard or subscription surface
     Then app shows pre-lapse warning state
     And app provides renew/restore recovery actions
+
+  Scenario: RevenueCat identity follows the self-managed server account
+    Given RevenueCat has been configured for one signed-in MyChampions user
+    When a different MyChampions user signs in before the next subscription operation
+    Then RevenueCat logs in the new server auth UID before that operation
+    And entitlement state or snapshots from the first user are not applied to the second user
 ```

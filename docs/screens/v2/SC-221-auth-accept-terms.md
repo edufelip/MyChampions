@@ -29,10 +29,10 @@
 ## Data Contract
 - Inputs:
   - Terms required version from config (`EXPO_PUBLIC_TERMS_REQUIRED_VERSION`, fallback `v1`).
-  - Terms URL from config (`EXPO_PUBLIC_TERMS_URL`, fallback `https://google.com`).
+  - Terms URL from config (`EXPO_PUBLIC_TERMS_URL`, fallback `https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use`).
   - Checkbox state.
 - Outputs:
-  - Firestore persisted acceptance version on `userProfiles/{uid}.acceptedTermsVersion`.
+  - MyChampions server profile persisted acceptance version on `acceptedTermsVersion`.
   - Updated auth session state (`needsTermsAcceptance=false` when versions match).
 
 ## Edge Cases
@@ -51,7 +51,7 @@
 - Current implementation status:
   - Acceptance happens after sign-in/create-account and before role-selection.
   - Sign-in and create-account success paths now route to `/auth/accept-terms`.
-  - Terms acceptance persistence is Firestore-backed (`acceptedTermsVersion` in profile source).
+  - Terms acceptance persistence is MyChampions server-backed (`acceptedTermsVersion` in profile source).
   - Route guard enforces terms gate globally for authenticated sessions.
   - Primary accept pill button uses light foreground for label/loading contrast over the accent background.
 

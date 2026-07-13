@@ -32,6 +32,13 @@
           <string>com.edufelip.mychampions.dev</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.942354515358-6pqkvvhajja4uon9igq3rtcp2q3k9qvo</string>
+          <string>com.googleusercontent.apps.942354515358-fursf2upkr1ggp1tfhojo1uhiqmtsc2t</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>

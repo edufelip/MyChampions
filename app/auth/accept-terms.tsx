@@ -57,7 +57,7 @@ export default function AcceptTermsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.color.canvas }]}>
+    <View style={[styles.container, { backgroundColor: theme.color.canvas }]} testID="auth.terms.screen">
       <Stack.Screen options={{ title: t('auth.terms.title'), headerShown: false }} />
 
       <View
@@ -82,7 +82,9 @@ export default function AcceptTermsScreen() {
           <View style={[styles.badge, { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft }]}>
             <MaterialIcons color={theme.color.accentPrimary} name="gavel" size={30} />
           </View>
-          <Text style={[styles.title, { color: palette.text }]}>{t('auth.terms.title')}</Text>
+          <Text style={[styles.title, { color: palette.text }]} testID="auth.terms.title">
+            {t('auth.terms.title')}
+          </Text>
           <Text style={[styles.subtitle, { color: palette.icon }]}>{t('auth.terms.description')}</Text>
         </View>
 
@@ -97,7 +99,8 @@ export default function AcceptTermsScreen() {
                 borderColor: isDark ? theme.color.borderStrong : theme.color.border,
                 backgroundColor: pressed ? theme.color.accentPrimarySoft : 'transparent',
               },
-            ]}>
+            ]}
+            testID="auth.terms.openLinkButton">
             <MaterialIcons color={theme.color.accentPrimary} name="open-in-new" size={20} />
             <Text style={[styles.linkButtonText, { color: theme.color.accentPrimary }]}>{t('auth.terms.open_link')}</Text>
           </Pressable>
@@ -106,7 +109,8 @@ export default function AcceptTermsScreen() {
             accessibilityRole="checkbox"
             accessibilityState={{ checked: isChecked }}
             onPress={() => setIsChecked((prev) => !prev)}
-            style={styles.checkboxRow}>
+            style={styles.checkboxRow}
+            testID="auth.terms.checkbox">
             <View
               style={[
                 styles.checkbox,
@@ -120,13 +124,15 @@ export default function AcceptTermsScreen() {
             <Text style={[styles.checkboxLabel, { color: palette.text }]}> {t('auth.terms.checkbox')}</Text>
           </Pressable>
 
-          <Text style={[styles.versionText, { color: palette.icon }]}>
+          <Text style={[styles.versionText, { color: palette.icon }]} testID="auth.terms.version">
             {t('auth.terms.version', { version: termsRequiredVersion })}
           </Text>
 
           {errorKey ? (
             <View accessibilityLiveRegion="polite">
-              <Text style={[styles.errorText, { color: theme.color.danger }]}>{t(errorKey)}</Text>
+              <Text style={[styles.errorText, { color: theme.color.danger }]} testID="auth.terms.error">
+                {t(errorKey)}
+              </Text>
             </View>
           ) : null}
 
@@ -142,7 +148,8 @@ export default function AcceptTermsScreen() {
                 shadowColor: theme.color.accentPrimary,
                 opacity: !isChecked || submitting ? 0.6 : pressed ? 0.92 : 1,
               },
-            ]}>
+            ]}
+            testID={isChecked ? 'auth.terms.acceptButton' : 'auth.terms.acceptButton.disabled'}>
             {submitting ? (
               <ActivityIndicator color={primaryButtonForeground} />
             ) : (

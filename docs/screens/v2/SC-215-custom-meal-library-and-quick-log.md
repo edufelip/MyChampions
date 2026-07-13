@@ -50,6 +50,8 @@
   - Updated daily totals in nutrition tracking.
   - Deep link navigation target for shared recipe confirmation flow.
 
+`features/nutrition/custom-meal-source.ts` now reads custom meal definitions through the local MyChampions server (`GET /nutrition/custom-meals`), and quick logging reads the selected meal through `GET /nutrition/custom-meals/:mealId` before writing `POST /nutrition/portion-logs`. Today's portion-log reads use `GET /nutrition/portion-logs`. Share links use `POST /nutrition/custom-meals/:mealId/share-links`; shared recipe previews use `GET /nutrition/custom-meal-shares/:shareToken`; imports use `POST /nutrition/custom-meal-shares/:shareToken/import`. These paths fail closed outside E2E fixtures when local server URL/auth is unavailable. Custom meal image URLs now come from local MyChampions server media storage.
+
 ## Edge Cases
 - Consumed grams greater than meal total grams should still calculate correctly.
 - If meal is edited later, old logs keep previous nutrition snapshot.

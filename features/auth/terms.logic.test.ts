@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  DEFAULT_TERMS_URL,
   needsTermsAcceptance,
   normalizeTermsVersion,
   resolveRequiredTermsVersion,
@@ -21,10 +22,10 @@ test('resolveRequiredTermsVersion falls back to v1 by default', () => {
   assert.equal(resolveRequiredTermsVersion(''), 'v1');
 });
 
-test('resolveTermsUrl falls back to google.com when missing', () => {
+test('resolveTermsUrl falls back to the app terms URL when missing', () => {
   assert.equal(resolveTermsUrl('https://example.com/terms'), 'https://example.com/terms');
-  assert.equal(resolveTermsUrl('   '), 'https://google.com');
-  assert.equal(resolveTermsUrl(null), 'https://google.com');
+  assert.equal(resolveTermsUrl('   '), DEFAULT_TERMS_URL);
+  assert.equal(resolveTermsUrl(null), DEFAULT_TERMS_URL);
 });
 
 test('needsTermsAcceptance returns true only when required differs from accepted', () => {

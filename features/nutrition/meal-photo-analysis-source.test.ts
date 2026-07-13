@@ -2,8 +2,8 @@
  * Unit tests for meal-photo-analysis-source.ts
  * Runner: node:test + node:assert/strict (npm run test:unit)
  *
- * All Firebase and fetch dependencies are injected via MealPhotoAnalysisSourceDeps
- * so no real network calls or Firebase SDK are needed.
+ * All fetch and auth dependencies are injected via MealPhotoAnalysisSourceDeps
+ * so no real network calls or provider SDKs are needed.
  * Refs: BL-108, D-106–D-110, TC-285
  */
 
@@ -19,13 +19,13 @@ import {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Minimal User-shaped object satisfying the type-only import. */
-const fakeUser = {} as Parameters<typeof analyzeMealPhoto>[0];
+const fakeUser = { uid: 'source-test-user' } as Parameters<typeof analyzeMealPhoto>[0];
 
 /** Returns a deps object with all fields overridable. Default is a happy-path config. */
 function makeDeps(overrides: Partial<MealPhotoAnalysisSourceDeps> = {}): MealPhotoAnalysisSourceDeps {
   return {
-    getFunctionUrl: () => 'https://example.com/analyzeMealPhoto',
-    getIdToken: async () => 'fake-id-token',
+    getServerBaseUrl: () => 'http://localhost:3400',
+    getCurrentAccessToken: async () => 'server-access-token',
     fetchFn: async () => {
       throw new Error('fetchFn not configured in this test');
     },
@@ -41,7 +41,7 @@ function makeResponse(status: number, body: unknown): Response {
   } as unknown as Response;
 }
 
-/** A valid MacroEstimate body returned by the Cloud Function. */
+/** A valid MacroEstimate body returned by the server. */
 const validBody = {
   calories: 520,
   carbs: 60,
@@ -82,11 +82,9 @@ describe('PhotoAnalysisSourceError', () => {
 // ─── analyzeMealPhoto — configuration errors ──────────────────────────────────
 
 describe('analyzeMealPhoto — configuration error', () => {
-  it('throws configuration error when getFunctionUrl throws PhotoAnalysisSourceError', async () => {
+  it('throws configuration error when the MyChampions server URL is missing', async () => {
     const deps = makeDeps({
-      getFunctionUrl: () => {
-        throw new PhotoAnalysisSourceError('configuration', 'URL not configured.');
-      },
+      getServerBaseUrl: () => undefined,
     });
     await assert.rejects(
       () => analyzeMealPhoto(fakeUser, 'base64data', deps),
@@ -101,20 +99,6 @@ describe('analyzeMealPhoto — configuration error', () => {
 // ─── analyzeMealPhoto — network errors ───────────────────────────────────────
 
 describe('analyzeMealPhoto — network errors', () => {
-  it('throws network error when getIdToken rejects', async () => {
-    const deps = makeDeps({
-      getIdToken: async () => { throw new Error('token expired'); },
-    });
-    await assert.rejects(
-      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
-      (err: PhotoAnalysisSourceError) => {
-        assert.equal(err.code, 'network');
-        assert.ok(err.message.includes('ID token'));
-        return true;
-      }
-    );
-  });
-
   it('throws network error when fetch itself rejects (no connectivity)', async () => {
     const deps = makeDeps({
       fetchFn: async () => { throw new TypeError('Network request failed'); },
@@ -146,9 +130,52 @@ describe('analyzeMealPhoto — network errors', () => {
 // ─── analyzeMealPhoto — unauthenticated errors ────────────────────────────────
 
 describe('analyzeMealPhoto — unauthenticated errors', () => {
+  it('throws unauthenticated when the local server bearer token is missing and never requests a legacy ID token', async () => {
+    let idTokenCalls = 0;
+    const legacyTokenProperty = ['get', 'IdToken'].join('');
+    const userWithLegacyToken = new Proxy({ uid: 'source-test-user' }, {
+      get(target, property, receiver) {
+        if (property === legacyTokenProperty) {
+          idTokenCalls += 1;
+          return async () => 'legacy-token';
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    }) as Parameters<typeof analyzeMealPhoto>[0];
+    const deps = makeDeps({
+      getCurrentAccessToken: async () => null,
+    });
+
+    await assert.rejects(
+      () => analyzeMealPhoto(userWithLegacyToken, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => {
+        assert.equal(err.code, 'unauthenticated');
+        assert.ok(err.message.includes('server token'));
+        return true;
+      }
+    );
+    assert.equal(idTokenCalls, 0);
+  });
+
   it('throws unauthenticated error on 401 response', async () => {
     const deps = makeDeps({
       fetchFn: async () => makeResponse(401, { error: 'unauthenticated' }),
+    });
+    await assert.rejects(
+      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => {
+        assert.equal(err.code, 'unauthenticated');
+        return true;
+      }
+    );
+  });
+
+  it('throws unauthenticated error on 401 response even when the body is not JSON', async () => {
+    const deps = makeDeps({
+      fetchFn: async () => ({
+        status: 401,
+        json: async () => { throw new SyntaxError('Unexpected token'); },
+      } as unknown as Response),
     });
     await assert.rejects(
       () => analyzeMealPhoto(fakeUser, 'base64data', deps),
@@ -289,11 +316,58 @@ describe('analyzeMealPhoto — domain errors', () => {
       }
     );
   });
+
+  it('throws configuration when the MyChampions server reports missing analyzer config', async () => {
+    const deps = makeDeps({
+      fetchFn: async () => makeResponse(503, { error: 'configuration' }),
+      getServerBaseUrl: () => 'http://localhost:3400',
+      getCurrentAccessToken: async () => 'server-access-token',
+    } as Partial<MealPhotoAnalysisSourceDeps> & {
+      getServerBaseUrl: () => string;
+      getCurrentAccessToken: () => Promise<string>;
+    });
+
+    await assert.rejects(
+      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => {
+        assert.equal(err.code, 'configuration');
+        return true;
+      }
+    );
+  });
 });
 
 // ─── analyzeMealPhoto — happy paths ───────────────────────────────────────────
 
 describe('analyzeMealPhoto — happy path', () => {
+  it('uses the MyChampions server with a local bearer token', async () => {
+    let capturedUrl: string | URL | Request = '';
+    let capturedInit: RequestInit | undefined;
+    const deps = makeDeps({
+      fetchFn: async (url, init) => {
+        capturedUrl = url;
+        capturedInit = init;
+        return makeResponse(200, validBody);
+      },
+    });
+
+    const result = await analyzeMealPhoto(fakeUser, 'mybase64==', deps);
+
+    assert.equal(result.calories, 520);
+    assert.equal(capturedUrl, 'http://localhost:3400/nutrition/meal-photo-analysis');
+    assert.equal(capturedInit?.method, 'POST');
+    assert.equal(
+      (capturedInit?.headers as Record<string, string>)['Authorization'],
+      'Bearer server-access-token'
+    );
+    const parsedBody = JSON.parse(capturedInit?.body as string) as {
+      image: string;
+      mimeType: string;
+    };
+    assert.equal(parsedBody.image, 'mybase64==');
+    assert.equal(parsedBody.mimeType, 'image/jpeg');
+  });
+
   it('returns a valid MacroEstimate on 200 success', async () => {
     const deps = makeDeps({
       fetchFn: async () => makeResponse(200, validBody),
@@ -307,7 +381,7 @@ describe('analyzeMealPhoto — happy path', () => {
     assert.equal(result.confidence, 'high');
   });
 
-  it('defaults confidence to low when Cloud Function omits the field', async () => {
+  it('defaults confidence to low when the server omits the field', async () => {
     const { confidence: _omit, ...bodyWithoutConfidence } = validBody;
     const deps = makeDeps({
       fetchFn: async () => makeResponse(200, bodyWithoutConfidence),
@@ -326,11 +400,11 @@ describe('analyzeMealPhoto — happy path', () => {
     assert.equal(result.carbs, 60.1);
   });
 
-  it('sends the base64 image and id token in the request body / headers', async () => {
+  it('sends the base64 image and server bearer token in the request body / headers', async () => {
     let capturedUrl: string | URL | Request = '';
     let capturedInit: RequestInit | undefined;
     const deps = makeDeps({
-      getIdToken: async () => 'my-token-xyz',
+      getCurrentAccessToken: async () => 'my-token-xyz',
       fetchFn: async (url, init) => {
         capturedUrl = url;
         capturedInit = init;
@@ -338,7 +412,7 @@ describe('analyzeMealPhoto — happy path', () => {
       },
     });
     await analyzeMealPhoto(fakeUser, 'mybase64==', deps);
-    assert.equal(capturedUrl, 'https://example.com/analyzeMealPhoto');
+    assert.equal(capturedUrl, 'http://localhost:3400/nutrition/meal-photo-analysis');
     assert.equal(capturedInit?.method, 'POST');
     assert.equal(
       (capturedInit?.headers as Record<string, string>)['Authorization'],
@@ -352,16 +426,16 @@ describe('analyzeMealPhoto — happy path', () => {
     assert.equal(parsedBody.mimeType, 'image/jpeg');
   });
 
-  it('calls the configured function URL', async () => {
+  it('trims trailing slashes from the configured server URL', async () => {
     let calledUrl: string | URL | Request = '';
     const deps = makeDeps({
-      getFunctionUrl: () => 'https://cf2.example.com/analyzeMealPhoto',
+      getServerBaseUrl: () => 'http://localhost:3400///',
       fetchFn: async (url, _init) => {
         calledUrl = url;
         return makeResponse(200, validBody);
       },
     });
     await analyzeMealPhoto(fakeUser, 'data', deps);
-    assert.equal(calledUrl, 'https://cf2.example.com/analyzeMealPhoto');
+    assert.equal(calledUrl, 'http://localhost:3400/nutrition/meal-photo-analysis');
   });
 });

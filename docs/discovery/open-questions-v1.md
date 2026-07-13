@@ -51,7 +51,7 @@
   - Regeneration becomes a complete containment action instead of partial mitigation.
 
 ## Resolved
-- `Q-010`: Food API final selection approved as VPS food-search microservice (`https://foodservice.eduwaldo.com/searchFoods`).
+- `Q-010`: Food API final selection approved behind the MyChampions server food integration route. Mobile calls `POST /integrations/food/search`; the server owns the food-service provider boundary and local catalog Postgres mirror.
 - `Q-011`: Specialty-removal guard fixed to `active + pending` constraint.
 - `Q-012`: Student-visible credential field scope fixed to `registry_id + authority + country` (assigned professionals only).
 - `Q-013`: Invite-code regeneration fixed to auto-cancel pending requests tied to superseded code.
@@ -61,6 +61,6 @@
 - `Q-018`: Tailwind library for MVP fixed to NativeWind.
 - `Q-019`: OTA strategy fixed to `store-only` for MVP.
 - `Q-020`: CI signing strategy fixed to `platform-native secret management`.
-- `Q-021`: QA distribution fixed to TestFlight on release branches and Firebase App Distribution on pull requests to `develop`.
+- `Q-021`: QA distribution fixed to TestFlight on release branches and native CI build artifacts on pull requests to `develop`.
 - `Q-022`: Post-compression media upload limits fixed at `<= 1.5 MB` and `<= 1600 px` longest side.
-- `Q-023`: Non-crash monitoring deferred; Crashlytics-only in MVP for crashes/ANRs.
+- `Q-023`: Non-crash monitoring deferred; crash/ANR monitoring provider selection remains required before production release.

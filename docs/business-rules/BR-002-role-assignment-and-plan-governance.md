@@ -22,7 +22,7 @@
 - `BR-219`: A professional can manage up to 10 active students without paid subscription.
 - `BR-220`: Active student count above 10 is blocked unless professional subscription entitlement is active.
 - `BR-221`: Subscription entitlement lifecycle is controlled by store billing and synchronized through RevenueCat.
-- `BR-222`: Either side of an active assignment can unbind at any time.
+- `BR-222`: Either side of an active assignment can unbind at any time; Professional and Student unbinds use the same connection-end lifecycle semantics.
 - `BR-223`: A replacement assignment in the same specialty cannot be simultaneously active; previous binding must be ended first.
 - `BR-224`: Training plans are professional-defined and fully customizable; app enforces no fixed domain workout fields beyond storage metadata.
 - `BR-225`: Release eligibility requires compliance with Apple/Google store policies for payments, privacy, account deletion, and data disclosures.
@@ -34,18 +34,23 @@
   - `invited` -> `pending_confirmation` when student submits invite code.
   - `pending_confirmation` -> `active` when professional confirms.
   - `active` -> `ended` when student or professional unbinds.
+- `BR-230A`: During the local MyChampions server migration, pending connection confirmation requires the MyChampions server bearer-auth endpoint backed by local Postgres outside E2E fixtures; missing local server auth fails closed.
+- `BR-230B`: During the local MyChampions server migration, student/professional unbind requires the MyChampions server bearer-auth endpoint for the connection-row transition to `ended` outside E2E fixtures; missing local server auth fails closed.
 - `BR-231`: Account deletion workflows must remove direct personal identifiers from retained historical relationship/plan records and keep only anonymized or pseudonymized data required for legal, billing, security, and continuity constraints.
 - `BR-232`: Supported MVP auth methods are email/password, Google, and Apple.
+- `BR-232A`: During the local MyChampions server migration, email/password sign-in and account creation establish a MyChampions server bearer session through local Postgres `local_email_auth_credentials` by default; non-dev app variants must not use the deterministic local dev-session endpoint.
 - `BR-233`: Password policy requires minimum 8 characters, at least one uppercase letter, one number, one special character, and no emojis.
 - `BR-234`: Email uniqueness is global per account; same email cannot create multiple accounts.
 - `BR-235`: Social login with matching email links provider identity into existing account.
 - `BR-236`: Role-selection route is bypassed for accounts with locked role and must auto-redirect to role home.
 - `BR-237`: Professional may add specialties post-onboarding.
-- `BR-238`: Professional may remove specialty only when that specialty has no active or pending students and at least one specialty remains on account.
+- `BR-238`: Professional may remove specialty only through the governed backend removal path, and only when that specialty has no active or pending students and at least one specialty remains on account; direct client specialty deletion/deactivation is blocked.
+- `BR-238A`: During the local MyChampions server migration, Specialty blocker counts, removal, and credential upsert require MyChampions server bearer-auth endpoints backed by local Postgres outside E2E fixtures; missing local server auth fails closed.
 - `BR-239`: Credential records are stored per specialty, with max one `professional_registry` credential per specialty in MVP.
 - `BR-240`: Student-visible credential info is limited to currently assigned professionals and field scope is constrained to `registry_id`, `authority`, and `country`.
-- `BR-241`: Professional invite code is persistent by default, revocable/regenerable on demand, and only one active code exists per professional at a time; regeneration invalidates the old code and auto-cancels pending requests tied to that old code.
-- `BR-242`: Pending connection requests awaiting professional action are capped at 10 per professional.
+- `BR-241`: Professional invite codes are persistent by default and scoped per Specialty in the governed relationship backend; each Specialty code is independently revocable/regenerable, regeneration auto-cancels pending requests tied to that code's Specialty only, and Specialty removal deletes the scoped code/lookup so stale codes cannot create or activate Connections.
+- `BR-241A`: During the local MyChampions server migration, professional invite-code read/create and regeneration require the MyChampions server bearer-auth endpoints backed by local Postgres outside E2E fixtures; missing local server auth fails closed.
+- `BR-242`: Pending connection requests awaiting professional action are capped at 10 unique Students per professional; one Student with two specialty-scoped pending requests counts once. Invite submission and pending Connection creation run through the governed backend path, which uses deterministic duplicate guard documents and ten pending-student slot documents so duplicate pending requests and cap checks are enforced transactionally before the Connection is created.
 - `BR-243`: Professional dashboard must show active and pending counts separately.
 - `BR-244`: Wrong-role route access is hard-blocked and redirected to role home.
 - `BR-245`: Offline mode allows read-only cached access; writes are blocked until connectivity is restored.
@@ -61,9 +66,9 @@
 - `BR-255`: MVP utility-class styling standard in mobile UI is NativeWind.
 - `BR-256`: QA distribution policy is branch-driven:
   - Release branches publish to TestFlight.
-  - Pull requests into `develop` publish to Firebase App Distribution.
-- `BR-257`: Client-side compression is required before any image/media upload to Firebase Cloud Storage.
-- `BR-258`: Production monitoring scope in MVP includes Firebase Crashlytics (crashes + ANRs) and excludes additional non-crash error-monitoring platforms.
+  - Pull requests into `develop` publish native CI build artifacts.
+- `BR-257`: Client-side compression is required before any image/media upload through the MyChampions server upload boundary.
+- `BR-258`: Production monitoring scope in MVP requires a selected crash/ANR provider before release and excludes additional non-crash error-monitoring platforms.
 - `BR-259`: Release updates in MVP are delivered only through App Store/Play Store binaries; OTA update channels are disabled.
 - `BR-260`: Signing assets are managed via platform-native CI secret management rather than centralized Fastlane certificate stores.
 - `BR-261`: Image/media uploads must pass post-compression limits of `<= 1.5 MB` and `<= 1600 px` longest side; uploads exceeding limits are blocked client-side.
@@ -84,7 +89,7 @@
 - `BR-276`: BL-104 habit-tracking scope is hydration-only (water intake); sleep and steps are excluded from this item.
 - `BR-277`: Student personal daily water-goal targets are authored in self-managed nutrition plan creation/edit contexts.
 - `BR-278`: Nutritionist daily water-goal targets are authored in assigned nutrition plan creation/edit or assignment fine-tune contexts.
-- `BR-279`: Effective water-goal precedence is plan-context driven: active assigned nutrition plan goal first, otherwise self-managed nutrition plan goal; legacy `waterGoals` values are compatibility fallback only.
+- `BR-279`: Effective water-goal precedence is plan-context driven: active assigned nutrition plan goal first, otherwise self-managed nutrition plan goal, resolved through the MyChampions server hydration-goal context.
 - `BR-280`: Water streak progression is based on daily completion against effective goal; non-complete days break the active streak.
 - `BR-281`: Predefined plans are professional-owned named library items for nutrition and/or training domains.
 - `BR-282`: Bulk assignment clones predefined plans into per-student copies; later edits to source predefined plan do not retroactively mutate already assigned student copies.
@@ -92,9 +97,9 @@
 - `BR-284`: Localization baseline requires every user-facing string key to have `en-US`, `pt-BR`, and `es-ES` values before release readiness.
 - `BR-285`: Critical journey screens covered by Detox smoke tests must expose stable `testID` selectors; selector changes require synchronized updates in E2E tests in the same change.
 - `BR-286`: AI meal photo analysis result is advisory only; all macro fields pre-filled by AI remain user-editable before any save or log operation.
-- `BR-287`: A captured meal image must be compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission to the Cloud Function proxy (per FR-202 / D-061).
-- `BR-288`: The Firebase Cloud Function proxy for AI analysis must validate the caller's Firebase Auth ID token before forwarding the request to OpenAI; unauthenticated calls must be rejected.
-- `BR-289`: The OpenAI API key used for meal photo analysis must never be embedded in the client binary or exposed through any client-accessible environment variable.
+- `BR-287`: A captured meal image must be compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission to the MyChampions server analyzer endpoint (per FR-202 / D-061).
+- `BR-288`: The MyChampions server analyzer endpoint must validate the caller's bearer session before forwarding the request to the configured meal-photo analyzer provider; unauthenticated calls must be rejected.
+- `BR-289`: The meal-photo analyzer provider API key must never be embedded in the client binary or exposed through any client-accessible environment variable.
 - `BR-290`: An AI estimate disclaimer must be displayed whenever analysis results pre-fill form fields, making clear to the user that values are estimates and should be verified before saving.
 - `BR-291`: A nutrition plan name is required and must be at least 2 characters; saving without a valid name is blocked.
 - `BR-292`: Calorie and macro targets (carbs, proteins, fats) must each be zero or a positive number; negative values are invalid.
@@ -104,14 +109,24 @@
 - `BR-296`: Plan builder screens are accessible only to professional role accounts; student route access to `/professional/nutrition/plans/*` and `/professional/training/plans/*` is blocked by the route guard.
 - `BR-297`: Terms acceptance is a required post-authentication gate; users must accept the currently required terms version before role-selection or role-home access.
 - `BR-298`: Terms acceptance persistence is versioned per user account; if required terms version changes, prior acceptance does not satisfy the new version and user must accept again.
-- `BR-299`: In-app password reset is available only for accounts whose Firebase Auth `providerData` includes the `password` provider; OAuth-only accounts (Google, Apple) do not receive a reset email and instead receive an informational alert.
-- `BR-300`: Provider detection for the password reset flow is performed at runtime by inspecting `currentUser.providerData`; the "Change password" row is always visible regardless of provider, and the runtime branch determines the action.
-- `BR-301`: A user confirmation alert must precede any `sendPasswordResetEmail` call from the account settings screen; silent auto-dispatch without user acknowledgment is not permitted.
-- `BR-302`: The OAuth provider label shown in the informational alert must be resolved from `providerData` at runtime: `google.com` maps to "Google", `apple.com` maps to "Apple", and any other unrecognized provider maps to "your sign-in provider".
-- `BR-303`: SC-208 exercise search/detail calls must use `https://exerciseservice.eduwaldo.com/proxy`; direct mobile calls to upstream YMove endpoints are not allowed.
-- `BR-304`: Proxy requests must include normalized language code (`en`, `pt`, `es`, fallback `en`) and client-generated `x-request-id` for correlation.
+- `BR-299`: In-app password reset is available only for accounts whose server-auth provider metadata includes the `password` provider; OAuth-only accounts (Google, Apple) do not receive a reset email and instead receive an informational alert.
+- `BR-300`: Provider detection for the password reset flow is performed at runtime from the current authenticated session metadata; the "Change password" row is always visible regardless of provider, and the runtime branch determines the action.
+- `BR-301`: A user confirmation alert must precede any password-reset request from the account settings screen; silent auto-dispatch without user acknowledgment is not permitted.
+- `BR-302`: The OAuth provider label shown in the informational alert must be resolved from runtime provider metadata: `google.com` maps to "Google", `apple.com` maps to "Apple", and any other unrecognized provider maps to "your sign-in provider".
+- `BR-303`: SC-208 exercise search/detail calls must use the exercise catalog service (`POST /catalog/search`, `GET /catalog/exercises/:id`); direct mobile calls to upstream YMove endpoints are not allowed.
+- `BR-304`: Catalog requests must include the effective app/device locale in `lang` and client-generated `x-request-id` for correlation.
 - `BR-305`: Upstream YMove API keys are server-side only; no client build/runtime variable may expose that key.
 - `BR-306`: Training session items persist only stable exercise identifiers (`exerciseId`); pre-signed media URLs are never persisted.
+- `BR-328`: Student-created NutritionPlans are Self-Managed Plans, not Professional Library/predefined plans owned by the same user.
+- `BR-329`: Active nutritionist Connections block Student Self-Managed NutritionPlan create/edit; Student nutrition surfaces show a waiting state until a published assigned plan exists.
+- `BR-330`: Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans.
+- `BR-331`: Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.
+- `BR-332`: Assigned NutritionPlan creation/send/bulk assignment requires an active nutritionist Connection to each target Student and nutrition-scoped targets.
+- `BR-333`: Connection end archives assigned NutritionPlans and restores the latest Self-Managed NutritionPlan tied to the ending Connection if present; no plan is auto-created.
+- `BR-334`: Professionals without nutritionist Specialty cannot access nutrition tab/routes.
+- `BR-335`: Nutritionist tracking review on the Professional Student Profile is read-only.
+- `BR-336`: TrackingLogs remain Student-owned but may carry plan/connection provenance for review and audit.
+- `BR-337`: CustomMeals are user-owned reusable meals/recipes; NutritionPlans and TrackingLogs carry stable snapshots/provenance, and Professionals cannot add Student-owned CustomMeals into assigned plans unless the meal is shared/imported first.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

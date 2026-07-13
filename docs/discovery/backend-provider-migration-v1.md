@@ -1,33 +1,30 @@
-# Backend Provider Migration V1
+# Retired Backend Provider Migration V1
 
 ## Purpose
-Track every planning/documentation touchpoint impacted by backend provider replacement to Firebase.
+Track the older backend-provider replacement pass and record that it has been superseded by the local MyChampions server/Postgres migration.
 
 ## Decision
-- Backend baseline is Firebase (`Auth`, `Firestore`, `Cloud Storage`).
-- Legacy backend-provider references are deprecated in product planning docs.
+- Active backend baseline is the root-level MyChampions server with local Postgres/Drizzle persistence, self-managed bearer auth, and local filesystem image storage; production storage is private GCS when configured.
+- Older provider-replacement notes in this file are historical context only; current product planning docs must point to the MyChampions server migration path.
 
 ## Migration Inventory
 
 | Area | File | Status | Notes |
 |---|---|---|---|
-| Decisions | `docs/discovery/decisions-log-v1.md` | Done | D-050/D-051/D-053/D-057/D-086/D-088/D-090 updated; D-089 and D-095 added. |
-| Pending wiring | `docs/discovery/pending-wiring-checklist-v1.md` | Done | Auth, profile source-of-truth, and storage wiring items switched to Firebase Firestore terminology. |
-| Functional requirements | `docs/functional-requirements/FR-001-domain-role-and-care-plans.md` | Done | FR-197 switched to Firebase Cloud Storage. |
-| Business rules | `docs/business-rules/BR-002-role-assignment-and-plan-governance.md` | Done | BR-257 switched to Firebase Cloud Storage. |
-| Acceptance criteria | `docs/acceptance-criteria/AC-005-mobile-platform-and-delivery-nfr.md` | Done | AC-506 switched to Firebase Cloud Storage. |
-| Mobile stack spec | `docs/specs/mobile-nfr-tech-stack-spec.md` | Done | Backend architecture, constraints, options, and references switched to Firebase. |
-| Firestore integration spec | `docs/specs/firebase-firestore-integration-spec.md` | Done | Data Connect integration spec replaced by Firestore collection/security contract. |
-| Data Connect runtime artifacts | `features/dataconnect.ts`, `features/dataconnect-generated/`, `dataconnect/` | Done | Removed from runtime; app persistence now uses `firebase/firestore` via source modules. |
-| Firebase CLI config | `firebase.json` | Done | Removed stale `dataconnect.source` entry that referenced deleted `dataconnect/sql`. |
-| Firestore security/index baseline | `firestore.rules`, `firestore.indexes.json` | Done | Baseline rules and required composite indexes are now source-controlled and deployable via Firebase CLI. |
-| Validation scripts | `scripts/validate-firestore-smoke.mjs` | Done | Firestore smoke validation replaces Data Connect validation/repair scripts. |
-| Architecture diagram | `docs/diagrams/mobile-stack-high-level-v1.md` | Done | Service nodes switched to Firebase backend services. |
-| Screen specs | `docs/screens/v2/SC-218-auth-create-account.md` | Done | Backend auth wiring note switched to Firebase Auth. |
-| Screen specs | `docs/screens/v2/SC-201-auth-role-selection.md` | Done | Session/profile source note switched to Firebase Firestore-backed integration wording. |
+| Decisions | `docs/discovery/decisions-log-v1.md` | Superseded | Current decisions point to the MyChampions server, server-owned Postgres, local bearer auth, and route/repository tests. |
+| Pending wiring | `docs/discovery/pending-wiring-checklist-v1.md` | Superseded | Active wiring items track the self-managed MyChampions server migration and fail-closed source boundaries. |
+| Functional requirements | `docs/functional-requirements/FR-001-domain-role-and-care-plans.md` | Superseded | Current requirements describe server-owned persistence and provider-neutral auth/session boundaries. |
+| Business rules | `docs/business-rules/BR-002-role-assignment-and-plan-governance.md` | Superseded | Current business rules describe server-owned role, connection, plan, and media behavior. |
+| Acceptance criteria | `docs/acceptance-criteria/AC-005-mobile-platform-and-delivery-nfr.md` | Superseded | Current acceptance criteria no longer require mobile-owned provider config, distribution, or storage surfaces. |
+| Mobile stack spec | `docs/specs/mobile-nfr-tech-stack-spec.md` | Superseded | Current stack direction is the MyChampions server plus local-first Postgres, direct provider verification, and GCS storage. |
+| Retired app-domain persistence contract | `docs/specs/retired-app-domain-persistence-contract-v1.md` | Retired | The file remains only as a pointer for older discovery notes; current contracts live in server tests and product docs. |
+| Removed runtime artifacts | `features/dataconnect.ts`, `features/dataconnect-generated/`, `dataconnect/` | Retired | Removed from runtime; app persistence now uses MyChampions server source modules. |
+| Removed provider project config | `firebase.json`, `firestore.rules`, `firestore.indexes.json`, `.firebaserc` | Retired | Removed with the mobile-owned provider project files. |
+| Validation scripts | `scripts/validate-firestore-smoke.mjs` | Retired | Replaced by local server Bun tests, Postgres repository tests, focused mobile source tests, and typecheck. |
+| Architecture diagram | `docs/diagrams/mobile-stack-high-level-v1.md` | Superseded | Current diagram shows the MyChampions server, local Postgres, local image storage, catalog integrations, and future auth/storage bridge. |
+| Screen specs | `docs/screens/v2/SC-218-auth-create-account.md` | Superseded | Current auth wiring notes point to the MyChampions server email-auth boundary with local Postgres credentials and direct provider-token verification. |
+| Screen specs | `docs/screens/v2/SC-201-auth-role-selection.md` | Superseded | Current session/profile source notes point to MyChampions server-backed role-lock/profile persistence. |
 
 ## New Guardrail
-- Any newly added backend planning text must use Firebase terminology.
-- If legacy provider terminology is mentioned in future drafts, it must be either:
-  - historical context in this migration log, or
-  - explicitly marked as deprecated/legacy.
+- Any newly added backend planning text must use MyChampions server/Postgres terminology for active app-domain behavior.
+- If retired provider terminology is mentioned in future drafts, it must be historical context only and explicitly marked as retired, superseded, or legacy.

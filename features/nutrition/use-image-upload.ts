@@ -1,10 +1,10 @@
 /**
- * React hook for Firebase Cloud Storage image upload with progress tracking.
+ * React hook for custom meal image upload with progress tracking.
  * Manages the full pick → compress → upload state machine (BL-007, D-053, D-057, D-073).
  *
  * Wires expo-image-picker (camera + library via Alert action sheet),
  * expo-image-manipulator for client-side JPEG compression, and
- * Firebase uploadBytesResumable for progress-aware upload.
+ * the local MyChampions server.
  *
  * Exposes pickAndUpload(mealId), retry(), and clear() for SC-214.
  *
@@ -16,10 +16,10 @@ import { Alert } from 'react-native';
 import { useCallback, useRef, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import type { User } from 'firebase/auth';
 
-import { getFirebaseStorage } from '@/features/auth/firebase';
+import type { AuthUser } from '@/features/auth/auth-user';
+import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
+import { getCurrentServerAccessToken } from '@/features/auth/server-auth-source';
 import {
   normalizeImageUploadError,
   type ImageUploadState,
@@ -27,6 +27,7 @@ import {
 import {
   pickAndUploadMealImage,
   ImageUploadSourceError,
+  uploadMealImageToServer,
   type ImageUploadSourceDeps,
   type UploadProgressCallback,
 } from './image-upload-source';
@@ -140,38 +141,17 @@ async function productionCompressImage(
 }
 
 /**
- * Uploads a Blob to Firebase Storage with progress tracking.
- * Uses uploadBytesResumable so progress events are emitted during transfer.
+ * Uploads a Blob to the MyChampions server with progress tracking.
  */
 async function productionUploadBlob(
-  storagePath: string,
+  uploadTarget: string,
   blob: Blob,
   onProgress: UploadProgressCallback
 ): Promise<string> {
-  const storage = getFirebaseStorage();
-  const storageRef = ref(storage, storagePath);
-
-  return new Promise<string>((resolve, reject) => {
-    const uploadTask = uploadBytesResumable(storageRef, blob, { contentType: 'image/jpeg' });
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        onProgress(Math.round(progress));
-      },
-      (error) => {
-        reject(error);
-      },
-      async () => {
-        try {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(url);
-        } catch (err) {
-          reject(err);
-        }
-      }
-    );
+  return uploadMealImageToServer(uploadTarget, blob, onProgress, {
+    getServerBaseUrl: resolveServerBaseUrl,
+    getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+    fetchFn: fetch,
   });
 }
 
@@ -182,6 +162,26 @@ function generateFilename(): string {
   return `${timestamp}-${random}.jpg`;
 }
 
+function resolveServerBaseUrl(): string | undefined {
+  let expoExtra: unknown;
+  try {
+    const Constants = require('expo-constants') as {
+      default?: { expoConfig?: { extra?: unknown } };
+      expoConfig?: { extra?: unknown };
+    };
+    expoExtra = (Constants.default ?? Constants).expoConfig?.extra;
+  } catch {
+    expoExtra = undefined;
+  }
+
+  const extra = (expoExtra ?? {}) as {
+    server?: {
+      baseUrl?: string;
+    };
+  };
+  return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
+}
+
 // ─── Production deps ──────────────────────────────────────────────────────────
 
 const productionDeps: ImageUploadSourceDeps = {
@@ -190,6 +190,34 @@ const productionDeps: ImageUploadSourceDeps = {
   uploadBlob: productionUploadBlob,
   generateFilename,
 };
+
+const E2E_IMAGE_DATA_URI =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAI0lEQVR4nGPQ25j9XyhowX9yaQZKNINohlEXjLpg1AWDxAUAJPQmH5CACa8AAAAASUVORK5CYII=';
+
+const e2eImageUploadDeps: ImageUploadSourceDeps = {
+  pickImage: async () => ({ uri: 'file://e2e-meal-photo.jpg', width: 800, height: 600 }),
+  compressImage: async () => ({ size: 256 } as Blob),
+  uploadBlob: async (_storagePath, _blob, onProgress) => {
+    onProgress(35);
+    onProgress(100);
+    return E2E_IMAGE_DATA_URI;
+  },
+  generateFilename: () => 'e2e-meal-photo.jpg',
+};
+
+function getE2EImageUploadDeps(): ImageUploadSourceDeps | null {
+  const override = resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+
+  if (!override || process.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE !== 'success') {
+    return null;
+  }
+
+  return e2eImageUploadDeps;
+}
 
 // ─── Hook result ──────────────────────────────────────────────────────────────
 
@@ -221,14 +249,15 @@ export type UseImageUploadResult = {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
- * @param user - Firebase Auth User from useAuthSession().currentUser.
+ * @param user - Auth user from useAuthSession().currentUser.
  *   Upload is blocked when user is null.
  * @param deps - Injectable deps (override in tests). Defaults to production deps.
  */
 export function useImageUpload(
-  user: User | null,
+  user: AuthUser | null,
   deps: ImageUploadSourceDeps = productionDeps
 ): UseImageUploadResult {
+  const resolvedDeps = deps === productionDeps ? getE2EImageUploadDeps() ?? deps : deps;
   const [uploadState, setUploadState] = useState<ImageUploadState>({ kind: 'idle' });
   // Store last mealId so retry can re-run the same upload
   const lastMealIdRef = useRef<string | null>(null);
@@ -248,7 +277,7 @@ export function useImageUpload(
       };
 
       try {
-        const result = await pickAndUploadMealImage(user.uid, mealId, deps, onProgress);
+        const result = await pickAndUploadMealImage(mealId, resolvedDeps, onProgress);
 
         if (result.kind === 'cancelled') {
           setUploadState({ kind: 'idle' });
@@ -263,7 +292,7 @@ export function useImageUpload(
         setUploadState({ kind: 'failed', reason });
       }
     },
-    [user, deps]
+    [user, resolvedDeps]
   );
 
   const pickAndUpload = useCallback(

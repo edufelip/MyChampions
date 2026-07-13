@@ -16,14 +16,16 @@
 
 ## States
 - Loading: fetch training plan context and today progress data.
-- Empty: no active training assignment; show illustrated acquisition empty state with direct coach-hiring CTA and secondary self-guided action that opens student self-managed training plan creation.
+- Empty, no coach: no active fitness-coach Connection and no Self-Managed Plan; show illustrated acquisition empty state with direct coach-hiring CTA and secondary self-guided action that opens Self-Managed Plan creation.
+- Waiting for coach plan: active fitness-coach Connection exists, but no published assigned training plan exists yet; show a non-editable waiting state that explains the coach is preparing the plan. Do not reveal draft plan title, sessions, or exercise items, and do not offer self-guided creation or editing while the active Connection exists.
 - Error: tracking update failure.
 - Success: completion state and progress summary updated.
 - Plan context and plan-change request actions are consumed through centralized plans store via `usePlans`.
 
 ## Validation Rules
 - If training plan is professionally assigned, student cannot edit plan structure.
-- If no active fitness coach, self-managed training plan is allowed.
+- If no active fitness coach, a Self-Managed Plan is allowed.
+- If an active fitness-coach Connection exists, Self-Managed Plan creation/editing is not allowed even when no assigned plan has been published yet.
 - Student may submit change request while assigned-plan structure remains locked.
 - Offline mode must show persistent banner and explicit write-lock reasons for blocked mutations.
 
@@ -32,12 +34,13 @@
   - Active training plan context (assigned or self-managed).
   - Student completion/progress events.
 - Outputs:
-  - Persisted tracking events.
+  - Persisted tracking events. Workout completion logs are written/read through the MyChampions server for local bearer-auth sessions; missing local server auth fails closed outside the assigned-training E2E fixture.
   - Updated progress indicators.
 
 ## Edge Cases
-- If assignment ends, assigned plan history remains accessible per retention policy.
-- If no plan exists, primary CTA routes to professional connection management and secondary CTA routes to self-guided plan creation.
+- If assignment ends, assigned plan history remains accessible per retention policy and the latest Self-Managed Plan is restored when one exists.
+- If no plan exists and no active fitness-coach Connection exists, primary CTA routes to professional connection management and secondary CTA routes to Self-Managed Plan creation.
+- If an active fitness-coach Connection exists but no published assigned plan exists yet, show a waiting-for-coach-plan state and hide the self-guided creation CTA.
 - Empty-state self-guided CTA routes to `/student/training/plans/new` so students can start a personal workout plan without a coach.
 - Student self-guided builder entry uses student-branded titles/actions (for example, `Create my workout plan`, `Save my plan`).
 

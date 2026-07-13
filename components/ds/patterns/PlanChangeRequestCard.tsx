@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   DsRadius,
@@ -54,6 +54,7 @@ export function PlanChangeRequestCard({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const onSubmit = async () => {
+    Keyboard.dismiss();
     const errors = validate({ requestText });
     if (errors.requestText) {
       setFieldError(
@@ -101,6 +102,7 @@ export function PlanChangeRequestCard({
           <Text style={[styles.label, { color: theme.color.textPrimary }]}>{t(keys.label)}</Text>
           <TextInput
             accessibilityLabel={t(keys.label)}
+            blurOnSubmit
             multiline
             numberOfLines={4}
             onChangeText={(value) => {
@@ -108,8 +110,10 @@ export function PlanChangeRequestCard({
               setFieldError(null);
               setSuccessMsg(null);
             }}
+            onSubmitEditing={Keyboard.dismiss}
             placeholder={t(keys.placeholder)}
             placeholderTextColor={theme.color.textSecondary}
+            returnKeyType="done"
             style={[
               styles.input,
               {

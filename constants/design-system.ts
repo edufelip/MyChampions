@@ -26,6 +26,8 @@ export type DsTheme = {
     readOnlyText: string;
     border: string;
     borderStrong: string;
+    accentCyan: string;
+    accentCyanSoft: string;
     onAccent: string;
     overlaySoft: string;
     overlayStrong: string;
@@ -61,6 +63,8 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       readOnlyText: '#9a3412',
       border: '#e2e8f0',
       borderStrong: '#cbd5e1',
+      accentCyan: '#06b6d4',
+      accentCyanSoft: '#06b6d420',
       onAccent: '#f8fafc',
       overlaySoft: 'rgba(30,169,90,0.4)',
       overlayStrong: 'rgba(30,169,90,0.85)',
@@ -94,6 +98,8 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       readOnlyText: '#fdba74',
       border: '#374151',
       borderStrong: '#4b5563',
+      accentCyan: '#22d3ee',
+      accentCyanSoft: '#22d3ee29',
       onAccent: '#f8fafc',
       overlaySoft: 'rgba(30,169,90,0.3)',
       overlayStrong: 'rgba(30,169,90,0.7)',

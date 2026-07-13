@@ -7,7 +7,7 @@ import { logNetworkDebug } from '../debug/logging';
  * Fetches a fresh thumbnail URL for an exercise by its stored ID.
  *
  * Why: upstream pre-signed URLs expire after 48 hours and must never be cached.
- * We store only the stable exercise ID in Firestore and re-fetch at display time.
+ * We store only the stable exercise ID in plan persistence and re-fetch at display time.
  *
  * Returns `null` while loading or if no exerciseId is provided.
  * Silently falls back to `null` on API error (caller should show placeholder).

@@ -59,5 +59,16 @@ target 'mychampions' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Xcode 26.5 fails to compile fmt 11.0.2 in C++20 consteval mode, while
+    # React Native targets still require C++20. Keep this workaround scoped to
+    # the fmt pod target.
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      end
+    end
   end
 end

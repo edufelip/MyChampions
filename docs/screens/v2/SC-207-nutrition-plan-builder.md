@@ -2,13 +2,14 @@
 
 ## Route
 - `/professional/nutrition/plans/:planId` — builder/editor for a specific plan.
+- `/professional/nutrition/plans/:planId/meals/:mealId` — meal-item builder for a meal inside a nutrition plan.
 - `/professional/nutrition` (tab) — plan library list with create and open CTAs.
 - Shared student self-guided alias: `/student/nutrition/plans/:planId` (same builder engine with student-branded titles/actions).
 
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
 ## Objective
-Let nutritionists create and edit named predefined nutrition plans (calorie/macro targets + food item list) stored in their private library. Plans can be assigned to individual students or bulk-assigned.
+Let nutritionists create and edit named predefined nutrition plans (calorie/macro targets + food item list) stored in their private library, then create student-specific assigned drafts for connected Students. Student route aliases create Self-Managed Plans, not predefined plans.
 
 ## Design Structure (D-134)
 - Library route (`/professional/nutrition`) uses `DsScreen` as shell with DS spacing/typography tokens and the SC-204 professional surface baseline (hero header + contextual helper).
@@ -35,12 +36,14 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Enter or edit calorie target (optional, must be ≥ 0).
 - Enter or edit carbs/proteins/fats targets (optional, must be ≥ 0).
 - Add food items (name, quantity, optional notes).
+- Add saved CustomMeals from the current user's library as copied meal snapshots.
 - Remove food items.
-- Search foods via VPS food-search microservice integration (`https://foodservice.eduwaldo.com/searchFoods`).
+- Search foods via the MyChampions server `POST /integrations/food/search` route backed by the local catalog Postgres mirror.
 - Save plan (create or update).
 - Delete plan; after a successful delete, show the blocking loading scrim and then return the user to the nutrition library.
-- Assign plan to a student.
-- Bulk-assign plan to multiple students with per-student fine-tune step.
+- Assign plan to a student with an active nutritionist Connection.
+- Bulk-assign plan to active nutritionist-connected Students with per-student fine-tune step.
+- Send/publish assigned drafts when ready.
 
 ## States
 
@@ -62,6 +65,11 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Carbs, proteins, and fats targets must each be zero or greater if provided (BR-292).
 - Bulk assignment produces independent per-student plan copies; later library edits do not mutate assigned copies (BR-283, D-082).
 - Assigned plans are read-only for students (D-006).
+- Draft assigned NutritionPlans are invisible to Students and cannot become Effective Plans until sent/published.
+- Published assigned NutritionPlans remain editable by the owning Professional while the matching active nutritionist Connection exists.
+- Assigned create/send/bulk assignment requires active nutritionist Connection and nutrition-scoped targets.
+- Professionals without nutritionist Specialty cannot access this route; their Nutrition tab is hidden and direct `/professional/nutrition` entry redirects to the dashboard.
+- Professionals cannot add Student-owned CustomMeals into assigned plans unless shared/imported first; assigned meals use stable snapshots.
 - Meal add/remove/item mutations must not clear already rendered builder content while the request is still pending; UI remains visible until the mutation resolves.
 
 ## Data Contract
@@ -78,21 +86,24 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | Meal item `name` | string | required |
 | Meal item `quantity` | string | optional free-form |
 | Meal item `notes` | string | optional |
+| Meal item `sourceKind` | `manual \| food_search \| custom_meal` | CustomMeal selections persist `custom_meal` |
+| Meal item `customMealSnapshot` | object | copied snapshot with name, serving grams, calories, macros, and source kind; excludes reusable meal id/owner/cost/image/timestamps |
 
 ### Outputs
 | Type | Description |
 |---|---|
 | `NutritionPlanDetail` | Full plan with id, name, macro targets, items list, timestamps |
 | `NutritionMealItem` | Individual food item with id, name, quantity, notes |
+| `CustomMealPlanSnapshot` | CustomMeal-derived plan item snapshot containing display/nutrition facts only, without direct reusable meal access |
 | `NutritionTotals` | Parsed numeric totals from raw string inputs |
-| `FoodSearchResult[]` | Normalized food search results from VPS food-search service integration |
+| `FoodSearchResult[]` | Normalized food search results from the MyChampions server food integration |
 
-### Food Search Service Contract
+### Food Search Server Contract
 | Field | Value |
 |---|---|
-| URL | `https://foodservice.eduwaldo.com/searchFoods` |
+| URL | MyChampions server `POST /integrations/food/search` |
 | Method | `POST` |
-| Headers | `Content-Type: application/json`, `Authorization: Bearer <Firebase ID token>` |
+| Headers | `Content-Type: application/json`, `Authorization: Bearer <MyChampions token>` |
 | Request body | `{ query: string, maxResults: number, region: string, language: string }` |
 | Success body | `{ results: Array<{ id: string, name: string, carbohydrate: number, protein: number, fat: number, serving: 100 }> }` |
 | Client normalization | App maps macros to per-100g result fields and derives calories as `carbohydrate*4 + protein*4 + fat*9` |
@@ -101,14 +112,15 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 ### Source Operations
 | Operation | Description |
 |---|---|
-| `createNutritionPlan` | Create new plan in professional's library |
+| `createNutritionPlan` | Create new professional-library, assigned-draft, or student self-managed plan according to route context |
 | `updateNutritionPlan` | Update plan name and macro targets |
 | `getNutritionPlanDetail` | Load plan with items |
 | `addNutritionMealItem` | Add food item to plan |
 | `removeNutritionMealItem` | Remove food item from plan |
-| `searchFoods` | VPS food-search service source |
+| `searchFoods` | MyChampions server food-search source backed by the local catalog mirror |
+| `getMyCustomMeals` | Load the current user's saved CustomMeal library for snapshot insertion |
 
-Plan library and builder persistence are Firestore-backed via `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`.
+Plan library and builder persistence use the MyChampions server through `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`; outside E2E fixtures, missing local server auth fails closed.
 
 ## Localization Keys
 
@@ -137,7 +149,9 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 | `pro.plan.food_search.placeholder` | Food search input placeholder |
 | `pro.plan.food_search.empty` | Empty food search result |
 | `pro.plan.food_search.error.quota` | Food search rate-limit feedback |
-| `pro.plan.food_search.stub_notice` | Empty meal helper text |
+| `pro.plan.custom_meal.section` | CustomMeal picker section header |
+| `pro.plan.custom_meal.empty` | Empty CustomMeal picker state |
+| `pro.plan.custom_meal.badge` | Selected CustomMeal snapshot badge |
 | `pro.plan.validation.name_required` | Name required error |
 | `pro.plan.validation.name_too_short` | Name too short error |
 | `pro.plan.validation.hydration_goal_required` | Hydration-goal required error |
@@ -160,18 +174,25 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Edge Cases
 - Food service unavailable/rate-limited: source call returns typed error and UI surfaces fallback copy.
-- If assignment becomes inactive mid-edit: block assign action; plan save remains available.
+- Selecting a CustomMeal copies its current name, serving grams, calories, macros, and `custom_meal` source kind into the plan item; later CustomMeal edits do not mutate the plan item.
+- CustomMeal snapshots never persist reusable meal ids, owner ids, ingredient cost, image URLs, or timestamps.
+- If assignment becomes inactive mid-edit: block assigning and saving assigned-plan changes; only independent Professional Library Plan edits remain available.
 - Editing a predefined plan after it has been bulk-assigned does not mutate already assigned student copies (D-082, BR-283).
+- If a Student opens self-managed create/edit while an active nutritionist Connection exists, block save and return to the waiting nutrition state.
 
 ## Implementation Files
 | File | Purpose |
 |---|---|
 | `features/plans/plan-builder.logic.ts` | Pure functions: `validateNutritionPlanInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError` |
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/plans/plan-builder-source.ts` | Firestore source ops: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `searchFoods` |
+| `features/plans/plan-builder-source.ts` | Server source ops: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, meal/item mutations, starter templates, and `searchFoods` |
+| `features/nutrition/custom-meal.logic.ts` | CustomMeal plan snapshot helper |
+| `features/nutrition/custom-meal.logic.test.ts` | Snapshot privacy/unit coverage |
 | `features/plans/use-plan-builder.ts` | React hook `useNutritionPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
+| `features/professional/nutrition-specialty-gate.logic.test.ts` | Pure resolver coverage for Student access and Professional nutritionist Specialty gate |
 | `app/professional/nutrition.tsx` | Plan library list screen |
 | `app/professional/nutrition/plans/[planId].tsx` | Plan builder screen |
+| `app/professional/nutrition/plans/[planId]/meals/[mealId].tsx` | Meal builder screen |
 
 ## Links
 | Artifact | IDs |
@@ -179,7 +200,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Functional requirements | FR-240, FR-241, FR-242, FR-243, FR-247, FR-248, FR-223, FR-224, FR-225, FR-226 |
 | Use case | UC-002.14, UC-002.20 |
 | Acceptance criteria | AC-256, AC-264, AC-265 |
-| Business rules | BR-281, BR-282, BR-283, BR-291, BR-292 |
-| Test cases | TC-268, TC-269, TC-270, TC-275, TC-276, TC-280 |
+| Business rules | BR-281, BR-282, BR-283, BR-291, BR-292, BR-328, BR-331, BR-332, BR-334, BR-337 |
+| Test cases | TC-268, TC-269, TC-270, TC-275, TC-276, TC-280, TC-328 |
 | Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114, D-173 |
 | Backlog | BL-106 |

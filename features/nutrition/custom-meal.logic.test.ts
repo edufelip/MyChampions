@@ -5,6 +5,7 @@ import {
   validateCustomMealInput,
   validatePortionLogInput,
   calculatePortionNutrition,
+  buildCustomMealPlanSnapshot,
   buildSharedMealSnapshot,
   normalizeMealActionError,
   type CustomMeal,
@@ -174,6 +175,33 @@ test('buildSharedMealSnapshot includes all nutrition fields', () => {
   assert.equal(snap.carbs, 50);
   assert.equal(snap.proteins, 20);
   assert.equal(snap.fats, 8);
+});
+
+// --- buildCustomMealPlanSnapshot ---
+
+test('buildCustomMealPlanSnapshot includes meal name, serving, calories, macros, and source kind', () => {
+  const snap = buildCustomMealPlanSnapshot(fullMeal);
+  assert.deepEqual(snap, {
+    name: 'Test Meal',
+    servingGrams: 200,
+    calories: 300,
+    carbs: 50,
+    proteins: 20,
+    fats: 8,
+    sourceKind: 'custom_meal',
+  });
+});
+
+test('buildCustomMealPlanSnapshot excludes private mutable fields and direct reusable meal access', () => {
+  const snap = buildCustomMealPlanSnapshot(fullMeal);
+  assert.equal('id' in snap, false);
+  assert.equal('mealId' in snap, false);
+  assert.equal('customMealId' in snap, false);
+  assert.equal('ownerUid' in snap, false);
+  assert.equal('ingredientCost' in snap, false);
+  assert.equal('imageUrl' in snap, false);
+  assert.equal('createdAt' in snap, false);
+  assert.equal('updatedAt' in snap, false);
 });
 
 // --- normalizeMealActionError ---

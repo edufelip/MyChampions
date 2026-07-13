@@ -4,7 +4,9 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  Keyboard,
   LayoutAnimation,
   Pressable,
   StyleSheet,
@@ -12,7 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -31,6 +33,8 @@ import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constan
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
+import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
@@ -61,8 +65,19 @@ export default function NutritionPlanBuilderScreen() {
   const navigation = useNavigation<any>();
   const pathname = usePathname();
   const { planId } = useLocalSearchParams<{ planId: string }>();
-  const { currentUser } = useAuthSession();
+  const { currentUser, lockedRole } = useAuthSession();
   const isStudentBuilder = pathname.startsWith('/student/');
+  const shouldGateProfessionalNutrition = !isStudentBuilder;
+  const { state: specialtiesState } = useSpecialties(
+    Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional'
+  );
+  const nutritionGate = shouldGateProfessionalNutrition
+    ? resolveProfessionalNutritionRouteGate({
+        role: lockedRole,
+        specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+        specialtiesStatus: specialtiesState.kind,
+      })
+    : 'allow';
 
   const tr = useMemo(() => createBuilderRoleTranslator(isStudentBuilder, t), [isStudentBuilder, t]);
 
@@ -77,11 +92,16 @@ export default function NutritionPlanBuilderScreen() {
     deletePlan,
     initNewPlan,
     validateInput,
-  } = useNutritionPlanBuilder(Boolean(currentUser), `${pathname}:plan:${planId ?? 'new'}`);
+  } = useNutritionPlanBuilder(
+    Boolean(currentUser) && nutritionGate === 'allow',
+    `${pathname}:plan:${planId ?? 'new'}`
+  );
 
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
+  const isDraftAssignment = state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
+  const creationMode = isStudentBuilder ? 'self_managed' : 'professional_library';
 
   const initialValues = useMemo(() => ({
     name: state.kind === 'ready' ? state.plan.name : '',
@@ -102,11 +122,12 @@ export default function NutritionPlanBuilderScreen() {
     t,
     onSave: async (formValues) => {
       if (isNew || isStarterClone) {
-        return createPlan(formValues);
+        return createPlan(formValues, creationMode);
       }
-      return savePlan(planId!, formValues);
+      return savePlan(planId!, formValues, isDraftAssignment);
     },
     onSuccess: (id) => {
+      Keyboard.dismiss();
       // After a successful save, we want to go back to the library.
       // We must clear the local dirty state first.
       setIsDirty(false);
@@ -162,14 +183,24 @@ export default function NutritionPlanBuilderScreen() {
   const isInitialLoading = state.kind === 'loading';
   const isBusy = isSaving || isMutating || isDeletingPlan;
 
+  useEffect(() => {
+    if (!isNew) {
+      Keyboard.dismiss();
+    }
+  }, [isNew, planId]);
+
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
+    if (nutritionGate !== 'allow') {
+      return;
+    }
+
     if (isNew) {
       initNewPlan();
     } else if (!isStarterClone && planId) {
       loadPlan(planId);
     }
-  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan]);
+  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan, nutritionGate]);
 
   useEffect(() => {
     if (!shouldNavigateAfterDelete || isDeletingPlan) {
@@ -195,7 +226,8 @@ export default function NutritionPlanBuilderScreen() {
     const { planId: realId, error } = await addMeal(
       state.plan.id,
       { name: mealName },
-      { name: values.name, hydrationGoalMl: values.hydrationGoalMl }
+      { name: values.name, hydrationGoalMl: values.hydrationGoalMl },
+      creationMode
     );
     
     if (error) {
@@ -210,7 +242,7 @@ export default function NutritionPlanBuilderScreen() {
         router.replace(`${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${realId}` as any);
       }
     }
-  }, [isBusy, addMealForm, state, addMeal, values.name, values.hydrationGoalMl, tr, setIsDirty, isNew, isStudentBuilder, router]);
+  }, [isBusy, addMealForm, state, addMeal, values.name, values.hydrationGoalMl, creationMode, tr, setIsDirty, isNew, isStudentBuilder, router]);
 
   const handleRemoveMeal = useCallback(
     (mealId: string) => {
@@ -300,10 +332,24 @@ export default function NutritionPlanBuilderScreen() {
     );
   }, [isBusy, isNew, planId, deletePlan, t, tr]);
 
+  if (nutritionGate === 'loading') {
+    return (
+      <DsScreen scheme={scheme} contentContainerStyle={[styles.content, styles.centeredContent]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+      </DsScreen>
+    );
+  }
+
+  if (nutritionGate === 'redirect') {
+    return <Redirect href="/(tabs)" />;
+  }
+
   return (
     <DsScreen
       scheme={scheme}
       contentContainerStyle={styles.content}
+      testID="pro.nutrition_plan.screen"
     >
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -314,6 +360,7 @@ export default function NutritionPlanBuilderScreen() {
           onPress={handleBack}
           accessibilityLabel={t('auth.role.cta_back') as string}
           style={styles.backButton}
+          testID="pro.nutrition_plan.backButton"
         />
 
         <View style={{ flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center' }}>
@@ -322,10 +369,11 @@ export default function NutritionPlanBuilderScreen() {
             variant="primary"
             size="sm"
             fullWidth={false}
-            label={tr('pro.plan.cta.save', 'student.plan.cta.save')}
+            label={isDraftAssignment ? t('pro.plan.cta.assign_and_send') : tr('pro.plan.cta.save', 'student.plan.cta.save')}
             onPress={handleSave}
             disabled={!isDirty || isSaving}
             loading={isSaving}
+            testID="pro.nutrition_plan.saveButton"
           />
 
           {!isNew && (
@@ -341,6 +389,14 @@ export default function NutritionPlanBuilderScreen() {
           )}
         </View>
       </View>
+
+      {isDraftAssignment && (
+        <BuilderAlertBanner
+          message={t('pro.plan.draft_banner.nutrition')}
+          backgroundColor={palette.tint}
+          textColor={theme.color.surface}
+        />
+      )}
 
       <BuilderGuidanceCard
         theme={theme}
@@ -381,7 +437,8 @@ export default function NutritionPlanBuilderScreen() {
         errors={formErrors}
         onNameChange={(v) => handleFieldChange('name', v)}
         onHydrationGoalChange={(v) => handleFieldChange('hydrationGoalMl', v)}
-        autoFocus={!values.name}
+        autoFocus={isNew && !values.name}
+        testIDPrefix="pro.plan.metadata"
       />
 
 
@@ -409,6 +466,7 @@ export default function NutritionPlanBuilderScreen() {
             value={addMealForm.name}
             onChangeText={(v) => setAddMealForm({ ...addMealForm, name: v })}
             autoFocus
+            testID="pro.nutrition_plan.addMeal.input"
           />
           <View style={styles.addMealActions}>
             <DsPillButton
@@ -419,6 +477,7 @@ export default function NutritionPlanBuilderScreen() {
               onPress={handleCloseAddMeal}
               disabled={isBusy}
               fullWidth={false}
+              testID="pro.nutrition_plan.addMeal.cancel"
             />
             <DsPillButton
               scheme={scheme}
@@ -428,6 +487,7 @@ export default function NutritionPlanBuilderScreen() {
               onPress={handleAddMeal}
               disabled={isBusy || !addMealForm.name.trim()}
               fullWidth={false}
+              testID="pro.nutrition_plan.addMeal.confirm"
             />
           </View>
         </Animated.View>
@@ -435,16 +495,22 @@ export default function NutritionPlanBuilderScreen() {
 
       {!isSortMode && state.kind === 'ready' && addMealForm.kind === 'closed' && (
         <View style={styles.actionRow}>
-          <DsPillButton
-            scheme={scheme}
-            variant="outline"
-            label={tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
-            onPress={handleOpenAddMeal}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
             disabled={isBusy}
-            fullWidth={false}
-            style={{ flex: 1 }}
-            leftIcon={<IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />}
-          />
+            onPress={handleOpenAddMeal}
+            testID="pro.nutrition_plan.addMeal"
+            style={({ pressed }) => [
+              styles.addMealButton,
+              { borderColor: palette.tint, opacity: isBusy ? 0.6 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+          >
+            <IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />
+            <Text style={[styles.addMealButtonText, { color: palette.tint }]}>
+              {tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
+            </Text>
+          </Pressable>
 
           {state.plan.meals.length > 1 && (
             <DsPillButton
@@ -513,6 +579,7 @@ export default function NutritionPlanBuilderScreen() {
               onMoveDown={() => handleMoveMeal(index, 'down')}
               isFirstInList={index === 0}
               isLastInList={index === state.plan.meals.length - 1}
+              testID={`pro.nutrition_plan.mealRow.${toTestIDSegment(meal.name)}`}
             />
           ))}
         </View>
@@ -543,7 +610,8 @@ function MealRow({
   onMoveUp, 
   onMoveDown,
   isFirstInList,
-  isLastInList 
+  isLastInList,
+  testID,
 }: { 
   meal: any; 
   palette: any; 
@@ -556,6 +624,7 @@ function MealRow({
   onMoveDown: () => void;
   isFirstInList: boolean;
   isLastInList: boolean;
+  testID: string;
 }) {
   const totals = calculateTotalsFromItems(meal.items);
 
@@ -564,6 +633,7 @@ function MealRow({
       <Pressable 
         onPress={isSortMode ? undefined : onPress}
         style={({ pressed }) => [styles.itemRowPressable, pressed && !isSortMode && { backgroundColor: theme.color.surfaceMuted }]}
+        testID={testID}
       >
         <View style={styles.itemRowMain}>
           <View style={styles.itemRowInfo}>
@@ -603,9 +673,14 @@ function MealRow({
   );
 }
 
+function toTestIDSegment(value: string): string {
+  return value.trim().replace(/[^A-Za-z0-9_-]+/g, '_');
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 60 },
+  centeredContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
   backButton: { marginBottom: 0 },
   itemsInsetWrapper: { borderRadius: DsRadius.lg, padding: 0, overflow: 'hidden', ...DsShadow.soft, backgroundColor: 'white' }, // Explicit fallback for surface
@@ -629,6 +704,8 @@ const styles = StyleSheet.create({
   addMealInline: { padding: DsSpace.md, borderRadius: DsRadius.lg, ...DsShadow.soft, gap: DsSpace.md, marginTop: 0, marginBottom: DsSpace.sm },
   addMealInput: { ...DsTypography.body, paddingVertical: DsSpace.xs, borderBottomWidth: 1, borderBottomColor: '#eee' },
   addMealActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: DsSpace.md },
+  addMealButton: { minHeight: 46, flex: 1, borderWidth: 1.5, borderRadius: DsRadius.pill, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 18 },
+  addMealButtonText: { ...DsTypography.button, fontSize: 15, textAlign: 'center' },
   addMealCancel: { ...DsTypography.button, opacity: 0.6, paddingHorizontal: DsSpace.sm, paddingVertical: DsSpace.xs },
   headerActionBtn: { padding: DsSpace.xs, justifyContent: 'center', alignItems: 'center' },
   actionRow: { flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center', marginTop: 0 },

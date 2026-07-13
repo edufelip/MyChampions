@@ -63,10 +63,11 @@
   - Email/password inputs with non-empty validation.
   - Password reveal/hide eye toggle embedded inside the password input field.
   - Contextual error copy mapping for `invalid_credentials`, `network`, `provider_conflict`, and `configuration`.
-  - Email/password sign-in is wired to Firebase Auth.
-  - Google and Apple social sign-in are wired to Firebase Auth credentials.
-  - Successful sign-in is driven by Firebase Auth session state for route-guard enforcement.
-  - Firebase Auth initializes with React Native persistence (`AsyncStorage`) on device runtimes so authenticated sessions survive app relaunches.
+  - Email/password sign-in is wired to the local MyChampions server auth bridge for explicit local/dev app variants.
+  - Google social sign-in shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
+  - Apple social sign-in shows the approved E2E fixture path in test mode, then tries native Apple identity-token capture and posts the token plus nonce to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer, audience, and nonce claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.
+  - Successful sign-in is driven by the MyChampions server auth session for route-guard enforcement.
+  - Durable device session persistence is owned by the MyChampions server auth bridge instead of native provider config.
   - Successful sign-in routes to `/auth/accept-terms`; global guard then routes to role-selection or role home depending on terms + role state.
   - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes after terms acceptance.
   - Visual treatment follows a playful rounded layout with decorative background blobs, rounded brand logo badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.

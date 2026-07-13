@@ -9,11 +9,14 @@ Define behavior for creating custom meals and logging consumed portions by grams
 - Proportional nutrient calculation.
 - Historical log integrity when meal definitions change.
 - Share-link distribution and recipient copy ownership.
+- Stable CustomMeal snapshots in NutritionPlans and TrackingLogs.
 
 ## Definitions And Terminology
 - Custom meal: user-defined meal with total weight and nutrient totals.
 - Portion log: consumption entry recording grams consumed from a custom meal.
 - Nutrition snapshot: stored nutrient values at time of log entry.
+- Plan meal snapshot: CustomMeal-derived meal values copied into a NutritionPlan without granting live access to the reusable CustomMeal record.
+- CustomMeal plan snapshots include name, serving grams, calories, carbs, proteins, fats, and `custom_meal` source-kind metadata only.
 - Shared recipe link: tokenized link allowing recipient to preview and save a copy.
 - Recipient-owned copy: independent recipe record created from a shared recipe.
 - Recipe ID: UUIDv7 primary identifier used by each custom meal record.
@@ -52,6 +55,8 @@ Define behavior for creating custom meals and logging consumed portions by grams
 20. Full shared-link values/raw share tokens are excluded from analytics and general observability logs.
 21. Recipe image uploads show visible progress state while transfer is in-flight.
 22. Recoverable image-upload failures show reason + retry path and preserve recipe draft fields.
+23. NutritionPlans and TrackingLogs store CustomMeal snapshots/provenance; they do not reference another user's reusable CustomMeal as mutable live data.
+24. Professionals cannot add Student-owned CustomMeals into assigned plans unless the meal is shared/imported first.
 
 ## Error Handling And Edge Cases
 - Missing/invalid required meal fields block save.
@@ -68,6 +73,9 @@ Define behavior for creating custom meals and logging consumed portions by grams
 - Formula basis for each nutrient:
   - `consumed = (consumed_grams / meal_total_grams) * meal_total`
 - Historical logs are immutable snapshots.
+- Plan meals and tracking logs preserve stable CustomMeal snapshots/provenance.
+- Plan meal snapshots exclude reusable meal identifiers, owner ids, ingredient cost, image URLs, and create/update timestamps.
+- CustomMeal ownership remains with the creating/importing user.
 - Custom meal functionality remains available in self-guided mode.
 - Share-save creates independent recipient ownership (copy-on-save).
 - Source record lifecycle must not remove already-saved recipient copies.

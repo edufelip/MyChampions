@@ -5,7 +5,7 @@
  *   - deriveStarterTemplatePlanType: prefix routing, edge cases, unknown prefixes
  *   - coalesceTemplateDescription: null/undefined coalescing, passthrough
  *
- * Strategy: test only pure functions (no Firebase / Expo dependencies) per the
+ * Strategy: test only pure functions (no provider runtime or Expo dependencies) per the
  * established test-convention for this codebase. Source layer wiring (D-114)
  * relies on these helpers and on the StarterTemplateDeps injection pattern.
  *
@@ -20,7 +20,9 @@ import {
   deriveStarterTemplatePlanType,
   coalesceTemplateDescription,
   resolveTrainingDraftCreationInput,
+  resolveTrainingPlanCreationMetadata,
 } from './plan-builder.logic';
+import { shouldExposePlanInMyPlans } from './plan-source';
 
 // ─── deriveStarterTemplatePlanType ────────────────────────────────────────────
 
@@ -202,5 +204,59 @@ describe('resolveTrainingDraftCreationInput', () => {
     const result = resolveTrainingDraftCreationInput({ name: 'Upper Body' });
     assert.equal(result.error, undefined);
     assert.deepEqual(result.input, { name: 'Upper Body' });
+  });
+});
+
+describe('resolveTrainingPlanCreationMetadata', () => {
+  it('returns Professional Library Plan metadata for professional builder mode', () => {
+    assert.deepEqual(resolveTrainingPlanCreationMetadata('pro-1', 'professional_library'), {
+      ownerProfessionalUid: 'pro-1',
+      studentAuthUid: 'pro-1',
+      sourceKind: 'predefined',
+      isDraft: false,
+    });
+  });
+
+  it('returns Self-Managed Plan metadata for student builder mode', () => {
+    assert.deepEqual(resolveTrainingPlanCreationMetadata('student-1', 'self_managed'), {
+      ownerProfessionalUid: null,
+      studentAuthUid: 'student-1',
+      sourceKind: 'self_managed',
+      isDraft: false,
+    });
+  });
+});
+
+describe('shouldExposePlanInMyPlans', () => {
+  it('hides draft assigned nutrition plans from the assigned student', () => {
+    assert.equal(
+      shouldExposePlanInMyPlans(
+        {
+          planType: 'nutrition',
+          sourceKind: 'assigned',
+          studentAuthUid: 'student-1',
+          ownerProfessionalUid: 'pro-1',
+          isDraft: true,
+        },
+        'student-1'
+      ),
+      false
+    );
+  });
+
+  it('keeps draft assigned nutrition plans visible to the owner professional', () => {
+    assert.equal(
+      shouldExposePlanInMyPlans(
+        {
+          planType: 'nutrition',
+          sourceKind: 'assigned',
+          studentAuthUid: 'student-1',
+          ownerProfessionalUid: 'pro-1',
+          isDraft: true,
+        },
+        'pro-1'
+      ),
+      true
+    );
   });
 });

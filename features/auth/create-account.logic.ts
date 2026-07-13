@@ -26,6 +26,14 @@ export type CreateAccountValidationErrors = {
     | 'auth.validation.password_confirmation_mismatch';
 };
 
+export type CreateAccountValidationAnalyticsReason =
+  | 'validation_name_required'
+  | 'validation_email_required'
+  | 'validation_password_required'
+  | 'validation_password_policy'
+  | 'validation_password_confirmation_required'
+  | 'validation_password_confirmation_mismatch';
+
 export type CreateAccountErrorMessageKey =
   | 'auth.signup.error.duplicate_email'
   | 'auth.signup.error.network'
@@ -99,6 +107,36 @@ export function validateCreateAccountInput(
   return errors;
 }
 
+export function resolveCreateAccountValidationAnalyticsReason(
+  errors: CreateAccountValidationErrors
+): CreateAccountValidationAnalyticsReason | null {
+  if (errors.name) {
+    return 'validation_name_required';
+  }
+
+  if (errors.email) {
+    return 'validation_email_required';
+  }
+
+  if (errors.password === 'auth.validation.password_required') {
+    return 'validation_password_required';
+  }
+
+  if (errors.password === 'auth.validation.password_policy') {
+    return 'validation_password_policy';
+  }
+
+  if (errors.passwordConfirmation === 'auth.validation.password_confirmation_required') {
+    return 'validation_password_confirmation_required';
+  }
+
+  if (errors.passwordConfirmation === 'auth.validation.password_confirmation_mismatch') {
+    return 'validation_password_confirmation_mismatch';
+  }
+
+  return null;
+}
+
 export function normalizeCreateAccountReason(error: unknown): CreateAccountErrorReason {
   if (error instanceof CreateAccountFailure) {
     return error.reason;
@@ -114,7 +152,6 @@ export function normalizeCreateAccountReason(error: unknown): CreateAccountError
 
   if (
     code.includes('duplicate') ||
-    code.includes('already-in-use') ||
     code.includes('already_exists') ||
     code.includes('already_registered') ||
     code.includes('email_taken') ||
@@ -124,15 +161,21 @@ export function normalizeCreateAccountReason(error: unknown): CreateAccountError
     return 'duplicate_email';
   }
 
-  if (code.includes('account-exists-with-different-credential')) {
+  if (
+    code.includes('provider_conflict') ||
+    code.includes('provider-conflict') ||
+    message.includes('provider conflict') ||
+    message.includes('different provider')
+  ) {
     return 'provider_conflict';
   }
 
   if (
-    code.includes('missing required keys') ||
-    code.includes('invalid-api-key') ||
-    message.includes('missing required keys') ||
-    message.includes('invalid api key')
+    code.includes('configuration') ||
+    code.includes('missing_config') ||
+    code.includes('server_not_configured') ||
+    message.includes('not configured') ||
+    message.includes('missing config')
   ) {
     return 'configuration';
   }

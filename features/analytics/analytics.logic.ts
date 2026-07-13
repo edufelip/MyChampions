@@ -1,6 +1,6 @@
 /**
  * Milestone A analytics event taxonomy logic.
- * Pure functions, no Firebase/external SDK dependencies.
+ * Pure functions, no runtime SDK dependencies.
  * All sensitive fields are redacted before event emission.
  * Refs: D-068, FR-206–FR-208, BR-265, BR-266, AC-251, AC-252, TC-254, TC-255
  */
@@ -33,7 +33,10 @@ export type AnalyticsEventName =
   | 'invite.submit.requested'
   | 'invite.submit.failed'
   | 'invite.pending.created'
-  | 'invite.pending.canceled';
+  | 'invite.pending.canceled'
+  | 'invite.pending.confirmed'
+  | 'invite.pending.denied'
+  | 'invite.pending.bulk_denied';
 
 export type AnalyticsEvent = {
   name: AnalyticsEventName;
@@ -47,7 +50,7 @@ export type AnalyticsEventProperties = {
   reason_code?: string;
   channel?: AnalyticsChannel;
   role_context?: 'student' | 'professional';
-};
+} & Record<string, unknown>;
 
 // ─── Event builders ───────────────────────────────────────────────────────────
 
@@ -125,6 +128,33 @@ export function buildInvitePendingCanceled(): AnalyticsEvent {
   return {
     name: 'invite.pending.canceled',
     properties: { surface: 'relationship_management', step: 'canceled', result: 'success', reason_code: 'code_rotated_canceled' },
+  };
+}
+
+export function buildInvitePendingConfirmed(): AnalyticsEvent {
+  return {
+    name: 'invite.pending.confirmed',
+    properties: { surface: 'relationship_management', step: 'confirm', result: 'success', role_context: 'professional' },
+  };
+}
+
+export function buildInvitePendingDenied(): AnalyticsEvent {
+  return {
+    name: 'invite.pending.denied',
+    properties: { surface: 'relationship_management', step: 'deny', result: 'success', role_context: 'professional' },
+  };
+}
+
+export function buildInvitePendingBulkDenied(pendingCount: number): AnalyticsEvent {
+  return {
+    name: 'invite.pending.bulk_denied',
+    properties: {
+      surface: 'relationship_management',
+      step: 'bulk_deny',
+      result: 'success',
+      role_context: 'professional',
+      pending_count: pendingCount,
+    },
   };
 }
 

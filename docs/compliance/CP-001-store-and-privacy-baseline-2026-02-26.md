@@ -37,6 +37,9 @@ Adopt a **store-compliance-first baseline** for MVP, aligned with current Apple 
   - Revoke sessions/tokens and disable account access immediately.
   - Replace retained actor references with irreversible internal tombstone identifiers.
   - Preserve only minimum event metadata (timestamps, lifecycle state transitions, non-personalized plan/history artifacts) required by policy.
+- Local implementation status: SC-213 now initiates account deletion through the MyChampions server `DELETE /me` boundary for local bearer sessions.
+- A236 repository evidence verified removal of direct account-owned rows and pseudonymization of retained relationship/history rows.
+- Release gate remains open until iOS and Android platform builds verify the flow end to end and store-listing deletion/data-disclosure metadata is reviewed.
 
 ### 4) Health-Related Data Handling
 - Treat nutrition/training data as sensitive user data.
@@ -55,8 +58,9 @@ Adopt a **store-compliance-first baseline** for MVP, aligned with current Apple 
 - [ ] Store-compliant billing flow is active for professional subscription tier.
 - [ ] Privacy policy URL configured and content validated.
 - [ ] Apple privacy labels and Google Play data safety forms match actual behavior.
-- [ ] In-app account deletion flow implemented and verified on both platforms.
-- [ ] Deletion pipeline verified to remove direct identifiers from retained historical data.
+- [ ] In-app account deletion flow verified on iOS and Android release builds.
+- [ ] Store-listing deletion/data-disclosure metadata reviewed against the server-owned deletion pipeline.
+- [x] Local server deletion pipeline verified to remove direct identifiers from retained historical data.
 - [ ] Consent and access controls validated for archived self-managed plan sharing.
 - [ ] No prohibited health-data advertising usage patterns detected.
 

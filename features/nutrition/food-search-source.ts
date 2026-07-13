@@ -1,15 +1,16 @@
 /**
- * Food search source — HTTP call to the VPS microservice.
+ * Food search source — HTTP call to the MyChampions server food catalog route.
  *
  * Contract:
- *  POST https://foodservice.eduwaldo.com/searchFoods
- *  Authorization: Bearer <Firebase ID token>
- *  body: { query, maxResults, region, language }
+ *  POST <MyChampions server>/integrations/food/search
+ *  Authorization: Bearer <MyChampions server access token>
  *
  * Refs: BL-106, FR-243
  */
 
 import { getEffectiveLocale } from '../auth/language-storage';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getCurrentServerAccessToken } from '../auth/server-auth-source';
 import { type FoodSearchResult } from '../plans/plan-builder.logic';
 import { isDevLoggingEnabled, logNetworkDebug } from '../debug/logging';
 
@@ -35,16 +36,62 @@ export class FoodSearchSourceError extends Error {
 // ─── Injectable deps (for testability) ───────────────────────────────────────
 
 export type FoodSearchSourceDeps = {
-  getServiceUrl: () => string | undefined;
+  getServerBaseUrl: () => string | undefined;
+  getCurrentAccessToken: () => Promise<string | null>;
   fetchFn: typeof fetch;
   getLocale: () => Promise<string>;
 };
 
 const defaultDeps: FoodSearchSourceDeps = {
-  getServiceUrl: () => process.env['EXPO_PUBLIC_FOOD_SEARCH_SERVICE_URL'],
+  getServerBaseUrl: defaultGetServerBaseUrl,
+  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
   fetchFn: fetch,
   getLocale: () => getEffectiveLocale(),
 };
+
+function defaultGetServerBaseUrl(): string | undefined {
+  let expoExtra: unknown;
+  try {
+    const Constants = require('expo-constants') as {
+      default?: { expoConfig?: { extra?: unknown } };
+      expoConfig?: { extra?: unknown };
+    };
+    expoExtra = (Constants.default ?? Constants).expoConfig?.extra;
+  } catch {
+    expoExtra = undefined;
+  }
+
+  const extra = (expoExtra ?? {}) as {
+    server?: {
+      baseUrl?: string;
+    };
+  };
+  return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
+}
+
+function getE2EFoodSearchFixture(query: string): FoodSearchResult[] | null {
+  const override = resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+  if (!override || process.env.EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE !== 'basic') return null;
+
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return [];
+  if (!'rice'.includes(normalized) && !normalized.includes('rice')) return [];
+
+  return [
+    {
+      id: 'e2e-food-rice',
+      name: 'E2E Brown Rice',
+      caloriesPer100g: 111,
+      carbsPer100g: 23,
+      proteinsPer100g: 2.6,
+      fatsPer100g: 0.9,
+    },
+  ];
+}
 
 type MicroserviceFoodResult = {
   id?: string;
@@ -145,7 +192,7 @@ function mapErrorToSourceError(
   const errorCode = body?.error ?? null;
 
   if (responseStatus === 401 || responseStatus === 403 || errorCode === 'unauthenticated') {
-    return new FoodSearchSourceError('unauthenticated', 'Food search service rejected Auth ID token.');
+    return new FoodSearchSourceError('unauthenticated', 'Food search service rejected the server access token.');
   }
 
   if (responseStatus === 429 || errorCode === 'quota_exceeded') {
@@ -154,6 +201,10 @@ function mapErrorToSourceError(
 
   if (responseStatus === 400 || errorCode === 'bad_request') {
     return new FoodSearchSourceError('unknown', body?.message ?? 'Food search request was rejected (bad_request).');
+  }
+
+  if (responseStatus === 503 || errorCode === 'configuration') {
+    return new FoodSearchSourceError('configuration', body?.message ?? 'Food search endpoint is not configured.');
   }
 
   if (errorCode === 'upstream_ip_not_allowlisted') {
@@ -177,47 +228,44 @@ function mapErrorToSourceError(
 // ─── Source call ──────────────────────────────────────────────────────────────
 
 /**
- * Calls the food search microservice to search the food database.
+ * Calls the MyChampions server to search the food database.
  * Returns an array of FoodSearchResult normalized to per-100g macros.
  *
- * @param user    - Authenticated Firebase user with getIdToken capability
- * @param query   - Search expression forwarded to the upstream provider
+ * @param query   - Search expression forwarded through the MyChampions server integration route
  * @param deps    - Injectable dependencies; omit in production
  */
 export async function searchFoodsFromSource(
-  user: { getIdToken: () => Promise<string> } | null,
   query: string,
   deps: FoodSearchSourceDeps = defaultDeps
 ): Promise<FoodSearchResult[]> {
   logNetworkDebug('searchFoodsFromSource', 'Starting service search for:', query);
 
-  const endpoint = deps.getServiceUrl();
-  if (!endpoint) {
-    throw new FoodSearchSourceError(
-      'configuration',
-      'Food search service URL is not configured. Set EXPO_PUBLIC_FOOD_SEARCH_SERVICE_URL.'
-    );
-  }
-
-  if (!user) {
-    throw new FoodSearchSourceError('unauthenticated', 'No active user found.');
-  }
-
-  let idToken: string;
-  try {
-    idToken = await user.getIdToken();
-    if (isDevLoggingEnabled()) {
-      logNetworkDebug('searchFoodsFromSource', 'Auth token:', idToken);
-    }
-  } catch (err) {
-    console.error('[searchFoodsFromSource] Failed to get ID token:', err);
-    throw new FoodSearchSourceError('unauthenticated', 'Failed to retrieve Firebase ID token.');
-  }
+  const fixture = getE2EFoodSearchFixture(query);
+  if (fixture) return fixture;
 
   let response: Response;
   const locale = await deps.getLocale();
   const { region, language } = resolveRegionLanguageFromLocale(locale);
   const requestPayload = { query, maxResults: 10, region, language };
+  const serverBaseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
+  const serverAccessToken = await deps.getCurrentAccessToken();
+  const endpoint = serverBaseUrl ? `${serverBaseUrl}/integrations/food/search` : undefined;
+
+  if (!endpoint) {
+    throw new FoodSearchSourceError(
+      'configuration',
+      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.'
+    );
+  }
+
+  if (!serverAccessToken) {
+    throw new FoodSearchSourceError('unauthenticated', 'No authenticated server token found.');
+  }
+
+  if (isDevLoggingEnabled()) {
+    logNetworkDebug('searchFoodsFromSource', 'Server auth token:', serverAccessToken);
+  }
+
   try {
     logNetworkDebug('searchFoodsFromSource', 'Fetching from service:', endpoint);
     logNetworkDebug('searchFoodsFromSource', 'Request payload:', requestPayload);
@@ -225,7 +273,7 @@ export async function searchFoodsFromSource(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
+        Authorization: `Bearer ${serverAccessToken}`,
       },
       body: JSON.stringify(requestPayload),
     });

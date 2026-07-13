@@ -6,7 +6,7 @@
  * Tapping a plan navigates to /professional/training/plans/:planId.
  * Creating a new plan navigates to /professional/training/plans/new.
  *
- * Data wiring is Firestore-backed via usePlans hook.
+ * Data wiring is server-backed via usePlans hook.
  *
  * Docs: docs/screens/v2/SC-208-training-plan-builder.md
  * Refs: D-013, D-080, D-111, D-134, FR-111, FR-112, FR-223, FR-244,
@@ -49,6 +49,7 @@ export default function ProTrainingLibraryScreen() {
         theme={theme}
         t={t}
         onPress={() => router.push(`/professional/training/plans/${item.id}`)}
+        testID={`pro.library.training.row.${item.id}`}
       />
     ),
     [router, t, theme]
@@ -175,15 +176,17 @@ type PlanRowProps = {
   theme: ReturnType<typeof getDsTheme>;
   t: TFn;
   onPress: () => void;
+  testID?: string;
 };
 
-function PlanRow({ plan, theme, t, onPress }: PlanRowProps) {
+function PlanRow({ plan, theme, t, onPress, testID }: PlanRowProps) {
   return (
     <Pressable
       style={[styles.planRow, { borderColor: theme.color.border, backgroundColor: theme.color.surface }]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${plan.name}, ${t('pro.plan.predefined.label')}`}>
+      accessibilityLabel={`${plan.name}, ${t('pro.plan.predefined.label')}`}
+      testID={testID}>
       <View style={[styles.rowIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
         <MaterialIcons name="fitness-center" size={18} color={theme.color.accentPrimary} />
       </View>

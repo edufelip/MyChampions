@@ -8,8 +8,6 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -83,15 +81,20 @@ export function SupportModal({
     }
   }, [state.kind]);
 
+  const handleClose = () => {
+    onClose();
+  };
+
   return (
     <Modal visible={isVisible} animationType="slide" transparent>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.flex}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.flex}>
-            <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>
-              <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
+      <View style={styles.flex}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.flex}>
+          <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>
+            <View
+              style={[styles.modalContent, { backgroundColor: theme.color.surface }]}
+              testID="settings.account.support.modal">
                 <View style={styles.modalHeader}>
                   <Text
                     style={[styles.modalTitle, { color: theme.color.textPrimary }]}
@@ -99,11 +102,14 @@ export function SupportModal({
                     {t('settings.account.support.dialog.title')}
                   </Text>
                   <Pressable
-                    onPress={onClose}
+                    onPress={handleClose}
+                    onTouchEnd={handleClose}
                     disabled={isSubmitting}
                     hitSlop={12}
+                    style={styles.closeButton}
                     accessibilityRole="button"
-                    accessibilityLabel={t('common.cta.cancel') as string}>
+                    accessibilityLabel={t('common.cta.cancel') as string}
+                    testID="settings.account.support.closeButton">
                     <MaterialIcons
                       name="close"
                       size={24}
@@ -114,7 +120,10 @@ export function SupportModal({
                 </View>
 
                 {isSuccess ? (
-                  <View style={styles.successContainer} accessibilityLiveRegion="polite">
+                  <View
+                    style={styles.successContainer}
+                    accessibilityLiveRegion="polite"
+                    testID="settings.account.support.success">
                     <View style={[styles.successIcon, { backgroundColor: theme.color.successSoft }]}>
                       <MaterialIcons name="check-circle" size={48} color={theme.color.success} />
                     </View>
@@ -126,7 +135,7 @@ export function SupportModal({
                     <DsPillButton
                       scheme={scheme}
                       label={t('auth.role.cta_continue') as string}
-                      onPress={onClose}
+                      onPress={handleClose}
                       variant="primary"
                     />
                   </View>
@@ -157,6 +166,7 @@ export function SupportModal({
                         </Text>
                       </View>
                       <TextInput
+                        testID="settings.account.support.subjectInput"
                         style={[
                           styles.input,
                           {
@@ -179,7 +189,8 @@ export function SupportModal({
                       {state.kind === 'error' && state.reason === 'subject_required' && (
                         <Text
                           style={[styles.errorText, { color: theme.color.danger }]}
-                          accessibilityRole="alert">
+                          accessibilityRole="alert"
+                          testID="settings.account.support.subjectError">
                           {t('settings.account.support.validation.subject_required')}
                         </Text>
                       )}
@@ -204,6 +215,7 @@ export function SupportModal({
                         </Text>
                       </View>
                       <TextInput
+                        testID="settings.account.support.bodyInput"
                         style={[
                           styles.input,
                           styles.textArea,
@@ -230,7 +242,8 @@ export function SupportModal({
                       {state.kind === 'error' && state.reason === 'body_required' && (
                         <Text
                           style={[styles.errorText, { color: theme.color.danger }]}
-                          accessibilityRole="alert">
+                          accessibilityRole="alert"
+                          testID="settings.account.support.bodyError">
                           {t('settings.account.support.validation.body_required')}
                         </Text>
                       )}
@@ -239,7 +252,8 @@ export function SupportModal({
                     {state.kind === 'error' && !state.reason.includes('required') && (
                       <View
                         style={[styles.errorBanner, { backgroundColor: theme.color.dangerSoft }]}
-                        accessibilityRole="alert">
+                        accessibilityRole="alert"
+                        testID="settings.account.support.errorBanner">
                         <Text style={[styles.errorBannerText, { color: theme.color.danger }]}>
                           {t('settings.account.support.error')}
                         </Text>
@@ -249,7 +263,8 @@ export function SupportModal({
                     {isOffline && (
                       <View
                         style={[styles.errorBanner, { backgroundColor: theme.color.warningSoft }]}
-                        accessibilityRole="alert">
+                        accessibilityRole="alert"
+                        testID="settings.account.support.offlineBanner">
                         <Text style={[styles.errorBannerText, { color: theme.color.warning }]}>
                           {t('offline.write_lock')}
                         </Text>
@@ -268,14 +283,23 @@ export function SupportModal({
                       disabled={isSubmitLocked}
                       variant="primary"
                       style={styles.submitButton}
+                      testID="settings.account.support.submitCta"
+                    />
+                    <DsPillButton
+                      scheme={scheme}
+                      label={t('common.cta.cancel') as string}
+                      onPress={handleClose}
+                      disabled={isSubmitting}
+                      variant="ghost"
+                      style={styles.cancelButton}
+                      testID="settings.account.support.cancelCta"
                     />
                   </ScrollView>
                 )}
-              </View>
             </View>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -298,6 +322,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: DsSpace.md,
+  },
+  closeButton: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
   modalTitle: {
     ...DsTypography.cardTitle,
@@ -344,6 +374,9 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: DsSpace.sm,
+  },
+  cancelButton: {
+    marginTop: -DsSpace.xs,
   },
   errorText: {
     fontSize: 12,

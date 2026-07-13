@@ -1,4 +1,4 @@
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState, useRef } from 'react';
 import { Image } from 'expo-image';
@@ -76,6 +76,7 @@ export function ExerciseSearchModal({
   }, [isVisible, onClear]);
 
   const handleSelectExercise = (exercise: ExerciseItem) => {
+    Keyboard.dismiss();
     setSelectedExercise(exercise);
     setView('detail');
   };
@@ -86,6 +87,7 @@ export function ExerciseSearchModal({
 
   const handleConfirm = () => {
     if (!selectedExercise) return;
+    Keyboard.dismiss();
     onConfirm(selectedExercise, quantity.trim(), notes.trim());
   };
 
@@ -94,7 +96,7 @@ export function ExerciseSearchModal({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>
-        <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
+        <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]} testID="exerciseSearch.modal">
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
               {view === 'detail' ? t('pro.plan.item.field.name.label') : t('pro.plan.item.search.placeholder')}
@@ -132,8 +134,14 @@ export function ExerciseSearchModal({
                   placeholderTextColor={theme.color.textSecondary}
                   value={query}
                   onChangeText={setQuery}
+                  onSubmitEditing={() => {
+                    Keyboard.dismiss();
+                    onSearch(query);
+                  }}
+                  returnKeyType="search"
                   autoFocus
                   accessibilityLabel={t('pro.plan.item.search.placeholder') as string}
+                  testID="exerciseSearch.input"
                 />
                 {query.length > 0 && (
                   <Pressable onPress={() => setQuery('')} hitSlop={12}>
@@ -164,7 +172,10 @@ export function ExerciseSearchModal({
                     <Pressable
                       key={exercise.id}
                       style={[styles.exerciseRow, { borderColor: theme.color.border }]}
-                      onPress={() => handleSelectExercise(exercise)}>
+                      onPress={() => handleSelectExercise(exercise)}
+                      accessibilityRole="button"
+                      accessibilityLabel={exercise.title}
+                      testID={`exerciseSearch.result.${exercise.id}`}>
                       
                       {exercise.thumbnailUrl ? (
                         <Image source={{ uri: exercise.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
@@ -192,7 +203,12 @@ export function ExerciseSearchModal({
             </>
           ) : (
             // ── Detail View ──────────────────────────────────────────────────
-            <ScrollView style={styles.detailsContainer} contentContainerStyle={{ paddingBottom: 40 }}>
+            <ScrollView
+              style={styles.detailsContainer}
+              contentContainerStyle={{ paddingBottom: 40 }}
+              keyboardShouldPersistTaps="handled"
+              testID="exerciseSearch.detailScroll"
+            >
               <Pressable onPress={handleBackToSearch} hitSlop={12} style={styles.backButton}>
                 <MaterialIcons name="arrow-back" size={20} color={theme.color.accentPrimary} />
                 <Text style={{ color: theme.color.accentPrimary, fontSize: 14, fontWeight: '600', marginLeft: 4 }}>
@@ -200,7 +216,7 @@ export function ExerciseSearchModal({
                 </Text>
               </Pressable>
 
-              <Text style={[styles.detailTitle, { color: theme.color.textPrimary }]}>
+              <Text style={[styles.detailTitle, { color: theme.color.textPrimary }]} testID="exerciseSearch.detail">
                 {selectedExercise?.title}
               </Text>
 
@@ -273,9 +289,10 @@ export function ExerciseSearchModal({
                   placeholderTextColor={theme.color.textSecondary}
                   value={quantity}
                   onChangeText={setQuantity}
-                  returnKeyType="next"
-                  onSubmitEditing={() => notesRef.current?.focus()}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
                   accessibilityLabel={t('pro.plan.item.field.quantity.label') as string}
+                  testID="exerciseSearch.quantity"
                 />
 
                 <Text style={[styles.fieldLabel, { color: theme.color.textPrimary }]}>
@@ -294,6 +311,7 @@ export function ExerciseSearchModal({
                   returnKeyType="done"
                   onSubmitEditing={handleConfirm}
                   accessibilityLabel={t('pro.plan.item.field.notes.label') as string}
+                  testID="exerciseSearch.notes"
                 />
 
                 <View style={styles.actionsFooter}>
@@ -301,6 +319,7 @@ export function ExerciseSearchModal({
                     scheme={scheme}
                     label={t('pro.plan.cta.add_item') as string}
                     onPress={handleConfirm}
+                    testID="exerciseSearch.confirm"
                   />
                 </View>
               </View>

@@ -10,7 +10,8 @@
  *   - fetchEntitlementStatus: happy path, getCustomerInfo throws (network, unknown), SDK throws SubscriptionSourceError
  *   - purchasePackage: happy path with customerInfo, no customerInfo, cancellation, store error
  *   - restorePurchases: happy path, network error, SubscriptionSourceError passthrough
- *   - configureRevenueCat: calls configure with key, throws on missing key
+ *   - configureRevenueCat: binds the SDK to a self-managed auth UID and rejects blank IDs
+ *   - RevenueCat identity coordinator: serializes account switches before the next SDK operation
  *   - presentAiPaywall: calls presentPaywall with AI_OFFERING_ID ('default_student'), propagates errors, passes through SubscriptionSourceError
  *   - presentProPaywall: calls presentPaywall with PRO_OFFERING_ID ('default_professional'), propagates errors, passes through SubscriptionSourceError
  */
@@ -44,6 +45,7 @@ function makeDeps(overrides: Partial<SubscriptionSourceDeps> = {}): Subscription
   return {
     presentPaywall: async () => {},
     configure: () => {},
+    logIn: async () => {},
     getCustomerInfo: async () => ({ entitlements: { active: {} } }),
     purchasePackage: async () => ({ customerInfo: { entitlements: { active: {} } } }),
     restorePurchases: async () => ({ entitlements: { active: {} } }),
@@ -253,14 +255,31 @@ describe('normalizeSubscriptionError', () => {
 // ─── configureRevenueCat ─────────────────────────────────────────────────────
 
 describe('configureRevenueCat', () => {
-  it('calls configure with the API key from getApiKey', () => {
-    const calls: string[] = [];
+  it('calls configure with the API key and self-managed auth UID', () => {
+    const calls: Array<{ apiKey: string; appUserId: string | undefined }> = [];
     const deps = makeDeps({
-      configure: (key) => { calls.push(key); },
+      configure: (apiKey, appUserId) => { calls.push({ apiKey, appUserId }); },
       getApiKey: () => 'appl_live_test',
     });
-    configureRevenueCat(deps);
-    assert.deepEqual(calls, ['appl_live_test']);
+    configureRevenueCat(deps, 'server-user-42');
+    assert.deepEqual(calls, [{ apiKey: 'appl_live_test', appUserId: 'server-user-42' }]);
+  });
+
+  it('rejects a blank auth UID before configuring RevenueCat', () => {
+    const calls: string[] = [];
+    const deps = makeDeps({
+      configure: () => { calls.push('configured'); },
+    });
+
+    assert.throws(
+      () => configureRevenueCat(deps, '  '),
+      (err: unknown) => {
+        assert.ok(err instanceof SubscriptionSourceError);
+        assert.equal(err.code, 'configuration');
+        return true;
+      }
+    );
+    assert.deepEqual(calls, []);
   });
 
   it('throws configuration error when getApiKey throws', () => {
@@ -268,13 +287,126 @@ describe('configureRevenueCat', () => {
       getApiKey: () => { throw new SubscriptionSourceError('configuration', 'No key'); },
     });
     assert.throws(
-      () => configureRevenueCat(deps),
+      () => configureRevenueCat(deps, 'server-user-42'),
       (err: unknown) => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
       }
     );
+  });
+});
+
+// ─── RevenueCat identity coordination ─────────────────────────────────────────
+
+type RevenueCatIdentityCoordinator = {
+  run<T>(
+    deps: SubscriptionSourceDeps,
+    appUserId: string,
+    operation: () => Promise<T>
+  ): Promise<T>;
+};
+
+async function createRevenueCatIdentityCoordinator(): Promise<RevenueCatIdentityCoordinator> {
+  const sourceModule = (await import('./subscription-source')) as unknown as {
+    createRevenueCatIdentityCoordinator?: () => RevenueCatIdentityCoordinator;
+  };
+
+  assert.equal(
+    typeof sourceModule.createRevenueCatIdentityCoordinator,
+    'function',
+    'subscription source must expose an identity coordinator for the singleton RevenueCat SDK'
+  );
+  return (sourceModule.createRevenueCatIdentityCoordinator as () => RevenueCatIdentityCoordinator)();
+}
+
+describe('RevenueCat identity coordinator', () => {
+  it('serializes an account switch before the next SDK operation', async () => {
+    const calls: string[] = [];
+    const coordinator = await createRevenueCatIdentityCoordinator();
+    let signalLoginStarted: (() => void) | null = null;
+    const loginStarted = new Promise<void>((resolve) => {
+      signalLoginStarted = resolve;
+    });
+    let releaseSecondLogin: () => void = () => {
+      throw new Error('RevenueCat account-switch test did not initialize its login release.');
+    };
+    const waitForSecondLoginRelease = new Promise<void>((resolve) => {
+      releaseSecondLogin = resolve;
+    });
+    const deps = makeDeps({
+      configure: (apiKey, appUserId) => { calls.push(`configure:${apiKey}:${appUserId}`); },
+      logIn: async (appUserId) => {
+        calls.push(`login:${appUserId}`);
+        signalLoginStarted?.();
+        await waitForSecondLoginRelease;
+      },
+      getApiKey: () => 'appl_live_test',
+    });
+
+    const firstOperation = coordinator.run(deps, 'server-user-a', async () => {
+      calls.push('operation:server-user-a');
+    });
+    const secondOperation = coordinator.run(deps, 'server-user-b', async () => {
+      calls.push('operation:server-user-b');
+    });
+
+    await firstOperation;
+    await loginStarted;
+    assert.deepEqual(calls, [
+      'configure:appl_live_test:server-user-a',
+      'operation:server-user-a',
+      'login:server-user-b',
+    ]);
+    releaseSecondLogin();
+    await secondOperation;
+    assert.deepEqual(calls, [
+      'configure:appl_live_test:server-user-a',
+      'operation:server-user-a',
+      'login:server-user-b',
+      'operation:server-user-b',
+    ]);
+  });
+
+  it('keeps an account switch retryable when RevenueCat logIn fails', async () => {
+    const calls: string[] = [];
+    const coordinator = await createRevenueCatIdentityCoordinator();
+    let secondUserLoginAttempts = 0;
+    const deps = makeDeps({
+      configure: (apiKey, appUserId) => { calls.push(`configure:${apiKey}:${appUserId}`); },
+      logIn: async (appUserId) => {
+        calls.push(`login:${appUserId}`);
+        if (appUserId === 'server-user-b' && secondUserLoginAttempts++ === 0) {
+          throw { code: 'network_error' };
+        }
+      },
+      getApiKey: () => 'appl_live_test',
+    });
+
+    await coordinator.run(deps, 'server-user-a', async () => {
+      calls.push('operation:server-user-a');
+    });
+    await assert.rejects(
+      () => coordinator.run(deps, 'server-user-b', async () => {
+        calls.push('operation:unexpected');
+      }),
+      (err: unknown) => {
+        assert.ok(err instanceof SubscriptionSourceError);
+        assert.equal(err.code, 'network');
+        return true;
+      }
+    );
+    await coordinator.run(deps, 'server-user-b', async () => {
+      calls.push('operation:server-user-b');
+    });
+
+    assert.deepEqual(calls, [
+      'configure:appl_live_test:server-user-a',
+      'operation:server-user-a',
+      'login:server-user-b',
+      'login:server-user-b',
+      'operation:server-user-b',
+    ]);
   });
 });
 

@@ -1,6 +1,6 @@
 /**
  * Starter template logic — template selection, cloning, and customization (BL-006).
- * Pure functions for template operations without Firebase dependencies.
+ * Pure functions for template operations without provider dependencies.
  * Refs: D-114, FR-212, FR-247, AC-256, BR-270, TC-260, UC-002.14
  */
 
@@ -55,15 +55,15 @@ export function isStarterTemplate(planId: string): boolean {
  */
 export function extractTemplateCategory(templateId: string): StarterTemplateCategory | null {
   if (!isStarterTemplate(templateId)) return null;
-  
+
   const parts = templateId.split('_');
   if (parts.length < 2) return null;
-  
+
   const category = parts[1];
   if (category === 'nutrition' || category === 'training') {
     return category as StarterTemplateCategory;
   }
-  
+
   return null;
 }
 

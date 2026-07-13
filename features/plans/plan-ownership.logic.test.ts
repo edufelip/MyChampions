@@ -14,7 +14,7 @@ test('isSelfGuidedPlan returns true for explicit self_managed source kind', () =
   assert.equal(isSelfGuidedPlan(base({ sourceKind: 'self_managed' }), 'student-1'), true);
 });
 
-test('isSelfGuidedPlan returns true for predefined plan owned by same student', () => {
+test('isSelfGuidedPlan returns false for predefined plan owned by same student', () => {
   assert.equal(
     isSelfGuidedPlan(
       base({
@@ -24,7 +24,7 @@ test('isSelfGuidedPlan returns true for predefined plan owned by same student', 
       }),
       'student-1'
     ),
-    true
+    false
   );
 });
 

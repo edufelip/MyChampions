@@ -5,8 +5,7 @@
  * Shows entitlement status, active-student cap usage, and exposes
  * purchase / restore CTAs.
  *
- * RevenueCat SDK is now wired via useSubscription (D-128).
- * Active student count is still stubbed at 0 pending Data Connect roster endpoint.
+ * RevenueCat SDK and unique active-student usage are wired via useSubscription.
  *
  * Docs: docs/screens/v2/SC-212-professional-subscription-gate.md
  * Refs: D-009–D-011, D-024, D-043, D-075, D-128, D-134, FR-126–129, FR-156, FR-185, FR-215, FR-217
@@ -27,6 +26,7 @@ import {
   type OfflineDisplayState,
   resolveOfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import {
   FREE_STUDENT_CAP,
@@ -45,16 +45,25 @@ export default function ProfessionalSubscriptionScreen() {
   const router = useRouter();
   const { currentUser } = useAuthSession();
 
-  const { entitlementStatus, activeStudentCount, isLoading, restore, refresh, openProPaywall } =
-    useSubscription(Boolean(currentUser));
+  const {
+    entitlementStatus,
+    activeStudentCount,
+    isLoading,
+    restore,
+    refresh,
+    openProPaywall,
+    lastSyncedAtIso: subscriptionSyncedAtIso,
+  } =
+    useSubscription(currentUser?.uid ?? null, { loadProfessionalActiveStudentCount: true });
 
   const subState = resolveSubscriptionState({ activeStudentCount, entitlementStatus });
   const isLocked = isPlanUpdateLocked(subState);
 
   const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([subscriptionSyncedAtIso]);
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
     networkStatus,
-    lastSyncedAtIso: null,
+    lastSyncedAtIso,
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner || isLocked;
 
@@ -114,13 +123,16 @@ export default function ProfessionalSubscriptionScreen() {
           />
         ) : (
           <Text
+            testID="pro.subscription.statusValue"
             style={[styles.statusBadge, { color: statusColor }]}
             accessibilityLabel={`${t('pro.subscription.title') as string}: ${statusLabel as string}`}>
             {statusLabel}
           </Text>
         )}
 
-        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>{capLabel}</Text>
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]} testID="pro.subscription.capUsage">
+          {capLabel}
+        </Text>
         <Text style={[styles.meta, { color: theme.color.textSecondary }]}>{t('pro.subscription.free_tier')}</Text>
       </DsCard>
 

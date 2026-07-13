@@ -1,9 +1,11 @@
 /**
  * Professional specialty logic — add/remove/credential management.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-034, D-035, D-036, D-062, FR-103, FR-174, FR-175, FR-176, FR-177, FR-216
  * BR-234, BR-235, BR-236, BR-237
  */
+
+import type { RoleIntent } from '../auth/role-selection.logic';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -41,6 +43,15 @@ export type SpecialtyActionErrorReason =
   | 'configuration'
   | 'unknown';
 
+export type NutritionSurfaceAccessInput = {
+  role: RoleIntent | null;
+  specialties: SpecialtyRecord[];
+};
+
+export type NutritionSurfaceGateStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+export type NutritionSurfaceGateDecision = 'allow' | 'loading' | 'redirect';
+
 export type CredentialInput = {
   registryId: string;
   authority: string;
@@ -53,11 +64,48 @@ export type CredentialValidationErrors = {
   country?: 'required';
 };
 
+export type OptionalCredentialInputDecision = {
+  shouldSave: boolean;
+  errors: CredentialValidationErrors;
+};
+
 // ─── Pure functions ───────────────────────────────────────────────────────────
 
 export function normalizeSpecialty(raw: unknown): Specialty | null {
   if (raw === 'nutritionist' || raw === 'fitness_coach') return raw;
   return null;
+}
+
+export function canAccessNutritionSurface(input: NutritionSurfaceAccessInput): boolean {
+  if (input.role === 'student') return true;
+  if (input.role !== 'professional') return false;
+
+  return input.specialties.some(
+    (record) => record.specialty === 'nutritionist' && record.isActive
+  );
+}
+
+export function resolveNutritionSurfaceGate(
+  input: NutritionSurfaceAccessInput & { specialtiesStatus: NutritionSurfaceGateStatus }
+): NutritionSurfaceGateDecision {
+  if (input.role === 'professional' && (input.specialtiesStatus === 'idle' || input.specialtiesStatus === 'loading')) {
+    return 'loading';
+  }
+
+  return canAccessNutritionSurface(input) ? 'allow' : 'redirect';
+}
+
+export function resolveProfessionalNutritionRouteGate(
+  input: NutritionSurfaceAccessInput & { specialtiesStatus: NutritionSurfaceGateStatus }
+): NutritionSurfaceGateDecision {
+  if (input.role !== 'professional') return 'redirect';
+  if (input.specialtiesStatus === 'idle' || input.specialtiesStatus === 'loading') return 'loading';
+
+  return input.specialties.some(
+    (record) => record.specialty === 'nutritionist' && record.isActive
+  )
+    ? 'allow'
+    : 'redirect';
 }
 
 /**
@@ -91,6 +139,25 @@ export function validateCredentialInput(input: CredentialInput): CredentialValid
   if (!input.authority.trim()) errors.authority = 'required';
   if (!input.country.trim()) errors.country = 'required';
   return errors;
+}
+
+export function resolveOptionalCredentialInput(
+  input: CredentialInput
+): OptionalCredentialInputDecision {
+  const hasAnyCredentialField =
+    Boolean(input.registryId.trim()) ||
+    Boolean(input.authority.trim()) ||
+    Boolean(input.country.trim());
+
+  if (!hasAnyCredentialField) {
+    return { shouldSave: false, errors: {} };
+  }
+
+  const errors = validateCredentialInput(input);
+  return {
+    shouldSave: Object.keys(errors).length === 0,
+    errors,
+  };
 }
 
 export function normalizeSpecialtyActionError(error: unknown): SpecialtyActionErrorReason {
