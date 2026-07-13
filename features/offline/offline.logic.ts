@@ -1,6 +1,6 @@
 /**
  * Offline mode logic — stale cache detection, write-lock resolution.
- * Pure functions, no Firebase dependencies.
+ * Pure functions with no provider dependencies.
  * Refs: D-041, D-047, D-074, FR-209, BR-267, BR-268
  *
  * Policy:

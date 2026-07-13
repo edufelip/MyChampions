@@ -17,6 +17,9 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  InputAccessoryView,
+  Keyboard,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -42,6 +45,7 @@ import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import {
   buildActionMetadata,
@@ -49,7 +53,11 @@ import {
   resolveRemovalAssistState,
   type RemovalAssistState,
 } from '@/features/professional/specialty-removal-assist.logic';
-import type { Specialty, SpecialtyRecord } from '@/features/professional/specialty.logic';
+import {
+  resolveOptionalCredentialInput,
+  type Specialty,
+  type SpecialtyRecord,
+} from '@/features/professional/specialty.logic';
 import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -62,6 +70,8 @@ type CredentialFormData = {
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
+const SPECIALTY_KEYBOARD_ACCESSORY_ID = 'professional-specialty-keyboard-accessory';
+
 export default function ProfessionalSpecialtyScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
@@ -72,21 +82,24 @@ export default function ProfessionalSpecialtyScreen() {
     tint: theme.color.accentPrimary,
     danger: theme.color.danger,
     onAccent: theme.color.onAccent,
+    surface: theme.color.surface,
   };
 
   const { t } = useTranslation();
   const { currentUser } = useAuthSession();
   const router = useRouter();
 
-  const networkStatus = useNetworkStatus();
-  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
-    networkStatus,
-    lastSyncedAtIso: null,
-  });
-  const isWriteLocked = offlineDisplay.showOfflineBanner;
-
   const { state, addSpecialty, removeSpecialty, checkRemoval, getRemovalBlockerCounts, upsertCredential } =
     useSpecialties(Boolean(currentUser));
+  const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    state.kind === 'ready' ? state.lastSyncedAtIso : null,
+  ]);
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   // credentialMode:
   //   'add'  — dialog opened from the add button; specialty does not exist yet
@@ -167,7 +180,11 @@ export default function ProfessionalSpecialtyScreen() {
     setCredentialFor(specialty);
     setCredentialMode('edit');
     setCredentialForId(record?.id ?? null);
-    setCredentialForm({ registryId: '', authority: '', country: '' });
+    setCredentialForm({
+      registryId: record?.credential?.registryId ?? '',
+      authority: record?.credential?.authority ?? '',
+      country: record?.credential?.country ?? '',
+    });
     setCredentialError(null);
   }
 
@@ -181,15 +198,17 @@ export default function ProfessionalSpecialtyScreen() {
    * Adds the specialty without a credential (used when user skips in add-mode
    * dialog, or directly if no credential is needed).
    */
-  async function handleAdd(specialty: Specialty) {
-    if (addingSpecialty) return;
+  async function handleAdd(specialty: Specialty): Promise<boolean> {
+    if (addingSpecialty) return false;
     setActionError(null);
     setAddingSpecialty(specialty);
-    const err = await addSpecialty(specialty);
+    const result = await addSpecialty(specialty);
     setAddingSpecialty(null);
-    if (err) {
+    if (result.error) {
       setActionError(t('pro.specialty.add_error') as string);
+      return false;
     }
+    return true;
   }
 
   /**
@@ -202,21 +221,24 @@ export default function ProfessionalSpecialtyScreen() {
 
     setCredentialError(null);
     setIsSavingCredential(true);
+    const credentialDecision = resolveOptionalCredentialInput(credentialForm);
+    if (!credentialDecision.shouldSave && Object.keys(credentialDecision.errors).length > 0) {
+      setIsSavingCredential(false);
+      setCredentialError(t('pro.specialty.credential.incomplete_error') as string);
+      return;
+    }
 
     if (credentialMode === 'add') {
       // Step 1: add the specialty.
-      const addErr = await addSpecialty(credentialFor);
-      if (addErr) {
+      const addResult = await addSpecialty(credentialFor);
+      if (addResult.error || !addResult.record) {
         setIsSavingCredential(false);
         setCredentialError(t('pro.specialty.add_error') as string);
         return;
       }
 
-      // Step 2: find the new record. useSpecialties reloads state after add.
-      // We re-read it from the hook's refreshed state via findRecord.
-      const newRecord = findRecord(credentialFor);
-      if (newRecord) {
-        const credErr = await upsertCredential(newRecord.id, credentialForm);
+      if (credentialDecision.shouldSave) {
+        const credErr = await upsertCredential(addResult.record.id, credentialForm);
         if (credErr) {
           // Specialty was added successfully — only the credential upsert failed.
           // Close dialog; user can edit credential later.
@@ -234,6 +256,12 @@ export default function ProfessionalSpecialtyScreen() {
     // edit mode: specialty already exists.
     if (!credentialForId) {
       setIsSavingCredential(false);
+      return;
+    }
+
+    if (!credentialDecision.shouldSave) {
+      setIsSavingCredential(false);
+      closeCredentialDialog();
       return;
     }
 
@@ -382,7 +410,10 @@ export default function ProfessionalSpecialtyScreen() {
           onSave={handleSaveCredential}
           onSkip={() => {
             if (credentialMode === 'add') {
-              void handleAdd(credentialFor);
+              void handleAdd(credentialFor).then((wasAdded) => {
+                if (wasAdded) closeCredentialDialog();
+              });
+              return;
             }
             closeCredentialDialog();
           }}
@@ -433,7 +464,7 @@ function RemovalAssistCard({
   specialty: Specialty;
   assistState: RemovalAssistState;
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
+  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string; surface: string };
   t: TFn;
   onAction: (navigationTarget: string | undefined) => void;
   onDismiss: () => void;
@@ -502,7 +533,7 @@ function SpecialtyList({
 }: {
   specialties: SpecialtyRecord[];
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
+  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string; surface: string };
   t: TFn;
   onRemove: (s: Specialty) => void;
   onOpenCredential: (s: Specialty) => void;
@@ -613,7 +644,7 @@ function CredentialForm({
   error: string | null;
   isSaving: boolean;
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string };
+  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string; surface: string };
   t: TFn;
   onChange: (field: keyof CredentialFormData, value: string) => void;
   onSave: () => void;
@@ -671,7 +702,11 @@ function CredentialForm({
 
       {error ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+          <Text
+            style={[styles.errorText, { color: palette.danger }]}
+            testID="pro.specialty.credential.error">
+            {error}
+          </Text>
         </View>
       ) : null}
 
@@ -689,10 +724,36 @@ function CredentialForm({
           />
         )}
 
-        <Pressable accessibilityRole="button" onPress={onSkip} testID="pro.specialty.credential.skip">
-          <Text style={[styles.link, { color: palette.icon }]}>{skipLabel}</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onSkip}
+          disabled={mode === 'add' && (isWriteLocked || isSaving)}
+          testID="pro.specialty.credential.skip">
+          <Text
+            style={[
+              styles.link,
+              { color: mode === 'add' && (isWriteLocked || isSaving) ? `${palette.icon}88` : palette.icon },
+            ]}>
+            {skipLabel}
+          </Text>
         </Pressable>
       </View>
+
+      {Platform.OS === 'ios' ? (
+        <InputAccessoryView nativeID={SPECIALTY_KEYBOARD_ACCESSORY_ID}>
+          <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={Keyboard.dismiss}
+              style={styles.keyboardDoneButton}
+              testID="pro.specialty.keyboard.done">
+              <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
+                {t('common.cta.done')}
+              </Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      ) : null}
     </DsCard>
   );
 }
@@ -723,6 +784,9 @@ function LabeledInput({
         onChangeText={onChangeText}
         testID={testID}
         accessibilityLabel={label}
+        returnKeyType="done"
+        onSubmitEditing={Keyboard.dismiss}
+        inputAccessoryViewID={SPECIALTY_KEYBOARD_ACCESSORY_ID}
       />
     </View>
   );
@@ -793,4 +857,17 @@ const styles = StyleSheet.create({
   assistActionDesc: { ...DsTypography.caption },
   cardGap: { gap: DsSpace.sm },
   saveButton: { flex: 1 },
+  keyboardAccessory: {
+    alignItems: 'flex-end',
+    borderTopColor: '#D8DEE7',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  keyboardDoneButton: {
+    justifyContent: 'center',
+    minHeight: 36,
+    paddingHorizontal: 8,
+  },
+  keyboardDoneText: { fontSize: 16, fontWeight: '700' },
 });

@@ -5,7 +5,7 @@ NutritionPlan governance matches TrainingPlan governance: student-authored nutri
 CustomMeals remain user-owned reusable meals/recipes. They can be included in NutritionPlans only as stable meal snapshots, not as direct access to another user's reusable CustomMeal record; Professionals cannot add Student-owned CustomMeals to assigned plans unless the Student first shares/copies the meal, and Students logging CustomMeals expose nutritionist-visible log snapshots rather than the private reusable record.
 
 **Consequences:**
-- Existing legacy Firestore shapes do not need migration or compatibility paths before release.
-- Nutrition plan rules must mirror the explicit source-kind, draft visibility, active-specialty, assignment, delete, and lifecycle constraints already used for training plans.
+- Existing retired provider data shapes do not need migration or compatibility paths before release.
+- Nutrition plan server routes/repositories must mirror the explicit source-kind, draft visibility, active-specialty, assignment, delete, and lifecycle constraints already used for training plans.
 - Nutrition tracking logs remain Student-owned but may include plan/Connection provenance for review and audit.
 - Nutritionist tracking review belongs on the Professional Student Profile and is read-only.

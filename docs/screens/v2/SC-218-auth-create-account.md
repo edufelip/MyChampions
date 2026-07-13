@@ -63,9 +63,10 @@
   - Password and password-confirmation reveal/hide toggles are implemented.
   - Validation rules are enforced in tested domain logic (`required`, password policy, no emoji, ASCII symbol, password confirmation match).
   - Contextual submit error mapping is implemented for `duplicate_email`, `network`, `provider_conflict`, and `configuration`.
-  - Email/password sign-up is wired to Firebase Auth.
-  - Google and Apple social auth are wired to Firebase Auth credentials.
-  - Successful sign-up routes to `/auth/accept-terms`; Firebase Auth session + guard then continue to role-selection or role home when terms are accepted.
+  - Email/password sign-up is wired to the local MyChampions server auth bridge for explicit local/dev app variants.
+  - Google social auth shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
+  - Apple social auth shows the approved E2E fixture path in test mode, then tries native Apple identity-token capture and posts the token plus nonce to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer, audience, and nonce claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.
+  - Successful sign-up routes to `/auth/accept-terms`; the MyChampions server auth session + guard then continue to role-selection or role home when terms are accepted.
   - Visual layout is aligned with Stitch reference `Playful Sign In Variant 1` using the same playful auth system used by SC-217:
     - Soft peach background with decorative blobs.
     - Rounded hero badge and rounded-full field/button controls.

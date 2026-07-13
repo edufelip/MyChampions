@@ -34,7 +34,7 @@
   - Active training plan context (assigned or self-managed).
   - Student completion/progress events.
 - Outputs:
-  - Persisted tracking events.
+  - Persisted tracking events. Workout completion logs are written/read through the MyChampions server for local bearer-auth sessions; missing local server auth fails closed outside the assigned-training E2E fixture.
   - Updated progress indicators.
 
 ## Edge Cases

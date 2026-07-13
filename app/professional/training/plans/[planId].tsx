@@ -46,7 +46,7 @@ import {
   isStarterTemplate,
   type TrainingSession,
 } from '@/features/plans/plan-builder.logic';
-import { generateId } from '@/features/firestore';
+import { generateLocalId } from '@/features/id-source';
 import { getProfessionalStudentRoster, type ProfessionalStudentRosterItem } from '@/features/professional/professional-source';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -67,7 +67,7 @@ export default function TrainingPlanBuilderScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
-  
+
   const palette = useMemo(() => createBuilderPalette(theme), [theme]);
 
   const { t } = useTranslation();
@@ -123,11 +123,11 @@ export default function TrainingPlanBuilderScreen() {
     },
     onSuccess: (id) => {
       // After a successful save, we want to go back to the library.
-      // We must clear the local dirty state first so the 'beforeRemove' 
+      // We must clear the local dirty state first so the 'beforeRemove'
       // listener doesn't trigger the discard dialog.
       setIsDirty(false);
       setSavedSessionsSnapshot(draftSessions);
-      
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Navigate to the tab route so the bottom nav bar is visible
       router.replace('/training');
@@ -138,7 +138,7 @@ export default function TrainingPlanBuilderScreen() {
   const [addSessionForm, setAddSessionForm] = useState<AddSessionFormState>({ kind: 'closed' });
   const [isSortMode, setIsSortMode] = useState(false);
   const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.training_builder');
-  
+
   const [isStudentPickerVisible, setIsStudentPickerVisible] = useState(false);
   const [students, setStudents] = useState<ProfessionalStudentRosterItem[]>([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
@@ -293,7 +293,7 @@ export default function TrainingPlanBuilderScreen() {
     setDraftSessions((prev) => [
       ...prev,
       {
-        id: generateId('training_session_local'),
+        id: generateLocalId('training_session_local'),
         name: sessionName.trim(),
         notes: notes.trim(),
         items: [],
@@ -371,10 +371,10 @@ export default function TrainingPlanBuilderScreen() {
 
   const handleConfirmExercise = useCallback(async (exercise: ExerciseItem, quantity: string, notes: string) => {
     if (isBusy || !activeSessionIdForSearch) return;
-    
+
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     setIsExerciseSearchVisible(false);
     const sessionId = activeSessionIdForSearch;
     setActiveSessionIdForSearch(null);
@@ -392,7 +392,7 @@ export default function TrainingPlanBuilderScreen() {
         items: [
           ...sessionDraft.items,
           {
-            id: generateId('training_item_local'),
+            id: generateLocalId('training_item_local'),
             name: exercise.title,
             quantity,
             notes,
@@ -417,7 +417,7 @@ export default function TrainingPlanBuilderScreen() {
     // Immediate visual update with animation
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     setDraftSessions(newSessions);
     setIsDirty(true);
   }, [draftSessions, isBusy, state.kind, setIsDirty]);
@@ -501,6 +501,7 @@ export default function TrainingPlanBuilderScreen() {
     <DsScreen
       scheme={scheme}
       contentContainerStyle={styles.content}
+      testID="pro.training_plan.screen"
     >
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -511,6 +512,7 @@ export default function TrainingPlanBuilderScreen() {
           onPress={handleBack}
           accessibilityLabel={t('auth.role.cta_back') as string}
           style={styles.backButton}
+          testID="pro.training_plan.backButton"
         />
 
         <View style={{ flexDirection: 'row', gap: DsSpace.sm }}>
@@ -532,7 +534,7 @@ export default function TrainingPlanBuilderScreen() {
             />
           )}
           {!isNew && (
-            <Pressable 
+            <Pressable
               onPress={handleDeletePlan}
               disabled={isBusy}
               hitSlop={12}
@@ -582,6 +584,7 @@ export default function TrainingPlanBuilderScreen() {
           value={values.name}
           onChangeText={handleNameChange}
           accessibilityLabel={tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
+          testID="pro.training_plan.name"
         />
         <Text style={[styles.supportText, { color: palette.icon }]}>
           {tr('pro.plan.field.name.support', 'student.plan.field.name.support')}
@@ -639,6 +642,7 @@ export default function TrainingPlanBuilderScreen() {
                   returnKeyType="next"
                   onSubmitEditing={() => sessionNotesRef.current?.focus()}
                   accessibilityLabel={tr('pro.plan.session.field.name.label', 'pro.plan.session.field.name.label')}
+                  testID="pro.training_plan.addSession.name"
                 />
               </View>
               <TextInput
@@ -652,10 +656,11 @@ export default function TrainingPlanBuilderScreen() {
                 returnKeyType="done"
                 onSubmitEditing={handleAddSession}
                 accessibilityLabel={t('pro.plan.session.field.notes.label')}
+                testID="pro.training_plan.addSession.notes"
               />
               <View style={styles.rowActions}>
-                <DsPillButton scheme={scheme} variant="primary" label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')} onPress={handleAddSession} disabled={isBusy} style={{ flex: 1 }} />
-                <DsPillButton scheme={scheme} variant="ghost" label={t('meal.library.quick_log.cta_cancel')} onPress={() => { if (isBusy) return; LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAddSessionForm({ kind: 'closed' }); }} disabled={isBusy} style={{ flex: 1 }} />
+                <DsPillButton scheme={scheme} variant="primary" label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')} onPress={handleAddSession} disabled={isBusy} style={{ flex: 1 }} testID="pro.training_plan.addSession.confirm" />
+                <DsPillButton scheme={scheme} variant="ghost" label={t('meal.library.quick_log.cta_cancel')} onPress={() => { if (isBusy) return; LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAddSessionForm({ kind: 'closed' }); }} disabled={isBusy} style={{ flex: 1 }} testID="pro.training_plan.addSession.cancel" />
               </View>
             </Animated.View>
           )}
@@ -679,12 +684,13 @@ export default function TrainingPlanBuilderScreen() {
           isInteractionLocked={isBusy}
           onMoveSession={handleMoveSession}
           onMoveItem={handleMoveItem}
+          testIDPrefix="pro.training_plan"
         />
       ))}
 
       {/* ── Add session form ──────────────────────────────────────────────── */}
       {!isEmptySessionsState && !isSortMode && state.kind === 'ready' && addSessionForm.kind === 'open' && (
-        <Animated.View 
+        <Animated.View
           entering={FadeIn.duration(300)}
           exiting={FadeOut.duration(200)}
           style={[styles.sessionCard, { backgroundColor: theme.color.surface }]}
@@ -701,6 +707,7 @@ export default function TrainingPlanBuilderScreen() {
               returnKeyType="next"
               onSubmitEditing={() => sessionNotesRef.current?.focus()}
               accessibilityLabel={tr('pro.plan.session.field.name.label', 'pro.plan.session.field.name.label')}
+              testID="pro.training_plan.addSession.name"
             />
           </View>
           <TextInput
@@ -714,10 +721,11 @@ export default function TrainingPlanBuilderScreen() {
             returnKeyType="done"
             onSubmitEditing={handleAddSession}
             accessibilityLabel={t('pro.plan.session.field.notes.label')}
+            testID="pro.training_plan.addSession.notes"
           />
           <View style={styles.rowActions}>
-            <DsPillButton scheme={scheme} variant="primary" label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')} onPress={handleAddSession} disabled={isBusy} style={{ flex: 1 }} />
-            <DsPillButton scheme={scheme} variant="ghost" label={t('meal.library.quick_log.cta_cancel')} onPress={() => { if (isBusy) return; LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAddSessionForm({ kind: 'closed' }); }} disabled={isBusy} style={{ flex: 1 }} />
+            <DsPillButton scheme={scheme} variant="primary" label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')} onPress={handleAddSession} disabled={isBusy} style={{ flex: 1 }} testID="pro.training_plan.addSession.confirm" />
+            <DsPillButton scheme={scheme} variant="ghost" label={t('meal.library.quick_log.cta_cancel')} onPress={() => { if (isBusy) return; LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAddSessionForm({ kind: 'closed' }); }} disabled={isBusy} style={{ flex: 1 }} testID="pro.training_plan.addSession.cancel" />
           </View>
         </Animated.View>
       )}
@@ -734,6 +742,7 @@ export default function TrainingPlanBuilderScreen() {
           }}
           disabled={isBusy}
           leftIcon={<IconSymbol name="plus.circle.fill" size={18} color={theme.color.onAccent} />}
+          testID="pro.training_plan.addSession"
         />
       )}
 
@@ -747,6 +756,7 @@ export default function TrainingPlanBuilderScreen() {
           disabled={!hasUnsavedChanges || isSaving || isMutating}
           loading={isSaving}
           style={{ flex: 1 }}
+          testID="pro.training_plan.saveButton"
         />
 
         {!isNew && !isStudentBuilder && (

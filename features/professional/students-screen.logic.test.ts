@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  filterStudentRosterRows,
   filterBulkAssignmentStudentsByPlanType,
   resolveStudentRosterViewState,
 } from './students-screen.logic';
@@ -48,6 +49,36 @@ test('SC-205 non-empty list always renders list shell', () => {
   });
 
   assert.equal(state, 'list_shell');
+});
+
+test('SC-205 filters roster rows by assignment status and case-insensitive search', () => {
+  const rows = [
+    {
+      studentAuthUid: 'ada',
+      displayName: 'Ada Active',
+      assignmentStatus: 'active' as const,
+    },
+    {
+      studentAuthUid: 'pia',
+      displayName: 'Pia Pending',
+      assignmentStatus: 'pending' as const,
+    },
+    {
+      studentAuthUid: 'ana',
+      displayName: 'Ana Training',
+      assignmentStatus: 'active' as const,
+    },
+  ];
+
+  assert.deepEqual(
+    filterStudentRosterRows(rows, { filter: 'active', search: ' an ' }).map((row) => row.studentAuthUid),
+    ['ana']
+  );
+
+  assert.deepEqual(
+    filterStudentRosterRows(rows, { filter: 'pending', search: 'PIA' }).map((row) => row.studentAuthUid),
+    ['pia']
+  );
 });
 
 test('SC-205 bulk nutrition picker only targets active nutritionist students', () => {

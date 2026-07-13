@@ -1,21 +1,10 @@
 /**
- * Water tracking Firestore source — intake logging + effective goal context.
+ * Water tracking source — intake logging + effective goal context.
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  runTransaction,
-  where,
-  type Firestore,
-} from 'firebase/firestore';
-
-import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso } from '../firestore';
-import { classifyFirestoreError } from '../firestore-error';
-import { resolvePlanHydrationGoalContext, type PlanHydrationSnapshot, type WaterIntakeLog } from './water-tracking.logic';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import type { WaterIntakeLog } from './water-tracking.logic';
 
 type WaterSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
@@ -29,67 +18,260 @@ export class WaterTrackingSourceError extends Error {
   }
 }
 
-type FirestoreWaterLog = {
-  id: string;
-  ownerUid: string;
-  dateKey: string;
-  totalMl: number;
-  loggedAt: string;
-};
-
-type FirestoreWaterGoal = {
-  ownerUid: string;
-  personalDailyMl: number | null;
-  nutritionistDailyMl: number | null;
-  nutritionistAuthUid: string | null;
-  updatedAt: string;
-};
-
-type FirestoreNutritionPlanHydration = PlanHydrationSnapshot & { isArchived: boolean };
-
-type FirestoreConnectionAssignment = {
-  professionalAuthUid: string;
-};
-
 export type WaterTrackingSourceDeps = {
-  getFirestoreInstance: () => Firestore;
-  getCurrentAuthUid: () => string;
+  getCurrentAccessToken?: () => Promise<string | null>;
+  getServerBaseUrl?: () => string | undefined;
+  fetchFn?: typeof fetch;
 };
 
 const defaultDeps: WaterTrackingSourceDeps = {
-  getFirestoreInstance: _getFirestoreInstance,
-  getCurrentAuthUid: _getCurrentAuthUid,
+  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getServerBaseUrl: resolveServerBaseUrl,
+  fetchFn: fetch,
 };
+const e2eWaterLogs = new Map<string, WaterIntakeLog>();
+
+function resolveServerBaseUrl(): string | undefined {
+  let expoExtra: unknown;
+  try {
+    const Constants = require('expo-constants') as {
+      default?: { expoConfig?: { extra?: unknown } };
+      expoConfig?: { extra?: unknown };
+    };
+    expoExtra = (Constants.default ?? Constants).expoConfig?.extra;
+  } catch {
+    expoExtra = undefined;
+  }
+
+  const extra = (expoExtra ?? {}) as {
+    server?: {
+      baseUrl?: string;
+    };
+  };
+  return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
+}
+
+function getE2EWaterTrackingSourceOverride() {
+  return resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+}
+
+function isE2EAssignedNutritionFixtureEnabled(): boolean {
+  return Boolean(getE2EWaterTrackingSourceOverride()) &&
+    process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE === 'assigned';
+}
 
 function normalizeWaterSourceError(error: unknown): WaterTrackingSourceError {
   if (error instanceof WaterTrackingSourceError) return error;
+  return new WaterTrackingSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected water source error.');
+}
 
-  switch (classifyFirestoreError(error)) {
-    case 'network':
-      return new WaterTrackingSourceError('network', (error as Error)?.message ?? 'Network error.');
-    case 'configuration':
-      return new WaterTrackingSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
-    default:
-      return new WaterTrackingSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected water source error.');
+type ServerWaterLog = Partial<WaterIntakeLog>;
+
+type WaterGoalContext = {
+  studentGoalMl: number | null;
+  nutritionistGoalMl: number | null;
+  hasActiveNutritionistAssignment: boolean;
+};
+
+type ServerWaterGoalContext = {
+  studentGoalMl?: unknown;
+  nutritionistGoalMl?: unknown;
+  hasActiveNutritionistAssignment?: unknown;
+};
+
+function normalizeServerWaterLog(input: ServerWaterLog): WaterIntakeLog | null {
+  const id = typeof input.id === 'string' ? input.id : '';
+  const dateKey = typeof input.dateKey === 'string' ? input.dateKey : '';
+  const totalMl = typeof input.totalMl === 'number' ? input.totalMl : Number.NaN;
+  const loggedAt = typeof input.loggedAt === 'string' ? input.loggedAt : '';
+
+  if (!id || !dateKey || !Number.isFinite(totalMl) || !loggedAt) return null;
+
+  return { id, dateKey, totalMl, loggedAt };
+}
+
+function normalizeNullableGoal(value: unknown): number | null | undefined {
+  if (value === null) return null;
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value;
+  return undefined;
+}
+
+function normalizeServerWaterGoalContext(input: ServerWaterGoalContext | null): WaterGoalContext | null {
+  if (!input) return null;
+
+  const studentGoalMl = normalizeNullableGoal(input.studentGoalMl);
+  const nutritionistGoalMl = normalizeNullableGoal(input.nutritionistGoalMl);
+  const hasActiveNutritionistAssignment = input.hasActiveNutritionistAssignment;
+
+  if (
+    studentGoalMl === undefined ||
+    nutritionistGoalMl === undefined ||
+    typeof hasActiveNutritionistAssignment !== 'boolean'
+  ) {
+    return null;
   }
+
+  return {
+    studentGoalMl,
+    nutritionistGoalMl,
+    hasActiveNutritionistAssignment,
+  };
+}
+
+function normalizeServerStatus(status: number, operation: 'create' | 'list'): WaterTrackingSourceError {
+  if (status === 401 || status === 403) {
+    return new WaterTrackingSourceError('graphql', `Water log ${operation} is not authorized.`);
+  }
+  if (status >= 500) {
+    return new WaterTrackingSourceError('network', `Water log ${operation} failed with status ${status}.`);
+  }
+  return new WaterTrackingSourceError('invalid_response', `Unexpected water log ${operation} response: ${status}.`);
+}
+
+function normalizeWaterGoalContextStatus(status: number): WaterTrackingSourceError {
+  if (status === 401 || status === 403) {
+    return new WaterTrackingSourceError('graphql', 'Water goal context read is not authorized.');
+  }
+  if (status >= 500) {
+    return new WaterTrackingSourceError('network', `Water goal context read failed with status ${status}.`);
+  }
+  return new WaterTrackingSourceError('invalid_response', `Unexpected water goal context response: ${status}.`);
+}
+
+function requireServerBaseUrl(deps: WaterTrackingSourceDeps, operation: string): string {
+  const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+  if (!baseUrl) {
+    throw new WaterTrackingSourceError(
+      'configuration',
+      `MyChampions server URL is not configured for ${operation}.`
+    );
+  }
+  return baseUrl;
+}
+
+async function requireAccessToken(deps: WaterTrackingSourceDeps, operation: string): Promise<string> {
+  const accessToken = await deps.getCurrentAccessToken?.();
+  if (!accessToken) {
+    throw new WaterTrackingSourceError('graphql', `No authenticated server token found for ${operation}.`);
+  }
+  return accessToken;
+}
+
+async function getWaterLogsFromServer(deps: WaterTrackingSourceDeps): Promise<WaterIntakeLog[]> {
+  const baseUrl = requireServerBaseUrl(deps, 'water log reads');
+  const accessToken = await requireAccessToken(deps, 'water log reads');
+
+  let response: Response;
+  try {
+    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/nutrition/water-logs`, {
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    throw new WaterTrackingSourceError('network', 'Network request to read water logs failed.');
+  }
+
+  let payload: { logs?: ServerWaterLog[] } | null = null;
+  try {
+    payload = (await response.json()) as { logs?: ServerWaterLog[] };
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw normalizeServerStatus(response.status, 'list');
+  }
+  if (!Array.isArray(payload?.logs)) {
+    throw new WaterTrackingSourceError('invalid_response', 'Water log response is missing logs.');
+  }
+
+  return payload.logs
+    .map(normalizeServerWaterLog)
+    .filter((log): log is WaterIntakeLog => log !== null);
+}
+
+async function getWaterGoalContextFromServer(deps: WaterTrackingSourceDeps): Promise<WaterGoalContext> {
+  const baseUrl = requireServerBaseUrl(deps, 'water goal context reads');
+  const accessToken = await requireAccessToken(deps, 'water goal context reads');
+
+  let response: Response;
+  try {
+    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/nutrition/water-goal-context`, {
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    throw new WaterTrackingSourceError('network', 'Network request to read water goal context failed.');
+  }
+
+  let payload: ServerWaterGoalContext | null = null;
+  try {
+    payload = (await response.json()) as ServerWaterGoalContext;
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw normalizeWaterGoalContextStatus(response.status);
+  }
+
+  const context = normalizeServerWaterGoalContext(payload);
+  if (!context) {
+    throw new WaterTrackingSourceError('invalid_response', 'Water goal context response is invalid.');
+  }
+
+  return context;
+}
+
+async function logWaterIntakeToServer(
+  amountMl: number,
+  dateKey: string,
+  deps: WaterTrackingSourceDeps
+): Promise<string> {
+  const baseUrl = requireServerBaseUrl(deps, 'water logging');
+  const accessToken = await requireAccessToken(deps, 'water logging');
+
+  let response: Response;
+  try {
+    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/nutrition/water-logs`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ amountMl, dateKey }),
+    });
+  } catch {
+    throw new WaterTrackingSourceError('network', 'Network request to log water failed.');
+  }
+
+  let payload: { log?: ServerWaterLog } | null = null;
+  try {
+    payload = (await response.json()) as { log?: ServerWaterLog };
+  } catch {
+    payload = null;
+  }
+
+  const log = payload?.log ? normalizeServerWaterLog(payload.log) : null;
+  if (response.ok && log) {
+    return log.id;
+  }
+
+  throw normalizeServerStatus(response.status, 'create');
 }
 
 export async function getMyWaterLogs(deps = defaultDeps): Promise<WaterIntakeLog[]> {
+  if (deps === defaultDeps && getE2EWaterTrackingSourceOverride()) {
+    if (isE2EAssignedNutritionFixtureEnabled()) {
+      return [...e2eWaterLogs.values()].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+    }
+    return [];
+  }
+
   try {
-    const firestore = deps.getFirestoreInstance();
-    const uid = deps.getCurrentAuthUid();
-
-    const snapshots = await getDocs(query(collection(firestore, 'waterLogs'), where('ownerUid', '==', uid)));
-
-    return snapshots.docs
-      .map((snap) => snap.data() as FirestoreWaterLog)
-      .sort((a, b) => b.dateKey.localeCompare(a.dateKey))
-      .map((raw) => ({
-        id: raw.id,
-        dateKey: raw.dateKey,
-        totalMl: raw.totalMl,
-        loggedAt: raw.loggedAt,
-      }));
+    return await getWaterLogsFromServer(deps);
   } catch (error) {
     throw normalizeWaterSourceError(error);
   }
@@ -100,25 +282,21 @@ export async function logWaterIntake(
   dateKey: string,
   deps = defaultDeps
 ): Promise<string> {
-  try {
-    const firestore = deps.getFirestoreInstance();
-    const uid = deps.getCurrentAuthUid();
+  if (deps === defaultDeps && isE2EAssignedNutritionFixtureEnabled()) {
+    const uid = getE2EWaterTrackingSourceOverride()?.uid ?? 'e2e-auth-session-user';
     const id = `${uid}_${dateKey}`;
-
-    await runTransaction(firestore, async (tx) => {
-      const ref = doc(firestore, 'waterLogs', id);
-      const snap = await tx.get(ref);
-      const current = snap.exists() ? (snap.data() as FirestoreWaterLog).totalMl : 0;
-      tx.set(ref, {
-        id,
-        ownerUid: uid,
-        dateKey,
-        totalMl: current + amountMl,
-        loggedAt: nowIso(),
-      } satisfies FirestoreWaterLog, { merge: true });
+    const existing = e2eWaterLogs.get(id);
+    e2eWaterLogs.set(id, {
+      id,
+      dateKey,
+      totalMl: (existing?.totalMl ?? 0) + amountMl,
+      loggedAt: '2026-06-22T12:00:00.000Z',
     });
-
     return id;
+  }
+
+  try {
+    return await logWaterIntakeToServer(amountMl, dateKey, deps);
   } catch (error) {
     throw normalizeWaterSourceError(error);
   }
@@ -129,63 +307,24 @@ export async function getMyWaterGoalContext(deps = defaultDeps): Promise<{
   nutritionistGoalMl: number | null;
   hasActiveNutritionistAssignment: boolean;
 }> {
-  try {
-    const firestore = deps.getFirestoreInstance();
-    const uid = deps.getCurrentAuthUid();
-
-    const plansSnap = await getDocs(
-      query(
-        collection(firestore, 'nutritionPlans'),
-        where('studentAuthUid', '==', uid),
-        where('isArchived', '==', false)
-      )
-    );
-
-    const plans = plansSnap.docs.map((d) => d.data() as FirestoreNutritionPlanHydration);
-
-    const activeAssignmentsSnap = await getDocs(query(
-      collection(firestore, 'connections'),
-      where('studentAuthUid', '==', uid),
-      where('specialty', '==', 'nutritionist'),
-      where('status', '==', 'active')
-    ));
-    const activeNutritionistUids = new Set<string>(
-      activeAssignmentsSnap.docs
-        .map((d) => (d.data() as FirestoreConnectionAssignment).professionalAuthUid)
-        .filter((v): v is string => typeof v === 'string' && v.length > 0)
-    );
-
-    const planContext = resolvePlanHydrationGoalContext({
-      plans,
-      activeNutritionistUids,
-      currentUserUid: uid,
-    });
-
-    if (planContext) {
-      return planContext;
-    }
-
-    // Backward-compatibility fallback while existing users still have waterGoals records.
-    const snap = await getDoc(doc(firestore, 'waterGoals', uid));
-    const raw = snap.exists() ? (snap.data() as FirestoreWaterGoal) : null;
-
-    let hasActiveNutritionistAssignment = false;
-    if (raw?.nutritionistAuthUid) {
-      const activeAssignments = await getDocs(query(
-        collection(firestore, 'connections'),
-        where('professionalAuthUid', '==', raw.nutritionistAuthUid),
-        where('studentAuthUid', '==', uid),
-        where('specialty', '==', 'nutritionist'),
-        where('status', '==', 'active')
-      ));
-      hasActiveNutritionistAssignment = !activeAssignments.empty;
+  if (deps === defaultDeps && getE2EWaterTrackingSourceOverride()) {
+    if (isE2EAssignedNutritionFixtureEnabled()) {
+      return {
+        studentGoalMl: 2500,
+        nutritionistGoalMl: 2800,
+        hasActiveNutritionistAssignment: true,
+      };
     }
 
     return {
-      studentGoalMl: raw?.personalDailyMl ?? null,
-      nutritionistGoalMl: raw?.nutritionistDailyMl ?? null,
-      hasActiveNutritionistAssignment,
+      studentGoalMl: 2500,
+      nutritionistGoalMl: null,
+      hasActiveNutritionistAssignment: false,
     };
+  }
+
+  try {
+    return await getWaterGoalContextFromServer(deps);
   } catch (error) {
     throw normalizeWaterSourceError(error);
   }

@@ -113,7 +113,8 @@ export function DsPillButton({
               styles.text,
               getTextSizeStyles(),
               { color: resolvedContentColor },
-            ]}>
+            ]}
+            testID={testID ? `${testID}.label` : undefined}>
             {label}
           </Text>
           {rightIcon}

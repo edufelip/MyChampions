@@ -19,13 +19,14 @@ export type WeekStripItem = {
 type WeekStripProps = {
   scheme: DsColorScheme;
   items: WeekStripItem[];
+  testID?: string;
 };
 
-export function WeekStrip({ scheme, items }: WeekStripProps) {
+export function WeekStrip({ scheme, items, testID }: WeekStripProps) {
   const theme = getDsTheme(scheme);
 
   return (
-    <View style={[styles.wrap, DsShadow.soft, { backgroundColor: theme.color.surface }]}> 
+    <View style={[styles.wrap, DsShadow.soft, { backgroundColor: theme.color.surface }]} testID={testID}>
       {items.map((item) => (
         <View
           key={item.id}

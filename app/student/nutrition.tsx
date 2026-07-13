@@ -8,11 +8,12 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View, type DimensionValue } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View, type DimensionValue } from 'react-native';
 
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import { logAssignedMealPortion, getTodayPortionLogs, type FirestorePortionLog } from '@/features/nutrition/custom-meal-source';
+import { logAssignedMealPortion, getTodayPortionLogs, type PortionLog } from '@/features/nutrition/custom-meal-source';
 import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/plan-builder.logic';
 
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
@@ -25,6 +26,7 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
@@ -49,15 +51,19 @@ export default function StudentNutritionScreen() {
   const { currentUser } = useAuthSession();
 
   const networkStatus = useNetworkStatus();
-  const offlineDisplay = resolveOfflineDisplayState({
-    networkStatus,
-    lastSyncedAtIso: null,
-  });
-  const isWriteLocked = offlineDisplay.showOfflineBanner;
-
   const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
   const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
   const { state: connectionsState } = useConnections(Boolean(currentUser));
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    waterHook.state.kind === 'ready' ? waterHook.state.lastSyncedAtIso : null,
+    plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
+    connectionsState.kind === 'ready' ? connectionsState.lastSyncedAtIso : null,
+  ]);
+  const offlineDisplay = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   const hasActiveNutritionistConnection =
     connectionsState.kind === 'ready' &&
@@ -85,10 +91,11 @@ export default function StudentNutritionScreen() {
   });
 
   const { state: builderState, loadPlan } = useNutritionPlanBuilder(Boolean(currentUser), 'student-assigned');
-  const [todayPortionLogs, setTodayPortionLogs] = useState<FirestorePortionLog[]>([]);
+  const [todayPortionLogs, setTodayPortionLogs] = useState<PortionLog[]>([]);
   const [expandedMealIds, setExpandedMealIds] = useState<string[]>([]);
   const [isLoggingMealId, setIsLoggingMealId] = useState<string | null>(null);
-  
+  const [screenFocusKey, setScreenFocusKey] = useState(0);
+
   const loggingMealsRef = useRef(new Set<string>());
   const loggedMealIds = todayPortionLogs.map((log) => log.mealId);
 
@@ -127,9 +134,15 @@ export default function StudentNutritionScreen() {
         })
         .catch((err) => {
           console.error('Error loading today portion logs:', err);
-        });
+      });
     }
   }, [currentUser]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setScreenFocusKey((current) => current + 1);
+    }, [])
+  );
 
   const toggleMealExpand = (mealId: string) => {
     setExpandedMealIds((prev) =>
@@ -139,7 +152,7 @@ export default function StudentNutritionScreen() {
 
   const handleLogMeal = async (meal: NutritionMeal) => {
     if (isWriteLocked || loggedMealIds.includes(meal.id) || loggingMealsRef.current.has(meal.id)) return;
-    
+
     loggingMealsRef.current.add(meal.id);
     setIsLoggingMealId(meal.id);
     try {
@@ -158,8 +171,8 @@ export default function StudentNutritionScreen() {
         ownerProfessionalUid: assignedNutritionPlan?.ownerProfessionalUid ?? null,
         connectionId: activeNutritionistConnection?.id ?? null,
       });
-      
-      const newLog: FirestorePortionLog = {
+
+      const newLog: PortionLog = {
         id: Math.random().toString(),
         ownerUid: currentUser?.uid || '',
         mealId: meal.id,
@@ -183,7 +196,13 @@ export default function StudentNutritionScreen() {
   };
 
   return (
-    <DsScreen scheme={scheme} testID="student.nutrition.screen">
+    <DsScreen
+      key={`student-nutrition-${screenFocusKey}`}
+      keyboardDismissMode="interactive"
+      keyboardShouldPersistTaps="handled"
+      scheme={scheme}
+      testID="student.nutrition.screen"
+    >
       <Stack.Screen options={{ title: t('student.nutrition.title'), headerShown: false }} />
 
       <View style={styles.shell}>
@@ -211,6 +230,10 @@ export default function StudentNutritionScreen() {
               {builderState.kind === 'loading' ? (
                 <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.planDetailsLoading">
                   <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+                </DsCard>
+              ) : builderState.kind === 'error' ? (
+                <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.planDetailsError">
+                  <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
                 </DsCard>
               ) : builderState.kind === 'ready' ? (
                 <>
@@ -317,7 +340,10 @@ export default function StudentNutritionScreen() {
 
                               <View style={styles.mealHeaderRight}>
                                 {isLogged ? (
-                                  <View style={[styles.loggedBadge, { backgroundColor: theme.color.successSoft }]}>
+                                  <View
+                                    style={[styles.loggedBadge, { backgroundColor: theme.color.successSoft }]}
+                                    testID={`student.nutrition.loggedMealBadge.${meal.id}`}
+                                  >
                                     <MaterialIcons color={theme.color.success} name="check-circle" size={16} />
                                     <Text style={[styles.loggedBadgeText, { color: theme.color.success }]}>
                                       {t('student.nutrition.meal.logged_badge')}
@@ -346,7 +372,7 @@ export default function StudentNutritionScreen() {
                             {isExpanded && (
                               <View style={styles.mealDetails} testID={`student.nutrition.mealDetails.${meal.id}`}>
                                 <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
-                                
+
                                 <Text style={[styles.detailsLabel, { color: theme.color.textSecondary }]}>
                                   {t('student.nutrition.meal.items_label')}
                                 </Text>
@@ -574,7 +600,7 @@ export default function StudentNutritionScreen() {
                   { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
                 ]}
                 testID="student.nutrition.emptySelfGuidedCta">
-                <Text style={[styles.emptyTertiaryText, { color: theme.color.textSecondary }]}> 
+                <Text style={[styles.emptyTertiaryText, { color: theme.color.textSecondary }]}>
                   {t('student.nutrition.empty.self_guided_cta')}
                 </Text>
               </Pressable>
@@ -653,7 +679,10 @@ function WaterWidget({
             <View style={styles.waterHeaderLeft}>
               <View style={styles.waterValueRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={[styles.waterValue, { color: theme.color.textPrimary }, isMutating && { opacity: 0.5 }]}>
+                  <Text
+                    style={[styles.waterValue, { color: theme.color.textPrimary }, isMutating && { opacity: 0.5 }]}
+                    testID="student.nutrition.waterWidget.consumedValue"
+                  >
                     {String(consumed)}
                   </Text>
                   {isMutating && (
@@ -669,7 +698,7 @@ function WaterWidget({
               </View>
             </View>
 
-            <View style={[styles.waterIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}> 
+            <View style={[styles.waterIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
               <MaterialIcons color={theme.color.accentCyan} name="water-drop" size={32} />
             </View>
           </View>
@@ -684,8 +713,10 @@ function WaterWidget({
                     setIntakeRaw(value);
                     setIntakeError(null);
                   }}
+                  onSubmitEditing={Keyboard.dismiss}
                   placeholder={t('student.nutrition.water.log.placeholder')}
                   placeholderTextColor={theme.color.textSecondary}
+                  returnKeyType="done"
                   style={[
                     styles.textInput,
                     {
@@ -713,7 +744,12 @@ function WaterWidget({
 
               {intakeError ? (
                 <View accessibilityLiveRegion="polite">
-                  <Text style={[styles.inlineError, { color: theme.color.danger }]}>{intakeError}</Text>
+                  <Text
+                    style={[styles.inlineError, { color: theme.color.danger }]}
+                    testID="student.nutrition.waterWidget.intakeError"
+                  >
+                    {intakeError}
+                  </Text>
                 </View>
               ) : null}
               <Text style={[styles.writeLockText, { color: theme.color.textSecondary }]}>
@@ -1088,19 +1124,17 @@ const styles = StyleSheet.create({
     gap: DsSpace.sm,
   },
   mealHeaderPressable: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    gap: DsSpace.sm,
   },
   mealHeaderLeft: {
-    flex: 1,
     gap: 2,
-    marginRight: 12,
   },
   mealHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    justifyContent: 'space-between',
   },
   mealName: {
     ...DsTypography.button,
@@ -1124,6 +1158,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   logButton: {
+    flex: 1,
     minHeight: 36,
     paddingHorizontal: 12,
     borderRadius: DsRadius.pill,

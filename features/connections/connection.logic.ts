@@ -30,6 +30,7 @@ export type InviteSubmitErrorReason =
 export type ConnectionActionErrorReason =
   | 'connection_not_found'
   | 'invalid_transition'
+  | 'subscription_required'
   | 'network'
   | 'configuration'
   | 'unknown';
@@ -135,6 +136,13 @@ export function normalizeConnectionActionError(
       message?.toLowerCase().includes('cannot transition')
     ) {
       return 'invalid_transition';
+    }
+    if (
+      code === 'SUBSCRIPTION_REQUIRED' ||
+      message?.toLowerCase().includes('professional subscription required') ||
+      message?.toLowerCase().includes('subscription required')
+    ) {
+      return 'subscription_required';
     }
     if (code === 'NETWORK_ERROR' || message?.toLowerCase().includes('network')) {
       return 'network';

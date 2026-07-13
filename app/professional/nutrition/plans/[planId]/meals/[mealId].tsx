@@ -2,7 +2,7 @@
  * SC-207 Nutrition Meal Builder
  * Route: /professional/nutrition/plans/:planId/meals/:mealId
  */
-import { useCallback, useLayoutEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -134,6 +134,20 @@ export default function NutritionMealBuilderScreen() {
   const [addItemForm, setAddItemForm] = useState<AddItemFormState>({ kind: 'closed' });
   const [isSortMode, setIsSortMode] = useState(false);
 
+  useEffect(() => {
+    if (addItemForm.kind !== 'open') return;
+    if (addItemForm.selectedFood || addItemForm.customMealSnapshot) return;
+
+    const query = addItemForm.foodQuery.trim();
+    if (query.length < 2) return;
+
+    const timeout = setTimeout(() => {
+      searchFoods(query);
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [addItemForm, searchFoods]);
+
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleAddItem = useCallback(async () => {
     if (isBusy || addItemForm.kind !== 'open' || state.kind !== 'ready' || !mealId) return;
@@ -176,7 +190,7 @@ export default function NutritionMealBuilderScreen() {
 
       Alert.alert(
         t('common.cta.delete') as string,
-        (t('pro.plan.delete.body') as string).replace('{name}', itemName),
+        (t('pro.plan.item.delete.body') as string).replace('{name}', itemName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -247,6 +261,7 @@ export default function NutritionMealBuilderScreen() {
     <DsScreen
       scheme={scheme}
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}
+      testID="pro.nutrition_meal.screen"
     >
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -257,6 +272,7 @@ export default function NutritionMealBuilderScreen() {
           onPress={() => router.back()}
           accessibilityLabel={t('auth.role.cta_back') as string}
           style={styles.backButton}
+          testID="pro.nutrition_meal.backButton"
         />
         <View style={{ flexDirection: 'row', gap: DsSpace.sm }}>
           {meal && meal.items.length > 1 && (
@@ -284,10 +300,10 @@ export default function NutritionMealBuilderScreen() {
       <View style={styles.titleSection}>
         <Text style={[styles.screenTitle, { color: palette.text }]}>{meal?.name}</Text>
         <View style={styles.totalsRow}>
-          <TotalChip label={t('common.nutrition.calories')} value={`${totals.calories} kcal`} palette={palette} />
-          <TotalChip label={t('common.nutrition.carbs')} value={`${totals.carbs}g`} palette={palette} />
-          <TotalChip label={t('common.nutrition.proteins')} value={`${totals.proteins}g`} palette={palette} />
-          <TotalChip label={t('common.nutrition.fats')} value={`${totals.fats}g`} palette={palette} />
+          <TotalChip label={t('common.nutrition.calories')} value={`${totals.calories} kcal`} palette={palette} testID="pro.nutrition_meal.total.calories" />
+          <TotalChip label={t('common.nutrition.carbs')} value={`${totals.carbs}g`} palette={palette} testID="pro.nutrition_meal.total.carbs" />
+          <TotalChip label={t('common.nutrition.proteins')} value={`${totals.proteins}g`} palette={palette} testID="pro.nutrition_meal.total.proteins" />
+          <TotalChip label={t('common.nutrition.fats')} value={`${totals.fats}g`} palette={palette} testID="pro.nutrition_meal.total.fats" />
         </View>
       </View>
 
@@ -436,6 +452,7 @@ export default function NutritionMealBuilderScreen() {
             onAdd={handleAddItem}
             onClose={handleCloseAddItem}
             style={{ top: '100%', left: 0, right: 0, marginTop: 16 }}
+            testIDPrefix="pro.nutrition_item"
           />
         )}
       </View>
@@ -446,10 +463,10 @@ export default function NutritionMealBuilderScreen() {
             <IconSymbol name="fork.knife" size={40} color={palette.icon} />
           </View>
           <Text style={[styles.emptyTitle, { color: palette.text }]}>
-            No foods added yet
+            {t('pro.plan.meal.empty.title')}
           </Text>
           <Text style={[styles.emptyText, { color: palette.icon }]}>
-            Search and add foods to this meal to build your plan.
+            {t('pro.plan.meal.empty.body')}
           </Text>
         </View>
       )}
@@ -477,6 +494,7 @@ export default function NutritionMealBuilderScreen() {
               isFirstInList={index === 0}
               isLastInList={index === meal.items.length - 1}
               isInteractionLocked={isBusy}
+              testID={`pro.nutrition_meal.foodRow.${toTestIDSegment(item.name)}`}
             />
           ))}
         </View>
@@ -490,6 +508,7 @@ export default function NutritionMealBuilderScreen() {
           disabled={isBusy}
           accessibilityRole="button"
           accessibilityLabel={t('pro.plan.cta.add_food')}
+          testID="pro.nutrition_meal.addFood"
         >
           <IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />
           <Text style={[styles.addSessionBtnText, { color: palette.tint }]}>
@@ -511,13 +530,17 @@ export default function NutritionMealBuilderScreen() {
   );
 }
 
-function TotalChip({ label, value, palette }: { label: string, value: string, palette: any }) {
+function TotalChip({ label, value, palette, testID }: { label: string, value: string, palette: any, testID?: string }) {
   return (
     <View style={styles.totalChip}>
       <Text style={[styles.totalLabel, { color: palette.icon }]}>{label}</Text>
-      <Text style={[styles.totalValue, { color: palette.text }]}>{value}</Text>
+      <Text style={[styles.totalValue, { color: palette.text }]} testID={testID}>{value}</Text>
     </View>
   );
+}
+
+function toTestIDSegment(value: string): string {
+  return value.trim().replace(/[^A-Za-z0-9_-]+/g, '_');
 }
 
 const styles = StyleSheet.create({

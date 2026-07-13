@@ -1,7 +1,7 @@
 /**
  * React hook for custom meal CRUD and recipe sharing operations.
  * Wraps custom-meal-source for UI consumption.
- * No Firebase/Firestore concerns in screen components.
+ * No backend persistence concerns in screen components.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -38,7 +38,7 @@ export type CustomMealsLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; meals: CustomMeal[] };
+  | { kind: 'ready'; meals: CustomMeal[]; lastSyncedAtIso: string };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -77,7 +77,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
     setState({ kind: 'loading' });
 
     void getMyCustomMeals()
-      .then((meals) => setState({ kind: 'ready', meals }))
+      .then((meals) => setState({ kind: 'ready', meals, lastSyncedAtIso: new Date().toISOString() }))
       .catch((err: Error) => setState({ kind: 'error', message: err.message }));
   }, [isAuthenticated]);
 

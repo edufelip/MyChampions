@@ -8,16 +8,16 @@ Mobile platform constraints and delivery workflow without EAS dependency.
 - `AC-502`: Build/release pipeline runs without requiring EAS Build or EAS Submit.
 - `AC-503`: Mobile UI utility-class styling is implemented with NativeWind in MVP.
 - `AC-504`: Release branch iOS builds are distributed through TestFlight.
-- `AC-505`: Pull requests targeting `develop` trigger QA distribution to Firebase App Distribution.
-- `AC-506`: Image/media uploads are client-compressed before upload to Firebase Cloud Storage.
-- `AC-507`: Runtime monitoring in MVP uses Crashlytics for crashes/ANRs.
+- `AC-505`: Pull requests targeting `develop` run native CI checks and publish build artifacts from the workflow.
+- `AC-506`: Image/media uploads are client-compressed before upload through the MyChampions server.
+- `AC-507`: Runtime crash/ANR monitoring provider is selected before production release.
 - `AC-508`: Additional non-crash monitoring tooling is not required for MVP.
 - `AC-509`: OTA updates are disabled in MVP and production updates are shipped only through App Store/Play binaries.
 - `AC-510`: CI signing workflow uses platform-native secret management for signing materials.
 - `AC-511`: Post-compression uploads enforce `<= 1.5 MB` file size and `<= 1600 px` longest-side dimension.
 - `AC-512`: Core screens meet accessibility baseline for contrast, dynamic text scaling, focus order, and screen-reader labels.
 - `AC-513`: User-facing strings use localization keys with populated values for `en-US`, `pt-BR`, and `es-ES` in release-candidate builds.
-- `AC-514`: Detox E2E suite is configured for iOS simulator and Android emulator builds, and includes auth sign-in smoke scenarios (empty-submit validation + success route to role-selection).
+- `AC-514`: Detox E2E suite is configured for iOS simulator and Android emulator builds, includes auth sign-in smoke scenarios (empty-submit validation + success route to role-selection), documents debug-build runtime prerequisites such as Metro when JS is not embedded, and uses stable non-production auth credentials or the explicit dev-only `EXPO_PUBLIC_E2E_AUTH_SESSION=true` harness, the sign-in-specific `EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN=true` fixture, the create-account-specific `EXPO_PUBLIC_E2E_CREATE_ACCOUNT=true` fixture, or the social-auth-specific `EXPO_PUBLIC_E2E_SOCIAL_AUTH=true` fixture for approved mock auth coverage. The auth-session harness may provide deterministic read-only fixtures for source modules that otherwise require a local server session, such as empty student connections and a personal water goal for the dashboard. Provider-backed and network-state story fixtures must be opt-in via explicit dev-only flags such as `EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE`, `EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE`, `EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE`, `EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE`, `EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE`, `EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE`, `EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE`, `EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS`, `EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT`, `EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS`, and `EXPO_PUBLIC_E2E_NETWORK_STATUS`.
 - `AC-515`: Android and iOS launcher icon assets are generated from the same source logo file (`assets/images/logo.svg`) and updated together.
 
 ## Gherkin Scenarios
@@ -33,10 +33,10 @@ Feature: Mobile platform and delivery constraints
     When Android and iOS jobs run
     Then builds execute with native toolchains without EAS Build/Submit dependency
 
-  Scenario: PR QA distribution path
+  Scenario: PR QA build artifact path
     Given a pull request targets develop
     When CI completes a QA build
-    Then build artifacts are distributed via Firebase App Distribution
+    Then build artifacts are available from the native CI workflow
 
   Scenario: Release branch iOS distribution path
     Given a release branch is built
@@ -73,6 +73,8 @@ Feature: Mobile platform and delivery constraints
 
   Scenario: Detox auth smoke coverage
     Given Detox config and native build profiles are available for iOS and Android
+    And the selected debug or release-like build has its required JavaScript runtime available
+    And stable non-production auth credentials or the explicit dev-only E2E auth session harness is configured
     When the auth smoke suite runs
     Then empty sign-in submission shows required-field validation errors
     And valid credential submission routes the user to role-selection screen

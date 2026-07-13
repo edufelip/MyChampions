@@ -1,121 +1,163 @@
 import test from 'node:test';
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 
-let loggedDocs: Array<{ path: string; data: any }> = [];
-let queriedCollection: string | null = null;
-let queryClauses: any[] = [];
+import {
+  getTodayWorkoutLogs,
+  logWorkoutSession,
+  WorkoutLogSourceError,
+} from './workout-log-source';
 
-const mockDoc = (db: any, path: string, ...segments: string[]) => {
-  return { type: 'doc_ref', path: `${path}/${segments.join('/')}` };
-};
+test('logWorkoutSession posts to the MyChampions server when a local bearer token is available', async () => {
+  let captured: Request | null = null;
 
-const mockCollection = (db: any, path: string) => {
-  queriedCollection = path;
-  return { type: 'collection_ref', path };
-};
-
-const mockWhere = (field: string, op: string, value: any) => {
-  return { type: 'where_clause', field, op, value };
-};
-
-const mockQuery = (colRef: any, ...clauses: any[]) => {
-  queryClauses = clauses;
-  return { type: 'query', colRef, clauses };
-};
-
-const mockGetDocs = async (q: any) => {
-  if (q.colRef && q.colRef.path === 'workoutLogs') {
-    return {
-      empty: false,
-      docs: [
-        {
-          id: 'wlog-123',
-          ref: { type: 'doc_ref', path: `workoutLogs/wlog-123` },
-          data: () => ({
-            id: 'wlog-123',
-            ownerUid: 'student-456',
+  await logWorkoutSession('sess-789', 'Chest Day', {
+    getCurrentAccessToken: async () => 'server-token',
+    getServerBaseUrl: () => 'http://server.test/',
+    fetchFn: async (input: RequestInfo | URL, init?: RequestInit) => {
+      captured = new Request(input, init);
+      return new Response(
+        JSON.stringify({
+          log: {
+            id: 'server-log-1',
+            ownerUid: 'server-user-1',
             sessionId: 'sess-789',
             sessionName: 'Chest Day',
-            createdAt: '2026-05-31T16:00:00Z',
-          }),
+            createdAt: '2026-06-28T10:00:00.000Z',
+          },
+        }),
+        { status: 201, headers: { 'content-type': 'application/json' } }
+      );
+    },
+  });
+
+  assert.ok(captured);
+  assert.equal((captured as Request).url, 'http://server.test/training/workout-logs');
+  assert.equal((captured as Request).method, 'POST');
+  assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
+  assert.deepEqual(await (captured as Request).json(), {
+    sessionId: 'sess-789',
+    sessionName: 'Chest Day',
+  });
+});
+
+test('logWorkoutSession fails closed when local server auth is missing', async () => {
+  await assert.rejects(
+    () =>
+      logWorkoutSession('sess-789', 'Chest Day', {
+        getCurrentAccessToken: async () => null,
+        getServerBaseUrl: () => 'http://server.test',
+        fetchFn: async () => {
+          throw new Error('fetch should not be called without a token');
         },
-      ],
-    } as any;
+      }),
+    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'permission'
+  );
+});
+
+test('logWorkoutSession fails closed when local server URL is missing', async () => {
+  await assert.rejects(
+    () =>
+      logWorkoutSession('sess-789', 'Chest Day', {
+        getCurrentAccessToken: async () => 'server-token',
+        getServerBaseUrl: () => undefined,
+        fetchFn: async () => {
+          throw new Error('fetch should not be called without a server URL');
+        },
+      }),
+    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'configuration'
+  );
+});
+
+test('getTodayWorkoutLogs reads from the MyChampions server when a local bearer token is available', async () => {
+  let captured: Request | null = null;
+
+  const logs = await getTodayWorkoutLogs({
+    getCurrentAccessToken: async () => 'server-token',
+    getServerBaseUrl: () => 'http://server.test/',
+    fetchFn: async (input: RequestInfo | URL, init?: RequestInit) => {
+      captured = new Request(input, init);
+      return new Response(
+        JSON.stringify({
+          logs: [
+            {
+              id: 'server-log-1',
+              ownerUid: 'server-user-1',
+              sessionId: 'sess-789',
+              sessionName: 'Chest Day',
+              createdAt: '2026-06-28T10:00:00.000Z',
+            },
+          ],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
+    },
+  });
+
+  assert.deepEqual(logs, [
+    {
+      id: 'server-log-1',
+      ownerUid: 'server-user-1',
+      sessionId: 'sess-789',
+      sessionName: 'Chest Day',
+      createdAt: '2026-06-28T10:00:00.000Z',
+    },
+  ]);
+  assert.ok(captured);
+  assert.equal((captured as Request).url.startsWith('http://server.test/training/workout-logs?from='), true);
+  assert.equal((captured as Request).method, 'GET');
+  assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
+});
+
+test('getTodayWorkoutLogs fails closed when local server auth is missing', async () => {
+  await assert.rejects(
+    () =>
+      getTodayWorkoutLogs({
+        getCurrentAccessToken: async () => null,
+        getServerBaseUrl: () => 'http://server.test',
+        fetchFn: async () => {
+          throw new Error('fetch should not be called without a token');
+        },
+      }),
+    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'permission'
+  );
+});
+
+test('assigned training E2E fixture logs today workout sessions without server auth', async () => {
+  const previousAppVariant = process.env.APP_VARIANT;
+  const previousE2EFlag = process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
+  const previousStudentTrainingFixture = process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
+  const previousDev = (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+
+  process.env.APP_VARIANT = 'dev';
+  process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = 'true';
+  process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE = 'assigned';
+  (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
+
+  try {
+    assert.deepEqual(await getTodayWorkoutLogs(), []);
+
+    await logWorkoutSession('e2e-assigned-session', 'Assigned Strength Session');
+
+    assert.deepEqual(await getTodayWorkoutLogs(), [
+      {
+        id: 'e2e-workout-log-e2e-assigned-session',
+        ownerUid: 'e2e-auth-session-user',
+        sessionId: 'e2e-assigned-session',
+        sessionName: 'Assigned Strength Session',
+        createdAt: '2026-06-22T12:00:00.000Z',
+      },
+    ]);
+  } finally {
+    if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
+    else process.env.APP_VARIANT = previousAppVariant;
+
+    if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
+    else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
+
+    if (previousStudentTrainingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
+    else process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE = previousStudentTrainingFixture;
+
+    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
-  return { empty: true, docs: [] } as any;
-};
-
-const mockSetDoc = async (docRef: any, data: any) => {
-  loggedDocs.push({ path: docRef.path, data });
-};
-
-const firestorePath = require.resolve('firebase/firestore');
-const originalFirestore = require(firestorePath);
-
-const mockedFirestore = {
-  ...originalFirestore,
-  doc: mockDoc,
-  collection: mockCollection,
-  where: mockWhere,
-  query: mockQuery,
-  getDocs: mockGetDocs,
-  setDoc: mockSetDoc,
-};
-
-require.cache[firestorePath] = {
-  id: firestorePath,
-  filename: firestorePath,
-  loaded: true,
-  exports: mockedFirestore,
-} as any;
-
-const { logWorkoutSession, getTodayWorkoutLogs } = require('./workout-log-source');
-
-test('TDD: logWorkoutSession writes correct workoutLog document', async (t) => {
-  loggedDocs = [];
-  const mockDeps = {
-    getFirestoreInstance: () => ({}) as any,
-    getCurrentAuthUid: () => 'student-456',
-  };
-
-  await logWorkoutSession('sess-789', 'Chest Day', mockDeps);
-
-  assert.equal(loggedDocs.length, 1);
-  const log = loggedDocs[0];
-  assert.match(log.path, /^workoutLogs\/.+/);
-  assert.equal(log.data.ownerUid, 'student-456');
-  assert.equal(log.data.sessionId, 'sess-789');
-  assert.equal(log.data.sessionName, 'Chest Day');
-  assert.ok(log.data.createdAt);
-});
-
-test('TDD: getTodayWorkoutLogs queries today workout logs for current student', async (t) => {
-  queriedCollection = null;
-  queryClauses = [];
-
-  const mockDeps = {
-    getFirestoreInstance: () => ({}) as any,
-    getCurrentAuthUid: () => 'student-456',
-  };
-
-  const logs = await getTodayWorkoutLogs(mockDeps);
-  assert.equal(logs.length, 1);
-  assert.equal(logs[0].id, 'wlog-123');
-  assert.equal(logs[0].sessionName, 'Chest Day');
-
-  assert.equal(queriedCollection, 'workoutLogs');
-  const ownerClause = queryClauses.find(c => c.field === 'ownerUid');
-  const dateClause = queryClauses.find(c => c.field === 'createdAt');
-
-  assert.ok(ownerClause && ownerClause.value === 'student-456');
-  assert.ok(dateClause && dateClause.op === '>=');
-});
-
-test('Restore original firestore exports for other tests', () => {
-  require.cache[firestorePath] = {
-    id: firestorePath,
-    filename: firestorePath,
-    loaded: true,
-    exports: originalFirestore,
-  } as any;
 });

@@ -37,7 +37,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.signin.error.provider_conflict':
     'Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado.',
   'auth.signin.error.configuration':
-    'A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente.',
+    'A autenticação ainda não está configurada. Defina a URL do servidor MyChampions e tente novamente.',
   'auth.terms.title': 'Termos e Privacidade',
   'auth.terms.description':
     'Antes de continuar, revise e aceite os termos mais recentes do My Champions.',
@@ -64,7 +64,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.signup.error.provider_conflict':
     'Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado.',
   'auth.signup.error.configuration':
-    'A autenticação ainda não está configurada. Defina as chaves do Firebase e tente novamente.',
+    'A autenticação ainda não está configurada. Defina a URL do servidor MyChampions e tente novamente.',
   'auth.signup.placeholder.body':
     'A implementação do formulário de criação de conta começa na próxima etapa.',
   'auth.signup.already_have': 'Já tem uma conta?',
@@ -105,6 +105,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'relationship.cta_scan_qr': 'Escanear QR code',
   'relationship.qr.permission_denied':
     'O acesso à câmera é necessário para escanear um QR code. Conceda a permissão nas configurações do dispositivo ou insira o código manualmente.',
+  'relationship.qr.camera_unavailable':
+    'Este dispositivo não tem uma câmera disponível. Insira o código de convite manualmente.',
   'relationship.qr.invalid_payload':
     'Este QR code não contém um código de convite válido. Tente escanear novamente ou insira o código manualmente.',
   'relationship.qr.close': 'Fechar scanner',
@@ -128,6 +130,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'relationship.unbind.confirm_yes': 'Encerrar conexão',
   'relationship.unbind.confirm_no': 'Manter conexão',
   'relationship.unbind.error': 'Não foi possível encerrar a conexão. Tente novamente.',
+  'relationship.unbind.ended': 'Conexão encerrada. Seu profissional não tem mais acesso ativo.',
   'relationship.credential.registry_id': 'Registro profissional',
   'relationship.credential.authority': 'Órgão',
   'relationship.credential.country': 'País',
@@ -153,6 +156,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'common.cta.save': 'Salvar',
   'common.cta.cancel': 'Cancelar',
   'common.cta.clear': 'Limpar',
+  'common.cta.done': 'Concluir',
   'common.cta.delete': 'Excluir',
   'pro.plan.draft.title': 'Versão não salva encontrada',
   'pro.plan.draft.body': 'Deseja continuar de onde parou?',
@@ -164,6 +168,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.error.reason': 'Motivo: {reason}',
   'pro.plan.meal.not_found': 'Refeição não encontrada',
   'pro.plan.meal.go_back': 'Voltar',
+  'pro.plan.meal.empty.title': 'Ainda não há alimentos adicionados',
+  'pro.plan.meal.empty.body': 'Busque e adicione alimentos a esta refeição para montar o plano.',
   'pro.plan.custom_meal.section': 'Refeições personalizadas salvas',
   'pro.plan.custom_meal.empty': 'Ainda não há refeições personalizadas salvas.',
   'pro.plan.custom_meal.badge': 'Snapshot',
@@ -289,6 +295,9 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.home.title': 'Painel',
   'pro.home.active_students': 'Alunos ativos',
   'pro.home.pending_requests': 'Solicitações pendentes',
+  'pro.home.plan_change_notification.title': 'Solicitação de alteração de plano',
+  'pro.home.plan_change_notification.body': '{count} solicitação pendente de {studentUid}.',
+  'pro.home.plan_change_notification.cta': 'Revisar',
   'pro.home.invite_code.title': 'Seu código de convite',
   'pro.home.invite_code.careful_sharing': 'Compartilhe apenas com alunos confiáveis para manter sua lista organizada.',
   'pro.home.invite_code.share': 'Compartilhar código',
@@ -330,6 +339,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.specialty.credential.save': 'Salvar credencial',
   'pro.specialty.credential.skip': 'Pular',
   'pro.specialty.credential.skip_add': 'Adicionar sem credencial',
+  'pro.specialty.credential.incomplete_error': 'Preencha todos os campos da credencial ou pule por agora.',
   'pro.specialty.credential.save_error': 'Não foi possível salvar a credencial. Tente novamente.',
   'pro.specialty.empty': 'Nenhuma especialidade adicionada ainda.',
   'pro.specialty.removal_assist.view_active': 'Ver alunos ativos',
@@ -539,8 +549,6 @@ export const ptBR: Record<TranslationKey, string> = {
   'settings.account.delete.error.network': 'Não foi possível conectar. Verifique sua conexão e tente novamente.',
   'settings.account.delete.error.unknown': 'Algo deu errado. Tente novamente.',
   'settings.account.delete.error.already_requested': 'Uma solicitação de exclusão já está em andamento.',
-  'settings.account.delete.error.requires_recent_login':
-    'Por segurança, saia e entre novamente antes de excluir sua conta.',
   'settings.account.delete.error.unauthenticated': 'Sua sessão expirou. Por favor, entre novamente.',
   'meal.builder.title.create': 'Criar alimento customizado',
   'meal.builder.title.edit': 'Editar refeição',
@@ -687,7 +695,6 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.cta.bulk_assign': 'Atribuição em massa',
   'pro.plan.food_search.placeholder': 'Buscar alimentos…',
   'pro.plan.food_search.empty': 'Nenhum alimento encontrado. Tente outro termo.',
-  'pro.plan.food_search.stub_notice': 'Adicione alimentos para começar este plano.',
   'pro.plan.validation.name_required': 'O nome do plano é obrigatório.',
   'pro.plan.validation.name_too_short': 'O nome do plano deve ter pelo menos 2 caracteres.',
   'pro.plan.validation.hydration_goal_required': 'A meta diária de água é obrigatória.',
@@ -769,6 +776,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.item.field.nutrition_quantity.placeholder': 'ex.: 150g',
   'pro.plan.item.field.nutrition_notes.label': 'Observações (opcional)',
   'pro.plan.item.field.nutrition_notes.placeholder': 'ex.: Sem sal',
+  'pro.plan.item.delete.body': 'Remover {name} desta refeição?',
   'pro.plan.item.search.placeholder': 'Buscar por um exercício...',
   'pro.plan.item.search.empty': 'Nenhum exercício encontrado.',
   'pro.plan.item.search.error': 'Erro ao buscar exercícios.',
@@ -798,7 +806,6 @@ export const ptBR: Record<TranslationKey, string> = {
   'student.plan.training.title.edit': 'Editar meu plano de treino',
   'student.plan.section.meals': 'Refeições do meu plano',
   'student.plan.section.sessions': 'Sessões de treino',
-  'student.plan.food_search.stub_notice': 'Adicione itens de refeição para começar seu plano por conta própria.',
   'student.plan.section.meal_items': 'Itens da Refeição',
   'student.plan.cta.add_meal': 'Adicionar refeição',
   'student.plan.delete.title': 'Excluir meu plano?',

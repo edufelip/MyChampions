@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   mapSignInReasonToMessageKey,
   normalizeSignInReason,
+  resolveSignInValidationAnalyticsReason,
   SignInFailure,
   validateSignInInput,
 } from './sign-in.logic';
@@ -21,6 +22,26 @@ test('validateSignInInput passes when both fields are provided', () => {
   assert.deepEqual(result, {});
 });
 
+test('resolveSignInValidationAnalyticsReason returns the first validation failure reason', () => {
+  assert.equal(
+    resolveSignInValidationAnalyticsReason({
+      email: 'auth.validation.email_required',
+      password: 'auth.validation.password_required',
+    }),
+    'validation_email_required'
+  );
+  assert.equal(
+    resolveSignInValidationAnalyticsReason({
+      password: 'auth.validation.password_required',
+    }),
+    'validation_password_required'
+  );
+});
+
+test('resolveSignInValidationAnalyticsReason returns null when there are no validation errors', () => {
+  assert.equal(resolveSignInValidationAnalyticsReason({}), null);
+});
+
 test('normalizeSignInReason maps SignInFailure directly', () => {
   const reason = normalizeSignInReason(new SignInFailure('invalid_credentials'));
 
@@ -34,13 +55,13 @@ test('normalizeSignInReason maps network-like errors', () => {
 });
 
 test('normalizeSignInReason maps provider conflict', () => {
-  const reason = normalizeSignInReason({ code: 'auth/account-exists-with-different-credential' });
+  const reason = normalizeSignInReason({ code: 'PROVIDER_CONFLICT' });
 
   assert.equal(reason, 'provider_conflict');
 });
 
 test('normalizeSignInReason maps missing config to configuration', () => {
-  const reason = normalizeSignInReason({ message: 'Firebase config is missing required keys: apiKey' });
+  const reason = normalizeSignInReason({ message: 'MyChampions server URL is not configured.' });
 
   assert.equal(reason, 'configuration');
 });

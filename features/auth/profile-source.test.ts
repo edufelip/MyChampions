@@ -20,67 +20,38 @@ type FakeProfile = {
   updatedAt: string;
 };
 
-function makeDeps(seed?: FakeProfile | null): ProfileSourceDeps {
-  let profile = seed ?? null;
-  let userDeleted = false;
+function response(body: unknown, init?: ResponseInit) {
+  return new Response(JSON.stringify(body), {
+    status: init?.status ?? 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}
 
+function makeDeps(handler: (request: Request) => Promise<Response> | Response): ProfileSourceDeps {
   return {
-    getFirestoreInstance: () => ({}) as never,
-    getFirebaseAuth: () => ({}) as never,
-    getCurrentAuthUid: () => (userDeleted ? undefined : 'uid-1'),
-    getCurrentUser: () => (userDeleted ? null : ({ uid: 'uid-1' } as never)),
-    readProfile: async (_firestore, uid) => {
-      if (!profile || userDeleted) return null;
-      return { ...profile, authUid: uid };
-    },
-    upsertProfile: async (_firestore, uid, input) => {
-      profile = {
-        authUid: uid,
-        displayName: input.displayName,
-        emailNormalized: input.emailNormalized,
-        lockedRole: null,
-        acceptedTermsVersion: null,
-        createdAt: '2026-01-01T00:00:00.000Z',
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      };
-    },
-    setLockedRole: async () => {
-      if (!profile) {
-        throw new ProfileSourceError('profile_row_not_found_after_upsert', 'Profile missing');
-      }
-      if (profile.lockedRole && profile.lockedRole !== 'student') {
-        throw new ProfileSourceError('graphql', 'Role already locked');
-      }
-      profile = { ...profile, lockedRole: 'student' };
-    },
-    setAcceptedTermsVersion: async (_firestore, _uid, version) => {
-      if (!profile) {
-        throw new ProfileSourceError('profile_row_not_found_after_upsert', 'Profile missing');
-      }
-      profile = { ...profile, acceptedTermsVersion: version };
-    },
-    deleteProfile: async () => {
-      profile = null;
-    },
-    deleteUser: async () => {
-      userDeleted = true;
-    },
-    delay: async () => {},
+    fetch: async (input, init) => handler(new Request(input, init)),
+    getCurrentAccessToken: async () => 'token-1',
+    getServerBaseUrl: () => 'http://server.test',
   };
 }
 
-describe('profile-source firestore', () => {
-  it('hydrates existing profile without upsert', async () => {
-    const deps = makeDeps({
-      authUid: 'uid-1',
-      displayName: 'A',
-      emailNormalized: 'a@a.com',
-      lockedRole: 'professional',
-      acceptedTermsVersion: null,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    });
+const profile = {
+  authUid: 'uid-1',
+  displayName: 'A',
+  emailNormalized: 'a@a.com',
+  lockedRole: 'professional' as const,
+  acceptedTermsVersion: null,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
 
+describe('profile-source server api', () => {
+  it('hydrates profile through POST /me/hydrate with bearer token', async () => {
+    let captured: Request | null = null;
+    const deps = makeDeps((request) => {
+      captured = request;
+      return response({ profile });
+    });
     const result = await hydrateProfileFromSource(
       { uid: 'uid-1', displayName: 'A', email: 'a@a.com' },
       deps
@@ -88,69 +59,90 @@ describe('profile-source firestore', () => {
 
     assert.equal(result.lockedRole, 'professional');
     assert.equal(result.acceptedTermsVersion, null);
+    assert.ok(captured);
+    const request = captured as Request;
+    assert.equal(request.method, 'POST');
+    assert.equal(request.url, 'http://server.test/me/hydrate');
+    assert.equal(request.headers.get('authorization'), 'Bearer token-1');
   });
 
-  it('upserts when profile is missing', async () => {
-    const deps = makeDeps(null);
+  it('uses the central server token resolver instead of a user token accessor for hydration', async () => {
+    let captured: Request | null = null;
+    const deps = makeDeps((request) => {
+      captured = request;
+      return response({ profile });
+    });
+    let userTokenAccessorCalled = false;
+    const userWithTokenAccessor: { uid: string; displayName: string | null; email: string | null } & {
+      getAccessToken: () => Promise<string>;
+    } = {
+      uid: 'uid-1',
+      displayName: 'A',
+      email: 'a@a.com',
+      getAccessToken: async () => {
+        userTokenAccessorCalled = true;
+        return 'user-access-token';
+      },
+    };
 
+    await hydrateProfileFromSource(userWithTokenAccessor, deps);
+
+    assert.equal(userTokenAccessorCalled, false);
+    assert.ok(captured);
+    assert.equal((captured as Request).headers.get('authorization'), 'Bearer token-1');
+  });
+
+  it('maps unauthorized hydration to unauthenticated error', async () => {
+    const deps = makeDeps(() => response({ error: { code: 'unauthorized' } }, { status: 401 }));
+    await assert.rejects(
+      () => hydrateProfileFromSource({ uid: 'uid-1', displayName: 'A', email: 'a@a.com' }, deps),
+      (error: unknown) => error instanceof ProfileSourceError && error.code === 'unauthenticated'
+    );
+  });
+
+  it('locks role through PATCH /me/role', async () => {
+    let body: { role?: string } | null = null;
+    const deps = makeDeps(async (request) => {
+      body = await request.json();
+      return response({ profile: { ...profile, lockedRole: 'student' } });
+    });
+    const result = await lockRoleInSource('student', deps);
+    assert.equal(result.lockedRole, 'student');
+    assert.deepEqual(body, { role: 'student' });
+  });
+
+  it('maps role conflicts to graphql source errors', async () => {
+    const deps = makeDeps(() =>
+      response({ error: { code: 'role_already_locked' } }, { status: 409 })
+    );
+    await assert.rejects(
+      () => lockRoleInSource('student', deps),
+      (error: unknown) => error instanceof ProfileSourceError && error.code === 'graphql'
+    );
+  });
+
+  it('persists accepted terms through PATCH /me/terms', async () => {
+    let body: { acceptedTermsVersion?: string } | null = null;
+    const deps = makeDeps(async (request) => {
+      body = await request.json();
+      return response({ profile: { ...profile, acceptedTermsVersion: 'v2' } });
+    });
+    await setAcceptedTermsVersionInSource('v2', deps);
+    assert.deepEqual(body, { acceptedTermsVersion: 'v2' });
     const result = await hydrateProfileFromSource(
       { uid: 'uid-1', displayName: 'A', email: 'a@a.com' },
       deps
     );
-
-    assert.equal(result.lockedRole, null);
-    assert.equal(result.acceptedTermsVersion, null);
+    assert.equal(result.acceptedTermsVersion, 'v2');
   });
 
-  it('locks role and confirms persisted value', async () => {
-    const deps = makeDeps({
-      authUid: 'uid-1',
-      displayName: 'A',
-      emailNormalized: 'a@a.com',
-      lockedRole: null,
-      acceptedTermsVersion: null,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
+  it('deletes account data through DELETE /me', async () => {
+    let method = '';
+    const deps = makeDeps((request) => {
+      method = request.method;
+      return new Response(null, { status: 204 });
     });
-
-    const result = await lockRoleInSource('student', deps);
-    assert.equal(result.lockedRole, 'student');
-  });
-
-  it('deletes account and data', async () => {
-    const deps = makeDeps({
-      authUid: 'uid-1',
-      displayName: 'A',
-      emailNormalized: 'a@a.com',
-      lockedRole: null,
-      acceptedTermsVersion: null,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    });
-
     await deleteAccountAndDataFromSource(deps);
-
-    assert.equal(deps.getCurrentAuthUid(), undefined);
-    assert.equal(deps.getCurrentUser(), null);
-  });
-
-  it('persists accepted terms version in source', async () => {
-    const deps = makeDeps({
-      authUid: 'uid-1',
-      displayName: 'A',
-      emailNormalized: 'a@a.com',
-      lockedRole: null,
-      acceptedTermsVersion: null,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    });
-
-    await setAcceptedTermsVersionInSource('v2', deps);
-    const hydrated = await hydrateProfileFromSource(
-      { uid: 'uid-1', displayName: 'A', email: 'a@a.com' },
-      deps
-    );
-
-    assert.equal(hydrated.acceptedTermsVersion, 'v2');
+    assert.equal(method, 'DELETE');
   });
 });

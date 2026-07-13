@@ -1,23 +1,14 @@
 /**
- * Auth profile Firestore source — profile hydration, role-lock, deletion.
- * Firestore persistence source while preserving the public source contract.
+ * Auth profile source backed by the MyChampions server.
+ *
+ * This module intentionally keeps the public source contract used by
+ * AuthSessionProvider while removing direct provider reads/writes from the
+ * profile boundary.
  */
 
-import {
-  deleteDoc,
-  doc,
-  getDoc,
-  runTransaction,
-  setDoc,
-  updateDoc,
-  type Firestore,
-} from 'firebase/firestore';
-import { deleteUser, type Auth, type User } from 'firebase/auth';
-
 import type { RoleIntent } from './role-selection.logic';
-import { classifyFirestoreError } from '../firestore-error';
-
-// ─── Error type ───────────────────────────────────────────────────────────────
+import { resolveE2EAuthSessionSourceOverride } from './e2e-auth-session';
+import { getCurrentServerAccessToken } from './server-auth-source';
 
 type ProfileSourceErrorCode =
   | 'configuration'
@@ -26,7 +17,6 @@ type ProfileSourceErrorCode =
   | 'invalid_response'
   | 'role_update_not_persisted'
   | 'profile_row_not_found_after_upsert'
-  | 'requires_recent_login'
   | 'unauthenticated';
 
 export class ProfileSourceError extends Error {
@@ -39,9 +29,12 @@ export class ProfileSourceError extends Error {
   }
 }
 
-// ─── Injectable deps ──────────────────────────────────────────────────────────
+type AuthProfile = {
+  lockedRole: RoleIntent | null;
+  acceptedTermsVersion: string | null;
+};
 
-type FirestoreProfile = {
+type ServerProfile = {
   authUid: string;
   displayName: string;
   emailNormalized: string;
@@ -51,211 +44,151 @@ type FirestoreProfile = {
   updatedAt: string;
 };
 
-export type ProfileSourceDeps = {
-  getFirestoreInstance: () => Firestore;
-  getFirebaseAuth: () => Auth;
-  getCurrentAuthUid: () => string | undefined;
-  getCurrentUser: () => User | null;
-  readProfile: (firestore: Firestore, uid: string) => Promise<FirestoreProfile | null>;
-  upsertProfile: (
-    firestore: Firestore,
-    uid: string,
-    input: { displayName: string; emailNormalized: string }
-  ) => Promise<void>;
-  setLockedRole: (firestore: Firestore, uid: string, role: RoleIntent) => Promise<void>;
-  setAcceptedTermsVersion: (firestore: Firestore, uid: string, version: string) => Promise<void>;
-  deleteProfile: (firestore: Firestore, uid: string) => Promise<void>;
-  deleteUser: (user: User) => Promise<void>;
-  delay: (ms: number) => Promise<void>;
+type ServerProfileResponse = {
+  profile?: Partial<ServerProfile>;
+  error?: {
+    code?: string;
+    message?: string;
+  };
 };
 
-function profileDoc(firestore: Firestore, uid: string) {
-  return doc(firestore, 'userProfiles', uid);
+export type ProfileSourceDeps = {
+  fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+  getCurrentAccessToken: () => Promise<string | null>;
+  getServerBaseUrl: () => string | undefined;
+};
+
+function resolveProfileSourceE2EOverride() {
+  return resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+}
+
+function resolveServerBaseUrl(): string | undefined {
+  let expoExtra: unknown;
+  try {
+    const Constants = require('expo-constants') as {
+      default?: { expoConfig?: { extra?: unknown } };
+      expoConfig?: { extra?: unknown };
+    };
+    expoExtra = (Constants.default ?? Constants).expoConfig?.extra;
+  } catch {
+    expoExtra = undefined;
+  }
+
+  const extra = (expoExtra ?? {}) as {
+    server?: {
+      baseUrl?: string;
+    };
+  };
+  return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
 }
 
 function getProfileSourceDeps(): ProfileSourceDeps {
-  const { getFirebaseAuth } = require('./firebase');
-  const { getFirestoreInstance, getCurrentAuthUid, nowIso } = require('../firestore');
-
   return {
-    getFirestoreInstance,
-    getFirebaseAuth,
-    getCurrentAuthUid: () => {
-      try {
-        return getCurrentAuthUid();
-      } catch {
-        return undefined;
-      }
+    fetch: globalThis.fetch.bind(globalThis),
+    getCurrentAccessToken: async () => {
+      const serverAccessToken = getCurrentServerAccessToken();
+      if (serverAccessToken) return serverAccessToken;
+
+      const e2eSourceOverride = resolveProfileSourceE2EOverride();
+      if (e2eSourceOverride) return e2eSourceOverride.idToken;
+
+      return null;
     },
-    getCurrentUser: () => getFirebaseAuth().currentUser,
-    readProfile: async (firestore, uid) => {
-      const snapshot = await getDoc(profileDoc(firestore, uid));
-      if (!snapshot.exists()) return null;
-      const data = snapshot.data() as Partial<FirestoreProfile>;
-      return {
-        authUid: String(data.authUid ?? uid),
-        displayName: String(data.displayName ?? ''),
-        emailNormalized: String(data.emailNormalized ?? ''),
-        lockedRole: data.lockedRole === 'student' || data.lockedRole === 'professional' ? data.lockedRole : null,
-        acceptedTermsVersion:
-          typeof data.acceptedTermsVersion === 'string' ? data.acceptedTermsVersion : null,
-        createdAt: String(data.createdAt ?? nowIso()),
-        updatedAt: String(data.updatedAt ?? nowIso()),
-      };
-    },
-    upsertProfile: async (firestore, uid, input) => {
-      const timestamp = nowIso();
-      await setDoc(
-        profileDoc(firestore, uid),
-        {
-          authUid: uid,
-          displayName: input.displayName,
-          emailNormalized: input.emailNormalized,
-          lockedRole: null,
-          acceptedTermsVersion: null,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        },
-        { merge: true }
-      );
-    },
-    setLockedRole: async (firestore, uid, role) => {
-      await runTransaction(firestore, async (tx) => {
-        const ref = profileDoc(firestore, uid);
-        const snap = await tx.get(ref);
-        if (!snap.exists()) {
-          throw new ProfileSourceError('profile_row_not_found_after_upsert', 'Profile row not found for role lock.');
-        }
-        const current = snap.data() as Partial<FirestoreProfile>;
-        const currentRole = current.lockedRole;
-        if (currentRole === 'student' || currentRole === 'professional') {
-          if (currentRole !== role) {
-            throw new ProfileSourceError('graphql', 'Role is already locked and cannot be changed.');
-          }
-          return;
-        }
-        tx.update(ref, {
-          lockedRole: role,
-          updatedAt: nowIso(),
-        });
-      });
-    },
-    deleteProfile: async (firestore, uid) => {
-      await deleteDoc(profileDoc(firestore, uid));
-    },
-    deleteUser: async (user) => {
-      await deleteUser(user);
-    },
-    setAcceptedTermsVersion: async (firestore, uid, version) => {
-      await setDoc(
-        profileDoc(firestore, uid),
-        {
-          authUid: uid,
-          acceptedTermsVersion: version,
-          updatedAt: nowIso(),
-        },
-        { merge: true }
-      );
-    },
-    delay: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+    getServerBaseUrl: resolveServerBaseUrl,
   };
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+function normalizeRole(value: unknown): RoleIntent | null {
+  return value === 'student' || value === 'professional' ? value : null;
+}
 
-type AuthProfile = {
-  lockedRole: RoleIntent | null;
-  acceptedTermsVersion: string | null;
-};
+function mapServerProfile(profile: Partial<ServerProfile> | undefined): AuthProfile {
+  if (!profile || typeof profile !== 'object') {
+    throw new ProfileSourceError('invalid_response', 'Profile response is missing.');
+  }
 
-type RemoteProfileSnapshot = {
-  exists: boolean;
-  authUid: string | null;
-  lockedRole: RoleIntent | null;
-  acceptedTermsVersion: string | null;
-  hasAuthUidMismatch: boolean;
-};
+  return {
+    lockedRole: normalizeRole(profile.lockedRole),
+    acceptedTermsVersion:
+      typeof profile.acceptedTermsVersion === 'string' ? profile.acceptedTermsVersion : null,
+  };
+}
 
-const ROLE_LOCK_CONFIRMATION_RETRY_DELAYS_MS = [120, 220, 350, 550, 800, 1100] as const;
+function normalizeServerError(status: number, payload: ServerProfileResponse | null): ProfileSourceError {
+  const code = payload?.error?.code;
+  const message = payload?.error?.message ?? `Profile server request failed with status ${status}.`;
+
+  if (status === 401 || code === 'unauthorized') {
+    return new ProfileSourceError('unauthenticated', message);
+  }
+  if (status === 404 || code === 'profile_not_found') {
+    return new ProfileSourceError('profile_row_not_found_after_upsert', message);
+  }
+  if (status === 409 || code === 'role_already_locked') {
+    return new ProfileSourceError('graphql', message);
+  }
+  if (status >= 500) {
+    return new ProfileSourceError('network', message);
+  }
+
+  return new ProfileSourceError('invalid_response', message);
+}
 
 function normalizeProfileSourceError(error: unknown): ProfileSourceError {
   if (error instanceof ProfileSourceError) return error;
+  return new ProfileSourceError('network', (error as Error)?.message ?? 'Network error.');
+}
 
-  const firebaseError = error as { code?: string };
-  if (firebaseError.code === 'auth/requires-recent-login') {
-    return new ProfileSourceError('requires_recent_login', 'Please re-authenticate before deleting account.');
-  }
-  if (firebaseError.code === 'auth/user-token-expired' || firebaseError.code === 'auth/network-request-failed') {
-    return new ProfileSourceError('network', 'Network error or session expired.');
-  }
-
-  switch (classifyFirestoreError(error)) {
-    case 'network':
-      return new ProfileSourceError('network', (error as Error)?.message ?? 'Network error.');
-    case 'permission':
-      return new ProfileSourceError('unauthenticated', (error as Error)?.message ?? 'Unauthenticated.');
-    case 'configuration':
-      return new ProfileSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
-    case 'not_found':
-      return new ProfileSourceError('profile_row_not_found_after_upsert', (error as Error)?.message ?? 'Profile not found.');
-    default:
-      return new ProfileSourceError('invalid_response', (error as Error)?.message ?? 'Unknown profile source error.');
+async function readJson(response: Response): Promise<ServerProfileResponse | null> {
+  if (response.status === 204) return null;
+  try {
+    return (await response.json()) as ServerProfileResponse;
+  } catch {
+    return null;
   }
 }
 
-
-async function getRemoteProfileSnapshot(
+async function requestProfile(
+  path: string,
   deps: ProfileSourceDeps,
-  uid: string
-): Promise<RemoteProfileSnapshot> {
-  const firestore = deps.getFirestoreInstance();
-  const profile = await deps.readProfile(firestore, uid);
-  if (!profile) {
-    return {
-      exists: false,
-      authUid: null,
-      lockedRole: null,
-      acceptedTermsVersion: null,
-      hasAuthUidMismatch: false,
-    };
+  options: {
+    method?: string;
+    body?: unknown;
+    accessToken?: string | null;
+  } = {}
+): Promise<ServerProfileResponse | null> {
+  const baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
+  if (!baseUrl) {
+    throw new ProfileSourceError(
+      'configuration',
+      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.'
+    );
   }
 
-  if (profile.authUid !== uid) {
-    return {
-      exists: false,
-      authUid: profile.authUid,
-      lockedRole: null,
-      acceptedTermsVersion: null,
-      hasAuthUidMismatch: true,
-    };
+  const accessToken = options.accessToken ?? (await deps.getCurrentAccessToken());
+  if (!accessToken) {
+    throw new ProfileSourceError('unauthenticated', 'No authenticated server token found.');
   }
 
-  return {
-    exists: true,
-    authUid: profile.authUid,
-    lockedRole: profile.lockedRole,
-    acceptedTermsVersion: profile.acceptedTermsVersion,
-    hasAuthUidMismatch: false,
-  };
-}
+  const response = await deps.fetch(`${baseUrl}${path}`, {
+    method: options.method ?? 'GET',
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const payload = await readJson(response);
 
-async function confirmLockedRoleWithRetry(
-  role: RoleIntent,
-  deps: ProfileSourceDeps,
-  uid: string
-): Promise<{ confirmedRole: RoleIntent | null; allSnapshotsMissing: boolean }> {
-  let allSnapshotsMissing = true;
-  for (const delayMs of ROLE_LOCK_CONFIRMATION_RETRY_DELAYS_MS) {
-    const snapshot = await getRemoteProfileSnapshot(deps, uid);
-    if (snapshot.exists) {
-      allSnapshotsMissing = false;
-    }
-    if (snapshot.lockedRole === role) {
-      return { confirmedRole: snapshot.lockedRole, allSnapshotsMissing };
-    }
-    await deps.delay(delayMs);
+  if (!response.ok) {
+    throw normalizeServerError(response.status, payload);
   }
-  return { confirmedRole: null, allSnapshotsMissing };
+
+  return payload;
 }
 
 export async function hydrateProfileFromSource(
@@ -263,25 +196,14 @@ export async function hydrateProfileFromSource(
   deps: ProfileSourceDeps = getProfileSourceDeps()
 ): Promise<AuthProfile> {
   try {
-    const initialSnapshot = await getRemoteProfileSnapshot(deps, user.uid);
-    if (initialSnapshot.exists) {
-      return {
-        lockedRole: initialSnapshot.lockedRole,
-        acceptedTermsVersion: initialSnapshot.acceptedTermsVersion,
-      };
-    }
-
-    const firestore = deps.getFirestoreInstance();
-    await deps.upsertProfile(firestore, user.uid, {
-      displayName: user.displayName ?? '',
-      emailNormalized: user.email?.toLowerCase() ?? '',
+    const payload = await requestProfile('/me/hydrate', deps, {
+      method: 'POST',
+      body: {
+        displayName: user.displayName ?? '',
+        email: user.email?.toLowerCase() ?? 'unknown@example.invalid',
+      },
     });
-
-    const hydratedSnapshot = await getRemoteProfileSnapshot(deps, user.uid);
-    return {
-      lockedRole: hydratedSnapshot.lockedRole,
-      acceptedTermsVersion: hydratedSnapshot.acceptedTermsVersion,
-    };
+    return mapServerProfile(payload?.profile);
   } catch (error) {
     throw normalizeProfileSourceError(error);
   }
@@ -291,41 +213,12 @@ export async function lockRoleInSource(
   role: RoleIntent,
   deps: ProfileSourceDeps = getProfileSourceDeps()
 ): Promise<AuthProfile> {
-  const uid = deps.getCurrentAuthUid();
-  if (!uid) {
-    throw new ProfileSourceError('configuration', 'No authenticated user found.');
-  }
-
   try {
-    const beforeLock = await getRemoteProfileSnapshot(deps, uid);
-    if (!beforeLock.exists) {
-      const firestore = deps.getFirestoreInstance();
-      await deps.upsertProfile(firestore, uid, { displayName: '', emailNormalized: '' });
-    }
-
-    const firestore = deps.getFirestoreInstance();
-    await deps.setLockedRole(firestore, uid, role);
-
-    const { confirmedRole, allSnapshotsMissing } = await confirmLockedRoleWithRetry(role, deps, uid);
-    if (confirmedRole) {
-      const confirmedSnapshot = await getRemoteProfileSnapshot(deps, uid);
-      return {
-        lockedRole: confirmedRole,
-        acceptedTermsVersion: confirmedSnapshot.acceptedTermsVersion,
-      };
-    }
-
-    if (allSnapshotsMissing) {
-      throw new ProfileSourceError(
-        'profile_row_not_found_after_upsert',
-        'Firestore did not return user profile after role lock attempts.'
-      );
-    }
-
-    throw new ProfileSourceError(
-      'role_update_not_persisted',
-      'Firestore accepted role lock but role was not confirmed in follow-up reads.'
-    );
+    const payload = await requestProfile('/me/role', deps, {
+      method: 'PATCH',
+      body: { role },
+    });
+    return mapServerProfile(payload?.profile);
   } catch (error) {
     throw normalizeProfileSourceError(error);
   }
@@ -334,25 +227,8 @@ export async function lockRoleInSource(
 export async function deleteAccountAndDataFromSource(
   deps: ProfileSourceDeps = getProfileSourceDeps()
 ): Promise<void> {
-  const uid = deps.getCurrentAuthUid();
-  const user = deps.getCurrentUser();
-
-  if (!uid || !user) {
-    throw new ProfileSourceError('unauthenticated', 'No authenticated user found.');
-  }
-
   try {
-    const firestore = deps.getFirestoreInstance();
-
-    // 1. Delete user profile (Firestore)
-    await deps.deleteProfile(firestore, uid);
-
-    // TODO: Clear other user-owned Firestore collections here (waterLogs, customMeals, etc.)
-    // For now, deleting the profile and auth user fulfills the core requirement.
-
-    // 2. Delete Auth user (Firebase Auth)
-    // This will trigger requires_recent_login if session is old.
-    await deps.deleteUser(user);
+    await requestProfile('/me', deps, { method: 'DELETE' });
   } catch (error) {
     throw normalizeProfileSourceError(error);
   }
@@ -362,18 +238,11 @@ export async function setAcceptedTermsVersionInSource(
   version: string,
   deps: ProfileSourceDeps = getProfileSourceDeps()
 ): Promise<void> {
-  const uid = deps.getCurrentAuthUid();
-  if (!uid) {
-    throw new ProfileSourceError('configuration', 'No authenticated user found.');
-  }
-
   try {
-    const firestore = deps.getFirestoreInstance();
-    const before = await getRemoteProfileSnapshot(deps, uid);
-    if (!before.exists) {
-      await deps.upsertProfile(firestore, uid, { displayName: '', emailNormalized: '' });
-    }
-    await deps.setAcceptedTermsVersion(firestore, uid, version);
+    await requestProfile('/me/terms', deps, {
+      method: 'PATCH',
+      body: { acceptedTermsVersion: version },
+    });
   } catch (error) {
     throw normalizeProfileSourceError(error);
   }

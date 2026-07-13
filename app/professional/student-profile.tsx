@@ -9,7 +9,7 @@
  *  - Plan change request triage (review / dismiss)
  *  - Entitlement lock notice when write actions are blocked
  *
- * Data wiring is Firestore-backed via professional-source.
+ * Data wiring is server-backed via professional-source.
  *
  * Docs: docs/screens/v2/SC-206-student-profile-professional-view.md
  * Refs: D-043, D-100, D-134, FR-106–108, FR-121, FR-123–125, FR-130–131, FR-185, FR-211
@@ -25,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsCard } from '@/components/ds/primitives/DsCard';
@@ -44,6 +45,7 @@ import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import type { PlanChangeRequest } from '@/features/plans/plan-change-request.logic';
 import { usePlans } from '@/features/plans/use-plans';
@@ -82,15 +84,12 @@ export default function ProfessionalStudentProfileScreen() {
   const { currentUser } = useAuthSession();
   const { studentId } = useLocalSearchParams<{ studentId: string }>();
 
-  const { entitlementStatus, activeStudentCount } = useSubscription(Boolean(currentUser));
+  const {
+    entitlementStatus,
+    activeStudentCount,
+    lastSyncedAtIso: subscriptionSyncedAtIso,
+  } = useSubscription(currentUser?.uid ?? null, { loadProfessionalActiveStudentCount: true });
   const subState = resolveSubscriptionState({ activeStudentCount, entitlementStatus });
-
-  const networkStatus = useNetworkStatus();
-  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
-    networkStatus,
-    lastSyncedAtIso: null,
-  });
-  const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   const {
     state: plansState,
@@ -100,9 +99,11 @@ export default function ProfessionalStudentProfileScreen() {
     reload: reloadPlans,
   } = usePlans(Boolean(currentUser));
   const [changeRequests, setChangeRequests] = useState<PlanChangeRequest[]>([]);
+  const [changeRequestsSyncedAtIso, setChangeRequestsSyncedAtIso] = useState<string | null>(null);
   const [changeRequestsLoadError, setChangeRequestsLoadError] = useState<string | null>(null);
   const [changeRequestsActionError, setChangeRequestsActionError] = useState<string | null>(null);
   const [trackingReview, setTrackingReview] = useState<StudentTrackingReview | null>(null);
+  const [trackingReviewSyncedAtIso, setTrackingReviewSyncedAtIso] = useState<string | null>(null);
   const [trackingReviewError, setTrackingReviewError] = useState<string | null>(null);
 
   const [isPlanPickerVisible, setIsPlanPickerVisible] = useState(false);
@@ -110,13 +111,18 @@ export default function ProfessionalStudentProfileScreen() {
   const [isAssigning, setIsAssigning] = useState(false);
 
   const loadChangeRequests = useCallback(async () => {
-    if (!studentId) return;
+    if (!studentId) {
+      setChangeRequestsSyncedAtIso(null);
+      return;
+    }
     setChangeRequestsLoadError(null);
     const result = await getChangeRequestsForStudent(studentId);
     if ('data' in result) {
       setChangeRequests(result.data);
+      setChangeRequestsSyncedAtIso(new Date().toISOString());
       return;
     }
+    setChangeRequestsSyncedAtIso(null);
     setChangeRequestsLoadError(t('pro.student_profile.plan_change_requests.load_error') as string);
   }, [getChangeRequestsForStudent, studentId, t]);
 
@@ -125,6 +131,7 @@ export default function ProfessionalStudentProfileScreen() {
   }, [loadChangeRequests]);
 
   const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
+  const [assignmentsSyncedAtIso, setAssignmentsSyncedAtIso] = useState<string | null>(null);
   const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
   const [unbindError, setUnbindError] = useState<string | null>(null);
 
@@ -136,6 +143,7 @@ export default function ProfessionalStudentProfileScreen() {
       setNutritionStatus('none');
       setTrainingStatus('none');
       setProfileLoadError(null);
+      setAssignmentsSyncedAtIso(null);
       setIsLoadingAssignments(false);
       return;
     }
@@ -145,6 +153,7 @@ export default function ProfessionalStudentProfileScreen() {
     const snapshot = await getProfessionalStudentAssignmentSnapshot(studentId);
     setNutritionStatus(snapshot.nutritionStatus);
     setTrainingStatus(snapshot.trainingStatus);
+    setAssignmentsSyncedAtIso(new Date().toISOString());
     setIsLoadingAssignments(false);
   }, [currentUser, studentId]);
 
@@ -154,6 +163,7 @@ export default function ProfessionalStudentProfileScreen() {
       if (!cancelled) {
         setNutritionStatus('none');
         setTrainingStatus('none');
+        setAssignmentsSyncedAtIso(null);
         setProfileLoadError(t('pro.student_profile.error') as string);
         setIsLoadingAssignments(false);
       }
@@ -163,6 +173,15 @@ export default function ProfessionalStudentProfileScreen() {
       cancelled = true;
     };
   }, [loadAssignments, t]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!currentUser || !studentId) return;
+
+      reloadPlans();
+      void loadAssignments();
+    }, [currentUser, loadAssignments, reloadPlans, studentId])
+  );
 
   async function handleReviewChangeRequest(requestId: string, action: 'reviewed' | 'dismissed') {
     setChangeRequestsActionError(null);
@@ -210,17 +229,12 @@ export default function ProfessionalStudentProfileScreen() {
   const deleteNutritionPlanAction = usePlansStore((s) => s.deleteNutritionPlanAction);
   const deleteTrainingPlanAction = usePlansStore((s) => s.deleteTrainingPlanAction);
 
-  const studentNutritionPlans = plansState.kind === 'ready' 
+  const studentNutritionPlans = plansState.kind === 'ready'
     ? plansState.plans.filter(p => p.studentUid === studentId && p.planType === 'nutrition' && !p.isArchived)
     : [];
   const draftNutritionPlan = studentNutritionPlans.find(p => p.isDraft) ?? null;
   const activeNutritionPlan = studentNutritionPlans.find(p => !p.isDraft) ?? null;
-  const activeNutritionHydrationGoalMl =
-    activeNutritionPlan && 'hydrationGoalMl' in activeNutritionPlan && typeof activeNutritionPlan.hydrationGoalMl === 'number'
-      ? activeNutritionPlan.hydrationGoalMl
-      : null;
-
-  const studentTrainingPlans = plansState.kind === 'ready' 
+  const studentTrainingPlans = plansState.kind === 'ready'
     ? plansState.plans.filter(p => p.studentUid === studentId && p.planType === 'training' && !p.isArchived)
     : [];
   const draftTrainingPlan = studentTrainingPlans.find(p => p.isDraft) ?? null;
@@ -292,6 +306,7 @@ export default function ProfessionalStudentProfileScreen() {
     if (!studentId || nutritionStatus !== 'active') {
       setTrackingReview(null);
       setTrackingReviewError(null);
+      setTrackingReviewSyncedAtIso(null);
       return;
     }
 
@@ -299,18 +314,33 @@ export default function ProfessionalStudentProfileScreen() {
     try {
       const review = await getStudentTrackingReview(studentId, {
         todayKey: todayKey(),
-        waterGoalMl: activeNutritionHydrationGoalMl,
       });
       setTrackingReview(review);
+      setTrackingReviewSyncedAtIso(new Date().toISOString());
     } catch {
       setTrackingReview(null);
+      setTrackingReviewSyncedAtIso(null);
       setTrackingReviewError(t('pro.student_profile.tracking_review.error') as string);
     }
-  }, [activeNutritionHydrationGoalMl, nutritionStatus, studentId, t]);
+  }, [nutritionStatus, studentId, t]);
 
   useEffect(() => {
     void loadTrackingReview();
   }, [loadTrackingReview]);
+
+  const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    subscriptionSyncedAtIso,
+    plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
+    changeRequestsSyncedAtIso,
+    assignmentsSyncedAtIso,
+    trackingReviewSyncedAtIso,
+  ]);
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso,
+  });
+  const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   return (
     <DsScreen scheme={scheme} testID="pro.student_profile.screen" contentContainerStyle={styles.content}>
@@ -450,7 +480,6 @@ export default function ProfessionalStudentProfileScreen() {
         onSelect={handleAssignPlan}
         plansState={plansState}
         planType={pickerPlanType}
-        scheme={scheme}
         theme={theme}
         t={t}
       />
@@ -473,10 +502,10 @@ function TrackingReviewCard({
 }) {
   return (
     <DsCard scheme={scheme} testID="pro.student_profile.trackingReview" style={styles.cardWithGap}>
-      <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}> 
+      <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
         {t('pro.student_profile.tracking_review.title')}
       </Text>
-      <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+      <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
         {t('pro.student_profile.tracking_review.read_only')}
       </Text>
 
@@ -485,16 +514,18 @@ function TrackingReviewCard({
           <Text style={[styles.errorText, { color: theme.color.danger }]}>{error}</Text>
         </View>
       ) : !review ? (
-        <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
           {t('pro.student_profile.tracking_review.loading')}
         </Text>
       ) : (
         <>
-          <View style={[styles.trackingPanel, { borderColor: theme.color.border }]}> 
-            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}> 
+          <View style={[styles.trackingPanel, { borderColor: theme.color.border }]}>
+            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}>
               {t('pro.student_profile.tracking_review.water_today')}
             </Text>
-            <Text style={[styles.trackingValue, { color: theme.color.textPrimary }]}> 
+            <Text
+              style={[styles.trackingValue, { color: theme.color.textPrimary }]}
+              testID="pro.student_profile.trackingReview.waterValue">
               {review.todayWater.goalMl
                 ? t('pro.student_profile.tracking_review.water_progress_value', {
                     total: review.todayWater.totalMl,
@@ -518,10 +549,10 @@ function TrackingReviewCard({
                     borderColor: day.goalMet ? theme.color.success : theme.color.border,
                   },
                 ]}>
-                <Text style={[styles.hydrationDayText, { color: theme.color.textPrimary }]}> 
+                <Text style={[styles.hydrationDayText, { color: theme.color.textPrimary }]}>
                   {day.dateKey.slice(5)}
                 </Text>
-                <Text style={[styles.hydrationMlText, { color: theme.color.textSecondary }]}> 
+                <Text style={[styles.hydrationMlText, { color: theme.color.textSecondary }]}>
                   {t('pro.student_profile.tracking_review.water_total_value', { total: day.totalMl })}
                 </Text>
               </View>
@@ -529,16 +560,16 @@ function TrackingReviewCard({
           </View>
 
           <View style={styles.trackingListBlock}>
-            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}> 
+            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}>
               {t('pro.student_profile.tracking_review.meals_today')}
             </Text>
             {review.todayMealCheckOffs.length === 0 ? (
-              <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+              <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
                 {t('pro.student_profile.tracking_review.empty_meals')}
               </Text>
             ) : (
               review.todayMealCheckOffs.map((meal) => (
-                <Text key={`${meal.mealId}-${meal.loggedAt}`} style={[styles.meta, { color: theme.color.textPrimary }]}> 
+                <Text key={`${meal.mealId}-${meal.loggedAt}`} style={[styles.meta, { color: theme.color.textPrimary }]}>
                   {t('pro.student_profile.tracking_review.meal_calories_value', {
                     mealId: meal.mealId,
                     calories: meal.calories,
@@ -549,20 +580,20 @@ function TrackingReviewCard({
           </View>
 
           <View style={styles.trackingListBlock}>
-            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}> 
+            <Text style={[styles.trackingLabel, { color: theme.color.textSecondary }]}>
               {t('pro.student_profile.tracking_review.recent_portions')}
             </Text>
             {review.recentPortionLogs.length === 0 ? (
-              <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+              <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
                 {t('pro.student_profile.tracking_review.empty_portions')}
               </Text>
             ) : (
               review.recentPortionLogs.slice(0, 7).map((log) => (
-                <View key={log.id} style={[styles.portionRow, { borderColor: theme.color.border }]}> 
-                  <Text style={[styles.meta, { color: theme.color.textPrimary }]}> 
+                <View key={log.id} style={[styles.portionRow, { borderColor: theme.color.border }]}>
+                  <Text style={[styles.meta, { color: theme.color.textPrimary }]}>
                     {`${log.loggedAt.slice(0, 10)} · ${log.mealId}`}
                   </Text>
-                  <Text style={[styles.meta, { color: theme.color.textSecondary }]}> 
+                  <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
                     {t('pro.student_profile.tracking_review.portion_macros_value', {
                       calories: log.snapshot.calories,
                       carbs: log.snapshot.carbs,
@@ -693,8 +724,12 @@ function AssignmentCard({
     <DsCard scheme={scheme} testID={`${testID}.assignmentCard`}>
       <View style={styles.assignmentHeader}>
         <View accessibilityLabel={`${specialtyLabel}: ${statusLabel}`} style={{ flex: 1 }}>
-          <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{specialtyLabel}</Text>
-          <Text style={[styles.statusBadge, { color: statusColor }]}>{statusLabel}</Text>
+          <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]} testID={`${testID}.title`}>
+            {specialtyLabel}
+          </Text>
+          <Text style={[styles.statusBadge, { color: statusColor }]} testID={`${testID}.status`}>
+            {statusLabel}
+          </Text>
         </View>
         {status !== 'active' || !draftPlan ? (
           <View style={styles.assignmentCtaContainer}>

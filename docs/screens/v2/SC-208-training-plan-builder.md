@@ -39,7 +39,7 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 - Remove sessions.
 - Add exercise items to a session via proxy-backed exercise search (name required, quantity and notes optional) or by typing a custom name.
 - Remove exercise items from a session.
-- Save plan (create or update) as a single persistence step that writes the current local draft to Firestore.
+- Save plan (create or update) as a single persistence step that writes the current local draft to the MyChampions server.
 - Delete plan; after a successful delete, show the blocking loading scrim and then return the user to the training library.
 - If the user attempts to leave with unsaved local changes, show a discard-confirmation dialog before navigation.
 - Assign plan to a single student by creating a draft assigned copy, routing the Professional into the builder to fine-tune that Student-specific copy, then publishing it with `Assign & Send`.
@@ -51,24 +51,24 @@ Exercise items are added via the `ExerciseSearchModal` component, which:
 1. Debounces user input (400 ms) and calls `searchExerciseLibrary` via the `useExerciseSearch` hook.
 2. Displays a scrollable list of search results (title + localized muscle group + thumbnail).
 3. On item selection, shows a detail/confirmation form for `quantity` and `notes`.
-4. On confirm, calls `handleConfirmExercise` which adds the item to the local draft; Firestore is updated only when the user presses `Save`.
+4. On confirm, calls `handleConfirmExercise` which adds the item to the local draft; the MyChampions server plan update is sent only when the user presses `Save`.
 
-### Proxy Contract
-- Base URL: `https://exerciseservice.eduwaldo.com`
-- Endpoint: `POST /proxy`
-- Request body shape:
-  - `lang`: normalized locale (`en`, `pt`, `es`; fallback `en`)
-  - `request.url`: upstream URL under `https://exercise-api.ymove.app/api/v2/exercises...`
-  - `request.method`: `GET`
-  - `request.headers`: `{ "Accept": "application/json" }`
-- Request header: send `x-request-id` on every call.
+### Catalog Service Contract
+- Base URL: `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL`
+- Search endpoint: `POST /integrations/exercise/search`
+- Detail endpoint: `GET /integrations/exercise/exercises/:id`
+- Search request body shape:
+  - `query`: user-entered exercise search string
+  - `lang`: effective app/device locale such as `en-US`, `pt-BR`, or `es-ES`
+  - `page`, `pageSize`: pagination controls
+- Request headers: send `Authorization: Bearer <MyChampions token>` and `x-request-id` on every call.
 - Response header: service always returns `x-request-id` for correlation.
-- The mobile app never sends YMove API keys; the proxy injects key server-side.
+- The mobile app never sends YMove API keys; the MyChampions server reads the mirrored local exercise catalog and owns any upstream/provider integration.
 
 ### Video URL Caching Policy (API Contract — Critical)
 Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
-- **Only `exerciseId` (the UUID) is persisted to Firestore.**
-- Thumbnail/video URLs are **never stored** in Firestore.
+- **Only `exerciseId` (the UUID) is persisted to the MyChampions server plan payload.**
+- Thumbnail/video URLs are **never stored** in plan persistence.
 - `SessionCard` re-fetches a fresh thumbnail via `useExerciseThumbnail(item.exerciseId)` → `getExerciseById` at display time.
 - Legacy `ymoveId` values are still read as fallback for existing records during migration.
 
@@ -93,7 +93,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 - Published assigned plans remain editable by the owning Professional while the matching `fitness_coach` Connection is active; edits apply directly to the Student-visible plan until a separate audit/change-history workflow is introduced.
 - When the matching `fitness_coach` Connection ends, the assigned training plan becomes read-only history and Professional write access stops.
 - No fixed mandatory fields beyond name for session items (D-013).
-- Session add/remove/reorder and item add/remove/reorder are local draft edits only; Firestore is not called until the user presses `Save`.
+- Session add/remove/reorder and item add/remove/reorder are local draft edits only; the MyChampions server is not called until the user presses `Save`.
 - If local draft edits exist, back navigation must require explicit discard confirmation before leaving the screen.
 
 ## Data Contract
@@ -107,7 +107,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | Item `name` | string | required |
 | Item `quantity` | string | optional free-form (e.g. "3 sets × 10 reps") |
 | Item `notes` | string | optional |
-| Item `exerciseId` | string (UUID) | optional; stable upstream exercise ID — only ID field stored in Firestore |
+| Item `exerciseId` | string (UUID) | optional; stable upstream exercise ID — only ID field stored in plan persistence |
 
 ### Outputs
 | Type | Description |
@@ -134,7 +134,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | `addTrainingSessionItem` | Add exercise item to session |
 | `removeTrainingSessionItem` | Remove exercise item from session |
 
-Plan library and builder persistence are Firestore-backed via `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`.
+Plan library reads, predefined assignment/draft operations, and builder mutations use the MyChampions server through `features/plans/plan-source.ts` and `features/plans/plan-builder-source.ts`; outside E2E fixtures, missing local server auth fails closed.
 
 ## Localization Keys
 
@@ -205,9 +205,9 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | `features/plans/plan-builder.logic.ts` | Pure functions: `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `isStarterTemplate`, `normalizePlanBuilderError` |
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/plans/plan-builder-source.ts` | Firestore source ops: `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, `addTrainingSession`, `removeTrainingSession`, `addTrainingSessionItem`, `removeTrainingSessionItem` |
+| `features/plans/plan-builder-source.ts` | Server source ops: `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, session/item mutations, starter templates, and food search |
 | `features/plans/use-plan-builder.ts` | React hook `useTrainingPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
-| `features/plans/exercise-service-source.ts` | Exercise service proxy client: `searchExerciseLibrary`, `getExerciseById`; types: `ExerciseItem`, `ExerciseVideo`, `ExerciseSearchResult` |
+| `features/plans/exercise-service-source.ts` | MyChampions server exercise catalog client: `searchExerciseLibrary`, `getExerciseById`; types: `ExerciseItem`, `ExerciseVideo`, `ExerciseSearchResult` |
 | `features/plans/use-exercise-search.ts` | Hook `useExerciseSearch` — state machine: `idle/loading/error/done` |
 | `features/plans/use-exercise-thumbnail.ts` | Hook `useExerciseThumbnail(exerciseId)` — fetches fresh thumbnail URL on demand; never caches |
 | `components/ds/patterns/ExerciseSearchModal.tsx` | Two-phase modal: search results list → exercise detail/confirm form |

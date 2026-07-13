@@ -27,14 +27,15 @@ In-App Support Dialog.
   - When: User submits valid subject and body.
   - Then: "Submitting..." indicator appears.
   - And: Success view is shown with "Message sent successfully!".
-  - And: Firestore receives a new document in `supportMessages` with correct metadata.
+  - And: The MyChampions server stores a new row in `support_messages` with correct metadata.
+  - E2E harness: With `EXPO_PUBLIC_E2E_AUTH_SESSION=true` in dev, the source layer returns a deterministic support id for the explicit E2E user so this case can verify modal success without mutating provider data.
 
 - `TC-304.5`: **Offline Resilience**
   - Given: Device is offline.
-  - When: User submits valid message.
-  - Then: Success view is shown.
-  - And: Offline notice "Connect to the internet to save changes" is displayed.
-  - And: Firestore local cache holds the document for later sync.
+  - When: User enters valid subject and body.
+  - Then: Offline notice "Connect to the internet to save changes" is displayed.
+  - And: Submit remains blocked until connectivity returns.
+  - And: No support message is written.
 
 - `TC-304.6`: **Dismissal Logic**
   - Given: User is on success screen.

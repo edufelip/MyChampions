@@ -39,7 +39,7 @@ export const esES: Record<TranslationKey, string> = {
   'auth.signin.error.provider_conflict':
     'Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método.',
   'auth.signin.error.configuration':
-    'La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo.',
+    'La autenticación aún no está configurada. Define la URL del servidor de MyChampions e inténtalo de nuevo.',
   'auth.terms.title': 'Términos y Privacidad',
   'auth.terms.description':
     'Antes de continuar, revisa y acepta los términos más recientes de My Champions.',
@@ -68,7 +68,7 @@ export const esES: Record<TranslationKey, string> = {
   'auth.signup.error.provider_conflict':
     'Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método.',
   'auth.signup.error.configuration':
-    'La autenticación aún no está configurada. Define las claves de Firebase e inténtalo de nuevo.',
+    'La autenticación aún no está configurada. Define la URL del servidor de MyChampions e inténtalo de nuevo.',
   'auth.signup.placeholder.body':
     'La implementación del formulario de creación de cuenta comienza en el siguiente bloque.',
   'auth.signup.already_have': '¿Ya tienes una cuenta?',
@@ -109,6 +109,8 @@ export const esES: Record<TranslationKey, string> = {
   'relationship.cta_scan_qr': 'Escanear código QR',
   'relationship.qr.permission_denied':
     'Se necesita acceso a la cámara para escanear un código QR. Concede el permiso en los ajustes del dispositivo o introduce el código manualmente.',
+  'relationship.qr.camera_unavailable':
+    'Este dispositivo no tiene una cámara disponible. Introduce el código de invitación manualmente.',
   'relationship.qr.invalid_payload':
     'Este código QR no contiene un código de invitación válido. Intenta escanearlo de nuevo o introdúcelo manualmente.',
   'relationship.qr.close': 'Cerrar escáner',
@@ -132,6 +134,7 @@ export const esES: Record<TranslationKey, string> = {
   'relationship.unbind.confirm_yes': 'Terminar conexión',
   'relationship.unbind.confirm_no': 'Mantener conexión',
   'relationship.unbind.error': 'No se pudo terminar la conexión. Inténtalo de nuevo.',
+  'relationship.unbind.ended': 'Conexión terminada. Tu profesional ya no tiene acceso activo.',
   'relationship.credential.registry_id': 'ID de registro',
   'relationship.credential.authority': 'Organismo',
   'relationship.credential.country': 'País',
@@ -155,6 +158,7 @@ export const esES: Record<TranslationKey, string> = {
   'common.cta.save': 'Guardar',
   'common.cta.cancel': 'Cancelar',
   'common.cta.clear': 'Limpiar',
+  'common.cta.done': 'Hecho',
   'common.cta.delete': 'Eliminar',
   'pro.plan.food_search.error': 'Búsqueda de alimentos no disponible. Inténtalo de nuevo.',
   'pro.plan.food_search.error.quota': 'La búsqueda de alimentos está temporalmente limitada. Inténtalo de nuevo en breve.',
@@ -162,6 +166,8 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.error.reason': 'Motivo: {reason}',
   'pro.plan.meal.not_found': 'Comida no encontrada',
   'pro.plan.meal.go_back': 'Volver',
+  'pro.plan.meal.empty.title': 'Aún no hay alimentos añadidos',
+  'pro.plan.meal.empty.body': 'Busca y añade alimentos a esta comida para construir el plan.',
   'pro.plan.custom_meal.section': 'Comidas personalizadas guardadas',
   'pro.plan.custom_meal.empty': 'Aún no hay comidas personalizadas guardadas.',
   'pro.plan.custom_meal.badge': 'Snapshot',
@@ -287,6 +293,9 @@ export const esES: Record<TranslationKey, string> = {
   'pro.home.title': 'Panel',
   'pro.home.active_students': 'Alumnos activos',
   'pro.home.pending_requests': 'Solicitudes pendientes',
+  'pro.home.plan_change_notification.title': 'Solicitud de cambio de plan',
+  'pro.home.plan_change_notification.body': '{count} solicitud pendiente de {studentUid}.',
+  'pro.home.plan_change_notification.cta': 'Revisar',
   'pro.home.invite_code.title': 'Tu código de invitación',
   'pro.home.invite_code.careful_sharing': 'Comparte solo con alumnos de confianza para mantener tu lista organizada.',
   'pro.home.invite_code.share': 'Compartir código',
@@ -328,6 +337,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.specialty.credential.save': 'Guardar credencial',
   'pro.specialty.credential.skip': 'Omitir',
   'pro.specialty.credential.skip_add': 'Añadir sin credencial',
+  'pro.specialty.credential.incomplete_error': 'Completa todos los campos de la credencial u omítela por ahora.',
   'pro.specialty.credential.save_error': 'No se pudo guardar la credencial. Inténtalo de nuevo.',
   'pro.specialty.empty': 'Aún no hay especialidades añadidas.',
   'pro.specialty.removal_assist.view_active': 'Ver alumnos activos',
@@ -541,8 +551,6 @@ export const esES: Record<TranslationKey, string> = {
   'settings.account.delete.error.network': 'No se pudo conectar. Verifica tu conexión e intenta de nuevo.',
   'settings.account.delete.error.unknown': 'Algo salió mal. Inténtalo de nuevo.',
   'settings.account.delete.error.already_requested': 'Ya hay una solicitud de eliminación en curso.',
-  'settings.account.delete.error.requires_recent_login':
-    'Por tu seguridad, cierra la sesión y vuelve a iniciarla antes de eliminar tu cuenta.',
   'settings.account.delete.error.unauthenticated': 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.',
   'meal.builder.title.create': 'Crear alimento personalizado',
   'meal.builder.title.edit': 'Editar comida',
@@ -734,7 +742,6 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.cta.bulk_assign': 'Asignación masiva',
   'pro.plan.food_search.placeholder': 'Buscar alimentos…',
   'pro.plan.food_search.empty': 'No se encontraron alimentos. Prueba otro término.',
-  'pro.plan.food_search.stub_notice': 'Añade alimentos para empezar este plan.',
   'pro.plan.validation.name_required': 'El nombre del plan es obligatorio.',
   'pro.plan.validation.name_too_short': 'El nombre del plan debe tener al menos 2 caracteres.',
   'pro.plan.validation.hydration_goal_required': 'El objetivo diario de agua es obligatorio.',
@@ -781,6 +788,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.item.field.nutrition_quantity.placeholder': 'p.ej. 150g',
   'pro.plan.item.field.nutrition_notes.label': 'Notas (opcional)',
   'pro.plan.item.field.nutrition_notes.placeholder': 'p.ej. Sin sal',
+  'pro.plan.item.delete.body': '¿Eliminar {name} de esta comida?',
   'pro.plan.item.search.placeholder': 'Buscar un ejercicio...',
   'pro.plan.item.search.empty': 'No se encontraron ejercicios.',
   'pro.plan.item.search.error': 'Error al buscar ejercicios.',
@@ -810,7 +818,6 @@ export const esES: Record<TranslationKey, string> = {
   'student.plan.training.title.edit': 'Editar mi plan de entrenamiento',
   'student.plan.section.meals': 'Comidas de mi plan',
   'student.plan.section.sessions': 'Sesiones de entrenamiento',
-  'student.plan.food_search.stub_notice': 'Añade comidas para comenzar tu plan autoguiado.',
   'student.plan.cta.add_meal': 'Añadir comida',
   'student.plan.field.name.label': 'Nombre de mi plan',
   'student.plan.training.empty_sessions': 'Aún no hay sesiones. Añade una para empezar tu plan.',

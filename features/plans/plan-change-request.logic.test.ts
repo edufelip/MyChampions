@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  buildProfessionalPlanChangeNotificationSummary,
   validatePlanChangeRequestInput,
   normalizePlanChangeRequestStatus,
   normalizePlanType,
@@ -99,4 +100,61 @@ test('normalizePlanChangeRequestError maps configuration error', () => {
 test('normalizePlanChangeRequestError returns unknown for unrecognized', () => {
   assert.equal(normalizePlanChangeRequestError(null), 'unknown');
   assert.equal(normalizePlanChangeRequestError({ message: 'some error' }), 'unknown');
+});
+
+test('buildProfessionalPlanChangeNotificationSummary summarizes pending requests newest first', () => {
+  assert.deepEqual(
+    buildProfessionalPlanChangeNotificationSummary([
+      {
+        id: 'request-old-reviewed',
+        planId: 'nutrition-plan-1',
+        planType: 'nutrition',
+        studentUid: 'student-1',
+        requestText: 'Already reviewed request.',
+        status: 'reviewed',
+        createdAt: '2026-06-29T09:00:00.000Z',
+      },
+      {
+        id: 'request-new',
+        planId: 'training-plan-2',
+        planType: 'training',
+        studentUid: 'student-2',
+        requestText: 'Please swap squats for leg press.',
+        status: 'pending',
+        createdAt: '2026-06-29T11:00:00.000Z',
+      },
+      {
+        id: 'request-old',
+        planId: 'nutrition-plan-1',
+        planType: 'nutrition',
+        studentUid: 'student-1',
+        requestText: 'Please adjust dinner carbs.',
+        status: 'pending',
+        createdAt: '2026-06-29T10:00:00.000Z',
+      },
+    ]),
+    {
+      pendingCount: 2,
+      latestRequest: {
+        id: 'request-new',
+        planId: 'training-plan-2',
+        planType: 'training',
+        studentUid: 'student-2',
+        requestText: 'Please swap squats for leg press.',
+        status: 'pending',
+        createdAt: '2026-06-29T11:00:00.000Z',
+      },
+      affectedStudentUids: ['student-2', 'student-1'],
+      planTypes: ['training', 'nutrition'],
+    }
+  );
+});
+
+test('buildProfessionalPlanChangeNotificationSummary returns an empty summary without pending requests', () => {
+  assert.deepEqual(buildProfessionalPlanChangeNotificationSummary([]), {
+    pendingCount: 0,
+    latestRequest: null,
+    affectedStudentUids: [],
+    planTypes: [],
+  });
 });

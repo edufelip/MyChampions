@@ -10,8 +10,8 @@
  * and expo-image-manipulator for client-side JPEG compression (FR-230, BR-287).
  * AI CTA is gated by paywall — requires student_pro or professional_pro
  * entitlement (D-132). RevenueCat native paywall shown on upgrade tap.
- * Data Connect meal source wiring is complete (D-126).
- * Portion log persistence is wired via logPortion SDK operation.
+ * Custom meal and portion-log sources use the MyChampions server path (D-126).
+ * Portion log persistence is wired through the local server source boundary.
  * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
  *
  * Docs: docs/screens/v2/SC-215-custom-meal-library-and-quick-log.md
@@ -27,6 +27,9 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  InputAccessoryView,
+  Keyboard,
+  Platform,
   Pressable,
   Share,
   StyleSheet,
@@ -57,6 +60,7 @@ import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -74,6 +78,7 @@ type Palette = {
   onAccent: string;
 };
 type TFn = ReturnType<typeof useTranslation>['t'];
+const QUICK_LOG_KEYBOARD_ACCESSORY_ID = 'quick-log-keyboard-accessory';
 
 type QuickLogPanelState =
   | { kind: 'closed' }
@@ -107,9 +112,12 @@ export default function CustomMealLibraryScreen({
   const { state, shareLink, remove, logPortion } = useCustomMeals(Boolean(currentUser));
 
   const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    state.kind === 'ready' ? state.lastSyncedAtIso : null,
+  ]);
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
     networkStatus,
-    lastSyncedAtIso: null,
+    lastSyncedAtIso,
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
@@ -121,7 +129,7 @@ export default function CustomMealLibraryScreen({
     hasAiAccess,
     isLoading: isSubscriptionLoading,
     openAiPaywall,
-  } = useSubscription(Boolean(currentUser));
+  } = useSubscription(currentUser?.uid ?? null);
 
   // ── AI photo analysis (BL-108) ─────────────────────────────────────────────
   const analysis = useMealPhotoAnalysis(currentUser);
@@ -372,6 +380,7 @@ function MealRow({
   onLog,
   onEdit,
   onShare,
+  onDelete,
 }: {
   meal: CustomMeal;
   palette: Palette;
@@ -423,6 +432,17 @@ function MealRow({
           testID={`meal.library.row.${meal.id}.share`}>
           <Text style={[styles.ghostActionText, { color: palette.tint }]}>
             {t('meal.library.cta_share')}
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t('common.cta.delete') as string} ${meal.name}`}
+          disabled={isWriteLocked}
+          onPress={() => void onDelete()}
+          style={[styles.ghostAction, { opacity: isWriteLocked ? 0.4 : 1 }]}
+          testID={`meal.library.row.${meal.id}.delete`}>
+          <Text style={[styles.ghostActionText, { color: palette.danger }]}>
+            {t('common.cta.delete')}
           </Text>
         </Pressable>
       </View>
@@ -513,7 +533,7 @@ function QuickLogPanel({
         value={grams}
         onChangeText={onChangeGrams}
         keyboardType="decimal-pad"
-        autoFocus
+        inputAccessoryViewID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}
         accessibilityLabel={t('meal.library.quick_log.field.label') as string}
         testID="meal.library.quickLog.input"
       />
@@ -568,6 +588,22 @@ function QuickLogPanel({
           </Text>
         </Pressable>
       </View>
+
+      {Platform.OS === 'ios' ? (
+        <InputAccessoryView nativeID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}>
+          <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={Keyboard.dismiss}
+              style={styles.keyboardDoneButton}
+              testID="meal.library.quickLog.keyboard.done">
+              <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
+                {t('common.cta.done')}
+              </Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      ) : null}
     </View>
   );
 }
@@ -820,6 +856,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
   },
+  keyboardAccessory: {
+    alignItems: 'flex-end',
+    borderTopColor: '#D8DEE7',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  keyboardDoneButton: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  keyboardDoneText: { fontSize: 16, fontWeight: '700' },
   panelTitle: {
     fontFamily: Fonts?.rounded ?? 'normal',
     fontSize: 16,

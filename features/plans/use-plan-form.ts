@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Keyboard } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import type { TranslationBinding } from '@/localization';
@@ -49,6 +49,8 @@ export function usePlanForm<T extends Record<string, any>>({
   }, []);
 
   const handleSave = useCallback(async () => {
+    Keyboard.dismiss();
+
     const formErrors = validate(values);
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);

@@ -6,12 +6,12 @@
  *   — Profile header (avatar initials, display name, email, role badge)
  *   — Account section: email display, change password, language switcher
  *   — Legal & Privacy section: privacy policy, terms of service
- *   — Support section: contact support (mailto)
+ *   — Support section: server-backed support dialog
  *   — Sign out
  *   — Danger zone: account deletion (FR-133, FR-157, BR-225, BR-231)
  *
  * Change-password flow:
- *   - Email/password accounts → sendPasswordResetEmail → inline success/error
+ *   - Email/password accounts → server-backed password reset request → inline success/error
  *   - OAuth accounts (Google/Apple) → informational notice (no reset email)
  *
  * Language switcher:
@@ -33,7 +33,6 @@ import {
   View,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { sendPasswordResetEmail, signOut } from 'firebase/auth';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -42,16 +41,22 @@ import { SupportModal } from '@/components/ds/patterns/SupportModal';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import type { AuthProviderId } from '@/features/auth/auth-user';
+import {
+  requestPasswordResetFromSource,
+  signOutFromSource,
+} from '@/features/auth/account-auth-source';
+import { E2E_AUTH_SESSION_UID } from '@/features/auth/e2e-auth-session';
 import {
   deleteAccountAndDataFromSource,
   ProfileSourceError,
 } from '@/features/auth/profile-source';
-import { getFirebaseAuth } from '@/features/auth/firebase';
 
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -68,7 +73,7 @@ type DeleteRequestState =
   | { kind: 'idle' }
   | { kind: 'pending' }
   | { kind: 'success' }
-  | { kind: 'error'; reason: 'network' | 'already_requested' | 'requires_recent_login' | 'unauthenticated' | 'unknown' };
+  | { kind: 'error'; reason: 'network' | 'already_requested' | 'unauthenticated' | 'unknown' };
 
 type PasswordResetState =
   | { kind: 'idle' }
@@ -92,13 +97,13 @@ function resolveAvatarInitial(displayName: string | null, email: string | null):
   return (name[0] ?? '?').toUpperCase();
 }
 
-function isEmailPasswordAccount(providerData: { providerId: string }[]): boolean {
-  return providerData.some((p) => p.providerId === 'password');
+function isEmailPasswordAccount(authProviderIds: AuthProviderId[]): boolean {
+  return authProviderIds.includes('email_password');
 }
 
-function resolveOAuthProviderLabel(providerData: { providerId: string }[]): string {
-  if (providerData.some((p) => p.providerId === 'google.com')) return 'Google';
-  if (providerData.some((p) => p.providerId === 'apple.com')) return 'Apple';
+function resolveOAuthProviderLabel(authProviderIds: AuthProviderId[]): string {
+  if (authProviderIds.includes('google')) return 'Google';
+  if (authProviderIds.includes('apple')) return 'Apple';
   return 'your sign-in provider';
 }
 
@@ -113,35 +118,47 @@ export default function AccountSettingsScreen() {
   const router = useRouter();
   const { activeLocale } = useLocale();
 
-  const { currentUser, lockedRole, clearSession, termsUrl, privacyPolicyUrl } = useAuthSession();
+  const {
+    currentUser,
+    lockedRole,
+    clearSession,
+    termsUrl,
+    privacyPolicyUrl,
+    lastProfileSyncedAtIso,
+  } = useAuthSession();
 
   // ── Offline state ──────────────────────────────────────────────────────────
   const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([lastProfileSyncedAtIso]);
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
     networkStatus,
-    lastSyncedAtIso: null,
+    lastSyncedAtIso,
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   // ── Feature state ──────────────────────────────────────────────────────────
   const [deleteState, setDeleteState] = useState<DeleteRequestState>({ kind: 'idle' });
   const [passwordState, setPasswordState] = useState<PasswordResetState>({ kind: 'idle' });
+  const [isPasswordConfirmVisible, setIsPasswordConfirmVisible] = useState(false);
   const [isSupportModalVisible, setIsSupportModalVisible] = useState(false);
+  const [isSignOutConfirmVisible, setIsSignOutConfirmVisible] = useState(false);
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
 
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const email = currentUser?.email ?? null;
   const displayName = resolveDisplayName(currentUser?.displayName ?? null, email);
   const avatarInitial = resolveAvatarInitial(currentUser?.displayName ?? null, email);
-  const providerData = currentUser?.providerData ?? [];
-  const isEmailUser = isEmailPasswordAccount(providerData);
-  const oauthProvider = resolveOAuthProviderLabel(providerData);
+  const authProviderIds = currentUser?.authProviderIds ?? [];
+  const isEmailUser = isEmailPasswordAccount(authProviderIds);
+  const oauthProvider = resolveOAuthProviderLabel(authProviderIds);
   const isStudent = lockedRole === 'student';
   const isProfessional = lockedRole === 'professional';
   const roleBadgeLabel = isStudent
     ? t('settings.account.role.student')
     : t('settings.account.role.professional');
   const topInsetPadding = insets.top;
+  const bottomNavigationInset = insets.bottom + 64;
 
   const isSubmittingDelete = deleteState.kind === 'pending';
   const isDeleteLocked = isSubmittingDelete || isWriteLocked;
@@ -153,11 +170,9 @@ export default function AccountSettingsScreen() {
         ? t('settings.account.delete.error.network')
         : deleteState.reason === 'already_requested'
           ? t('settings.account.delete.error.already_requested')
-          : deleteState.reason === 'requires_recent_login'
-            ? t('settings.account.delete.error.requires_recent_login')
-            : deleteState.reason === 'unauthenticated'
-              ? t('settings.account.delete.error.unauthenticated')
-              : t('settings.account.delete.error.unknown')
+          : deleteState.reason === 'unauthenticated'
+            ? t('settings.account.delete.error.unauthenticated')
+            : t('settings.account.delete.error.unknown')
       : null;
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -196,24 +211,20 @@ export default function AccountSettingsScreen() {
       return;
     }
 
-    Alert.alert(
-      t('settings.account.change_password.confirm_title') as string,
-      t('settings.account.change_password.confirm_body', { email: email ?? '' }) as string,
-      [
-        { text: t('settings.account.change_password.confirm_no') as string, style: 'cancel' },
-        {
-          text: t('settings.account.change_password.confirm_yes') as string,
-          onPress: submitPasswordReset,
-        },
-      ]
-    );
+    setPasswordState({ kind: 'idle' });
+    setIsPasswordConfirmVisible(true);
   }
 
   async function submitPasswordReset() {
     if (!email) return;
+    setIsPasswordConfirmVisible(false);
     setPasswordState({ kind: 'pending' });
+    if (__DEV__ && currentUser?.uid === E2E_AUTH_SESSION_UID) {
+      setPasswordState({ kind: 'success' });
+      return;
+    }
     try {
-      await sendPasswordResetEmail(getFirebaseAuth(), email);
+      await requestPasswordResetFromSource(email);
       setPasswordState({ kind: 'success' });
     } catch {
       setPasswordState({ kind: 'error' });
@@ -225,53 +236,34 @@ export default function AccountSettingsScreen() {
   }
 
   function handleSignOut() {
-    Alert.alert(
-      t('settings.account.sign_out.confirm_title') as string,
-      t('settings.account.sign_out.confirm_body') as string,
-      [
-        { text: t('settings.account.sign_out.confirm_no') as string, style: 'cancel' },
-        {
-          text: t('settings.account.sign_out.confirm_yes') as string,
-          style: 'destructive',
-          onPress: submitSignOut,
-        },
-      ]
-    );
+    setIsSignOutConfirmVisible(true);
   }
 
   function submitSignOut() {
-    clearSession();
-    void signOut(getFirebaseAuth());
+    setIsSignOutConfirmVisible(false);
+    void signOutFromSource().finally(() => clearSession());
   }
 
   function handleRequestDeletion() {
-    Alert.alert(
-      t('settings.account.delete.confirm_title') as string,
-      t('settings.account.delete.confirm_body') as string,
-      [
-        { text: t('settings.account.delete.confirm_no') as string, style: 'cancel' },
-        {
-          text: t('settings.account.delete.confirm_yes') as string,
-          style: 'destructive',
-          onPress: submitDeletionRequest,
-        },
-      ]
-    );
+    setDeleteState({ kind: 'idle' });
+    setIsDeleteConfirmVisible(true);
   }
 
   async function submitDeletionRequest() {
+    setIsDeleteConfirmVisible(false);
     setDeleteState({ kind: 'pending' });
     try {
       await deleteAccountAndDataFromSource();
+      try {
+        await signOutFromSource();
+      } catch {
+        // Account deletion already succeeded; local session state must still be cleared.
+      }
       clearSession();
-      // Optional: signOut is redundant if deleteUser succeeds, but safe to call.
-      void signOut(getFirebaseAuth());
       setDeleteState({ kind: 'success' });
     } catch (err) {
       if (err instanceof ProfileSourceError) {
-        if (err.code === 'requires_recent_login') {
-          setDeleteState({ kind: 'error', reason: 'requires_recent_login' });
-        } else if (err.code === 'network') {
+        if (err.code === 'network') {
           setDeleteState({ kind: 'error', reason: 'network' });
         } else if (err.code === 'unauthenticated') {
           setDeleteState({ kind: 'error', reason: 'unauthenticated' });
@@ -298,7 +290,7 @@ export default function AccountSettingsScreen() {
 
   return (
     <ScrollView
-      style={[styles.root, { backgroundColor: theme.color.canvas }]}
+      style={[styles.root, { backgroundColor: theme.color.canvas, marginBottom: bottomNavigationInset }]}
       contentContainerStyle={[styles.content, { paddingTop: topInsetPadding + DsSpace.sm }]}
       testID="settings.account.screen">
       <Stack.Screen options={{ title: t('settings.account.title') as string, headerShown: false }} />
@@ -376,6 +368,15 @@ export default function AccountSettingsScreen() {
             ) : null}
           </View>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('settings.account.contact.label') as string}
+          onPress={handleContactSupport}
+          hitSlop={8}
+          style={[styles.supportQuickButton, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}
+          testID="settings.account.supportQuickCta">
+          <MaterialIcons name="help-outline" size={20} color={theme.color.accentPrimary} />
+        </Pressable>
       </View>
 
       {/* ── Account section ────────────────────────────────────────────── */}
@@ -405,6 +406,38 @@ export default function AccountSettingsScreen() {
             testID="settings.account.changePasswordRow"
           />
         )}
+        {isPasswordConfirmVisible ? (
+          <View
+            style={[styles.confirmCard, { backgroundColor: theme.color.accentPrimarySoft, borderColor: theme.color.accentPrimary }]}
+            testID="settings.account.passwordConfirm">
+            <Text style={[styles.confirmTitle, { color: theme.color.textPrimary }]}>
+              {t('settings.account.change_password.confirm_title')}
+            </Text>
+            <Text style={[styles.confirmBody, { color: theme.color.textSecondary }]}>
+              {t('settings.account.change_password.confirm_body', { email: email ?? '' })}
+            </Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setIsPasswordConfirmVisible(false)}
+                style={[styles.confirmButton, { borderColor: theme.color.border }]}
+                testID="settings.account.passwordCancelCta">
+                <Text style={[styles.confirmButtonText, { color: theme.color.textSecondary }]}>
+                  {t('settings.account.change_password.confirm_no')}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={submitPasswordReset}
+                style={[styles.confirmButton, { backgroundColor: theme.color.accentPrimary, borderColor: theme.color.accentPrimary }]}
+                testID="settings.account.passwordConfirmCta">
+                <Text style={[styles.confirmButtonText, { color: theme.color.surface }]}>
+                  {t('settings.account.change_password.confirm_yes')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
         {passwordState.kind === 'error' ? (
           <Text style={[styles.rowError, { color: theme.color.danger }]} testID="settings.account.passwordError">
             {t('settings.account.change_password.error')}
@@ -420,6 +453,49 @@ export default function AccountSettingsScreen() {
           testID="settings.account.languageRow"
         />
       </View>
+
+      {/* ── Sign out ───────────────────────────────────────────────────── */}
+      <Pressable
+        onPress={handleSignOut}
+        style={[styles.signOutButton, { borderColor: theme.color.warning }]}
+        accessibilityRole="button"
+        testID="settings.account.signOutCta">
+        <Text style={[styles.signOutText, { color: theme.color.warning }]}>
+          {t('settings.account.sign_out.cta')}
+        </Text>
+      </Pressable>
+      {isSignOutConfirmVisible ? (
+        <View
+          style={[styles.confirmCard, { backgroundColor: theme.color.warningSoft, borderColor: theme.color.warning }]}
+          testID="settings.account.signOutConfirm">
+          <Text style={[styles.confirmTitle, { color: theme.color.textPrimary }]}>
+            {t('settings.account.sign_out.confirm_title')}
+          </Text>
+          <Text style={[styles.confirmBody, { color: theme.color.textSecondary }]}>
+            {t('settings.account.sign_out.confirm_body')}
+          </Text>
+          <View style={styles.confirmActions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setIsSignOutConfirmVisible(false)}
+              style={[styles.confirmButton, { borderColor: theme.color.border }]}
+              testID="settings.account.signOutCancelCta">
+              <Text style={[styles.confirmButtonText, { color: theme.color.textSecondary }]}>
+                {t('settings.account.sign_out.confirm_no')}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={submitSignOut}
+              style={[styles.confirmButton, styles.confirmDestructiveButton, { backgroundColor: theme.color.warning, borderColor: theme.color.warning }]}
+              testID="settings.account.signOutConfirmCta">
+              <Text style={[styles.confirmButtonText, { color: theme.color.surface }]}>
+                {t('settings.account.sign_out.confirm_yes')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       {/* ── Legal & Privacy section ─────────────────────────────────────── */}
       <SectionHeader label={t('settings.account.section.legal') as string} theme={theme} />
@@ -450,16 +526,6 @@ export default function AccountSettingsScreen() {
         />
       </View>
 
-      {/* ── Sign out ───────────────────────────────────────────────────── */}
-      <Pressable
-        onPress={handleSignOut}
-        style={[styles.signOutButton, { borderColor: theme.color.warning }]}
-        testID="settings.account.signOutCta">
-        <Text style={[styles.signOutText, { color: theme.color.warning }]}>
-          {t('settings.account.sign_out.cta')}
-        </Text>
-      </Pressable>
-
       {/* ── Danger zone ────────────────────────────────────────────────── */}
       <SectionHeader label={t('settings.account.section.danger') as string} theme={theme} danger />
       <View style={[styles.group, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder }]}>
@@ -487,8 +553,41 @@ export default function AccountSettingsScreen() {
                 </Text>
               </View>
             ) : null}
+            {isDeleteConfirmVisible ? (
+              <View
+                style={[styles.confirmCard, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.danger }]}
+                testID="settings.account.deleteConfirm">
+                <Text style={[styles.confirmTitle, { color: theme.color.textPrimary }]}>
+                  {t('settings.account.delete.confirm_title')}
+                </Text>
+                <Text style={[styles.confirmBody, { color: theme.color.textSecondary }]}>
+                  {t('settings.account.delete.confirm_body')}
+                </Text>
+                <View style={styles.confirmActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setIsDeleteConfirmVisible(false)}
+                    style={[styles.confirmButton, { borderColor: theme.color.border }]}
+                    testID="settings.account.deleteCancelCta">
+                    <Text style={[styles.confirmButtonText, { color: theme.color.textSecondary }]}>
+                      {t('settings.account.delete.confirm_no')}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={submitDeletionRequest}
+                    style={[styles.confirmButton, styles.confirmDestructiveButton, { backgroundColor: theme.color.danger, borderColor: theme.color.danger }]}
+                    testID="settings.account.deleteConfirmCta">
+                    <Text style={[styles.confirmButtonText, { color: theme.color.surface }]}>
+                      {t('settings.account.delete.confirm_yes')}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={t('settings.account.delete.cta') as string}
               onPress={handleRequestDeletion}
               disabled={isDeleteLocked}
               style={[
@@ -655,6 +754,14 @@ const styles = StyleSheet.create({
   },
   rolePillText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   freeTierText: { fontSize: 11, fontWeight: '500', flexShrink: 1 },
+  supportQuickButton: {
+    alignItems: 'center',
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
 
   // Section header
   sectionHeader: {
@@ -722,6 +829,41 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   signOutText: { fontSize: 15, fontWeight: '600' },
+  confirmCard: {
+    borderRadius: DsRadius.lg,
+    borderWidth: 1,
+    gap: 10,
+    padding: DsSpace.md,
+  },
+  confirmTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  confirmBody: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+  },
+  confirmButton: {
+    alignItems: 'center',
+    borderRadius: DsRadius.md,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingHorizontal: DsSpace.sm,
+  },
+  confirmDestructiveButton: {
+    borderWidth: 1,
+  },
+  confirmButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
 
   // Footer
   versionFooter: {

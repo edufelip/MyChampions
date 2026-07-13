@@ -1,6 +1,6 @@
 /**
  * Connection invite code logic — professional-side operations.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-037, D-064, FR-179, FR-180, BR-241, BR-242
  */
 

@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, usePathname, useRouter } from 'expo-router';
+import { Stack, useGlobalSearchParams, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -9,7 +9,11 @@ import { getDsTheme } from '@/constants/design-system';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import { LocaleProvider } from '@/localization/locale-context';
-import { normalizeGuardPathname, resolveAuthGuardRedirect } from '@/features/auth/auth-route-guard.logic';
+import {
+  normalizeAuthReturnTo,
+  normalizeGuardPathname,
+  resolveAuthGuardRedirect,
+} from '@/features/auth/auth-route-guard.logic';
 import { AuthSessionProvider, useAuthSession } from '@/features/auth/auth-session';
 
 export const unstable_settings = {
@@ -33,7 +37,9 @@ function RootLayoutContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useGlobalSearchParams<{ returnTo?: string | string[] }>();
   const normalizedPathname = normalizeGuardPathname(pathname);
+  const authReturnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const lastRedirectAttemptRef = useRef<string | null>(null);
   const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance, currentUser } = useAuthSession();
   const currentUserUid = currentUser?.uid ?? null;
@@ -48,6 +54,7 @@ function RootLayoutContent() {
       lockedRole,
       needsTermsAcceptance,
       pathname: normalizedPathname,
+      returnTo: authReturnTo,
     });
 
     if (__DEV__) {
@@ -58,6 +65,7 @@ function RootLayoutContent() {
         lockedRole,
         needsTermsAcceptance,
         pathname: normalizedPathname,
+        returnTo: authReturnTo,
         redirect,
       });
     }
@@ -76,7 +84,7 @@ function RootLayoutContent() {
     if (redirect !== normalizedPathname) {
       router.replace(redirect as never);
     }
-  }, [currentUserUid, isAuthenticated, isHydrated, lockedRole, needsTermsAcceptance, normalizedPathname, router]);
+  }, [authReturnTo, currentUserUid, isAuthenticated, isHydrated, lockedRole, needsTermsAcceptance, normalizedPathname, router]);
 
   if (!isHydrated) {
     return (

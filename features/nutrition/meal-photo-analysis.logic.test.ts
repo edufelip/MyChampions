@@ -6,11 +6,11 @@ import {
   parseMacroEstimateFromResponse,
   mapMacroEstimateToMealInput,
   normalizePhotoAnalysisError,
-  buildAnalysisSystemPrompt,
-  buildAnalysisUserPrompt,
   type MacroEstimate,
   type RawAnalysisResponse,
 } from './meal-photo-analysis.logic';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -253,14 +253,14 @@ test('normalizePhotoAnalysisError maps code unauthenticated', () => {
 
 test('normalizePhotoAnalysisError maps message containing "unauthenticated"', () => {
   assert.equal(
-    normalizePhotoAnalysisError({ message: 'Cloud Function rejected Auth ID token: unauthenticated' }),
+    normalizePhotoAnalysisError({ message: 'MyChampions server rejected access token: unauthenticated' }),
     'unauthenticated'
   );
 });
 
-test('normalizePhotoAnalysisError maps message containing "id token"', () => {
+test('normalizePhotoAnalysisError maps message containing "access token"', () => {
   assert.equal(
-    normalizePhotoAnalysisError({ message: 'Failed to verify id token' }),
+    normalizePhotoAnalysisError({ message: 'Failed to verify access token' }),
     'unauthenticated'
   );
 });
@@ -277,36 +277,15 @@ test('normalizePhotoAnalysisError returns unknown for primitive', () => {
   assert.equal(normalizePhotoAnalysisError(42), 'unknown');
 });
 
-// ─── buildAnalysisSystemPrompt ────────────────────────────────────────────────
+test('mobile meal-photo logic does not own analyzer prompt text', () => {
+  const source = readFileSync(join(process.cwd(), 'features/nutrition/meal-photo-analysis.logic.ts'), 'utf8');
 
-test('buildAnalysisSystemPrompt returns a non-empty string', () => {
-  const prompt = buildAnalysisSystemPrompt();
-  assert.ok(typeof prompt === 'string' && prompt.length > 0);
-});
-
-test('buildAnalysisSystemPrompt includes all required macro field names', () => {
-  const prompt = buildAnalysisSystemPrompt();
-  assert.ok(prompt.includes('calories'));
-  assert.ok(prompt.includes('carbs'));
-  assert.ok(prompt.includes('proteins'));
-  assert.ok(prompt.includes('fats'));
-  assert.ok(prompt.includes('totalGrams'));
-  assert.ok(prompt.includes('confidence'));
-});
-
-test('buildAnalysisSystemPrompt instructs returning JSON only', () => {
-  const prompt = buildAnalysisSystemPrompt();
-  assert.ok(prompt.toLowerCase().includes('json'));
-});
-
-test('buildAnalysisSystemPrompt includes unrecognizable_image fallback instruction', () => {
-  const prompt = buildAnalysisSystemPrompt();
-  assert.ok(prompt.includes('unrecognizable_image'));
-});
-
-// ─── buildAnalysisUserPrompt ──────────────────────────────────────────────────
-
-test('buildAnalysisUserPrompt returns a non-empty string', () => {
-  const prompt = buildAnalysisUserPrompt();
-  assert.ok(typeof prompt === 'string' && prompt.length > 0);
+  for (const token of [
+    'buildAnalysisSystemPrompt',
+    'buildAnalysisUserPrompt',
+    'professional nutritionist',
+    'Analyze this meal photo and estimate its macronutrients',
+  ]) {
+    assert.equal(source.includes(token), false, `mobile logic still owns analyzer prompt token: ${token}`);
+  }
 });

@@ -1,32 +1,33 @@
-import { Stack, useRouter } from 'expo-router';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Google from 'expo-auth-session/providers/google';
-import * as Crypto from 'expo-crypto';
-import * as WebBrowser from 'expo-web-browser';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { GoogleAuthProvider, OAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 
 import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
-import { signInOrLinkWithCredential } from '@/features/auth/firebase-social-auth';
-import { getFirebaseAuth, firebaseOAuthConfig } from '@/features/auth/firebase';
+import { signInWithAppleProviderTokenFromSource } from '@/features/auth/apple-social-auth-source';
+import { signInWithEmailPasswordFromSource } from '@/features/auth/email-auth-source';
+import { signInWithGoogleProviderTokenFromSource } from '@/features/auth/google-social-auth-source';
+import { useAuthSession } from '@/features/auth/auth-session';
+import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
 import {
+  SignInFailure,
   mapSignInReasonToMessageKey,
   normalizeSignInReason,
+  resolveSignInValidationAnalyticsReason,
   type SignInErrorMessageKey,
-  type SignInRequest,
   validateSignInInput,
   type SignInValidationErrors,
 } from '@/features/auth/sign-in.logic';
@@ -39,31 +40,21 @@ import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
-WebBrowser.maybeCompleteAuthSession();
-
-function createNonce(length = 32) {
-  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-  let value = '';
-  for (let i = 0; i < length; i += 1) {
-    value += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-
-  return value;
-}
-
 export default function SignInScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
   const primaryButtonForeground = '#F7FBFF';
   const router = useRouter();
+  const searchParams = useLocalSearchParams<{ returnTo?: string | string[] }>();
+  const returnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const { t } = useTranslation();
   const { emitEvent } = useAnalytics();
-  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
-    iosClientId: firebaseOAuthConfig.iosClientId,
-    androidClientId: firebaseOAuthConfig.androidClientId,
-    webClientId: firebaseOAuthConfig.webClientId,
-  });
+  const {
+    signInWithE2EEmailPassword,
+    signInWithE2ESocialAuth,
+    signInWithServerSocialAuth,
+  } = useAuthSession();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,10 +62,31 @@ export default function SignInScreen() {
   const [errors, setErrors] = useState<SignInValidationErrors>({});
   const [submitError, setSubmitError] = useState<SignInErrorMessageKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  const buildAuthRoute = (pathname: '/auth/create-account') => {
+    if (!returnTo) {
+      return pathname;
+    }
+
+    return { pathname, params: { returnTo } };
+  };
 
   useEffect(() => {
     emitEvent(buildAuthEntryViewed('auth_sign_in'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, () => setIsKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener(hideEvent, () => setIsKeyboardVisible(false));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
   }, []);
 
   const onEmailPasswordSignIn = async () => {
@@ -83,13 +95,20 @@ export default function SignInScreen() {
     setSubmitError(null);
 
     if (Object.keys(nextErrors).length > 0) {
+      const validationReason = resolveSignInValidationAnalyticsReason(nextErrors);
+      if (validationReason) {
+        emitEvent(buildSignInFailed('email_password', validationReason));
+      }
       return;
     }
 
     emitEvent(buildSignInSubmitted('email_password'));
     setSubmitting(true);
     try {
-      await signInWithEmailPassword({ email, password });
+      if (await signInWithE2EEmailPassword(email, password)) {
+        return;
+      }
+      await signInWithEmailPasswordFromSource({ email, password });
     } catch (error: unknown) {
       const reason = normalizeSignInReason(error);
       emitEvent(buildSignInFailed('email_password', reason));
@@ -104,8 +123,28 @@ export default function SignInScreen() {
     emitEvent(buildSignInSubmitted('google'));
 
     try {
-      await promptGoogle();
+      if (await signInWithE2ESocialAuth('google')) {
+        return;
+      }
+      try {
+        await signInWithGoogleProviderTokenFromSource();
+        return;
+      } catch (error: unknown) {
+        if (normalizeSignInReason(error) !== 'configuration') {
+          throw error;
+        }
+      }
+      if (await signInWithServerSocialAuth('google')) {
+        return;
+      }
+
+      throw new SignInFailure('configuration');
     } catch (error: unknown) {
+      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      if (code.includes('ERR_REQUEST_CANCELED')) {
+        return;
+      }
+
       const reason = normalizeSignInReason(error);
       emitEvent(buildSignInFailed('google', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
@@ -117,28 +156,22 @@ export default function SignInScreen() {
     emitEvent(buildSignInSubmitted('apple'));
 
     try {
-      if (Platform.OS !== 'ios') {
-        throw new Error('Apple Sign-In is only available on iOS.');
+      if (await signInWithE2ESocialAuth('apple')) {
+        return;
+      }
+      try {
+        await signInWithAppleProviderTokenFromSource();
+        return;
+      } catch (error: unknown) {
+        if (normalizeSignInReason(error) !== 'configuration') {
+          throw error;
+        }
+      }
+      if (await signInWithServerSocialAuth('apple')) {
+        return;
       }
 
-      const nonce = createNonce();
-      const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
-      const appleCredential = await AppleAuthentication.signInAsync({
-        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
-        nonce: hashedNonce,
-      });
-
-      if (!appleCredential.identityToken) {
-        throw new Error('Apple identity token is missing.');
-      }
-
-      setSubmitting(true);
-      const provider = new OAuthProvider('apple.com');
-      const firebaseCredential = provider.credential({
-        idToken: appleCredential.identityToken,
-        rawNonce: nonce,
-      });
-      await signInOrLinkWithCredential(firebaseCredential);
+      throw new SignInFailure('configuration');
     } catch (error: unknown) {
       const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       if (code.includes('ERR_REQUEST_CANCELED')) {
@@ -152,33 +185,6 @@ export default function SignInScreen() {
       setSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    if (googleResponse?.type !== 'success') {
-      return;
-    }
-
-    const idToken =
-      googleResponse.authentication?.idToken ||
-      (typeof googleResponse.params?.id_token === 'string' ? googleResponse.params.id_token : '');
-    if (!idToken) {
-      emitEvent(buildSignInFailed('google', 'missing_id_token'));
-      setSubmitError('common.error.generic');
-      return;
-    }
-
-    setSubmitting(true);
-    void signInOrLinkWithCredential(GoogleAuthProvider.credential(idToken))
-      .then(() => {})
-      .catch((error: unknown) => {
-        const reason = normalizeSignInReason(error);
-        emitEvent(buildSignInFailed('google', reason));
-        setSubmitError(mapSignInReasonToMessageKey(reason));
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
-  }, [googleResponse, router, emitEvent]);
 
   return (
     <KeyboardAvoidingView
@@ -203,13 +209,18 @@ export default function SignInScreen() {
         ]}
       />
 
-      <View style={styles.content}>
-        <View style={styles.titleArea}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        testID="auth.signIn.scrollView">
+        <View style={[styles.titleArea, isKeyboardVisible ? styles.titleAreaKeyboardVisible : null]}>
           <Image
             accessibilityLabel={t('a11y.brand_logo')}
             contentFit="contain"
             source={require('../../assets/images/logo.svg')}
-            style={styles.brandLogo}
+            style={[styles.brandLogo, isKeyboardVisible ? styles.brandLogoKeyboardVisible : null]}
           />
           <Text testID="auth.signIn.title" style={[styles.title, { color: palette.text }]}>
             {t('auth.signin.title')}
@@ -254,8 +265,10 @@ export default function SignInScreen() {
                 autoCapitalize="none"
                 autoComplete="password"
                 onChangeText={setPassword}
+                onSubmitEditing={onEmailPasswordSignIn}
                 placeholder={t('auth.signin.placeholder.password')}
                 placeholderTextColor={palette.icon}
+                returnKeyType="done"
                 secureTextEntry={!showPassword}
                 style={[
                   styles.input,
@@ -332,13 +345,13 @@ export default function SignInScreen() {
           <View style={styles.socialRow}>
             <Pressable
               accessibilityRole="button"
-              disabled={submitting || !googleRequest}
+              disabled={submitting}
               onPress={onGoogleSignIn}
               style={[
                 styles.socialButton,
                 {
                   backgroundColor: theme.color.surface,
-                  opacity: submitting || !googleRequest ? 0.5 : 1,
+                  opacity: submitting ? 0.5 : 1,
                 },
               ]}
               testID="auth.signIn.googleButton">
@@ -367,14 +380,14 @@ export default function SignInScreen() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push('/auth/create-account')}
+          onPress={() => router.push(buildAuthRoute('/auth/create-account') as never)}
           testID="auth.signIn.createAccountButton"
           style={styles.secondaryButton}
           disabled={submitting}>
           <Text style={[styles.secondaryButtonHint, { color: palette.icon }]}>{t('auth.signin.new_here')}</Text>
           <Text style={[styles.secondaryButtonText, { color: palette.tint }]}>{t('auth.signin.cta_create')}</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -401,9 +414,9 @@ const styles = StyleSheet.create({
     width: 340,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 48,
     paddingTop: 20,
   },
   titleArea: {
@@ -411,12 +424,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 64,
   },
+  titleAreaKeyboardVisible: {
+    marginBottom: 16,
+    marginTop: 16,
+  },
   brandLogo: {
     borderRadius: 20,
     height: 100,
     marginBottom: 16,
     overflow: 'hidden',
     width: 100,
+  },
+  brandLogoKeyboardVisible: {
+    borderRadius: 16,
+    height: 72,
+    marginBottom: 10,
+    width: 72,
   },
   formWrapper: {
     gap: 14,
@@ -535,8 +558,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
-async function signInWithEmailPassword(input: SignInRequest): Promise<void> {
-  const auth = getFirebaseAuth();
-  await signInWithEmailAndPassword(auth, input.email.trim().toLowerCase(), input.password);
-}

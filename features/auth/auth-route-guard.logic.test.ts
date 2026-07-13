@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  normalizeAuthReturnTo,
   normalizeGuardPathname,
   resolveAuthGuardRedirect,
   roleHomePath,
@@ -16,6 +17,17 @@ test('normalizeGuardPathname normalizes empty, duplicate, and trailing slash pat
   assert.equal(normalizeGuardPathname(''), '/');
   assert.equal(normalizeGuardPathname('auth/sign-in'), '/auth/sign-in');
   assert.equal(normalizeGuardPathname('/auth//accept-terms/'), '/auth/accept-terms');
+});
+
+test('normalizeAuthReturnTo accepts only shared recipe app paths', () => {
+  assert.equal(normalizeAuthReturnTo('/shared/recipes/share-123'), '/shared/recipes/share-123');
+  assert.equal(normalizeAuthReturnTo('%2Fshared%2Frecipes%2Fshare-123'), '/shared/recipes/share-123');
+  assert.equal(normalizeAuthReturnTo([' /shared/recipes/share-456 ']), '/shared/recipes/share-456');
+  assert.equal(normalizeAuthReturnTo('/professional/home'), null);
+  assert.equal(normalizeAuthReturnTo('/student/nutrition'), null);
+  assert.equal(normalizeAuthReturnTo('/auth/sign-in'), null);
+  assert.equal(normalizeAuthReturnTo('https://evil.test/shared/recipes/share-123'), null);
+  assert.equal(normalizeAuthReturnTo('//evil.test/shared/recipes/share-123'), null);
 });
 
 test('guard redirects unauthenticated user from app routes to sign-in', () => {
@@ -51,6 +63,17 @@ test('guard redirects unauthenticated user from role-selection to sign-in', () =
   assert.equal(redirect, '/auth/sign-in');
 });
 
+test('guard redirects unauthenticated shared recipe links to sign-in with safe return target', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: false,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/shared/recipes/share-123',
+  });
+
+  assert.equal(redirect, '/auth/sign-in?returnTo=%2Fshared%2Frecipes%2Fshare-123');
+});
+
 test('guard sends authenticated unlocked user to role-selection', () => {
   const redirect = resolveAuthGuardRedirect({
     isAuthenticated: true,
@@ -60,6 +83,50 @@ test('guard sends authenticated unlocked user to role-selection', () => {
   });
 
   assert.equal(redirect, '/auth/role-selection');
+});
+
+test('guard lets authenticated users resume shared recipe links before role selection', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/shared/recipes/share-123',
+  });
+
+  assert.equal(redirect, null);
+});
+
+test('guard consumes safe return target after sign-in', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/sign-in',
+    returnTo: '/shared/recipes/share-123',
+  });
+
+  assert.equal(redirect, '/shared/recipes/share-123');
+});
+
+test('guard ignores unsafe return targets and keeps normal auth routing', () => {
+  const externalRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/sign-in',
+    returnTo: 'https://evil.test/shared/recipes/share-123',
+  });
+
+  const professionalRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/sign-in',
+    returnTo: '/professional/home',
+  });
+
+  assert.equal(externalRedirect, '/auth/role-selection');
+  assert.equal(professionalRedirect, '/auth/role-selection');
 });
 
 test('guard keeps authenticated unlocked user locked on role-selection after relaunch to tab shell', () => {
@@ -155,6 +222,26 @@ test('guard forces accept-terms before role selection/home when terms are pendin
   });
 
   assert.equal(redirect, '/auth/accept-terms');
+});
+
+test('guard preserves safe return target through terms acceptance', () => {
+  const beforeAcceptance = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/recipes/share-123',
+  });
+
+  const afterAcceptance = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/accept-terms',
+    returnTo: '/shared/recipes/share-123',
+  });
+
+  assert.equal(beforeAcceptance, '/auth/accept-terms?returnTo=%2Fshared%2Frecipes%2Fshare-123');
+  assert.equal(afterAcceptance, '/shared/recipes/share-123');
 });
 
 test('guard allows accept-terms route while terms are pending', () => {

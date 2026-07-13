@@ -23,6 +23,7 @@ import {
   type OfflineDisplayState,
   type StaleElapsed,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -48,14 +49,18 @@ export default function StudentHomeScreen() {
   const { currentUser } = useAuthSession();
 
   const networkStatus = useNetworkStatus();
-  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
-    networkStatus,
-    lastSyncedAtIso: null,
-  });
-
   const { state: connectionsState, reload: reloadConnections } = useConnections(Boolean(currentUser));
   const { state: waterState, reload: reloadWater } = useWaterTracking(Boolean(currentUser), todayKey());
   const { state: plansState, reload: reloadPlans } = usePlans(Boolean(currentUser));
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    connectionsState.kind === 'ready' ? connectionsState.lastSyncedAtIso : null,
+    waterState.kind === 'ready' ? waterState.lastSyncedAtIso : null,
+    plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
+  ]);
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso,
+  });
 
   const isLoading =
     connectionsState.kind === 'loading' ||
@@ -110,11 +115,11 @@ export default function StudentHomeScreen() {
       <View pointerEvents="none" style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]} />
       <View pointerEvents="none" style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]} />
 
-      <View style={[styles.shell, { paddingTop: insets.top + 12 }]}>        
+      <View style={[styles.shell, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerRow}>
           <View style={styles.profileWrap}>
-            <View style={[styles.avatarOuter, { borderColor: theme.color.accentPrimary }]}> 
-              <View style={[styles.avatarInner, { backgroundColor: theme.color.surface }]}> 
+            <View style={[styles.avatarOuter, { borderColor: theme.color.accentPrimary }]}>
+              <View style={[styles.avatarInner, { backgroundColor: theme.color.surface }]}>
                 <Text style={[styles.avatarInitial, { color: theme.color.textPrimary }]}>{profileInitial}</Text>
               </View>
               <View style={[styles.avatarStatusDot, { backgroundColor: theme.color.accentPrimary }]} />
@@ -242,7 +247,7 @@ export default function StudentHomeScreen() {
                   <Text style={styles.heroTitle}>{hasTrainingPlan ? t('student.home.cta_training') : t('student.home.no_active_plan')}</Text>
                   <Text style={styles.heroMeta}>{hasTrainingPlan ? t('student.home.training.plan_available') : t('student.home.cta_start_self')}</Text>
 
-                  <View style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}> 
+                  <View style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}>
                     <MaterialIcons color={theme.color.onAccent} name="play-arrow" size={20} />
                     <Text style={[styles.heroCtaText, { color: theme.color.onAccent }]}>
                       {hasTrainingPlan ? t('student.home.cta_training') : t('student.home.cta_start_self')}

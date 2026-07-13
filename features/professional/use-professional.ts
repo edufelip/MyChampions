@@ -1,7 +1,7 @@
 /**
  * React hook for professional invite code and specialty operations.
  * Wraps professional-source for UI consumption.
- * No Firebase/Firestore concerns in screen components.
+ * No backend persistence concerns in screen components.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -37,13 +37,13 @@ export type InviteCodeLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; code: InviteCode | null; displayCode: DisplayInviteCode };
+  | { kind: 'ready'; code: InviteCode | null; displayCode: DisplayInviteCode; lastSyncedAtIso: string };
 
 export type SpecialtiesLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; specialties: SpecialtyRecord[] };
+  | { kind: 'ready'; specialties: SpecialtyRecord[]; lastSyncedAtIso: string };
 
 // ─── Invite code hook ─────────────────────────────────────────────────────────
 
@@ -66,7 +66,12 @@ export function useInviteCode(isAuthenticated: boolean, specialty: Specialty | n
 
     void getOrCreateActiveInviteCode(specialty)
       .then((code) => {
-        setState({ kind: 'ready', code, displayCode: resolveDisplayInviteCode(code) });
+        setState({
+          kind: 'ready',
+          code,
+          displayCode: resolveDisplayInviteCode(code),
+          lastSyncedAtIso: new Date().toISOString(),
+        });
       })
       .catch((err: Error) => {
         setState({ kind: 'error', message: err.message });
@@ -105,7 +110,10 @@ export type UseSpecialtiesResult = {
   getRemovalBlockerCounts: (
     specialty: Specialty
   ) => Promise<{ activeCount: number; pendingCount: number } | null>;
-  addSpecialty: (specialty: Specialty) => Promise<SpecialtyActionErrorReason | null>;
+  addSpecialty: (specialty: Specialty) => Promise<{
+    error: SpecialtyActionErrorReason | null;
+    record: { id: string; specialty: Specialty } | null;
+  }>;
   removeSpecialty: (specialtyId: string) => Promise<SpecialtyActionErrorReason | null>;
   upsertCredential: (
     specialtyId: string,
@@ -126,7 +134,7 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
 
     void getProfessionalSpecialties()
       .then((specialties) => {
-        setState({ kind: 'ready', specialties });
+        setState({ kind: 'ready', specialties, lastSyncedAtIso: new Date().toISOString() });
       })
       .catch((err: Error) => {
         setState({ kind: 'error', message: err.message });
@@ -171,15 +179,20 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
   );
 
   const addSpecialty = useCallback(
-    async (specialty: Specialty): Promise<SpecialtyActionErrorReason | null> => {
-      if (!isAuthenticated) return 'unknown';
+    async (
+      specialty: Specialty
+    ): Promise<{
+      error: SpecialtyActionErrorReason | null;
+      record: { id: string; specialty: Specialty } | null;
+    }> => {
+      if (!isAuthenticated) return { error: 'unknown', record: null };
 
       try {
-        await addProfessionalSpecialty(specialty);
+        const record = await addProfessionalSpecialty(specialty);
         load();
-        return null;
+        return { error: null, record };
       } catch (err) {
-        return normalizeSpecialtyActionError(err);
+        return { error: normalizeSpecialtyActionError(err), record: null };
       }
     },
     [isAuthenticated, load]

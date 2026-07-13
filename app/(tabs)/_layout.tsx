@@ -105,7 +105,7 @@ export default function TabLayout() {
         sceneStyle: {
           backgroundColor: theme.color.canvas,
         },
-        lazy: false,
+        lazy: true,
         animation: 'fade',
         headerShown: false,
         tabBarButton: HapticTab,
@@ -122,6 +122,7 @@ export default function TabLayout() {
               color={color}
             />
           ),
+          tabBarButtonTestID: 'tabs.home',
           // Always visible — every role has a home/dashboard tab
           href: effectiveRole ? undefined : null,
         }}
@@ -135,6 +136,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.2.fill" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.students',
           href: isPro ? undefined : null,
         }}
       />
@@ -147,6 +149,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="fork.knife" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.nutrition',
           href: canUseNutrition ? undefined : null,
         }}
       />
@@ -159,6 +162,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="figure.run" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.training',
           href: effectiveRole ? undefined : null,
         }}
       />
@@ -172,6 +176,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="book.closed.fill" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.recipes',
           href: isStudent ? undefined : null,
         }}
       />
@@ -185,6 +190,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.crop.circle.fill" color={color} />
           ),
+          tabBarButtonTestID: 'tabs.account',
           href: effectiveRole ? undefined : null,
         }}
       />

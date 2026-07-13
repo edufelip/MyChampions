@@ -22,11 +22,12 @@ import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
 import { usePlans } from '@/features/plans/use-plans';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
-import { logWorkoutSession, getTodayWorkoutLogs, type FirestoreWorkoutLog } from '@/features/training/workout-log-source';
+import { logWorkoutSession, getTodayWorkoutLogs, type WorkoutLog } from '@/features/training/workout-log-source';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -62,14 +63,17 @@ export default function StudentTrainingScreen() {
   const router = useRouter();
 
   const networkStatus = useNetworkStatus();
-  const offlineDisplay = resolveOfflineDisplayState({
-    networkStatus,
-    lastSyncedAtIso: null,
-  });
-  const isWriteLocked = offlineDisplay.showOfflineBanner;
-
   const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
   const { state: connectionsState } = useConnections(Boolean(currentUser));
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
+    connectionsState.kind === 'ready' ? connectionsState.lastSyncedAtIso : null,
+  ]);
+  const offlineDisplay = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso,
+  });
+  const isWriteLocked = offlineDisplay.showOfflineBanner;
 
   const trainingPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'training' && !p.isArchived) : [];
 
@@ -97,7 +101,7 @@ export default function StudentTrainingScreen() {
   const weekStrip = useMemo(() => getWeekStrip(locale), [locale]);
 
   const { state: builderState, loadPlan } = useTrainingPlanBuilder(Boolean(currentUser), 'student-assigned');
-  const [todayWorkoutLogs, setTodayWorkoutLogs] = useState<FirestoreWorkoutLog[]>([]);
+  const [todayWorkoutLogs, setTodayWorkoutLogs] = useState<WorkoutLog[]>([]);
   const [expandedSessionIds, setExpandedSessionIds] = useState<string[]>([]);
   const [isLoggingSessionId, setIsLoggingSessionId] = useState<string | null>(null);
 
@@ -135,7 +139,7 @@ export default function StudentTrainingScreen() {
     setIsLoggingSessionId(sessionId);
     try {
       await logWorkoutSession(sessionId, sessionName);
-      const newLog: FirestoreWorkoutLog = {
+      const newLog: WorkoutLog = {
         id: Math.random().toString(),
         ownerUid: currentUser?.uid || '',
         sessionId,
@@ -153,7 +157,12 @@ export default function StudentTrainingScreen() {
   };
 
   return (
-    <DsScreen scheme={scheme} testID="student.training.screen">
+    <DsScreen
+      scheme={scheme}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      testID="student.training.screen"
+    >
       <Stack.Screen options={{ title: t('student.training.title'), headerShown: false }} />
 
       <View style={[styles.shell, { backgroundColor: theme.color.shell }]}>
@@ -167,13 +176,15 @@ export default function StudentTrainingScreen() {
           <DsOfflineBanner scheme={scheme} text={t('offline.banner')} testID="student.training.offlineBanner" />
         ) : null}
 
-        {shouldShowPlanCalendar ? <WeekStrip scheme={scheme} items={weekStrip} /> : null}
+        {shouldShowPlanCalendar ? (
+          <WeekStrip scheme={scheme} items={weekStrip} testID="student.training.weekStrip" />
+        ) : null}
 
-        {plansState.kind === 'loading' || isConnectionsPending ? (
+        {plansState.kind === 'loading' || (isConnectionsPending && !hasSelfManagedPlan) ? (
           <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.plansLoading">
             <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
           </DsCard>
-        ) : plansState.kind === 'error' || hasConnectionsError ? (
+        ) : plansState.kind === 'error' || (hasConnectionsError && !hasSelfManagedPlan) ? (
           <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.loadError">
             <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
               {loadErrorMessage ?? t('common.error.generic')}
@@ -185,8 +196,14 @@ export default function StudentTrainingScreen() {
               <DsCard scheme={scheme} style={styles.loadingCard}>
                 <ActivityIndicator color={theme.color.accentPrimary} />
               </DsCard>
+            ) : builderState.kind === 'error' ? (
+              <DsCard scheme={scheme} style={styles.loadingCard} testID="student.training.planDetailsError">
+                <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
+                  {builderState.message || t('common.error.generic')}
+                </Text>
+              </DsCard>
             ) : builderState.kind === 'ready' && builderState.plan ? (
-              <View style={{ gap: DsSpace.md }}>
+              <View style={{ gap: DsSpace.md }} testID="student.training.assignedSessionList">
                 <Text style={[styles.guidedTitle, { color: theme.color.textPrimary }]}>
                   {t('student.training.session.title')}
                 </Text>
@@ -198,12 +215,15 @@ export default function StudentTrainingScreen() {
 
                     return (
                       <DsCard scheme={scheme} key={session.id} style={styles.workoutCard} testID={`student.training.sessionCard-${session.id}`}>
-                        <Pressable
-                          accessibilityRole="button"
-                          onPress={() => toggleSessionExpand(session.id)}
-                          style={styles.workoutHeaderRow}
-                        >
-                          <View style={styles.workoutHeaderLeft}>
+                        <View style={styles.workoutHeaderRow}>
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => toggleSessionExpand(session.id)}
+                            style={({ pressed }) => [
+                              styles.workoutHeaderLeft,
+                              { opacity: pressed ? 0.72 : 1 },
+                            ]}
+                          >
                             <View style={[styles.workoutIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
                               <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={24} />
                             </View>
@@ -215,12 +235,13 @@ export default function StudentTrainingScreen() {
                                 {t('student.training.exercise_count', { count: session.items?.length || 0 })}
                               </Text>
                             </View>
-                          </View>
+                          </Pressable>
 
                           <View style={styles.workoutHeaderRight}>
                             <DsPillButton
                               scheme={scheme}
                               disabled={isWriteLocked || isLogged}
+                              fullWidth={false}
                               loading={isLoggingThis}
                               label={isLogged ? t('student.training.cta_logged') : t('student.training.cta_log')}
                               leftIcon={
@@ -233,14 +254,21 @@ export default function StudentTrainingScreen() {
                               style={styles.logButton}
                               testID={`student.training.logBtn-${session.id}`}
                             />
-                            <MaterialIcons
-                              color={theme.color.textSecondary}
-                              name={isExpanded ? 'expand-less' : 'expand-more'}
-                              size={24}
-                              style={{ marginLeft: 4 }}
-                            />
+                            <Pressable
+                              accessibilityRole="button"
+                              hitSlop={10}
+                              onPress={() => toggleSessionExpand(session.id)}
+                              testID={`student.training.expandBtn-${session.id}`}
+                            >
+                              <MaterialIcons
+                                color={theme.color.textSecondary}
+                                name={isExpanded ? 'expand-less' : 'expand-more'}
+                                size={24}
+                                style={{ marginLeft: 4 }}
+                              />
+                            </Pressable>
                           </View>
-                        </Pressable>
+                        </View>
 
                         {isExpanded && (
                           <View style={[styles.exerciseList, { borderTopColor: theme.color.border }]}>
@@ -446,7 +474,7 @@ export default function StudentTrainingScreen() {
                 { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
               ]}
               testID="student.training.emptySelfGuidedCta">
-              <Text style={[styles.emptySecondaryCtaText, { color: theme.color.textSecondary }]}> 
+              <Text style={[styles.emptySecondaryCtaText, { color: theme.color.textSecondary }]}>
                 {t('student.training.empty.self_guided_cta')}
               </Text>
             </Pressable>

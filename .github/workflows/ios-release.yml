@@ -41,29 +41,71 @@ jobs:
             echo "EXPO_PUBLIC_ENV must be 'prod' (got '$EXPO_PUBLIC_ENV')" >&2
             exit 1
           fi
-          echo "EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
-      - name: Validate Firebase secrets
-        env:
-          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
-        run: |
-          if [ -z "$GOOGLE_SERVICE_INFO_PLIST_BASE64" ]; then
-            echo "GOOGLE_SERVICE_INFO_PLIST_BASE64 is not set" >&2
+          if [ "${EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL:-}" != "https://api.mychampions.eduwaldo.com" ]; then
+            echo "EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL must be https://api.mychampions.eduwaldo.com for production builds" >&2
             exit 1
           fi
+          if [ -z "${EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID:-}" ]; then
+            echo "EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID must be configured for production builds" >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID:-}" ]; then
+            echo "EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID must be configured for native Google sign-in" >&2
+            exit 1
+          fi
+          python3 <<'PY'
+          import json
+          import os
+          import plistlib
 
+          with open('config/google-oauth-production.json', encoding='utf-8') as source:
+              oauth = json.load(source)
+
+          ios_client_id = os.environ['EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID']
+          web_client_id = os.environ['EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID']
+          if ios_client_id != oauth['ios']['clientId']:
+              raise SystemExit('iOS Google OAuth client does not match production provider metadata')
+          if web_client_id != oauth['webClientId']:
+              raise SystemExit('Google OAuth web client does not match production provider metadata')
+
+          suffix = '.apps.googleusercontent.com'
+          if not ios_client_id.endswith(suffix):
+              raise SystemExit('iOS Google OAuth client has an invalid client ID suffix')
+          callback_scheme = oauth['ios']['callbackScheme']
+          if not callback_scheme.endswith(ios_client_id[:-len(suffix)]):
+              raise SystemExit('iOS Google OAuth callback does not match production provider metadata')
+
+          with open('ios/mychampions/Info.plist', 'rb') as source:
+              info = plistlib.load(source)
+          callback_schemes = {
+              scheme
+              for url_type in info.get('CFBundleURLTypes', [])
+              for scheme in url_type.get('CFBundleURLSchemes', [])
+          }
+          if callback_scheme not in callback_schemes:
+              raise SystemExit('Info.plist is missing the configured Google OAuth callback scheme')
+          PY
+          case "${EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_PROD:-}" in
+            appl_*) ;;
+            *)
+              echo "EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_PROD must be an appl_* public RevenueCat key" >&2
+              exit 1
+              ;;
+          esac
+          echo "EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
       - name: Bump iOS build number
         run: |
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" ios/mychampions/Info.plist
 
       - name: Setup Node
         uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: yarn
+          cache-dependency-path: yarn.lock
 
       - name: Install JS deps
-        run: npm ci
+        run: yarn install --frozen-lockfile
         working-directory: .
 
       - name: Install pods
@@ -73,61 +115,6 @@ jobs:
           mkdir -p "$COCOAPODS_CACHE_DIR"
           cd ios
           pod install --silent
-      - name: Write GoogleService-Info.plist
-        working-directory: ios
-        env:
-          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
-        run: |
-          echo "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 -d > GoogleService-Info-Prod.plist
-          cp -f GoogleService-Info-Prod.plist GoogleService-Info.plist
-
-      - name: Sync Google Sign-In scheme (prod)
-        run: |
-          python3 - <<'PY'
-          import plistlib
-          import sys
-
-          info_path = "ios/mychampions/Info.plist"
-          gservice_path = "ios/GoogleService-Info-Prod.plist"
-
-          with open(gservice_path, "rb") as f:
-            gservice = plistlib.load(f)
-          scheme = gservice.get("REVERSED_CLIENT_ID")
-          if not scheme:
-            print("REVERSED_CLIENT_ID missing in GoogleService-Info.plist", file=sys.stderr)
-            sys.exit(1)
-
-          with open(info_path, "rb") as f:
-            info = plistlib.load(f)
-
-          url_types = info.get("CFBundleURLTypes", [])
-          google_entry = None
-          for entry in url_types:
-            schemes = entry.get("CFBundleURLSchemes", [])
-            if any(s.startswith("com.googleusercontent.apps.") for s in schemes):
-              google_entry = entry
-              break
-
-          if google_entry is None:
-            url_types.append({"CFBundleURLSchemes": [scheme]})
-          else:
-            google_entry["CFBundleURLSchemes"] = [scheme]
-
-          info["CFBundleURLTypes"] = url_types
-
-          with open(info_path, "wb") as f:
-            plistlib.dump(info, f)
-
-          print(f"Updated Google Sign-In scheme to {scheme}")
-          PY
-
-      - name: Validate Google Sign-In scheme
-        run: |
-          PLIST_REVERSED=$(/usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" ios/GoogleService-Info.plist)
-          if ! /usr/libexec/PlistBuddy -c "Print :CFBundleURLTypes" ios/mychampions/Info.plist | grep -Fq "$PLIST_REVERSED"; then
-            echo "Google Sign-In mismatch: Info.plist missing REVERSED_CLIENT_ID scheme ($PLIST_REVERSED)" >&2
-            exit 1
-          fi
       - name: Set up keychain and certificates
         env:
           CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
@@ -166,7 +153,7 @@ jobs:
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/mychampions.mobileprovision"
 
-      - name: Validate provisioning profile entitlements (push)
+      - name: Validate provisioning profile entitlements
         run: |
           PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/mychampions.mobileprovision"
           if [ ! -f "$PROFILE_PATH" ]; then
@@ -176,6 +163,7 @@ jobs:
 
           security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
           APS_ENV=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:aps-environment" "$RUNNER_TEMP/profile.plist" 2>/dev/null || true)
+          APPLE_SIGN_IN=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.applesignin:0" "$RUNNER_TEMP/profile.plist" 2>/dev/null || true)
 
           if [ -z "$APS_ENV" ]; then
             echo "Provisioning profile missing Push Notifications entitlement (aps-environment)." >&2
@@ -184,6 +172,11 @@ jobs:
 
           if [ "$APS_ENV" != "production" ]; then
             echo "Provisioning profile aps-environment is '$APS_ENV' but Release builds require 'production'." >&2
+            exit 1
+          fi
+
+          if [ "$APPLE_SIGN_IN" != "Default" ]; then
+            echo "Provisioning profile missing Sign in with Apple entitlement (expected Default)." >&2
             exit 1
           fi
 

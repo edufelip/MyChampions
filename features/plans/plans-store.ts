@@ -11,6 +11,7 @@ import {
   getCachedPlans,
   getCachedPredefinedPlans,
   getCachedPlansOwnerUid,
+  getCachedPlansSyncedAtIso,
   clearPlanCaches,
   optimisticUpdatePredefinedPlan,
   optimisticDeletePredefinedPlan,
@@ -84,13 +85,15 @@ import {
   type NutritionBuilderState,
   type TrainingBuilderState,
 } from './plan-builder-state';
-import { getFirebaseAuth } from '../auth/firebase';
+import { resolvePlansAuthUid } from './plans-auth-source';
+import { getCurrentServerUser } from '../auth/server-auth-source';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 
 export type PlansLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; plans: Plan[]; predefinedPlans: PredefinedPlan[] };
+  | { kind: 'ready'; plans: Plan[]; predefinedPlans: PredefinedPlan[]; lastSyncedAtIso: string };
 
 function buildNutritionMutationErrorState(
   previousState: NutritionBuilderState,
@@ -298,18 +301,23 @@ function buildInitialPlansState(): PlansLoadState {
   const plans = getCachedPlans();
   const predefinedPlans = getCachedPredefinedPlans();
   const cacheOwnerUid = getCachedPlansOwnerUid();
-  if (uid && cacheOwnerUid && uid === cacheOwnerUid && plans && predefinedPlans) {
-    return { kind: 'ready', plans, predefinedPlans };
+  const cacheSyncedAtIso = getCachedPlansSyncedAtIso();
+  if (uid && cacheOwnerUid && uid === cacheOwnerUid && plans && predefinedPlans && cacheSyncedAtIso) {
+    return { kind: 'ready', plans, predefinedPlans, lastSyncedAtIso: cacheSyncedAtIso };
   }
   return { kind: 'idle' };
 }
 
 function resolveCurrentAuthUid(): string | null {
-  try {
-    return getFirebaseAuth().currentUser?.uid ?? null;
-  } catch {
-    return null;
-  }
+  return resolvePlansAuthUid({
+    getServerUserUid: () => getCurrentServerUser()?.uid ?? null,
+    getE2EUid: () =>
+      resolveE2EAuthSessionSourceOverride({
+        appVariant: process.env.APP_VARIANT,
+        enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+        isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+      })?.uid ?? null,
+  });
 }
 
 export const usePlansStore = create<PlansStoreState>((set, get) => ({
@@ -383,7 +391,8 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
       if (get().authUid !== uid) {
         return;
       }
-      set({ plansState: { kind: 'ready', plans, predefinedPlans } });
+      const lastSyncedAtIso = getCachedPlansSyncedAtIso() ?? new Date().toISOString();
+      set({ plansState: { kind: 'ready', plans, predefinedPlans, lastSyncedAtIso } });
     } catch (err) {
       set({ plansState: { kind: 'error', message: (err as Error).message } });
     }
@@ -1166,7 +1175,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ trainingBuilderState: markTrainingBuilderMutating(currentState) });
 
     try {
-      await addTrainingSessionItem(sessionId, item);
+      await addTrainingSessionItem(currentPlanId, sessionId, item);
       const updated = await getTrainingPlanDetail(currentPlanId);
       await setCachedTrainingPlan(updated);
       set((state) => ({
@@ -1222,7 +1231,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ trainingBuilderState: markTrainingBuilderMutating(currentState) });
 
     try {
-      await reorderTrainingSessionItems(sessionId, itemIds);
+      await reorderTrainingSessionItems(currentPlanId, sessionId, itemIds);
       const updated = await getTrainingPlanDetail(currentPlanId);
       await setCachedTrainingPlan(updated);
       set((state) => ({

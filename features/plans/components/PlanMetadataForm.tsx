@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
 import { DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -7,6 +7,8 @@ import type { validateNutritionPlanInput } from '@/features/plans/plan-builder.l
 import type { TranslationBinding } from '@/localization';
 
 type TFn = TranslationBinding['t'];
+
+const PLAN_METADATA_KEYBOARD_ACCESSORY_ID = 'plan-metadata-keyboard-accessory';
 
 type PlanMetadataFormProps = {
   palette: {
@@ -27,6 +29,7 @@ type PlanMetadataFormProps = {
   onNameChange: (v: string) => void;
   onHydrationGoalChange: (v: string) => void;
   autoFocus?: boolean;
+  testIDPrefix?: string;
 };
 
 export const PlanMetadataForm = React.memo(({
@@ -44,98 +47,128 @@ export const PlanMetadataForm = React.memo(({
   onNameChange,
   onHydrationGoalChange,
   autoFocus,
+  testIDPrefix,
 }: PlanMetadataFormProps) => {
+  const hydrationInputRef = React.useRef<TextInput>(null);
+
   return (
-    <BuilderInsetGroup theme={theme}>
-      {/* Name */}
-      <View style={styles.fieldSection}>
-        <Text style={[styles.insetGroupLabel, { color: palette.text }]}> 
-          {t('pro.plan.field.name.label')}
-        </Text>
-        <TextInput
-          style={[styles.titleInput, { color: palette.text }]}
-          placeholder={tr('pro.plan.field.nutrition_name.support', 'student.plan.field.nutrition_name.support')}
-          placeholderTextColor={palette.icon}
-          value={name}
-          onChangeText={onNameChange}
-          accessibilityLabel={t('pro.plan.field.name.label')}
-          autoFocus={autoFocus}
-        />
-        {errors.name && (
-          <Text style={[styles.fieldError, { color: palette.danger }]}>
-            {errors.name === 'required' ? t('pro.plan.validation.name_required') : t('pro.plan.validation.name_too_short')}
+    <>
+      <BuilderInsetGroup theme={theme}>
+        {/* Name */}
+        <View style={styles.fieldSection}>
+          <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
+            {t('pro.plan.field.name.label')}
           </Text>
-        )}
-      </View>
-
-      <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
-
-      <View style={styles.fieldSection}>
-        <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
-          {tr('pro.plan.field.hydration_goal.label', 'student.plan.field.hydration_goal.label')}
-        </Text>
-        <TextInput
-          style={[styles.titleInput, { color: palette.text }]}
-          placeholder={tr(
-            'pro.plan.field.hydration_goal.placeholder',
-            'student.plan.field.hydration_goal.placeholder'
+          <TextInput
+            style={[styles.titleInput, { color: palette.text }]}
+            placeholder={tr('pro.plan.field.nutrition_name.support', 'student.plan.field.nutrition_name.support')}
+            placeholderTextColor={palette.icon}
+            value={name}
+            onChangeText={onNameChange}
+            accessibilityLabel={t('pro.plan.field.name.label')}
+            autoFocus={autoFocus}
+            returnKeyType="next"
+            onSubmitEditing={() => hydrationInputRef.current?.focus()}
+            inputAccessoryViewID={Platform.OS === 'ios' ? PLAN_METADATA_KEYBOARD_ACCESSORY_ID : undefined}
+            testID={testIDPrefix ? `${testIDPrefix}.name` : undefined}
+          />
+          {errors.name && (
+            <Text style={[styles.fieldError, { color: palette.danger }]}>
+              {errors.name === 'required' ? t('pro.plan.validation.name_required') : t('pro.plan.validation.name_too_short')}
+            </Text>
           )}
-          placeholderTextColor={palette.icon}
-          value={hydrationGoalMl}
-          onChangeText={onHydrationGoalChange}
-          keyboardType="numeric"
-          accessibilityLabel={tr(
-            'pro.plan.field.hydration_goal.label',
-            'student.plan.field.hydration_goal.label'
-          )}
-        />
-        {errors.hydrationGoalMl && (
-          <Text style={[styles.fieldError, { color: palette.danger }]}>
-            {errors.hydrationGoalMl === 'required'
-              ? tr('pro.plan.validation.hydration_goal_required', 'student.plan.validation.hydration_goal_required')
-              : tr(
-                  'pro.plan.validation.hydration_goal_positive',
-                  'student.plan.validation.hydration_goal_positive'
-                )}
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
+
+        <View style={styles.fieldSection}>
+          <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
+            {tr('pro.plan.field.hydration_goal.label', 'student.plan.field.hydration_goal.label')}
           </Text>
-        )}
-      </View>
+          <TextInput
+            ref={hydrationInputRef}
+            style={[styles.titleInput, { color: palette.text }]}
+            placeholder={tr(
+              'pro.plan.field.hydration_goal.placeholder',
+              'student.plan.field.hydration_goal.placeholder'
+            )}
+            placeholderTextColor={palette.icon}
+            value={hydrationGoalMl}
+            onChangeText={onHydrationGoalChange}
+            keyboardType="numeric"
+            returnKeyType="done"
+            onSubmitEditing={Keyboard.dismiss}
+            inputAccessoryViewID={Platform.OS === 'ios' ? PLAN_METADATA_KEYBOARD_ACCESSORY_ID : undefined}
+            accessibilityLabel={tr(
+              'pro.plan.field.hydration_goal.label',
+              'student.plan.field.hydration_goal.label'
+            )}
+            testID={testIDPrefix ? `${testIDPrefix}.hydrationGoalMl` : undefined}
+          />
+          {errors.hydrationGoalMl && (
+            <Text style={[styles.fieldError, { color: palette.danger }]}>
+              {errors.hydrationGoalMl === 'required'
+                ? tr('pro.plan.validation.hydration_goal_required', 'student.plan.validation.hydration_goal_required')
+                : tr(
+                    'pro.plan.validation.hydration_goal_positive',
+                    'student.plan.validation.hydration_goal_positive'
+                  )}
+            </Text>
+          )}
+        </View>
 
-      <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
 
-      {/* Calorie target */}
-      <View style={styles.fieldSection}>
-        <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
-          {t('pro.plan.field.calories_target.label')}
-        </Text>
-        <Text style={[styles.targetLabel, { color: palette.text }]}>
-          {caloriesTarget || '0'} kcal
-        </Text>
-      </View>
+        {/* Calorie target */}
+        <View style={styles.fieldSection}>
+          <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
+            {t('pro.plan.field.calories_target.label')}
+          </Text>
+          <Text style={[styles.targetLabel, { color: palette.text }]}>
+            {caloriesTarget || '0'} kcal
+          </Text>
+        </View>
 
-      <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
 
-      {/* Macro targets row */}
-      <View style={styles.macroRow}>
-        <MacroField
-          label={t('pro.plan.field.carbs_target.label')}
-          value={carbsTarget}
-          palette={palette}
-        />
-        <View style={[styles.verticalDivider, { backgroundColor: theme.color.border }]} />
-        <MacroField
-          label={t('pro.plan.field.proteins_target.label')}
-          value={proteinsTarget}
-          palette={palette}
-        />
-        <View style={[styles.verticalDivider, { backgroundColor: theme.color.border }]} />
-        <MacroField
-          label={t('pro.plan.field.fats_target.label')}
-          value={fatsTarget}
-          palette={palette}
-        />
-      </View>
-    </BuilderInsetGroup>
+        {/* Macro targets row */}
+        <View style={styles.macroRow}>
+          <MacroField
+            label={t('pro.plan.field.carbs_target.label')}
+            value={carbsTarget}
+            palette={palette}
+          />
+          <View style={[styles.verticalDivider, { backgroundColor: theme.color.border }]} />
+          <MacroField
+            label={t('pro.plan.field.proteins_target.label')}
+            value={proteinsTarget}
+            palette={palette}
+          />
+          <View style={[styles.verticalDivider, { backgroundColor: theme.color.border }]} />
+          <MacroField
+            label={t('pro.plan.field.fats_target.label')}
+            value={fatsTarget}
+            palette={palette}
+          />
+        </View>
+      </BuilderInsetGroup>
+      {Platform.OS === 'ios' ? (
+        <InputAccessoryView nativeID={PLAN_METADATA_KEYBOARD_ACCESSORY_ID}>
+          <View style={[styles.keyboardAccessory, { backgroundColor: theme.color.surface, borderTopColor: theme.color.border }]}>
+            <Pressable
+              onPress={Keyboard.dismiss}
+              hitSlop={10}
+              style={styles.keyboardDoneButton}
+              testID={testIDPrefix ? `${testIDPrefix}.keyboard.done` : undefined}
+            >
+              <Text style={[styles.keyboardDone, { color: palette.text }]}>
+                {t('common.cta.done')}
+              </Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      ) : null}
+    </>
   );
 });
 
@@ -168,4 +201,17 @@ const styles = StyleSheet.create({
   macroLabel: { ...DsTypography.micro, opacity: 0.6, marginBottom: 4 },
   macroValue: { ...DsTypography.body, fontWeight: '700', textAlign: 'center' },
   fieldError: { ...DsTypography.micro, marginTop: 2 },
+  keyboardAccessory: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    alignItems: 'flex-end',
+    paddingHorizontal: DsSpace.md,
+    paddingVertical: DsSpace.xs,
+  },
+  keyboardDoneButton: {
+    minHeight: 44,
+    minWidth: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keyboardDone: { ...DsTypography.button },
 });

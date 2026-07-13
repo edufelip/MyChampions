@@ -30,11 +30,6 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-firebase-debug.log
-firestore-debug.log
-
-# Firebase Data Connect — generated SDK (rebuilt via `firebase dataconnect:sdk:generate`)
-features/dataconnect-generated/
 
 # macOS
 .DS_Store
@@ -46,20 +41,6 @@ features/dataconnect-generated/
 .env.dev
 .env.prod
 .env*.local
-
-# scratch / debug scripts
-test-dc*.ts
-test-dc*.js
-
-# iOS/Android Firebase configs
-GoogleService-Info.plist
-GoogleService-Info-Dev.plist
-GoogleService-Info-Prod.plist
-ios/GoogleService-Info.plist
-ios/GoogleService-Info-Dev.plist
-ios/GoogleService-Info-Prod.plist
-**/google-services.json
-google-services-dev.json
 
 # typescript
 *.tsbuildinfo

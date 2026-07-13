@@ -1,4 +1,4 @@
-import type { FirestorePortionLog } from '../nutrition/custom-meal-source';
+import type { PortionLog } from '../nutrition/custom-meal-source';
 import type { WaterIntakeLog } from '../nutrition/water-tracking.logic';
 
 export type StudentTrackingReview = {
@@ -20,14 +20,14 @@ export type StudentTrackingReview = {
     planId: string | null;
     connectionId: string | null;
   }>;
-  recentPortionLogs: FirestorePortionLog[];
+  recentPortionLogs: PortionLog[];
 };
 
 export function buildStudentTrackingReview(input: {
   todayKey: string;
   waterGoalMl: number | null;
   waterLogs: WaterIntakeLog[];
-  portionLogs: FirestorePortionLog[];
+  portionLogs: PortionLog[];
 }): StudentTrackingReview {
   const dateKeys = buildDateKeys(input.todayKey, 7);
   const waterByDate = new Map(input.waterLogs.map((log) => [log.dateKey, log]));

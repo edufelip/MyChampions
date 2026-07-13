@@ -1,0 +1,13 @@
+{
+  "webClientId": "942354515358-ldkltehi2l9d942219l68rlbjav7d9mc.apps.googleusercontent.com",
+  "ios": {
+    "clientId": "942354515358-6pqkvvhajja4uon9igq3rtcp2q3k9qvo.apps.googleusercontent.com",
+    "callbackScheme": "com.googleusercontent.apps.942354515358-6pqkvvhajja4uon9igq3rtcp2q3k9qvo",
+    "bundleIdentifier": "com.edufelip.mychampions"
+  },
+  "android": {
+    "clientId": "942354515358-1r5l73l9vjlngq7i2l0i4j4p41p65d2o.apps.googleusercontent.com",
+    "packageName": "com.edufelip.mychampions",
+    "playSigningSha1": "85:E5:17:D8:91:E0:55:55:E4:26:A0:9F:CD:1D:97:C9:A8:8E:A9:AD"
+  }
+}

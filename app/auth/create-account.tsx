@@ -1,8 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Google from 'expo-auth-session/providers/google';
-import * as Crypto from 'expo-crypto';
-import * as WebBrowser from 'expo-web-browser';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
@@ -16,20 +12,23 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
 
 import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import {
+  CreateAccountFailure,
   mapCreateAccountReasonToMessageKey,
   normalizeCreateAccountReason,
+  resolveCreateAccountValidationAnalyticsReason,
   type CreateAccountErrorMessageKey,
-  type CreateAccountRequest,
   validateCreateAccountInput,
   type CreateAccountValidationErrors,
 } from '@/features/auth/create-account.logic';
-import { signInOrLinkWithCredential } from '@/features/auth/firebase-social-auth';
-import { getFirebaseAuth, firebaseOAuthConfig } from '@/features/auth/firebase';
+import { signInWithAppleProviderTokenFromSource } from '@/features/auth/apple-social-auth-source';
+import { createAccountWithEmailPasswordFromSource } from '@/features/auth/email-auth-source';
+import { signInWithGoogleProviderTokenFromSource } from '@/features/auth/google-social-auth-source';
+import { useAuthSession } from '@/features/auth/auth-session';
+import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
 import {
   buildAuthEntryViewed,
   buildSignUpFailed,
@@ -40,31 +39,21 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-WebBrowser.maybeCompleteAuthSession();
-
-function createNonce(length = 32) {
-  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-  let value = '';
-  for (let i = 0; i < length; i += 1) {
-    value += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-
-  return value;
-}
-
 export default function CreateAccountScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
   const router = useRouter();
+  const searchParams = useLocalSearchParams<{ returnTo?: string | string[] }>();
+  const returnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const { t } = useTranslation();
   const { emitEvent } = useAnalytics();
+  const {
+    createAccountWithE2EEmailPassword,
+    signInWithE2ESocialAuth,
+    signInWithServerSocialAuth,
+  } = useAuthSession();
   const insets = useSafeAreaInsets();
-  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
-    iosClientId: firebaseOAuthConfig.iosClientId,
-    androidClientId: firebaseOAuthConfig.androidClientId,
-    webClientId: firebaseOAuthConfig.webClientId,
-  });
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -75,6 +64,14 @@ export default function CreateAccountScreen() {
   const [errors, setErrors] = useState<CreateAccountValidationErrors>({});
   const [submitError, setSubmitError] = useState<CreateAccountErrorMessageKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const buildAuthRoute = (pathname: '/auth/sign-in') => {
+    if (!returnTo) {
+      return pathname;
+    }
+
+    return { pathname, params: { returnTo } };
+  };
 
   useEffect(() => {
     emitEvent(buildAuthEntryViewed('auth_create_account'));
@@ -87,13 +84,20 @@ export default function CreateAccountScreen() {
     setSubmitError(null);
 
     if (Object.keys(nextErrors).length > 0) {
+      const validationReason = resolveCreateAccountValidationAnalyticsReason(nextErrors);
+      if (validationReason) {
+        emitEvent(buildSignUpFailed('email_password', validationReason));
+      }
       return;
     }
 
     emitEvent(buildSignUpSubmitted('email_password'));
     setSubmitting(true);
     try {
-      await createAccountWithEmailPassword({ name, email, password, passwordConfirmation });
+      if (await createAccountWithE2EEmailPassword({ name, email, password })) {
+        return;
+      }
+      await createAccountWithEmailPasswordFromSource({ name, email, password, passwordConfirmation });
     } catch (error: unknown) {
       const reason = normalizeCreateAccountReason(error);
       emitEvent(buildSignUpFailed('email_password', reason));
@@ -108,8 +112,28 @@ export default function CreateAccountScreen() {
     emitEvent(buildSignUpSubmitted('google'));
 
     try {
-      await promptGoogle();
+      if (await signInWithE2ESocialAuth('google')) {
+        return;
+      }
+      try {
+        await signInWithGoogleProviderTokenFromSource();
+        return;
+      } catch (error: unknown) {
+        if (normalizeCreateAccountReason(error) !== 'configuration') {
+          throw error;
+        }
+      }
+      if (await signInWithServerSocialAuth('google')) {
+        return;
+      }
+
+      throw new CreateAccountFailure('configuration');
     } catch (error: unknown) {
+      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      if (code.includes('ERR_REQUEST_CANCELED')) {
+        return;
+      }
+
       const reason = normalizeCreateAccountReason(error);
       emitEvent(buildSignUpFailed('google', reason));
       setSubmitError(mapCreateAccountReasonToMessageKey(reason));
@@ -121,28 +145,22 @@ export default function CreateAccountScreen() {
     emitEvent(buildSignUpSubmitted('apple'));
 
     try {
-      if (Platform.OS !== 'ios') {
-        throw new Error('Apple Sign-In is only available on iOS.');
+      if (await signInWithE2ESocialAuth('apple')) {
+        return;
+      }
+      try {
+        await signInWithAppleProviderTokenFromSource();
+        return;
+      } catch (error: unknown) {
+        if (normalizeCreateAccountReason(error) !== 'configuration') {
+          throw error;
+        }
+      }
+      if (await signInWithServerSocialAuth('apple')) {
+        return;
       }
 
-      const nonce = createNonce();
-      const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
-      const appleCredential = await AppleAuthentication.signInAsync({
-        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
-        nonce: hashedNonce,
-      });
-
-      if (!appleCredential.identityToken) {
-        throw new Error('Apple identity token is missing.');
-      }
-
-      setSubmitting(true);
-      const provider = new OAuthProvider('apple.com');
-      const firebaseCredential = provider.credential({
-        idToken: appleCredential.identityToken,
-        rawNonce: nonce,
-      });
-      await signInOrLinkWithCredential(firebaseCredential);
+      throw new CreateAccountFailure('configuration');
     } catch (error: unknown) {
       const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       if (code.includes('ERR_REQUEST_CANCELED')) {
@@ -156,33 +174,6 @@ export default function CreateAccountScreen() {
       setSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    if (googleResponse?.type !== 'success') {
-      return;
-    }
-
-    const idToken =
-      googleResponse.authentication?.idToken ||
-      (typeof googleResponse.params?.id_token === 'string' ? googleResponse.params.id_token : '');
-    if (!idToken) {
-      emitEvent(buildSignUpFailed('google', 'missing_id_token'));
-      setSubmitError('common.error.generic');
-      return;
-    }
-
-    setSubmitting(true);
-    void signInOrLinkWithCredential(GoogleAuthProvider.credential(idToken))
-      .then(() => {})
-      .catch((error: unknown) => {
-        const reason = normalizeCreateAccountReason(error);
-        emitEvent(buildSignUpFailed('google', reason));
-        setSubmitError(mapCreateAccountReasonToMessageKey(reason));
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
-  }, [googleResponse, router, emitEvent]);
 
   return (
     <KeyboardAvoidingView
@@ -210,9 +201,10 @@ export default function CreateAccountScreen() {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 20 }]}
+        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 120 }]}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        testID="auth.createAccount.scrollView">
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
@@ -222,7 +214,7 @@ export default function CreateAccountScreen() {
                 return;
               }
 
-              router.replace('/auth/sign-in');
+              router.replace(buildAuthRoute('/auth/sign-in') as never);
             }}
             style={[styles.backButton, { backgroundColor: theme.color.surface }]}
             testID="auth.createAccount.backButton">
@@ -347,9 +339,12 @@ export default function CreateAccountScreen() {
                 accessibilityLabel={t('auth.field.password_confirmation')}
                 autoCapitalize="none"
                 autoComplete="password-new"
+                blurOnSubmit
                 onChangeText={setPasswordConfirmation}
+                onSubmitEditing={onCreateAccount}
                 placeholder={t('auth.placeholder.password_confirmation')}
                 placeholderTextColor={palette.icon}
+                returnKeyType="done"
                 secureTextEntry={!showPasswordConfirmation}
                 style={[
                   styles.input,
@@ -428,13 +423,13 @@ export default function CreateAccountScreen() {
           <View style={styles.socialRow}>
             <Pressable
               accessibilityRole="button"
-              disabled={submitting || !googleRequest}
+              disabled={submitting}
               onPress={onGoogleCreateAccount}
               style={[
                 styles.socialButton,
                 {
                   backgroundColor: theme.color.surface,
-                  opacity: submitting || !googleRequest ? 0.5 : 1,
+                  opacity: submitting ? 0.5 : 1,
                 },
               ]}
               testID="auth.createAccount.googleButton">
@@ -459,7 +454,7 @@ export default function CreateAccountScreen() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.replace('/auth/sign-in')}
+          onPress={() => router.replace(buildAuthRoute('/auth/sign-in') as never)}
           style={styles.secondaryButton}
           testID="auth.createAccount.backToSignInButton"
           disabled={submitting}>
@@ -649,8 +644,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
-async function createAccountWithEmailPassword(input: CreateAccountRequest): Promise<void> {
-  const auth = getFirebaseAuth();
-  await createUserWithEmailAndPassword(auth, input.email.trim().toLowerCase(), input.password);
-}

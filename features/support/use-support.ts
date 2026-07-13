@@ -2,7 +2,7 @@
  * Support hook for UI consumption.
  */
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   validateSupportInput,
   normalizeSupportError,
@@ -20,7 +20,7 @@ export type SupportState =
 export function useSupport() {
   const [state, setState] = useState<SupportState>({ kind: 'idle' });
 
-  async function submit(input: SupportMessageInput & { userRole?: string | null }) {
+  const submit = useCallback(async (input: SupportMessageInput & { userRole?: string | null }) => {
     const validationError = validateSupportInput(input);
     if (validationError) {
       setState({ kind: 'error', reason: validationError });
@@ -34,11 +34,11 @@ export function useSupport() {
     } catch (error) {
       setState({ kind: 'error', reason: normalizeSupportError(error) });
     }
-  }
+  }, []);
 
-  function reset() {
+  const reset = useCallback(() => {
     setState({ kind: 'idle' });
-  }
+  }, []);
 
   return {
     state,

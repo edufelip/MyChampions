@@ -1,7 +1,7 @@
 /**
  * React hook for water tracking operations.
  * Wraps water-tracking-source for UI consumption.
- * No Firebase/Firestore concerns in screen components.
+ * No backend persistence concerns in screen components.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -38,6 +38,7 @@ export type WaterTrackingLoadState =
       todayConsumedMl: number;
       todayStatus: WaterDayStatus | null;
       streak: number;
+      lastSyncedAtIso: string;
       isMutating?: boolean;
     };
 
@@ -80,7 +81,16 @@ export function useWaterTracking(isAuthenticated: boolean, todayKey: string): Us
             ? calculateWaterStreak(logs, effectiveGoal.dailyMl, todayKey)
             : 0;
 
-        setState({ kind: 'ready', logs, effectiveGoal, todayConsumedMl, todayStatus, streak, isMutating: false });
+        setState({
+          kind: 'ready',
+          logs,
+          effectiveGoal,
+          todayConsumedMl,
+          todayStatus,
+          streak,
+          lastSyncedAtIso: new Date().toISOString(),
+          isMutating: false,
+        });
       })
       .catch((err: Error) => {
         setState({ kind: 'error', message: err.message });
@@ -103,10 +113,10 @@ export function useWaterTracking(isAuthenticated: boolean, todayKey: string): Us
       // Optimistic update
       if (state.kind === 'ready') {
         const newConsumed = state.todayConsumedMl + amountMl;
-        const newStatus = state.effectiveGoal 
+        const newStatus = state.effectiveGoal
           ? resolveWaterDayStatus(newConsumed, state.effectiveGoal.dailyMl)
           : state.todayStatus;
-          
+
         setState({
           ...state,
           todayConsumedMl: newConsumed,

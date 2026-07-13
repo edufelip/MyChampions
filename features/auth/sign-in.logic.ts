@@ -15,6 +15,10 @@ export type SignInValidationErrors = {
   password?: 'auth.validation.password_required';
 };
 
+export type SignInValidationAnalyticsReason =
+  | 'validation_email_required'
+  | 'validation_password_required';
+
 export type SignInErrorMessageKey =
   | 'auth.signin.error.invalid_credentials'
   | 'auth.signin.error.network'
@@ -46,6 +50,20 @@ export function validateSignInInput(input: SignInRequest): SignInValidationError
   return errors;
 }
 
+export function resolveSignInValidationAnalyticsReason(
+  errors: SignInValidationErrors
+): SignInValidationAnalyticsReason | null {
+  if (errors.email) {
+    return 'validation_email_required';
+  }
+
+  if (errors.password) {
+    return 'validation_password_required';
+  }
+
+  return null;
+}
+
 export function normalizeSignInReason(error: unknown): SignInErrorReason {
   if (error instanceof SignInFailure) {
     return error.reason;
@@ -62,23 +80,27 @@ export function normalizeSignInReason(error: unknown): SignInErrorReason {
   if (
     code.includes('invalid_credentials') ||
     code.includes('invalid-login') ||
-    code.includes('wrong-password') ||
-    code.includes('user-not-found') ||
     code.includes('invalid_login') ||
     message.includes('invalid credentials')
   ) {
     return 'invalid_credentials';
   }
 
-  if (code.includes('account-exists-with-different-credential')) {
+  if (
+    code.includes('provider_conflict') ||
+    code.includes('provider-conflict') ||
+    message.includes('provider conflict') ||
+    message.includes('different provider')
+  ) {
     return 'provider_conflict';
   }
 
   if (
-    code.includes('missing required keys') ||
-    code.includes('invalid-api-key') ||
-    message.includes('missing required keys') ||
-    message.includes('invalid api key')
+    code.includes('configuration') ||
+    code.includes('missing_config') ||
+    code.includes('server_not_configured') ||
+    message.includes('not configured') ||
+    message.includes('missing config')
   ) {
     return 'configuration';
   }

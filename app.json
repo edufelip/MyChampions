@@ -46,23 +46,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "firebase": {
-        "apiKey": "REPLACE_ME",
-        "authDomain": "REPLACE_ME",
-        "projectId": "REPLACE_ME",
-        "storageBucket": "REPLACE_ME",
-        "messagingSenderId": "REPLACE_ME",
-        "appId": "REPLACE_ME",
-        "iosClientId": "REPLACE_ME",
-        "androidClientId": "REPLACE_ME",
-        "webClientId": "REPLACE_ME"
-      },
-      "dataConnect": {
-        "graphqlEndpoint": "REPLACE_ME",
-        "apiKey": "REPLACE_ME"
-      }
     }
   }
 }

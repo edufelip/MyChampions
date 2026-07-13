@@ -8,9 +8,9 @@ Contact support dialog in settings screen.
 - `AC-602`: Dialog includes a clear disclaimer about messaging the support team.
 - `AC-603`: Subject field is mandatory and limited to 50 characters.
 - `AC-604`: Message field is mandatory and limited to 500 characters.
-- `AC-605`: Submitting a valid message saves it to the `supportMessages` Firestore collection.
+- `AC-605`: Submitting a valid message sends it to the MyChampions server and saves it to the PostgreSQL `support_messages` table.
 - `AC-606`: Successfully submitted messages include metadata: `userId`, `userEmail`, `userName`, `appVersion`, `platform`, `createdAt`, `updatedAt`, and `status='pending'`.
-- `AC-607`: If offline, the submission is persisted locally by Firestore and a notice informs the user it will be sent when connection returns.
+- `AC-607`: If offline, support submission is blocked and the modal shows the standard offline write-lock notice.
 - `AC-608`: Character counters provide real-time feedback on input length.
 - `AC-609`: Input fields and close button are disabled while submission is in progress.
 - `AC-610`: Modal can be dismissed after success or by tapping the close button (when not submitting).
@@ -32,7 +32,7 @@ Feature: Contact Support
     And the user enters a message "I cannot sign in."
     And the user taps "Send message"
     Then a success message is displayed
-    And the message is saved to Firestore
+    And the message is saved by the MyChampions server
 
   Scenario: Validation errors
     Given the support modal is open
@@ -43,7 +43,7 @@ Feature: Contact Support
   Scenario: Offline submission
     Given the device is offline
     And the support modal is open
-    When the user submits a valid message
-    Then a success message is displayed
-    And an offline notice informs the user that the message will sync later
+    When the user enters a valid subject and message
+    Then the offline write-lock notice is displayed
+    And the message cannot be submitted until connectivity returns
 ```

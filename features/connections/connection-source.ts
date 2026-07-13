@@ -1,22 +1,9 @@
 /**
- * Connection Firestore source — invite submit, confirm, end, list.
+ * Connection source — invite submit, confirm, end, list.
  */
 
-import {
-  collection,
-  deleteField,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  runTransaction,
-  where,
-  type Firestore,
-  type Transaction,
-} from 'firebase/firestore';
-
-import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso } from '../firestore';
-import { classifyFirestoreError } from '../firestore-error';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getCurrentServerAccessToken } from '../auth/server-auth-source';
 import {
   normalizeConnectionStatus,
   normalizeCanceledReason,
@@ -24,12 +11,6 @@ import {
   type ConnectionRecord,
   type ConnectionSpecialty,
 } from './connection.logic';
-import {
-  buildPendingInviteGuardId,
-  getPendingStudentConnectionField,
-  shouldReleasePendingStudentSlot,
-  type PendingStudentOccupancy,
-} from './pending-invite-guards';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -45,7 +26,7 @@ export class ConnectionSourceError extends Error {
   }
 }
 
-type FirestoreConnection = {
+type PendingConnectionFromInvite = {
   id: string;
   status: string;
   canceledReason?: string | null;
@@ -59,24 +40,10 @@ type FirestoreConnection = {
   endedAt?: string | null;
 };
 
-type FirestoreInviteCode = {
-  scope: 'professional_specialty';
+type InviteConnectionInput = {
   professionalAuthUid: string;
   specialty: ConnectionSpecialty;
   codeValue: string;
-  status: 'active' | 'rotated' | 'revoked';
-  createdAt: string;
-  updatedAt: string;
-  rotatedAt?: string | null;
-};
-
-type FirestoreInviteCodeLookup = {
-  scope: 'invite_code_lookup';
-  codeValue: string;
-  professionalAuthUid: string;
-  specialty: ConnectionSpecialty;
-  inviteCodeId: ConnectionSpecialty;
-  status: 'active' | 'rotated' | 'revoked';
 };
 
 const MAX_PENDING_STUDENTS = 10;
@@ -85,9 +52,9 @@ export function buildPendingConnectionFromInvite(input: {
   connectionId: string;
   studentUid: string;
   inviteDocId: string;
-  invite: Pick<FirestoreInviteCode, 'professionalAuthUid' | 'specialty' | 'codeValue'>;
+  invite: InviteConnectionInput;
   timestamp: string;
-}): FirestoreConnection {
+}): PendingConnectionFromInvite {
   return {
     id: input.connectionId,
     studentAuthUid: input.studentUid,
@@ -125,264 +92,397 @@ export function getExistingInviteConnectionConflict(
   return null;
 }
 
-type SubmitInviteRequestDeps = {
-  getCurrentIdToken: () => Promise<string>;
-  getSubmitInviteFunctionUrl: () => string;
-  fetchFn: typeof fetch;
-};
-
-export async function requestSubmitInviteCode(
-  code: string,
-  deps: SubmitInviteRequestDeps
-): Promise<{ connectionId: string; status: 'pending_confirmation' }> {
-  let idToken: string;
-  try {
-    idToken = await deps.getCurrentIdToken();
-  } catch (error) {
-    throw normalizeConnectionSourceError(error);
-  }
-
-  let response: Response;
-  const endpoint = deps.getSubmitInviteFunctionUrl();
-  try {
-    response = await deps.fetchFn(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({ code }),
-    });
-  } catch {
-    throw new ConnectionSourceError('network', 'Network request to submit invite code failed.');
-  }
-
-  let body: { connectionId?: unknown; status?: unknown; error?: unknown } = {};
-  try {
-    body = (await response.json()) as { connectionId?: unknown; status?: unknown; error?: unknown };
-  } catch {
-    body = {};
-  }
-
-  if (response.status === 200 && typeof body.connectionId === 'string' && body.status === 'pending_confirmation') {
-    return { connectionId: body.connectionId, status: 'pending_confirmation' };
-  }
-
-  if (body.error === 'not_found') {
-    throw new ConnectionSourceError('graphql', 'Invite code not found.');
-  }
-  if (body.error === 'already_connected') {
-    throw new ConnectionSourceError('graphql', 'Already connected.');
-  }
-  if (body.error === 'pending_already_exists') {
-    throw new ConnectionSourceError('graphql', 'Pending request already exists.');
-  }
-  if (body.error === 'pending_cap_reached') {
-    throw new ConnectionSourceError('graphql', 'Pending cap reached.');
-  }
-  if (response.status === 401 || response.status === 403 || body.error === 'unauthenticated' || body.error === 'forbidden') {
-    throw new ConnectionSourceError('graphql', 'Invite submission is not authorized.');
-  }
-
-  throw new ConnectionSourceError('invalid_response', `Unexpected invite submission response: ${response.status}.`);
-}
-
 export type ConnectionSourceDeps = {
-  getFirestoreInstance: () => Firestore;
-  getCurrentAuthUid: () => string;
-  getCurrentIdToken?: () => Promise<string>;
-  getSubmitInviteFunctionUrl?: () => string;
+  getCurrentAccessToken?: () => Promise<string | null>;
+  getServerBaseUrl?: () => string | undefined;
   fetchFn?: typeof fetch;
 };
 
 const defaultConnectionSourceDeps: ConnectionSourceDeps = {
-  getFirestoreInstance: _getFirestoreInstance,
-  getCurrentAuthUid: _getCurrentAuthUid,
-  getCurrentIdToken: defaultGetCurrentIdToken,
-  getSubmitInviteFunctionUrl: defaultGetSubmitInviteFunctionUrl,
+  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getServerBaseUrl: resolveServerBaseUrl,
   fetchFn: fetch,
 };
 
-function defaultGetSubmitInviteFunctionUrl(): string {
-  const url = process.env['EXPO_PUBLIC_SUBMIT_INVITE_FUNCTION_URL'];
-  if (!url) {
-    throw new ConnectionSourceError(
-      'configuration',
-      'Invite submission Cloud Function URL is not configured. Set EXPO_PUBLIC_SUBMIT_INVITE_FUNCTION_URL.'
-    );
+function resolveServerBaseUrl(): string | undefined {
+  let expoExtra: unknown;
+  try {
+    const Constants = require('expo-constants') as {
+      default?: { expoConfig?: { extra?: unknown } };
+      expoConfig?: { extra?: unknown };
+    };
+    expoExtra = (Constants.default ?? Constants).expoConfig?.extra;
+  } catch {
+    expoExtra = undefined;
   }
-  return url;
-}
 
-async function defaultGetCurrentIdToken(): Promise<string> {
-  const { getFirebaseAuth } = require('../auth/firebase') as {
-    getFirebaseAuth: () => { currentUser: { getIdToken?: () => Promise<string> } | null };
+  const extra = (expoExtra ?? {}) as {
+    server?: {
+      baseUrl?: string;
+    };
   };
-  const user = getFirebaseAuth().currentUser;
-  if (!user?.getIdToken) {
-    throw new ConnectionSourceError('configuration', 'No authenticated user found.');
-  }
-  return user.getIdToken();
+  return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
 }
 
-function getTrackingAccessRef(firestore: Firestore, connection: FirestoreConnection) {
-  const readerCollection = connection.specialty === 'fitness_coach' ? 'fitnessCoaches' : 'nutritionists';
-  return doc(
-    firestore,
-    'trackingAccess',
-    connection.studentAuthUid,
-    readerCollection,
-    connection.professionalAuthUid
-  );
+function getE2EConnectionSourceOverride() {
+  return resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
 }
 
-function getActiveSpecialtyRef(firestore: Firestore, connection: FirestoreConnection) {
-  return doc(
-    firestore,
-    'trackingAccess',
-    connection.studentAuthUid,
-    'activeSpecialties',
-    connection.specialty
-  );
+const e2eEndedConnectionIds = new Set<string>();
+const e2eSubmittedInviteConnections = new Map<string, ConnectionRecord>();
+
+function getE2EInviteSubmitFixture() {
+  const override = getE2EConnectionSourceOverride();
+  if (!override) return null;
+
+  return process.env.EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE === 'success' ? 'success' : null;
 }
 
-function getPendingInviteGuardRef(firestore: Firestore, connection: FirestoreConnection) {
-  const specialty = normalizeConnectionSpecialty(connection.specialty);
-  if (!specialty) return null;
-  return doc(
-    firestore,
-    'connectionInviteGuards',
-    buildPendingInviteGuardId(connection.professionalAuthUid, connection.studentAuthUid, specialty)
-  );
-}
+function buildE2EPendingConnectionFromCode(code: string): ConnectionRecord {
+  const normalizedCode = code.trim().toUpperCase();
+  const specialty: ConnectionSpecialty = normalizedCode.startsWith('FIT') ? 'fitness_coach' : 'nutritionist';
+  const professionalAuthUid = specialty === 'fitness_coach' ? 'e2e-fitness-coach' : 'e2e-nutritionist';
+  const id = specialty === 'fitness_coach'
+    ? 'e2e-pending-fitness-coach-connection'
+    : 'e2e-pending-nutritionist-connection';
 
-function getPendingStudentRef(firestore: Firestore, connection: FirestoreConnection) {
-  return doc(
-    firestore,
-    'professionals',
-    connection.professionalAuthUid,
-    'pendingStudents',
-    connection.studentAuthUid
-  );
-}
-
-function getPendingStudentSlotRef(firestore: Firestore, professionalUid: string, slotId: string) {
-  return doc(firestore, 'professionals', professionalUid, 'pendingStudentSlots', slotId);
-}
-
-export async function buildPendingInviteRelease(
-  firestore: Firestore,
-  tx: Transaction,
-  connection: FirestoreConnection
-): Promise<{
-  guardRef: ReturnType<typeof doc> | null;
-  pendingStudentRef: ReturnType<typeof doc> | null;
-  pendingStudentField: 'nutritionistConnectionId' | 'fitnessCoachConnectionId' | null;
-  releaseSlotRef: ReturnType<typeof doc> | null;
-}> {
-  if (connection.status !== 'pending_confirmation') {
-    return { guardRef: null, pendingStudentRef: null, pendingStudentField: null, releaseSlotRef: null };
-  }
-
-  const specialty = normalizeConnectionSpecialty(connection.specialty);
-  const guardRef = getPendingInviteGuardRef(firestore, connection);
-  const guardSnap = guardRef ? await tx.get(guardRef) : null;
-  const existingGuardRef = guardSnap?.exists() ? guardRef : null;
-  if (!specialty) {
-    return { guardRef: existingGuardRef, pendingStudentRef: null, pendingStudentField: null, releaseSlotRef: null };
-  }
-
-  const pendingStudentRef = getPendingStudentRef(firestore, connection);
-  const pendingStudentSnap = await tx.get(pendingStudentRef);
-  if (!pendingStudentSnap.exists()) {
-    return { guardRef: existingGuardRef, pendingStudentRef: null, pendingStudentField: null, releaseSlotRef: null };
-  }
-
-  const pendingStudent = pendingStudentSnap.data() as PendingStudentOccupancy & { slotId?: string | null };
-  const pendingStudentField = getPendingStudentConnectionField(specialty);
-  if (pendingStudent[pendingStudentField] !== connection.id) {
-    return { guardRef: existingGuardRef, pendingStudentRef: null, pendingStudentField: null, releaseSlotRef: null };
-  }
-
-  const slotId = typeof pendingStudent.slotId === 'string' ? pendingStudent.slotId : '';
-  const releaseSlotRef = slotId && shouldReleasePendingStudentSlot(pendingStudent, connection.id)
-    ? getPendingStudentSlotRef(firestore, connection.professionalAuthUid, slotId)
-    : null;
-
-  return { guardRef: existingGuardRef, pendingStudentRef, pendingStudentField, releaseSlotRef };
-}
-
-export function applyPendingInviteRelease(
-  tx: Transaction,
-  release: Awaited<ReturnType<typeof buildPendingInviteRelease>>,
-  timestamp: string
-) {
-  if (release.guardRef) {
-    tx.delete(release.guardRef);
-  }
-  if (release.pendingStudentRef && release.pendingStudentField) {
-    tx.update(release.pendingStudentRef, {
-      [release.pendingStudentField]: deleteField(),
-      updatedAt: timestamp,
-    });
-  }
-  if (release.releaseSlotRef) {
-    tx.update(release.releaseSlotRef, {
-      studentAuthUid: null,
-      updatedAt: timestamp,
-    });
-  }
-}
-
-function getPlanCollectionForSpecialty(connection: FirestoreConnection) {
-  return connection.specialty === 'fitness_coach' ? 'trainingPlans' : 'nutritionPlans';
-}
-
-function getPlanSortTimestamp(plan: unknown) {
-  const data = typeof (plan as { data?: unknown })?.data === 'function'
-    ? (plan as { data: () => { updatedAt?: unknown; createdAt?: unknown } }).data()
-    : {};
-  const updatedAt = typeof data.updatedAt === 'string' ? Date.parse(data.updatedAt) : NaN;
-  if (!Number.isNaN(updatedAt)) return updatedAt;
-
-  const createdAt = typeof data.createdAt === 'string' ? Date.parse(data.createdAt) : NaN;
-  return Number.isNaN(createdAt) ? 0 : createdAt;
-}
-
-function buildTrackingAccessRecord(connection: FirestoreConnection, status: 'active' | 'ended') {
   return {
-    connectionId: connection.id,
-    studentAuthUid: connection.studentAuthUid,
-    professionalAuthUid: connection.professionalAuthUid,
-    specialty: connection.specialty,
-    status,
-    updatedAt: nowIso(),
+    id,
+    status: 'pending_confirmation',
+    canceledReason: null,
+    specialty,
+    professionalAuthUid,
   };
+}
+
+function getE2EConnectionFixtures(): ConnectionRecord[] | null {
+  const override = getE2EConnectionSourceOverride();
+  if (!override) return null;
+
+  const connections: ConnectionRecord[] = [];
+
+  if (process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE === 'assigned') {
+    connections.push({
+      id: 'e2e-active-nutritionist-connection',
+      status: e2eEndedConnectionIds.has('e2e-active-nutritionist-connection') ? 'ended' : 'active',
+      canceledReason: null,
+      specialty: 'nutritionist',
+      professionalAuthUid: 'e2e-nutritionist',
+    });
+  }
+
+  if (process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE === 'assigned') {
+    connections.push({
+      id: 'e2e-active-fitness-coach-connection',
+      status: e2eEndedConnectionIds.has('e2e-active-fitness-coach-connection') ? 'ended' : 'active',
+      canceledReason: null,
+      specialty: 'fitness_coach',
+      professionalAuthUid: 'e2e-fitness-coach',
+    });
+  }
+
+  if (getE2EInviteSubmitFixture() === 'success') {
+    connections.push(...e2eSubmittedInviteConnections.values());
+  }
+
+  return connections;
 }
 
 function normalizeConnectionSourceError(error: unknown): ConnectionSourceError {
   if (error instanceof ConnectionSourceError) return error;
 
-  switch (classifyFirestoreError(error)) {
-    case 'network':
-      return new ConnectionSourceError('network', (error as Error)?.message ?? 'Network error.');
-    case 'configuration':
-      return new ConnectionSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
-    default:
-      return new ConnectionSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected connection source error.');
+  return new ConnectionSourceError(
+    'invalid_response',
+    (error as Error)?.message ?? 'Unexpected connection source error.'
+  );
+}
+
+function requireServerResult<T>(result: T | null, operation: string): T {
+  if (result) return result;
+  throw new ConnectionSourceError('configuration', `${operation} requires local server auth.`);
+}
+
+type ServerConnectionResponse = {
+  connections?: Array<Partial<ConnectionRecord>>;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+type ServerInviteSubmitResponse = {
+  connectionId?: unknown;
+  status?: unknown;
+  error?: unknown;
+};
+
+type ServerConnectionActionResponse = {
+  connectionId?: unknown;
+  status?: unknown;
+  error?: unknown;
+};
+
+function mapServerConnections(payload: ServerConnectionResponse | null): ConnectionRecord[] {
+  const connections = Array.isArray(payload?.connections) ? payload.connections : null;
+  if (!connections) {
+    throw new ConnectionSourceError('invalid_response', 'Connections response is missing.');
   }
+
+  return connections
+    .map((connection) => {
+      const id = typeof connection.id === 'string' ? connection.id : '';
+      const status = normalizeConnectionStatus(connection.status);
+      const specialty = normalizeConnectionSpecialty(connection.specialty);
+      const professionalAuthUid =
+        typeof connection.professionalAuthUid === 'string' ? connection.professionalAuthUid : '';
+
+      if (!id || !status || !specialty || !professionalAuthUid) return null;
+
+      return {
+        id,
+        status,
+        canceledReason: normalizeCanceledReason(connection.canceledReason ?? null),
+        specialty,
+        professionalAuthUid,
+      };
+    })
+    .filter((connection): connection is ConnectionRecord => connection !== null);
+}
+
+async function readServerJson(response: Response): Promise<ServerConnectionResponse | null> {
+  try {
+    return (await response.json()) as ServerConnectionResponse;
+  } catch {
+    return null;
+  }
+}
+
+async function readServerInviteJson(response: Response): Promise<ServerInviteSubmitResponse | null> {
+  try {
+    return (await response.json()) as ServerInviteSubmitResponse;
+  } catch {
+    return null;
+  }
+}
+
+async function readServerConnectionActionJson(response: Response): Promise<ServerConnectionActionResponse | null> {
+  try {
+    return (await response.json()) as ServerConnectionActionResponse;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeServerConnectionError(
+  status: number,
+  payload: ServerConnectionResponse | null
+): ConnectionSourceError {
+  const code = payload?.error?.code;
+  const message = payload?.error?.message ?? `Connections server request failed with status ${status}.`;
+
+  if (status === 401 || code === 'unauthorized') {
+    return new ConnectionSourceError('graphql', message);
+  }
+  if (status >= 500) {
+    return new ConnectionSourceError('network', message);
+  }
+  return new ConnectionSourceError('invalid_response', message);
+}
+
+async function getMyConnectionsFromServer(
+  deps: ConnectionSourceDeps
+): Promise<ConnectionRecord[] | null> {
+  const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+  const accessToken = await deps.getCurrentAccessToken?.();
+
+  if (!baseUrl || !accessToken) return null;
+
+  let response: Response;
+  try {
+    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections`, {
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    throw new ConnectionSourceError('network', 'Network request to list connections failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) {
+    throw normalizeServerConnectionError(response.status, payload);
+  }
+
+  return mapServerConnections(payload);
+}
+
+function normalizeServerInviteSubmitError(
+  status: number,
+  payload: ServerInviteSubmitResponse | null
+): ConnectionSourceError {
+  const error = payload?.error;
+  if (error === 'not_found') {
+    return new ConnectionSourceError('graphql', 'Invite code not found.');
+  }
+  if (error === 'already_connected') {
+    return new ConnectionSourceError('graphql', 'Already connected.');
+  }
+  if (error === 'pending_already_exists') {
+    return new ConnectionSourceError('graphql', 'Pending request already exists.');
+  }
+  if (error === 'pending_cap_reached') {
+    return new ConnectionSourceError('graphql', 'Pending cap reached.');
+  }
+  if (status === 401 || status === 403 || error === 'unauthorized' || error === 'forbidden') {
+    return new ConnectionSourceError('graphql', 'Invite submission is not authorized.');
+  }
+  if (status >= 500) {
+    return new ConnectionSourceError('network', `Invite submission failed with status ${status}.`);
+  }
+  return new ConnectionSourceError('invalid_response', `Unexpected invite submission response: ${status}.`);
+}
+
+async function submitInviteCodeToServer(
+  code: string,
+  deps: ConnectionSourceDeps
+): Promise<{ connectionId: string; status: 'pending_confirmation' } | null> {
+  const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+  const accessToken = await deps.getCurrentAccessToken?.();
+  if (!baseUrl || !accessToken) return null;
+
+  let response: Response;
+  try {
+    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/invite-submissions`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ code: code.trim() }),
+    });
+  } catch {
+    throw new ConnectionSourceError('network', 'Network request to submit invite code failed.');
+  }
+
+  const payload = await readServerInviteJson(response);
+  if (
+    (response.status === 200 || response.status === 201) &&
+    typeof payload?.connectionId === 'string' &&
+    payload.status === 'pending_confirmation'
+  ) {
+    return { connectionId: payload.connectionId, status: 'pending_confirmation' };
+  }
+
+  throw normalizeServerInviteSubmitError(response.status, payload);
+}
+
+function normalizeServerConnectionActionError(
+  status: number,
+  payload: ServerConnectionActionResponse | null,
+  action: 'confirm' | 'end'
+): ConnectionSourceError {
+  const error = payload?.error;
+  if (error === 'not_found') {
+    return new ConnectionSourceError('graphql', 'Connection not found.');
+  }
+  if (error === 'invalid_transition') {
+    return new ConnectionSourceError('graphql', 'Invalid connection transition.');
+  }
+  if (error === 'already_connected') {
+    return new ConnectionSourceError('graphql', 'Already connected.');
+  }
+  if (error === 'professional_subscription_required') {
+    return new ConnectionSourceError('graphql', 'Professional subscription required.');
+  }
+  if (status === 401 || status === 403 || error === 'unauthorized' || error === 'forbidden') {
+    return new ConnectionSourceError('graphql', `Connection ${action} is not authorized.`);
+  }
+  if (status >= 500) {
+    return new ConnectionSourceError('network', `Connection ${action} failed with status ${status}.`);
+  }
+  return new ConnectionSourceError('invalid_response', `Unexpected connection ${action} response: ${status}.`);
+}
+
+async function confirmPendingConnectionToServer(
+  connectionId: string,
+  deps: ConnectionSourceDeps
+): Promise<{ connectionId: string; status: 'active' } | null> {
+  const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+  const accessToken = await deps.getCurrentAccessToken?.();
+  if (!baseUrl || !accessToken) return null;
+
+  let response: Response;
+  try {
+    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/${connectionId}/confirm`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    throw new ConnectionSourceError('network', 'Network request to confirm connection failed.');
+  }
+
+  const payload = await readServerConnectionActionJson(response);
+  if (
+    response.ok &&
+    typeof payload?.connectionId === 'string' &&
+    payload.status === 'active'
+  ) {
+    return { connectionId: payload.connectionId, status: 'active' };
+  }
+
+  throw normalizeServerConnectionActionError(response.status, payload, 'confirm');
+}
+
+async function endConnectionToServer(
+  connectionId: string,
+  deps: ConnectionSourceDeps
+): Promise<boolean> {
+  const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+  const accessToken = await deps.getCurrentAccessToken?.();
+  if (!baseUrl || !accessToken) return false;
+
+  let response: Response;
+  try {
+    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/${connectionId}/end`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    throw new ConnectionSourceError('network', 'Network request to end connection failed.');
+  }
+
+  const payload = await readServerConnectionActionJson(response);
+  if (
+    response.ok &&
+    typeof payload?.connectionId === 'string' &&
+    payload.status === 'ended'
+  ) {
+    return true;
+  }
+
+  throw normalizeServerConnectionActionError(response.status, payload, 'end');
 }
 
 export async function submitInviteCode(
   code: string,
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<{ connectionId: string; status: 'pending_confirmation' }> {
+  if (deps === defaultConnectionSourceDeps && getE2EInviteSubmitFixture() === 'success') {
+    const connection = buildE2EPendingConnectionFromCode(code);
+    e2eSubmittedInviteConnections.set(connection.id, connection);
+    return { connectionId: connection.id, status: 'pending_confirmation' };
+  }
+
   try {
-    return await requestSubmitInviteCode(code.trim(), {
-      getCurrentIdToken: deps.getCurrentIdToken ?? defaultGetCurrentIdToken,
-      getSubmitInviteFunctionUrl: deps.getSubmitInviteFunctionUrl ?? defaultGetSubmitInviteFunctionUrl,
-      fetchFn: deps.fetchFn ?? fetch,
-    });
+    const serverResult = await submitInviteCodeToServer(code, deps);
+    if (serverResult) return serverResult;
+
+    throw new ConnectionSourceError(
+      'configuration',
+      'Invite submission requires local server auth.'
+    );
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }
@@ -393,54 +493,10 @@ export async function confirmPendingConnection(
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<{ connectionId: string; status: 'active' }> {
   try {
-    const firestore = deps.getFirestoreInstance();
-    const professionalUid = deps.getCurrentAuthUid();
-
-    await runTransaction(firestore, async (tx) => {
-      const ref = doc(firestore, 'connections', connectionId);
-      const snap = await tx.get(ref);
-      if (!snap.exists()) {
-        throw new ConnectionSourceError('graphql', 'Connection not found.');
-      }
-
-      const data = snap.data() as FirestoreConnection;
-      if (data.professionalAuthUid !== professionalUid) {
-        throw new ConnectionSourceError('graphql', 'Permission denied for connection confirmation.');
-      }
-      if (data.status !== 'pending_confirmation') {
-        throw new ConnectionSourceError('graphql', 'Invalid connection transition.');
-      }
-
-      // Archive student self-managed plans for this connection specialty
-      const targetCollection = getPlanCollectionForSpecialty(data);
-      const selfManagedQuery = query(
-        collection(firestore, targetCollection),
-        where('studentAuthUid', '==', data.studentAuthUid),
-        where('sourceKind', '==', 'self_managed'),
-        where('isArchived', '==', false)
-      );
-      const selfManagedSnaps = await getDocs(selfManagedQuery);
-      const timestamp = nowIso();
-      const pendingRelease = await buildPendingInviteRelease(firestore, tx, data);
-
-      tx.update(ref, {
-        status: 'active',
-        canceledReason: null,
-        endedAt: null,
-        updatedAt: timestamp,
-      });
-      applyPendingInviteRelease(tx, pendingRelease, timestamp);
-
-      tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'active'), { merge: true });
-      tx.set(getActiveSpecialtyRef(firestore, data), buildTrackingAccessRecord(data, 'active'), { merge: true });
-
-      selfManagedSnaps.forEach((docSnap) => {
-        tx.update(docSnap.ref, { isArchived: true, updatedAt: timestamp, lifecycleConnectionId: connectionId });
-      });
-    });
-
-
-    return { connectionId, status: 'active' };
+    return requireServerResult(
+      await confirmPendingConnectionToServer(connectionId, deps),
+      'Connection confirmation'
+    );
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }
@@ -450,71 +506,23 @@ export async function endConnection(
   connectionId: string,
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<void> {
-  try {
-    const firestore = deps.getFirestoreInstance();
-    const currentUid = deps.getCurrentAuthUid();
-
-    await runTransaction(firestore, async (tx) => {
-      const ref = doc(firestore, 'connections', connectionId);
-      const snap = await tx.get(ref);
-      if (!snap.exists()) {
+  if (deps === defaultConnectionSourceDeps) {
+    const e2eConnections = getE2EConnectionFixtures();
+    if (e2eConnections) {
+      const connection = e2eConnections.find((candidate) => candidate.id === connectionId);
+      if (!connection) {
         throw new ConnectionSourceError('graphql', 'Connection not found.');
       }
+      e2eEndedConnectionIds.add(connectionId);
+      return;
+    }
+  }
 
-      const data = snap.data() as FirestoreConnection;
-      if (data.professionalAuthUid !== currentUid && data.studentAuthUid !== currentUid) {
-        throw new ConnectionSourceError('graphql', 'Permission denied for connection end.');
-      }
-
-      const targetCollection = getPlanCollectionForSpecialty(data);
-      const assignedQuery = query(
-        collection(firestore, targetCollection),
-        where('studentAuthUid', '==', data.studentAuthUid),
-        where('ownerProfessionalUid', '==', data.professionalAuthUid),
-        where('sourceKind', '==', 'assigned'),
-        where('isArchived', '==', false)
-      );
-      const selfManagedQuery = query(
-        collection(firestore, targetCollection),
-        where('studentAuthUid', '==', data.studentAuthUid),
-        where('sourceKind', '==', 'self_managed'),
-        where('isArchived', '==', true)
-      );
-      const [assignedSnaps, selfManagedSnaps] = await Promise.all([
-        getDocs(assignedQuery),
-        getDocs(selfManagedQuery),
-      ]);
-      const activeSpecialtyRef = getActiveSpecialtyRef(firestore, data);
-      const activeSpecialtySnap = await tx.get(activeSpecialtyRef);
-      const canEndActiveSpecialty = !activeSpecialtySnap.exists()
-        || activeSpecialtySnap.data()?.connectionId === connectionId;
-      const timestamp = nowIso();
-      const pendingRelease = await buildPendingInviteRelease(firestore, tx, data);
-
-      tx.update(ref, {
-        status: 'ended',
-        endedAt: timestamp,
-        updatedAt: timestamp,
-      });
-      applyPendingInviteRelease(tx, pendingRelease, timestamp);
-
-      tx.set(getTrackingAccessRef(firestore, data), buildTrackingAccessRecord(data, 'ended'), { merge: true });
-      if (canEndActiveSpecialty) {
-        tx.set(activeSpecialtyRef, buildTrackingAccessRecord(data, 'ended'), { merge: true });
-      }
-
-      assignedSnaps.forEach((docSnap) => {
-        tx.update(docSnap.ref, { isArchived: true, updatedAt: timestamp, lifecycleConnectionId: connectionId });
-      });
-
-      const latestSelfManagedSnap = [...selfManagedSnaps.docs]
-        .filter((docSnap) => docSnap.data()?.lifecycleConnectionId === connectionId)
-        .sort((a, b) => getPlanSortTimestamp(b) - getPlanSortTimestamp(a))[0];
-
-      if (latestSelfManagedSnap) {
-        tx.update(latestSelfManagedSnap.ref, { isArchived: false, updatedAt: timestamp, lifecycleConnectionId: connectionId });
-      }
-    });
+  try {
+    requireServerResult(
+      await endConnectionToServer(connectionId, deps),
+      'Connection end'
+    );
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }
@@ -523,35 +531,16 @@ export async function endConnection(
 export async function getMyConnections(
   deps: ConnectionSourceDeps = defaultConnectionSourceDeps
 ): Promise<ConnectionRecord[]> {
+  if (deps === defaultConnectionSourceDeps) {
+    const e2eConnections = getE2EConnectionFixtures();
+    if (e2eConnections) return e2eConnections;
+  }
+
   try {
-    const firestore = deps.getFirestoreInstance();
-    const uid = deps.getCurrentAuthUid();
-
-    const [studentSide, professionalSide] = await Promise.all([
-      getDocs(query(collection(firestore, 'connections'), where('studentAuthUid', '==', uid))),
-      getDocs(query(collection(firestore, 'connections'), where('professionalAuthUid', '==', uid))),
-    ]);
-
-    const map = new Map<string, ConnectionRecord>();
-
-    for (const snap of [...studentSide.docs, ...professionalSide.docs]) {
-      const data = snap.data() as Partial<FirestoreConnection>;
-      const id = typeof data.id === 'string' ? data.id : snap.id;
-      const status = normalizeConnectionStatus(data.status);
-      const specialty = normalizeConnectionSpecialty(data.specialty);
-
-      if (!id || !status || !specialty) continue;
-
-      map.set(id, {
-        id,
-        status,
-        canceledReason: normalizeCanceledReason(data.canceledReason ?? null),
-        specialty,
-        professionalAuthUid: String(data.professionalAuthUid ?? ''),
-      });
-    }
-
-    return [...map.values()];
+    return requireServerResult(
+      await getMyConnectionsFromServer(deps),
+      'Connection reads'
+    );
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }

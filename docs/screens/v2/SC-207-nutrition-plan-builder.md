@@ -38,7 +38,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Add food items (name, quantity, optional notes).
 - Add saved CustomMeals from the current user's library as copied meal snapshots.
 - Remove food items.
-- Search foods via VPS food-search microservice integration (`https://foodservice.eduwaldo.com/searchFoods`).
+- Search foods via the MyChampions server `POST /integrations/food/search` route backed by the local catalog Postgres mirror.
 - Save plan (create or update).
 - Delete plan; after a successful delete, show the blocking loading scrim and then return the user to the nutrition library.
 - Assign plan to a student with an active nutritionist Connection.
@@ -96,14 +96,14 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `NutritionMealItem` | Individual food item with id, name, quantity, notes |
 | `CustomMealPlanSnapshot` | CustomMeal-derived plan item snapshot containing display/nutrition facts only, without direct reusable meal access |
 | `NutritionTotals` | Parsed numeric totals from raw string inputs |
-| `FoodSearchResult[]` | Normalized food search results from VPS food-search service integration |
+| `FoodSearchResult[]` | Normalized food search results from the MyChampions server food integration |
 
-### Food Search Service Contract
+### Food Search Server Contract
 | Field | Value |
 |---|---|
-| URL | `https://foodservice.eduwaldo.com/searchFoods` |
+| URL | MyChampions server `POST /integrations/food/search` |
 | Method | `POST` |
-| Headers | `Content-Type: application/json`, `Authorization: Bearer <Firebase ID token>` |
+| Headers | `Content-Type: application/json`, `Authorization: Bearer <MyChampions token>` |
 | Request body | `{ query: string, maxResults: number, region: string, language: string }` |
 | Success body | `{ results: Array<{ id: string, name: string, carbohydrate: number, protein: number, fat: number, serving: 100 }> }` |
 | Client normalization | App maps macros to per-100g result fields and derives calories as `carbohydrate*4 + protein*4 + fat*9` |
@@ -117,10 +117,10 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `getNutritionPlanDetail` | Load plan with items |
 | `addNutritionMealItem` | Add food item to plan |
 | `removeNutritionMealItem` | Remove food item from plan |
-| `searchFoods` | VPS food-search service source |
+| `searchFoods` | MyChampions server food-search source backed by the local catalog mirror |
 | `getMyCustomMeals` | Load the current user's saved CustomMeal library for snapshot insertion |
 
-Plan library and builder persistence are Firestore-backed via `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`.
+Plan library and builder persistence use the MyChampions server through `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`; outside E2E fixtures, missing local server auth fails closed.
 
 ## Localization Keys
 
@@ -149,7 +149,6 @@ Plan library and builder persistence are Firestore-backed via `features/plans/pl
 | `pro.plan.food_search.placeholder` | Food search input placeholder |
 | `pro.plan.food_search.empty` | Empty food search result |
 | `pro.plan.food_search.error.quota` | Food search rate-limit feedback |
-| `pro.plan.food_search.stub_notice` | Empty meal helper text |
 | `pro.plan.custom_meal.section` | CustomMeal picker section header |
 | `pro.plan.custom_meal.empty` | Empty CustomMeal picker state |
 | `pro.plan.custom_meal.badge` | Selected CustomMeal snapshot badge |
@@ -186,7 +185,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | `features/plans/plan-builder.logic.ts` | Pure functions: `validateNutritionPlanInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError` |
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/plans/plan-builder-source.ts` | Firestore source ops: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, `addNutritionMealItem`, `removeNutritionMealItem`, `searchFoods` |
+| `features/plans/plan-builder-source.ts` | Server source ops: `createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, meal/item mutations, starter templates, and `searchFoods` |
 | `features/nutrition/custom-meal.logic.ts` | CustomMeal plan snapshot helper |
 | `features/nutrition/custom-meal.logic.test.ts` | Snapshot privacy/unit coverage |
 | `features/plans/use-plan-builder.ts` | React hook `useNutritionPlanBuilder` with state machine: `idle/loading/ready/saving/error` |

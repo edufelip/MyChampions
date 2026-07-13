@@ -7,7 +7,7 @@ assignees: []
 ---
 
 ## Goal
-Set up repository secrets and validate all GitHub Actions workflows for Android/iOS CI, distribution, and release.
+Set up repository secrets and validate all GitHub Actions workflows for Android/iOS CI and release.
 
 ## References
 - Secrets source-of-truth: `docs/discovery/ci-secrets-matrix-v1.md`
@@ -24,13 +24,10 @@ Set up repository secrets and validate all GitHub Actions workflows for Android/
 ### Common
 - [ ] `ENV_FILE`
 
-### Android (Dev/PR/Distribution)
-- [ ] `GOOGLE_SERVICES_JSON_BASE64_DEV`
-- [ ] `FIREBASE_APP_ID_ANDROID_DEV`
-- [ ] `FIREBASE_SERVICE_ACCOUNT_JSON`
+### Android (Dev/PR)
+- [ ] `ENV_FILE` includes the local MyChampions server URL for dev builds.
 
 ### Android (Release)
-- [ ] `GOOGLE_SERVICES_JSON_BASE64`
 - [ ] `ANDROID_KEYSTORE_BASE64`
 - [ ] `ANDROID_KEYSTORE_PASSWORD`
 - [ ] `ANDROID_KEY_ALIAS`
@@ -38,9 +35,8 @@ Set up repository secrets and validate all GitHub Actions workflows for Android/
 - [ ] `PLAY_SERVICE_ACCOUNT_JSON`
 - [ ] `ANDROID_PLAY_SIGNING_SHA1` (optional)
 
-### iOS (Dev/PR/Distribution)
-- [ ] `GOOGLE_SERVICE_INFO_PLIST_BASE64_DEV`
-- [ ] `FIREBASE_APP_ID_IOS_DEV`
+### iOS (Dev/PR)
+- [ ] `ENV_FILE` includes the local MyChampions server URL for dev builds.
 - [ ] `IOS_ADHOC_KEYCHAIN_PASSWORD`
 - [ ] `IOS_ADHOC_PROFILE_NAME`
 - [ ] `IOS_ADHOC_CERT_P12_BASE64`
@@ -49,7 +45,6 @@ Set up repository secrets and validate all GitHub Actions workflows for Android/
 - [ ] `IOS_TEAM_ID`
 
 ### iOS (Release/TestFlight)
-- [ ] `GOOGLE_SERVICE_INFO_PLIST_BASE64`
 - [ ] `IOS_KEYCHAIN_PASSWORD`
 - [ ] `IOS_DIST_CERT_P12_BASE64`
 - [ ] `IOS_DIST_CERT_PASSWORD`
@@ -62,8 +57,6 @@ Set up repository secrets and validate all GitHub Actions workflows for Android/
 ## Validation Runs
 - [ ] `android-pr.yml` passes.
 - [ ] `ios-pr.yml` passes.
-- [ ] `firebase-distribution-android.yml` runs and uploads artifact to Firebase App Distribution.
-- [ ] `firebase-distribution-ios.yml` runs and uploads artifact to Firebase App Distribution.
 - [ ] `android-release.yml` builds signed AAB and reaches Play upload step.
 - [ ] `ios-release.yml` archives/exports IPA and reaches TestFlight upload step.
 
@@ -74,4 +67,3 @@ Set up repository secrets and validate all GitHub Actions workflows for Android/
 ## Follow-ups
 - [ ] Open issues for failures, missing permissions, or rotated credentials.
 - [ ] Update `docs/discovery/ci-secrets-matrix-v1.md` if secret names/scope changed.
-

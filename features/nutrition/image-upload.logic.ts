@@ -1,7 +1,7 @@
 /**
  * Image upload progress and retry logic — BL-007.
  * Pure functions for upload state machine, error normalization, and display computation.
- * No Firebase/Expo dependencies — fully unit-testable.
+ * No native picker or network dependencies — fully unit-testable.
  *
  * Refs: BL-007, FR-213, AC-424, AC-425, BR-261, BR-271, TC-426, TC-427
  * D-057, D-061
@@ -30,9 +30,10 @@ export type ImageUploadState =
  */
 export type ImageUploadErrorReason =
   | 'network'         // Transient connectivity failure — retryable
-  | 'storage_quota'   // Cloud Storage quota exceeded — retryable
+  | 'storage_quota'   // Server storage quota exceeded — retryable
   | 'file_too_large'  // File exceeds post-compression limit (BR-261) — not retryable; recompress first
   | 'unauthorized'    // Auth token invalid or expired — not retryable; must re-authenticate
+  | 'configuration'   // Local server upload endpoint is not configured
   | 'unknown';        // Unclassified failure — treated as retryable (optimistic)
 
 /**
@@ -86,10 +87,19 @@ export function normalizeImageUploadError(error: unknown): ImageUploadErrorReaso
     return 'file_too_large';
   }
 
+  // Configuration
+  if (
+    code.includes('configuration') ||
+    message.includes('configuration') ||
+    message.includes('not configured') ||
+    message.includes('server url')
+  ) {
+    return 'configuration';
+  }
+
   // Unauthorized / permission
   if (
     code.includes('unauthorized') ||
-    code.includes('storage/unauthorized') ||
     message.includes('unauthorized') ||
     message.includes('permission denied')
   ) {
@@ -98,7 +108,8 @@ export function normalizeImageUploadError(error: unknown): ImageUploadErrorReaso
 
   // Storage quota
   if (
-    code.includes('storage/quota-exceeded') ||
+    code.includes('quota_exceeded') ||
+    code.includes('quota-exceeded') ||
     message.includes('quota exceeded') ||
     message.includes('quota')
   ) {
@@ -130,6 +141,7 @@ export function isRetryable(reason: ImageUploadErrorReason): boolean {
   switch (reason) {
     case 'file_too_large':
     case 'unauthorized':
+    case 'configuration':
       return false;
     case 'network':
     case 'storage_quota':
@@ -150,6 +162,7 @@ function mapErrorReasonToMessageKey(reason: ImageUploadErrorReason): ImageUpload
       return 'custom_meal.image.file_too_large';
     case 'unauthorized':
       return 'custom_meal.image.unauthorized';
+    case 'configuration':
     case 'network':
     case 'storage_quota':
     case 'unknown':

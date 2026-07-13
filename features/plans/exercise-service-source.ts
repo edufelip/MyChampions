@@ -1,17 +1,18 @@
 /**
- * Exercise service source.
+ * Exercise source - HTTP calls to the MyChampions server exercise catalog routes.
  *
- * Mobile calls the proxy service:
- *   POST https://exerciseservice.eduwaldo.com/proxy
+ * Contract:
+ *   POST <MyChampions server>/integrations/exercise/search
+ *   GET  <MyChampions server>/integrations/exercise/exercises/:id
+ *   Authorization: Bearer <MyChampions server access token>
  *
- * The service validates URL constraints, injects the upstream YMove API key,
- * translates text fields by language, and returns x-request-id for tracing.
+ * The server searches the mirrored local exercise catalog Postgres database.
  */
 
 import { getEffectiveLocale } from '../auth/language-storage';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getCurrentServerAccessToken } from '../auth/server-auth-source';
 import { logNetworkDebug } from '../debug/logging';
-
-const UPSTREAM_BASE_URL = 'https://exercise-api.ymove.app/api/v2';
 
 export type ExerciseVideo = {
   videoUrl?: string;
@@ -53,26 +54,24 @@ export type ExerciseSearchResult = {
   requestId?: string;
 };
 
-type ProxyRequestBody = {
+type CatalogSearchRequestBody = {
   lang: string;
-  request: {
-    url: string;
-    method: 'GET';
-    headers: {
-      Accept: 'application/json';
-    };
-  };
+  query: string;
+  page: number;
+  pageSize: number;
 };
 
 type ExerciseServiceDeps = {
-  getServiceBaseUrl: () => string | undefined;
+  getServerBaseUrl: () => string | undefined;
+  getCurrentAccessToken: () => Promise<string | null>;
   getLocale: () => Promise<string>;
   fetchFn: typeof fetch;
   createRequestId: () => string;
 };
 
 const defaultDeps: ExerciseServiceDeps = {
-  getServiceBaseUrl: () => process.env.EXPO_PUBLIC_EXERCISE_SERVICE_URL?.trim(),
+  getServerBaseUrl: defaultGetServerBaseUrl,
+  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
   getLocale: () => getEffectiveLocale(),
   fetchFn: fetch,
   createRequestId: () => {
@@ -83,7 +82,27 @@ const defaultDeps: ExerciseServiceDeps = {
   },
 };
 
-export type ExerciseServiceErrorCode = 'configuration' | 'network' | 'invalid_response' | 'service';
+function defaultGetServerBaseUrl(): string | undefined {
+  let expoExtra: unknown;
+  try {
+    const Constants = require('expo-constants') as {
+      default?: { expoConfig?: { extra?: unknown } };
+      expoConfig?: { extra?: unknown };
+    };
+    expoExtra = (Constants.default ?? Constants).expoConfig?.extra;
+  } catch {
+    expoExtra = undefined;
+  }
+
+  const extra = (expoExtra ?? {}) as {
+    server?: {
+      baseUrl?: string;
+    };
+  };
+  return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
+}
+
+export type ExerciseServiceErrorCode = 'configuration' | 'network' | 'invalid_response' | 'service' | 'unauthenticated';
 
 export class ExerciseServiceSourceError extends Error {
   code: ExerciseServiceErrorCode;
@@ -99,24 +118,9 @@ export class ExerciseServiceSourceError extends Error {
   }
 }
 
-function normalizeLang(rawLocale: string): 'en' | 'pt' | 'es' {
-  const lower = rawLocale.trim().toLowerCase();
-  if (lower.startsWith('pt')) return 'pt';
-  if (lower.startsWith('es')) return 'es';
-  return 'en';
-}
-
-function buildExerciseSearchUrl(query: string, pageSize: number): string {
-  const trimmedQuery = query.trim();
-  let url = `${UPSTREAM_BASE_URL}/exercises?pageSize=${pageSize}`;
-  if (trimmedQuery) {
-    url += `&search=${encodeURIComponent(trimmedQuery)}`;
-  }
-  return url;
-}
-
-function buildExerciseByIdUrl(id: string): string {
-  return `${UPSTREAM_BASE_URL}/exercises/${encodeURIComponent(id.trim())}`;
+function normalizeLocaleForService(rawLocale: string): string {
+  const trimmed = rawLocale.trim();
+  return trimmed.length > 0 ? trimmed : 'en-US';
 }
 
 function isExerciseItem(value: unknown): value is ExerciseItem {
@@ -129,6 +133,52 @@ function isExerciseItem(value: unknown): value is ExerciseItem {
     typeof maybe.muscleGroup === 'string' &&
     typeof maybe.equipment === 'string'
   );
+}
+
+function getE2EExerciseSearchFixture(query: string): ExerciseSearchResult | null {
+  const override = resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+  if (!override || process.env.EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE !== 'basic') return null;
+
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return { page: 1, pageSize: 20, total: 0, exercises: [], requestId: 'e2e-exercise-fixture' };
+  if (!'push'.includes(normalized) && !normalized.includes('push')) {
+    return { page: 1, pageSize: 20, total: 0, exercises: [], requestId: 'e2e-exercise-fixture' };
+  }
+
+  return {
+    page: 1,
+    pageSize: 20,
+    total: 1,
+    requestId: 'e2e-exercise-fixture',
+    exercises: [
+      {
+        id: 'e2e-exercise-push-up',
+        slug: 'e2e-push-up',
+        title: 'E2E Push-Up',
+        description: 'Fixture bodyweight exercise for deterministic E2E builder coverage.',
+        instructions: ['Set a straight plank position.', 'Lower under control.', 'Press back to the start.'],
+        importantPoints: ['Keep the torso braced.'],
+        muscleGroup: 'chest',
+        secondaryMuscles: ['triceps', 'shoulders'],
+        equipment: 'bodyweight',
+        category: 'strength',
+        difficulty: 'beginner',
+        exerciseType: ['strength'],
+        hasVideo: false,
+        hasVideoWhite: false,
+        hasVideoGym: false,
+        videos: [],
+        videoUrl: null,
+        videoHlsUrl: null,
+        thumbnailUrl: null,
+        videoDurationSecs: null,
+      },
+    ],
+  };
 }
 
 function parseExerciseFromUnknown(payload: unknown): ExerciseItem | null {
@@ -150,57 +200,60 @@ function parseExerciseFromUnknown(payload: unknown): ExerciseItem | null {
   return null;
 }
 
-async function proxyGet<T>(
-  upstreamUrl: string,
-  deps: ExerciseServiceDeps
-): Promise<{ payload: T; requestId?: string; status: number }> {
-  const serviceBaseUrl = deps.getServiceBaseUrl();
-  if (!serviceBaseUrl) {
-    console.error('[exerciseService.proxyGet] Missing EXPO_PUBLIC_EXERCISE_SERVICE_URL.');
+async function resolveServerConnection(deps: ExerciseServiceDeps): Promise<{ baseUrl: string; accessToken: string }> {
+  const serverBaseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
+  if (!serverBaseUrl) {
     throw new ExerciseServiceSourceError(
       'configuration',
-      'Exercise service URL is missing. Set EXPO_PUBLIC_EXERCISE_SERVICE_URL.'
+      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.'
     );
   }
 
-  const locale = await deps.getLocale();
-  const lang = normalizeLang(locale);
-  const requestId = deps.createRequestId();
-  const endpoint = `${serviceBaseUrl.replace(/\/+$/, '')}/proxy`;
+  const accessToken = await deps.getCurrentAccessToken();
+  if (!accessToken) {
+    throw new ExerciseServiceSourceError('unauthenticated', 'No authenticated server token found.');
+  }
 
-  const body: ProxyRequestBody = {
-    lang,
-    request: {
-      url: upstreamUrl,
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-      },
-    },
+  return { baseUrl: serverBaseUrl, accessToken };
+}
+
+async function catalogPost<T>(
+  path: string,
+  body: CatalogSearchRequestBody,
+  deps: ExerciseServiceDeps
+): Promise<{ payload: T; requestId?: string; status: number }> {
+  const serverConnection = await resolveServerConnection(deps);
+
+  const locale = await deps.getLocale();
+  const lang = normalizeLocaleForService(locale);
+  const requestId = deps.createRequestId();
+  const endpoint = `${serverConnection.baseUrl}/integrations/exercise/search`;
+  const requestBody = { ...body, lang };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'x-request-id': requestId,
+    Authorization: `Bearer ${serverConnection.accessToken}`,
   };
 
   logNetworkDebug(
-    'exerciseService.proxyGet',
-    'Dispatching proxy request.',
-    { upstreamUrl, lang, requestId }
+    'exerciseService.catalogPost',
+    'Dispatching catalog request.',
+    { path, lang, requestId }
   );
-  logNetworkDebug('exerciseService.proxyGet', 'Request endpoint:', endpoint);
-  logNetworkDebug('exerciseService.proxyGet', 'Request body:', body);
+  logNetworkDebug('exerciseService.catalogPost', 'Request endpoint:', endpoint);
+  logNetworkDebug('exerciseService.catalogPost', 'Request body:', requestBody);
 
   let response: Response;
   try {
     response = await deps.fetchFn(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'x-request-id': requestId,
-      },
-      body: JSON.stringify(body),
+      headers,
+      body: JSON.stringify(requestBody),
     });
   } catch (error) {
-    console.error('[exerciseService.proxyGet] Network request failed:', {
-      upstreamUrl,
+    console.error('[exerciseService.catalogPost] Network request failed:', {
+      path,
       requestId,
       error: (error as Error)?.message ?? String(error),
     });
@@ -211,7 +264,7 @@ async function proxyGet<T>(
   }
 
   const responseRequestId = response.headers.get('x-request-id') ?? requestId;
-  logNetworkDebug('exerciseService.proxyGet', 'Response status/request-id:', response.status, responseRequestId);
+  logNetworkDebug('exerciseService.catalogPost', 'Response status/request-id:', response.status, responseRequestId);
 
   if (!response.ok) {
     let responseBody = '';
@@ -220,8 +273,8 @@ async function proxyGet<T>(
     } catch {
       responseBody = '';
     }
-    console.error('[exerciseService.proxyGet] Service returned non-OK status:', {
-      upstreamUrl,
+    console.error('[exerciseService.catalogPost] Service returned non-OK status:', {
+      path,
       requestId: responseRequestId,
       status: response.status,
       body: responseBody,
@@ -238,8 +291,8 @@ async function proxyGet<T>(
   try {
     payload = (await response.json()) as T;
   } catch {
-    console.error('[exerciseService.proxyGet] Response JSON parse failed:', {
-      upstreamUrl,
+    console.error('[exerciseService.catalogPost] Response JSON parse failed:', {
+      path,
       requestId: responseRequestId,
       status: response.status,
     });
@@ -250,12 +303,75 @@ async function proxyGet<T>(
     );
   }
 
-  logNetworkDebug('exerciseService.proxyGet', 'Request completed successfully.', {
-    upstreamUrl,
+  logNetworkDebug('exerciseService.catalogPost', 'Request completed successfully.', {
+    path,
     requestId: responseRequestId,
     status: response.status,
   });
   return { payload, requestId: responseRequestId, status: response.status };
+}
+
+async function catalogGet<T>(
+  path: string,
+  deps: ExerciseServiceDeps
+): Promise<{ payload: T; requestId?: string; status: number }> {
+  const serverConnection = await resolveServerConnection(deps);
+
+  const requestId = deps.createRequestId();
+  const endpoint = `${serverConnection.baseUrl}/integrations/exercise${path.replace(/^\/catalog/, '')}`;
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'x-request-id': requestId,
+    Authorization: `Bearer ${serverConnection.accessToken}`,
+  };
+
+  let response: Response;
+  try {
+    response = await deps.fetchFn(endpoint, {
+      method: 'GET',
+      headers,
+    });
+  } catch (error) {
+    console.error('[exerciseService.catalogGet] Network request failed:', {
+      path,
+      requestId,
+      error: (error as Error)?.message ?? String(error),
+    });
+    throw new ExerciseServiceSourceError(
+      'network',
+      `Exercise service request failed: ${(error as Error)?.message ?? 'network error'}`
+    );
+  }
+
+  const responseRequestId = response.headers.get('x-request-id') ?? requestId;
+  if (!response.ok) {
+    let responseBody = '';
+    try {
+      responseBody = await response.text();
+    } catch {
+      responseBody = '';
+    }
+
+    throw new ExerciseServiceSourceError(
+      'service',
+      `Exercise service returned ${response.status}${responseBody ? `: ${responseBody}` : ''}`,
+      { status: response.status, requestId: responseRequestId }
+    );
+  }
+
+  try {
+    return {
+      payload: (await response.json()) as T,
+      requestId: responseRequestId,
+      status: response.status,
+    };
+  } catch {
+    throw new ExerciseServiceSourceError(
+      'invalid_response',
+      'Exercise service returned a non-JSON response.',
+      { status: response.status, requestId: responseRequestId }
+    );
+  }
 }
 
 export async function searchExerciseLibrary(
@@ -263,21 +379,31 @@ export async function searchExerciseLibrary(
   pageSize = 20,
   deps: ExerciseServiceDeps = defaultDeps
 ): Promise<ExerciseSearchResult> {
-  const upstreamUrl = buildExerciseSearchUrl(query, pageSize);
-  const { payload, requestId } = await proxyGet<{
+  const fixture = getE2EExerciseSearchFixture(query);
+  if (fixture) {
+    return {
+      ...fixture,
+      pageSize,
+    };
+  }
+
+  const { payload, requestId } = await catalogPost<{
     page?: number;
     pageSize?: number;
     total?: number;
     exercises?: unknown[];
+    results?: unknown[];
     data?: unknown[];
     pagination?: {
       page?: number;
       pageSize?: number;
       total?: number;
     };
-  }>(upstreamUrl, deps);
+  }>('/catalog/search', { query: query.trim(), lang: '', page: 1, pageSize }, deps);
 
-  const rawExercises = Array.isArray(payload.exercises)
+  const rawExercises = Array.isArray(payload.results)
+    ? payload.results
+    : Array.isArray(payload.exercises)
     ? payload.exercises
     : Array.isArray(payload.data)
       ? payload.data
@@ -304,7 +430,6 @@ export async function searchExerciseLibrary(
       : exercises.length;
 
   logNetworkDebug('exerciseService.searchExerciseLibrary', 'Search response parsed.', {
-    upstreamUrl,
     requestId,
     page,
     pageSize: resolvedPageSize,
@@ -331,12 +456,12 @@ export async function getExerciseById(
 ): Promise<ExerciseItem | null> {
   if (!id?.trim()) return null;
 
-  const upstreamUrl = buildExerciseByIdUrl(id);
   try {
-    const { payload } = await proxyGet<unknown>(upstreamUrl, deps);
+    const locale = normalizeLocaleForService(await deps.getLocale());
+    const detailPath = `/catalog/exercises/${encodeURIComponent(id.trim())}?lang=${encodeURIComponent(locale)}`;
+    const { payload } = await catalogGet<unknown>(detailPath, deps);
     const parsed = parseExerciseFromUnknown(payload);
     logNetworkDebug('exerciseService.getExerciseById', 'Detail response parsed.', {
-      upstreamUrl,
       found: Boolean(parsed),
     });
     return parsed;
@@ -347,13 +472,11 @@ export async function getExerciseById(
       error.status === 404
     ) {
       logNetworkDebug('exerciseService.getExerciseById', 'Exercise not found (404).', {
-        upstreamUrl,
         requestId: error.requestId,
       });
       return null;
     }
     console.error('[exerciseService.getExerciseById] Detail request failed:', {
-      upstreamUrl,
       error: (error as Error)?.message ?? String(error),
       requestId: error instanceof ExerciseServiceSourceError ? error.requestId : undefined,
       status: error instanceof ExerciseServiceSourceError ? error.status : undefined,

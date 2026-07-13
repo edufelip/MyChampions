@@ -1,6 +1,6 @@
 /**
  * Custom meal and portion logging logic.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-017, D-021, D-027, D-029, FR-137–FR-162
  * BR-301–BR-327
  */

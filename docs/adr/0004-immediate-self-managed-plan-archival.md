@@ -5,7 +5,7 @@
 - **Status**: Accepted
 - **Deciders**: Antigravity, USER
 
-When a Connection between a Student and a Professional becomes active (e.g. at the confirmation time when the Professional accepts the Student's invite code), there is a transition from self-managed care to professional care. 
+When a Connection between a Student and a Professional becomes active (e.g. at the confirmation time when the Professional accepts the Student's invite code), there is a transition from self-managed care to professional care.
 
 In `CONTEXT.md` and the existing design, we had two potential approaches for when a Student's self-managed plan should be archived:
 - **Option A (Immediate Archival)**: Archive the self-managed plan immediately when the connection status transitions to `active`.
@@ -14,7 +14,7 @@ In `CONTEXT.md` and the existing design, we had two potential approaches for whe
 ## Decision
 We chose **Option A: Immediate Archival**.
 
-The moment a Connection transitions to `active` (`confirmPendingConnection` in `connection-source.ts`), the student's active self-managed plan for that Specialty is immediately marked as archived (`isArchived: false` -> `isArchived: true` in Firestore). 
+The moment a Connection transitions to `active` (`confirmPendingConnection` in `connection-source.ts` calling the MyChampions server for local bearer sessions), the student's active self-managed plan for that Specialty is immediately marked as archived (`isArchived: false` -> `isArchived: true`) in the server-owned Postgres transaction.
 
 ## Rationale & Trade-offs
 - **Strict Governance Boundary**: Immediate archival enforces a clear boundary. Once a student is actively connected to a professional for a specialty, they are strictly under that professional's care. Following a self-managed plan during the professional's drafting phase is disallowed to prevent conflicting routines.
@@ -22,5 +22,5 @@ The moment a Connection transitions to `active` (`confirmPendingConnection` in `
 - **Transactional Consistency**: Archiving the self-managed plan inside the connection confirmation transaction prevents any race conditions or inconsistent states where a student is simultaneously connected to a professional but actively executing their own self-guided plan.
 
 ## Consequences
-- `confirmPendingConnection` in `connection-source.ts` must query for non-archived `self_managed` plans for that student and specialty, and set `isArchived: true` inside the confirmation transaction.
+- The MyChampions server connection repository must query for non-archived `self_managed` plans for that student and specialty, and set `isArchived: true` inside the confirmation transaction.
 - The student's tracking tabs (`SC-209` / `SC-210`) will transition to show the pending plan assignment empty-state/notice if no published assigned plan exists yet.

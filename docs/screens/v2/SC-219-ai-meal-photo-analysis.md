@@ -2,7 +2,7 @@
 
 ## Route
 - No standalone route. SC-219 is a modal/inline surface embedded in:
-  - SC-214 Custom Meal Builder (`app/(tabs)/nutrition/custom-meals/[mealId].tsx`) — camera icon adjacent to image upload stub; analysis pre-fills the meal creation form.
+  - SC-214 Custom Meal Builder (`app/(tabs)/nutrition/custom-meals/[mealId].tsx`) — camera icon in the custom-meal form near the server-backed photo attachment controls; analysis pre-fills the meal creation form.
   - SC-215 Custom Meal Library Quick Log (`app/(tabs)/nutrition/custom-meals/index.tsx`) — camera icon in the quick-log panel header; analysis pre-fills the nutrition preview panel.
 
 ## Objective
@@ -12,11 +12,13 @@ AI estimates are always advisory — all fields remain editable after pre-fill (
 
 **Paywall gate (D-132):** The AI analysis CTA is only accessible to users with an active `professional_pro` OR `student_pro` RevenueCat entitlement. When neither entitlement is `'active'`, the CTA is replaced by a locked paywall banner with an "Upgrade to unlock" CTA that presents the native RevenueCat paywall (`default_student` offering, `AI_OFFERING_ID`). Status `'unknown'` (loading/error) is treated as locked (strict policy).
 
+After native RevenueCat customer info is read, the subscription hook best-effort syncs the latest professional and AI entitlement snapshot to the MyChampions server at `POST /subscription/entitlements/snapshot`. The server stores this in local Postgres `subscription_entitlement_snapshots` for future server-side AI-access enforcement; native paywall presentation remains mobile-owned for now.
+
 ## User Actions
 - When entitlement is active: tap "Analyze with AI" CTA to initiate capture.
 - When entitlement is not active: tap "Upgrade to unlock" CTA to open the native RevenueCat paywall for the `default_student` offering (`AI_OFFERING_ID`); after purchase/dismissal, entitlement status is refreshed.
 - Action sheet presents "Take Photo" / "Choose from Library" / "Cancel".
-- On capture: image is compressed client-side via `expo-image-manipulator`, then sent to Cloud Function.
+- On capture: image is compressed client-side via `expo-image-manipulator`, then sent to the MyChampions server with the local bearer token. Missing server config/token fails closed.
 - Review AI-estimated macros pre-filled into form fields.
 - Edit any field before confirming save.
 - Tap retry to dismiss error and attempt a new capture.
@@ -32,19 +34,19 @@ AI estimates are always advisory — all fields remain editable after pre-fill (
 | `capturing` | `startCapture()` called | Native camera/picker open via `expo-image-picker` |
 | `compressing` | Capture complete | Brief loading indicator; `expo-image-manipulator` resizes + compresses JPEG |
 | `analyzing` | `analyze(base64Image)` called | Full-width loading indicator with `meal.photo_analysis.analyzing` |
-| `done` | Cloud Function returns valid estimate | Pre-filled form fields + disclaimer banner + optional low-confidence warning |
-| `error` | Cloud Function or network failure | Reason-specific error message + retry CTA; form remains editable |
+| `done` | MyChampions server returns valid estimate | Pre-filled form fields + disclaimer banner + optional low-confidence warning |
+| `error` | MyChampions server or network failure | Reason-specific error message + retry CTA; form remains editable |
 
 ## Error Reasons
 
 | `reason` | Trigger | Copy key |
 |---|---|---|
-| `unrecognizable_image` | Cloud Function returns `{ error: 'unrecognizable_image' }` | `meal.photo_analysis.error.unrecognizable` |
+| `unrecognizable_image` | Analysis endpoint returns `{ error: 'unrecognizable_image' }` | `meal.photo_analysis.error.unrecognizable` |
 | `quota_exceeded` | HTTP 429 or body `{ error: 'quota_exceeded' }` | `meal.photo_analysis.error.quota` |
 | `network` | Network-level fetch failure | `meal.photo_analysis.error.network` |
-| `invalid_response` | Cloud Function returned malformed/non-JSON body | `meal.photo_analysis.error.generic` |
-| `configuration` | `EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL` not set | `meal.photo_analysis.error.generic` |
-| `unauthenticated` | HTTP 401 or 403 — Firebase ID token rejected | `meal.photo_analysis.error.generic` |
+| `invalid_response` | Analysis endpoint returned malformed/non-JSON body | `meal.photo_analysis.error.generic` |
+| `configuration` | Local server URL is missing or no real/mock analyzer is configured | `meal.photo_analysis.error.generic` |
+| `unauthenticated` | HTTP 401 or 403 — bearer token rejected | `meal.photo_analysis.error.generic` |
 | `unknown` | Any other failure | `meal.photo_analysis.error.generic` |
 
 All errors are recoverable — user can dismiss and fill fields manually (D-110).
@@ -52,26 +54,27 @@ All errors are recoverable — user can dismiss and fill fields manually (D-110)
 ## Validation Rules
 - MacroEstimate is considered valid only when all fields are finite non-negative numbers and `totalGrams > 0` (BR-286).
 - All macro values are rounded to 1 decimal place before form pre-fill.
-- Confidence defaults to `'low'` when Cloud Function returns an unrecognized confidence value.
+- Confidence defaults to `'low'` when the analysis endpoint returns an unrecognized confidence value.
 - Analysis failure is never a hard blocker for meal creation (D-110).
 
-## Cloud Function Contract
+## MyChampions Server Contract
 ```
-POST /analyzeMealPhoto
+POST /nutrition/meal-photo-analysis
 Headers:
-  Authorization: Bearer <Firebase Auth ID token>
+  Authorization: Bearer <MyChampions server access token>
   Content-Type: application/json
 Body:   { image: string (base64, JPEG), mimeType: 'image/jpeg' }
 Response 200: { calories: number, carbs: number, proteins: number, fats: number, totalGrams: number, confidence: 'high' | 'medium' | 'low' }
-Response 400: { error: 'unrecognizable_image' }
-Response 429: { error: 'quota_exceeded' }
-Response 401: { error: 'unauthenticated' }
-Response 500: { error: 'unknown' }
+Response 401: { error: { code: 'unauthorized', message: string } }
+Response 422: { error: 'unrecognizable_image' | 'invalid_response', message: string }
+Response 429: { error: 'quota_exceeded', message: string }
+Response 503: { error: 'configuration', message: string }
 ```
 
-- Cloud Function must validate Firebase Auth ID token before proxying to OpenAI (BR-288).
-- OpenAI API key is server-side only; never shipped in client binary (D-106, BR-289).
-- Function URL provided via `EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL` env var.
+- The server validates the local bearer token before proxying to the configured meal-photo analyzer provider.
+- Meal-photo analyzer provider API keys are server-side only; never shipped in the client binary (D-106, BR-289).
+- Local development may set `MEAL_PHOTO_ANALYZER=local_mock` on the MyChampions server to exercise the full mobile/server flow with a deterministic low-confidence advisory estimate; this is not a production nutrition analyzer.
+- When no local server URL/token is available, the mobile source fails closed.
 
 ## Localization Keys
 
@@ -105,21 +108,23 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 ## Implementation Files
 | File | Purpose |
 |---|---|
-| `features/nutrition/meal-photo-analysis.logic.ts` | Pure functions: `isValidMacroEstimate`, `parseMacroEstimateFromResponse`, `mapMacroEstimateToMealInput`, `normalizePhotoAnalysisError`, `buildAnalysisSystemPrompt`, `buildAnalysisUserPrompt` |
+| `features/nutrition/meal-photo-analysis.logic.ts` | Mobile pure functions: `isValidMacroEstimate`, `parseMacroEstimateFromResponse`, `mapMacroEstimateToMealInput`, `normalizePhotoAnalysisError` |
+| `../server/src/nutrition/meal-photo-analysis-prompt.ts` | Server-owned analyzer prompt builders; prompt text is not bundled in mobile source |
 | `features/nutrition/meal-photo-analysis.logic.test.ts` | Unit tests (included in 715-test suite; TC-271–TC-274) |
-| `features/nutrition/meal-photo-analysis-source.ts` | HTTP source: `analyzeMealPhoto` with `MealPhotoAnalysisSourceDeps` injectable pattern; typed `PhotoAnalysisSourceError` with `PhotoAnalysisErrorReason` union |
-| `features/nutrition/meal-photo-analysis-source.test.ts` | 21 unit tests (TC-285) |
-| `features/nutrition/use-meal-photo-analysis.ts` | React hook `useMealPhotoAnalysis` — full pipeline: `startCapture` (expo-image-picker action sheet → expo-image-manipulator compress → Cloud Function), `analyze` (direct injection), `reset`, `preFillMealInput` |
+| `features/nutrition/meal-photo-analysis-source.ts` | HTTP source: `analyzeMealPhoto` with `MealPhotoAnalysisSourceDeps` injectable pattern; MyChampions server bearer path only; typed `PhotoAnalysisSourceError` with `PhotoAnalysisErrorReason` union |
+| `features/nutrition/meal-photo-analysis-source.test.ts` | 23 unit tests (TC-285) |
+| `features/nutrition/use-meal-photo-analysis.ts` | React hook `useMealPhotoAnalysis` — full pipeline: `startCapture` (expo-image-picker action sheet -> expo-image-manipulator compress -> MyChampions server), `analyze` (direct injection), `reset`, `preFillMealInput` |
 | `features/subscription/subscription.logic.ts` | Pure entitlement logic — `AI_ENTITLEMENT_ID = 'student_pro'`, `hasAiAnalysisAccess()` (D-132) |
 | `features/subscription/subscription-source.ts` | RevenueCat source layer — `AI_FEATURES_ENTITLEMENT_ID`, `mapCustomerInfoToAiEntitlementStatus`, `presentAiPaywall` (D-132) |
 | `features/subscription/use-subscription.ts` | React hook — exposes `aiEntitlementStatus`, `hasAiAccess`, `openAiPaywall`; single `getCustomerInfo()` call maps both entitlements (D-132) |
+| `features/subscription/subscription-server-source.ts` | MyChampions server sync source for RevenueCat-derived entitlement snapshots |
 | `app/(tabs)/nutrition/custom-meals/[mealId].tsx` | SC-214 entry point — camera CTA gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill, attach-photo toggle |
 | `app/(tabs)/nutrition/custom-meals/index.tsx` | SC-215 entry point — camera CTA in quick-log panel gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill |
 
 ## Edge Cases
 - Camera/picker cancellation: state returns to `idle`; no form field changes.
 - Confidence `'low'`: low-confidence warning shown alongside results; fields remain editable.
-- Cloud Function responds `401` or `403`: treated as `'unauthenticated'` error (D-128).
+- MyChampions server responds `401` or `403`: treated as `'unauthenticated'` error (D-128).
 - Compression is applied via `expo-image-manipulator`: resizes to ≤ 1600 px longest side, compresses at 0.75 JPEG quality (FR-230, BR-287, D-107).
 - In SC-214: photo attachment after analysis is optional and independent of the analysis result (D-109).
 - Paywall dismissed without purchase: entitlement status is refreshed after `presentPaywall` resolves regardless of outcome; if user is still not entitled, paywall banner re-displays (D-132).

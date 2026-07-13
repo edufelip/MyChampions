@@ -3,7 +3,7 @@
  *
  * Use these helpers for network/source diagnostics so logging behavior is
  * controlled by one global switch and can be reused across microservices,
- * Firebase source modules, and future integrations.
+ * migrated source modules and future integrations.
  */
 
 function readEnvFlag(name: string): string | undefined {

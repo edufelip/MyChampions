@@ -51,7 +51,7 @@ test('role-selection continue does not route when role lock fails', async () => 
   const result = await simulateRoleSelectionContinue({
     role: 'student',
     lockRole: async () => {
-      throw new Error('Firestore did not confirm locked role');
+      throw new Error('Server did not confirm locked role');
     },
   });
 

@@ -66,7 +66,7 @@ Effective goal precedence (D-081, BR-279): nutritionist-defined goal applies whe
 | `logWaterIntake` | Student |
 | `createNutritionPlan` / `updateNutritionPlan` (`hydrationGoalMl`) | Student / Nutritionist |
 
-All operations are Firestore-backed in `features/nutrition/water-tracking-source.ts` using the source-layer dependency boundary and normalized source errors.
+`getMyWaterLogs`, `logWaterIntake`, and `getMyWaterGoalContext` require the MyChampions server (`GET /nutrition/water-logs`, `POST /nutrition/water-logs`, `GET /nutrition/water-goal-context`) with a local bearer session outside E2E fixtures. Server goal context reads local `nutrition_plans` and active nutritionist `connections`; missing local server URL/auth fails closed.
 
 ## Localization Keys
 
@@ -103,7 +103,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | `features/nutrition/water-tracking.logic.ts` | Pure functions: `resolveEffectiveWaterGoal`, `resolveWaterDayStatus`, `calculateWaterStreak`, `validateWaterGoalInput`, `validateWaterIntakeInput`, `normalizeWaterTrackingError` |
 | `features/nutrition/water-tracking.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/nutrition/water-tracking-source.ts` | Firestore source surface with plan-first hydration-goal resolution and backward-compat fallback |
+| `features/nutrition/water-tracking-source.ts` | Server-backed water-log and hydration-goal context source |
 | `features/nutrition/use-water-tracking.ts` | React hook with `idle/loading/ready/error` state machine |
 | `app/student/home.tsx` | `HydrationCard` component |
 | `app/student/nutrition.tsx` | `WaterWidget` component |

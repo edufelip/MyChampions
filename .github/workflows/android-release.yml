@@ -40,24 +40,56 @@ jobs:
             echo "EXPO_PUBLIC_ENV must be 'prod' (got '$EXPO_PUBLIC_ENV')" >&2
             exit 1
           fi
-          echo "EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
-        working-directory: .
-      - name: Validate Firebase secrets
-        env:
-          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
-        run: |
-          if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
-            echo "GOOGLE_SERVICES_JSON_BASE64 is not set" >&2
+          if [ "${EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL:-}" != "https://api.mychampions.eduwaldo.com" ]; then
+            echo "EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL must be https://api.mychampions.eduwaldo.com for production builds" >&2
             exit 1
           fi
+          if [ -z "${EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID:-}" ]; then
+            echo "EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID must be configured for production builds" >&2
+            exit 1
+          fi
+          if [ -z "${EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID:-}" ]; then
+            echo "EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID must be configured for native Google sign-in" >&2
+            exit 1
+          fi
+          python3 <<'PY'
+          import json
+          import os
+          import re
+
+          with open('config/google-oauth-production.json', encoding='utf-8') as source:
+              oauth = json.load(source)
+
+          android = oauth['android']
+          if os.environ['EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID'] != android['clientId']:
+              raise SystemExit('Android Google OAuth client does not match production provider metadata')
+          if os.environ['EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID'] != oauth['webClientId']:
+              raise SystemExit('Google OAuth web client does not match production provider metadata')
+          if not re.fullmatch(r'(?:[0-9A-F]{2}:){19}[0-9A-F]{2}', android['playSigningSha1']):
+              raise SystemExit('Production provider metadata has an invalid Play signing SHA-1')
+
+          with open('android/app/build.gradle', encoding='utf-8') as source:
+              build_gradle = source.read()
+          application_id = re.search(r'applicationId\s+["\']([^"\']+)["\']', build_gradle)
+          if application_id is None or application_id.group(1) != android['packageName']:
+              raise SystemExit('Android applicationId does not match production provider metadata')
+          PY
+          case "${EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_PROD:-}" in
+            goog_*) ;;
+            *)
+              echo "EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_PROD must be a goog_* public RevenueCat key" >&2
+              exit 1
+              ;;
+          esac
+          echo "EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
         working-directory: .
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: yarn
+          cache-dependency-path: yarn.lock
       - name: Install JS deps
-        run: npm ci
+        run: yarn install --frozen-lockfile
         working-directory: .
       - uses: actions/setup-java@v4
         with:
@@ -78,36 +110,6 @@ jobs:
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           keyPassword=${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
           EOF
-
-      - name: Write google-services.json
-        run: |
-          mkdir -p app/src/production
-          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > app/src/production/google-services.json
-
-      - name: Resolve required Google Sign-In SHA-1 values
-        env:
-          STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEYPASS: ${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
-          PLAY_SIGNING_SHA1: ${{ secrets.ANDROID_PLAY_SIGNING_SHA1 }}
-        run: |
-          UPLOAD_SHA1=$(keytool -list -v \
-            -keystore app/mychampions-release-key.jks \
-            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -storepass "$STOREPASS" \
-            -keypass "$KEYPASS" | awk -F': ' '/SHA1:/{print $2; exit}')
-
-          if [ -z "$UPLOAD_SHA1" ]; then
-            echo "Unable to extract upload key SHA-1 from app/mychampions-release-key.jks" >&2
-            exit 1
-          fi
-
-          REQUIRED_SHA1S="$UPLOAD_SHA1"
-          if [ -n "$PLAY_SIGNING_SHA1" ]; then
-            REQUIRED_SHA1S="$REQUIRED_SHA1S,$PLAY_SIGNING_SHA1"
-          fi
-
-          echo "GOOGLE_ANDROID_REQUIRED_SHA1S=$REQUIRED_SHA1S" >> "$GITHUB_ENV"
-          echo "Google Sign-In required SHA-1 values: $REQUIRED_SHA1S"
 
       - name: Build release bundle
         uses: gradle/gradle-build-action@v2

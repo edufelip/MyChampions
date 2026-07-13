@@ -12,11 +12,10 @@
  *   saved    — import succeeded (idempotent: re-opening resolves to same state)
  *
  * Auth gate: unauthenticated users are redirected to sign-in by the root
- * layout guard; the redirect-back mechanism (deep-link resume) is deferred and
- * tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * layout guard with a safe return target, then resumed to this same shared
+ * recipe route after authentication and terms acceptance.
  *
- * Import wiring is deferred — importMeal calls the Data Connect endpoint stub.
- * Deferred items tracked in docs/discovery/pending-wiring-checklist-v1.md.
+ * Preview and import use the MyChampions server custom-meal share endpoints.
  *
  * Docs: docs/screens/v2/SC-216-shared-recipe-save-confirmation.md
  * Refs: FR-145–FR-155, FR-159–FR-162
@@ -47,6 +46,7 @@ import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -98,11 +98,13 @@ export default function SharedRecipeSaveScreen() {
   const [screenState, setScreenState] = useState<ScreenState>({ kind: 'loading' });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [previewSyncedAtIso, setPreviewSyncedAtIso] = useState<string | null>(null);
 
   const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([previewSyncedAtIso]);
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
     networkStatus,
-    lastSyncedAtIso: null,
+    lastSyncedAtIso,
   });
   const isWriteLocked = offlineDisplay.showOfflineBanner;
 
@@ -111,10 +113,12 @@ export default function SharedRecipeSaveScreen() {
   useEffect(() => {
     if (!shareToken) {
       setScreenState({ kind: 'error', reason: 'invalid_token' });
+      setPreviewSyncedAtIso(null);
       return;
     }
 
     setScreenState({ kind: 'loading' });
+    setPreviewSyncedAtIso(null);
 
     void previewImport(shareToken).then((result) => {
       if (typeof result === 'string') {
@@ -128,6 +132,7 @@ export default function SharedRecipeSaveScreen() {
         setScreenState({ kind: 'error', reason });
       } else {
         setScreenState({ kind: 'ready', snapshot: result });
+        setPreviewSyncedAtIso(new Date().toISOString());
       }
     });
     // previewImport is stable (useCallback with [user]) — safe dependency

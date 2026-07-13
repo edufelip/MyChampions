@@ -35,7 +35,7 @@ export const enUS = {
   'auth.signin.error.provider_conflict':
     'This email is already linked to another sign-in method. Sign in with your existing method first.',
   'auth.signin.error.configuration':
-    'Authentication is not configured yet. Set Firebase keys and try again.',
+    'Authentication is not configured yet. Set the MyChampions server URL and try again.',
   'auth.terms.title': 'Terms and Privacy',
   'auth.terms.description': 'Before continuing, review and accept the latest terms for My Champions.',
   'auth.terms.open_link': 'Open terms and privacy policy',
@@ -60,7 +60,7 @@ export const enUS = {
   'auth.signup.error.provider_conflict':
     'This email is already linked to another sign-in method. Sign in with your existing method first.',
   'auth.signup.error.configuration':
-    'Authentication is not configured yet. Set Firebase keys and try again.',
+    'Authentication is not configured yet. Set the MyChampions server URL and try again.',
   'auth.signup.placeholder.body':
     'Create-account form implementation starts in the next screen slice.',
   'auth.signup.already_have': 'Already have an account?',
@@ -101,6 +101,8 @@ export const enUS = {
   'relationship.cta_scan_qr': 'Scan QR code',
   'relationship.qr.permission_denied':
     "Camera access is required to scan a QR code. Grant permission in your device settings, or type the code manually.",
+  'relationship.qr.camera_unavailable':
+    "This device doesn't have an available camera. Enter the invite code manually.",
   'relationship.qr.invalid_payload':
     "This QR code doesn't contain a valid invite code. Try scanning again or enter the code manually.",
   'relationship.qr.close': 'Close scanner',
@@ -124,6 +126,7 @@ export const enUS = {
   'relationship.unbind.confirm_yes': 'End connection',
   'relationship.unbind.confirm_no': 'Keep connection',
   'relationship.unbind.error': 'Could not end the connection. Try again.',
+  'relationship.unbind.ended': 'Connection ended. Your professional no longer has active access.',
   'relationship.credential.registry_id': 'Registry ID',
   'relationship.credential.authority': 'Authority',
   'relationship.credential.country': 'Country',
@@ -145,6 +148,7 @@ export const enUS = {
   'common.cta.save': 'Save',
   'common.cta.cancel': 'Cancel',
   'common.cta.clear': 'Clear',
+  'common.cta.done': 'Done',
   'common.cta.delete': 'Delete',
   'pro.plan.food_search.error': 'Food search unavailable. Try again.',
   'pro.plan.food_search.error.quota': 'Food search is temporarily rate-limited. Try again soon.',
@@ -152,6 +156,8 @@ export const enUS = {
   'pro.plan.error.reason': 'Reason: {reason}',
   'pro.plan.meal.not_found': 'Meal not found',
   'pro.plan.meal.go_back': 'Go Back',
+  'pro.plan.meal.empty.title': 'No foods added yet',
+  'pro.plan.meal.empty.body': 'Search and add foods to this meal to build your plan.',
   'pro.plan.custom_meal.section': 'Saved custom meals',
   'pro.plan.custom_meal.empty': 'No saved custom meals yet.',
   'pro.plan.custom_meal.badge': 'Snapshot',
@@ -278,6 +284,9 @@ export const enUS = {
   'pro.home.title': 'Dashboard',
   'pro.home.active_students': 'Active students',
   'pro.home.pending_requests': 'Pending requests',
+  'pro.home.plan_change_notification.title': 'Plan change request',
+  'pro.home.plan_change_notification.body': '{count} pending request from {studentUid}.',
+  'pro.home.plan_change_notification.cta': 'Review',
   'pro.home.invite_code.title': 'Your invite code',
   'pro.home.invite_code.careful_sharing': 'Share only with trusted students to keep your roster organized.',
   'pro.home.invite_code.share': 'Share code',
@@ -319,6 +328,7 @@ export const enUS = {
   'pro.specialty.credential.save': 'Save credential',
   'pro.specialty.credential.skip': 'Skip',
   'pro.specialty.credential.skip_add': 'Add without credential',
+  'pro.specialty.credential.incomplete_error': 'Complete all credential fields or skip for now.',
   'pro.specialty.credential.save_error': 'Could not save credential. Try again.',
   'pro.specialty.empty': 'No specialties added yet.',
   'pro.specialty.removal_assist.view_active': 'View active students',
@@ -461,8 +471,6 @@ export const enUS = {
   'settings.account.delete.error.network': "Couldn't connect. Check your connection and try again.",
   'settings.account.delete.error.unknown': 'Something went wrong. Try again.',
   'settings.account.delete.error.already_requested': 'A deletion request is already in progress.',
-  'settings.account.delete.error.requires_recent_login':
-    'For your security, please sign out and sign in again before deleting your account.',
   'settings.account.delete.error.unauthenticated': 'Your session expired. Please sign in again.',
   'meal.builder.title.create': 'Create custom meal',
   'meal.builder.title.edit': 'Edit meal',
@@ -613,7 +621,6 @@ export const enUS = {
   'pro.plan.cta.bulk_assign': 'Bulk assign',
   'pro.plan.food_search.placeholder': 'Search foods…',
   'pro.plan.food_search.empty': 'No foods found. Try a different search term.',
-  'pro.plan.food_search.stub_notice': 'Add food items to start this plan.',
   'pro.plan.validation.name_required': 'Plan name is required.',
   'pro.plan.validation.name_too_short': 'Plan name must be at least 2 characters.',
   'pro.plan.validation.hydration_goal_required': 'Daily water goal is required.',
@@ -699,6 +706,7 @@ export const enUS = {
   'pro.plan.item.field.nutrition_quantity.placeholder': 'e.g. 150g',
   'pro.plan.item.field.nutrition_notes.label': 'Notes (optional)',
   'pro.plan.item.field.nutrition_notes.placeholder': 'e.g. No salt',
+  'pro.plan.item.delete.body': 'Remove {name} from this meal?',
   'pro.plan.item.search.placeholder': 'Search for an exercise...',
   'pro.plan.item.search.empty': 'No exercises found.',
   'pro.plan.item.search.error': 'Error searching for exercises.',
@@ -728,7 +736,6 @@ export const enUS = {
   'student.plan.training.title.edit': 'Edit my workout plan',
   'student.plan.section.meals': 'Meals in my plan',
   'student.plan.section.sessions': 'Workout sessions',
-  'student.plan.food_search.stub_notice': 'Add meal items to start your self-guided plan.',
   'student.plan.section.meal_items': 'Meal Items',
   'student.plan.cta.add_meal': 'Add meal',
   'student.plan.delete.title': 'Delete my plan?',

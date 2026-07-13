@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -20,6 +20,7 @@ import {
   type RoleIntent,
   validateRoleSelectionInput,
 } from '@/features/auth/role-selection.logic';
+import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
 import {
   buildAuthEntryViewed,
@@ -36,6 +37,8 @@ export default function RoleSelectionScreen() {
   const palette = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const router = useRouter();
+  const searchParams = useLocalSearchParams<{ returnTo?: string | string[] }>();
+  const returnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isHydrated, currentUser, lockRole } = useAuthSession();
@@ -74,7 +77,7 @@ export default function RoleSelectionScreen() {
     try {
       await lockRole(role);
       didPersistRole = true;
-      router.replace(resolvePostRoleRoute(role) as never);
+      router.replace((returnTo ?? resolvePostRoleRoute(role)) as never);
     } catch (error) {
       if (__DEV__) {
         console.warn('[auth][role-selection] continue failed', {

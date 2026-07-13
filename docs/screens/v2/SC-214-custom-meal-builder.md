@@ -58,6 +58,8 @@
   - Image upload state (`uploading`, `failed_retryable`, `completed`) and progress value.
   - Immutable nutrition-only share link payload for selected recipe.
 
+`features/nutrition/custom-meal-source.ts` now creates, updates, deletes, reads, and shares custom meal definitions through the local MyChampions server (`POST /nutrition/custom-meals`, `PUT /nutrition/custom-meals/:mealId`, `DELETE /nutrition/custom-meals/:mealId`, `GET /nutrition/custom-meals/:mealId`, `POST /nutrition/custom-meals/:mealId/share-links`) and fails closed outside E2E fixtures when local server URL/auth is unavailable. Image upload posts compressed JPEG bytes to `POST /nutrition/custom-meal-images/:mealId` and stores the returned local media URL with the custom meal.
+
 ## Edge Cases
 - Editing a meal must not rewrite existing historical log entries.
 - Large values should still validate numeric bounds safely.

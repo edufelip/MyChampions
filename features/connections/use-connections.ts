@@ -23,7 +23,12 @@ export type ConnectionsLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; connections: ConnectionRecord[]; displayStates: ConnectionDisplayState[] };
+  | {
+      kind: 'ready';
+      connections: ConnectionRecord[];
+      displayStates: ConnectionDisplayState[];
+      lastSyncedAtIso: string;
+    };
 
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
@@ -36,9 +41,9 @@ export type UseConnectionsResult = {
 };
 
 /**
- * Wraps Firestore-backed connection-source operations for UI consumption.
- * Keeps Firebase / Firestore concerns out of screen components.
- * Auth user is no longer passed — SDK uses the authenticated session internally.
+ * Wraps server-backed connection-source operations for UI consumption.
+ * Keeps persistence and auth transport concerns out of screen components.
+ * Auth user is no longer passed; the source uses the active local server session.
  */
 export function useConnections(isAuthenticated: boolean): UseConnectionsResult {
   const [state, setState] = useState<ConnectionsLoadState>({ kind: 'idle' });
@@ -54,7 +59,12 @@ export function useConnections(isAuthenticated: boolean): UseConnectionsResult {
     void getMyConnections()
       .then((connections) => {
         const displayStates = connections.map(resolveConnectionDisplayState);
-        setState({ kind: 'ready', connections, displayStates });
+        setState({
+          kind: 'ready',
+          connections,
+          displayStates,
+          lastSyncedAtIso: new Date().toISOString(),
+        });
       })
       .catch((err: ConnectionSourceError) => {
         setState({ kind: 'error', message: err.message });

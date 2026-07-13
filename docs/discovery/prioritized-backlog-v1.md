@@ -68,8 +68,8 @@ Convert current brainstorming into an execution-ready product backlog with clear
 ## Milestone C Spec Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
-| BL-005 Student plan change request flow | Screens implemented; Firestore endpoint wiring deferred | FR-211 | UC-002.13 | AC-255 | BR-269 | TC-259 |
-| BL-006 Professional starter template library | Implemented end-to-end — pure logic layer (11 functions, 88 tests), Firestore schema + connectors, generated SDK wired into plan-builder-source.ts (D-114 complete) | FR-212 | UC-002.14 | AC-256 | BR-270 | TC-260 |
+| BL-005 Student plan change request flow | Implemented — screens and MyChampions server plan-change request endpoints are wired; professional notification delivery remains deferred until push infrastructure exists | FR-211 | UC-002.13 | AC-255 | BR-269 | TC-259 |
+| BL-006 Professional starter template library | Implemented for local flow — pure logic layer, server-backed predefined plan reads/assignment paths, and focused source tests are in place; durable starter-template authoring remains tracked for a later server route | FR-212 | UC-002.14 | AC-256 | BR-270 | TC-260 |
 | BL-007 Image upload progress and retry UX | Implemented — pure logic layer (`image-upload.logic.ts`, 62 tests), discriminated union `ImageUploadState`, retryable/non-retryable error classification, 5 locale keys in all 3 bundles, screen wiring in `nutrition/custom-meals/[mealId].tsx` | FR-213 | UC-003.8 | AC-424, AC-425 | BR-271 | TC-426, TC-427 |
 | BL-008 Explicit offline banner and write-lock explanations | Implemented — offline banner + write-lock gated on all 12 screens: `pro/home`, `pro/students`, `pro/student-profile`, `pro/specialty`, `pro/pending`, `pro/subscription`, `student/home`, `student/nutrition`, `student/training`, `settings/account`, `nutrition/custom-meals/index`, `nutrition/custom-meals/[mealId]`, `shared/recipes/[shareToken]` | FR-214 | UC-002.17 | AC-257 | BR-272 | TC-261 |
 | BL-009 Subscription pre-lapse warning | Implemented — `pre_lapse.title`, `pre_lapse.body`, `pre_lapse.cta_renew` locale keys in all 3 bundles; renew CTA Pressable added in `pro/subscription.tsx`; purchase/restore CTAs gated with `isWriteLocked` | FR-215 | UC-002.15 | AC-312 | BR-273 | TC-311 |
@@ -78,7 +78,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 ## Account & Support Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
-| BL-014 In-App Support Dialog | Implemented — custom Firestore-backed modal (D-171), logic layer with 6 tests, security rules, character counters, offline awareness, and localization (3 bundles). | FR-133 | UC-002.5 | AC-006 | BR-004 | TC-304 |
+| BL-014 In-App Support Dialog | Implemented — custom MyChampions server-backed modal (D-171), logic layer tests, server route/repository tests, character counters, offline awareness, and localization (3 bundles). | FR-133 | UC-002.5 | AC-006 | BR-004 | TC-304 |
 | BL-015 Account & Privacy Settings | Implemented — SC-213 screen covering identity, password reset, language switcher (SC-222), legal links, and account deletion. | FR-133, FR-157 | UC-002.5 | AC-305–310 | BR-225, BR-231 | TC-304–310 |
 
 All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/TC traceability.
@@ -87,8 +87,8 @@ All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
 | BL-104 Water tracker with personal/professional goals | Implemented — hydration goal authoring moved to nutrition plan builders (SC-207); hydration widgets focus on intake/progress using plan-defined effective goal | FR-218, FR-219, FR-220, FR-221, FR-222 | UC-002.19 | AC-259, AC-260, AC-261, AC-262, AC-263 | BR-276, BR-277, BR-278, BR-279, BR-280 | TC-264, TC-265, TC-266, TC-267 |
-| BL-106 Named predefined plans + clone/bulk assignment | Screens implemented; Firestore + VPS food-service wiring completed | FR-223, FR-224, FR-225, FR-226 | UC-002.20 | AC-264, AC-265 | BR-281, BR-282, BR-283 | TC-268, TC-269, TC-270 |
-| BL-108 AI meal photo macronutrient analysis | Implemented — logic/hook/source/Cloud Function/camera/compression all wired; photo Cloud Storage attachment and SC-214 attach-toggle integration deferred (D-109) | FR-229, FR-230, FR-231, FR-232, FR-233, FR-234, FR-235, FR-236, FR-237, FR-238, FR-239 | UC-003.9 | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 | BR-286, BR-287, BR-288, BR-289, BR-290 | TC-271, TC-272, TC-273, TC-274, TC-285 |
+| BL-106 Named predefined plans + clone/bulk assignment | Implemented — screens use MyChampions server plan-list/predefined assignment paths and server-backed food search against the mirrored local catalog | FR-223, FR-224, FR-225, FR-226 | UC-002.20 | AC-264, AC-265 | BR-281, BR-282, BR-283 | TC-268, TC-269, TC-270 |
+| BL-108 AI meal photo macronutrient analysis | Implemented locally — logic/hook/source/camera/compression use the MyChampions server analyzer boundary; provider configuration and durable remote media storage remain future server/provider work | FR-229, FR-230, FR-231, FR-232, FR-233, FR-234, FR-235, FR-236, FR-237, FR-238, FR-239 | UC-003.9 | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 | BR-286, BR-287, BR-288, BR-289, BR-290 | TC-271, TC-272, TC-273, TC-274, TC-285 |
 
 ## Documentation Gate For Each Backlog Item
 - Add or update FR, UC, AC, BR, and TC artifacts.

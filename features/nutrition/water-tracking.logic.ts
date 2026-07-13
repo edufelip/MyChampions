@@ -1,6 +1,6 @@
 /**
  * Water tracking logic — intake logging, goal precedence, streak calculation.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-078, D-079, D-081, FR-218–FR-222, BR-276–BR-280
  */
 

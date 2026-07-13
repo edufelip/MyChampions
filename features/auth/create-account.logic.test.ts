@@ -7,6 +7,7 @@ import {
   isPasswordPolicySatisfied,
   mapCreateAccountReasonToMessageKey,
   normalizeCreateAccountReason,
+  resolveCreateAccountValidationAnalyticsReason,
   validateCreateAccountInput,
 } from './create-account.logic';
 
@@ -57,6 +58,34 @@ test('validateCreateAccountInput passes with valid values', () => {
   assert.deepEqual(result, {});
 });
 
+test('resolveCreateAccountValidationAnalyticsReason returns the first validation failure reason', () => {
+  assert.equal(
+    resolveCreateAccountValidationAnalyticsReason({
+      name: 'auth.validation.name_required',
+      email: 'auth.validation.email_required',
+      password: 'auth.validation.password_required',
+      passwordConfirmation: 'auth.validation.password_confirmation_required',
+    }),
+    'validation_name_required'
+  );
+  assert.equal(
+    resolveCreateAccountValidationAnalyticsReason({
+      password: 'auth.validation.password_policy',
+    }),
+    'validation_password_policy'
+  );
+  assert.equal(
+    resolveCreateAccountValidationAnalyticsReason({
+      passwordConfirmation: 'auth.validation.password_confirmation_mismatch',
+    }),
+    'validation_password_confirmation_mismatch'
+  );
+});
+
+test('resolveCreateAccountValidationAnalyticsReason returns null when there are no validation errors', () => {
+  assert.equal(resolveCreateAccountValidationAnalyticsReason({}), null);
+});
+
 test('isPasswordPolicySatisfied requires ASCII punctuation for special character', () => {
   assert.equal(isPasswordPolicySatisfied('Abcdef1¡'), false);
   assert.equal(isPasswordPolicySatisfied('Abcdef1!'), true);
@@ -90,7 +119,7 @@ test('normalizeCreateAccountReason maps network hints', () => {
 
 test('normalizeCreateAccountReason maps provider conflict', () => {
   const reason = normalizeCreateAccountReason({
-    code: 'auth/account-exists-with-different-credential',
+    code: 'PROVIDER_CONFLICT',
   });
 
   assert.equal(reason, 'provider_conflict');
@@ -98,7 +127,7 @@ test('normalizeCreateAccountReason maps provider conflict', () => {
 
 test('normalizeCreateAccountReason maps missing config to configuration', () => {
   const reason = normalizeCreateAccountReason({
-    message: 'Firebase config is missing required keys: projectId',
+    message: 'MyChampions server URL is not configured.',
   });
 
   assert.equal(reason, 'configuration');

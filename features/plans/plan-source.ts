@@ -1,22 +1,8 @@
 /**
- * Plan Firestore source — plan CRUD, predefined library, bulk assign,
+ * Plan source — server-first plan CRUD, predefined library, bulk assign,
  * and plan-change request operations.
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  runTransaction,
-  where,
-  writeBatch,
-  type Firestore,
-} from 'firebase/firestore';
-
-import { getFirestoreInstance as _getFirestoreInstance, getCurrentAuthUid as _getCurrentAuthUid, nowIso, generateId } from '../firestore';
-import { classifyFirestoreError } from '../firestore-error';
 import {
   normalizePlanChangeRequestStatus,
   normalizePlanType,
@@ -24,6 +10,8 @@ import {
   type PlanChangeRequest,
   type PlanChangeRequestStatus,
 } from './plan-change-request.logic';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getCurrentServerAccessToken } from '../auth/server-auth-source';
 
 export type PlanSourceKind = 'predefined' | 'assigned' | 'self_managed';
 
@@ -66,53 +54,12 @@ export type NutritionPlan = Plan & {
   fatsTarget: number | null;
 };
 
-type FirestoreNutritionPlan = {
-  id: string;
-  ownerProfessionalUid: string | null;
-  studentAuthUid: string;
-  sourceKind: PlanSourceKind;
-  isArchived: boolean;
-  isDraft: boolean;
-  name: string;
-  hydrationGoalMl: number | null;
-  caloriesTarget: number;
-  carbsTarget: number;
-  proteinsTarget: number;
-  fatsTarget: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type FirestoreTrainingPlan = {
-  id: string;
-  ownerProfessionalUid: string | null;
-  studentAuthUid: string;
-  sourceKind: PlanSourceKind;
-  isArchived: boolean;
-  isDraft: boolean;
-  name: string;
-  sessions: Array<{ id: string; sessionName: string; items: Array<{ id: string; exerciseName: string }> }>;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type FirestorePlanVisibilityInput = {
+type PlanVisibilityInput = {
   planType: PlanType;
   sourceKind: PlanSourceKind;
   ownerProfessionalUid: string | null;
   studentAuthUid: string;
   isDraft?: boolean;
-};
-
-type FirestorePlanChangeRequest = {
-  id: string;
-  planId: string;
-  planType: PlanType;
-  studentAuthUid: string;
-  requestText: string;
-  status: PlanChangeRequestStatus;
-  createdAt: string;
-  updatedAt: string;
 };
 
 type PlanSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
@@ -122,6 +69,7 @@ type PlanSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_re
 let globalPlansCache: Plan[] | null = null;
 let globalPredefinedPlansCache: PredefinedPlan[] | null = null;
 let globalPlansCacheOwnerUid: string | null = null;
+let globalPlansCacheSyncedAtIso: string | null = null;
 
 export function getCachedPlans(): Plan[] | null {
   return globalPlansCache;
@@ -134,6 +82,7 @@ export function getCachedPredefinedPlans(): PredefinedPlan[] | null {
 export function setCachedPlans(plans: Plan[]) {
   globalPlansCache = plans;
   globalPlansCacheOwnerUid = plans[0]?.studentUid ?? null;
+  globalPlansCacheSyncedAtIso = nowIso();
 }
 
 export function setCachedPredefinedPlans(plans: PredefinedPlan[]) {
@@ -144,10 +93,15 @@ export function getCachedPlansOwnerUid(): string | null {
   return globalPlansCacheOwnerUid;
 }
 
+export function getCachedPlansSyncedAtIso(): string | null {
+  return globalPlansCacheSyncedAtIso;
+}
+
 export function clearPlanCaches() {
   globalPlansCache = null;
   globalPredefinedPlansCache = null;
   globalPlansCacheOwnerUid = null;
+  globalPlansCacheSyncedAtIso = null;
 }
 
 /**
@@ -217,112 +171,684 @@ export function validatePlanAssignmentTargets({
 }
 
 export type PlanSourceDeps = {
-  getFirestoreInstance: () => Firestore;
-  getCurrentAuthUid: () => string;
+  getServerBaseUrl?: () => string | undefined;
+  getCurrentAccessToken?: () => Promise<string | null>;
+  fetchFn?: typeof fetch;
 };
 
-const defaultDeps: PlanSourceDeps = {
-  getFirestoreInstance: _getFirestoreInstance,
-  getCurrentAuthUid: _getCurrentAuthUid,
-};
-
-async function getActiveConnectionStudentUids(
-  firestore: Firestore,
-  professionalUid: string,
-  planType: PlanType,
-  studentUids: string[]
-): Promise<string[]> {
-  const requiredSpecialty = getRequiredAssignmentSpecialty(planType);
-  const uniqueStudentUids = [...new Set(studentUids.filter(Boolean))];
-  const activeStudentUids: string[] = [];
-
-  await Promise.all(
-    uniqueStudentUids.map(async (studentUid) => {
-      const snapshot = await getDocs(
-        query(
-          collection(firestore, 'connections'),
-          where('professionalAuthUid', '==', professionalUid),
-          where('studentAuthUid', '==', studentUid),
-          where('specialty', '==', requiredSpecialty),
-          where('status', '==', 'active')
-        )
-      );
-
-      if (!snapshot.empty) {
-        activeStudentUids.push(studentUid);
-      }
-    })
-  );
-
-  return activeStudentUids;
+function nowIso(): string {
+  return new Date().toISOString();
 }
 
-async function assertActiveAssignmentTargets(
-  firestore: Firestore,
-  professionalUid: string,
-  planType: PlanType,
-  studentUids: string[]
-): Promise<void> {
-  const activeStudentUids = await getActiveConnectionStudentUids(firestore, professionalUid, planType, studentUids);
-  const validation = validatePlanAssignmentTargets({ planType, targetStudentUids: studentUids, activeStudentUids });
+const defaultDeps: PlanSourceDeps = {
+  getServerBaseUrl: defaultGetServerBaseUrl,
+  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  fetchFn: fetch,
+};
 
-  if (!validation.isValid) {
-    throw new PlanSourceError(
-      'configuration',
-      `No active assignment for ${validation.requiredSpecialty}: ${validation.invalidStudentUids.join(', ')}`
-    );
+function defaultGetServerBaseUrl(): string | undefined {
+  let expoExtra: unknown;
+  try {
+    const Constants = require('expo-constants') as {
+      default?: { expoConfig?: { extra?: unknown } };
+      expoConfig?: { extra?: unknown };
+    };
+    expoExtra = (Constants.default ?? Constants).expoConfig?.extra;
+  } catch {
+    expoExtra = undefined;
   }
+
+  const extra = (expoExtra ?? {}) as {
+    server?: {
+      baseUrl?: string;
+    };
+  };
+  return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
+}
+
+let e2eAssignedPlanSequence = 0;
+let e2ePlanChangeRequestStatus: PlanChangeRequestStatus = 'pending';
+const e2eAssignedPlans: Plan[] = [];
+const e2ePredefinedPlanFixtures: PredefinedPlan[] = [];
+const E2E_ASSIGNED_NUTRITION_PLAN: Plan = {
+  id: 'e2e-assigned-nutrition-plan',
+  planType: 'nutrition',
+  sourceKind: 'assigned',
+  ownerProfessionalUid: 'e2e-nutritionist',
+  studentUid: 'e2e-auth-session-user',
+  isArchived: false,
+  isDraft: false,
+  name: 'Assigned Nutrition Plan',
+  createdAt: '2026-06-22T10:00:00.000Z',
+  updatedAt: '2026-06-22T10:00:00.000Z',
+};
+const E2E_ASSIGNED_TRAINING_PLAN: Plan = {
+  id: 'e2e-assigned-training-plan',
+  planType: 'training',
+  sourceKind: 'assigned',
+  ownerProfessionalUid: 'e2e-fitness-coach',
+  studentUid: 'e2e-auth-session-user',
+  isArchived: false,
+  isDraft: false,
+  name: 'Assigned Training Plan',
+  createdAt: '2026-06-22T10:00:00.000Z',
+  updatedAt: '2026-06-22T10:00:00.000Z',
+};
+
+function getE2EPlanSourceOverride() {
+  return resolveE2EAuthSessionSourceOverride({
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+}
+
+function getE2EPredefinedPlans(): PredefinedPlan[] | null {
+  const override = getE2EPlanSourceOverride();
+  if (!override || process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE !== 'basic') return null;
+
+  return [
+    {
+      id: 'e2e-nutrition-predefined-plan',
+      name: 'Balanced Nutrition Template',
+      planType: 'nutrition',
+      ownerProfessionalUid: override.uid,
+      createdAt: '2026-06-22T12:00:00.000Z',
+      updatedAt: '2026-06-22T12:00:00.000Z',
+    },
+    {
+      id: 'e2e-training-predefined-plan',
+      name: 'Strength Training Template',
+      planType: 'training',
+      ownerProfessionalUid: override.uid,
+      createdAt: '2026-06-22T11:00:00.000Z',
+      updatedAt: '2026-06-22T11:00:00.000Z',
+    },
+    ...e2ePredefinedPlanFixtures.map(cloneE2EPredefinedPlan),
+  ];
+}
+
+function getE2EAssignedPlanFixtures(): Plan[] | null {
+  const override = getE2EPlanSourceOverride();
+  if (!override) return null;
+  const assignedPlans =
+    process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE === 'basic'
+      ? e2eAssignedPlans.map(cloneE2EPlan)
+      : [];
+  const fixturePlans: Plan[] = [];
+
+  if (process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE === 'assigned') {
+    fixturePlans.push({ ...E2E_ASSIGNED_NUTRITION_PLAN, studentUid: override.uid });
+  }
+
+  if (process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE === 'assigned') {
+    fixturePlans.push({ ...E2E_ASSIGNED_TRAINING_PLAN, studentUid: override.uid });
+  }
+
+  return [...fixturePlans, ...assignedPlans];
+}
+
+function getE2EActiveStudentUidsForPlanType(planType: PlanType): string[] {
+  if (planType === 'nutrition') {
+    return ['e2e-active-student', 'e2e-dual-student'];
+  }
+
+  return ['e2e-dual-student'];
+}
+
+function cloneE2EPlan(plan: Plan): Plan {
+  return { ...plan };
+}
+
+function cloneE2EPredefinedPlan(plan: PredefinedPlan): PredefinedPlan {
+  return { ...plan };
+}
+
+function getE2EPlanChangeRequests(studentUid: string): PlanChangeRequest[] | null {
+  if (!getE2EPlanSourceOverride()) return null;
+  if (studentUid !== 'e2e-dual-student') return [];
+
+  return [
+    {
+      id: 'e2e-plan-change-request-nutrition',
+      planId: 'e2e-assigned-nutrition-plan',
+      planType: 'nutrition',
+      studentUid,
+      requestText: 'Please add one more high-protein breakfast option.',
+      status: e2ePlanChangeRequestStatus,
+      createdAt: '2026-06-22T09:00:00.000Z',
+    },
+  ];
+}
+
+export function getE2EAssignedPlanFixture(
+  planId: string,
+  planType: PlanType
+): Plan | null | undefined {
+  const plans = getE2EAssignedPlanFixtures();
+  if (!plans) return undefined;
+  const plan = plans.find((candidate) => candidate.id === planId && candidate.planType === planType);
+  return plan ? cloneE2EPlan(plan) : null;
+}
+
+export function updateE2EAssignedPlanFixture(
+  planId: string,
+  planType: PlanType,
+  updates: { name?: string; isDraft?: boolean; updatedAt?: string }
+): boolean | undefined {
+  if (!getE2EPredefinedPlans()) return undefined;
+  const planIndex = e2eAssignedPlans.findIndex(
+    (candidate) => candidate.id === planId && candidate.planType === planType
+  );
+  if (planIndex < 0) return false;
+
+  e2eAssignedPlans[planIndex] = {
+    ...e2eAssignedPlans[planIndex],
+    ...(updates.name !== undefined ? { name: updates.name } : {}),
+    ...(updates.isDraft !== undefined ? { isDraft: updates.isDraft } : {}),
+    updatedAt: updates.updatedAt ?? nowIso(),
+  };
+  return true;
+}
+
+export function removeE2EAssignedPlanFixture(
+  planId: string,
+  planType: PlanType
+): boolean | undefined {
+  if (!getE2EPredefinedPlans()) return undefined;
+  const planIndex = e2eAssignedPlans.findIndex(
+    (candidate) => candidate.id === planId && candidate.planType === planType
+  );
+  if (planIndex < 0) return false;
+
+  e2eAssignedPlans.splice(planIndex, 1);
+  return true;
+}
+
+export function upsertE2EPredefinedPlanFixture(plan: PredefinedPlan): boolean | undefined {
+  if (!getE2EPredefinedPlans()) return undefined;
+  const existingIndex = e2ePredefinedPlanFixtures.findIndex(
+    (candidate) => candidate.id === plan.id && candidate.planType === plan.planType
+  );
+  if (existingIndex >= 0) {
+    e2ePredefinedPlanFixtures[existingIndex] = cloneE2EPredefinedPlan(plan);
+  } else {
+    e2ePredefinedPlanFixtures.push(cloneE2EPredefinedPlan(plan));
+  }
+  return true;
+}
+
+export function removeE2EPredefinedPlanFixture(planId: string, planType: PlanType): boolean | undefined {
+  if (!getE2EPredefinedPlans()) return undefined;
+  const existingIndex = e2ePredefinedPlanFixtures.findIndex(
+    (candidate) => candidate.id === planId && candidate.planType === planType
+  );
+  if (existingIndex < 0) return false;
+  e2ePredefinedPlanFixtures.splice(existingIndex, 1);
+  return true;
+}
+
+export function upsertE2EMyPlanFixture(plan: Plan): boolean | undefined {
+  if (!getE2EPredefinedPlans()) return undefined;
+  const existingIndex = e2eAssignedPlans.findIndex(
+    (candidate) => candidate.id === plan.id && candidate.planType === plan.planType
+  );
+  if (existingIndex >= 0) {
+    e2eAssignedPlans[existingIndex] = cloneE2EPlan(plan);
+  } else {
+    e2eAssignedPlans.push(cloneE2EPlan(plan));
+  }
+  return true;
 }
 
 function normalizePlanSourceError(error: unknown): PlanSourceError {
   if (error instanceof PlanSourceError) return error;
 
-  switch (classifyFirestoreError(error)) {
-    case 'network':
-      return new PlanSourceError('network', (error as Error)?.message ?? 'Network error.');
-    case 'configuration':
-      return new PlanSourceError('configuration', (error as Error)?.message ?? 'Configuration error.');
-    default:
-      return new PlanSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected plan source error.');
+  return new PlanSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected plan source error.');
+}
+
+function requireServerResult<T>(result: T | null, operation: string): T {
+  if (result !== null) return result;
+  throw new PlanSourceError('configuration', `${operation} requires local MyChampions server URL and auth.`);
+}
+
+function resolveServerPlanSource(deps: PlanSourceDeps): {
+  baseUrl: string;
+  token: string;
+  fetchFn: typeof fetch;
+} | null {
+  const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+  const fetchFn = deps.fetchFn ?? fetch;
+  if (!baseUrl || !fetchFn) return null;
+
+  return {
+    baseUrl,
+    token: '',
+    fetchFn,
+  };
+}
+
+async function getServerPlanSource(deps: PlanSourceDeps): Promise<{
+  baseUrl: string;
+  token: string;
+  fetchFn: typeof fetch;
+} | null> {
+  const source = resolveServerPlanSource(deps);
+  if (!source) return null;
+  const token = await (deps.getCurrentAccessToken?.() ?? Promise.resolve(null));
+  if (!token) return null;
+  return { ...source, token };
+}
+
+function parseServerPlanChangeRequest(raw: unknown): PlanChangeRequest | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Partial<PlanChangeRequest>;
+  const planType = normalizePlanType(value.planType);
+  const status = normalizePlanChangeRequestStatus(value.status);
+
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.planId !== 'string' ||
+    !planType ||
+    typeof value.studentUid !== 'string' ||
+    typeof value.requestText !== 'string' ||
+    !status ||
+    typeof value.createdAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    planId: value.planId,
+    planType,
+    studentUid: value.studentUid,
+    requestText: value.requestText,
+    status,
+    createdAt: value.createdAt,
+  };
+}
+
+function normalizePlanSourceKind(value: unknown): PlanSourceKind | null {
+  return value === 'predefined' || value === 'assigned' || value === 'self_managed' ? value : null;
+}
+
+function optionalNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function parseServerPlan(raw: unknown): Plan | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Partial<NutritionPlan>;
+  const planType = normalizePlanType(value.planType);
+  const sourceKind = normalizePlanSourceKind(value.sourceKind);
+
+  if (
+    typeof value.id !== 'string' ||
+    !planType ||
+    !sourceKind ||
+    !('ownerProfessionalUid' in value) ||
+    (value.ownerProfessionalUid !== null && typeof value.ownerProfessionalUid !== 'string') ||
+    typeof value.studentUid !== 'string' ||
+    typeof value.isArchived !== 'boolean' ||
+    typeof value.createdAt !== 'string' ||
+    typeof value.updatedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  const basePlan: Plan = {
+    id: value.id,
+    planType,
+    sourceKind,
+    ownerProfessionalUid: value.ownerProfessionalUid ?? null,
+    studentUid: value.studentUid,
+    isArchived: value.isArchived,
+    isDraft: typeof value.isDraft === 'boolean' ? value.isDraft : false,
+    name: typeof value.name === 'string' ? value.name : null,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+  };
+
+  if (planType !== 'nutrition') return basePlan;
+
+  const nutritionPlan: NutritionPlan = {
+    ...basePlan,
+    planType: 'nutrition',
+    isDraft: basePlan.isDraft ?? false,
+    hydrationGoalMl: optionalNumber(value.hydrationGoalMl),
+    caloriesTarget: optionalNumber(value.caloriesTarget),
+    carbsTarget: optionalNumber(value.carbsTarget),
+    proteinsTarget: optionalNumber(value.proteinsTarget),
+    fatsTarget: optionalNumber(value.fatsTarget),
+  };
+  return nutritionPlan;
+}
+
+function parseServerPredefinedPlan(raw: unknown): PredefinedPlan | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Partial<PredefinedPlan>;
+  const planType = normalizePlanType(value.planType);
+
+  if (
+    typeof value.id !== 'string' ||
+    !planType ||
+    typeof value.name !== 'string' ||
+    typeof value.ownerProfessionalUid !== 'string' ||
+    typeof value.createdAt !== 'string' ||
+    typeof value.updatedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    planType,
+    name: value.name,
+    ownerProfessionalUid: value.ownerProfessionalUid,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+  };
+}
+
+async function readServerJson(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    throw new PlanSourceError('invalid_response', 'Plan server returned a non-JSON response.');
   }
 }
 
-function toNutritionPlan(raw: FirestoreNutritionPlan): NutritionPlan {
+function planServerError(status: number, payload: unknown): PlanSourceError {
+  const nestedError = payload && typeof payload === 'object' ? (payload as { error?: unknown }).error : null;
+  const nestedCode =
+    nestedError && typeof nestedError === 'object' && typeof (nestedError as { code?: unknown }).code === 'string'
+      ? (nestedError as { code: string }).code
+      : typeof nestedError === 'string'
+        ? nestedError
+        : null;
+  const nestedMessage =
+    nestedError && typeof nestedError === 'object' && typeof (nestedError as { message?: unknown }).message === 'string'
+      ? (nestedError as { message: string }).message
+      : null;
+  const message =
+    nestedMessage ??
+    (payload &&
+    typeof payload === 'object' &&
+    'message' in payload &&
+    typeof (payload as { message?: unknown }).message === 'string'
+      ? (payload as { message: string }).message
+      : `Plan server returned status ${status}.`);
+
+  if (status === 401 || status === 403) {
+    return new PlanSourceError('configuration', message);
+  }
+  if (status === 404 || (status === 402 && nestedCode === 'professional_subscription_required')) {
+    return new PlanSourceError('graphql', message);
+  }
+  if (status >= 500) {
+    return new PlanSourceError('network', message);
+  }
+  return new PlanSourceError('invalid_response', message);
+}
+
+async function submitPlanChangeRequestToServer(
+  planId: string,
+  planType: PlanType,
+  requestText: string,
+  deps: PlanSourceDeps
+): Promise<PlanChangeRequest | null> {
+  const source = await getServerPlanSource(deps);
+  if (!source) return null;
+
+  let response: Response;
+  try {
+    response = await source.fetchFn(`${source.baseUrl}/plans/change-requests`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${source.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ planId, planType, requestText }),
+    });
+  } catch (error) {
+    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) throw planServerError(response.status, payload);
+
+  const request = parseServerPlanChangeRequest((payload as { request?: unknown }).request);
+  if (!request) {
+    throw new PlanSourceError('invalid_response', 'Plan server returned an invalid change request.');
+  }
+  return request;
+}
+
+async function getStudentPlanChangeRequestsFromServer(
+  studentUid: string,
+  deps: PlanSourceDeps
+): Promise<PlanChangeRequest[] | null> {
+  const source = await getServerPlanSource(deps);
+  if (!source) return null;
+
+  let response: Response;
+  try {
+    response = await source.fetchFn(
+      `${source.baseUrl}/professional/students/${encodeURIComponent(studentUid)}/plan-change-requests`,
+      {
+        headers: {
+          Authorization: `Bearer ${source.token}`,
+        },
+      }
+    );
+  } catch (error) {
+    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) throw planServerError(response.status, payload);
+
+  const rawRequests = (payload as { requests?: unknown }).requests;
+  if (!Array.isArray(rawRequests)) {
+    throw new PlanSourceError('invalid_response', 'Plan server returned invalid change request list.');
+  }
+  return rawRequests.map(parseServerPlanChangeRequest).filter((request): request is PlanChangeRequest => request !== null);
+}
+
+async function getProfessionalPlanChangeRequestsFromServer(
+  deps: PlanSourceDeps
+): Promise<PlanChangeRequest[] | null> {
+  const source = await getServerPlanSource(deps);
+  if (!source) return null;
+
+  let response: Response;
+  try {
+    response = await source.fetchFn(
+      `${source.baseUrl}/professional/plan-change-requests?status=pending`,
+      {
+        headers: {
+          Authorization: `Bearer ${source.token}`,
+        },
+      }
+    );
+  } catch (error) {
+    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) throw planServerError(response.status, payload);
+
+  const rawRequests = (payload as { requests?: unknown }).requests;
+  if (!Array.isArray(rawRequests)) {
+    throw new PlanSourceError('invalid_response', 'Plan server returned invalid professional change request list.');
+  }
+  return rawRequests.map(parseServerPlanChangeRequest).filter((request): request is PlanChangeRequest => request !== null);
+}
+
+async function reviewPlanChangeRequestOnServer(
+  requestId: string,
+  status: 'reviewed' | 'dismissed',
+  deps: PlanSourceDeps
+): Promise<{ id: string; status: PlanChangeRequestStatus } | null> {
+  const source = await getServerPlanSource(deps);
+  if (!source) return null;
+
+  let response: Response;
+  try {
+    response = await source.fetchFn(
+      `${source.baseUrl}/plans/change-requests/${encodeURIComponent(requestId)}/review`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${source.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      }
+    );
+  } catch (error) {
+    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) throw planServerError(response.status, payload);
+
+  const nextStatus = normalizePlanChangeRequestStatus((payload as { status?: unknown }).status);
+  if (typeof (payload as { id?: unknown }).id !== 'string' || !nextStatus) {
+    throw new PlanSourceError('invalid_response', 'Plan server returned an invalid review response.');
+  }
+
   return {
-    id: raw.id,
-    name: raw.name ?? null,
-    planType: 'nutrition',
-    sourceKind: raw.sourceKind ?? 'assigned',
-    ownerProfessionalUid: raw.ownerProfessionalUid ?? null,
-    studentUid: raw.studentAuthUid,
-    isArchived: raw.isArchived,
-    isDraft: raw.isDraft,
-    hydrationGoalMl: raw.hydrationGoalMl ?? null,
-    caloriesTarget: raw.caloriesTarget ?? null,
-    carbsTarget: raw.carbsTarget ?? null,
-    proteinsTarget: raw.proteinsTarget ?? null,
-    fatsTarget: raw.fatsTarget ?? null,
-    createdAt: raw.createdAt,
-    updatedAt: raw.updatedAt,
+    id: (payload as { id: string }).id,
+    status: nextStatus,
   };
 }
 
-function toPlanFromTraining(raw: FirestoreTrainingPlan): Plan {
-  return {
-    id: raw.id,
-    name: raw.name ?? null,
-    planType: 'training',
-    sourceKind: raw.sourceKind ?? 'assigned',
-    ownerProfessionalUid: raw.ownerProfessionalUid ?? null,
-    studentUid: raw.studentAuthUid,
-    isArchived: raw.isArchived,
-    isDraft: raw.isDraft,
-    createdAt: raw.createdAt,
-    updatedAt: raw.updatedAt,
-  };
+async function getMyPlansFromServer(deps: PlanSourceDeps): Promise<Plan[] | null> {
+  const source = await getServerPlanSource(deps);
+  if (!source) return null;
+
+  let response: Response;
+  try {
+    response = await source.fetchFn(`${source.baseUrl}/plans/my`, {
+      headers: {
+        Authorization: `Bearer ${source.token}`,
+      },
+    });
+  } catch (error) {
+    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) throw planServerError(response.status, payload);
+
+  const rawPlans = (payload as { plans?: unknown }).plans;
+  if (!Array.isArray(rawPlans)) {
+    throw new PlanSourceError('invalid_response', 'Plan server returned invalid plan list.');
+  }
+
+  return rawPlans.map(parseServerPlan).filter((plan): plan is Plan => plan !== null);
 }
 
-export function shouldExposePlanInMyPlans(raw: FirestorePlanVisibilityInput, currentUid: string): boolean {
+async function getMyPredefinedPlansFromServer(deps: PlanSourceDeps): Promise<PredefinedPlan[] | null> {
+  const source = await getServerPlanSource(deps);
+  if (!source) return null;
+
+  let response: Response;
+  try {
+    response = await source.fetchFn(`${source.baseUrl}/plans/predefined`, {
+      headers: {
+        Authorization: `Bearer ${source.token}`,
+      },
+    });
+  } catch (error) {
+    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) throw planServerError(response.status, payload);
+
+  const rawPlans = (payload as { plans?: unknown }).plans;
+  if (!Array.isArray(rawPlans)) {
+    throw new PlanSourceError('invalid_response', 'Plan server returned invalid predefined plan list.');
+  }
+
+  return rawPlans.map(parseServerPredefinedPlan).filter((plan): plan is PredefinedPlan => plan !== null);
+}
+
+async function bulkAssignPredefinedPlanOnServer(
+  predefinedPlanId: string,
+  studentUids: string[],
+  deps: PlanSourceDeps
+): Promise<{ assignedCount: number } | null> {
+  const source = await getServerPlanSource(deps);
+  if (!source) return null;
+
+  let response: Response;
+  try {
+    response = await source.fetchFn(
+      `${source.baseUrl}/plans/predefined/${encodeURIComponent(predefinedPlanId)}/bulk-assign`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${source.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ studentUids }),
+      }
+    );
+  } catch (error) {
+    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) throw planServerError(response.status, payload);
+
+  const assignedCount = (payload as { assignedCount?: unknown }).assignedCount;
+  if (typeof assignedCount !== 'number' || !Number.isFinite(assignedCount)) {
+    throw new PlanSourceError('invalid_response', 'Plan server returned invalid assignment result.');
+  }
+  return { assignedCount };
+}
+
+async function createDraftAssignedPlanOnServer(
+  predefinedPlanId: string,
+  studentUid: string,
+  deps: PlanSourceDeps
+): Promise<{ id: string } | null> {
+  const source = await getServerPlanSource(deps);
+  if (!source) return null;
+
+  let response: Response;
+  try {
+    response = await source.fetchFn(
+      `${source.baseUrl}/plans/predefined/${encodeURIComponent(predefinedPlanId)}/draft-assignments`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${source.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ studentUid }),
+      }
+    );
+  } catch (error) {
+    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+  }
+
+  const payload = await readServerJson(response);
+  if (!response.ok) throw planServerError(response.status, payload);
+
+  const plan = parseServerPlan((payload as { plan?: unknown }).plan);
+  if (!plan || !plan.isDraft || plan.sourceKind !== 'assigned') {
+    throw new PlanSourceError('invalid_response', 'Plan server returned an invalid draft assignment.');
+  }
+
+  return { id: plan.id };
+}
+
+export function shouldExposePlanInMyPlans(raw: PlanVisibilityInput, currentUid: string): boolean {
   return !(
     raw.planType === 'nutrition' &&
     raw.studentAuthUid === currentUid &&
@@ -333,78 +859,36 @@ export function shouldExposePlanInMyPlans(raw: FirestorePlanVisibilityInput, cur
 }
 
 export async function getMyPlans(deps = defaultDeps): Promise<Plan[]> {
+  if (deps === defaultDeps) {
+    const e2ePlans = getE2EAssignedPlanFixtures();
+    if (e2ePlans) return e2ePlans;
+  }
+
   try {
-    const firestore = deps.getFirestoreInstance();
-    const uid = deps.getCurrentAuthUid();
-
-    const [asStudentNutrition, asOwnerNutrition, asStudentTraining, asOwnerTraining] = await Promise.all([
-      getDocs(query(collection(firestore, 'nutritionPlans'), where('studentAuthUid', '==', uid))),
-      getDocs(query(collection(firestore, 'nutritionPlans'), where('ownerProfessionalUid', '==', uid))),
-      getDocs(query(collection(firestore, 'trainingPlans'), where('studentAuthUid', '==', uid))),
-      getDocs(query(collection(firestore, 'trainingPlans'), where('ownerProfessionalUid', '==', uid))),
-    ]);
-
-    const unique = new Map<string, Plan>();
-    for (const snap of [...asStudentNutrition.docs, ...asOwnerNutrition.docs]) {
-      const raw = snap.data() as FirestoreNutritionPlan;
-      if (!shouldExposePlanInMyPlans({ ...raw, planType: 'nutrition' }, uid)) continue;
-      unique.set(`nutrition:${snap.id}`, toNutritionPlan(raw));
-    }
-    for (const snap of [...asStudentTraining.docs, ...asOwnerTraining.docs]) {
-      const raw = snap.data() as FirestoreTrainingPlan;
-      unique.set(`training:${snap.id}`, toPlanFromTraining(raw));
-    }
-
-    const result = [...unique.values()];
-    setCachedPlans(result);
-    return result;
+    const serverPlans = requireServerResult(await getMyPlansFromServer(deps), 'Plan list reads');
+    setCachedPlans(serverPlans);
+    return serverPlans;
   } catch (error) {
     throw normalizePlanSourceError(error);
   }
 }
 
 export async function getMyPredefinedPlans(deps = defaultDeps): Promise<PredefinedPlan[]> {
+  if (deps === defaultDeps) {
+    const e2ePlans = getE2EPredefinedPlans();
+    if (e2ePlans) {
+      const result = e2ePlans.map(cloneE2EPredefinedPlan);
+      setCachedPredefinedPlans(result);
+      return result;
+    }
+  }
+
   try {
-    const firestore = deps.getFirestoreInstance();
-    const uid = deps.getCurrentAuthUid();
-
-    const [nutritionPlans, trainingPlans] = await Promise.all([
-      getDocs(query(
-        collection(firestore, 'nutritionPlans'),
-        where('ownerProfessionalUid', '==', uid),
-        where('sourceKind', '==', 'predefined')
-      )),
-      getDocs(query(
-        collection(firestore, 'trainingPlans'),
-        where('ownerProfessionalUid', '==', uid),
-        where('sourceKind', '==', 'predefined')
-      )),
-    ]);
-
-    const nutritionPredefined = nutritionPlans.docs.map((snap) => {
-      const raw = snap.data() as FirestoreNutritionPlan;
-      return {
-        id: raw.id ?? snap.id,
-        name: raw.name,
-        planType: 'nutrition' as PlanType,
-        ownerProfessionalUid: uid,
-        createdAt: raw.createdAt,
-        updatedAt: raw.updatedAt,
-      };
-    });
-    const trainingPredefined = trainingPlans.docs.map((snap) => {
-      const raw = snap.data() as FirestoreTrainingPlan;
-      return {
-        id: raw.id ?? snap.id,
-        name: raw.name,
-        planType: 'training' as PlanType,
-        ownerProfessionalUid: uid,
-        createdAt: raw.createdAt,
-        updatedAt: raw.updatedAt,
-      };
-    });
-
-    const result = [...nutritionPredefined, ...trainingPredefined].sort((a, b) =>
+    const serverPlans = requireServerResult(
+      await getMyPredefinedPlansFromServer(deps),
+      'Predefined plan reads'
+    );
+    const result = [...serverPlans].sort((a, b) =>
       b.updatedAt.localeCompare(a.updatedAt)
     );
     setCachedPredefinedPlans(result);
@@ -419,87 +903,53 @@ export async function bulkAssignPredefinedPlan(
   studentUids: string[],
   deps = defaultDeps
 ): Promise<{ assignedCount: number }> {
+  if (deps === defaultDeps) {
+    const e2ePlans = getE2EPredefinedPlans();
+    if (e2ePlans) {
+      const source = e2ePlans.find((plan) => plan.id === predefinedPlanId);
+      if (!source) {
+        throw new PlanSourceError('graphql', 'Predefined plan not found.');
+      }
+
+      const uniqueStudentUids = [...new Set(studentUids)].filter(Boolean);
+      const validation = validatePlanAssignmentTargets({
+        planType: source.planType,
+        targetStudentUids: uniqueStudentUids,
+        activeStudentUids: getE2EActiveStudentUidsForPlanType(source.planType),
+      });
+      if (!validation.isValid) {
+        throw new PlanSourceError(
+          'configuration',
+          `No active assignment for ${validation.requiredSpecialty}: ${validation.invalidStudentUids.join(', ')}`
+        );
+      }
+
+      const timestamp = nowIso();
+      for (const studentUid of uniqueStudentUids) {
+        e2eAssignedPlanSequence += 1;
+        e2eAssignedPlans.push({
+          id: `${source.id}-assigned-${e2eAssignedPlanSequence}`,
+          planType: source.planType,
+          sourceKind: 'assigned',
+          ownerProfessionalUid: source.ownerProfessionalUid,
+          studentUid,
+          isArchived: false,
+          isDraft: false,
+          name: source.name,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        });
+      }
+
+      return { assignedCount: uniqueStudentUids.length };
+    }
+  }
+
   try {
-    const firestore = deps.getFirestoreInstance();
-    const professionalUid = deps.getCurrentAuthUid();
-
-    const [nutritionSourceSnap, trainingSourceSnap] = await Promise.all([
-      getDoc(doc(firestore, 'nutritionPlans', predefinedPlanId)),
-      getDoc(doc(firestore, 'trainingPlans', predefinedPlanId)),
-    ]);
-    if (!nutritionSourceSnap.exists() && !trainingSourceSnap.exists()) {
-      throw new PlanSourceError('graphql', 'Predefined plan not found.');
-    }
-    const sourceKind = (nutritionSourceSnap.exists()
-      ? (nutritionSourceSnap.data() as FirestoreNutritionPlan).sourceKind
-      : (trainingSourceSnap.data() as FirestoreTrainingPlan).sourceKind);
-    if (sourceKind !== 'predefined') {
-      throw new PlanSourceError('invalid_response', 'Only predefined plans can be bulk-assigned.');
-    }
-
-    const ownerProfessionalUid = (nutritionSourceSnap.exists()
-      ? (nutritionSourceSnap.data() as FirestoreNutritionPlan).ownerProfessionalUid
-      : (trainingSourceSnap.data() as FirestoreTrainingPlan).ownerProfessionalUid);
-    if (ownerProfessionalUid !== professionalUid) {
-      throw new PlanSourceError('configuration', 'Cannot bulk-assign a plan owned by another professional.');
-    }
-
-    const uniqueStudentUids = [...new Set(studentUids)].filter((uid) => Boolean(uid));
-    const sourcePlanType: PlanType = nutritionSourceSnap.exists() ? 'nutrition' : 'training';
-    await assertActiveAssignmentTargets(firestore, professionalUid, sourcePlanType, uniqueStudentUids);
-
-    const timestamp = nowIso();
-    let batch = writeBatch(firestore);
-    let writesInBatch = 0;
-    let assignedCount = 0;
-
-    const flushBatch = async () => {
-      if (writesInBatch === 0) return;
-      await batch.commit();
-      batch = writeBatch(firestore);
-      writesInBatch = 0;
-    };
-
-    for (const studentUid of uniqueStudentUids) {
-      if (nutritionSourceSnap.exists()) {
-        const source = nutritionSourceSnap.data() as FirestoreNutritionPlan;
-        const id = generateId('nutrition_plan');
-        batch.set(doc(firestore, 'nutritionPlans', id), {
-          ...source,
-          id,
-          ownerProfessionalUid: professionalUid,
-          studentAuthUid: studentUid,
-          sourceKind: 'assigned',
-          isArchived: false,
-          isDraft: false,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        } satisfies FirestoreNutritionPlan);
-      } else {
-        const source = trainingSourceSnap.data() as FirestoreTrainingPlan;
-        const id = generateId('training_plan');
-        batch.set(doc(firestore, 'trainingPlans', id), {
-          ...source,
-          id,
-          ownerProfessionalUid: professionalUid,
-          studentAuthUid: studentUid,
-          sourceKind: 'assigned',
-          isArchived: false,
-          isDraft: false,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        } satisfies FirestoreTrainingPlan);
-      }
-      writesInBatch += 1;
-      assignedCount += 1;
-
-      if (writesInBatch >= 450) {
-        await flushBatch();
-      }
-    }
-
-    await flushBatch();
-    return { assignedCount };
+    return requireServerResult(
+      await bulkAssignPredefinedPlanOnServer(predefinedPlanId, studentUids, deps),
+      'Predefined bulk assignment'
+    );
   } catch (error) {
     throw normalizePlanSourceError(error);
   }
@@ -510,90 +960,50 @@ export async function createDraftAssignedPlan(
   studentUid: string,
   deps = defaultDeps
 ): Promise<{ id: string }> {
-  try {
-    const firestore = deps.getFirestoreInstance();
-    const professionalUid = deps.getCurrentAuthUid();
-    const timestamp = nowIso();
-    let newPlanId = '';
-
-    const [nutritionSourceSnap, trainingSourceSnap] = await Promise.all([
-      getDoc(doc(firestore, 'nutritionPlans', predefinedPlanId)),
-      getDoc(doc(firestore, 'trainingPlans', predefinedPlanId)),
-    ]);
-    if (!nutritionSourceSnap.exists() && !trainingSourceSnap.exists()) {
-      throw new PlanSourceError('graphql', 'Predefined plan not found.');
-    }
-    const sourcePlanType: PlanType = nutritionSourceSnap.exists() ? 'nutrition' : 'training';
-    const source = nutritionSourceSnap.exists()
-      ? (nutritionSourceSnap.data() as FirestoreNutritionPlan)
-      : (trainingSourceSnap.data() as FirestoreTrainingPlan);
-    if (source.sourceKind !== 'predefined') {
-      throw new PlanSourceError('invalid_response', 'Only predefined plans can be assigned.');
-    }
-    if (source.ownerProfessionalUid !== professionalUid) {
-      throw new PlanSourceError('configuration', 'Cannot assign a plan owned by another professional.');
-    }
-    await assertActiveAssignmentTargets(firestore, professionalUid, sourcePlanType, [studentUid]);
-
-    await runTransaction(firestore, async (tx) => {
-      const nutritionRef = doc(firestore, 'nutritionPlans', predefinedPlanId);
-      const trainingRef = doc(firestore, 'trainingPlans', predefinedPlanId);
-
-      const [nutritionSnap, trainingSnap] = await Promise.all([
-        tx.get(nutritionRef),
-        tx.get(trainingRef),
-      ]);
-
-      if (!nutritionSnap.exists() && !trainingSnap.exists()) {
+  if (deps === defaultDeps) {
+    const e2ePlans = getE2EPredefinedPlans();
+    if (e2ePlans) {
+      const source = e2ePlans.find((plan) => plan.id === predefinedPlanId);
+      if (!source) {
         throw new PlanSourceError('graphql', 'Predefined plan not found.');
       }
 
-      if (nutritionSnap.exists()) {
-        const source = nutritionSnap.data() as FirestoreNutritionPlan;
-        if (source.sourceKind !== 'predefined') {
-          throw new PlanSourceError('invalid_response', 'Only predefined plans can be assigned.');
-        }
-        if (source.ownerProfessionalUid !== professionalUid) {
-          throw new PlanSourceError('configuration', 'Cannot assign a plan owned by another professional.');
-        }
-        newPlanId = generateId('nutrition_plan');
-        const newRef = doc(firestore, 'nutritionPlans', newPlanId);
-        tx.set(newRef, {
-          ...source,
-          id: newPlanId,
-          ownerProfessionalUid: professionalUid,
-          studentAuthUid: studentUid,
-          sourceKind: 'assigned',
-          isArchived: false,
-          isDraft: true,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        } satisfies FirestoreNutritionPlan);
-      } else {
-        const source = trainingSnap.data() as FirestoreTrainingPlan;
-        if (source.sourceKind !== 'predefined') {
-          throw new PlanSourceError('invalid_response', 'Only predefined plans can be assigned.');
-        }
-        if (source.ownerProfessionalUid !== professionalUid) {
-          throw new PlanSourceError('configuration', 'Cannot assign a plan owned by another professional.');
-        }
-        newPlanId = generateId('training_plan');
-        const newRef = doc(firestore, 'trainingPlans', newPlanId);
-        tx.set(newRef, {
-          ...source,
-          id: newPlanId,
-          ownerProfessionalUid: professionalUid,
-          studentAuthUid: studentUid,
-          sourceKind: 'assigned',
-          isArchived: false,
-          isDraft: true,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        } satisfies FirestoreTrainingPlan);
+      const validation = validatePlanAssignmentTargets({
+        planType: source.planType,
+        targetStudentUids: [studentUid],
+        activeStudentUids: getE2EActiveStudentUidsForPlanType(source.planType),
+      });
+      if (!validation.isValid) {
+        throw new PlanSourceError(
+          'configuration',
+          `No active assignment for ${validation.requiredSpecialty}: ${validation.invalidStudentUids.join(', ')}`
+        );
       }
-    });
 
-    return { id: newPlanId };
+      const timestamp = nowIso();
+      e2eAssignedPlanSequence += 1;
+      const id = `${source.id}-draft-${e2eAssignedPlanSequence}`;
+      e2eAssignedPlans.push({
+        id,
+        planType: source.planType,
+        sourceKind: 'assigned',
+        ownerProfessionalUid: source.ownerProfessionalUid,
+        studentUid,
+        isArchived: false,
+        isDraft: true,
+        name: source.name,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+      return { id };
+    }
+  }
+
+  try {
+    return requireServerResult(
+      await createDraftAssignedPlanOnServer(predefinedPlanId, studentUid, deps),
+      'Predefined draft assignment'
+    );
   } catch (error) {
     throw normalizePlanSourceError(error);
   }
@@ -605,34 +1015,24 @@ export async function submitPlanChangeRequest(
   requestText: string,
   deps = defaultDeps
 ): Promise<PlanChangeRequest> {
-  try {
-    const firestore = deps.getFirestoreInstance();
-    const studentUid = deps.getCurrentAuthUid();
-    const id = generateId('plan_change_request');
-    const timestamp = nowIso();
-
-    await runTransaction(firestore, async (tx) => {
-      tx.set(doc(firestore, 'planChangeRequests', id), {
-        id,
-        planId,
-        planType,
-        studentAuthUid: studentUid,
-        requestText,
-        status: 'pending',
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      } satisfies FirestorePlanChangeRequest);
-    });
-
+  if (deps === defaultDeps && getE2EPlanSourceOverride()) {
+    const studentUid = getE2EPlanSourceOverride()?.uid ?? 'e2e-auth-session-user';
     return {
-      id,
+      id: `e2e-plan-change-request-${Date.now()}`,
       planId,
       planType,
       studentUid,
       requestText,
       status: 'pending',
-      createdAt: timestamp,
+      createdAt: nowIso(),
     };
+  }
+
+  try {
+    return requireServerResult(
+      await submitPlanChangeRequestToServer(planId, planType, requestText, deps),
+      'Plan change request submission'
+    );
   } catch (error) {
     throw normalizePlanSourceError(error);
   }
@@ -642,29 +1042,34 @@ export async function getStudentPlanChangeRequests(
   studentUid: string,
   deps = defaultDeps
 ): Promise<PlanChangeRequest[]> {
+  if (deps === defaultDeps) {
+    const e2eRequests = getE2EPlanChangeRequests(studentUid);
+    if (e2eRequests) return e2eRequests;
+  }
+
   try {
-    const firestore = deps.getFirestoreInstance();
+    return requireServerResult(
+      await getStudentPlanChangeRequestsFromServer(studentUid, deps),
+      'Plan change request reads'
+    );
+  } catch (error) {
+    throw normalizePlanSourceError(error);
+  }
+}
 
-    const requests = await getDocs(query(
-      collection(firestore, 'planChangeRequests'),
-      where('studentAuthUid', '==', studentUid)
-    ));
+export async function getProfessionalPlanChangeRequests(
+  deps = defaultDeps
+): Promise<PlanChangeRequest[]> {
+  if (deps === defaultDeps) {
+    const e2eRequests = getE2EPlanChangeRequests('e2e-dual-student');
+    if (e2eRequests) return e2eRequests;
+  }
 
-    return requests.docs.flatMap((snap) => {
-      const raw = snap.data() as FirestorePlanChangeRequest;
-      const planType = normalizePlanType(raw.planType);
-      const status = normalizePlanChangeRequestStatus(raw.status);
-      if (!planType || !status) return [];
-      return [{
-        id: raw.id,
-        planId: raw.planId,
-        planType,
-        studentUid: raw.studentAuthUid,
-        requestText: raw.requestText,
-        status,
-        createdAt: raw.createdAt,
-      } satisfies PlanChangeRequest];
-    });
+  try {
+    return requireServerResult(
+      await getProfessionalPlanChangeRequestsFromServer(deps),
+      'Professional plan change request reads'
+    );
   } catch (error) {
     throw normalizePlanSourceError(error);
   }
@@ -675,21 +1080,19 @@ export async function reviewPlanChangeRequest(
   status: 'reviewed' | 'dismissed',
   deps = defaultDeps
 ): Promise<{ id: string; status: PlanChangeRequestStatus }> {
-  try {
-    const firestore = deps.getFirestoreInstance();
-    await runTransaction(firestore, async (tx) => {
-      const ref = doc(firestore, 'planChangeRequests', requestId);
-      const snap = await tx.get(ref);
-      if (!snap.exists()) {
-        throw new PlanSourceError('graphql', 'Plan change request not found.');
-      }
-      tx.update(ref, {
-        status,
-        updatedAt: nowIso(),
-      });
-    });
-
+  if (deps === defaultDeps && getE2EPlanSourceOverride()) {
+    if (requestId !== 'e2e-plan-change-request-nutrition') {
+      throw new PlanSourceError('graphql', 'Plan change request not found.');
+    }
+    e2ePlanChangeRequestStatus = status;
     return { id: requestId, status };
+  }
+
+  try {
+    return requireServerResult(
+      await reviewPlanChangeRequestOnServer(requestId, status, deps),
+      'Plan change request review'
+    );
   } catch (error) {
     throw normalizePlanSourceError(error);
   }

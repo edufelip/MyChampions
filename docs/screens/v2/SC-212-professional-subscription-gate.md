@@ -34,7 +34,9 @@
 - Professional cap above 10 active students requires active entitlement.
 - Active student count is computed by unique active student accounts (one student counts once even with dual specialty assignment).
 - Entitlement state must align with RevenueCat + store billing.
-- If entitlement is inactive while over cap, new activations and student-plan update actions remain locked.
+- After native RevenueCat customer info is read, the app best-effort syncs the latest professional and AI entitlement snapshot to the MyChampions server at `POST /subscription/entitlements/snapshot`.
+- Server-side pending confirmation enforces the activation cap: activating a new 11th unique active student requires an active professional entitlement snapshot, while a second specialty for an already-active student does not increase the count.
+- If entitlement is inactive while over cap, new activations and professional writes to assigned student plans are locked until an active professional entitlement snapshot is synced.
 - Pre-lapse warning must appear before lock state with clear renew/restore path.
 - Accessibility baseline applies for readable warnings/CTAs with proper labels and focus order.
 
@@ -51,11 +53,12 @@
 ## Data Contract
 - Inputs:
   - Professional id.
-  - Active student count.
+  - Active student count from `getActiveProfessionalStudentCount`, computed as unique `studentAuthUid` values across active connections.
   - RevenueCat entitlement and storefront purchase state.
 - Outputs:
   - Updated entitlement state.
   - Unlock signal for cap-sensitive operations.
+  - Local MyChampions server entitlement snapshot in `subscription_entitlement_snapshots`.
 
 ## Edge Cases
 - Entitlement active but stale local cache should reconcile on refresh.

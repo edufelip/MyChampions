@@ -1,6 +1,6 @@
 /**
  * Professional specialty logic — add/remove/credential management.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-034, D-035, D-036, D-062, FR-103, FR-174, FR-175, FR-176, FR-177, FR-216
  * BR-234, BR-235, BR-236, BR-237
  */
@@ -62,6 +62,11 @@ export type CredentialValidationErrors = {
   registryId?: 'required';
   authority?: 'required';
   country?: 'required';
+};
+
+export type OptionalCredentialInputDecision = {
+  shouldSave: boolean;
+  errors: CredentialValidationErrors;
 };
 
 // ─── Pure functions ───────────────────────────────────────────────────────────
@@ -134,6 +139,25 @@ export function validateCredentialInput(input: CredentialInput): CredentialValid
   if (!input.authority.trim()) errors.authority = 'required';
   if (!input.country.trim()) errors.country = 'required';
   return errors;
+}
+
+export function resolveOptionalCredentialInput(
+  input: CredentialInput
+): OptionalCredentialInputDecision {
+  const hasAnyCredentialField =
+    Boolean(input.registryId.trim()) ||
+    Boolean(input.authority.trim()) ||
+    Boolean(input.country.trim());
+
+  if (!hasAnyCredentialField) {
+    return { shouldSave: false, errors: {} };
+  }
+
+  const errors = validateCredentialInput(input);
+  return {
+    shouldSave: Object.keys(errors).length === 0,
+    errors,
+  };
 }
 
 export function normalizeSpecialtyActionError(error: unknown): SpecialtyActionErrorReason {

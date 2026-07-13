@@ -8,7 +8,7 @@
  *  - Tap to open student profile
  *  - Multi-select mode for bulk assignment
  *
- * Data wiring is Firestore-backed via professional-source.
+ * Data wiring is server-backed via professional-source.
  *
  * Docs: docs/screens/v2/SC-205-student-roster.md
  * Refs: D-100, D-134, FR-105, FR-122, FR-210, FR-224, FR-225
@@ -45,9 +45,11 @@ import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
+import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useAuthSession } from '@/features/auth/auth-session';
 import {
+  filterStudentRosterRows,
   filterBulkAssignmentStudentsByPlanType,
   resolveStudentRosterViewState,
 } from '@/features/professional/students-screen.logic';
@@ -81,20 +83,15 @@ export default function ProfessionalStudentsScreen() {
   const { state: inviteCodeState } = useInviteCode(Boolean(currentUser), inviteSpecialty);
   const { state: plansState, bulkAssign } = usePlans(Boolean(currentUser));
 
-  const networkStatus = useNetworkStatus();
-  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
-    networkStatus,
-    lastSyncedAtIso: null,
-  });
-
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filter, setFilter] = useState<FilterKind>('all');
   const [students, setStudents] = useState<StudentRow[]>([]);
+  const [rosterSyncedAtIso, setRosterSyncedAtIso] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(currentUser));
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [loadErrorKey, setLoadErrorKey] = useState<TranslationKey | null>(null);
-  
+
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedStudentUids, setSelectedStudentUids] = useState<string[]>([]);
   const [bulkPlanType, setBulkPlanType] = useState<BulkPlanType>('nutrition');
@@ -102,6 +99,17 @@ export default function ProfessionalStudentsScreen() {
   const [isAssigning, setIsAssigning] = useState(false);
 
   const fetchStartedAtRef = useRef<number | null>(null);
+  const networkStatus = useNetworkStatus();
+  const lastSyncedAtIso = resolveLatestSyncTimestamp([
+    rosterSyncedAtIso,
+    specialtiesState.kind === 'ready' ? specialtiesState.lastSyncedAtIso : null,
+    inviteCodeState.kind === 'ready' ? inviteCodeState.lastSyncedAtIso : null,
+    plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
+  ]);
+  const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
+    networkStatus,
+    lastSyncedAtIso,
+  });
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -116,6 +124,7 @@ export default function ProfessionalStudentsScreen() {
   const loadRoster = useCallback(async () => {
     if (!currentUser) {
       setStudents([]);
+      setRosterSyncedAtIso(null);
       setIsLoading(false);
       setLoadErrorKey(null);
       setHasLoadedOnce(false);
@@ -128,6 +137,7 @@ export default function ProfessionalStudentsScreen() {
     try {
       const rows = await getProfessionalStudentRoster();
       setStudents(rows);
+      setRosterSyncedAtIso(new Date().toISOString());
     } catch {
       setLoadErrorKey('pro.students.error');
     } finally {
@@ -141,18 +151,7 @@ export default function ProfessionalStudentsScreen() {
   }, [loadRoster]);
 
   const visible = useMemo(
-    () =>
-      students.filter((s) => {
-        const matchesFilter =
-          filter === 'all' ||
-          (filter === 'active' && s.assignmentStatus === 'active') ||
-          (filter === 'pending' && s.assignmentStatus === 'pending');
-
-        const query = debouncedSearch.trim().toLowerCase();
-        const matchesSearch = !query || s.displayName.toLowerCase().includes(query);
-
-        return matchesFilter && matchesSearch;
-      }),
+    () => filterStudentRosterRows(students, { filter, search: debouncedSearch }),
     [debouncedSearch, filter, students]
   );
   const assignmentVisible = useMemo(
@@ -257,6 +256,7 @@ export default function ProfessionalStudentsScreen() {
                 setSelectedStudentUids([]);
               }}
               fullWidth={false}
+              testID="pro.students.bulkAssignToggle"
             />
           )}
         </View>
@@ -374,6 +374,7 @@ export default function ProfessionalStudentsScreen() {
                 data={assignmentVisible}
                 extraData={{ isSelectionMode, selectedStudentUids }}
                 keyExtractor={(item) => item.studentAuthUid}
+                keyboardShouldPersistTaps="handled"
                 renderItem={({ item }) => (
                   <StudentRowItem
                     student={item}
@@ -423,6 +424,7 @@ export default function ProfessionalStudentsScreen() {
                   label={t('pro.students.specialty.nutritionist') as string}
                   onPress={() => setBulkPlanType('nutrition')}
                   fullWidth={false}
+                  testID="pro.students.bulk.planType.nutrition"
                 />
                 <DsPillButton
                   scheme={scheme}
@@ -431,6 +433,7 @@ export default function ProfessionalStudentsScreen() {
                   label={t('pro.students.specialty.fitness_coach') as string}
                   onPress={() => setBulkPlanType('training')}
                   fullWidth={false}
+                  testID="pro.students.bulk.planType.training"
                 />
               </View>
               {selectedStudentUids.length > 0 ? (
@@ -438,6 +441,7 @@ export default function ProfessionalStudentsScreen() {
                   scheme={scheme}
                   label={(t('pro.students.bulk_assign.cta_confirm') as string).replace('{count}', String(selectedStudentUids.length))}
                   onPress={() => setIsPlanPickerVisible(true)}
+                  testID="pro.students.bulk.assignSelected"
                 />
               ) : null}
             </View>
@@ -451,7 +455,6 @@ export default function ProfessionalStudentsScreen() {
         onSelect={handleBulkAssign}
         plansState={plansState}
         planType={bulkPlanType}
-        scheme={scheme}
         theme={theme}
         t={t}
       />
@@ -547,12 +550,12 @@ function StudentRowItem({
         .replace('{status}', statusLabel as string)}
       onPress={onPress}
       style={[
-        styles.row, 
+        styles.row,
         { borderColor: isSelected ? theme.color.accentPrimary : theme.color.border, backgroundColor: theme.color.surface },
         isSelected && { borderWidth: 2 }
       ]}
       testID={`pro.students.row.${student.studentAuthUid}`}>
-      
+
       {isSelectionMode && (
         <View style={[styles.selectionIcon, { backgroundColor: isSelected ? theme.color.accentPrimary : theme.color.surface, borderColor: theme.color.border }]}>
           {isSelected && <MaterialIcons name="check" size={16} color={theme.color.onAccent} />}

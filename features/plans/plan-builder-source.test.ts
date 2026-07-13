@@ -5,7 +5,7 @@
  *   - deriveStarterTemplatePlanType: prefix routing, edge cases, unknown prefixes
  *   - coalesceTemplateDescription: null/undefined coalescing, passthrough
  *
- * Strategy: test only pure functions (no Firebase / Expo dependencies) per the
+ * Strategy: test only pure functions (no provider runtime or Expo dependencies) per the
  * established test-convention for this codebase. Source layer wiring (D-114)
  * relies on these helpers and on the StarterTemplateDeps injection pattern.
  *

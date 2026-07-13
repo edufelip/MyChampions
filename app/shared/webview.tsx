@@ -29,7 +29,10 @@ export default function WebViewScreen() {
   // react-native-webview doesn't support Web. Fallback to external link.
   if (Platform.OS === 'web') {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.color.canvas }]}>
+      <View
+        style={[styles.container, styles.centered, { backgroundColor: theme.color.canvas }]}
+        collapsable={false}
+        testID="shared.webview.screen">
          <Stack.Screen options={{ title: title ?? '', headerShown: true }} />
          <Text style={[styles.errorText, { color: theme.color.textPrimary, marginBottom: DsSpace.md }]}>
            {t('auth.terms.offline_hint')}
@@ -46,7 +49,10 @@ export default function WebViewScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.color.canvas }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.color.canvas }]}
+      collapsable={false}
+      testID="shared.webview.screen">
       <Stack.Screen
         options={{
           title: title ?? '',
@@ -75,6 +81,7 @@ export default function WebViewScreen() {
         </View>
       ) : (
         <WebView
+          testID="shared.webview.webview"
           key={key}
           source={{ uri: url }}
           style={styles.webview}
@@ -83,7 +90,7 @@ export default function WebViewScreen() {
           onError={() => setError(true)}
           onHttpError={() => setError(true)}
           renderLoading={() => (
-            <View style={[styles.loading, { backgroundColor: theme.color.canvas }]}>
+            <View style={[styles.loading, { backgroundColor: theme.color.canvas }]} testID="shared.webview.loading">
               <ActivityIndicator size="large" color={theme.color.accentPrimary} />
             </View>
           )}

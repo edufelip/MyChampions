@@ -1,26 +1,14 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-type AppVariant = 'dev' | 'prod';
+const DEFAULT_TERMS_URL = 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use';
+const DEFAULT_PRIVACY_POLICY_URL = 'https://portfolio.eduwaldo.com/projects/my-champions/privacy_policy';
 
-type FirebaseConfig = {
-  apiKey: string;
-  authDomain: string;
-  projectId: string;
-  storageBucket: string;
-  messagingSenderId: string;
-  appId: string;
-  iosClientId: string;
-  androidClientId: string;
-  webClientId: string;
-  iosAppId: string;
-  androidAppId: string;
-};
+type AppVariant = 'dev' | 'prod';
 
 type VariantConfig = {
   name: string;
   iosBundleId: string;
   androidPackage: string;
-  firebase: FirebaseConfig;
 };
 
 type TermsConfig = {
@@ -34,37 +22,29 @@ type RevenueCatConfig = {
   revenueCatApiKeyAndroid: string;
 };
 
-function requireEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) {
-    throw new Error(
-      `Missing required environment variable: ${key}.\nCopy .env.example to .env and fill in all values.`
-    );
-  }
-  return value;
-}
+type ServerConfig = {
+  baseUrl: string;
+};
 
-function resolveFirebaseConfig(prefix: 'FIREBASE_DEV' | 'FIREBASE_PROD'): FirebaseConfig {
-  return {
-    apiKey: requireEnv(`${prefix}_API_KEY`),
-    authDomain: requireEnv(`${prefix}_AUTH_DOMAIN`),
-    projectId: requireEnv(`${prefix}_PROJECT_ID`),
-    storageBucket: requireEnv(`${prefix}_STORAGE_BUCKET`),
-    messagingSenderId: requireEnv(`${prefix}_MESSAGING_SENDER_ID`),
-    appId: requireEnv(`${prefix}_APP_ID`),
-    iosClientId: requireEnv(`${prefix}_IOS_CLIENT_ID`),
-    androidClientId: requireEnv(`${prefix}_ANDROID_CLIENT_ID`),
-    webClientId: requireEnv(`${prefix}_WEB_CLIENT_ID`),
-    iosAppId: requireEnv(`${prefix}_IOS_APP_ID`),
-    androidAppId: requireEnv(`${prefix}_ANDROID_APP_ID`),
-  };
-}
+type GoogleAuthConfig = {
+  androidClientId: string;
+  iosClientId: string;
+  webClientId: string;
+};
+
+type E2EConfig = {
+  acceptedTermsVersion: string;
+  authSession: string;
+  createAccount: string;
+  emailPasswordSignIn: string;
+  socialAuth: string;
+};
 
 function resolveTermsConfig(): TermsConfig {
   const requiredVersion = process.env.EXPO_PUBLIC_TERMS_REQUIRED_VERSION?.trim() || 'v1';
-  const url = process.env.EXPO_PUBLIC_TERMS_URL?.trim() || 'https://google.com';
+  const url = process.env.EXPO_PUBLIC_TERMS_URL?.trim() || DEFAULT_TERMS_URL;
   const privacyPolicyUrl =
-    process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim() || 'https://google.com';
+    process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim() || DEFAULT_PRIVACY_POLICY_URL;
 
   return {
     requiredVersion,
@@ -93,7 +73,31 @@ function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
   };
 }
 
-const VARIANT_IDENTIFIERS: Record<AppVariant, Omit<VariantConfig, 'firebase' | 'dataConnect'>> = {
+function resolveServerConfig(): ServerConfig {
+  return {
+    baseUrl: process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim() ?? '',
+  };
+}
+
+function resolveGoogleAuthConfig(): GoogleAuthConfig {
+  return {
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID?.trim() ?? '',
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID?.trim() ?? '',
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID?.trim() ?? '',
+  };
+}
+
+function resolveE2EConfig(variant: AppVariant): E2EConfig {
+  return {
+    acceptedTermsVersion: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION?.trim() ?? '' : '',
+    authSession: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_AUTH_SESSION?.trim() ?? '' : '',
+    createAccount: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT?.trim() ?? '' : '',
+    emailPasswordSignIn: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN?.trim() ?? '' : '',
+    socialAuth: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH?.trim() ?? '' : '',
+  };
+}
+
+const VARIANT_IDENTIFIERS: Record<AppVariant, VariantConfig> = {
   dev: {
     name: 'MyChampions Dev',
     iosBundleId: 'com.edufelip.mychampions.dev',
@@ -108,11 +112,12 @@ const VARIANT_IDENTIFIERS: Record<AppVariant, Omit<VariantConfig, 'firebase' | '
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const variant = (process.env.APP_VARIANT === 'prod' ? 'prod' : 'dev') as AppVariant;
-  const prefix = variant === 'prod' ? 'FIREBASE_PROD' : 'FIREBASE_DEV';
   const { name, iosBundleId, androidPackage } = VARIANT_IDENTIFIERS[variant];
-  const firebase = resolveFirebaseConfig(prefix);
   const terms = resolveTermsConfig();
   const revenueCat = resolveRevenueCatConfig(variant);
+  const server = resolveServerConfig();
+  const googleAuth = resolveGoogleAuthConfig();
+  const e2e = resolveE2EConfig(variant);
 
   return {
     ...config,
@@ -178,7 +183,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     extra: {
       appVariant: variant,
-      firebase,
+      server,
       terms,
       // RevenueCat SDK API keys — read by subscription-source.ts via Constants.expoConfig.extra.
       // Must be public SDK keys (appl_*/goog_*), never secret keys (sk_*).
@@ -188,6 +193,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // Legacy fallback retained temporarily: EXPO_PUBLIC_REVENUECAT_API_KEY_IOS/ANDROID.
       revenueCatApiKeyIos: revenueCat.revenueCatApiKeyIos,
       revenueCatApiKeyAndroid: revenueCat.revenueCatApiKeyAndroid,
+      googleAuth,
+      e2e,
     },
   };
 };

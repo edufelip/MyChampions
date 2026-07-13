@@ -1,7 +1,7 @@
 /**
  * Plan builder logic — nutrition and training plan creation/editing,
  * plus pure food-search API response normalization helpers.
- * Pure functions, no Firebase dependencies.
+ * Pure functions, no provider dependencies.
  * Refs: D-111–D-114, FR-240–FR-248, BR-291–BR-296,
  *       AC-207, AC-208, AC-256, AC-264, AC-265,
  *       TC-275–TC-280, TC-281
@@ -93,7 +93,7 @@ export type TrainingSessionItemInput = {
   quantity: string; // optional, e.g. "3 sets x 10 reps"
   notes: string;
   /**
-   * Stable upstream exercise UUID. Only this ID is persisted to Firestore.
+   * Stable upstream exercise UUID. Only this ID is persisted to plan storage.
    * Video/thumbnail URLs must never be stored — they expire after 48 hours.
    * Fetch fresh URLs on demand through the exercise proxy service.
    */

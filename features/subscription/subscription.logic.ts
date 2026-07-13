@@ -1,6 +1,6 @@
 /**
  * Subscription and entitlement logic — professional cap enforcement and AI paywall.
- * Pure functions, no Firebase/RevenueCat dependencies.
+ * Pure functions, no backend or entitlement SDK dependencies.
  * Refs: D-009–D-011, D-024, D-043, D-075, D-132
  * FR-126–FR-129, FR-156, FR-185, FR-215
  * BR-218–BR-221, BR-228, BR-247, BR-273
