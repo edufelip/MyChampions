@@ -56,6 +56,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.terms.offline_hint` | SC-221 | Link/open hint | You need internet access to open the legal link. | Você precisa de internet para abrir o link acima. | Necesitas internet para abrir el enlace legal. | |
 | `auth.terms.version` | SC-221 | Required version label | Required version: {version} | Versão obrigatória: {version} | Versión obligatoria: {version} | |
 | `auth.terms.error.link_unavailable` | SC-221 | Terms link error | Could not open the terms link right now. Try again. | Não foi possível abrir o link dos termos agora. Tente novamente. | No se pudo abrir el enlace de términos ahora. Inténtalo de nuevo. | |
+| `auth.terms.invalid_link` | SC-221 | Missing or unsafe legal URL | This link is unavailable because its address is missing or unsafe. | Este link está indisponível porque o endereço está ausente ou não é seguro. | Este enlace no está disponible porque falta la dirección o no es segura. | Web safe-link guard |
 | `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | Crea tu cuenta | |
 | `auth.field.name` | SC-218 | Name label | Name | Nome | Nombre | Shared auth field label |
 | `auth.field.email` | SC-218 | Email label | Email | E-mail | Correo electrónico | Shared create-account field label |
@@ -264,6 +265,10 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `custom_meal.image.file_too_large` | SC-214 | Upload error — file size | The image is too large. Please choose a smaller file. | A imagem é muito grande. Por favor, escolha um arquivo menor. | La imagen es demasiado grande. Por favor, elige un archivo más pequeño. | BL-007 |
 | `custom_meal.image.permission_denied` | SC-214 | Upload error — native permission | Camera or photo library access is required. Grant permission in your device settings and try again. | É necessário permitir o acesso à câmera ou à biblioteca de fotos. Conceda a permissão nas configurações do dispositivo e tente novamente. | Se necesita acceso a la cámara o a la fototeca. Concede el permiso en los ajustes del dispositivo e inténtalo de nuevo. | BL-007 |
 | `custom_meal.image.unauthorized` | SC-214 | Upload error — auth | Upload failed. Please sign out and sign in again. | Falha no envio. Por favor, saia e entre novamente. | Error al subir. Por favor, cierra sesión y vuelve a iniciarla. | BL-007 |
+| `photo_picker.title` | SC-214/SC-215/SC-219 | Native photo-source dialog title | Upload image | Enviar imagem | Subir imagen | Shared by meal image upload and AI analysis |
+| `photo_picker.body` | SC-214/SC-215/SC-219 | Native photo-source dialog helper | Choose a photo source | Escolha a origem da foto | Elige el origen de la foto | Shared by meal image upload and AI analysis |
+| `photo_picker.take_photo` | SC-214/SC-215/SC-219 | Camera action | Take photo | Tirar foto | Tomar foto | Native action sheet |
+| `photo_picker.choose_from_library` | SC-214/SC-215/SC-219 | Photo-library action | Choose from library | Escolher da biblioteca | Elegir de la biblioteca | Native action sheet |
 | `custom_meal.builder.cta_save` | SC-214 | Save action | Save meal | Salvar refeição | Guardar comida | |
 | `custom_meal.builder.validation.grams_positive` | SC-214 | Validation message | Total grams must be greater than zero. | O total em gramas deve ser maior que zero. | El total en gramos debe ser mayor que cero. | |
 | `custom_meal.library.empty.title` | SC-215 | Empty-state title | No custom meals yet | Ainda não há refeições personalizadas | Aún no hay comidas personalizadas | |
@@ -316,7 +321,12 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.subscription.current_status` | SC-212 | Status section title | Current status | Status atual | Estado actual | |
 | `pro.subscription.status.unknown` | SC-212 | Settled unknown state | Status unavailable | Status indisponível | Estado no disponible | Never used as loading copy |
 | `pro.subscription.status.checking` | SC-212 | Loading state | Checking your subscription status… | Verificando o status da sua assinatura… | Comprobando el estado de tu suscripción… | Progress only |
+| `pro.subscription.status.active_body` | SC-212 | Active entitlement explanation | Your professional subscription tools are available. | As ferramentas da sua assinatura profissional estão disponíveis. | Las herramientas de tu suscripción profesional están disponibles. | |
+| `pro.subscription.status.inactive_body` | SC-212 | Inactive entitlement explanation | Free-tier limits apply until the subscription is reactivated. | Os limites do plano gratuito se aplicam até a assinatura ser reativada. | Los límites del plan gratuito se aplican hasta que se reactive la suscripción. | |
+| `pro.subscription.status.unavailable_body` | SC-212 | Unverified entitlement explanation | We could not verify your entitlement. Restricted actions remain locked. | Não foi possível verificar seu direito de acesso. As ações restritas continuam bloqueadas. | No pudimos verificar tu derecho de acceso. Las acciones restringidas siguen bloqueadas. | Fail-closed state |
 | `pro.subscription.capacity_title` | SC-212 | Capacity section title | Student capacity | Capacidade de alunos | Capacidad de alumnos | |
+| `pro.subscription.free_tier` | SC-212/SC-213 | Free-tier capacity explanation | Free for up to 10 active students. | Grátis para até 10 alunos ativos. | Gratis para hasta 10 alumnos activos. | Active-student limit |
+| `pro.subscription.locked_unknown` | SC-212 | Unknown-entitlement lock explanation | Student-plan actions are temporarily locked until subscription status can be verified. | As ações de plano de aluno estão temporariamente bloqueadas até o status da assinatura ser verificado. | Las acciones de plan de alumno están bloqueadas temporalmente hasta verificar el estado de la suscripción. | Fail-closed state |
 | `pro.subscription.pre_lapse.title` | SC-212 | Pre-lapse warning title | Your subscription is close to expiring | Sua assinatura está perto de expirar | Tu suscripción está a punto de expirar | BL-009 |
 | `pro.subscription.pre_lapse.body` | SC-212 | Pre-lapse warning helper | Renew now to avoid student management locks. | Renove agora para evitar bloqueios no gerenciamento de alunos. | Renueva ahora para evitar bloqueos en la gestión de alumnos. | BL-009 |
 | `pro.subscription.pre_lapse.cta_renew` | SC-212 | Pre-lapse warning CTA | Renew subscription | Renovar assinatura | Renovar suscripción | BL-009 |
@@ -537,6 +547,8 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 |---|---|---|---|---|---|---|
 | `pro.subscription.handoff_note` | SC-212 | Browser billing explanation | Browser purchases are unavailable. Continue on mobile to manage your subscription. | Compras no navegador não estão disponíveis. Continue no celular para gerenciar sua assinatura. | Las compras en el navegador no están disponibles. Continúa en el móvil para gestionar tu suscripción. | Web only |
 | `pro.subscription.cta_mobile_handoff` | SC-212/219 | Mobile handoff CTA | Continue on mobile | Continuar no celular | Continuar en el móvil | Replaces purchase/restore on web |
+| `pro.subscription.unavailable_note` | SC-212 | Browser billing unavailable explanation | Subscription changes are not available in this browser right now. You can still refresh your status. | Alterações na assinatura não estão disponíveis neste navegador agora. Você ainda pode atualizar o status. | Los cambios de suscripción no están disponibles ahora en este navegador. Aún puedes actualizar el estado. | Web only; refresh remains available |
+| `pro.subscription.cta_unavailable` | SC-212 | Browser billing unavailable label | Subscription unavailable | Assinatura indisponível | Suscripción no disponible | Capability label; no dead purchase action |
 
 ## Shell — Responsive Tab Navigator
 

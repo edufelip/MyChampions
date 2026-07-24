@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { resolveE2ESubscriptionOverride } from '@/features/auth/e2e-auth-session';
 import type { RoleIntent } from '@/features/auth/role-selection.logic';
 import { getActiveProfessionalStudentCount } from '@/features/professional/professional-source';
 import type { EntitlementStatus } from './subscription.logic';
@@ -35,6 +36,19 @@ export type UseSubscriptionOptions = {
   loadProfessionalActiveStudentCount?: boolean;
 };
 
+function getE2ESubscriptionOverride() {
+  return resolveE2ESubscriptionOverride({
+    activeStudentCount: process.env.EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT,
+    aiEntitlementStatus: process.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS,
+    appVariant: process.env.APP_VARIANT,
+    enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    entitlementStatus: process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS,
+    professionalEntitlementRenewalRisk:
+      process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+  });
+}
+
 export function useSubscription(
   authUid: string | null,
   optionsOrActiveStudentCount: number | UseSubscriptionOptions = 0
@@ -46,22 +60,27 @@ export function useSubscription(
     typeof optionsOrActiveStudentCount === 'number'
       ? optionsOrActiveStudentCount
       : optionsOrActiveStudentCount.activeStudentCount;
+  const e2eSubscriptionOverride = getE2ESubscriptionOverride();
+  const resolvedActiveStudentCountOverride =
+    activeStudentCountOverride ?? e2eSubscriptionOverride?.activeStudentCount;
   const loadProfessionalActiveStudentCount =
     typeof optionsOrActiveStudentCount === 'object' &&
     optionsOrActiveStudentCount.loadProfessionalActiveStudentCount === true;
   const shouldLoadProfessionalActiveStudentCount =
     Boolean(activeAuthUid) &&
     loadProfessionalActiveStudentCount &&
-    typeof activeStudentCountOverride !== 'number';
+    typeof resolvedActiveStudentCountOverride !== 'number';
   const [entitlementStatus, setEntitlementStatus] = useState<EntitlementStatus>('unknown');
   const [aiEntitlementStatus, setAiEntitlementStatus] = useState<EntitlementStatus>('unknown');
   const [professionalEntitlementExpiresAt, setProfessionalEntitlementExpiresAt] =
     useState<string | null>(null);
   const [professionalEntitlementRenewalRisk, setProfessionalEntitlementRenewalRisk] =
     useState(false);
-  const [activeStudentCount, setActiveStudentCount] = useState(activeStudentCountOverride ?? 0);
+  const [activeStudentCount, setActiveStudentCount] = useState(
+    resolvedActiveStudentCountOverride ?? 0
+  );
   const [isActiveStudentCountKnown, setIsActiveStudentCountKnown] = useState(
-    typeof activeStudentCountOverride === 'number'
+    typeof resolvedActiveStudentCountOverride === 'number'
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<SubscriptionErrorReason | null>(null);
@@ -74,7 +93,7 @@ export function useSubscription(
       setAiEntitlementStatus('unknown');
       setProfessionalEntitlementExpiresAt(null);
       setProfessionalEntitlementRenewalRisk(false);
-      setIsActiveStudentCountKnown(typeof activeStudentCountOverride === 'number');
+      setIsActiveStudentCountKnown(typeof resolvedActiveStudentCountOverride === 'number');
       setIsLoading(false);
       setError(null);
       setLastSyncedAtIso(null);
@@ -90,8 +109,8 @@ export function useSubscription(
         setAiEntitlementStatus('unknown');
         setProfessionalEntitlementExpiresAt(null);
         setProfessionalEntitlementRenewalRisk(false);
-        if (typeof activeStudentCountOverride === 'number') {
-          setActiveStudentCount(activeStudentCountOverride);
+        if (typeof resolvedActiveStudentCountOverride === 'number') {
+          setActiveStudentCount(resolvedActiveStudentCountOverride);
           setIsActiveStudentCountKnown(true);
         } else if (!shouldLoadProfessionalActiveStudentCount) {
           setActiveStudentCount(0);
@@ -104,8 +123,8 @@ export function useSubscription(
       setAiEntitlementStatus(snapshot.aiEntitlementStatus);
       setProfessionalEntitlementExpiresAt(snapshot.professionalEntitlementExpiresAt);
       setProfessionalEntitlementRenewalRisk(snapshot.professionalEntitlementRenewalRisk);
-      if (typeof activeStudentCountOverride === 'number') {
-        setActiveStudentCount(activeStudentCountOverride);
+      if (typeof resolvedActiveStudentCountOverride === 'number') {
+        setActiveStudentCount(resolvedActiveStudentCountOverride);
         setIsActiveStudentCountKnown(true);
       } else if (!shouldLoadProfessionalActiveStudentCount) {
         setActiveStudentCount(snapshot.activeStudentCount ?? 0);
@@ -118,8 +137,8 @@ export function useSubscription(
       setAiEntitlementStatus('unknown');
       setProfessionalEntitlementExpiresAt(null);
       setProfessionalEntitlementRenewalRisk(false);
-      if (typeof activeStudentCountOverride === 'number') {
-        setActiveStudentCount(activeStudentCountOverride);
+      if (typeof resolvedActiveStudentCountOverride === 'number') {
+        setActiveStudentCount(resolvedActiveStudentCountOverride);
         setIsActiveStudentCountKnown(true);
       } else if (!shouldLoadProfessionalActiveStudentCount) {
         setActiveStudentCount(0);
@@ -134,7 +153,7 @@ export function useSubscription(
     }
   }, [
     activeAuthUid,
-    activeStudentCountOverride,
+    resolvedActiveStudentCountOverride,
     shouldLoadProfessionalActiveStudentCount,
   ]);
 
@@ -143,8 +162,8 @@ export function useSubscription(
   }, [refresh]);
 
   useEffect(() => {
-    if (typeof activeStudentCountOverride === 'number') {
-      setActiveStudentCount(activeStudentCountOverride);
+    if (typeof resolvedActiveStudentCountOverride === 'number') {
+      setActiveStudentCount(resolvedActiveStudentCountOverride);
       setIsActiveStudentCountKnown(true);
       return;
     }
@@ -177,7 +196,11 @@ export function useSubscription(
     return () => {
       isCancelled = true;
     };
-  }, [activeAuthUid, activeStudentCountOverride, loadProfessionalActiveStudentCount]);
+  }, [
+    activeAuthUid,
+    loadProfessionalActiveStudentCount,
+    resolvedActiveStudentCountOverride,
+  ]);
 
   const openHandoff = useCallback(async () => {
     try {

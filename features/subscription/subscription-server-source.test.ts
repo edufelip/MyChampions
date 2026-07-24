@@ -505,9 +505,13 @@ test('web useSubscription discards stale refresh completions after an account sw
   );
 });
 
-test('web useSubscription loads professional student usage without overriding explicit counts', () => {
+test('web useSubscription resolves professional counts as explicit, dev E2E, then live', () => {
   const hookSource = readFileSync(join(__dirname, 'use-subscription.web.ts'), 'utf8');
 
+  assert.match(
+    hookSource,
+    /import \{ resolveE2ESubscriptionOverride \} from '@\/features\/auth\/e2e-auth-session'/
+  );
   assert.match(
     hookSource,
     /import \{ getActiveProfessionalStudentCount \} from '@\/features\/professional\/professional-source'/
@@ -516,12 +520,24 @@ test('web useSubscription loads professional student usage without overriding ex
     hookSource,
     /optionsOrActiveStudentCount\.loadProfessionalActiveStudentCount === true/
   );
+  assert.match(
+    hookSource,
+    /const e2eSubscriptionOverride = getE2ESubscriptionOverride\(\)/
+  );
+  assert.match(
+    hookSource,
+    /activeStudentCountOverride \?\? e2eSubscriptionOverride\?\.activeStudentCount/
+  );
+  assert.match(
+    hookSource,
+    /isDev: typeof __DEV__ !== 'undefined' && __DEV__/
+  );
 
   const countEffectStart = hookSource.indexOf(
-    "useEffect(() => {\n    if (typeof activeStudentCountOverride === 'number')"
+    "useEffect(() => {\n    if (typeof resolvedActiveStudentCountOverride === 'number')"
   );
   const countEffectEnd = hookSource.indexOf(
-    '\n  }, [activeAuthUid, activeStudentCountOverride, loadProfessionalActiveStudentCount]);',
+    '\n  }, [\n    activeAuthUid,\n    loadProfessionalActiveStudentCount,\n    resolvedActiveStudentCountOverride,\n  ]);',
     countEffectStart
   );
   assert.notEqual(countEffectStart, -1);
@@ -529,9 +545,9 @@ test('web useSubscription loads professional student usage without overriding ex
   const countEffect = hookSource.slice(countEffectStart, countEffectEnd);
 
   assert.ok(
-    countEffect.indexOf("typeof activeStudentCountOverride === 'number'") <
+    countEffect.indexOf("typeof resolvedActiveStudentCountOverride === 'number'") <
       countEffect.indexOf('getActiveProfessionalStudentCount()'),
-    'an explicit active-student count must win before the live loader runs'
+    'an explicit or validated dev-E2E count must win before the live loader runs'
   );
   assert.match(countEffect, /if \(!activeAuthUid \|\| !loadProfessionalActiveStudentCount\)/);
   assert.match(countEffect, /setIsActiveStudentCountKnown\(false\)/);
