@@ -40,6 +40,9 @@ Define non-functional architecture constraints and technology options for the mo
   - max image dimension: `1600 px` on longest side.
 - Localization baseline requires all user-facing strings to ship in `en-US`, `pt-BR`, and `es-ES`.
 - E2E automation baseline uses Detox with Jest runner for mobile smoke coverage.
+  The default Android Detox command builds the secret-free `productionDebug`
+  profile; signed `productionRelease` Detox evidence is an explicit command
+  that retains the CI version-code and private-keystore requirements.
 
 ## Constraints From Platform Docs
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.

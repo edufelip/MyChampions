@@ -51,16 +51,26 @@ describe('Google web social auth source', () => {
     );
   });
 
-  it('distinguishes a dismissed prompt from one the browser could not display', () => {
+  it('settles dismissed prompts as cancellation and skipped or not-displayed prompts as configuration', () => {
     const dismissed = resolveGooglePromptError({
       isDismissedMoment: () => true,
       isNotDisplayed: () => false,
+      isSkippedMoment: () => false,
     });
     assert.equal((dismissed as { code?: string }).code, 'ERR_REQUEST_CANCELED');
+
+    const skipped = resolveGooglePromptError({
+      isDismissedMoment: () => false,
+      isNotDisplayed: () => false,
+      isSkippedMoment: () => true,
+    });
+    assert.equal(skipped instanceof SocialAuthSourceError, true);
+    assert.equal((skipped as SocialAuthSourceError).code, 'configuration');
 
     const notDisplayed = resolveGooglePromptError({
       isDismissedMoment: () => false,
       isNotDisplayed: () => true,
+      isSkippedMoment: () => false,
     });
     assert.equal(notDisplayed instanceof SocialAuthSourceError, true);
     assert.equal((notDisplayed as SocialAuthSourceError).code, 'configuration');
@@ -69,6 +79,7 @@ describe('Google web social auth source', () => {
       resolveGooglePromptError({
         isDismissedMoment: () => false,
         isNotDisplayed: () => false,
+        isSkippedMoment: () => false,
       }),
       null
     );

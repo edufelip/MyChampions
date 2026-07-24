@@ -9,6 +9,7 @@ type GoogleCredentialResponse = { credential?: string };
 type GooglePromptMomentNotification = {
   isDismissedMoment: () => boolean;
   isNotDisplayed: () => boolean;
+  isSkippedMoment: () => boolean;
 };
 
 export type GoogleWebSocialAuthSourceDeps = {
@@ -98,10 +99,10 @@ export function resolveGooglePromptError(
   if (notification.isDismissedMoment()) {
     return new GoogleWebAuthCanceledError();
   }
-  if (notification.isNotDisplayed()) {
+  if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
     return new SocialAuthSourceError(
       'configuration',
-      'Google sign-in could not be displayed in this browser.'
+      'Google sign-in could not provide a credential in this browser.'
     );
   }
   return null;

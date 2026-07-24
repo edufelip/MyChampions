@@ -33,6 +33,7 @@ Platform behavior is selected by Metro's `.web` module resolution rather than sc
 - Sign-out calls `POST /auth/session/sign-out`, revokes the current refresh session, and clears both legacy access and browser refresh cookies.
 - Native requests omit cookie mode and retain response-body refresh tokens for backward compatibility.
 - The server accepts credentialed browser requests only from exact `WEB_ALLOWED_ORIGINS` values. Development defaults are `http://localhost:8081` and `http://127.0.0.1:8081`; production defaults to no allowed browser origins.
+- Google Identity Services dismissed prompt moments settle the active browser sign-in attempt as cancellation. Skipped or undisplayable moments fail closed through the configured fallback/error path because they may indicate that Google could not issue a credential. No terminal prompt moment may leave the sign-in request pending.
 
 ## Responsive and accessibility behavior
 

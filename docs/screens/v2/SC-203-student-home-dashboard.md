@@ -67,6 +67,7 @@
   - Stats cards now derive from live hook state (`usePlans`, `useWaterTracking`) instead of fixed placeholders.
   - Training and nutrition cards now render helper/tag copy conditionally based on actual active-plan availability.
   - Source-specific error cards preserve successful plan, hydration, and relationship content and retry only the failed source.
+  - The full-dashboard loading gate applies only until every source completes its first attempt. Later source-specific retries may return that source to `loading`, but keep independently successful dashboard sections visible.
   - Compact phone layouts use a two-column plan summary plus full-width hydration summary instead of squeezing three cards into one row.
   - Tablet and desktop layouts place the training and nutrition action cards in one equal-width row so image-led actions remain scannable without stretching excessively.
   - A no-professional empty-state card is rendered when no active professional connection exists.

@@ -39,12 +39,14 @@
     "test:e2e:ios:debug:subscription": "bash scripts/run-detox-subscription-scenario.sh",
     "test:e2e:ios:debug:revenuecat-live": "bash scripts/run-detox-revenuecat-test-store.sh",
     "test:e2e:ios:debug:revenuecat-student-matrix": "bash scripts/run-detox-revenuecat-student-matrix.sh",
-    "test:e2e:build:android": "detox build -c android.emu.release",
-    "test:e2e:android": "detox test -c android.emu.release",
+    "test:e2e:build:android": "detox build -c android.emu.prodDebug",
+    "test:e2e:android": "detox test -c android.emu.prodDebug",
     "test:e2e:build:android:debug": "detox build -c android.emu.debug",
     "test:e2e:android:debug": "detox test -c android.emu.debug",
     "test:e2e:build:android:prod-debug": "detox build -c android.emu.prodDebug",
     "test:e2e:android:prod-debug": "detox test -c android.emu.prodDebug",
+    "test:e2e:build:android:release": "detox build -c android.emu.release",
+    "test:e2e:android:release": "detox test -c android.emu.release",
     "test:e2e": "yarn test:e2e:ios"
   },
   "dependencies": {

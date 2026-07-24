@@ -125,6 +125,7 @@
 | TC-327 | Nutrition Tracking Read-Only Review | Active nutritionist opens Student Profile | Review tracking logs | Logs are visible read-only and remain Student-owned |
 | TC-328 | CustomMeal Snapshot Boundary | Professional assigns nutrition plan using Student-owned CustomMeal without import/share | Attempt to add meal | Action is blocked unless shared/imported; plan/log uses snapshot |
 | TC-329 | Student Assigned Nutrition Tracking | Student has an active nutritionist connection and a published assigned NutritionPlan with meals and hydration goal | Open student nutrition, log an assigned meal, log water intake, and submit a plan-change request | Macro targets and assigned meal cards render, logged meal state appears, water total updates against the effective assigned goal, and the change request is submitted with assigned plan context |
+| TC-330 | Google Browser Prompt Terminal Moments | Google Identity Services invokes its browser prompt callback | Emit dismissed, skipped, and not-displayed prompt moments without returning a credential | Dismissed rejects as cancellation; skipped and not-displayed reject as configuration so the configured fallback/error path can run; no terminal moment leaves the sign-in request pending |
 
 ## Notes
 - API contract tests are required once food/calorie provider is selected.

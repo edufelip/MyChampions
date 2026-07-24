@@ -36,7 +36,7 @@
 
 - Google Identity Services and Sign in with Apple JS capture browser provider tokens and keep the server token-exchange contract.
 - Email and social account creation selects cookie session mode on web. Refresh credentials remain HttpOnly and are never persisted in browser storage.
-- Missing provider identifiers, cancellation, and network failures keep the localized provider-neutral error behavior.
+- Missing provider identifiers, cancellation, and network failures keep the localized provider-neutral error behavior. Dismissed Google Identity Services prompt moments settle as cancellation, while skipped or undisplayable moments fail closed through the configured fallback/error path.
 - At 390x844 and similarly compact phone viewports, the complete idle form—including provider actions and the return-to-sign-in action—fits inside the initial viewport while remaining scrollable for text scaling and validation messages.
 - Tablet and desktop forms are centered at a readable 560px maximum width.
 
@@ -89,6 +89,6 @@
 - Use case: UC-002.0, UC-002.10, UC-002.11, UC-002.18, UC-002.21
 - Acceptance criteria: AC-227, AC-228, AC-229, AC-230, AC-231, AC-232, AC-239, AC-244, AC-246, AC-250, AC-251, AC-252, AC-266, AC-512
 - Business rules: BR-232, BR-233, BR-234, BR-235, BR-244, BR-251, BR-264, BR-265, BR-266, BR-275, BR-297
-- Test cases: TC-228, TC-229, TC-230, TC-231, TC-232, TC-233, TC-234, TC-242, TC-247, TC-252, TC-254, TC-255, TC-288, TC-512
+- Test cases: TC-228, TC-229, TC-230, TC-231, TC-232, TC-233, TC-234, TC-242, TC-247, TC-252, TC-254, TC-255, TC-288, TC-330, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md

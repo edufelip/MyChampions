@@ -6,6 +6,7 @@
  * profile header, weekly stats strip, highlighted workout card, and next-meal card.
  * Keeps BL-008 offline/write-lock and D-081 hydration-goal ownership behavior.
  */
+import { useEffect, useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
@@ -66,6 +67,12 @@ export default function StudentHomeScreen() {
   const { state: connectionsState, reload: reloadConnections } = useConnections(Boolean(currentUser));
   const { state: waterState, reload: reloadWater } = useWaterTracking(Boolean(currentUser), todayKey());
   const { state: plansState, reload: reloadPlans } = usePlans(Boolean(currentUser));
+  const [initialLoadHistory, setInitialLoadHistory] = useState({
+    accountId: currentUser?.uid ?? null,
+    hasCompleted: false,
+  });
+  const accountId = currentUser?.uid ?? null;
+  const accountChanged = initialLoadHistory.accountId !== accountId;
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
     connectionsState.kind === 'ready' ? connectionsState.lastSyncedAtIso : null,
     waterState.kind === 'ready' ? waterState.lastSyncedAtIso : null,
@@ -77,10 +84,29 @@ export default function StudentHomeScreen() {
   });
 
   const displayState = resolveStudentHomeDisplayState({
-    connections: connectionsState.kind,
-    plans: plansState.kind,
-    water: waterState.kind,
+    connections: accountChanged ? 'idle' : connectionsState.kind,
+    plans: accountChanged ? 'idle' : plansState.kind,
+    water: accountChanged ? 'idle' : waterState.kind,
+    hasCompletedInitialLoad: accountChanged ? false : initialLoadHistory.hasCompleted,
   });
+
+  useEffect(() => {
+    setInitialLoadHistory((current) => {
+      if (current.accountId !== accountId) {
+        return {
+          accountId,
+          hasCompleted: false,
+        };
+      }
+      if (!current.hasCompleted && displayState.hasCompletedInitialLoad) {
+        return {
+          ...current,
+          hasCompleted: true,
+        };
+      }
+      return current;
+    });
+  }, [accountId, displayState.hasCompletedInitialLoad]);
 
   const hasPendingConnection =
     connectionsState.kind === 'ready' &&

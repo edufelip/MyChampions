@@ -64,12 +64,32 @@ test('Android Detox targets the committed dev and production flavors on an avail
   assert.match(detoxConfig, /app:assembleProductionDebug app:assembleProductionDebugAndroidTest/);
   assert.match(detoxConfig, /'android\.emu\.prodDebug'/);
   assert.equal(
+    packageJson.scripts?.['test:e2e:build:android'],
+    'detox build -c android.emu.prodDebug',
+    'default Android Detox builds must use the secret-free productionDebug variant'
+  );
+  assert.equal(
+    packageJson.scripts?.['test:e2e:android'],
+    'detox test -c android.emu.prodDebug',
+    'default Android Detox tests must use the matching productionDebug variant'
+  );
+  assert.equal(
     packageJson.scripts?.['test:e2e:build:android:prod-debug'],
     'detox build -c android.emu.prodDebug'
   );
   assert.equal(
     packageJson.scripts?.['test:e2e:android:prod-debug'],
     'detox test -c android.emu.prodDebug'
+  );
+  assert.equal(
+    packageJson.scripts?.['test:e2e:build:android:release'],
+    'detox build -c android.emu.release',
+    'signed productionRelease builds must remain an explicit opt-in command'
+  );
+  assert.equal(
+    packageJson.scripts?.['test:e2e:android:release'],
+    'detox test -c android.emu.release',
+    'signed productionRelease tests must remain an explicit opt-in command'
   );
   assert.match(detoxConfig, /DETOX_ANDROID_AVD \|\| 'Pixel_10'/);
   assert.doesNotMatch(detoxConfig, /outputs\/apk\/debug\/app-debug\.apk/);
