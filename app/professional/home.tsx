@@ -667,7 +667,7 @@ function TaskCard({
       ]}
       testID={testID}>
       <View style={[styles.taskIcon, { backgroundColor: theme.color.accentPrimary }]}>
-        <MaterialIcons name={iconName} size={20} color="#FFFFFF" />
+        <MaterialIcons name={iconName} size={20} color={theme.color.onAccent} />
       </View>
       <View style={styles.taskCopy}>
         <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{title}</Text>
