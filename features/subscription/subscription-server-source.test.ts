@@ -505,6 +505,54 @@ test('web useSubscription discards stale refresh completions after an account sw
   );
 });
 
+test('web useSubscription loads professional student usage without overriding explicit counts', () => {
+  const hookSource = readFileSync(join(__dirname, 'use-subscription.web.ts'), 'utf8');
+
+  assert.match(
+    hookSource,
+    /import \{ getActiveProfessionalStudentCount \} from '@\/features\/professional\/professional-source'/
+  );
+  assert.match(
+    hookSource,
+    /optionsOrActiveStudentCount\.loadProfessionalActiveStudentCount === true/
+  );
+
+  const countEffectStart = hookSource.indexOf(
+    "useEffect(() => {\n    if (typeof activeStudentCountOverride === 'number')"
+  );
+  const countEffectEnd = hookSource.indexOf(
+    '\n  }, [activeAuthUid, activeStudentCountOverride, loadProfessionalActiveStudentCount]);',
+    countEffectStart
+  );
+  assert.notEqual(countEffectStart, -1);
+  assert.notEqual(countEffectEnd, -1);
+  const countEffect = hookSource.slice(countEffectStart, countEffectEnd);
+
+  assert.ok(
+    countEffect.indexOf("typeof activeStudentCountOverride === 'number'") <
+      countEffect.indexOf('getActiveProfessionalStudentCount()'),
+    'an explicit active-student count must win before the live loader runs'
+  );
+  assert.match(countEffect, /if \(!activeAuthUid \|\| !loadProfessionalActiveStudentCount\)/);
+  assert.match(countEffect, /setIsActiveStudentCountKnown\(false\)/);
+  assert.match(countEffect, /getActiveProfessionalStudentCount\(\)/);
+  assert.match(
+    countEffect,
+    /!isCancelled && currentAuthUidRef\.current === expectedAuthUid/
+  );
+  assert.match(countEffect, /setActiveStudentCount\(count\)/);
+  assert.match(countEffect, /setIsActiveStudentCountKnown\(true\)/);
+  assert.match(
+    countEffect,
+    /\.catch\(\(\) => \{[\s\S]*setActiveStudentCount\(0\);[\s\S]*setIsActiveStudentCountKnown\(false\)/
+  );
+
+  assert.match(
+    hookSource,
+    /else if \(!shouldLoadProfessionalActiveStudentCount\) \{\s*setActiveStudentCount\(snapshot\.activeStudentCount \?\? 0\)/
+  );
+});
+
 test('useSubscription binds native RevenueCat calls to the current self-managed auth UID', () => {
   const hookSource = readFileSync(join(__dirname, 'use-subscription.ts'), 'utf8');
 

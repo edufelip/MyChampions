@@ -38,6 +38,7 @@
 - Active student count is computed by unique active student accounts (one student counts once even with dual specialty assignment).
 - Entitlement state must align with RevenueCat + store billing.
 - Browser entitlement state comes only from the authoritative server snapshot; RevenueCat browser preview APIs are not initialized.
+- Professional browser screens that opt into live capacity loading read the unique active-student count through `getActiveProfessionalStudentCount`, matching native behavior. An explicit count override takes precedence; a failed or account-stale read leaves capacity unknown instead of fabricating zero or reusing a snapshot count.
 - Unknown entitlement fails closed for cap-sensitive writes above the free tier.
 - After native RevenueCat customer info is read, the app best-effort syncs the latest professional and AI entitlement snapshot to the MyChampions server at `POST /subscription/entitlements/snapshot`.
 - The snapshot carries normalized professional entitlement expiration and renewal-risk metadata. Production privileges are refreshed from the server-side canonical RevenueCat subscriber after a signed webhook, not trusted from a client write.
@@ -65,6 +66,7 @@
 - The primary CTA opens the configured mobile destination in a separate browser context. No browser purchase or restore API is called.
 - Missing handoff configuration renders an informational unavailable card and omits purchase/restore controls instead of presenting a disabled primary action.
 - The status refresh action remains available and re-reads the server snapshot.
+- The entitlement snapshot remains authoritative for browser billing state. Opted-in professional capacity uses the live professional source independently so stale snapshot usage cannot overwrite the current count.
 
 ## Data Contract
 - Inputs:
@@ -89,6 +91,6 @@
 - Use case: UC-002.6, UC-002.15, UC-002.18
 - Acceptance criteria: AC-219, AC-220, AC-221, AC-301, AC-302, AC-303, AC-304, AC-309, AC-311, AC-312, AC-512
 - Business rules: BR-218, BR-219, BR-220, BR-221, BR-228, BR-247, BR-273, BR-275
-- Test cases: TC-220, TC-221, TC-222, TC-301, TC-302, TC-303, TC-308, TC-310, TC-311, TC-512
+- Test cases: TC-220, TC-221, TC-222, TC-301, TC-302, TC-303, TC-308, TC-310, TC-311, TC-434, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md

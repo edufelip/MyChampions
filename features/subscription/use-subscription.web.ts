@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { RoleIntent } from '@/features/auth/role-selection.logic';
+import { getActiveProfessionalStudentCount } from '@/features/professional/professional-source';
 import type { EntitlementStatus } from './subscription.logic';
 import { hasAiAnalysisAccess } from './subscription.logic';
 import { getSubscriptionEntitlementSnapshot } from './subscription-server-source';
@@ -45,6 +46,13 @@ export function useSubscription(
     typeof optionsOrActiveStudentCount === 'number'
       ? optionsOrActiveStudentCount
       : optionsOrActiveStudentCount.activeStudentCount;
+  const loadProfessionalActiveStudentCount =
+    typeof optionsOrActiveStudentCount === 'object' &&
+    optionsOrActiveStudentCount.loadProfessionalActiveStudentCount === true;
+  const shouldLoadProfessionalActiveStudentCount =
+    Boolean(activeAuthUid) &&
+    loadProfessionalActiveStudentCount &&
+    typeof activeStudentCountOverride !== 'number';
   const [entitlementStatus, setEntitlementStatus] = useState<EntitlementStatus>('unknown');
   const [aiEntitlementStatus, setAiEntitlementStatus] = useState<EntitlementStatus>('unknown');
   const [professionalEntitlementExpiresAt, setProfessionalEntitlementExpiresAt] =
@@ -82,8 +90,13 @@ export function useSubscription(
         setAiEntitlementStatus('unknown');
         setProfessionalEntitlementExpiresAt(null);
         setProfessionalEntitlementRenewalRisk(false);
-        setActiveStudentCount(activeStudentCountOverride ?? 0);
-        setIsActiveStudentCountKnown(typeof activeStudentCountOverride === 'number');
+        if (typeof activeStudentCountOverride === 'number') {
+          setActiveStudentCount(activeStudentCountOverride);
+          setIsActiveStudentCountKnown(true);
+        } else if (!shouldLoadProfessionalActiveStudentCount) {
+          setActiveStudentCount(0);
+          setIsActiveStudentCountKnown(false);
+        }
         setLastSyncedAtIso(null);
         return;
       }
@@ -91,10 +104,13 @@ export function useSubscription(
       setAiEntitlementStatus(snapshot.aiEntitlementStatus);
       setProfessionalEntitlementExpiresAt(snapshot.professionalEntitlementExpiresAt);
       setProfessionalEntitlementRenewalRisk(snapshot.professionalEntitlementRenewalRisk);
-      setActiveStudentCount(snapshot.activeStudentCount ?? activeStudentCountOverride ?? 0);
-      setIsActiveStudentCountKnown(
-        snapshot.activeStudentCount !== null || typeof activeStudentCountOverride === 'number'
-      );
+      if (typeof activeStudentCountOverride === 'number') {
+        setActiveStudentCount(activeStudentCountOverride);
+        setIsActiveStudentCountKnown(true);
+      } else if (!shouldLoadProfessionalActiveStudentCount) {
+        setActiveStudentCount(snapshot.activeStudentCount ?? 0);
+        setIsActiveStudentCountKnown(snapshot.activeStudentCount !== null);
+      }
       setLastSyncedAtIso(snapshot.observedAt || snapshot.updatedAt);
     } catch {
       if (currentAuthUidRef.current !== expectedAuthUid) return;
@@ -102,7 +118,13 @@ export function useSubscription(
       setAiEntitlementStatus('unknown');
       setProfessionalEntitlementExpiresAt(null);
       setProfessionalEntitlementRenewalRisk(false);
-      setIsActiveStudentCountKnown(typeof activeStudentCountOverride === 'number');
+      if (typeof activeStudentCountOverride === 'number') {
+        setActiveStudentCount(activeStudentCountOverride);
+        setIsActiveStudentCountKnown(true);
+      } else if (!shouldLoadProfessionalActiveStudentCount) {
+        setActiveStudentCount(0);
+        setIsActiveStudentCountKnown(false);
+      }
       setError('network');
       setLastSyncedAtIso(null);
     } finally {
@@ -110,11 +132,52 @@ export function useSubscription(
         setIsLoading(false);
       }
     }
-  }, [activeAuthUid, activeStudentCountOverride]);
+  }, [
+    activeAuthUid,
+    activeStudentCountOverride,
+    shouldLoadProfessionalActiveStudentCount,
+  ]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (typeof activeStudentCountOverride === 'number') {
+      setActiveStudentCount(activeStudentCountOverride);
+      setIsActiveStudentCountKnown(true);
+      return;
+    }
+
+    if (!activeAuthUid || !loadProfessionalActiveStudentCount) {
+      setActiveStudentCount(0);
+      setIsActiveStudentCountKnown(false);
+      return;
+    }
+
+    const expectedAuthUid = activeAuthUid;
+    let isCancelled = false;
+    setActiveStudentCount(0);
+    setIsActiveStudentCountKnown(false);
+    void getActiveProfessionalStudentCount()
+      .then((count) => {
+        if (!isCancelled && currentAuthUidRef.current === expectedAuthUid) {
+          setActiveStudentCount(count);
+          setIsActiveStudentCountKnown(true);
+          setLastSyncedAtIso(new Date().toISOString());
+        }
+      })
+      .catch(() => {
+        if (!isCancelled && currentAuthUidRef.current === expectedAuthUid) {
+          setActiveStudentCount(0);
+          setIsActiveStudentCountKnown(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeAuthUid, activeStudentCountOverride, loadProfessionalActiveStudentCount]);
 
   const openHandoff = useCallback(async () => {
     try {
