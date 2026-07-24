@@ -9,6 +9,7 @@
 
 import type { AuthUser } from '../auth/auth-user';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 import {
   parseMacroEstimateFromResponse,
   type MacroEstimate,
@@ -150,7 +151,7 @@ export async function analyzeMealPhoto(
 ): Promise<MacroEstimate> {
   const getServerBaseUrl = deps?.getServerBaseUrl ?? defaultGetServerBaseUrl;
   const getCurrentAccessToken = deps?.getCurrentAccessToken ?? defaultGetCurrentAccessToken;
-  const fetchFn = deps?.fetchFn ?? fetch;
+  const fetchFn = deps?.fetchFn ?? defaultAppFetch;
 
   const serverBaseUrl = getServerBaseUrl()?.replace(/\/+$/, '');
   if (!serverBaseUrl) {

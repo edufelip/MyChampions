@@ -13,6 +13,7 @@ import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { type FoodSearchResult } from '../plans/plan-builder.logic';
 import { isDevLoggingEnabled, logNetworkDebug } from '../debug/logging';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ export type FoodSearchSourceDeps = {
 const defaultDeps: FoodSearchSourceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
   getCurrentAccessToken: () => getValidServerAccessToken(),
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
   getLocale: () => getEffectiveLocale(),
 };
 
@@ -266,10 +267,11 @@ export async function searchFoodsFromSource(
     logNetworkDebug('searchFoodsFromSource', 'Server auth token:', serverAccessToken);
   }
 
+  const fetchFn = deps.fetchFn;
   try {
     logNetworkDebug('searchFoodsFromSource', 'Fetching from service:', endpoint);
     logNetworkDebug('searchFoodsFromSource', 'Request payload:', requestPayload);
-    response = await deps.fetchFn(endpoint, {
+    response = await fetchFn(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

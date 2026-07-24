@@ -32,7 +32,7 @@ Platform behavior is selected by Metro's `.web` module resolution rather than sc
 - `share-adapter`: native Share/Linking versus Web Share, clipboard fallback, and safe external tabs.
 - `haptics-adapter`: native feedback versus browser no-op.
 - `subscription-runtime`: native purchase capability versus browser mobile handoff/unavailable capability.
-- Server-backed plan-builder and subscription requests retain the browser fetch global receiver, including Firefox, while keeping injected fetch dependencies available as standalone functions for deterministic tests.
+- Every shared server-backed source uses the late-bound `defaultAppFetch` adapter (or an equivalent explicit receiver wrapper) so browser requests retain the global fetch receiver, including Firefox. Injected fetch dependencies remain standalone functions for deterministic tests. A production-source contract scan rejects raw `fetchFn: fetch`, `?? fetch`, and dependency-object method invocation in the migrated connection, workout, water, custom-meal, image-upload, meal-analysis, food-search, professional, student-tracking, and exercise boundaries.
 
 ## Browser authentication
 

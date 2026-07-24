@@ -17,6 +17,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { AuthUser } from '@/features/auth/auth-user';
 import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
 import { getValidServerAccessToken } from '@/features/auth/server-auth-source';
+import { defaultAppFetch } from '@/features/platform/default-app-fetch';
 import { photoPickerAdapter } from '@/features/platform/photo-picker-adapter';
 import { useTranslation } from '@/localization';
 import {
@@ -62,7 +63,7 @@ async function productionUploadBlob(
   return uploadMealImageToServer(uploadTarget, blob, onProgress, {
     getServerBaseUrl: resolveServerBaseUrl,
     getCurrentAccessToken: () => getValidServerAccessToken(),
-    fetchFn: fetch,
+    fetchFn: defaultAppFetch,
   });
 }
 

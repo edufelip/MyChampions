@@ -4,6 +4,7 @@
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 import {
   normalizeConnectionStatus,
   normalizeCanceledReason,
@@ -101,7 +102,7 @@ export type ConnectionSourceDeps = {
 const defaultConnectionSourceDeps: ConnectionSourceDeps = {
   getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
 };
 
 function resolveServerBaseUrl(): string | undefined {
@@ -313,7 +314,7 @@ async function getMyConnectionsFromServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
@@ -364,7 +365,7 @@ async function submitInviteCodeToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/invite-submissions`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/invite-submissions`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${accessToken}`,
@@ -425,7 +426,7 @@ async function confirmPendingConnectionToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/${connectionId}/confirm`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/${connectionId}/confirm`, {
       method: 'POST',
       headers: { authorization: `Bearer ${accessToken}` },
     });
@@ -455,7 +456,7 @@ async function endConnectionToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/${connectionId}/end`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/${connectionId}/end`, {
       method: 'POST',
       headers: { authorization: `Bearer ${accessToken}` },
     });

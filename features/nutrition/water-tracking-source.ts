@@ -4,6 +4,7 @@
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 import type { WaterIntakeLog } from './water-tracking.logic';
 
 type WaterSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
@@ -27,7 +28,7 @@ export type WaterTrackingSourceDeps = {
 const defaultDeps: WaterTrackingSourceDeps = {
   getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
 };
 const e2eWaterLogs = new Map<string, WaterIntakeLog>();
 
@@ -167,7 +168,7 @@ async function getWaterLogsFromServer(deps: WaterTrackingSourceDeps): Promise<Wa
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/nutrition/water-logs`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/nutrition/water-logs`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
@@ -199,7 +200,7 @@ async function getWaterGoalContextFromServer(deps: WaterTrackingSourceDeps): Pro
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/nutrition/water-goal-context`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/nutrition/water-goal-context`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
@@ -235,7 +236,7 @@ async function logWaterIntakeToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/nutrition/water-logs`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/nutrition/water-logs`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${accessToken}`,

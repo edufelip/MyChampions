@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  clearServerAuthSession,
+  persistServerAuthSessionFromPayload,
+} from '../auth/server-auth-source';
+import {
   addProfessionalSpecialty,
   buildInviteCodeLookupPath,
   buildInviteCodePath,
@@ -226,7 +230,8 @@ test('getActiveProfessionalStudentCount counts active students from the MyChampi
   const count = await getActiveProfessionalStudentCount({
     getCurrentAccessToken: async () => 'server-token',
     getServerBaseUrl: () => 'http://server.test',
-    fetchFn: async (input, init) => {
+    fetchFn: async function (this: unknown, input, init) {
+      assert.equal(this, undefined);
       captured = new Request(input, init);
       return new Response(JSON.stringify({
         students: [
@@ -267,6 +272,78 @@ test('getActiveProfessionalStudentCount counts active students from the MyChampi
   assert.equal((captured as Request).url, 'http://server.test/professional/students');
   assert.equal((captured as Request).method, 'GET');
   assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
+});
+
+test('default professional roster fetch retains the browser global receiver', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalServerUrl = process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL;
+  let requestUrl: string | null = null;
+  const authUid = 'firefox-professional-user';
+
+  try {
+    process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL = 'http://server.test';
+    const receiverAwareFetch = async function (
+      this: typeof globalThis,
+      input: string | URL | Request
+    ): Promise<Response> {
+      assert.equal(this, globalThis);
+      requestUrl = String(input);
+      return new Response(JSON.stringify({
+        students: [
+          {
+            studentAuthUid: 'student-a',
+            displayName: 'Ada Active',
+            specialty: 'nutritionist',
+            assignmentStatus: 'active',
+            nutritionStatus: 'active',
+            trainingStatus: 'none',
+          },
+          {
+            studentAuthUid: 'student-b',
+            displayName: 'Ben Pending',
+            specialty: 'fitness_coach',
+            assignmentStatus: 'pending',
+            nutritionStatus: 'none',
+            trainingStatus: 'pending',
+          },
+        ],
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    };
+    globalThis.fetch = receiverAwareFetch as typeof globalThis.fetch;
+
+    await persistServerAuthSessionFromPayload({
+      accessToken: 'server-token',
+      refreshToken: 'refresh-token',
+      tokenType: 'Bearer',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      authProviderIds: ['email_password'],
+      profile: {
+        authUid,
+        displayName: 'Firefox Professional User',
+        emailNormalized: 'firefox-professional@example.test',
+        lockedRole: 'professional',
+        acceptedTermsVersion: null,
+        createdAt: '2026-07-24T19:00:00.000Z',
+        updatedAt: '2026-07-24T19:00:00.000Z',
+      },
+    });
+
+    const count = await getActiveProfessionalStudentCount();
+
+    assert.equal(requestUrl, 'http://server.test/professional/students');
+    assert.equal(count, 1);
+  } finally {
+    clearServerAuthSession();
+    globalThis.fetch = originalFetch;
+    if (originalServerUrl === undefined) {
+      delete process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL;
+    } else {
+      process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL = originalServerUrl;
+    }
+  }
 });
 
 test('getProfessionalSpecialties reads from the MyChampions server when a local bearer token is available', async () => {

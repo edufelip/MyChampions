@@ -18,6 +18,7 @@
  *       BR-261, BR-271, TC-287
  */
 
+import { defaultAppFetch } from '../platform/default-app-fetch';
 import { normalizeImageUploadError, type ImageUploadErrorReason } from './image-upload.logic';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
@@ -120,7 +121,7 @@ export async function uploadMealImageToServer(
   const requestUrl = `${baseUrl}/nutrition/custom-meal-images/${encodeURIComponent(
     mealId
   )}?filename=${encodeURIComponent(filename)}`;
-  const fetchFn = deps.fetchFn ?? fetch;
+  const fetchFn = deps.fetchFn ?? defaultAppFetch;
 
   onProgress(0);
 

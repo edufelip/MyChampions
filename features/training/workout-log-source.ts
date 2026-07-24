@@ -4,6 +4,7 @@
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 export type WorkoutLog = {
   id: string;
@@ -22,7 +23,7 @@ type WorkoutLogSourceDeps = {
 const defaultDeps: WorkoutLogSourceDeps = {
   getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
 };
 const e2eWorkoutLogs = new Map<string, WorkoutLog>();
 
@@ -123,7 +124,7 @@ async function logWorkoutSessionToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/training/workout-logs`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/training/workout-logs`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${accessToken}`,
@@ -167,7 +168,7 @@ async function getWorkoutLogsFromServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/training/workout-logs?from=${encodeURIComponent(fromIso)}`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/training/workout-logs?from=${encodeURIComponent(fromIso)}`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {

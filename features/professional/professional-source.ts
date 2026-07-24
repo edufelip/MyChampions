@@ -21,6 +21,7 @@ import {
   type ConnectionStatus,
 } from '../connections/connection.logic';
 import { endConnection } from '../connections/connection-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ function nowIso(): string {
 const defaultDeps: ProfessionalSourceDeps = {
   getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
   generateInviteCode: () => Math.random().toString(36).slice(2, 8).toUpperCase(),
 };
 
@@ -271,6 +272,15 @@ function normalizeProfessionalSourceError(error: unknown): ProfessionalSourceErr
 function requireServerResult<T>(result: T | null, operation: string): T {
   if (result !== null) return result;
   throw new ProfessionalSourceError('configuration', `${operation} requires local server auth.`);
+}
+
+function requestProfessionalSource(
+  deps: Pick<ProfessionalSourceDeps, 'fetchFn'>,
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  const fetchFn = deps.fetchFn;
+  return fetchFn(input, init);
 }
 
 function buildSpecialtyId(professionalUid: string, specialty: Specialty): string {
@@ -524,7 +534,7 @@ async function requestInviteCodeFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}${path}`, {
+    response = await requestProfessionalSource(deps, `${baseUrl}${path}`, {
       method: action === 'rotate' ? 'POST' : 'GET',
       headers: { authorization: `Bearer ${accessToken}` },
     });
@@ -549,7 +559,7 @@ async function requestProfessionalSpecialtiesFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties`, {
+    response = await requestProfessionalSource(deps, `${baseUrl}/professional/specialties`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
@@ -577,9 +587,13 @@ async function getSpecialtyBlockerCountsFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties/${specialty}/blockers`, {
-      headers: { authorization: `Bearer ${accessToken}` },
-    });
+    response = await requestProfessionalSource(
+      deps,
+      `${baseUrl}/professional/specialties/${specialty}/blockers`,
+      {
+        headers: { authorization: `Bearer ${accessToken}` },
+      }
+    );
   } catch {
     throw new ProfessionalSourceError('network', 'Network request to professional specialty blockers server failed.');
   }
@@ -609,7 +623,7 @@ async function addProfessionalSpecialtyToServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties`, {
+    response = await requestProfessionalSource(deps, `${baseUrl}/professional/specialties`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${accessToken}`,
@@ -643,10 +657,14 @@ async function removeProfessionalSpecialtyFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties/${encodeURIComponent(specialtyId)}`, {
-      method: 'DELETE',
-      headers: { authorization: `Bearer ${accessToken}` },
-    });
+    response = await requestProfessionalSource(
+      deps,
+      `${baseUrl}/professional/specialties/${encodeURIComponent(specialtyId)}`,
+      {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${accessToken}` },
+      }
+    );
   } catch {
     throw new ProfessionalSourceError('network', 'Network request to remove professional specialty failed.');
   }
@@ -668,14 +686,18 @@ async function upsertProfessionalCredentialToServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties/${encodeURIComponent(specialtyId)}/credential`, {
-      method: 'PUT',
-      headers: {
-        authorization: `Bearer ${accessToken}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
+    response = await requestProfessionalSource(
+      deps,
+      `${baseUrl}/professional/specialties/${encodeURIComponent(specialtyId)}/credential`,
+      {
+        method: 'PUT',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(input),
+      }
+    );
   } catch {
     throw new ProfessionalSourceError('network', 'Network request to upsert professional credential failed.');
   }
@@ -803,7 +825,7 @@ async function requestProfessionalStudentRosterFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/students`, {
+    response = await requestProfessionalSource(deps, `${baseUrl}/professional/students`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
@@ -831,7 +853,8 @@ async function requestProfessionalStudentAssignmentSnapshotFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(
+    response = await requestProfessionalSource(
+      deps,
       `${baseUrl}/professional/students/${encodeURIComponent(studentAuthUid)}/assignment-snapshot`,
       {
         headers: { authorization: `Bearer ${accessToken}` },
