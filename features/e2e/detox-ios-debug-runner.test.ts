@@ -16,6 +16,11 @@ const revenueCatLiveRunnerPath = join(
   'scripts',
   'run-detox-revenuecat-test-store.sh',
 );
+const revenueCatStudentMatrixRunnerPath = join(
+  repositoryRoot,
+  'scripts',
+  'run-detox-revenuecat-student-matrix.sh',
+);
 
 async function writeExecutable(path: string, contents: string) {
   await writeFile(path, contents, { mode: 0o755 });
@@ -24,9 +29,11 @@ async function writeExecutable(path: string, contents: string) {
 async function runRunner({
   clearCache = false,
   metroAlreadyRunning,
+  requireFreshMetro = false,
 }: {
   clearCache?: boolean;
   metroAlreadyRunning: boolean;
+  requireFreshMetro?: boolean;
 }) {
   const tempDirectory = await mkdtemp(join(tmpdir(), 'mychampions-detox-runner-'));
   const binDirectory = join(tempDirectory, 'bin');
@@ -90,6 +97,7 @@ printf '%s\\n' 'packager-status:running'
         ...process.env,
         DETOX_METRO_STARTED: metroStartedPath,
         DETOX_METRO_CLEAR_CACHE: String(clearCache),
+        DETOX_REQUIRE_FRESH_METRO: String(requireFreshMetro),
         DETOX_RUNNER_LOG: logPath,
         DETOX_TEST_METRO_ALREADY_RUNNING: String(metroAlreadyRunning),
         PATH: `${binDirectory}:${process.env.PATH}`,
@@ -98,6 +106,57 @@ printf '%s\\n' 'packager-status:running'
     });
 
     return await readFile(logPath, 'utf8');
+  } finally {
+    await rm(tempDirectory, { force: true, recursive: true });
+  }
+}
+
+async function runRevenueCatStudentMatrixRunner(explicitCustomerIds?: string) {
+  const tempDirectory = await mkdtemp(join(tmpdir(), 'mychampions-revenuecat-student-matrix-'));
+  const mobileRoot = join(tempDirectory, 'mychampions');
+  const binDirectory = join(tempDirectory, 'bin');
+  const runnerScriptsDirectory = join(mobileRoot, 'scripts');
+  const runnerCopyPath = join(
+    runnerScriptsDirectory,
+    'run-detox-revenuecat-student-matrix.sh',
+  );
+  const logPath = join(tempDirectory, 'runner.log');
+
+  await mkdir(binDirectory);
+  await mkdir(runnerScriptsDirectory, { recursive: true });
+  await writeFile(
+    runnerCopyPath,
+    await readFile(revenueCatStudentMatrixRunnerPath),
+    { mode: 0o755 },
+  );
+  await writeExecutable(
+    join(binDirectory, 'bash'),
+    `#!/bin/bash
+set -euo pipefail
+printf 'scenario=%s|uid=%s|alternate=%s|skipBuild=%s|args=%s\\n' "\${REVENUECAT_LIVE_SCENARIO:-}" "\${REVENUECAT_TEST_APP_USER_ID:-}" "\${REVENUECAT_TEST_ALT_APP_USER_ID:-}" "\${DETOX_SKIP_BUILD:-}" "$*" >> "$DETOX_RUNNER_LOG"
+`,
+  );
+
+  try {
+    const { stdout } = await execFile('/bin/bash', [runnerCopyPath], {
+      cwd: mobileRoot,
+      env: {
+        ...process.env,
+        DETOX_RUNNER_LOG: logPath,
+        DETOX_SKIP_BUILD: 'true',
+        PATH: `${binDirectory}:${process.env.PATH}`,
+        REVENUECAT_LIVE_E2E: 'true',
+        ...(explicitCustomerIds === undefined
+          ? {}
+          : { REVENUECAT_STUDENT_MATRIX_CUSTOMER_IDS: explicitCustomerIds }),
+      },
+      timeout: 10_000,
+    });
+
+    return {
+      log: await readFile(logPath, 'utf8'),
+      stdout,
+    };
   } finally {
     await rm(tempDirectory, { force: true, recursive: true });
   }
@@ -231,6 +290,13 @@ test('reuses an existing Metro process without stopping it', async () => {
   assert.doesNotMatch(log, /^metro-stopped$/m);
 });
 
+test('fails closed instead of reusing Metro when the caller requires fresh ownership', async () => {
+  await assert.rejects(
+    runRunner({ metroAlreadyRunning: true, requireFreshMetro: true }),
+    /requires a freshly owned Metro process/,
+  );
+});
+
 test('clears Metro transforms when a scenario changes compile-time Expo environment values', async () => {
   const log = await runRunner({ clearCache: true, metroAlreadyRunning: false });
 
@@ -281,6 +347,23 @@ test('rejects non-Test-Store RevenueCat SDK keys before build or provider access
   );
 });
 
+test('rejects a live RevenueCat alternate identity that matches the primary customer', async () => {
+  await assert.rejects(
+    execFile('/bin/bash', [revenueCatLiveRunnerPath], {
+      cwd: repositoryRoot,
+      env: {
+        ...process.env,
+        EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE: 'test_public-sdk-key',
+        REVENUECAT_LIVE_E2E: 'true',
+        REVENUECAT_TEST_ALT_APP_USER_ID: 'same-live-customer',
+        REVENUECAT_TEST_APP_USER_ID: 'same-live-customer',
+      },
+      timeout: 10_000,
+    }),
+    /must differ from REVENUECAT_TEST_APP_USER_ID/,
+  );
+});
+
 test('keeps live RevenueCat runs dev-only, identity-isolated, and free of entitlement fixtures', async () => {
   const runner = await readFile(revenueCatLiveRunnerPath, 'utf8');
   const liveConfig = await readFile(
@@ -295,6 +378,7 @@ test('keeps live RevenueCat runs dev-only, identity-isolated, and free of entitl
   assert.match(runner, /export APP_VARIANT=dev/);
   assert.match(runner, /export EXPO_PUBLIC_REVENUECAT_TEST_STORE_ENABLED=true/);
   assert.match(runner, /export EXPO_PUBLIC_E2E_AUTH_UID="\$run_uid"/);
+  assert.match(runner, /export DETOX_REQUIRE_FRESH_METRO=true/);
   assert.match(runner, /unset EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS/);
   assert.match(runner, /unset EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS/);
   assert.match(runner, /unset EXPO_PUBLIC_E2E_PRO_ACTION_OUTCOME/);
@@ -307,6 +391,72 @@ test('keeps live RevenueCat runs dev-only, identity-isolated, and free of entitl
   assert.match(liveSpec, /Test failed purchase/);
   assert.match(liveSpec, /does not leak professional privileges across account switches/);
   assert.match(liveSpec, /does not let the student privilege unlock professional capabilities/);
+});
+
+test('derives a fresh isolated customer set for each default live student matrix run', async () => {
+  const { log, stdout } = await runRevenueCatStudentMatrixRunner();
+  const secondRun = await runRevenueCatStudentMatrixRunner();
+  const runLines = log.trim().split('\n');
+  const customerIds = runLines.map((line) => line.match(/\|uid=([^|]+)\|/)?.[1] ?? '');
+  const alternateIds = runLines.map(
+    (line) => line.match(/\|alternate=([^|]+)\|/)?.[1] ?? '',
+  );
+  const secondRunCustomerIds = secondRun.log
+    .trim()
+    .split('\n')
+    .map((line) => line.match(/\|uid=([^|]+)\|/)?.[1] ?? '');
+
+  assert.equal(runLines.length, 9);
+  assert.equal(new Set(customerIds).size, 9);
+  assert.equal(new Set([...customerIds, ...alternateIds]).size, 18);
+  assert.equal(new Set([...customerIds, ...secondRunCustomerIds]).size, 18);
+  assert.equal(
+    customerIds.every((customerId) =>
+      /^rc-student-v1-\d{14}-\d+-\d+-(dismiss|cancel|fail|duplicate|monthly|annual|restore|switch|pro-route)$/.test(
+        customerId,
+      ),
+    ),
+    true,
+  );
+  assert.equal(customerIds.some((customerId) => customerId === 'rc-student-v1-monthly'), false);
+  assert.doesNotMatch(stdout, /REVENUECAT_STUDENT_MATRIX_CUSTOMER_IDS/);
+});
+
+test('accepts an explicit strictly validated isolated customer set for the live student matrix', async () => {
+  const customerIds = Array.from(
+    { length: 9 },
+    (_, index) => `review-isolated-20260724-${index + 1}`,
+  );
+  const { log } = await runRevenueCatStudentMatrixRunner(customerIds.join(','));
+
+  for (const customerId of customerIds) {
+    assert.match(log, new RegExp(`\\|uid=${customerId}\\|`));
+  }
+});
+
+test('rejects duplicate or malformed explicit student matrix customer IDs', async () => {
+  await assert.rejects(
+    runRevenueCatStudentMatrixRunner('isolated-1,isolated-2'),
+    /must contain exactly 9 comma-separated customer IDs/,
+  );
+
+  const duplicateIds = Array.from(
+    { length: 9 },
+    (_, index) => `review-isolated-20260724-${Math.max(index, 1)}`,
+  );
+  await assert.rejects(
+    runRevenueCatStudentMatrixRunner(duplicateIds.join(',')),
+    /must contain distinct customer IDs/,
+  );
+
+  const malformedIds = Array.from(
+    { length: 9 },
+    (_, index) => (index === 4 ? 'invalid customer' : `review-isolated-20260724-${index + 1}`),
+  );
+  await assert.rejects(
+    runRevenueCatStudentMatrixRunner(malformedIds.join(',')),
+    /must contain 1-88 safe RevenueCat ID characters/,
+  );
 });
 
 test('executes the live RevenueCat runner with a fixed isolated identity and no fixture privileges', async () => {

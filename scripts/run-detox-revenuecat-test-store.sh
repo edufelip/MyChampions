@@ -33,6 +33,10 @@ if [[ ${#alternate_uid} -gt 88 || ! "$alternate_uid" =~ ^[A-Za-z0-9][A-Za-z0-9._
   echo "REVENUECAT_TEST_ALT_APP_USER_ID must be 1-88 safe RevenueCat ID characters." >&2
   exit 2
 fi
+if [[ "$alternate_uid" == "$run_uid" ]]; then
+  echo "REVENUECAT_TEST_ALT_APP_USER_ID must differ from REVENUECAT_TEST_APP_USER_ID." >&2
+  exit 2
+fi
 
 cd "$project_root"
 
@@ -48,6 +52,7 @@ export EXPO_PUBLIC_E2E_AUTH_UID="$run_uid"
 export EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID="$alternate_uid"
 export EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE=basic
 export DETOX_METRO_CLEAR_CACHE=true
+export DETOX_REQUIRE_FRESH_METRO=true
 
 # A live run must resolve privileges from RevenueCat, never the deterministic
 # subscription scenarios used by the regular Detox matrix.
