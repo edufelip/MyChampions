@@ -1,11 +1,16 @@
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { resolveFlowAtlasArtifactRoot } from './flow-atlas-artifacts.mjs';
 import { flowAtlasManifest, flowAtlasPlatforms } from './flow-atlas-manifest.mjs';
 
-const artifactRoot = path.resolve(
-  process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/complete-flow-atlas-verified'
-);
+if (!process.env.WEB_E2E_ARTIFACT_ROOT) {
+  throw new Error(
+    'WEB_E2E_ARTIFACT_ROOT is required; run yarn test:e2e:web:flow-atlas to verify a fresh capture'
+  );
+}
+
+const artifactRoot = resolveFlowAtlasArtifactRoot();
 const screenshotRoot = path.join(artifactRoot, 'screenshots');
 const failures = [];
 const inventory = [];

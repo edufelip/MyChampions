@@ -13,7 +13,7 @@ These are responsive web captures, not iOS/Android simulator screenshots. Native
 The ignored local artifact hierarchy is:
 
 ```text
-.artifacts/web-e2e/complete-flow-atlas-verified/
+.artifacts/web-e2e/complete-flow-atlas-verified/<run-id>/
 ├── screenshots/
 │   └── <flow>/
 │       ├── mobile/*.png
@@ -27,7 +27,11 @@ The ignored local artifact hierarchy is:
 └── results-app.json
 ```
 
-Run `yarn test:e2e:web:flow-atlas`. The verifier requires the exact manifest filename set; matching only the total image count is insufficient.
+Run `yarn test:e2e:web:flow-atlas`. Each invocation creates a unique run ID, clears only
+that guarded run directory before either Playwright capture starts, and prints the final
+artifact path. The command fails before capture if the directory cannot be prepared. The
+verifier requires the exact manifest filename set from that run; matching only the total
+image count is insufficient.
 
 ## Flow inventory
 
