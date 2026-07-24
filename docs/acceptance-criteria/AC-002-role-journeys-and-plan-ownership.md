@@ -85,6 +85,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-536`: TrackingLogs stay Student-owned and expose only plan/connection provenance needed for review.
 - `AC-537`: Assigned NutritionPlans use stable meal snapshots; Professionals cannot insert Student-owned CustomMeals unless the meal has been shared/imported first.
 - `AC-538`: Students with an active assigned NutritionPlan see calorie/macro targets, assigned meal cards, hydration tracking using the effective assigned goal, meal log completion state, and a plan-change request form tied to the assigned plan context.
+- `AC-539`: In a browser, confirming sign-out clears the local identity and exposes unauthenticated entry immediately, but a subsequent email/password or social login cannot send its session-establishing request until the credentialed sign-out barrier is released, including when sign-out fails; native bearer-session clearing remains immediate.
 - `AC-266`: After successful sign-in or create-account, users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted.
 - `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
 - `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.

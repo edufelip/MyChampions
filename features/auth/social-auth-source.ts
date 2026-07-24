@@ -1,4 +1,8 @@
-import { persistServerAuthSessionFromPayload, type ServerAuthStorage } from './server-auth-source';
+import {
+  persistServerAuthSessionFromPayload,
+  type ServerAuthStorage,
+  waitForPendingServerAuthSignOut,
+} from './server-auth-source';
 import { authSessionRuntime } from './auth-session-runtime';
 
 export type SocialAuthProvider = 'google' | 'apple';
@@ -99,6 +103,7 @@ export async function signInWithSocialProviderTokenFromSource(
   input: SocialAuthSourceInput,
   deps: SocialAuthSourceDeps = makeDeps()
 ): Promise<void> {
+  await waitForPendingServerAuthSignOut();
   let baseUrl: string | undefined;
   try {
     baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');

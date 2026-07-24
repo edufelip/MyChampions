@@ -130,6 +130,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 - Browser compression verifies the encoded JPEG byte size, then reduces quality and dimensions through a bounded retry sequence; output still above 1.5 MB fails with `file_too_large` before upload or analysis.
 - In SC-214: photo attachment after analysis is optional and independent of the analysis result (D-109).
 - Paywall dismissed without purchase: entitlement status is refreshed after `presentPaywall` resolves regardless of outcome; if user is still not entitled, paywall banner re-displays (D-132).
+- Paywall not presented: RevenueCat `NOT_PRESENTED` is surfaced as a recoverable configuration failure after the entitlement refresh for both student and professional role routes; the gate stays locked and retry remains available.
 - Professional route isolation: a professional can never initiate a new student-plan purchase from either AI gate; the professional offering is presented instead.
 - Missing role isolation: no RevenueCat paywall is presented until a locked account role is available.
 - Subscription loading (`isSubscriptionLoading === true` and `hasAiAccess === false`): `ActivityIndicator` shown instead of locked banner — avoids false paywall flash before entitlement is known.

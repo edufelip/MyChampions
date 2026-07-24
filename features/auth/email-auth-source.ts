@@ -1,5 +1,9 @@
 import { CreateAccountFailure, type CreateAccountRequest } from './create-account.logic';
-import { persistServerAuthSessionFromPayload, type ServerAuthStorage } from './server-auth-source';
+import {
+  persistServerAuthSessionFromPayload,
+  type ServerAuthStorage,
+  waitForPendingServerAuthSignOut,
+} from './server-auth-source';
 import { SignInFailure, type SignInRequest } from './sign-in.logic';
 import { authSessionRuntime } from './auth-session-runtime';
 
@@ -82,6 +86,7 @@ export async function signInWithEmailPasswordFromSource(
   input: SignInRequest,
   deps: EmailAuthSourceDeps = makeDeps()
 ): Promise<void> {
+  await waitForPendingServerAuthSignOut();
   let baseUrl: string | undefined;
   try {
     baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
@@ -123,6 +128,7 @@ export async function createAccountWithEmailPasswordFromSource(
   input: CreateAccountRequest,
   deps: EmailAuthSourceDeps = makeDeps()
 ): Promise<void> {
+  await waitForPendingServerAuthSignOut();
   let baseUrl: string | undefined;
   try {
     baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');

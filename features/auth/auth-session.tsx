@@ -54,7 +54,7 @@ type AuthSessionContextValue = {
   adoptCurrentServerSession: () => boolean;
   lockRole: (role: RoleIntent) => Promise<void>;
   acceptTerms: () => Promise<void>;
-  clearSession: () => void;
+  clearSession: () => Promise<void>;
 };
 
 const AuthSessionContext = createContext<AuthSessionContextValue | undefined>(undefined);
@@ -429,9 +429,9 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setLastProfileSyncedAtIso(new Date().toISOString());
         setRequiresTermsAcceptance(false);
       },
-      clearSession: () => {
+      clearSession: async () => {
         if (e2eSession) persistE2ELockedRole(null);
-        void clearPersistedServerAuthSession();
+        await clearPersistedServerAuthSession();
         setIsAuthenticated(false);
         setCurrentUser(null);
         setLockedRole(null);

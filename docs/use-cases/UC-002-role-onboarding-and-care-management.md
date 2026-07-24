@@ -311,6 +311,20 @@
   - If required terms version changes, user is re-routed to terms gate until new version is accepted.
 - Expected result: Onboarding and role journeys only continue after required terms version acceptance.
 
+## UC-002.23 Browser Sign-Out Before Account Switch
+- Primary actor: Authenticated browser user.
+- Trigger: User confirms sign-out and then attempts to authenticate another account.
+- Preconditions: Browser session uses an in-memory access token and rotating HttpOnly refresh cookie.
+- Main flow:
+  1. App starts one credentialed `POST /auth/session/sign-out` request.
+  2. App clears the current in-memory identity and exposes unauthenticated entry immediately while retaining the request as a sign-out barrier.
+  3. Any subsequent email/password, Google, Apple, or local-development authentication waits for that barrier before sending its session-establishing request.
+  4. Sign-out completion releases the barrier.
+  5. Replacement account response becomes the only active in-memory and cookie session.
+- Alternate flow:
+  - If sign-out fails because the server is unreachable, the already-cleared local state remains unauthenticated, the barrier settles, and a later login may retry without deadlock.
+- Expected result: A delayed sign-out response can never clear the replacement account's refresh cookie or leak the prior account state.
+
 ## UC-003.9 Capture Meal Photo For AI Macronutrient Estimation
 - Primary actor: Student (or professional).
 - Trigger: User opens the camera entry point within SC-214 (Custom Meal Builder) or SC-215 (Custom Meal Library Quick Log).

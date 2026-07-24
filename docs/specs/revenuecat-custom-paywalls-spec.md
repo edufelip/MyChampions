@@ -114,6 +114,7 @@ Long translations, dynamic prices, large accessibility text, and right-to-left b
 - Purchase success refreshes both known entitlement snapshots, while only the purchased offering's entitlement becomes active.
 - Cancellation is not an error and never grants access.
 - Store/provider/network failure preserves the user's ability to close, retry, or restore.
+- RevenueCat `NOT_PRESENTED` is an explicit recoverable configuration failure. The entitlement refresh still runs, then the presentation failure is restored so a missing or unavailable paywall cannot fail silently.
 - Restore runs through the platform receipt/token flow for App Store and Google Play evidence. RevenueCat Test Store retained-customer behavior is not accepted as platform restore proof.
 - Account changes remain serialized through the process-global RevenueCat coordinator. A result for user A cannot update user B.
 - Paywall presentation resolves the exact required offering before calling
@@ -160,6 +161,15 @@ Publish first only to an explicitly approved test audience. The evidence package
 | PW-10 | Targeting audit | Inspect test and production targeting after initial test publication | Only the approved test audience receives the custom paywalls; production targeting remains unchanged | RevenueCat targeting screenshots and reviewer sign-off |
 
 PW-03 and PW-04 validate app integration but cannot complete PW-06 or PW-07. PW-05 validates provider orchestration but cannot complete platform receipt/token restore.
+
+Every provider-backed live runner derives a fresh customer identity by default.
+The student matrix may instead receive
+`REVENUECAT_STUDENT_MATRIX_CUSTOMER_IDS` only as an explicit comma-separated
+set of exactly nine safe, distinct, caller-isolated identities in scenario
+order. Live runs always start and own a new Metro process with cleared
+transforms; an occupied Metro port is a hard failure because reusing a bundle
+compiled with stale customer or entitlement fixture variables would invalidate
+the evidence. SDK keys and other credentials must never be printed.
 
 Production targeting remains a separate approval after the test evidence is accepted.
 

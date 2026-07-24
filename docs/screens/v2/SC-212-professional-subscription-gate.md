@@ -53,7 +53,7 @@
 - Products: `professional_annual` (App Store annual), `professional_monthly` (App Store monthly), and `professional_test` (development App Store test product). Android and dedicated Test Store products remain a provider-release gate until configured.
 - Paywall: RevenueCat offering **`default_professional`** (`PRO_OFFERING_ID`) — presented via `openProPaywall()` → `Purchases.getOfferings().all['default_professional']` → `RevenueCatUI.presentPaywall({ offering })`.
 - Entitlement refresh happens automatically after the native paywall closes.
-- Paywall outcome is explicit: purchase/restore success refreshes access; user cancellation closes without a system-error banner; network and store/provider failures remain actionable after the follow-up refresh.
+- Paywall outcome is explicit: purchase/restore success refreshes access; user cancellation closes without a system-error banner; `NOT_PRESENTED` becomes a recoverable configuration failure; network and store/provider failures remain actionable after the follow-up refresh.
 - SDK key mapping is variant-aware (D-156):
   - `APP_VARIANT=dev` -> `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV` / `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV`
   - `APP_VARIANT=prod` -> `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_PROD` / `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_PROD`

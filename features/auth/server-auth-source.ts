@@ -8,7 +8,7 @@
  */
 
 import type { AuthProviderId } from './auth-user';
-import { authSessionRuntime } from './auth-session-runtime';
+import { authSessionRuntime, type AuthSessionRuntime } from './auth-session-runtime';
 import { serverAuthStorage } from './server-auth-storage';
 
 type ServerAuthProfile = {
@@ -53,6 +53,7 @@ export type ServerAuthStorage = {
 export type ServerAuthDeps = {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
   getServerBaseUrl: () => string | undefined;
+  runtime?: AuthSessionRuntime;
   storage?: ServerAuthStorage;
 };
 
@@ -70,6 +71,7 @@ let refreshInFlight: {
   revision: number;
   promise: Promise<RefreshServerSessionOutcome>;
 } | null = null;
+let browserSignOutInFlight: Promise<void> | null = null;
 const sessionListeners = new Set<(session: ServerAuthSession | null) => void>();
 
 type LocalServerSocialAuthProvider = 'google' | 'apple';
@@ -298,6 +300,12 @@ export function clearServerAuthSession(): void {
   setCurrentSession(null);
 }
 
+export async function waitForPendingServerAuthSignOut(): Promise<void> {
+  if (browserSignOutInFlight) {
+    await browserSignOutInFlight;
+  }
+}
+
 export function subscribeServerAuthSession(
   listener: (session: ServerAuthSession | null) => void
 ): () => void {
@@ -370,22 +378,45 @@ export async function getValidServerAccessToken(
 export async function clearPersistedServerAuthSession(
   deps: Partial<ServerAuthDeps> = makeDeps()
 ): Promise<void> {
-  refreshInFlight = null;
-  setCurrentSession(null);
-  if (!authSessionRuntime.persistsSession) {
+  const runtime = deps.runtime ?? authSessionRuntime;
+  if (!runtime.persistsSession) {
+    if (!browserSignOutInFlight) {
+      const signOut = (async () => {
+        try {
+          const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+          if (baseUrl && deps.fetch) {
+            await deps.fetch(`${baseUrl}/auth/session/sign-out`, {
+              method: 'POST',
+              credentials: runtime.credentials,
+            });
+          }
+        } catch {
+          // Local identity is already cleared; a failed request still releases the login barrier.
+        }
+      })();
+      browserSignOutInFlight = signOut;
+    }
+
+    // Clear the local identity synchronously so the UI can leave the account
+    // immediately. The browser request remains a barrier for every subsequent
+    // session-establishing auth source until its response can no longer race
+    // the replacement cookie.
+    refreshInFlight = null;
+    setCurrentSession(null);
+
+    const signOut = browserSignOutInFlight;
     try {
-      const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
-      if (baseUrl && deps.fetch) {
-        await deps.fetch(`${baseUrl}/auth/session/sign-out`, {
-          method: 'POST',
-          credentials: authSessionRuntime.credentials,
-        });
+      await signOut;
+    } finally {
+      if (browserSignOutInFlight === signOut) {
+        browserSignOutInFlight = null;
       }
-    } catch {
-      // The local session is cleared even when the server cannot be reached.
     }
     return;
   }
+
+  refreshInFlight = null;
+  setCurrentSession(null);
   try {
     await resolveStorage(deps).removeItem(SERVER_AUTH_SESSION_STORAGE_KEY);
   } catch {
@@ -517,6 +548,7 @@ export async function startLocalServerSession(
   input: { email: string; displayName: string; authProviderId?: AuthProviderId },
   deps: ServerAuthDeps = makeDeps()
 ): Promise<ServerAuthSession | null> {
+  await waitForPendingServerAuthSignOut();
   if (!isLocalServerAuthEnabled()) return null;
 
   const baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
@@ -593,6 +625,7 @@ export async function persistServerAuthSessionFromPayload(
   payload: unknown,
   deps: Pick<ServerAuthDeps, 'storage'> = makeDeps()
 ): Promise<ServerAuthSession | null> {
+  await waitForPendingServerAuthSignOut();
   const session = await sessionFromPayload(payload);
   if (!session) return null;
 

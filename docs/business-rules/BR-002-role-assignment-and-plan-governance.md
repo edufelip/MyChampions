@@ -131,6 +131,7 @@
 - `BR-339`: Production subscription authorization is derived from a server-side canonical RevenueCat customer reconciliation. A single webhook event must not directly overwrite an unrelated entitlement, and transfer events must reconcile every affected App User ID before acknowledgement.
 - `BR-340`: Professional pre-lapse warning is driven only by authoritative active-entitlement expiry plus explicit renewal, unsubscribe, or billing-issue risk. Student capacity is never treated as a billing-expiry signal.
 - `BR-341`: New `student_pro` purchases may be initiated only by locked student accounts. A professional who enters an AI gate is routed to `default_professional`, because `professional_pro` already grants AI access. Existing valid `student_pro` entitlements continue to unlock AI regardless of current role, but missing or malformed role state presents no paywall.
+- `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native bearer-session persistence keeps its existing immediate-clear behavior.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

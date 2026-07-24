@@ -180,6 +180,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-267`: The MyChampions server shall reconcile both known RevenueCat entitlements from the canonical subscriber record after every accepted webhook, including both affected customer IDs for transfer events, before persisting production privileges.
 - `FR-268`: The subscription snapshot contract shall carry optional professional-entitlement expiry and authoritative renewal-risk state through native customer info, server persistence, browser hydration, and professional warning UI.
 - `FR-269`: Native purchase, restore, and paywall outcomes shall distinguish success, user cancellation, network failure, and storefront/provider failure; cancellation shall preserve the current gate without being presented as a system error, while failures shall remain actionable after refresh.
+- `FR-270`: Browser sign-out shall clear local identity immediately while retaining the credentialed server request as a barrier that every subsequent email/password, Google, Apple, or local-development authentication request must await before establishing a replacement cookie session. Native bearer-session clearing remains local and does not wait on the browser barrier.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

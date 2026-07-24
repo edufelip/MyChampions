@@ -61,6 +61,5 @@ export async function requestPasswordResetFromSource(
 export async function signOutFromSource(
   deps: AccountAuthSourceDeps = makeDeps()
 ): Promise<void> {
-  void deps;
-  await clearPersistedServerAuthSession();
+  await clearPersistedServerAuthSession(deps);
 }

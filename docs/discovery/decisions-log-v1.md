@@ -410,7 +410,7 @@
   - The server holds the only secret `sk_*` key and fetches `GET /v1/subscribers/{app_user_id}` after each authenticated webhook. It maps `professional_pro` and `student_pro` independently so a partial product event cannot revoke the unrelated privilege.
   - `TRANSFER` deliveries reconcile every source and destination App User ID before acknowledgement. Configuration/provider failures return non-2xx so RevenueCat can retry instead of leaving an accepted but stale privilege snapshot.
   - Professional snapshot metadata now includes normalized entitlement expiry and an authoritative renewal-risk flag derived only while the entitlement is active and expiring with explicit non-renewal, unsubscribe, or billing-issue evidence.
-  - Native paywall presentation exposes success, cancellation, network, and store/provider outcomes. Cancellation is nonfatal; provider failures remain visible after refresh; deterministic Detox scenarios cover these outcomes separately from provider-backed sandbox evidence.
+  - Native paywall presentation exposes success, cancellation, not-presented, network, and store/provider outcomes. Cancellation is nonfatal; RevenueCat `NOT_PRESENTED` is a recoverable configuration failure; provider failures remain visible after refresh; deterministic Detox scenarios cover these outcomes separately from provider-backed sandbox evidence.
   - Mobile server-snapshot fallback validates every privilege/timestamp/count field, requires `source=revenuecat`, rejects a snapshot whose `authUid` differs from the expected current user, and rechecks the session after the network read. A malformed or stale cross-account snapshot cannot unlock paid behavior.
 - `D-189`: The 2026-07-23 live RevenueCat audit supersedes D-152's earlier unverified provider-inventory claims while retaining its offering identifiers and application code path.
   - Apps: production App Store and Play Store plus development App Store and Test Store exist. `com.edufelip.mychampions.dev` has no Play Store app configuration, and the dashboard reports that the current account cannot add app configurations.
@@ -421,7 +421,7 @@
   - Webhook: `whintgr487dee5eb5` is active at the production HTTPS endpoint, has a masked Authorization header, HMAC enabled, both production and sandbox environments, all apps, and all events. The dashboard currently shows no delivery history.
   - Sandbox access currently allows anybody. Keep it open only through the provider-backed verification run, then restrict it to explicit test App User IDs.
   - Live verification uses the Test Store through an explicit dev-only `test_*` key gate. Production ignores that gate and continues requiring `appl_*`/`goog_*` keys.
-  - Live Test Store runs use unique derived App User IDs and clear every deterministic entitlement override. The optional server-evidence phase reads the canonical subscriber API and the production snapshot for both professional and student customers; it does not write provider or database state or expose credentials.
+  - Live Test Store runs derive fresh, run-scoped App User IDs by default and clear every deterministic entitlement override. The student matrix accepts caller-supplied identities only as an explicit, exact nine-ID set whose members are safe, distinct, and isolated by the caller. Live provider runners require an exclusively owned, newly started Metro process with cleared transforms and fail closed when their configured Metro port is already occupied, so stale Expo environment values cannot select another customer or a fixture entitlement. The optional server-evidence phase reads the canonical subscriber API and the production snapshot for both professional and student customers; it does not write provider or database state or expose credentials.
   - Production deployment now fails before migration/cutover unless `REVENUECAT_SECRET_API_KEY` is a nonblank `sk_*` key and both webhook Authorization and HMAC values are present.
   - Test Store restore only returns retained current customer information; it is not evidence of a true App Store/Google Play restore. Platform-sandbox restore remains a separate release gate.
 
@@ -431,6 +431,8 @@
   - Missing or malformed role state fails closed without presenting a paywall.
   - A valid existing `student_pro` entitlement continues to grant AI access regardless of role; no entitlement is revoked or remapped by this routing change.
   - `test_student` and `Student Paywall v1 Test` are temporary provider artifacts for the approved Test Store evidence batch. Promotion to `default_student` is a separate provider approval.
+
+- `D-191`: Browser account switching is serialized behind a single in-flight cookie sign-out barrier. `clearSession()` is the only account-screen cleanup boundary and remains awaitable; it clears local identity immediately while the credentialed sign-out attempt continues. Every server-backed email/password, social, and local-development session-establishment path waits for that barrier. Native bearer sessions retain immediate local clearing and persisted-token removal.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

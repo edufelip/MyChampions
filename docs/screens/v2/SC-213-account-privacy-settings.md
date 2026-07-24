@@ -52,12 +52,12 @@ in-app support access.
 ### 5. Sign Out
 - Outlined warning-color button.
 - Inline confirmation panel before signing out.
-- Calls `signOutFromSource()` + `clearSession()`, which clears the local server auth session.
+- Calls the single awaitable `clearSession()` boundary. In browsers, local identity clears immediately, but every replacement authentication request waits for the credentialed server sign-out barrier to settle before sending. This avoids a detached sign-out response racing a replacement account cookie.
 
 ### 6. Danger Zone
 - Danger-tinted background group.
 - Body copy explaining data retention policy.
-- **Request account deletion** — destructive button; inline confirmation panel → `deleteAccountAndDataFromSource()` → `signOutFromSource()` → `clearSession()`; inline success/error feedback when the user remains on the screen; disabled when offline. The MyChampions server removes direct account-owned local rows and rewrites retained relationship/history rows to a `deleted_account_*` pseudonym so the deleted auth UID is not preserved.
+- **Request account deletion** — destructive button; inline confirmation panel → `deleteAccountAndDataFromSource()` → awaited `clearSession()`; inline success/error feedback when the user remains on the screen; disabled when offline. The MyChampions server removes direct account-owned local rows and rewrites retained relationship/history rows to a `deleted_account_*` pseudonym so the deleted auth UID is not preserved.
 
 ### 7. App Version Footer
 - Subtle centered text: "Version {app version}" from `Constants.expoConfig.version`.

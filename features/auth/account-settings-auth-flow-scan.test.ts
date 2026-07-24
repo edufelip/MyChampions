@@ -15,25 +15,27 @@ function functionBody(name: string): string {
   return match[1];
 }
 
-function assertSignOutBeforeClearSession(name: string) {
+function assertUsesSingleAwaitableClearSession(name: string) {
   const body = functionBody(name);
-  const signOutIndex = body.indexOf('signOutFromSource()');
-  const clearIndex = body.indexOf('clearSession()');
 
-  assert.notEqual(signOutIndex, -1, `${name} should call signOutFromSource()`);
-  assert.notEqual(clearIndex, -1, `${name} should call clearSession()`);
-  assert.ok(
-    signOutIndex < clearIndex,
-    `${name} should call signOutFromSource() before clearSession() so local server sessions are cleared through the source boundary first`
+  assert.match(
+    body,
+    /(?:void|await) clearSession\(\)/,
+    `${name} should use the awaitable auth-session cleanup boundary`
+  );
+  assert.equal(
+    body.includes('signOutFromSource()'),
+    false,
+    `${name} should not issue a second detached server sign-out request`
   );
 }
 
-test('account sign-out preserves the local server token until source sign-out runs', () => {
-  assertSignOutBeforeClearSession('submitSignOut');
+test('account sign-out uses one serialized session-clear operation', () => {
+  assertUsesSingleAwaitableClearSession('submitSignOut');
 });
 
-test('account deletion preserves the local server token until source sign-out runs', () => {
-  assertSignOutBeforeClearSession('submitDeletionRequest');
+test('account deletion awaits the same serialized session-clear operation', () => {
+  assertUsesSingleAwaitableClearSession('submitDeletionRequest');
 });
 
 test('account deletion does not expose provider reauthentication semantics', () => {

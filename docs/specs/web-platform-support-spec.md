@@ -39,7 +39,7 @@ Platform behavior is selected by Metro's `.web` module resolution rather than sc
 - Email/password, Google, and Apple sign-in requests send `sessionMode: cookie` on web.
 - The response exposes a short-lived access token for app memory and sets an HttpOnly rotating refresh cookie. Browser storage never receives refresh tokens or serialized auth sessions.
 - Reload restoration calls `POST /auth/session/refresh` with `credentials: include` and rotates the refresh cookie.
-- Sign-out calls `POST /auth/session/sign-out`, revokes the current refresh session, and clears both legacy access and browser refresh cookies.
+- Sign-out calls `POST /auth/session/sign-out`, revokes the current refresh session, and clears both legacy access and browser refresh cookies. Local identity clears immediately, while every server-backed email/password, Google, Apple, or local-development authentication path waits on the still-running single-flight sign-out barrier before it may establish a replacement cookie session. A failed request still releases the barrier so later authentication cannot deadlock.
 - Native requests omit cookie mode and retain response-body refresh tokens for backward compatibility.
 - The server accepts credentialed browser requests only from exact `WEB_ALLOWED_ORIGINS` values. Development defaults are `http://localhost:8081` and `http://127.0.0.1:8081`; production defaults to no allowed browser origins.
 - Google Identity Services dismissed prompt moments settle the active browser sign-in attempt as cancellation. Skipped or undisplayable moments fail closed through the configured fallback/error path because they may indicate that Google could not issue a credential. No terminal prompt moment may leave the sign-in request pending.
