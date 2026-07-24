@@ -4,6 +4,21 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 const root = process.cwd();
+const parentWorkspaceContractPaths = [
+  '../package.json',
+  '../server/package.json',
+  '../server/bun.lock',
+  '../server/README.md',
+  '../docs/superpowers/project-adapter.md',
+  '../docs/superpowers/plans/2026-06-21-mobile-backend-postgres-source-task-card.md',
+  '../docs/superpowers/plans/2026-06-22-feature-inventory-user-story-testing-task-card.md',
+  '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+  '../docs/superpowers/specs/2026-06-21-mobile-backend-postgres-catalog-source-design.md',
+];
+const parentWorkspaceContractsAvailable = parentWorkspaceContractPaths.every((relativePath) =>
+  existsSync(join(root, relativePath))
+);
+const parentWorkspaceTest = parentWorkspaceContractsAvailable ? test : test.skip;
 
 const collectSourceFiles = (relativeDir: string): string[] => {
   const absoluteDir = join(root, relativeDir);
@@ -287,7 +302,7 @@ test('app config no longer requires Firebase env or exposes extra.firebase', () 
   }
 });
 
-test('workspace package manifests and locks stay free of Firebase runtime packages', () => {
+parentWorkspaceTest('workspace package manifests and locks stay free of Firebase runtime packages', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -311,7 +326,7 @@ test('workspace package manifests and locks stay free of Firebase runtime packag
   assert.equal(taskCard.includes('A293 | Mobile package and lockfile Firebase dependency guard'), true);
 });
 
-test('current task card records the active runtime Firebase-free audit', () => {
+parentWorkspaceTest('current task card records the active runtime Firebase-free audit', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -365,7 +380,7 @@ test('active mobile backend sources stay routed through the MyChampions server',
   }
 });
 
-test('current task card records the active mobile backend boundary audit', () => {
+parentWorkspaceTest('current task card records the active mobile backend boundary audit', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -380,7 +395,7 @@ test('current task card records the active mobile backend boundary audit', () =>
   );
 });
 
-test('current task card records server-owned custom meal image upload path ownership', () => {
+parentWorkspaceTest('current task card records server-owned custom meal image upload path ownership', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -395,7 +410,7 @@ test('current task card records server-owned custom meal image upload path owner
   );
 });
 
-test('current task card records Google provider-token network normalization', () => {
+parentWorkspaceTest('current task card records Google provider-token network normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -410,7 +425,7 @@ test('current task card records Google provider-token network normalization', ()
   );
 });
 
-test('current task card records Apple provider-token network normalization', () => {
+parentWorkspaceTest('current task card records Apple provider-token network normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -425,7 +440,7 @@ test('current task card records Apple provider-token network normalization', () 
   );
 });
 
-test('current task card records Apple availability-check network normalization', () => {
+parentWorkspaceTest('current task card records Apple availability-check network normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -440,7 +455,7 @@ test('current task card records Apple availability-check network normalization',
   );
 });
 
-test('current task card records Google auth-request network normalization', () => {
+parentWorkspaceTest('current task card records Google auth-request network normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -455,7 +470,7 @@ test('current task card records Google auth-request network normalization', () =
   );
 });
 
-test('current task card records Google redirect URI configuration normalization', () => {
+parentWorkspaceTest('current task card records Google redirect URI configuration normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -470,7 +485,7 @@ test('current task card records Google redirect URI configuration normalization'
   );
 });
 
-test('current task card records Google client-id configuration normalization', () => {
+parentWorkspaceTest('current task card records Google client-id configuration normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -485,7 +500,7 @@ test('current task card records Google client-id configuration normalization', (
   );
 });
 
-test('current task card records social-auth server URL configuration normalization', () => {
+parentWorkspaceTest('current task card records social-auth server URL configuration normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -500,7 +515,7 @@ test('current task card records social-auth server URL configuration normalizati
   );
 });
 
-test('current task card records server-auth restore cleanup storage normalization', () => {
+parentWorkspaceTest('current task card records server-auth restore cleanup storage normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -515,7 +530,7 @@ test('current task card records server-auth restore cleanup storage normalizatio
   );
 });
 
-test('current task card records server-auth persisted refresh failure normalization', () => {
+parentWorkspaceTest('current task card records server-auth persisted refresh failure normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -530,7 +545,7 @@ test('current task card records server-auth persisted refresh failure normalizat
   );
 });
 
-test('current task card records server-auth refresh payload failure normalization', () => {
+parentWorkspaceTest('current task card records server-auth refresh payload failure normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -543,7 +558,7 @@ test('current task card records server-auth refresh payload failure normalizatio
   );
 });
 
-test('current task card records email-auth URL resolution failure normalization', () => {
+parentWorkspaceTest('current task card records email-auth URL resolution failure normalization', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -556,7 +571,7 @@ test('current task card records email-auth URL resolution failure normalization'
   );
 });
 
-test('current task card records the local Firebase-removal completion audit', () => {
+parentWorkspaceTest('current task card records the local Firebase-removal completion audit', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1162,7 +1177,7 @@ test('retired AI provider superpower plan no longer carries executable Firebase 
   }
 });
 
-test('parent evidence adapter no longer recommends retired Firebase mobile checks', () => {
+parentWorkspaceTest('parent evidence adapter no longer recommends retired Firebase mobile checks', () => {
   const adapter = readFileSync(join(root, '..', 'docs/superpowers/project-adapter.md'), 'utf8');
   const retiredEvidenceCommands = [
     'yarn test:rules',
@@ -1177,7 +1192,7 @@ test('parent evidence adapter no longer recommends retired Firebase mobile check
   }
 });
 
-test('parent catalog-source docs no longer preserve Firebase-authenticated mobile food search', () => {
+parentWorkspaceTest('parent catalog-source docs no longer preserve Firebase-authenticated mobile food search', () => {
   const parentCatalogDocs = [
     '../docs/superpowers/specs/2026-06-21-mobile-backend-postgres-catalog-source-design.md',
     '../docs/superpowers/plans/2026-06-21-mobile-backend-postgres-source-task-card.md',
@@ -1197,7 +1212,7 @@ test('parent catalog-source docs no longer preserve Firebase-authenticated mobil
   }
 });
 
-test('current Firebase-removal task card no longer treats full mobile Firebase removal as out of scope', () => {
+parentWorkspaceTest('current Firebase-removal task card no longer treats full mobile Firebase removal as out of scope', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1214,7 +1229,7 @@ test('current Firebase-removal task card no longer treats full mobile Firebase r
   }
 });
 
-test('current Firebase-removal task card affected surfaces reflect migrated CI and provider scope', () => {
+parentWorkspaceTest('current Firebase-removal task card affected surfaces reflect migrated CI and provider scope', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1235,7 +1250,7 @@ test('current Firebase-removal task card affected surfaces reflect migrated CI a
   assert.equal(taskCard.includes('self-managed auth/storage'), true);
 });
 
-test('current Firebase-removal task card no longer frames local migration as scaffold-only', () => {
+parentWorkspaceTest('current Firebase-removal task card no longer frames local migration as scaffold-only', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1255,7 +1270,7 @@ test('current Firebase-removal task card no longer frames local migration as sca
   assert.equal(taskCard.includes('local-only migration work'), true);
 });
 
-test('current Firebase-removal task card no longer tells workers to defer or roll back migrated mobile sources', () => {
+parentWorkspaceTest('current Firebase-removal task card no longer tells workers to defer or roll back migrated mobile sources', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1275,7 +1290,7 @@ test('current Firebase-removal task card no longer tells workers to defer or rol
   assert.equal(taskCard.includes('Keep as local Firebase-removal migration evidence'), true);
 });
 
-test('current Firebase-removal acceptance matrix no longer treats Firestore fallbacks as pending current behavior', () => {
+parentWorkspaceTest('current Firebase-removal acceptance matrix no longer treats Firestore fallbacks as pending current behavior', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1304,7 +1319,7 @@ test('current Firebase-removal acceptance matrix no longer treats Firestore fall
   assert.equal(acceptanceMatrix.includes('fails closed without Firestore fallback'), true);
 });
 
-test('current Firebase-removal acceptance matrix no longer preserves Firebase-shaped auth token contracts', () => {
+parentWorkspaceTest('current Firebase-removal acceptance matrix no longer preserves Firebase-shaped auth token contracts', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1332,7 +1347,7 @@ test('current Firebase-removal acceptance matrix no longer preserves Firebase-sh
   );
 });
 
-test('current Firebase-removal task card final evidence table describes the latest A308 continuation', () => {
+parentWorkspaceTest('current Firebase-removal task card final evidence table describes the latest A308 continuation', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1463,7 +1478,7 @@ test('current Firebase-removal task card final evidence table describes the late
   assert.equal(finalEvidence.includes('passed 41 tests after adding A228'), false);
 });
 
-test('current auth docs reserve deterministic local dev sessions for explicit local dev variants', () => {
+parentWorkspaceTest('current auth docs reserve deterministic local dev sessions for explicit local dev variants', () => {
   const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
   const pendingChecklist = readFileSync(join(root, 'docs/discovery/pending-wiring-checklist-v1.md'), 'utf8');
   const businessRules = readFileSync(join(root, 'docs/business-rules/BR-002-role-assignment-and-plan-governance.md'), 'utf8');
@@ -1518,7 +1533,7 @@ test('current auth docs reserve deterministic local dev sessions for explicit lo
   );
 });
 
-test('current Firebase-removal task card no longer says mobile auth is waiting on legacy provider rewiring', () => {
+parentWorkspaceTest('current Firebase-removal task card no longer says mobile auth is waiting on legacy provider rewiring', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1607,7 +1622,7 @@ test('pending tracker limits social auth deterministic fallback to provider-toke
   );
 });
 
-test('current decisions and task card limit local social fallback to provider-token configuration gaps', () => {
+parentWorkspaceTest('current decisions and task card limit local social fallback to provider-token configuration gaps', () => {
   const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
   const mobileNfr = readFileSync(join(root, 'docs/specs/mobile-nfr-tech-stack-spec.md'), 'utf8');
   const signInSpec = readFileSync(join(root, 'docs/screens/v2/SC-217-auth-sign-in.md'), 'utf8');
@@ -1732,7 +1747,7 @@ test('pending tracker scopes remaining auth work to Apple profile proof', () => 
   );
 });
 
-test('current auth requirements and decisions describe local Postgres email credentials', () => {
+parentWorkspaceTest('current auth requirements and decisions describe local Postgres email credentials', () => {
   const files = [
     '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
     'docs/discovery/decisions-log-v1.md',
@@ -1769,7 +1784,7 @@ test('current auth requirements and decisions describe local Postgres email cred
   assert.equal(requirements.includes('local Postgres `local_email_auth_credentials`'), true);
 });
 
-test('current Firebase-removal task card no longer says local plan-change notification delivery is future work', () => {
+parentWorkspaceTest('current Firebase-removal task card no longer says local plan-change notification delivery is future work', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -1785,7 +1800,7 @@ test('current Firebase-removal task card no longer says local plan-change notifi
   assert.equal(taskCard.includes('local in-app professional plan-change notification surface is server-backed'), true);
 });
 
-test('current Firebase-removal task card no longer says professional tracking review receives hydration goal from mobile caller', () => {
+parentWorkspaceTest('current Firebase-removal task card no longer says professional tracking review receives hydration goal from mobile caller', () => {
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
     'utf8'
@@ -2102,7 +2117,7 @@ test('decision log describes role-lock persistence as local server-owned, not re
   );
 });
 
-test('retired feature-inventory evidence no longer recommends Firebase provider-live follow-up', () => {
+parentWorkspaceTest('retired feature-inventory evidence no longer recommends Firebase provider-live follow-up', () => {
   const source = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-22-feature-inventory-user-story-testing-task-card.md'),
     'utf8'
@@ -2218,7 +2233,7 @@ test('auth session user contract no longer exposes Firebase-shaped token methods
   }
 });
 
-test('profile hydration resolves access through the central server token source', () => {
+parentWorkspaceTest('profile hydration resolves access through the central server token source', () => {
   const profileSource = readFileSync(join(root, 'features/auth/profile-source.ts'), 'utf8');
   const taskCard = readFileSync(
     join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
@@ -2388,7 +2403,7 @@ test('server-backed feature error semantics no longer mention legacy provider pa
   }
 });
 
-test('root server README no longer describes migrated mobile paths as falling back to Firebase', () => {
+parentWorkspaceTest('root server README no longer describes migrated mobile paths as falling back to Firebase', () => {
   const source = readFileSync(join(root, '../server/README.md'), 'utf8');
   const staleReadmeClaims = [
     'falls back to Firestore',

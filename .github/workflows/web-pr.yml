@@ -28,7 +28,24 @@ jobs:
           node-version: 22
           cache: yarn
       - run: yarn install --frozen-lockfile --no-progress
+      - id: backend-contract-ref
+        name: Resolve coordinated backend contract ref
+        env:
+          MOBILE_HEAD_REF: ${{ github.head_ref }}
+        run: |
+          backend_ref="${MOBILE_HEAD_REF:-main}"
+          if ! git ls-remote --exit-code --heads https://github.com/edufelip/mychampions-api.git "refs/heads/${backend_ref}" >/dev/null; then
+            backend_ref=main
+          fi
+          echo "ref=${backend_ref}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: edufelip/mychampions-api
+          ref: ${{ steps.backend-contract-ref.outputs.ref }}
+          path: node_modules/.ci-my-champions-api
       - run: yarn test:unit
+        env:
+          MYCHAMPIONS_SERVER_APP_PATH: node_modules/.ci-my-champions-api/src/app.ts
       - run: yarn lint
       - run: yarn tsc --noEmit
       - run: yarn web:export

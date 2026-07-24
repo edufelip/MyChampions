@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { test } from 'node:test';
 
 const mobileRoot = process.cwd();
-const rootServerAppPath = join(mobileRoot, '../server/src/app.ts');
+const configuredServerAppPath = process.env.MYCHAMPIONS_SERVER_APP_PATH?.trim();
+const rootServerAppPath = configuredServerAppPath
+  ? isAbsolute(configuredServerAppPath)
+    ? configuredServerAppPath
+    : resolve(mobileRoot, configuredServerAppPath)
+  : join(mobileRoot, '../server/src/app.ts');
+const serverRouteContractTest = existsSync(rootServerAppPath) ? test : test.skip;
 
 function collectFeatureSourceFiles(relativeDir = 'features'): string[] {
   const absoluteDir = join(mobileRoot, relativeDir);
@@ -59,7 +65,7 @@ function directMobileRootRoutes(): Array<{ file: string; route: string }> {
   });
 }
 
-test('every direct mobile root-server request resolves to a registered Elysia route', () => {
+serverRouteContractTest('every direct mobile root-server request resolves to a registered Elysia route', () => {
   const registeredRoutes = registeredRootRoutes();
   const directRoutes = directMobileRootRoutes();
 
@@ -74,7 +80,7 @@ test('every direct mobile root-server request resolves to a registered Elysia ro
   }
 });
 
-test('helper-built mobile requests resolve to registered Elysia routes', () => {
+serverRouteContractTest('helper-built mobile requests resolve to registered Elysia routes', () => {
   const registeredRoutes = registeredRootRoutes();
   const contracts = [
     {
