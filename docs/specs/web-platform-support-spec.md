@@ -57,7 +57,11 @@ Platform behavior is selected by Metro's `.web` module resolution rather than sc
 ## Subscription behavior
 
 - Browser code never initializes or consults RevenueCat preview APIs.
-- Web reads authoritative MyChampions server entitlement snapshots.
+- Web reads authoritative MyChampions server entitlement snapshots. RevenueCat
+  SDK or signed webhook observations are materialized into the server's
+  Postgres snapshot rows; the browser does not read a Firebase persistence or
+  billing runtime. This follows the active baseline in
+  `docs/discovery/backend-provider-migration-v1.md`.
 - AI access and professional cap gates require an explicit active entitlement where applicable; unknown status fails closed.
 - Browser purchase and restore controls are replaced by a localized mobile handoff from `EXPO_PUBLIC_SUBSCRIPTION_HANDOFF_URL`. Missing handoff configuration yields `unavailable`; it never falls back to browser purchase.
 

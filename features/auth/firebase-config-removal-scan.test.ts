@@ -2010,6 +2010,48 @@ test('current discovery trackers no longer route active backend work to Firebase
   }
 });
 
+test('backend authority docs keep the MyChampions server baseline and Firebase retirement aligned', () => {
+  const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
+  const migration = readFileSync(
+    join(root, 'docs/discovery/backend-provider-migration-v1.md'),
+    'utf8'
+  );
+  const socialAuth = readFileSync(
+    join(root, 'docs/specs/2026-07-13-native-social-auth-design.md'),
+    'utf8'
+  );
+  const webSupport = readFileSync(
+    join(root, 'docs/specs/web-platform-support-spec.md'),
+    'utf8'
+  );
+  const currentDocs = [agents, migration, socialAuth, webSupport];
+
+  for (const source of currentDocs) {
+    assert.equal(
+      source.includes('Current backend baseline is Firebase'),
+      false,
+      'current documentation must not restore Firebase as the backend baseline'
+    );
+  }
+
+  assert.equal(
+    agents.includes('Current app-domain backend baseline is the root-level MyChampions server'),
+    true
+  );
+  assert.equal(
+    agents.includes('Firebase Auth, Cloud Firestore, and Firebase Cloud Storage are retired'),
+    true
+  );
+  assert.equal(
+    migration.includes('Identity, sessions, profiles, and app-domain records are authoritative'),
+    true
+  );
+  assert.match(migration, /RevenueCat SDK or signed webhook\s+observations/);
+  assert.match(socialAuth, /does not restore\s+Firebase Auth as an application runtime/);
+  assert.match(webSupport, /server's\s+Postgres snapshot rows/);
+  assert.match(webSupport, /does not read a Firebase persistence or\s+billing runtime/);
+});
+
 test('pending tracker no longer lists completed cap-sensitive write locks as remaining work', () => {
   const source = readFileSync(join(root, 'docs/discovery/pending-wiring-checklist-v1.md'), 'utf8');
 

@@ -4,6 +4,11 @@
 
 Replace Google browser OAuth token capture with `@react-native-google-signin/google-signin` while preserving the existing `SocialAuthSourceInput` and `POST /auth/social/sign-in` server contract. Keep Apple token capture on `expo-apple-authentication`, add the missing Sign in with Apple entitlement to the manually maintained Xcode project, and fail release builds when the provisioning profile does not carry the same entitlement.
 
+The MyChampions server and its Postgres repositories remain authoritative for
+identity, profiles, and sessions. Google and Apple act only as external
+credential issuers whose tokens the server verifies; this flow does not restore
+Firebase Auth as an application runtime or backend baseline.
+
 ## Scope
 
 - Google native token capture on iOS and Android.
