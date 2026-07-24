@@ -10,7 +10,7 @@
 
 import { getEffectiveLocale } from '../auth/language-storage';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { type FoodSearchResult } from '../plans/plan-builder.logic';
 import { isDevLoggingEnabled, logNetworkDebug } from '../debug/logging';
 
@@ -38,13 +38,13 @@ export class FoodSearchSourceError extends Error {
 export type FoodSearchSourceDeps = {
   getServerBaseUrl: () => string | undefined;
   getCurrentAccessToken: () => Promise<string | null>;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
   getLocale: () => Promise<string>;
 };
 
 const defaultDeps: FoodSearchSourceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   fetchFn: fetch,
   getLocale: () => getEffectiveLocale(),
 };

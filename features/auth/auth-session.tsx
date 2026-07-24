@@ -17,12 +17,16 @@ import {
   resolveE2ESocialAuthOverride,
   type E2EAuthSessionOverride,
   type E2ESocialAuthProvider,
+  persistE2ELockedRole,
+  readPersistedE2ELockedRole,
 } from './e2e-auth-session';
 import {
   clearPersistedServerAuthSession,
+  getCurrentServerProfile,
   getCurrentServerUser,
   restoreServerAuthSession,
   startLocalServerSocialSession,
+  subscribeServerAuthSession,
 } from './server-auth-source';
 
 type AuthSessionContextValue = {
@@ -45,6 +49,7 @@ type AuthSessionContextValue = {
   signInWithE2EEmailPassword: (email: string, password: string) => Promise<boolean>;
   signInWithE2ESocialAuth: (provider: E2ESocialAuthProvider) => Promise<boolean>;
   signInWithServerSocialAuth: (provider: E2ESocialAuthProvider) => Promise<boolean>;
+  adoptCurrentServerSession: () => boolean;
   lockRole: (role: RoleIntent) => Promise<void>;
   acceptTerms: () => Promise<void>;
   clearSession: () => void;
@@ -122,9 +127,10 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     if (e2eSession) {
+      const persistedRole = readPersistedE2ELockedRole();
       setCurrentUser(createE2EUser(e2eSession));
       setIsAuthenticated(true);
-      setLockedRole(e2eSession.lockedRole);
+      setLockedRole(persistedRole ?? e2eSession.lockedRole);
       setAcceptedTermsVersion(e2eSession.acceptedTermsVersion);
       setLastProfileSyncedAtIso(new Date().toISOString());
       setRequiresTermsAcceptance(
@@ -198,6 +204,34 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [termsRequiredVersion]);
+
+  useEffect(() => {
+    if (e2eSession) return;
+
+    return subscribeServerAuthSession((session) => {
+      if (!session) {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+        setLockedRole(null);
+        setAcceptedTermsVersion(null);
+        setLastProfileSyncedAtIso(null);
+        setRequiresTermsAcceptance(false);
+        return;
+      }
+
+      setCurrentUser(session.user as AuthSessionUser);
+      setIsAuthenticated(true);
+      setLockedRole(session.profile.lockedRole);
+      setAcceptedTermsVersion(session.profile.acceptedTermsVersion);
+      setLastProfileSyncedAtIso(new Date().toISOString());
+      setRequiresTermsAcceptance(
+        needsTermsAcceptance({
+          requiredVersion: termsRequiredVersion,
+          acceptedVersion: session.profile.acceptedTermsVersion,
+        })
+      );
+    });
+  }, [e2eSession, termsRequiredVersion]);
 
   const value = useMemo<AuthSessionContextValue>(
     () => ({
@@ -331,12 +365,31 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setIsHydrated(true);
         return true;
       },
+      adoptCurrentServerSession: () => {
+        const serverUser = getCurrentServerUser();
+        const serverProfile = getCurrentServerProfile();
+        if (!serverUser || !serverProfile) return false;
+        setCurrentUser(serverUser as AuthSessionUser);
+        setIsAuthenticated(true);
+        setLockedRole(serverProfile.lockedRole);
+        setAcceptedTermsVersion(serverProfile.acceptedTermsVersion);
+        setRequiresTermsAcceptance(
+          needsTermsAcceptance({
+            requiredVersion: termsConfig.requiredVersion,
+            acceptedVersion: serverProfile.acceptedTermsVersion,
+          })
+        );
+        setLastProfileSyncedAtIso(new Date().toISOString());
+        setIsHydrated(true);
+        return true;
+      },
       lockRole: async (role: RoleIntent) => {
         if (!currentUser) {
           throw new Error('No authenticated user found.');
         }
 
         if (e2eSession) {
+          persistE2ELockedRole(role);
           setLockedRole(role);
           setLastProfileSyncedAtIso(new Date().toISOString());
           return;
@@ -364,6 +417,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setRequiresTermsAcceptance(false);
       },
       clearSession: () => {
+        if (e2eSession) persistE2ELockedRole(null);
         void clearPersistedServerAuthSession();
         setIsAuthenticated(false);
         setCurrentUser(null);

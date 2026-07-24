@@ -27,6 +27,7 @@
 - Social sign-in with existing email must link to existing account instead of creating duplicate account.
 - Known sign-in failures must show reason-specific actionable copy.
 - Accessibility baseline applies for text scaling, contrast, focus order, and control labels.
+- Browser auth uses cookie session mode: the access token stays in memory and the rotating refresh token is HttpOnly. Reload restoration never reads browser storage.
 
 ## Data Contract
 - Inputs:
@@ -63,9 +64,11 @@
   - Email/password inputs with non-empty validation.
   - Password reveal/hide eye toggle embedded inside the password input field.
   - Contextual error copy mapping for `invalid_credentials`, `network`, `provider_conflict`, and `configuration`.
-  - Email/password sign-in is wired to the local MyChampions server auth bridge for explicit local/dev app variants.
+  - Email/password sign-in is wired to the MyChampions server auth boundary for native and browser runtimes.
   - Google social sign-in shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
   - Apple social sign-in shows the approved E2E fixture path in test mode, then tries native Apple identity-token capture and posts the token plus nonce to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer, audience, and nonce claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.
+  - On web, Google uses Google Identity Services and Apple uses Sign in with Apple JS. Both adapters forward ID tokens to the same server endpoint; missing browser client/redirect configuration fails closed.
+  - Browser requests include credentials and `sessionMode: cookie`; native requests preserve bearer response-body refresh sessions.
   - Successful sign-in is driven by the MyChampions server auth session for route-guard enforcement.
   - Durable device session persistence is owned by the MyChampions server auth bridge instead of native provider config.
   - Successful sign-in routes to `/auth/accept-terms`; global guard then routes to role-selection or role home depending on terms + role state.

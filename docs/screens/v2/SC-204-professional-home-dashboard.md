@@ -27,7 +27,14 @@
 
 ## Design Structure (D-134)
 - Screen shell adopts DS structure (`DsScreen`) for consistent playful background and spacing.
-- Home now establishes the professional surface baseline: top hero summary (title + context pill), elevated KPI cards, and a primary task card for invite-code operations.
+- Home now establishes the professional surface baseline: top purpose summary, truthful KPI links, a first-class `Needs attention` queue, and direct work-management shortcuts.
+- Pending connection requests and pending plan-change requests are distinct task types with separate destinations. Successful task data remains actionable when the other source fails.
+- `You're all caught up` is shown only after both task sources settle successfully with no pending work; loading and partial-error states never masquerade as an empty queue.
+- Desktop uses a two-column workbench with priorities and management shortcuts in the main column and invitation/subscription utilities in the secondary column. Compact layouts preserve a single reading order.
+- Dashboard plan shortcuts reuse the role shell's specialty access rules; Nutrition is never offered from the dashboard when the professional does not have nutrition access.
+- When no invite specialty exists, the invitation utility explains the prerequisite and links to specialty management instead of rendering an apparently empty card.
+- Active-student capacity renders an em dash until an authoritative count has loaded; an unavailable count is never presented as zero.
+- Operational dashboard and subscription surfaces use a low-noise canvas. The subscription shortcut communicates state with semantic iconography and text instead of generic fitness photography or decorative premium imagery.
 - Dashboard blocks use DS surface primitives (`DsCard`) and unified CTA primitives (`DsPillButton`) with clear primary/secondary hierarchy.
 - Offline and lock warnings follow DS semantic alert structure while preserving existing gating logic.
 - Invite-code actions and navigation CTAs remain behavior-equivalent; presentation is standardized for cleaner visual rhythm.

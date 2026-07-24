@@ -12,6 +12,7 @@
  */
 
 import { normalizeEntitlementStatus, type EntitlementStatus } from './subscription.logic';
+import type { RoleIntent } from '@/features/auth/role-selection.logic';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -37,12 +38,24 @@ export class SubscriptionSourceError extends Error {
 
 /**
  * Minimal shape of a RevenueCat CustomerInfo object that we depend on.
- * We only read entitlement active status; the full SDK type has many more fields.
+ * We only read the entitlement fields needed to derive access and authoritative
+ * pre-lapse state; the full SDK type has many more fields.
  */
 export type RawCustomerInfo = {
   entitlements?: {
-    active?: Record<string, { isActive?: boolean }>;
+    active?: Record<string, {
+      isActive?: boolean;
+      willRenew?: boolean;
+      expirationDate?: string | null;
+      unsubscribeDetectedAt?: string | null;
+      billingIssueDetectedAt?: string | null;
+    }>;
   };
+};
+
+export type ProfessionalEntitlementMetadata = {
+  expiresAt: string | null;
+  renewalRisk: boolean;
 };
 
 /**
@@ -54,6 +67,13 @@ export type RawPurchasesPackage = unknown;
 export type RawPurchaseResult = {
   customerInfo?: RawCustomerInfo;
 };
+
+export type RawPaywallResult =
+  | 'NOT_PRESENTED'
+  | 'ERROR'
+  | 'CANCELLED'
+  | 'PURCHASED'
+  | 'RESTORED';
 
 // ─── Injectable deps ──────────────────────────────────────────────────────────
 
@@ -74,7 +94,7 @@ export type SubscriptionSourceDeps = {
    * Presents the RevenueCat native paywall UI (D-132).
    * @param offeringIdentifier - The RevenueCat offering to display. If omitted, shows the default offering.
    */
-  presentPaywall: (offeringIdentifier?: string) => Promise<void>;
+  presentPaywall: (offeringIdentifier?: string) => Promise<RawPaywallResult | void>;
 };
 
 export type RevenueCatPlatform = 'ios' | 'android';
@@ -84,13 +104,14 @@ export type RevenueCatPlatform = 'ios' | 'android';
  * D-011, BR-219: more than FREE_STUDENT_CAP active students requires active entitlement.
  *
  * RevenueCat dashboard entitlement identifier: `professional_pro`
- * Products attached: mychampions_professional_anuual, mychampions_professional_monthly.
+ * Products attached: professional_annual, professional_monthly, professional_test.
  */
 export const PRO_ENTITLEMENT_ID = 'professional_pro';
 
 /**
  * Identifies the entitlement key that grants access to AI features (BL-108, D-132).
- * Purchasable by any role. Checked alongside PRO_ENTITLEMENT_ID for AI access.
+ * New purchases are offered only to locked student accounts. Existing valid
+ * entitlements remain role-agnostic for backward-compatible AI access.
  * Must match the entitlement identifier configured in the RevenueCat dashboard.
  *
  * RevenueCat dashboard entitlement identifier: `student_pro`
@@ -102,7 +123,8 @@ export const AI_FEATURES_ENTITLEMENT_ID = 'student_pro';
  * RevenueCat offering identifier for the professional subscription paywall (D-152).
  * Must be configured in the RevenueCat dashboard under Offerings.
  * Shown when openProPaywall() is triggered from SC-212.
- * Contains professional products: mychampions_professional_anuual, mychampions_professional_monthly.
+ * Contains professional products: professional_annual, professional_monthly, professional_test,
+ * plus Test Store package mappings when explicitly configured for development.
  */
 export const PRO_OFFERING_ID = 'default_professional';
 
@@ -113,6 +135,85 @@ export const PRO_OFFERING_ID = 'default_professional';
  * Contains student products: student_annual, student_monthly.
  */
 export const AI_OFFERING_ID = 'default_student';
+
+/**
+ * Temporary development-only offering used to validate Student Paywall v1 with
+ * RevenueCat Test Store before a separately approved production promotion.
+ */
+export const AI_TEST_OFFERING_ID = 'test_student';
+
+export type AiUpgradeOfferingId =
+  | typeof AI_OFFERING_ID
+  | typeof AI_TEST_OFFERING_ID
+  | typeof PRO_OFFERING_ID;
+
+/**
+ * Resolves the student offering exposed through Expo config. The temporary
+ * offering is accepted only when both the development variant and Test Store
+ * guard are explicit. Missing config safely falls back to default_student.
+ */
+export function resolveStudentOfferingId(
+  extra?: Record<string, unknown>
+): typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID {
+  const source = extra ?? {};
+  const configured = source['revenueCatStudentOfferingId'];
+  const offeringId =
+    typeof configured === 'string' && configured.trim()
+      ? configured.trim()
+      : AI_OFFERING_ID;
+
+  if (offeringId !== AI_OFFERING_ID && offeringId !== AI_TEST_OFFERING_ID) {
+    throw new SubscriptionSourceError(
+      'configuration',
+      'RevenueCat student offering must be default_student or test_student.'
+    );
+  }
+
+  if (
+    offeringId === AI_TEST_OFFERING_ID &&
+    (source['appVariant'] !== 'dev' || source['revenueCatTestStoreEnabled'] !== true)
+  ) {
+    throw new SubscriptionSourceError(
+      'configuration',
+      'RevenueCat test_student offering is allowed only in an explicit development Test Store build.'
+    );
+  }
+
+  return offeringId;
+}
+
+/**
+ * Maps the locked account role to the only offering it may initiate from an AI gate.
+ * Missing or malformed roles fail closed without a provider presentation.
+ */
+export function resolveAiUpgradeOfferingId(
+  role: RoleIntent | null | undefined,
+  resolveStudentOffering: () => typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID
+): AiUpgradeOfferingId | null {
+  if (role === 'professional') return PRO_OFFERING_ID;
+  if (role === 'student') return resolveStudentOffering();
+  return null;
+}
+
+/**
+ * Resolves an explicitly requested offering without falling back to RevenueCat's
+ * current/default offering. Role-aware paywall routing must fail closed when the
+ * configured offering is absent so students and professionals cannot cross into
+ * the other plan.
+ */
+export function resolveRequiredRevenueCatOffering<T>(
+  offeringsById: Record<string, T | undefined>,
+  offeringId: string
+): T {
+  const offering = offeringsById[offeringId];
+  if (!offering) {
+    throw new SubscriptionSourceError(
+      'configuration',
+      `RevenueCat offering ${offeringId} is not available for this app configuration.`
+    );
+  }
+  return offering;
+}
 
 // ─── API key resolution ───────────────────────────────────────────────────────
 
@@ -138,8 +239,13 @@ function isSecretRevenueCatKey(key: string): boolean {
   return key.toLowerCase().startsWith('sk_');
 }
 
-function isValidPublicRevenueCatKey(key: string, platform: RevenueCatPlatform): boolean {
+function isValidPublicRevenueCatKey(
+  key: string,
+  platform: RevenueCatPlatform,
+  testStoreEnabled: boolean
+): boolean {
   const normalized = key.toLowerCase();
+  if (testStoreEnabled) return normalized.startsWith('test_');
   if (platform === 'ios') return normalized.startsWith('appl_');
   return normalized.startsWith('goog_');
 }
@@ -157,6 +263,15 @@ export function resolveRevenueCatApiKey(
     return Constants.expoConfig?.extra ?? {};
   })();
 
+  const testStoreEnabled = source['revenueCatTestStoreEnabled'] === true;
+  const appVariant = source['appVariant'];
+  if (testStoreEnabled && appVariant !== 'dev') {
+    throw new SubscriptionSourceError(
+      'configuration',
+      'RevenueCat Test Store is allowed only for explicit development builds.'
+    );
+  }
+
   const key = resolvePlatformRevenueCatKey(source, platform).trim();
   if (!key) {
     throw new SubscriptionSourceError(
@@ -170,10 +285,15 @@ export function resolveRevenueCatApiKey(
       `RevenueCat secret key detected for ${platform}. Do not ship sk_* keys in mobile apps; use public SDK keys (appl_* for iOS, goog_* for Android).`
     );
   }
-  if (!isValidPublicRevenueCatKey(key, platform)) {
+  if (!isValidPublicRevenueCatKey(key, platform, testStoreEnabled)) {
+    const expectedPrefix = testStoreEnabled
+      ? 'test_*'
+      : platform === 'ios'
+        ? 'appl_*'
+        : 'goog_*';
     throw new SubscriptionSourceError(
       'configuration',
-      `RevenueCat API key for ${platform} has an invalid prefix. Expected ${platform === 'ios' ? 'appl_*' : 'goog_*'}.`
+      `RevenueCat API key for ${platform} has an invalid prefix. Expected ${expectedPrefix}.`
     );
   }
   return key;
@@ -200,6 +320,45 @@ export function mapCustomerInfoToEntitlementStatus(
     return normalizeEntitlementStatus(entitlement.isActive ? 'active' : 'lapsed');
   } catch {
     return 'unknown';
+  }
+}
+
+/**
+ * Maps RevenueCat's current professional entitlement to the pre-lapse signal
+ * consumed by the professional subscription UI. A warning is only emitted for
+ * an active, expiring subscription with explicit cancellation/non-renewal or a
+ * billing issue. Missing or malformed provider data fails closed to no warning.
+ */
+export function mapCustomerInfoToProfessionalEntitlementMetadata(
+  customerInfo: RawCustomerInfo
+): ProfessionalEntitlementMetadata {
+  try {
+    const entitlement = customerInfo.entitlements?.active?.[PRO_ENTITLEMENT_ID];
+    if (!entitlement?.isActive) {
+      return { expiresAt: null, renewalRisk: false };
+    }
+
+    const expirationTimestamp =
+      typeof entitlement.expirationDate === 'string'
+        ? Date.parse(entitlement.expirationDate)
+        : Number.NaN;
+    const expiresAt = Number.isFinite(expirationTimestamp)
+      ? new Date(expirationTimestamp).toISOString()
+      : null;
+    const hasCancellationSignal =
+      entitlement.willRenew === false ||
+      (typeof entitlement.unsubscribeDetectedAt === 'string' &&
+        entitlement.unsubscribeDetectedAt.trim().length > 0);
+    const hasBillingIssue =
+      typeof entitlement.billingIssueDetectedAt === 'string' &&
+      entitlement.billingIssueDetectedAt.trim().length > 0;
+
+    return {
+      expiresAt,
+      renewalRisk: expiresAt !== null && (hasCancellationSignal || hasBillingIssue),
+    };
+  } catch {
+    return { expiresAt: null, renewalRisk: false };
   }
 }
 
@@ -445,15 +604,19 @@ export async function restorePurchases(
 
 /**
  * Presents the native RevenueCat paywall for the AI features offering (D-132, D-152).
- * Uses the AI_OFFERING_ID ('default_student') offering configured in the RevenueCat dashboard.
+ * Uses the supplied guarded student offering, defaulting to AI_OFFERING_ID
+ * ('default_student') for normal development and production.
  * The production dep resolves the offering via getOfferings() and passes the full
  * PurchasesOffering object to RevenueCatUI.presentPaywall({ offering }).
  *
  * Throws SubscriptionSourceError on presentation failure.
  */
-export async function presentAiPaywall(deps: SubscriptionSourceDeps): Promise<void> {
+export async function presentAiPaywall(
+  deps: SubscriptionSourceDeps,
+  offeringId: typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID = AI_OFFERING_ID
+): Promise<RawPaywallResult | void> {
   try {
-    await deps.presentPaywall(AI_OFFERING_ID);
+    return await deps.presentPaywall(offeringId);
   } catch (err: unknown) {
     if (err instanceof SubscriptionSourceError) throw err;
     const reason = normalizeSubscriptionError(err);
@@ -469,9 +632,11 @@ export async function presentAiPaywall(deps: SubscriptionSourceDeps): Promise<vo
  *
  * Throws SubscriptionSourceError on presentation failure.
  */
-export async function presentProPaywall(deps: SubscriptionSourceDeps): Promise<void> {
+export async function presentProPaywall(
+  deps: SubscriptionSourceDeps
+): Promise<RawPaywallResult | void> {
   try {
-    await deps.presentPaywall(PRO_OFFERING_ID);
+    return await deps.presentPaywall(PRO_OFFERING_ID);
   } catch (err: unknown) {
     if (err instanceof SubscriptionSourceError) throw err;
     const reason = normalizeSubscriptionError(err);

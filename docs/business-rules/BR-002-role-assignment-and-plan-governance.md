@@ -18,7 +18,7 @@
 - `BR-215`: Students cannot edit professionally assigned plans; assigned plans are view-only on the student side.
 - `BR-216`: Student self-managed plans for a specialty are archived when professional assignment becomes active in that specialty.
 - `BR-217`: Archived student self-managed plans are visible to professionals only with student consent.
-- `BR-218`: Students are never payers in the subscription model.
+- `BR-218`: Standard student meal and progress tracking remains free. A locked student account may optionally purchase the `student_pro` AI meal-photo analysis add-on; that add-on grants no professional roster privilege.
 - `BR-219`: A professional can manage up to 10 active students without paid subscription.
 - `BR-220`: Active student count above 10 is blocked unless professional subscription entitlement is active.
 - `BR-221`: Subscription entitlement lifecycle is controlled by store billing and synchronized through RevenueCat.
@@ -127,6 +127,10 @@
 - `BR-335`: Nutritionist tracking review on the Professional Student Profile is read-only.
 - `BR-336`: TrackingLogs remain Student-owned but may carry plan/connection provenance for review and audit.
 - `BR-337`: CustomMeals are user-owned reusable meals/recipes; NutritionPlans and TrackingLogs carry stable snapshots/provenance, and Professionals cannot add Student-owned CustomMeals into assigned plans unless the meal is shared/imported first.
+- `BR-338`: Subscription privileges are keyed by the self-managed MyChampions auth UID. RevenueCat customer changes must be serialized before any entitlement read, restore, purchase, or paywall action, and stale results from a previous UID must never update the current account.
+- `BR-339`: Production subscription authorization is derived from a server-side canonical RevenueCat customer reconciliation. A single webhook event must not directly overwrite an unrelated entitlement, and transfer events must reconcile every affected App User ID before acknowledgement.
+- `BR-340`: Professional pre-lapse warning is driven only by authoritative active-entitlement expiry plus explicit renewal, unsubscribe, or billing-issue risk. Student capacity is never treated as a billing-expiry signal.
+- `BR-341`: New `student_pro` purchases may be initiated only by locked student accounts. A professional who enters an AI gate is routed to `default_professional`, because `professional_pro` already grants AI access. Existing valid `student_pro` entitlements continue to unlock AI regardless of current role, but missing or malformed role state presents no paywall.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

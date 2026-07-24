@@ -8,10 +8,22 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { ActivityIndicator, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getDsTheme, type DsTheme } from '@/constants/design-system';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { getDsTheme, type DsColorScheme, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
@@ -25,6 +37,7 @@ import {
 } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import { resolveStudentHomeDisplayState } from '@/features/student/student-home.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -46,6 +59,7 @@ export default function StudentHomeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth } = useWindowDimensions();
   const { currentUser } = useAuthSession();
 
   const networkStatus = useNetworkStatus();
@@ -62,10 +76,11 @@ export default function StudentHomeScreen() {
     lastSyncedAtIso,
   });
 
-  const isLoading =
-    connectionsState.kind === 'loading' ||
-    waterState.kind === 'loading' ||
-    plansState.kind === 'loading';
+  const displayState = resolveStudentHomeDisplayState({
+    connections: connectionsState.kind,
+    plans: plansState.kind,
+    water: waterState.kind,
+  });
 
   const hasPendingConnection =
     connectionsState.kind === 'ready' &&
@@ -98,12 +113,11 @@ export default function StudentHomeScreen() {
       ? `${Math.round((hydrationConsumed / 1000) * 10) / 10}L`
       : '0L';
 
-  const isError =
-    connectionsState.kind === 'error' ||
-    plansState.kind === 'error' ||
-    waterState.kind === 'error';
-
-  const profileInitial = (currentUser?.email?.[0] ?? 'M').toUpperCase();
+  const displayName = currentUser?.displayName?.trim() || currentUser?.email?.split('@')[0] || '';
+  const firstName = displayName.split(/\s+/)[0] || t('student.home.title');
+  const profileInitial = (displayName[0] ?? 'M').toUpperCase();
+  const usesCompactStatsLayout = viewportWidth < 480;
+  const usesPlanCardColumns = viewportWidth >= 768;
 
   return (
     <ScrollView
@@ -124,21 +138,30 @@ export default function StudentHomeScreen() {
               </View>
               <View style={[styles.avatarStatusDot, { backgroundColor: theme.color.accentPrimary }]} />
             </View>
-            <View>
-              <Text style={[styles.welcomeLine, { color: theme.color.textSecondary }]}>{t('student.home.title')}</Text>
-              <Text style={[styles.helloLine, { color: theme.color.textPrimary }]}>{t('student.home.cta_manage_professionals')}</Text>
+            <View style={styles.profileCopy}>
+              <Text style={[styles.welcomeLine, { color: theme.color.textSecondary }]}>
+                {t('student.home.welcome')}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[styles.helloLine, { color: theme.color.textPrimary }]}
+                testID="student.home.greeting">
+                {firstName}
+              </Text>
             </View>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('student.home.cta_professionals')}
+          <DsPillButton
+            scheme={scheme}
+            label={t('student.home.professionals_short')}
             onPress={() => router.push('/student/professionals')}
-            style={[styles.notificationButton, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}
-            testID="student.home.accountButton">
-            <MaterialIcons color={theme.color.textPrimary} name="notifications-none" size={22} />
-            <View style={[styles.notificationDot, { backgroundColor: theme.color.danger }]} />
-          </Pressable>
+            variant="outline"
+            size="sm"
+            fullWidth={false}
+            leftIcon={<MaterialIcons color={theme.color.accentPrimary} name="group" size={18} />}
+            style={styles.professionalsButton}
+            testID="student.home.accountButton"
+          />
         </View>
 
         {offlineDisplay.showOfflineBanner ? (
@@ -154,62 +177,100 @@ export default function StudentHomeScreen() {
           </View>
         ) : null}
 
-        {hasPendingConnection ? (
-          <View style={[styles.pendingPill, { backgroundColor: theme.color.warningSoft }]} testID="student.home.pendingBadge" accessibilityRole="alert">
-            <MaterialIcons color={theme.color.warning} name="hourglass-empty" size={16} />
-            <Text style={[styles.pendingText, { color: theme.color.warning }]}>{t('student.home.pending_connection')}</Text>
-          </View>
-        ) : null}
-
-        {isLoading ? (
+        {displayState.isInitialLoading ? (
           <View testID="student.home.loading" style={styles.loadingWrap}>
             <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} size="large" />
           </View>
-        ) : isError ? (
-          <View style={styles.loadingWrap} testID="student.home.error">
-            <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                reloadConnections();
-                reloadPlans();
-                reloadWater();
-              }}
-              style={[styles.retryButton, { borderColor: theme.color.borderStrong }]}>
-              <Text style={[styles.retryText, { color: theme.color.textPrimary }]}>{t('common.error.retry')}</Text>
-            </Pressable>
-          </View>
         ) : (
-          <>
-            <SectionTitle title={t('student.home.title') as string} theme={theme} />
-            <View style={styles.statsRow}>
+          <View testID="student.home.ready">
+            <View style={styles.pageIntro}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.pageTitle, { color: theme.color.textPrimary }]}
+                testID="student.home.dashboardTitle">
+                {t('student.home.your_day')}
+              </Text>
+              <Text style={[styles.pageSubtitle, { color: theme.color.textSecondary }]}>
+                {t('student.home.summary')}
+              </Text>
+            </View>
+
+            {hasPendingConnection ? (
+              <View style={[styles.pendingPill, { backgroundColor: theme.color.warningSoft }]} testID="student.home.pendingBadge" accessibilityRole="alert">
+                <MaterialIcons color={theme.color.warning} name="hourglass-empty" size={16} />
+                <Text style={[styles.pendingText, { color: theme.color.warning }]}>{t('student.home.pending_connection')}</Text>
+              </View>
+            ) : null}
+
+            {connectionsState.kind === 'error' ? (
+              <DashboardIssue
+                label={t('student.home.error.connections')}
+                onRetry={reloadConnections}
+                retryLabel={t('common.error.retry')}
+                scheme={scheme}
+                theme={theme}
+                testID="student.home.connections.retry"
+              />
+            ) : null}
+            {plansState.kind === 'error' ? (
+              <DashboardIssue
+                label={t('student.home.error.plans')}
+                onRetry={reloadPlans}
+                retryLabel={t('common.error.retry')}
+                scheme={scheme}
+                theme={theme}
+                testID="student.home.plans.retry"
+              />
+            ) : null}
+            {waterState.kind === 'error' ? (
+              <DashboardIssue
+                label={t('student.home.error.hydration')}
+                onRetry={reloadWater}
+                retryLabel={t('common.error.retry')}
+                scheme={scheme}
+                theme={theme}
+                testID="student.home.hydration.retry"
+              />
+            ) : null}
+
+            <View style={[styles.statsRow, usesCompactStatsLayout && styles.statsRowCompact]}>
               <StatCard
                 theme={theme}
                 icon="fitness-center"
                 label={t('student.home.training.section') as string}
-                value={String(trainingPlanCount)}
+                value={displayState.canRenderPlans ? String(trainingPlanCount) : '—'}
                 progress={hasTrainingPlan ? 100 : 0}
                 tint={theme.color.accentPrimary}
+                style={usesCompactStatsLayout ? styles.statCardCompact : undefined}
+                testID="student.home.trainingStat"
               />
               <StatCard
                 theme={theme}
                 icon="restaurant"
                 label={t('student.home.nutrition.section') as string}
-                value={String(nutritionPlanCount)}
+                value={displayState.canRenderPlans ? String(nutritionPlanCount) : '—'}
                 progress={hasNutritionPlan ? 100 : 0}
                 tint={theme.color.accentPrimary}
+                style={usesCompactStatsLayout ? styles.statCardCompact : undefined}
+                testID="student.home.nutritionStat"
               />
               <StatCard
                 theme={theme}
                 icon="water-drop"
                 label={t('student.home.hydration.title') as string}
-                value={hydrationValue}
+                value={displayState.canRenderWater ? hydrationValue : '—'}
                 progress={hydrationPercent}
                 tint={theme.color.accentCyan}
                 testID="student.home.hydrationCard"
+                style={usesCompactStatsLayout ? styles.statCardWide : undefined}
               />
             </View>
 
+            {displayState.canRenderPlans ? (
+              <View
+                style={[styles.planCards, usesPlanCardColumns && styles.planCardsWide]}
+                testID="student.home.planCards">
+              <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
             <SectionTitle title={t('student.home.training.section') as string} theme={theme} />
             <Pressable
               accessibilityRole="button"
@@ -256,7 +317,9 @@ export default function StudentHomeScreen() {
                 </View>
               </View>
             </Pressable>
+              </View>
 
+              <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
             <SectionTitle title={t('student.home.nutrition.section') as string} theme={theme} />
             <Pressable
               accessibilityRole="button"
@@ -297,17 +360,18 @@ export default function StudentHomeScreen() {
                   </Text>
 
                   <View style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}>
-                    <MaterialIcons color="white" name="restaurant" size={20} />
-                    <Text style={[styles.heroCtaText, { color: 'white' }]}>
+                    <MaterialIcons color={theme.color.onAccent} name="restaurant" size={20} />
+                    <Text style={[styles.heroCtaText, { color: theme.color.onAccent }]}>
                       {hasNutritionPlan ? t('student.home.cta_nutrition') : t('student.home.cta_start_nutrition')}
                     </Text>
                   </View>
                 </View>
               </View>
             </Pressable>
-
-
-          </>
+              </View>
+              </View>
+            ) : null}
+          </View>
         )}
       </View>
     </ScrollView>
@@ -318,6 +382,46 @@ function SectionTitle({ title, theme }: { title: string; theme: DsTheme }) {
   return <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>{title}</Text>;
 }
 
+function DashboardIssue({
+  label,
+  onRetry,
+  retryLabel,
+  scheme,
+  theme,
+  testID,
+}: {
+  label: string;
+  onRetry: () => void;
+  retryLabel: string;
+  scheme: DsColorScheme;
+  theme: DsTheme;
+  testID: string;
+}) {
+  return (
+    <View
+      accessibilityRole="alert"
+      style={[
+        styles.issueCard,
+        { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder },
+      ]}
+      testID="student.home.error">
+      <View style={styles.issueCopy}>
+        <MaterialIcons color={theme.color.danger} name="error-outline" size={20} />
+        <Text style={[styles.issueText, { color: theme.color.textPrimary }]}>{label}</Text>
+      </View>
+      <DsPillButton
+        scheme={scheme}
+        label={retryLabel}
+        onPress={onRetry}
+        variant="outline"
+        size="sm"
+        fullWidth={false}
+        testID={testID}
+      />
+    </View>
+  );
+}
+
 function StatCard({
   theme,
   icon,
@@ -326,6 +430,7 @@ function StatCard({
   progress,
   tint,
   testID,
+  style,
 }: {
   theme: DsTheme;
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -334,9 +439,16 @@ function StatCard({
   progress: number;
   tint: string;
   testID?: string;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]} testID={testID}>
+    <View
+      style={[
+        styles.statCard,
+        { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+        style,
+      ]}
+      testID={testID}>
       <View style={[styles.statIconBubble, { backgroundColor: theme.color.surfaceMuted }]}>
         <MaterialIcons color={tint} name={icon} size={18} />
       </View>
@@ -360,10 +472,12 @@ const styles = StyleSheet.create({
   headerRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: 12,
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  profileWrap: { alignItems: 'center', flexDirection: 'row', gap: 12 },
+  profileWrap: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, minWidth: 0 },
+  profileCopy: { flex: 1, minWidth: 0 },
   avatarOuter: {
     borderRadius: 26,
     borderWidth: 2,
@@ -401,23 +515,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
   },
-  notificationButton: {
-    alignItems: 'center',
-    borderRadius: 20,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: 'center',
-    position: 'relative',
-    width: 40,
-  },
-  notificationDot: {
-    borderRadius: 4,
-    height: 8,
-    position: 'absolute',
-    right: 10,
-    top: 10,
-    width: 8,
-  },
+  professionalsButton: { flexShrink: 0, paddingHorizontal: 14 },
 
   offlineBanner: {
     alignItems: 'center',
@@ -445,22 +543,22 @@ const styles = StyleSheet.create({
   pendingText: { fontSize: 12, fontWeight: '600' },
 
   loadingWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-  errorText: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  retryButton: {
-    borderRadius: 10,
+  pageIntro: { marginBottom: 14, marginTop: 4 },
+  pageTitle: { fontFamily: Fonts.rounded, fontSize: 28, fontWeight: '700' },
+  pageSubtitle: { fontSize: 14, lineHeight: 20, marginTop: 3 },
+  issueCard: {
+    alignItems: 'center',
+    borderRadius: 14,
     borderWidth: 1,
-    minHeight: 40,
-    paddingHorizontal: 14,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  retryText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  issueCopy: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 8, minWidth: 0 },
+  issueText: { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 18 },
   sectionTitle: {
     fontFamily: Fonts.rounded,
     fontSize: 18,
@@ -468,8 +566,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 6,
   },
+  planCards: {},
+  planCardsWide: { flexDirection: 'row', gap: 16 },
+  planCardColumn: { flex: 1, minWidth: 0 },
 
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  statsRowCompact: { flexWrap: 'wrap' },
   statCard: {
     borderRadius: 16,
     borderWidth: 1,
@@ -478,6 +580,8 @@ const styles = StyleSheet.create({
     minHeight: 128,
     padding: 12,
   },
+  statCardCompact: { flexBasis: '46%' },
+  statCardWide: { flexBasis: '100%' },
   statIconBubble: {
     alignItems: 'center',
     borderRadius: 14,

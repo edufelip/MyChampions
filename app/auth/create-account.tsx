@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -52,8 +53,11 @@ export default function CreateAccountScreen() {
     createAccountWithE2EEmailPassword,
     signInWithE2ESocialAuth,
     signInWithServerSocialAuth,
+    adoptCurrentServerSession,
   } = useAuthSession();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const usesCompactMobileLayout = viewportWidth < 480 && viewportHeight <= 900;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -98,6 +102,7 @@ export default function CreateAccountScreen() {
         return;
       }
       await createAccountWithEmailPasswordFromSource({ name, email, password, passwordConfirmation });
+      if (!adoptCurrentServerSession()) throw new CreateAccountFailure('unknown');
     } catch (error: unknown) {
       const reason = normalizeCreateAccountReason(error);
       emitEvent(buildSignUpFailed('email_password', reason));
@@ -117,6 +122,7 @@ export default function CreateAccountScreen() {
       }
       try {
         await signInWithGoogleProviderTokenFromSource();
+        if (!adoptCurrentServerSession()) throw new CreateAccountFailure('unknown');
         return;
       } catch (error: unknown) {
         if (normalizeCreateAccountReason(error) !== 'configuration') {
@@ -150,6 +156,7 @@ export default function CreateAccountScreen() {
       }
       try {
         await signInWithAppleProviderTokenFromSource();
+        if (!adoptCurrentServerSession()) throw new CreateAccountFailure('unknown');
         return;
       } catch (error: unknown) {
         if (normalizeCreateAccountReason(error) !== 'configuration') {
@@ -201,7 +208,14 @@ export default function CreateAccountScreen() {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[
+          styles.contentContainer,
+          usesCompactMobileLayout && styles.contentContainerCompact,
+          {
+            paddingTop: insets.top + (usesCompactMobileLayout ? 8 : 14),
+            paddingBottom: insets.bottom + (usesCompactMobileLayout ? 20 : 48),
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         testID="auth.createAccount.scrollView">
@@ -223,16 +237,20 @@ export default function CreateAccountScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
-        <View style={styles.titleArea}>
-          <View style={[styles.brandBadge, { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft }]}>
-            <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={32} />
+        <View style={[styles.titleArea, usesCompactMobileLayout && styles.titleAreaCompact]}>
+          <View style={[
+            styles.brandBadge,
+            usesCompactMobileLayout && styles.brandBadgeCompact,
+            { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft },
+          ]}>
+            <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={usesCompactMobileLayout ? 25 : 32} />
           </View>
-          <Text style={[styles.title, { color: palette.text }]} testID="auth.createAccount.title">
+          <Text style={[styles.title, usesCompactMobileLayout && styles.titleCompact, { color: palette.text }]} testID="auth.createAccount.title">
             {t('auth.signup.title')}
           </Text>
         </View>
 
-        <View style={styles.formWrapper}>
+        <View style={[styles.formWrapper, usesCompactMobileLayout && styles.formWrapperCompact]}>
           <View style={styles.formSection}>
             <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.name')}</Text>
             <TextInput
@@ -455,7 +473,7 @@ export default function CreateAccountScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.replace(buildAuthRoute('/auth/sign-in') as never)}
-          style={styles.secondaryButton}
+          style={[styles.secondaryButton, usesCompactMobileLayout && styles.secondaryButtonCompact]}
           testID="auth.createAccount.backToSignInButton"
           disabled={submitting}>
           <Text style={[styles.secondaryButtonHint, { color: palette.icon }]}>
@@ -473,6 +491,7 @@ export default function CreateAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   blob: {
     borderRadius: 999,
@@ -495,7 +514,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
+    alignSelf: 'center',
     flexGrow: 1,
+    maxWidth: 560,
+    paddingHorizontal: 20,
+    width: '100%',
+  },
+  contentContainerCompact: {
     paddingHorizontal: 20,
   },
   header: {
@@ -519,6 +544,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     marginTop: 20,
   },
+  titleAreaCompact: {
+    marginBottom: 10,
+    marginTop: 8,
+  },
   brandBadge: {
     alignItems: 'center',
     borderRadius: 44,
@@ -529,14 +558,28 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     width: 88,
   },
+  brandBadgeCompact: {
+    borderRadius: 32,
+    borderWidth: 3,
+    height: 64,
+    marginBottom: 6,
+    width: 64,
+  },
   formWrapper: {
     gap: 12,
+  },
+  formWrapperCompact: {
+    gap: 8,
   },
   title: {
     fontFamily: Fonts.rounded,
     fontSize: 34,
     fontWeight: '700',
     textAlign: 'center',
+  },
+  titleCompact: {
+    fontSize: 30,
+    lineHeight: 36,
   },
   formSection: {
     gap: 8,
@@ -550,7 +593,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 2,
     fontSize: 16,
-    minHeight: 56,
+    minHeight: 52,
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
@@ -634,6 +677,11 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingBottom: 8,
     paddingTop: 8,
+  },
+  secondaryButtonCompact: {
+    marginTop: 10,
+    paddingBottom: 4,
+    paddingTop: 4,
   },
   secondaryButtonHint: {
     fontSize: 14,

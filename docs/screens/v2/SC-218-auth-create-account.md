@@ -32,6 +32,14 @@
 - Known sign-up failures must show reason-specific actionable copy.
 - Accessibility baseline applies for text scaling, contrast, focus order, and control labels.
 
+## Browser Behavior
+
+- Google Identity Services and Sign in with Apple JS capture browser provider tokens and keep the server token-exchange contract.
+- Email and social account creation selects cookie session mode on web. Refresh credentials remain HttpOnly and are never persisted in browser storage.
+- Missing provider identifiers, cancellation, and network failures keep the localized provider-neutral error behavior.
+- At 390x844 and similarly compact phone viewports, the complete idle form—including provider actions and the return-to-sign-in action—fits inside the initial viewport while remaining scrollable for text scaling and validation messages.
+- Tablet and desktop forms are centered at a readable 560px maximum width.
+
 ## Data Contract
 - Inputs:
   - Name, email, password, password-confirmation values.
@@ -63,7 +71,7 @@
   - Password and password-confirmation reveal/hide toggles are implemented.
   - Validation rules are enforced in tested domain logic (`required`, password policy, no emoji, ASCII symbol, password confirmation match).
   - Contextual submit error mapping is implemented for `duplicate_email`, `network`, `provider_conflict`, and `configuration`.
-  - Email/password sign-up is wired to the local MyChampions server auth bridge for explicit local/dev app variants.
+  - Email/password sign-up is wired to the MyChampions server auth boundary for native and browser runtimes.
   - Google social auth shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
   - Apple social auth shows the approved E2E fixture path in test mode, then tries native Apple identity-token capture and posts the token plus nonce to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer, audience, and nonce claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.
   - Successful sign-up routes to `/auth/accept-terms`; the MyChampions server auth session + guard then continue to role-selection or role home when terms are accepted.

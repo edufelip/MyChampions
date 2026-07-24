@@ -92,6 +92,13 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.home.offline.banner_read_only` | SC-203 | Offline persistent banner | You're offline. You can view cached data, but updates are locked until connection returns. | Você está offline. Você pode ver dados em cache, mas as atualizações ficam bloqueadas até a conexão voltar. | Estás sin conexión. Puedes ver los datos en caché, pero las actualizaciones están bloqueadas hasta que vuelva la conexión. | BL-008 |
 | `student.home.offline.write_lock` | SC-203 | Offline blocked-write helper | Connect to the internet to save changes. | Conecte-se à internet para salvar alterações. | Conéctate a internet para guardar los cambios. | BL-008 |
 | `student.home.title` | SC-203 | Screen title | Home | Início | Inicio | |
+| `student.home.welcome` | SC-203 | Personalized return cue | Welcome back | Que bom ter você de volta | Qué bueno verte de nuevo | Shown above the user's first name |
+| `student.home.your_day` | SC-203 | Dashboard heading | Your day | Seu dia | Tu día | Primary page identity |
+| `student.home.summary` | SC-203 | Dashboard helper | Your plans and progress at a glance. | Seus planos e progresso em um só lugar. | Tus planes y progreso de un vistazo. | |
+| `student.home.professionals_short` | SC-203 | Compact relationship action | My coaches | Meus coaches | Mis coaches | Visible header CTA |
+| `student.home.error.connections` | SC-203 | Partial connection error | Professional connections could not be loaded. | Não foi possível carregar as conexões profissionais. | No se pudieron cargar las conexiones profesionales. | Source-specific retry |
+| `student.home.error.plans` | SC-203 | Partial plan error | Your plans could not be loaded. | Não foi possível carregar seus planos. | No se pudieron cargar tus planes. | Source-specific retry |
+| `student.home.error.hydration` | SC-203 | Partial hydration error | Hydration progress could not be loaded. | Não foi possível carregar o progresso de hidratação. | No se pudo cargar el progreso de hidratación. | Source-specific retry |
 | `student.home.pending_connection` | SC-203 | Pending pill label | Pending Connection | Conexão Pendente | Conexión Pendiente | Stitch compact status pill |
 | `student.home.hydration.title` | SC-203 | Hydration card title | Hydration | Hidratação | Hidratación | Stitch card title |
 | `student.home.hydration.progress` | SC-203 | Hydration progress value | {consumed} / {goal} ml | {consumed} / {goal} ml | {consumed} / {goal} ml | |
@@ -129,6 +136,9 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `relationship.pending.helper` | SC-211 | Pending assignment state | Waiting for professional confirmation to activate this connection. | Aguardando confirmação do profissional para ativar esta conexão. | Esperando confirmación del profesional para activar esta conexión. | |
 | `relationship.pending.canceled_code_rotated` | SC-211 | Pending request canceled state | This request was canceled because the professional regenerated their invite code. Ask for the new code to reconnect. | Esta solicitação foi cancelada porque o profissional regenerou o código de convite. Peça o novo código para se conectar novamente. | Esta solicitud fue cancelada porque el profesional regeneró su código de invitación. Pide el nuevo código para volver a conectarte. | |
 | `pro.pending.search.placeholder` | SC-205 | Pending queue search | Search pending requests | Buscar solicitações pendentes | Buscar solicitudes pendientes | BL-004 |
+| `pro.pending.title` | SC-205 | Pending queue title | Connection requests | Solicitações de conexão | Solicitudes de conexión | Informative queue header |
+| `pro.pending.description` | SC-205 | Pending queue helper | Review students who want to work with you. Accept requests individually or select several to decline. | Revise os alunos que querem trabalhar com você. Aceite individualmente ou selecione vários para recusar. | Revisa a los estudiantes que quieren trabajar contigo. Acepta solicitudes individualmente o selecciona varias para rechazarlas. | Informative queue header |
+| `pro.pending.count` | SC-205 | Pending queue count | {count} pending | {count} pendentes | {count} pendientes | Informative queue header |
 | `pro.pending.filter.label` | SC-205 | Pending queue filter | Filter requests | Filtrar solicitações | Filtrar solicitudes | BL-004 |
 | `pro.pending.bulk_deny.cta` | SC-205 | Bulk deny action | Deny selected | Negar selecionadas | Rechazar seleccionadas | BL-004 |
 | `pro.pending.bulk_deny.confirm_title` | SC-205 | Bulk deny confirmation | Deny selected requests? | Negar solicitações selecionadas? | ¿Rechazar solicitudes seleccionadas? | BL-004 |
@@ -175,6 +185,21 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.home.plan_change_notification.title` | SC-204 | Pending plan-change notification title | Plan change request | Solicitação de alteração de plano | Solicitud de cambio de plan | Local in-app notification; push remains future provider work |
 | `pro.home.plan_change_notification.body` | SC-204 | Pending plan-change notification body | {count} pending request from {studentUid}. | {count} solicitação pendente de {studentUid}. | {count} solicitud pendiente de {studentUid}. | Deep links to student profile review card |
 | `pro.home.plan_change_notification.cta` | SC-204 | Pending plan-change notification CTA | Review | Revisar | Revisar | Opens `/professional/student-profile?studentId=...` |
+| `pro.home.subtitle` | SC-204 | Dashboard purpose | Priorities, students, and plans in one place. | Prioridades, alunos e planos em um só lugar. | Prioridades, alumnos y planes en un solo lugar. | Sets task-oriented context |
+| `pro.home.overview` | SC-204 | Summary section | Overview | Visão geral | Resumen | |
+| `pro.home.connection_requests` | SC-204 | Pending connection label | Connection requests | Solicitações de conexão | Solicitudes de conexión | Distinct from plan-change requests |
+| `pro.home.connection_requests_body` | SC-204 | Pending connection summary | {count} awaiting your review. | {count} aguardando sua análise. | {count} esperando tu revisión. | |
+| `pro.home.needs_attention` | SC-204 | Priority section | Needs attention | Precisa da sua atenção | Necesita tu atención | |
+| `pro.home.all_caught_up_title` | SC-204 | Settled empty task state | You're all caught up | Tudo em dia | Todo está al día | Only shown after both task sources settle successfully |
+| `pro.home.all_caught_up_body` | SC-204 | Settled empty task explanation | No student requests need your review right now. | Nenhuma solicitação de aluno precisa da sua análise agora. | Ninguna solicitud de alumno necesita tu revisión ahora. | |
+| `pro.home.attention_loading` | SC-204 | Task loading state | Checking for new student requests… | Verificando novas solicitações de alunos… | Comprobando nuevas solicitudes de alumnos… | |
+| `pro.home.attention_error` | SC-204 | Partial task-source failure | Some requests could not be checked. Available dashboard data is still shown. | Não foi possível verificar algumas solicitações. Os dados disponíveis continuam visíveis. | No se pudieron comprobar algunas solicitudes. Los datos disponibles siguen visibles. | Preserves successful task data |
+| `pro.home.manage` | SC-204 | Quick-action section | Manage your work | Gerencie seu trabalho | Gestiona tu trabajo | |
+| `pro.home.cta_nutrition` | SC-204 | Nutrition plan shortcut | Nutrition plans | Planos de nutrição | Planes de nutrición | |
+| `pro.home.cta_training` | SC-204 | Training plan shortcut | Training plans | Planos de treino | Planes de entrenamiento | |
+| `pro.home.subscription_status_unknown` | SC-204 | Unknown capacity shortcut | Capacity data unavailable. Open to refresh. | Dados de capacidade indisponíveis. Abra para atualizar. | Datos de capacidad no disponibles. Abre para actualizar. | Avoids presenting an inferred zero |
+| `pro.home.invite_code.specialty_required` | SC-204 | Invite prerequisite | Add a specialty before creating an invite code. | Adicione uma especialidade antes de criar um código de convite. | Añade una especialidad antes de crear un código de invitación. | Replaces a silent empty invite panel |
+| `pro.home.invite_code.add_specialty` | SC-204 | Invite prerequisite action | Manage specialties | Gerenciar especialidades | Gestionar especialidades | Opens specialty management |
 | `student.nutrition.water.log.label` | SC-209 | Hydration intake label | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
 | `student.nutrition.water.log.placeholder` | SC-209 | Hydration intake placeholder | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
 | `student.nutrition.water.goal_defined_in_plan` | SC-209 | Hydration helper | Water goal is defined in your nutrition plan. | A meta de água é definida no seu plano alimentar. | El objetivo de agua se define en tu plan de nutrición. | BL-104 |
@@ -286,6 +311,11 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.subscription.cta_subscribe` | SC-212 | Purchase CTA | Upgrade now | Fazer upgrade agora | Actualizar ahora | |
 | `pro.subscription.cta_restore` | SC-212 | Restore CTA | Restore purchase | Restaurar compra | Restaurar compra | |
 | `pro.subscription.status_active` | SC-212 | Entitlement badge | Subscription active | Assinatura ativa | Suscripción activa | |
+| `pro.subscription.subtitle` | SC-212 | Screen helper | Manage professional access and student capacity. | Gerencie o acesso profissional e a capacidade de alunos. | Gestiona el acceso profesional y la capacidad de alumnos. | Separates access from capacity |
+| `pro.subscription.current_status` | SC-212 | Status section title | Current status | Status atual | Estado actual | |
+| `pro.subscription.status.unknown` | SC-212 | Settled unknown state | Status unavailable | Status indisponível | Estado no disponible | Never used as loading copy |
+| `pro.subscription.status.checking` | SC-212 | Loading state | Checking your subscription status… | Verificando o status da sua assinatura… | Comprobando el estado de tu suscripción… | Progress only |
+| `pro.subscription.capacity_title` | SC-212 | Capacity section title | Student capacity | Capacidade de alunos | Capacidad de alumnos | |
 | `pro.subscription.pre_lapse.title` | SC-212 | Pre-lapse warning title | Your subscription is close to expiring | Sua assinatura está perto de expirar | Tu suscripción está a punto de expirar | BL-009 |
 | `pro.subscription.pre_lapse.body` | SC-212 | Pre-lapse warning helper | Renew now to avoid student management locks. | Renove agora para evitar bloqueios no gerenciamento de alunos. | Renueva ahora para evitar bloqueos en la gestión de alumnos. | BL-009 |
 | `pro.subscription.pre_lapse.cta_renew` | SC-212 | Pre-lapse warning CTA | Renew subscription | Renovar assinatura | Renovar suscripción | BL-009 |
@@ -497,7 +527,14 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `exercise.muscle_group.full_body` | SC-208 | Muscle group label | Full Body | Corpo Inteiro | Cuerpo Completo | |
 | `pro.plan.predefined.label` | SC-207/208 | Plan kind badge | Predefined plan | Plano predefinido | Plan predefinido | BR-281 |
 
-## Shell — Bottom Tab Navigator
+## Web Subscription Handoff
+
+| Key | Screen | Usage | en-US | pt-BR | es-ES | Notes |
+|---|---|---|---|---|---|---|
+| `pro.subscription.handoff_note` | SC-212 | Browser billing explanation | Browser purchases are unavailable. Continue on mobile to manage your subscription. | Compras no navegador não estão disponíveis. Continue no celular para gerenciar sua assinatura. | Las compras en el navegador no están disponibles. Continúa en el móvil para gestionar tu suscripción. | Web only |
+| `pro.subscription.cta_mobile_handoff` | SC-212/219 | Mobile handoff CTA | Continue on mobile | Continuar no celular | Continuar en el móvil | Replaces purchase/restore on web |
+
+## Shell — Responsive Tab Navigator
 
 | Key | Screen | Usage | en-US | pt-BR | es-ES | Notes |
 |---|---|---|---|---|---|---|

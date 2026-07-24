@@ -4,7 +4,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { searchFoodsFromSource } from '../nutrition/food-search-source';
 
 import type {
@@ -92,14 +92,14 @@ export type { FoodSearchResult } from './plan-builder.logic';
 export type PlanBuilderSourceDeps = {
   getServerBaseUrl?: () => string | undefined;
   getCurrentAccessToken?: () => Promise<string | null>;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 export type StarterTemplateDeps = PlanBuilderSourceDeps;
 
 const defaultDeps: PlanBuilderSourceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   fetchFn: fetch,
 };
 
@@ -135,7 +135,7 @@ function normalizePlanBuilderSourceError(error: unknown): PlanBuilderSourceError
 
 function resolveServerPlanBuilderSource(deps: PlanBuilderSourceDeps): {
   baseUrl: string;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
 } | null {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const fetchFn = deps.fetchFn ?? fetch;
@@ -147,7 +147,7 @@ function resolveServerPlanBuilderSource(deps: PlanBuilderSourceDeps): {
 async function getServerPlanBuilderSource(deps: PlanBuilderSourceDeps): Promise<{
   baseUrl: string;
   token: string;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
 } | null> {
   const source = resolveServerPlanBuilderSource(deps);
   if (!source) return null;

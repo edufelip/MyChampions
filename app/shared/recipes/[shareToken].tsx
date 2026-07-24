@@ -162,6 +162,7 @@ export default function SharedRecipeSaveScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      contentWidth="content"
       contentContainerStyle={styles.content}
       testID="shared_recipe.screen">
       <Stack.Screen

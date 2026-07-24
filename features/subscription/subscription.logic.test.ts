@@ -9,6 +9,7 @@ import {
   isPlanUpdateLocked,
   hasAiAnalysisAccess,
   AI_ENTITLEMENT_ID,
+  resolveSubscriptionStatusPresentation,
 } from './subscription.logic';
 
 // --- checkStudentCapEnforcement ---
@@ -38,10 +39,10 @@ test('checkStudentCapEnforcement blocks at cap when lapsed (D-043)', () => {
   );
 });
 
-test('checkStudentCapEnforcement allows when entitlement is unknown (optimistic)', () => {
+test('checkStudentCapEnforcement fails closed when entitlement is unknown', () => {
   assert.deepEqual(
     checkStudentCapEnforcement({ activeStudentCount: FREE_STUDENT_CAP + 5, entitlementStatus: 'unknown' }),
-    { allowed: true }
+    { allowed: false, reason: 'requires_entitlement' }
   );
 });
 
@@ -63,30 +64,65 @@ test('resolveSubscriptionState returns correct state for lapsed above cap', () =
   assert.equal(state.isPreLapseWarningVisible, false);
 });
 
-test('resolveSubscriptionState shows pre-lapse warning when active at threshold', () => {
+test('resolveSubscriptionState never infers billing expiry from active student count', () => {
   const state = resolveSubscriptionState({
-    activeStudentCount: FREE_STUDENT_CAP,
+    activeStudentCount: FREE_STUDENT_CAP + 5,
     entitlementStatus: 'active',
   });
-  assert.equal(state.isPreLapseWarningVisible, true);
+  assert.equal(state.isPreLapseWarningVisible, false);
   assert.equal(state.isAboveCapLocked, false);
 });
 
-test('resolveSubscriptionState uses custom preLapseThreshold', () => {
+test('resolveSubscriptionState shows pre-lapse warning only from an explicit expiry signal', () => {
   const state = resolveSubscriptionState({
-    activeStudentCount: 7,
+    activeStudentCount: 2,
     entitlementStatus: 'active',
-    preLapseThreshold: 7,
+    isExpiringSoon: true,
   });
   assert.equal(state.isPreLapseWarningVisible, true);
 });
 
-test('resolveSubscriptionState no warning below threshold', () => {
+test('resolveSubscriptionState does not show warning without an expiry signal', () => {
   const state = resolveSubscriptionState({
     activeStudentCount: FREE_STUDENT_CAP - 1,
     entitlementStatus: 'active',
   });
   assert.equal(state.isPreLapseWarningVisible, false);
+});
+
+test('resolveSubscriptionStatusPresentation separates loading, entitlement, and failure states', () => {
+  assert.equal(
+    resolveSubscriptionStatusPresentation({
+      entitlementStatus: 'unknown',
+      isLoading: true,
+      hasError: false,
+    }),
+    'loading'
+  );
+  assert.equal(
+    resolveSubscriptionStatusPresentation({
+      entitlementStatus: 'active',
+      isLoading: false,
+      hasError: false,
+    }),
+    'active'
+  );
+  assert.equal(
+    resolveSubscriptionStatusPresentation({
+      entitlementStatus: 'lapsed',
+      isLoading: false,
+      hasError: false,
+    }),
+    'inactive'
+  );
+  assert.equal(
+    resolveSubscriptionStatusPresentation({
+      entitlementStatus: 'unknown',
+      isLoading: false,
+      hasError: true,
+    }),
+    'unavailable'
+  );
 });
 
 test('resolveSubscriptionState not locked when not lapsed even above cap', () => {
@@ -97,13 +133,12 @@ test('resolveSubscriptionState not locked when not lapsed even above cap', () =>
   assert.equal(state.isAboveCapLocked, false);
 });
 
-test('resolveSubscriptionState unknown entitlement — no lock and no warning (optimistic, D-041)', () => {
+test('resolveSubscriptionState unknown entitlement fails closed above cap', () => {
   const state = resolveSubscriptionState({
     activeStudentCount: FREE_STUDENT_CAP + 3,
     entitlementStatus: 'unknown',
   });
-  // Unknown entitlement is optimistic: neither locked nor warning shown
-  assert.equal(state.isAboveCapLocked, false);
+  assert.equal(state.isAboveCapLocked, true);
   assert.equal(state.isPreLapseWarningVisible, false);
   assert.equal(state.entitlementStatus, 'unknown');
   assert.equal(state.activeStudentCount, FREE_STUDENT_CAP + 3);

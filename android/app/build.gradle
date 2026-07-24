@@ -3,6 +3,66 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+def releaseKeystorePropertiesFile = rootProject.file("keystore.properties")
+def releaseKeystoreProperties = new Properties()
+if (releaseKeystorePropertiesFile.isFile()) {
+    releaseKeystorePropertiesFile.withInputStream { releaseKeystoreProperties.load(it) }
+}
+
+def requiredReleaseSigningProperties = ["storeFile", "storePassword", "keyAlias", "keyPassword"]
+def missingReleaseSigningProperties = requiredReleaseSigningProperties.findAll {
+    releaseKeystoreProperties.getProperty(it)?.trim()?.isEmpty() != false
+}
+def releaseStoreFile = releaseKeystoreProperties.getProperty("storeFile")?.trim()
+    ? rootProject.file(releaseKeystoreProperties.getProperty("storeFile").trim())
+    : null
+def ciVersionCode = providers.gradleProperty("CI_VERSION_CODE").orNull?.trim()
+Integer parsedCiVersionCode = null
+try {
+    if (ciVersionCode ==~ /[1-9][0-9]*/) {
+        def candidateVersionCode = Long.valueOf(ciVersionCode)
+        if (candidateVersionCode <= 2100000000L) {
+            parsedCiVersionCode = candidateVersionCode.intValue()
+        }
+    }
+} catch (NumberFormatException ignored) {
+    // The production task-graph guard below reports the stable, value-free error.
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def productionReleaseInGraph = taskGraph.allTasks.any {
+        it.path.toLowerCase(Locale.ROOT).contains("productionrelease")
+    }
+    if (!productionReleaseInGraph) {
+        return
+    }
+    if (!releaseKeystorePropertiesFile.isFile()) {
+        throw new GradleException(
+            "Production release requires android/keystore.properties; debug signing is never used."
+        )
+    }
+    if (!missingReleaseSigningProperties.isEmpty()) {
+        throw new GradleException(
+            "Production release signing properties are incomplete: ${missingReleaseSigningProperties.join(', ')}."
+        )
+    }
+    if (!releaseStoreFile.isFile()) {
+        throw new GradleException(
+            "Production release keystore file declared by keystore.properties does not exist."
+        )
+    }
+    if (parsedCiVersionCode == null) {
+        throw new GradleException(
+            "Production release requires CI_VERSION_CODE from 1 through 2100000000."
+        )
+    }
+}
+
+def resolvedVersionCode = parsedCiVersionCode ?: 1
+def releaseSigningConfigured =
+    releaseKeystorePropertiesFile.isFile() &&
+    missingReleaseSigningProperties.isEmpty() &&
+    releaseStoreFile?.isFile()
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -92,7 +152,7 @@ android {
         applicationId "com.edufelip.mychampions"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode resolvedVersionCode
         versionName "1.0.0"
         testBuildType System.getProperty('testBuildType', 'debug')
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -118,15 +178,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (releaseSigningConfigured) {
+            release {
+                storeFile releaseStoreFile
+                storePassword releaseKeystoreProperties.getProperty("storePassword")
+                keyAlias releaseKeystoreProperties.getProperty("keyAlias")
+                keyPassword releaseKeystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

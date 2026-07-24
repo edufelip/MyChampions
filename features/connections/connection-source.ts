@@ -3,7 +3,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import {
   normalizeConnectionStatus,
   normalizeCanceledReason,
@@ -95,11 +95,11 @@ export function getExistingInviteConnectionConflict(
 export type ConnectionSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 const defaultConnectionSourceDeps: ConnectionSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
   fetchFn: fetch,
 };
@@ -182,6 +182,16 @@ function getE2EConnectionFixtures(): ConnectionRecord[] | null {
       canceledReason: null,
       specialty: 'fitness_coach',
       professionalAuthUid: 'e2e-fitness-coach',
+    });
+  }
+
+  if (process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE === 'basic') {
+    connections.push({
+      id: 'e2e-professional-pending-connection',
+      status: 'pending_confirmation',
+      canceledReason: null,
+      specialty: 'nutritionist',
+      professionalAuthUid: 'e2e-nutritionist',
     });
   }
 

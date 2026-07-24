@@ -20,10 +20,14 @@ import { resolveE2ENetworkStatusOverride } from './network-status-override.logic
  * Returns `'online'`, `'offline'`, or `'unknown'`.
  */
 export function useNetworkStatus(): NetworkStatus {
+  const storedE2EStatus =
+    process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' && typeof sessionStorage !== 'undefined'
+      ? sessionStorage.getItem('mychampions.e2e.network-status') ?? undefined
+      : undefined;
   const e2eNetworkStatusOverride = resolveE2ENetworkStatusOverride({
     appVariant: process.env.APP_VARIANT,
     isDev: typeof __DEV__ !== 'undefined' && __DEV__,
-    status: process.env.EXPO_PUBLIC_E2E_NETWORK_STATUS,
+    status: storedE2EStatus ?? process.env.EXPO_PUBLIC_E2E_NETWORK_STATUS,
   });
   const [status, setStatus] = useState<NetworkStatus>(e2eNetworkStatusOverride ?? 'unknown');
 

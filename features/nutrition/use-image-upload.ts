@@ -12,14 +12,12 @@
  *       BR-261, BR-271, TC-287
  */
 
-import { Alert } from 'react-native';
 import { useCallback, useRef, useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
 
 import type { AuthUser } from '@/features/auth/auth-user';
 import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '@/features/auth/server-auth-source';
+import { getValidServerAccessToken } from '@/features/auth/server-auth-source';
+import { photoPickerAdapter } from '@/features/platform/photo-picker-adapter';
 import {
   normalizeImageUploadError,
   type ImageUploadState,
@@ -34,9 +32,6 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_DIMENSION_PX = 1600;
-const JPEG_QUALITY = 0.75;
-
 // ─── Production picker ────────────────────────────────────────────────────────
 
 /**
@@ -44,68 +39,7 @@ const JPEG_QUALITY = 0.75;
  * Returns the selected asset info or null on cancellation.
  */
 function productionPickImage(): Promise<{ uri: string; width: number; height: number } | null> {
-  return new Promise((resolve) => {
-    Alert.alert(
-      'Upload Image',
-      'Choose a photo source',
-      [
-        {
-          text: 'Take Photo',
-          onPress: async () => {
-            const permission = await ImagePicker.requestCameraPermissionsAsync();
-            if (!permission.granted) {
-              resolve(null);
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: 'images',
-              quality: 1,
-            });
-            if (result.canceled || !result.assets[0]) {
-              resolve(null);
-              return;
-            }
-            const asset = result.assets[0];
-            resolve({
-              uri: asset.uri,
-              width: asset.width ?? MAX_DIMENSION_PX,
-              height: asset.height ?? MAX_DIMENSION_PX,
-            });
-          },
-        },
-        {
-          text: 'Choose from Library',
-          onPress: async () => {
-            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (!permission.granted) {
-              resolve(null);
-              return;
-            }
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: 'images',
-              quality: 1,
-            });
-            if (result.canceled || !result.assets[0]) {
-              resolve(null);
-              return;
-            }
-            const asset = result.assets[0];
-            resolve({
-              uri: asset.uri,
-              width: asset.width ?? MAX_DIMENSION_PX,
-              height: asset.height ?? MAX_DIMENSION_PX,
-            });
-          },
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => resolve(null),
-        },
-      ],
-      { cancelable: true, onDismiss: () => resolve(null) }
-    );
-  });
+  return photoPickerAdapter.pickPhoto();
 }
 
 /**
@@ -117,27 +51,7 @@ async function productionCompressImage(
   width: number,
   height: number
 ): Promise<Blob> {
-  const longestSide = Math.max(width, height);
-  const actions: ImageManipulator.Action[] = [];
-
-  if (longestSide > MAX_DIMENSION_PX) {
-    const scale = MAX_DIMENSION_PX / longestSide;
-    actions.push({
-      resize: {
-        width: Math.round(width * scale),
-        height: Math.round(height * scale),
-      },
-    });
-  }
-
-  const result = await ImageManipulator.manipulateAsync(uri, actions, {
-    compress: JPEG_QUALITY,
-    format: ImageManipulator.SaveFormat.JPEG,
-    base64: false,
-  });
-
-  const response = await fetch(result.uri);
-  return response.blob();
+  return photoPickerAdapter.compressToBlob({ uri, width, height });
 }
 
 /**
@@ -150,7 +64,7 @@ async function productionUploadBlob(
 ): Promise<string> {
   return uploadMealImageToServer(uploadTarget, blob, onProgress, {
     getServerBaseUrl: resolveServerBaseUrl,
-    getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+    getCurrentAccessToken: () => getValidServerAccessToken(),
     fetchFn: fetch,
   });
 }

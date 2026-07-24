@@ -70,7 +70,7 @@ function makeServerDeps(
   return {
     getServerBaseUrl: () => 'http://server.test/',
     getCurrentAccessToken: async () => 'server-token',
-    fetchFn: handler as typeof fetch,
+    fetchFn: handler as AppFetch,
   } as import('./plan-builder-source').PlanBuilderSourceDeps;
 }
 
@@ -81,7 +81,7 @@ describe('plan-builder server source', () => {
       getCurrentAccessToken: async () => null,
       fetchFn: (async () => {
         throw new Error('fetch should not run without server config and auth.');
-      }) as typeof fetch,
+      }) as AppFetch,
     };
 
     await assert.rejects(

@@ -16,7 +16,7 @@ export default function ModalScreen() {
   const theme = getDsTheme(scheme);
 
   return (
-    <DsScreen scheme={scheme} contentContainerStyle={styles.content}>
+    <DsScreen scheme={scheme} contentWidth="form" contentContainerStyle={styles.content}>
       <DsCard scheme={scheme} style={styles.card}>
         <Text style={[styles.title, { color: theme.color.textPrimary }]}>
           {t('shell.modal.body_title')}

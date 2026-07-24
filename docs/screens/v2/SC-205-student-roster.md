@@ -16,6 +16,8 @@
 - Roster rows are rendered inside a dedicated `DsCard` list container using DS spacing/radius/typography tokens, initial-avatar chips, status pills, and trailing chevrons.
 - Offline state uses `DsOfflineBanner`; all copy remains localization-key driven.
 - `/professional/pending` queue follows the same shell, card, and pill-action structure for search, selection, and bulk deny flows.
+- Selection mode uses an inset elevated action tray with horizontal and bottom clearance around the plan-type chips and assignment CTA.
+- The pending queue begins with an informative summary card that explains the decision, exposes the pending count, and keeps search and request actions in separate task groups.
 
 ## User Actions
 - Primary:

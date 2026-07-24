@@ -24,16 +24,29 @@ module.exports = {
     },
     'android.debug': {
       type: 'android.apk',
-      binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
-      testBinaryPath: 'android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk',
-      build: 'cd android && ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug',
+      binaryPath: 'android/app/build/outputs/apk/dev/debug/app-dev-debug.apk',
+      testBinaryPath:
+        'android/app/build/outputs/apk/androidTest/dev/debug/app-dev-debug-androidTest.apk',
+      build:
+        'cd android && APP_VARIANT=dev EXPO_PUBLIC_ENV=dev ./gradlew -DtestBuildType=debug app:assembleDevDebug app:assembleDevDebugAndroidTest',
       reversePorts: [8081],
     },
     'android.release': {
       type: 'android.apk',
-      binaryPath: 'android/app/build/outputs/apk/release/app-release.apk',
-      testBinaryPath: 'android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk',
-      build: 'cd android && ./gradlew assembleRelease assembleAndroidTest -DtestBuildType=release',
+      binaryPath: 'android/app/build/outputs/apk/production/release/app-production-release.apk',
+      testBinaryPath:
+        'android/app/build/outputs/apk/androidTest/production/release/app-production-release-androidTest.apk',
+      build:
+        'cd android && APP_VARIANT=prod EXPO_PUBLIC_ENV=prod EXPO_NO_DEV_CLIENT=1 ./gradlew -DtestBuildType=release app:assembleProductionRelease app:assembleProductionReleaseAndroidTest',
+    },
+    'android.prodDebug': {
+      type: 'android.apk',
+      binaryPath: 'android/app/build/outputs/apk/production/debug/app-production-debug.apk',
+      testBinaryPath:
+        'android/app/build/outputs/apk/androidTest/production/debug/app-production-debug-androidTest.apk',
+      build:
+        'cd android && APP_VARIANT=prod EXPO_PUBLIC_ENV=prod ./gradlew -DtestBuildType=debug app:assembleProductionDebug app:assembleProductionDebugAndroidTest',
+      reversePorts: [8081],
     },
   },
   devices: {
@@ -52,7 +65,7 @@ module.exports = {
     emulator: {
       type: 'android.emulator',
       device: {
-        avdName: process.env.DETOX_ANDROID_AVD || 'Pixel_9',
+        avdName: process.env.DETOX_ANDROID_AVD || 'Pixel_10',
       },
     },
   },
@@ -80,6 +93,14 @@ module.exports = {
     'android.emu.release': {
       device: 'emulator',
       app: 'android.release',
+    },
+    'android.att.prodDebug': {
+      device: 'attached',
+      app: 'android.prodDebug',
+    },
+    'android.emu.prodDebug': {
+      device: 'emulator',
+      app: 'android.prodDebug',
     },
   },
 };

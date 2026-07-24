@@ -177,6 +177,9 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-264`: Professional Student Profile shall expose nutrition tracking review as read-only.
 - `FR-265`: TrackingLogs shall remain Student-owned while allowing plan/connection provenance.
 - `FR-266`: NutritionPlans and TrackingLogs shall store stable CustomMeal snapshots/provenance; Professionals cannot add Student-owned CustomMeals into assigned plans unless shared/imported first.
+- `FR-267`: The MyChampions server shall reconcile both known RevenueCat entitlements from the canonical subscriber record after every accepted webhook, including both affected customer IDs for transfer events, before persisting production privileges.
+- `FR-268`: The subscription snapshot contract shall carry optional professional-entitlement expiry and authoritative renewal-risk state through native customer info, server persistence, browser hydration, and professional warning UI.
+- `FR-269`: Native purchase, restore, and paywall outcomes shall distinguish success, user cancellation, network failure, and storefront/provider failure; cancellation shall preserve the current gate without being presented as a system error, while failures shall remain actionable after refresh.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

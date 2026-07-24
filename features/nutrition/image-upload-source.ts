@@ -73,7 +73,7 @@ export type ImageUploadSourceDeps = {
 export type ServerImageUploadDeps = {
   getServerBaseUrl?: () => string | undefined;
   getCurrentAccessToken?: () => Promise<string | null>;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 // ─── Pick result ──────────────────────────────────────────────────────────────

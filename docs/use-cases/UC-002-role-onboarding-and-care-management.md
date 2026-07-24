@@ -206,12 +206,14 @@
 ## UC-002.15 Subscription Pre-Lapse Warning
 - Primary actor: Professional.
 - Trigger: Entitlement risk window is detected before subscription lapse lock.
-- Preconditions: Professional is near or above cap and entitlement is nearing inactive state.
+- Preconditions: Professional is near or above cap; `professional_pro` remains active; RevenueCat provides a valid expiration timestamp and explicit non-renewal, unsubscribe, or billing-issue risk.
 - Main flow:
-  1. System evaluates entitlement and cap state.
+  1. Native customer info or the server canonical customer manager evaluates entitlement expiry and renewal-risk data independently from cap state.
   2. System surfaces pre-lapse warning in professional surfaces.
   3. Professional is offered renew/restore path before lock.
 - Expected result: Professional receives early warning and recovery path before write lock.
+- Alternate flow:
+  - If expiry/risk metadata is absent, malformed, healthy, or the entitlement is already inactive, the pre-lapse warning is not inferred from student count; normal active, locked, or unknown behavior applies.
 
 ## UC-002.16 Specialty Removal Assist
 - Primary actor: Professional.

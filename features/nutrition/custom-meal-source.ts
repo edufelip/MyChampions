@@ -3,7 +3,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 
 import type { CustomMeal, SharedMealSnapshot } from './custom-meal.logic';
 import { calculatePortionNutrition } from './custom-meal.logic';
@@ -81,11 +81,11 @@ export function buildAssignedMealPortionLog(input: {
 export type CustomMealSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 const defaultDeps: CustomMealSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
   fetchFn: fetch,
 };

@@ -28,6 +28,135 @@ test('resolveE2EAuthSessionOverride enables an unlocked dev auth session for E2E
   });
 });
 
+test('dev E2E auth derives isolated customer identities from an explicit run UID', () => {
+  const previousUid = process.env.EXPO_PUBLIC_E2E_AUTH_UID;
+  process.env.EXPO_PUBLIC_E2E_AUTH_UID = 'rc-live-20260723-001';
+
+  try {
+    const input = {
+      appVariant: 'dev',
+      enabledFlag: 'true',
+      isDev: true,
+      requiredTermsVersion: 'v3',
+    } as const;
+
+    assert.equal(resolveE2EAuthSessionOverride(input)?.uid, 'rc-live-20260723-001');
+    assert.equal(
+      resolveE2EAuthSessionSourceOverride(input)?.uid,
+      'rc-live-20260723-001'
+    );
+    assert.equal(
+      resolveE2EEmailPasswordSignInOverride({
+        ...input,
+        email: 'e2e-auth-session@example.test',
+        password: E2E_AUTH_SESSION_PASSWORD,
+      })?.uid,
+      'rc-live-20260723-001'
+    );
+    assert.equal(
+      resolveE2EEmailPasswordCreateAccountOverride({
+        ...input,
+        email: 'e2e-created-account@example.test',
+        name: 'RevenueCat Student',
+        password: 'E2E-create-123!',
+      })?.uid,
+      'rc-live-20260723-001-created'
+    );
+    assert.equal(
+      resolveE2EEmailPasswordSignInOverride({
+        ...input,
+        email: 'e2e-created-account@example.test',
+        password: 'E2E-create-123!',
+      })?.uid,
+      'rc-live-20260723-001-created'
+    );
+    assert.equal(
+      resolveE2ESocialAuthOverride({
+        ...input,
+        provider: 'google',
+      })?.uid,
+      'rc-live-20260723-001-google'
+    );
+  } finally {
+    if (previousUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_UID;
+    else process.env.EXPO_PUBLIC_E2E_AUTH_UID = previousUid;
+  }
+});
+
+test('dev E2E auth accepts an explicit allowlisted Google switch identity', () => {
+  const previousUid = process.env.EXPO_PUBLIC_E2E_AUTH_UID;
+  const previousGoogleUid = process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID;
+  process.env.EXPO_PUBLIC_E2E_AUTH_UID = 'rc-student-v1-switch';
+  process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID = 'rc-student-v1-switch-alt';
+
+  try {
+    assert.equal(
+      resolveE2ESocialAuthOverride({
+        appVariant: 'dev',
+        enabledFlag: 'true',
+        isDev: true,
+        provider: 'google',
+        requiredTermsVersion: 'v3',
+      })?.uid,
+      'rc-student-v1-switch-alt'
+    );
+  } finally {
+    if (previousUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_UID;
+    else process.env.EXPO_PUBLIC_E2E_AUTH_UID = previousUid;
+    if (previousGoogleUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID;
+    else process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID = previousGoogleUid;
+  }
+});
+
+test('invalid explicit Google switch identity fails closed', () => {
+  const previousGoogleUid = process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID;
+  process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID = 'invalid customer id';
+
+  try {
+    assert.equal(
+      resolveE2ESocialAuthOverride({
+        appVariant: 'dev',
+        enabledFlag: 'true',
+        isDev: true,
+        provider: 'google',
+        requiredTermsVersion: 'v3',
+      }),
+      null
+    );
+  } finally {
+    if (previousGoogleUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID;
+    else process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID = previousGoogleUid;
+  }
+});
+
+test('invalid explicit E2E customer identities fail closed instead of sharing a fallback customer', () => {
+  const previousUid = process.env.EXPO_PUBLIC_E2E_AUTH_UID;
+  process.env.EXPO_PUBLIC_E2E_AUTH_UID = 'invalid customer id';
+
+  try {
+    assert.equal(
+      resolveE2EAuthSessionOverride({
+        appVariant: 'dev',
+        enabledFlag: 'true',
+        isDev: true,
+        requiredTermsVersion: 'v3',
+      }),
+      null
+    );
+    assert.equal(
+      resolveE2EAuthSessionSourceOverride({
+        appVariant: 'dev',
+        enabledFlag: 'true',
+        isDev: true,
+      }),
+      null
+    );
+  } finally {
+    if (previousUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_UID;
+    else process.env.EXPO_PUBLIC_E2E_AUTH_UID = previousUid;
+  }
+});
+
 test('resolveE2EEmailPasswordSignInOverride accepts only the deterministic dev credentials', () => {
   const session = resolveE2EEmailPasswordSignInOverride({
     appVariant: 'dev',
@@ -45,6 +174,24 @@ test('resolveE2EEmailPasswordSignInOverride accepts only the deterministic dev c
     lockedRole: null,
     uid: 'e2e-auth-session-user',
   });
+
+  assert.deepEqual(
+    resolveE2EEmailPasswordSignInOverride({
+      appVariant: 'dev',
+      email: 'E2E-CREATED-ACCOUNT@EXAMPLE.TEST',
+      enabledFlag: 'true',
+      isDev: true,
+      password: 'E2E-create-123!',
+      requiredTermsVersion: 'v3',
+    }),
+    {
+      acceptedTermsVersion: 'v3',
+      displayName: 'New E2E User',
+      email: 'e2e-created-account@example.test',
+      lockedRole: null,
+      uid: 'e2e-created-account-user',
+    }
+  );
 
   assert.equal(
     resolveE2EEmailPasswordSignInOverride({
@@ -251,12 +398,14 @@ test('resolveE2ESubscriptionOverride exposes dev-only entitlement and count fixt
     enabledFlag: 'true',
     entitlementStatus: 'lapsed',
     isDev: true,
+    professionalEntitlementRenewalRisk: 'true',
   });
 
   assert.deepEqual(subscription, {
     activeStudentCount: 11,
     aiEntitlementStatus: 'unknown',
     entitlementStatus: 'lapsed',
+    professionalEntitlementRenewalRisk: true,
   });
 });
 

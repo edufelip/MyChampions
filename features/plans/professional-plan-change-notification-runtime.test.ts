@@ -12,5 +12,6 @@ test('professional home renders server-backed plan change notifications', () => 
   assert.equal(source.includes('buildProfessionalPlanChangeNotificationSummary'), true);
   assert.equal(source.includes('pro.home.planChangeNotification'), true);
   assert.equal(source.includes('/professional/student-profile?studentId='), true);
-  assert.equal(source.includes('pro.home.pendingRequests'), true);
+  assert.equal(source.includes("t('pro.home.needs_attention')"), true);
+  assert.equal(source.includes('attentionState.hasPlanChangeRequests'), true);
 });

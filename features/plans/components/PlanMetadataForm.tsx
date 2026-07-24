@@ -1,10 +1,24 @@
 import React from 'react';
-import { InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  InputAccessoryView,
+  Keyboard,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextStyle,
+  View,
+} from 'react-native';
 import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
 import { DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import type { validateNutritionPlanInput } from '@/features/plans/plan-builder.logic';
 import type { TranslationBinding } from '@/localization';
+
+const WEB_INPUT_RESET = Platform.OS === 'web'
+  ? ({ outlineStyle: 'none', outlineWidth: 0 } as unknown as TextStyle)
+  : undefined;
 
 type TFn = TranslationBinding['t'];
 
@@ -60,7 +74,7 @@ export const PlanMetadataForm = React.memo(({
             {t('pro.plan.field.name.label')}
           </Text>
           <TextInput
-            style={[styles.titleInput, { color: palette.text }]}
+            style={[styles.titleInput, WEB_INPUT_RESET, { color: palette.text }]}
             placeholder={tr('pro.plan.field.nutrition_name.support', 'student.plan.field.nutrition_name.support')}
             placeholderTextColor={palette.icon}
             value={name}
@@ -87,7 +101,7 @@ export const PlanMetadataForm = React.memo(({
           </Text>
           <TextInput
             ref={hydrationInputRef}
-            style={[styles.titleInput, { color: palette.text }]}
+            style={[styles.titleInput, WEB_INPUT_RESET, { color: palette.text }]}
             placeholder={tr(
               'pro.plan.field.hydration_goal.placeholder',
               'student.plan.field.hydration_goal.placeholder'

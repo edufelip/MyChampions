@@ -21,10 +21,12 @@
 - Success: acceptance stored for current required version; user proceeds to role-selection or role-home by guard.
 
 ## Validation Rules
-- Accept button remains disabled until checkbox is checked.
+- Accept button remains disabled until checkbox is checked and uses the shared explicit disabled-control tokens.
 - Route guard forces authenticated users with pending acceptance to `/auth/accept-terms`.
 - Route guard redirects away from `/auth/accept-terms` once required version is accepted.
 - Terms URL and required version are read from expo `extra.terms` config with documented fallback values.
+- Structural surfaces use the shared radius vocabulary: 16px card, 12px link control, compact checkbox radius, and pill treatment only for the primary CTA.
+- The terms block is centered and capped at 520px on larger screens.
 
 ## Data Contract
 - Inputs:
@@ -53,7 +55,7 @@
   - Sign-in and create-account success paths now route to `/auth/accept-terms`.
   - Terms acceptance persistence is MyChampions server-backed (`acceptedTermsVersion` in profile source).
   - Route guard enforces terms gate globally for authenticated sessions.
-  - Primary accept pill button uses light foreground for label/loading contrast over the accent background.
+  - Primary accept action uses `DsPillButton`; foreground and disabled colors are scheme-aware and covered by contrast tests.
 
 ## Links
 - Functional requirement: FR-101, FR-164, FR-249

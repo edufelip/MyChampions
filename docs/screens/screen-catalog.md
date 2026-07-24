@@ -7,9 +7,20 @@
 
 | Screen | Route | Type | Purpose | Status |
 |---|---|---|---|---|
-| Home | `/` | Tab | Entry screen with starter content and modal entry point | Implemented |
-| Explore | `/explore` | Tab | Starter examples and links | Implemented |
-| Modal | `/modal` | Modal | Demonstrates modal flow and return action | Implemented |
+| Root resolver | `/` | Router | Restores auth, terms, role, and role-home routing | Implemented |
+| Student home | `/student/home` | Tab | Daily plan, hydration, and relationship entry | Implemented |
+| Student nutrition | `/student/nutrition` | Tab | Assigned/self-managed nutrition tracking | Implemented |
+| Student training | `/student/training` | Tab | Assigned/self-managed workout tracking | Implemented |
+| Custom meal library/builder | `/nutrition/custom-meals`, `/nutrition/custom-meals/:mealId` | Stack | Meal reuse, logging, photo analysis, upload, and sharing | Implemented |
+| Student professionals | `/student/professionals` | Stack | Invite, QR fallback, connection state, and relationship ending | Implemented |
+| Professional dashboard | `/professional/home` | Tab | Operational workbench and subscription state | Implemented |
+| Professional students/profile/pending | `/professional/students`, `/professional/student-profile`, `/professional/pending` | Stack | Roster, tracking review, bulk assignment, and pending queue | Implemented |
+| Professional plan libraries/builders | `/professional/nutrition`, `/professional/training`, `/professional/*/plans/:planId` | Stack | Reusable nutrition/training plan authoring and assignment | Implemented |
+| Professional specialties/subscription | `/professional/specialty`, `/professional/subscription` | Stack | Specialty configuration/removal assist and entitlement handoff | Implemented |
+| Authentication/terms/role | `/auth/sign-in`, `/auth/create-account`, `/auth/accept-terms`, `/auth/role-selection` | Stack | Session entry, legal gate, and immutable role onboarding | Implemented |
+| Account/language | `/settings/account`, `/settings/language-select` | Stack | Privacy, support, localization, deletion, and sign-out | Implemented |
+| Shared recipe | `/shared/recipes/:shareToken` | Deep link | Preview and idempotent account-owned save | Implemented |
+| Modal | `/modal` | Modal | Modal presentation and role-home return | Implemented |
 
 ## Planned Screens Backlog
 

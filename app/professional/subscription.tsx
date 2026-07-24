@@ -11,7 +11,8 @@
  * Refs: D-009–D-011, D-024, D-043, D-075, D-128, D-134, FR-126–129, FR-156, FR-185, FR-215, FR-217
  *       BR-218–221, BR-228, BR-247, BR-273, BR-275
  */
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
@@ -32,6 +33,7 @@ import {
   FREE_STUDENT_CAP,
   isPlanUpdateLocked,
   resolveSubscriptionState,
+  resolveSubscriptionStatusPresentation,
 } from '@/features/subscription/subscription.logic';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -47,16 +49,24 @@ export default function ProfessionalSubscriptionScreen() {
 
   const {
     entitlementStatus,
+    professionalEntitlementRenewalRisk,
     activeStudentCount,
+    isActiveStudentCountKnown,
     isLoading,
+    error,
     restore,
     refresh,
     openProPaywall,
+    purchaseCapability,
     lastSyncedAtIso: subscriptionSyncedAtIso,
   } =
     useSubscription(currentUser?.uid ?? null, { loadProfessionalActiveStudentCount: true });
 
-  const subState = resolveSubscriptionState({ activeStudentCount, entitlementStatus });
+  const subState = resolveSubscriptionState({
+    activeStudentCount,
+    entitlementStatus,
+    isExpiringSoon: professionalEntitlementRenewalRisk,
+  });
   const isLocked = isPlanUpdateLocked(subState);
 
   const networkStatus = useNetworkStatus();
@@ -65,28 +75,61 @@ export default function ProfessionalSubscriptionScreen() {
     networkStatus,
     lastSyncedAtIso,
   });
-  const isWriteLocked = offlineDisplay.showOfflineBanner || isLocked;
+  const isSubscriptionActionDisabled = offlineDisplay.showOfflineBanner || isLoading;
+  const isPurchaseUnavailable = purchaseCapability === 'unavailable';
+  const statusPresentation = resolveSubscriptionStatusPresentation({
+    entitlementStatus,
+    isLoading,
+    hasError: error !== null,
+  });
 
   const statusLabel =
-    entitlementStatus === 'active'
+    statusPresentation === 'active'
       ? t('pro.subscription.status.active')
-      : entitlementStatus === 'lapsed'
+      : statusPresentation === 'inactive'
       ? t('pro.subscription.status.inactive')
       : t('pro.subscription.status.unknown');
 
   const statusColor =
-    entitlementStatus === 'active'
+    statusPresentation === 'active'
       ? theme.color.success
-      : entitlementStatus === 'lapsed'
+      : statusPresentation === 'inactive'
       ? theme.color.danger
       : theme.color.textSecondary;
+  const statusBackground =
+    statusPresentation === 'active'
+      ? theme.color.successSoft
+      : statusPresentation === 'inactive'
+        ? theme.color.dangerSoft
+        : theme.color.surfaceMuted;
+  const statusIcon: keyof typeof MaterialIcons.glyphMap =
+    statusPresentation === 'active'
+      ? 'check-circle'
+      : statusPresentation === 'inactive'
+        ? 'error-outline'
+        : 'help-outline';
+  const statusBody =
+    statusPresentation === 'active'
+      ? t('pro.subscription.status.active_body')
+      : statusPresentation === 'inactive'
+        ? t('pro.subscription.status.inactive_body')
+        : t('pro.subscription.status.unavailable_body');
 
+  const hasCapacityData = isActiveStudentCountKnown;
   const capLabel = (t('pro.subscription.cap_usage') as string)
-    .replace('{count}', String(activeStudentCount))
+    .replace('{count}', hasCapacityData ? String(activeStudentCount) : '—')
     .replace('{limit}', String(FREE_STUDENT_CAP));
+  const capProgress = hasCapacityData
+    ? Math.min(100, (activeStudentCount / FREE_STUDENT_CAP) * 100)
+    : 0;
 
   return (
-    <DsScreen scheme={scheme} testID="pro.subscription.screen" contentContainerStyle={styles.content}>
+    <DsScreen
+      scheme={scheme}
+      contentWidth="form"
+      withBlobs={false}
+      testID="pro.subscription.screen"
+      contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.subscription.title'), headerShown: false }} />
 
       <DsBackButton
@@ -112,27 +155,73 @@ export default function ProfessionalSubscriptionScreen() {
         />
       ) : null}
 
+      <View style={styles.pageIntro}>
+        <Text accessibilityRole="header" style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
+          {t('pro.subscription.title')}
+        </Text>
+        <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
+          {t('pro.subscription.subtitle')}
+        </Text>
+      </View>
+
       <DsCard scheme={scheme} testID="pro.subscription.statusCard" style={styles.statusCard}>
-        <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{t('pro.subscription.title')}</Text>
+        <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
+          {t('pro.subscription.current_status')}
+        </Text>
 
         {isLoading ? (
-          <ActivityIndicator
-            testID="pro.subscription.loading"
-            accessibilityLabel={t('a11y.loading.default') as string}
-            color={theme.color.accentPrimary}
-          />
+          <View style={styles.loadingRow} testID="pro.subscription.loading">
+            <ActivityIndicator
+              accessibilityLabel={t('a11y.loading.default') as string}
+              color={theme.color.accentPrimary}
+            />
+            <Text style={[styles.statusBody, { color: theme.color.textSecondary }]}>
+              {t('pro.subscription.status.checking')}
+            </Text>
+          </View>
         ) : (
-          <Text
-            testID="pro.subscription.statusValue"
-            style={[styles.statusBadge, { color: statusColor }]}
-            accessibilityLabel={`${t('pro.subscription.title') as string}: ${statusLabel as string}`}>
-            {statusLabel}
-          </Text>
+          <>
+            <View
+              accessible
+              accessibilityLabel={`${t('pro.subscription.title') as string}: ${statusLabel as string}`}
+              style={[styles.statusBadge, { backgroundColor: statusBackground }]}
+              testID="pro.subscription.statusValue">
+              <MaterialIcons color={statusColor} name={statusIcon} size={18} />
+              <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
+            </View>
+            <Text style={[styles.statusBody, { color: theme.color.textSecondary }]}>{statusBody}</Text>
+          </>
         )}
 
-        <Text style={[styles.meta, { color: theme.color.textSecondary }]} testID="pro.subscription.capUsage">
-          {capLabel}
-        </Text>
+        <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
+        <View style={styles.capacityHeader}>
+          <Text style={[styles.capacityTitle, { color: theme.color.textPrimary }]}>
+            {t('pro.subscription.capacity_title')}
+          </Text>
+          <Text style={[styles.capacityValue, { color: isLocked ? theme.color.danger : theme.color.textPrimary }]} testID="pro.subscription.capUsage">
+            {capLabel}
+          </Text>
+        </View>
+        <View
+          accessibilityLabel={t('pro.subscription.capacity_title') as string}
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            min: 0,
+            max: FREE_STUDENT_CAP,
+            now: hasCapacityData ? Math.min(activeStudentCount, FREE_STUDENT_CAP) : undefined,
+            text: capLabel,
+          }}
+          style={[styles.capacityTrack, { backgroundColor: theme.color.surfaceMuted }]}>
+          <View
+            style={[
+              styles.capacityFill,
+              {
+                backgroundColor: isLocked ? theme.color.danger : theme.color.accentPrimary,
+                width: `${capProgress}%`,
+              },
+            ]}
+          />
+        </View>
         <Text style={[styles.meta, { color: theme.color.textSecondary }]}>{t('pro.subscription.free_tier')}</Text>
       </DsCard>
 
@@ -148,64 +237,88 @@ export default function ProfessionalSubscriptionScreen() {
           <Text style={[styles.warningText, { color: theme.color.textPrimary }]}>
             {t('pro.subscription.pre_lapse.body')}
           </Text>
-          <Pressable
-            accessibilityRole="button"
-            disabled={isWriteLocked}
-            onPress={() => void refresh()}
-            style={[
-              styles.renewButton,
-              {
-                borderColor: theme.color.warning,
-                opacity: isWriteLocked ? 0.4 : 1,
-                backgroundColor: theme.color.surface,
-              },
-            ]}
-            testID="pro.subscription.renewCta">
-            <Text style={[styles.renewButtonText, { color: theme.color.warning }]}>
-              {t('pro.subscription.pre_lapse.cta_renew')}
-            </Text>
-          </Pressable>
+          <DsPillButton
+            scheme={scheme}
+            variant="outline"
+            disabled={isSubscriptionActionDisabled || isPurchaseUnavailable}
+            onPress={() => void openProPaywall()}
+            label={t('pro.subscription.pre_lapse.cta_renew') as string}
+            testID="pro.subscription.renewCta"
+          />
         </DsCard>
       ) : null}
 
       {isLocked ? (
         <DsCard scheme={scheme} variant="warning" testID="pro.subscription.locked">
-          <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('pro.subscription.locked')}</Text>
+          <Text style={[styles.errorText, { color: theme.color.danger }]}>
+            {t(
+              entitlementStatus === 'unknown'
+                ? 'pro.subscription.locked_unknown'
+                : 'pro.subscription.locked'
+            )}
+          </Text>
         </DsCard>
       ) : null}
 
-      <Text style={[styles.purchaseNote, { color: theme.color.textSecondary }]}>
-        {t('pro.subscription.purchase_note')}
-      </Text>
+      {isPurchaseUnavailable ? (
+        <DsCard
+          scheme={scheme}
+          variant="muted"
+          style={styles.capabilityCard}
+          testID="pro.subscription.capabilityUnavailable">
+          <MaterialIcons color={theme.color.textSecondary} name="info-outline" size={20} />
+          <Text style={[styles.capabilityText, { color: theme.color.textSecondary }]}>
+            {t('pro.subscription.unavailable_note')}
+          </Text>
+        </DsCard>
+      ) : (
+        <>
+          <Text style={[styles.purchaseNote, { color: theme.color.textSecondary }]}>
+            {t(
+              purchaseCapability === 'native_purchase'
+                ? 'pro.subscription.purchase_note'
+                : 'pro.subscription.handoff_note'
+            )}
+          </Text>
+
+          <DsPillButton
+            scheme={scheme}
+            disabled={isSubscriptionActionDisabled}
+            loading={isLoading}
+            onPress={() => {
+              void openProPaywall();
+            }}
+            label={
+              t(
+                purchaseCapability === 'native_purchase'
+                  ? 'pro.subscription.cta_purchase'
+                  : 'pro.subscription.cta_mobile_handoff'
+              ) as string
+            }
+            testID="pro.subscription.purchaseCta"
+          />
+
+          {purchaseCapability === 'native_purchase' ? (
+            <DsPillButton
+              scheme={scheme}
+              variant="secondary"
+              disabled={isSubscriptionActionDisabled}
+              onPress={() => void restore()}
+              label={t('pro.subscription.cta_restore') as string}
+              testID="pro.subscription.restoreCta"
+            />
+          ) : null}
+        </>
+      )}
 
       <DsPillButton
         scheme={scheme}
-        disabled={isWriteLocked}
-        onPress={() => {
-          void openProPaywall();
-        }}
-        label={t('pro.subscription.cta_purchase') as string}
-        testID="pro.subscription.purchaseCta"
-      />
-
-      <DsPillButton
-        scheme={scheme}
-        variant="secondary"
-        disabled={isWriteLocked}
-        onPress={() => void restore()}
-        label={t('pro.subscription.cta_restore') as string}
-        testID="pro.subscription.restoreCta"
-      />
-
-      <Pressable
-        accessibilityRole="button"
+        variant="ghost"
+        disabled={offlineDisplay.showOfflineBanner || isLoading}
         onPress={() => void refresh()}
-        style={styles.ghostButton}
-        testID="pro.subscription.refreshCta">
-        <Text style={[styles.ghostButtonText, { color: theme.color.accentPrimary }]}>
-          {t('pro.subscription.cta_refresh')}
-        </Text>
-      </Pressable>
+        label={t('pro.subscription.cta_refresh') as string}
+        testID="pro.subscription.refreshCta"
+      />
     </DsScreen>
   );
 }
@@ -218,17 +331,48 @@ const styles = StyleSheet.create({
     paddingBottom: DsSpace.xxl,
   },
   backButton: { marginBottom: -4 },
+  pageIntro: { gap: 4 },
+  screenTitle: {
+    ...DsTypography.screenTitle,
+    fontFamily: Fonts?.rounded ?? 'normal',
+  },
+  screenSubtitle: {
+    ...DsTypography.body,
+    lineHeight: 21,
+  },
   statusCard: {
-    gap: DsSpace.xs,
+    gap: DsSpace.sm,
   },
   cardTitle: {
     ...DsTypography.cardTitle,
     fontFamily: Fonts?.rounded ?? 'normal',
   },
+  loadingRow: { alignItems: 'center', flexDirection: 'row', gap: DsSpace.sm, minHeight: 34 },
   statusBadge: {
-    fontSize: 20,
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  statusBadgeText: {
+    fontSize: 14,
     fontWeight: '700',
   },
+  statusBody: { ...DsTypography.caption, lineHeight: 19 },
+  divider: { height: 1, marginVertical: DsSpace.xs },
+  capacityHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+    justifyContent: 'space-between',
+  },
+  capacityTitle: { ...DsTypography.body, fontWeight: '700' },
+  capacityValue: { ...DsTypography.caption, fontWeight: '700' },
+  capacityTrack: { borderRadius: 999, height: 8, overflow: 'hidden' },
+  capacityFill: { borderRadius: 999, height: '100%' },
   meta: {
     ...DsTypography.caption,
   },
@@ -242,32 +386,13 @@ const styles = StyleSheet.create({
   warningText: {
     ...DsTypography.caption,
   },
-  renewButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    minHeight: 40,
-    marginTop: 4,
-  },
-  renewButtonText: {
-    ...DsTypography.body,
-    fontWeight: '700',
-  },
   errorText: {
     ...DsTypography.caption,
   },
+  capabilityCard: { alignItems: 'center', flexDirection: 'row', gap: DsSpace.sm },
+  capabilityText: { ...DsTypography.caption, flex: 1, lineHeight: 19 },
   purchaseNote: {
     ...DsTypography.caption,
     textAlign: 'center',
-  },
-  ghostButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  ghostButtonText: {
-    ...DsTypography.body,
-    fontWeight: '700',
   },
 });

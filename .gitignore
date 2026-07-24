@@ -4,9 +4,8 @@
 node_modules/
 .npm-cache/
 
-# lockfiles are local; package management should use yarn commands
+# npm lockfiles are not used; Yarn's lockfile is committed for reproducible installs
 package-lock.json
-yarn.lock
 
 # Expo
 .expo/
@@ -18,6 +17,7 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+android/keystore.properties
 *.p8
 *.p12
 *.key
@@ -30,6 +30,12 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+
+# Local browser evidence (Playwright reports, traces, videos, and screenshots)
+.artifacts/
+
+# Raw Detox run output; curated evidence bundles under artifacts/ remain tracked
+artifacts/ios.sim.debug.*/
 
 # macOS
 .DS_Store

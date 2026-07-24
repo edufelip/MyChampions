@@ -1,4 +1,4 @@
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import type { PortionLog } from '../nutrition/custom-meal-source';
 import type { WaterIntakeLog } from '../nutrition/water-tracking.logic';
@@ -22,11 +22,11 @@ export class StudentTrackingReviewSourceError extends Error {
 export type StudentTrackingReviewSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 const defaultDeps: StudentTrackingReviewSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
   fetchFn: fetch,
 };

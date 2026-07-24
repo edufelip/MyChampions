@@ -26,6 +26,7 @@
 
 ## Validation Rules
 - Role selection is required before entering the main app journey.
+- Continue remains explicitly disabled until a role is selected and exposes an accessible disabled state without opacity-derived contrast.
 - Role cannot be changed in this account after confirmation.
 - Copy must explicitly communicate that users can continue without connecting to a professional.
 - Screen is only available for authenticated accounts with unlocked role state.
@@ -69,7 +70,8 @@
     - Horizontal role cards with icon, role tag (colored label), title, and two-line description per card.
     - Student card accent: `accentPrimary` (green); Professional card accent: `accentBlue` (blue). Each card glow/border uses its own accent color.
     - Selected role outline + shadow glow transition is animated on pick/unpick.
-    - Lock icon + terse lock-note panel; rounded primary CTA with green shadow lift.
+    - Lock icon + terse lock-note panel; shared `DsPillButton` primary CTA with explicit enabled, disabled, and loading states.
+    - Responsive composition vertically centers the complete decision block instead of pinning content to the top and the CTA to the bottom. Tablet keeps a single column capped at 720px; desktop uses a centered two-card row capped at 960px, with the primary action capped at 420px.
     - New locale keys: `auth.role.option_self.description`, `auth.role.option_pro.description`.
 
 ## Design Reference Assets

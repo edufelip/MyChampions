@@ -1,4 +1,5 @@
 import { persistServerAuthSessionFromPayload, type ServerAuthStorage } from './server-auth-source';
+import { authSessionRuntime } from './auth-session-runtime';
 
 export type SocialAuthProvider = 'google' | 'apple';
 
@@ -122,11 +123,13 @@ export async function signInWithSocialProviderTokenFromSource(
     response = await deps.fetch(`${baseUrl}/auth/social/sign-in`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
+      credentials: authSessionRuntime.credentials,
       body: JSON.stringify({
         provider: input.provider,
         idToken,
         ...(trimOptional(input.accessToken) ? { accessToken: trimOptional(input.accessToken) } : {}),
         ...(trimOptional(input.nonce) ? { nonce: trimOptional(input.nonce) } : {}),
+        ...authSessionRuntime.sessionRequestFields,
       }),
     });
   } catch {

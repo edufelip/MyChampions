@@ -14,6 +14,7 @@
 - Primary:
   - Enter professional invite code.
   - Scan professional invite QR code.
+  - Enter the invite code manually when browser camera access is denied or unavailable.
   - View pending and active assignment statuses.
   - Unbind active relationship.
 - Secondary:
@@ -48,6 +49,9 @@
 - Auto-canceled pending requests caused by code rotation must show explicit reason and reconnect action to affected students.
 - QR scan payload must execute same validation pipeline as manual invite entry.
 - QR scan must not open a black or unrecoverable scanner on camera-less devices; show inline camera-unavailable guidance and keep manual entry usable.
+- Browser scanning checks media-device availability and permission through `QrScannerAdapter`; denial never disables manual entry.
+- Invite-code entry and its submit action stack at compact widths below 480px; both controls remain fully visible and the submit action spans the available content width.
+- The QR dialog supports Escape, keyboard focus containment, and focus restoration on web.
 - Known invite failures must show reason-specific actionable copy.
 - Accessibility baseline applies for text scaling, focus order, contrast, and readable status semantics.
 

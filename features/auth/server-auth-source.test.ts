@@ -6,6 +6,7 @@ import {
   clearServerAuthSession,
   getCurrentServerAccessToken,
   getCurrentServerUser,
+  getValidServerAccessToken,
   restoreServerAuthSession,
   startLocalServerSession,
   startLocalServerSocialSession,
@@ -331,12 +332,266 @@ describe('server-auth-source', () => {
 
     assert.equal(requests.length, 1);
     assert.equal(requests[0]?.method, 'POST');
-    assert.equal(requests[0]?.url, 'http://server.test/auth/dev/refresh');
-    assert.deepEqual(await requests[0]?.json(), { refreshToken: 'refresh-token-1' });
+    assert.equal(requests[0]?.url, 'http://server.test/auth/session/refresh');
+    assert.deepEqual(await requests[0]?.json(), {
+      refreshToken: 'refresh-token-1',
+      sessionMode: 'bearer',
+    });
     assert.equal(restored?.accessToken, 'refreshed-token');
     assert.equal(restored?.profile.lockedRole, 'student');
     assert.deepEqual(restored?.user.authProviderIds, ['apple']);
     assert.equal(getCurrentServerAccessToken(), 'refreshed-token');
+  });
+
+  it('single-flights concurrent access-token refreshes', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+    let refreshCalls = 0;
+
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'expiring-token',
+            refreshToken: 'refresh-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: new Date(Date.now() + 1_000).toISOString(),
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    const deps = {
+      fetch: async () => {
+        refreshCalls += 1;
+        await Promise.resolve();
+        return response({
+          accessToken: 'refreshed-token',
+          refreshToken: 'refresh-token-2',
+          tokenType: 'Bearer',
+          profile: {
+            authUid: 'local_user',
+            displayName: 'User One',
+            emailNormalized: 'user@example.test',
+            lockedRole: 'student',
+            acceptedTermsVersion: 'v1',
+          },
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        });
+      },
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    };
+
+    const [first, second, third] = await Promise.all([
+      getValidServerAccessToken(deps),
+      getValidServerAccessToken(deps),
+      getValidServerAccessToken(deps),
+    ]);
+
+    assert.equal(refreshCalls, 1);
+    assert.deepEqual([first, second, third], [
+      'refreshed-token',
+      'refreshed-token',
+      'refreshed-token',
+    ]);
+  });
+
+  it('does not restore a cleared session when an older refresh finishes after sign-out', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+    let resolveRefresh!: (value: Response) => void;
+    let markRefreshStarted!: () => void;
+    const refreshStarted = new Promise<void>((resolve) => {
+      markRefreshStarted = resolve;
+    });
+    const refreshResponse = new Promise<Response>((resolve) => {
+      resolveRefresh = resolve;
+    });
+
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'expiring-token',
+            refreshToken: 'refresh-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: new Date(Date.now() + 1_000).toISOString(),
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    const staleRefresh = getValidServerAccessToken({
+      fetch: async () => {
+        markRefreshStarted();
+        return refreshResponse;
+      },
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    });
+    await refreshStarted;
+    clearServerAuthSession();
+    resolveRefresh(
+      response({
+        accessToken: 'stale-refreshed-token',
+        refreshToken: 'refresh-token-2',
+        tokenType: 'Bearer',
+        profile: {
+          authUid: 'local_user',
+          displayName: 'User One',
+          emailNormalized: 'user@example.test',
+          lockedRole: 'student',
+          acceptedTermsVersion: 'v1',
+        },
+        expiresAt: '2999-01-01T00:00:00.000Z',
+      })
+    );
+
+    assert.equal(await staleRefresh, null);
+    assert.equal(getCurrentServerAccessToken(), null);
+    assert.equal(getCurrentServerUser(), null);
+  });
+
+  it('does not let an older account refresh overwrite a replacement session', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+    let resolveRefresh!: (value: Response) => void;
+    let markRefreshStarted!: () => void;
+    const refreshStarted = new Promise<void>((resolve) => {
+      markRefreshStarted = resolve;
+    });
+    const refreshResponse = new Promise<Response>((resolve) => {
+      resolveRefresh = resolve;
+    });
+
+    await startLocalServerSession(
+      { email: 'first@example.test', displayName: 'First User' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'first-expiring-token',
+            refreshToken: 'first-refresh-token',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'first_user',
+              displayName: 'First User',
+              emailNormalized: 'first@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: new Date(Date.now() + 1_000).toISOString(),
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    const staleRefresh = getValidServerAccessToken({
+      fetch: async () => {
+        markRefreshStarted();
+        return refreshResponse;
+      },
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    });
+    await refreshStarted;
+
+    await startLocalServerSession(
+      { email: 'second@example.test', displayName: 'Second User' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'second-token',
+            refreshToken: 'second-refresh-token',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'second_user',
+              displayName: 'Second User',
+              emailNormalized: 'second@example.test',
+              lockedRole: 'professional',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: '2999-01-01T00:00:00.000Z',
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    resolveRefresh(
+      response({
+        accessToken: 'first-stale-refreshed-token',
+        refreshToken: 'first-refresh-token-2',
+        tokenType: 'Bearer',
+        profile: {
+          authUid: 'first_user',
+          displayName: 'First User',
+          emailNormalized: 'first@example.test',
+          lockedRole: 'student',
+          acceptedTermsVersion: 'v1',
+        },
+        expiresAt: '2999-01-01T00:00:00.000Z',
+      })
+    );
+
+    assert.equal(await staleRefresh, null);
+    assert.equal(getCurrentServerAccessToken(), 'second-token');
+    assert.equal(getCurrentServerUser()?.uid, 'second_user');
+  });
+
+  it('clears the active session when token refresh is rejected', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'expired-token',
+            refreshToken: 'refresh-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: '2020-01-01T00:00:00.000Z',
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    const token = await getValidServerAccessToken({
+      fetch: async () => response({ error: 'invalid_refresh_token' }, { status: 401 }),
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    });
+
+    assert.equal(token, null);
+    assert.equal(getCurrentServerUser(), null);
   });
 
   it('fails closed when persisted-session refresh transport fails', async () => {

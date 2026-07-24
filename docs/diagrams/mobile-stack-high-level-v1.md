@@ -1,5 +1,7 @@
 # Mobile Stack High-Level Diagram (V1)
 
+> Historical mobile-focused view. The current Android/iOS/web architecture is documented in `cross-platform-stack-v1.md`.
+
 ```mermaid
 flowchart LR
   U[Student / Professional User] --> A[Expo React Native App]

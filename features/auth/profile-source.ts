@@ -8,7 +8,7 @@
 
 import type { RoleIntent } from './role-selection.logic';
 import { resolveE2EAuthSessionSourceOverride } from './e2e-auth-session';
-import { getCurrentServerAccessToken } from './server-auth-source';
+import { getValidServerAccessToken } from './server-auth-source';
 
 type ProfileSourceErrorCode =
   | 'configuration'
@@ -90,7 +90,7 @@ function getProfileSourceDeps(): ProfileSourceDeps {
   return {
     fetch: globalThis.fetch.bind(globalThis),
     getCurrentAccessToken: async () => {
-      const serverAccessToken = getCurrentServerAccessToken();
+      const serverAccessToken = await getValidServerAccessToken();
       if (serverAccessToken) return serverAccessToken;
 
       const e2eSourceOverride = resolveProfileSourceE2EOverride();

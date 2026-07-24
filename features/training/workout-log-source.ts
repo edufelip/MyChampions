@@ -3,7 +3,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 
 export type WorkoutLog = {
   id: string;
@@ -16,11 +16,11 @@ export type WorkoutLog = {
 type WorkoutLogSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 const defaultDeps: WorkoutLogSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
   fetchFn: fetch,
 };

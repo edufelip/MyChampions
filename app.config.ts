@@ -20,6 +20,8 @@ type TermsConfig = {
 type RevenueCatConfig = {
   revenueCatApiKeyIos: string;
   revenueCatApiKeyAndroid: string;
+  revenueCatTestStoreEnabled: boolean;
+  revenueCatStudentOfferingId: 'default_student' | 'test_student';
 };
 
 type ServerConfig = {
@@ -30,6 +32,11 @@ type GoogleAuthConfig = {
   androidClientId: string;
   iosClientId: string;
   webClientId: string;
+};
+
+type AppleWebAuthConfig = {
+  clientId: string;
+  redirectUri: string;
 };
 
 type E2EConfig = {
@@ -53,7 +60,43 @@ function resolveTermsConfig(): TermsConfig {
   };
 }
 
-function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
+export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
+  const revenueCatTestStoreEnabled =
+    variant === 'dev' &&
+    process.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_ENABLED?.trim().toLowerCase() === 'true';
+  const studentOfferingOverride =
+    process.env.EXPO_PUBLIC_REVENUECAT_STUDENT_OFFERING_ID?.trim() ?? '';
+
+  if (
+    studentOfferingOverride &&
+    studentOfferingOverride !== 'default_student' &&
+    studentOfferingOverride !== 'test_student'
+  ) {
+    throw new Error(
+      'EXPO_PUBLIC_REVENUECAT_STUDENT_OFFERING_ID must be default_student or test_student.'
+    );
+  }
+  if (
+    studentOfferingOverride === 'test_student' &&
+    (variant !== 'dev' || !revenueCatTestStoreEnabled)
+  ) {
+    throw new Error(
+      'RevenueCat test_student offering is allowed only in an explicit development Test Store build.'
+    );
+  }
+
+  const revenueCatStudentOfferingId =
+    studentOfferingOverride === 'test_student' ? 'test_student' : 'default_student';
+  const testStoreKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE?.trim() ?? '';
+  if (revenueCatTestStoreEnabled) {
+    return {
+      revenueCatApiKeyIos: testStoreKey,
+      revenueCatApiKeyAndroid: testStoreKey,
+      revenueCatTestStoreEnabled: true,
+      revenueCatStudentOfferingId,
+    };
+  }
+
   const iosVariantKey =
     variant === 'prod'
       ? process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_PROD
@@ -70,6 +113,8 @@ function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
   return {
     revenueCatApiKeyIos: iosVariantKey ?? legacyIosKey ?? '',
     revenueCatApiKeyAndroid: androidVariantKey ?? legacyAndroidKey ?? '',
+    revenueCatTestStoreEnabled: false,
+    revenueCatStudentOfferingId,
   };
 }
 
@@ -84,6 +129,13 @@ function resolveGoogleAuthConfig(): GoogleAuthConfig {
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID?.trim() ?? '',
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID?.trim() ?? '',
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID?.trim() ?? '',
+  };
+}
+
+function resolveAppleWebAuthConfig(): AppleWebAuthConfig {
+  return {
+    clientId: process.env.EXPO_PUBLIC_APPLE_WEB_CLIENT_ID?.trim() ?? '',
+    redirectUri: process.env.EXPO_PUBLIC_APPLE_WEB_REDIRECT_URI?.trim() ?? '',
   };
 }
 
@@ -117,6 +169,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const revenueCat = resolveRevenueCatConfig(variant);
   const server = resolveServerConfig();
   const googleAuth = resolveGoogleAuthConfig();
+  const appleWebAuth = resolveAppleWebAuthConfig();
   const e2e = resolveE2EConfig(variant);
 
   return {
@@ -152,7 +205,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       package: androidPackage,
     },
     web: {
-      output: 'static',
+      output: 'single',
       favicon: './assets/images/favicon.png',
     },
     plugins: [
@@ -187,13 +240,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       terms,
       // RevenueCat SDK API keys — read by subscription-source.ts via Constants.expoConfig.extra.
       // Must be public SDK keys (appl_*/goog_*), never secret keys (sk_*).
+      // Explicit dev-only Test Store builds use the project test_* SDK key for both platforms.
       // Variant-aware keys:
       //  - APP_VARIANT=dev  -> EXPO_PUBLIC_REVENUECAT_API_KEY_*_DEV
       //  - APP_VARIANT=prod -> EXPO_PUBLIC_REVENUECAT_API_KEY_*_PROD
       // Legacy fallback retained temporarily: EXPO_PUBLIC_REVENUECAT_API_KEY_IOS/ANDROID.
       revenueCatApiKeyIos: revenueCat.revenueCatApiKeyIos,
       revenueCatApiKeyAndroid: revenueCat.revenueCatApiKeyAndroid,
+      revenueCatTestStoreEnabled: revenueCat.revenueCatTestStoreEnabled,
+      // Defaults to default_student. test_student is accepted only for explicit dev Test Store builds.
+      revenueCatStudentOfferingId: revenueCat.revenueCatStudentOfferingId,
       googleAuth,
+      appleWebAuth,
+      subscriptionHandoffUrl:
+        process.env.EXPO_PUBLIC_SUBSCRIPTION_HANDOFF_URL?.trim() ?? '',
       e2e,
     },
   };

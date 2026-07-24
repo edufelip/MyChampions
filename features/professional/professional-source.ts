@@ -3,7 +3,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import {
   normalizeInviteCodeStatus,
   type InviteCode,
@@ -65,7 +65,7 @@ export type SpecialtyBlockerCounts = {
 export type ProfessionalSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
   generateInviteCode: () => string;
 };
 
@@ -74,7 +74,7 @@ function nowIso(): string {
 }
 
 const defaultDeps: ProfessionalSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
   fetchFn: fetch,
   generateInviteCode: () => Math.random().toString(36).slice(2, 8).toUpperCase(),
@@ -950,6 +950,18 @@ export async function getSpecialtyBlockerCounts(
   deps = defaultDeps
 ): Promise<SpecialtyBlockerCounts> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
+    const roster = getE2EProfessionalRosterFixture();
+    if (roster) {
+      return roster.reduce<SpecialtyBlockerCounts>(
+        (counts, student) => {
+          if (student.specialty !== specialty) return counts;
+          if (student.assignmentStatus === 'active') counts.activeCount += 1;
+          if (student.assignmentStatus === 'pending') counts.pendingCount += 1;
+          return counts;
+        },
+        { activeCount: 0, pendingCount: 0 }
+      );
+    }
     return { activeCount: 0, pendingCount: 0 };
   }
 

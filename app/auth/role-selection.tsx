@@ -3,17 +3,19 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  ActivityIndicator,
   Easing,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getDsTheme } from '@/constants/design-system';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { Colors, Fonts } from '@/constants/theme';
 import {
   resolvePostRoleRoute,
@@ -41,6 +43,13 @@ export default function RoleSelectionScreen() {
   const returnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth } = useWindowDimensions();
+  const usesDesktopLayout = viewportWidth >= 1024;
+  const usesContainedTabletLayout = viewportWidth >= 768 && viewportWidth < 1024;
+  const exposesNativeE2ETapTargets =
+    Platform.OS !== 'web' &&
+    __DEV__ &&
+    process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true';
   const { isHydrated, currentUser, lockRole } = useAuthSession();
   const { emitEvent } = useAnalytics();
   const [selectedRole, setSelectedRole] = useState<RoleIntent | null>(null);
@@ -102,6 +111,7 @@ export default function RoleSelectionScreen() {
 
   const isStudentSelected = selectedRole === 'student';
   const isProfessionalSelected = selectedRole === 'professional';
+  const isContinueDisabled = isSubmitting || !isHydrated || !currentUser || !selectedRole;
 
   useEffect(() => {
     Animated.timing(studentCardSelectionAnim, {
@@ -138,7 +148,13 @@ export default function RoleSelectionScreen() {
         style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
       />
 
-      <View style={[styles.content, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
+      <View
+        style={[
+          styles.content,
+          usesContainedTabletLayout && styles.contentTablet,
+          usesDesktopLayout && styles.contentDesktop,
+          { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 },
+        ]}>
         {/* Hero: brand badge */}
         <View style={styles.heroArea}>
           <View style={[styles.brandBadge, { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft }]}>
@@ -157,12 +173,13 @@ export default function RoleSelectionScreen() {
         </View>
 
         {/* Role cards */}
-        <View style={styles.cardGroup}>
+        <View style={[styles.cardGroup, usesDesktopLayout && styles.cardGroupDesktop]}>
 
           {/* Student card */}
           <Animated.View
             style={[
               styles.roleCardOutline,
+              usesDesktopLayout && styles.roleCardOutlineDesktop,
               {
                 borderColor: studentCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
@@ -198,8 +215,22 @@ export default function RoleSelectionScreen() {
                 setSelectedRole('student');
                 setRoleError(null);
               }}
-              style={[styles.roleCard, { backgroundColor: theme.color.surface }]}
+              style={[
+                styles.roleCard,
+                usesDesktopLayout && styles.roleCardDesktop,
+                { backgroundColor: theme.color.surface },
+              ]}
               testID="auth.roleSelection.studentCard">
+              {exposesNativeE2ETapTargets ? (
+                <Pressable
+                  onPress={() => {
+                    setSelectedRole('student');
+                    setRoleError(null);
+                  }}
+                  style={[styles.nativeE2ETapTarget, { backgroundColor: theme.color.surface }]}
+                  testID="auth.roleSelection.studentTapTarget"
+                />
+              ) : null}
 
               {isStudentSelected ? (
                 <View style={[styles.selectedBadge, { backgroundColor: theme.color.accentPrimary }]}>
@@ -229,6 +260,7 @@ export default function RoleSelectionScreen() {
           <Animated.View
             style={[
               styles.roleCardOutline,
+              usesDesktopLayout && styles.roleCardOutlineDesktop,
               {
                 borderColor: professionalCardSelectionAnim.interpolate({
                   inputRange: [0, 1],
@@ -264,8 +296,22 @@ export default function RoleSelectionScreen() {
                 setSelectedRole('professional');
                 setRoleError(null);
               }}
-              style={[styles.roleCard, { backgroundColor: theme.color.surface }]}
+              style={[
+                styles.roleCard,
+                usesDesktopLayout && styles.roleCardDesktop,
+                { backgroundColor: theme.color.surface },
+              ]}
               testID="auth.roleSelection.professionalCard">
+              {exposesNativeE2ETapTargets ? (
+                <Pressable
+                  onPress={() => {
+                    setSelectedRole('professional');
+                    setRoleError(null);
+                  }}
+                  style={[styles.nativeE2ETapTarget, { backgroundColor: theme.color.surface }]}
+                  testID="auth.roleSelection.professionalTapTarget"
+                />
+              ) : null}
 
               {isProfessionalSelected ? (
                 <View style={[styles.selectedBadge, { backgroundColor: theme.color.accentPrimary }]}>
@@ -296,6 +342,7 @@ export default function RoleSelectionScreen() {
         {/* Lock note */}
         <View style={[
           styles.lockNotePanel,
+          usesDesktopLayout && styles.lockNotePanelDesktop,
           {
             backgroundColor: isDark ? theme.color.warningSoft : theme.color.accentPrimarySoft,
             borderColor: isDark ? theme.color.borderStrong : theme.color.successSoft,
@@ -319,33 +366,22 @@ export default function RoleSelectionScreen() {
         </View>
 
         {/* Primary CTA */}
-        <Pressable
-          accessibilityRole="button"
-          disabled={isSubmitting || !isHydrated || !currentUser}
+        <DsPillButton
+          scheme={isDark ? 'dark' : 'light'}
+          disabled={isContinueDisabled}
+          loading={isSubmitting}
+          label={t('auth.role.cta_continue') as string}
           onPress={() => { void onContinue(); }}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            {
-              backgroundColor: theme.color.accentPrimary,
-              opacity: isSubmitting || !isHydrated || !currentUser ? 0.7 : 1,
-              transform: [{ scale: pressed ? 0.96 : 1 }],
-            },
-          ]}
-          testID="auth.roleSelection.continueButton">
-          {isSubmitting ? (
-            <ActivityIndicator
-              accessibilityLabel={t('a11y.loading.submitting')}
-              color={theme.color.onAccent}
+          rightIcon={
+            <MaterialIcons
+              color={isContinueDisabled ? theme.color.disabledText : theme.color.onAccent}
+              name="arrow-forward"
+              size={20}
             />
-          ) : (
-            <>
-              <Text style={[styles.primaryButtonText, { color: theme.color.onAccent }]}>
-                {t('auth.role.cta_continue')}
-              </Text>
-              <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
-            </>
-          )}
-        </Pressable>
+          }
+          style={[styles.primaryButton, usesDesktopLayout && styles.primaryButtonDesktop]}
+          testID="auth.roleSelection.continueButton"
+        />
 
       </View>
     </ScrollView>
@@ -374,9 +410,15 @@ const styles = StyleSheet.create({
     width: 320,
   },
   content: {
+    alignSelf: 'center',
     flex: 1,
+    justifyContent: 'center',
+    maxWidth: 960,
     paddingHorizontal: 20,
+    width: '100%',
   },
+  contentTablet: { maxWidth: 720, paddingHorizontal: 24 },
+  contentDesktop: { paddingHorizontal: 32 },
   heroArea: {
     alignItems: 'center',
     marginTop: 6,
@@ -418,9 +460,11 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 16,
   },
+  cardGroupDesktop: { flexDirection: 'row', gap: 20 },
   roleCardOutline: {
     borderRadius: 22,
   },
+  roleCardOutlineDesktop: { flex: 1 },
   roleCard: {
     borderRadius: 22,
     flexDirection: 'row',
@@ -430,6 +474,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 18,
     position: 'relative',
+  },
+  roleCardDesktop: { minHeight: 150 },
+  nativeE2ETapTarget: {
+    height: 44,
+    left: 0,
+    position: 'absolute',
+    top: 0,
+    width: 44,
+    zIndex: 2,
   },
   selectedBadge: {
     alignItems: 'center',
@@ -481,6 +534,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  lockNotePanelDesktop: { alignSelf: 'center', maxWidth: 720, width: '100%' },
   lockNoteIcon: {
     marginTop: 1,
     flexShrink: 0,
@@ -497,23 +551,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   primaryButton: {
-    alignItems: 'center',
-    borderRadius: 28,
-    flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'center',
-    marginTop: 'auto',
+    marginTop: 8,
     minHeight: 56,
-    paddingHorizontal: 16,
-    // Lift the button
-    shadowColor: '#1ea95a',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 4,
   },
-  primaryButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
+  primaryButtonDesktop: {
+    alignSelf: 'center',
+    marginTop: 12,
+    maxWidth: 420,
+    width: '100%',
   },
 });

@@ -277,7 +277,7 @@ export default function ProfessionalSpecialtyScreen() {
   }
 
   return (
-    <DsScreen scheme={scheme} testID="pro.specialty.screen" contentContainerStyle={styles.content}>
+    <DsScreen scheme={scheme} contentWidth="form" testID="pro.specialty.screen" contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.specialty.title'), headerShown: false }} />
 
       <DsBackButton
@@ -475,7 +475,7 @@ function RemovalAssistCard({
   const actions = assistState.availableActions.map((a) => buildActionMetadata(a, specialty));
 
   return (
-    <DsCard scheme={scheme} variant="warning" testID="pro.specialty.removalAssist">
+    <DsCard scheme={scheme} variant="warning" style={styles.removalAssistCard} testID="pro.specialty.removalAssist">
       <Text style={[styles.assistTitle, { color: palette.danger }]}>{t(titleKey)}</Text>
       <Text style={[styles.assistBody, { color: palette.text }]}>{t(bodyKey)}</Text>
 
@@ -512,6 +512,7 @@ function RemovalAssistCard({
       <Pressable
         accessibilityRole="button"
         onPress={onDismiss}
+        style={styles.assistDismiss}
         testID="pro.specialty.removalAssist.dismiss">
         <Text style={[styles.link, { color: palette.icon }]}>
           {t('pro.specialty.remove_blocked.dismiss') as string}
@@ -798,6 +799,7 @@ const styles = StyleSheet.create({
     gap: DsSpace.lg,
     padding: DsSpace.lg,
     paddingBottom: DsSpace.xxl,
+    paddingTop: DsSpace.xl,
   },
   backButton: { marginBottom: -4 },
   pageHeader: { gap: DsSpace.xs },
@@ -844,6 +846,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  removalAssistCard: { gap: DsSpace.xs },
   assistBody: { ...DsTypography.caption },
   assistAction: {
     borderRadius: DsRadius.md,
@@ -855,6 +858,12 @@ const styles = StyleSheet.create({
   },
   assistActionText: { ...DsTypography.body, fontWeight: '700' },
   assistActionDesc: { ...DsTypography.caption },
+  assistDismiss: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: DsSpace.xxs,
+  },
   cardGap: { gap: DsSpace.sm },
   saveButton: { flex: 1 },
   keyboardAccessory: {

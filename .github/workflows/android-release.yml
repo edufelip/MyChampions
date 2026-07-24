@@ -101,6 +101,7 @@ jobs:
       - name: Decode keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/mychampions-release-key.jks
+        working-directory: android
 
       - name: Create keystore.properties
         run: |
@@ -110,6 +111,7 @@ jobs:
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           keyPassword=${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
           EOF
+        working-directory: android
 
       - name: Build release bundle
         uses: gradle/gradle-build-action@v2

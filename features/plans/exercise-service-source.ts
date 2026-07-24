@@ -11,7 +11,7 @@
 
 import { getEffectiveLocale } from '../auth/language-storage';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { logNetworkDebug } from '../debug/logging';
 
 export type ExerciseVideo = {
@@ -65,13 +65,13 @@ type ExerciseServiceDeps = {
   getServerBaseUrl: () => string | undefined;
   getCurrentAccessToken: () => Promise<string | null>;
   getLocale: () => Promise<string>;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
   createRequestId: () => string;
 };
 
 const defaultDeps: ExerciseServiceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getLocale: () => getEffectiveLocale(),
   fetchFn: fetch,
   createRequestId: () => {

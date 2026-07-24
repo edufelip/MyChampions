@@ -10,13 +10,11 @@
  * Refs: BL-108, D-106–D-110, FR-229–FR-239
  */
 
-import { Alert } from 'react-native';
 import { useCallback, useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
 
 import type { AuthUser } from '@/features/auth/auth-user';
 import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
+import { photoPickerAdapter } from '@/features/platform/photo-picker-adapter';
 import { analyzeMealPhoto, PhotoAnalysisSourceError } from './meal-photo-analysis-source';
 import {
   mapMacroEstimateToMealInput,
@@ -25,14 +23,6 @@ import {
   type PhotoAnalysisErrorReason,
 } from './meal-photo-analysis.logic';
 import type { CustomMealInput } from './custom-meal.logic';
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-/** Maximum longest-side pixel dimension before resize (FR-230, BR-287, Q-022). */
-const MAX_DIMENSION_PX = 1600;
-
-/** JPEG compression quality (0–1). Targets ≤ 1.5 MB for typical meal photos. */
-const JPEG_QUALITY = 0.75;
 
 const E2E_MEAL_ANALYSIS_ESTIMATE: MacroEstimate = {
   calories: 520,
@@ -95,40 +85,6 @@ export type UseMealPhotoAnalysisResult = {
   preFillMealInput: () => Partial<CustomMealInput> | null;
 };
 
-// ─── Compression helper ───────────────────────────────────────────────────────
-
-/**
- * Resizes and compresses a local image URI to meet upload constraints.
- * Returns a base64-encoded JPEG string (without the data URI prefix).
- * FR-230, BR-287: ≤ 1.5 MB, ≤ 1600 px longest side.
- */
-async function compressImageUri(uri: string, width: number, height: number): Promise<string> {
-  const longestSide = Math.max(width, height);
-  const actions: ImageManipulator.Action[] = [];
-
-  if (longestSide > MAX_DIMENSION_PX) {
-    const scale = MAX_DIMENSION_PX / longestSide;
-    actions.push({
-      resize: {
-        width: Math.round(width * scale),
-        height: Math.round(height * scale),
-      },
-    });
-  }
-
-  const result = await ImageManipulator.manipulateAsync(uri, actions, {
-    compress: JPEG_QUALITY,
-    format: ImageManipulator.SaveFormat.JPEG,
-    base64: true,
-  });
-
-  if (!result.base64) {
-    throw new Error('Image compression returned no base64 data.');
-  }
-
-  return result.base64;
-}
-
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysisResult {
@@ -168,100 +124,20 @@ export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysi
       return;
     }
 
-    /**
-     * Present an action sheet so the user can choose camera or photo library.
-     * The entire async pipeline runs inside the callback — state transitions
-     * flow through 'capturing' → 'compressing' → 'analyzing' → 'done' | 'error'.
-     */
-    Alert.alert(
-      'Analyze Meal',
-      'Choose a photo source',
-      [
-        {
-          text: 'Take Photo',
-          onPress: async () => {
-            setState({ kind: 'capturing' });
-
-            const permission = await ImagePicker.requestCameraPermissionsAsync();
-            if (!permission.granted) {
-              setState({ kind: 'error', reason: 'configuration' });
-              return;
-            }
-
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: 'images',
-              quality: 1,
-              base64: false, // we compress manually to control quality/size
-            });
-
-            if (result.canceled || !result.assets[0]) {
-              setState({ kind: 'idle' });
-              return;
-            }
-
-            const asset = result.assets[0];
-            setState({ kind: 'compressing' });
-
-            try {
-              const base64 = await compressImageUri(
-                asset.uri,
-                asset.width ?? MAX_DIMENSION_PX,
-                asset.height ?? MAX_DIMENSION_PX
-              );
-              await analyze(base64);
-            } catch {
-              setState({ kind: 'error', reason: 'unknown' });
-            }
-          },
-        },
-        {
-          text: 'Choose from Library',
-          onPress: async () => {
-            setState({ kind: 'capturing' });
-
-            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (!permission.granted) {
-              setState({ kind: 'error', reason: 'configuration' });
-              return;
-            }
-
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: 'images',
-              quality: 1,
-              base64: false,
-            });
-
-            if (result.canceled || !result.assets[0]) {
-              setState({ kind: 'idle' });
-              return;
-            }
-
-            const asset = result.assets[0];
-            setState({ kind: 'compressing' });
-
-            try {
-              const base64 = await compressImageUri(
-                asset.uri,
-                asset.width ?? MAX_DIMENSION_PX,
-                asset.height ?? MAX_DIMENSION_PX
-              );
-              await analyze(base64);
-            } catch {
-              setState({ kind: 'error', reason: 'unknown' });
-            }
-          },
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => {
-            // Return to idle without state change if we haven't started yet
-            setState((prev) => (prev.kind === 'idle' ? prev : { kind: 'idle' }));
-          },
-        },
-      ],
-      { cancelable: true, onDismiss: () => setState((prev) => (prev.kind === 'idle' ? prev : { kind: 'idle' })) }
-    );
+    void (async () => {
+      setState({ kind: 'capturing' });
+      try {
+        const photo = await photoPickerAdapter.pickPhoto();
+        if (!photo) {
+          setState({ kind: 'idle' });
+          return;
+        }
+        setState({ kind: 'compressing' });
+        await analyze(await photoPickerAdapter.compressToBase64(photo));
+      } catch {
+        setState({ kind: 'error', reason: 'unknown' });
+      }
+    })();
   }, [analyze]);
 
   const reset = useCallback(() => {

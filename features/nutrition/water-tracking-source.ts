@@ -3,7 +3,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import type { WaterIntakeLog } from './water-tracking.logic';
 
 type WaterSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
@@ -21,11 +21,11 @@ export class WaterTrackingSourceError extends Error {
 export type WaterTrackingSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 const defaultDeps: WaterTrackingSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
   fetchFn: fetch,
 };
