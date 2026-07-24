@@ -44,6 +44,7 @@ import {
   getSubscriptionEntitlementSnapshot,
   syncSubscriptionEntitlementSnapshot,
 } from './subscription-server-source';
+import { runPaywallPresentation } from './subscription-paywall-outcome';
 import type { SubscriptionPurchaseCapability } from './subscription-runtime';
 
 // ─── SDK identity coordinator ─────────────────────────────────────────────────
@@ -488,23 +489,14 @@ export function useSubscription(
   ) => {
     if (!activeAuthUid) return;
 
-    let presentationError: SubscriptionErrorReason | null = null;
-    try {
-      if (applyE2EAiSubscriptionSuccess()) return;
-      const result = await runRevenueCatOperation(() =>
-        presentAiPaywall(deps, studentOfferingId)
-      );
-      if (result === 'ERROR') presentationError = 'store_problem';
-    } catch (err: unknown) {
-      const reason = err instanceof SubscriptionSourceError ? err.code : 'unknown';
-      if (reason !== 'purchase_cancelled') presentationError = reason;
-    }
-    if (currentAuthUidRef.current !== activeAuthUid) return;
-    // Always refresh entitlements after paywall closes (user may have purchased)
-    await fetchStatus();
-    if (presentationError && currentAuthUidRef.current === activeAuthUid) {
-      setError(presentationError);
-    }
+    if (applyE2EAiSubscriptionSuccess()) return;
+    await runPaywallPresentation({
+      present: () =>
+        runRevenueCatOperation(() => presentAiPaywall(deps, studentOfferingId)),
+      refresh: fetchStatus,
+      reportError: setError,
+      isCurrent: () => currentAuthUidRef.current === activeAuthUid,
+    });
   }, [activeAuthUid, applyE2EAiSubscriptionSuccess, deps, fetchStatus, runRevenueCatOperation]);
 
   // Open pro paywall action (D-152): present native RevenueCat paywall for the professional
@@ -513,20 +505,12 @@ export function useSubscription(
     if (applyE2EProSubscriptionAction()) return;
     if (!activeAuthUid) return;
 
-    let presentationError: SubscriptionErrorReason | null = null;
-    try {
-      const result = await runRevenueCatOperation(() => presentProPaywall(deps));
-      if (result === 'ERROR') presentationError = 'store_problem';
-    } catch (err: unknown) {
-      const reason = err instanceof SubscriptionSourceError ? err.code : 'unknown';
-      if (reason !== 'purchase_cancelled') presentationError = reason;
-    }
-    if (currentAuthUidRef.current !== activeAuthUid) return;
-    // Always refresh entitlements after paywall closes (user may have purchased)
-    await fetchStatus();
-    if (presentationError && currentAuthUidRef.current === activeAuthUid) {
-      setError(presentationError);
-    }
+    await runPaywallPresentation({
+      present: () => runRevenueCatOperation(() => presentProPaywall(deps)),
+      refresh: fetchStatus,
+      reportError: setError,
+      isCurrent: () => currentAuthUidRef.current === activeAuthUid,
+    });
   }, [activeAuthUid, applyE2EProSubscriptionAction, deps, fetchStatus, runRevenueCatOperation]);
 
   const openAiUpgradePaywall = useCallback(
