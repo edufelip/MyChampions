@@ -64,6 +64,7 @@ describe('PhotoAnalysisSourceError', () => {
 
   it('works for every valid PhotoAnalysisErrorReason code', () => {
     const codes = [
+      'permission_denied',
       'unrecognizable_image',
       'quota_exceeded',
       'network',

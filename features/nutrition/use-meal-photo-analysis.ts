@@ -146,8 +146,8 @@ export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysi
         }
         setState({ kind: 'compressing' });
         await analyze(await photoPickerAdapter.compressToBase64(photo));
-      } catch {
-        setState({ kind: 'error', reason: 'unknown' });
+      } catch (err: unknown) {
+        setState({ kind: 'error', reason: normalizePhotoAnalysisError(err) });
       }
     })();
   }, [analyze, photoPickerCopy]);

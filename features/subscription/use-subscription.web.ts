@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { RoleIntent } from '@/features/auth/role-selection.logic';
 import type { EntitlementStatus } from './subscription.logic';
@@ -38,6 +38,9 @@ export function useSubscription(
   authUid: string | null,
   optionsOrActiveStudentCount: number | UseSubscriptionOptions = 0
 ): UseSubscriptionResult {
+  const activeAuthUid = authUid?.trim() || null;
+  const currentAuthUidRef = useRef<string | null>(activeAuthUid);
+  currentAuthUidRef.current = activeAuthUid;
   const activeStudentCountOverride =
     typeof optionsOrActiveStudentCount === 'number'
       ? optionsOrActiveStudentCount
@@ -57,19 +60,23 @@ export function useSubscription(
   const [lastSyncedAtIso, setLastSyncedAtIso] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!authUid) {
+    const expectedAuthUid = activeAuthUid;
+    if (!expectedAuthUid) {
       setEntitlementStatus('unknown');
       setAiEntitlementStatus('unknown');
       setProfessionalEntitlementExpiresAt(null);
       setProfessionalEntitlementRenewalRisk(false);
       setIsActiveStudentCountKnown(typeof activeStudentCountOverride === 'number');
+      setIsLoading(false);
+      setError(null);
       setLastSyncedAtIso(null);
       return;
     }
     setIsLoading(true);
     setError(null);
     try {
-      const snapshot = await getSubscriptionEntitlementSnapshot(undefined, authUid);
+      const snapshot = await getSubscriptionEntitlementSnapshot(undefined, expectedAuthUid);
+      if (currentAuthUidRef.current !== expectedAuthUid) return;
       if (!snapshot) {
         setEntitlementStatus('unknown');
         setAiEntitlementStatus('unknown');
@@ -90,6 +97,7 @@ export function useSubscription(
       );
       setLastSyncedAtIso(snapshot.observedAt || snapshot.updatedAt);
     } catch {
+      if (currentAuthUidRef.current !== expectedAuthUid) return;
       setEntitlementStatus('unknown');
       setAiEntitlementStatus('unknown');
       setProfessionalEntitlementExpiresAt(null);
@@ -98,9 +106,11 @@ export function useSubscription(
       setError('network');
       setLastSyncedAtIso(null);
     } finally {
-      setIsLoading(false);
+      if (currentAuthUidRef.current === expectedAuthUid) {
+        setIsLoading(false);
+      }
     }
-  }, [activeStudentCountOverride, authUid]);
+  }, [activeAuthUid, activeStudentCountOverride]);
 
   useEffect(() => {
     void refresh();

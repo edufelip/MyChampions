@@ -91,7 +91,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-515`: In SC-214, AI macro estimates pre-fill all form fields (calories, carbs, proteins, fats, totalGrams) for user review and editing before saving.
 - `AC-516`: In SC-215, AI macro estimates pre-fill the quick-log grams/nutrition panel for user review and editing before logging.
 - `AC-517`: User can edit all AI-pre-filled fields before confirming; no field is locked or auto-saved after analysis.
-- `AC-518`: AI analysis failure (network, quota, unrecognizable image) surfaces a reason-specific recoverable error; form fields remain available for manual entry.
+- `AC-518`: AI analysis failure (permission denial, network, quota, unrecognizable image) surfaces reason-specific recoverable guidance; permission denial directs the user to device settings, and form fields remain available for manual entry.
 - `AC-519`: Meal-photo analyzer provider API key is not present in client binary or any client-accessible environment variable; analysis calls route through the MyChampions server with bearer-token validation.
 - `AC-520`: When an email/password account user taps "Change password" in account settings, a confirmation alert is shown before any email is dispatched.
 - `AC-521`: After confirming the password reset request, the app calls the MyChampions server password-reset request endpoint and the "Change password" row enters a loading state for the duration of the request.

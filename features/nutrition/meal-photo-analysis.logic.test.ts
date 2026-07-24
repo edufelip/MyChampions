@@ -167,6 +167,16 @@ test('mapMacroEstimateToMealInput preserves decimal string representation', () =
 
 // ─── normalizePhotoAnalysisError ──────────────────────────────────────────────
 
+test('normalizePhotoAnalysisError keeps native permission denial distinct from cancellation', () => {
+  assert.equal(
+    normalizePhotoAnalysisError({
+      code: 'photo_permission_denied',
+      message: 'Photo permission denied for camera',
+    }),
+    'permission_denied'
+  );
+});
+
 test('normalizePhotoAnalysisError maps code unrecognizable_image', () => {
   assert.equal(
     normalizePhotoAnalysisError({ code: 'unrecognizable_image', message: '' }),

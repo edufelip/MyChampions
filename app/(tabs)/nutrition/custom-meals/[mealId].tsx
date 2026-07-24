@@ -611,6 +611,8 @@ function MealPhotoAnalysisSection({
 
 function resolveAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string {
   switch (reason) {
+    case 'permission_denied':
+      return t('meal.photo_analysis.error.permission_denied') as string;
     case 'unrecognizable_image':
       return t('meal.photo_analysis.error.unrecognizable') as string;
     case 'quota_exceeded':

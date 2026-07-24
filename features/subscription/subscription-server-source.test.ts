@@ -486,6 +486,25 @@ test('useSubscription can hydrate from a server-owned snapshot when native entit
   assert.match(hookSource, /serverSnapshot\.aiEntitlementStatus/);
 });
 
+test('web useSubscription discards stale refresh completions after an account switch', () => {
+  const hookSource = readFileSync(join(__dirname, 'use-subscription.web.ts'), 'utf8');
+
+  assert.match(hookSource, /const currentAuthUidRef = useRef<string \| null>\(activeAuthUid\)/);
+  assert.match(hookSource, /const expectedAuthUid = activeAuthUid/);
+  assert.match(
+    hookSource,
+    /getSubscriptionEntitlementSnapshot\(undefined, expectedAuthUid\)/
+  );
+  assert.match(
+    hookSource,
+    /if \(currentAuthUidRef\.current !== expectedAuthUid\) return/
+  );
+  assert.match(
+    hookSource,
+    /if \(currentAuthUidRef\.current === expectedAuthUid\) \{\s*setIsLoading\(false\)/
+  );
+});
+
 test('useSubscription binds native RevenueCat calls to the current self-managed auth UID', () => {
   const hookSource = readFileSync(join(__dirname, 'use-subscription.ts'), 'utf8');
 

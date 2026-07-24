@@ -82,6 +82,7 @@
 | TC-271 | AI Meal Photo — Success | User in SC-214 or SC-215 with camera permission | Capture meal photo; analysis returns estimates | Form fields are pre-filled with AI estimates; AI disclaimer is visible; all fields are editable |
 | TC-272 | AI Meal Photo — Image Compression | User captures high-resolution meal photo | Photo captured before MyChampions server analyzer request | Transmitted image is ≤1.5 MB and ≤1600 px longest side |
 | TC-273 | AI Meal Photo — Analysis Failure | User captures photo; MyChampions server analyzer returns error (network/quota/unrecognizable) | Analysis completes with error | Reason-specific recoverable error is shown; form fields remain available for manual entry |
+| TC-273A | AI Meal Photo — Permission Denied | User opens the AI camera or photo-library action and denies the requested native permission | Permission request completes without launching the picker | Localized device-settings guidance is shown; no analysis is started; manual entry remains available |
 | TC-274 | AI Meal Photo — Optional Attachment | User completes analysis in SC-214 | User declines to attach the captured photo | Meal saves without image; no error is shown |
 | TC-275 | SC-207 Create Named Nutrition Plan | Professional on plan builder | Enter plan name, calorie/macro targets, save | Plan appears in predefined nutrition library |
 | TC-276 | SC-207 Validation — Name Required | Professional on plan builder | Attempt save with empty name | Validation error shown; save blocked |

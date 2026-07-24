@@ -18,6 +18,15 @@ export type PhotoPickerAdapter = {
   compressToBase64: (photo: PickedPhoto) => Promise<string>;
 };
 
+export class PhotoPickerPermissionDeniedError extends Error {
+  readonly code = 'photo_permission_denied';
+
+  constructor(readonly source: 'camera' | 'library') {
+    super(`Photo permission denied for ${source}`);
+    this.name = 'PhotoPickerPermissionDeniedError';
+  }
+}
+
 const MAX_DIMENSION_PX = 1600;
 const JPEG_QUALITY = 0.75;
 
@@ -26,7 +35,7 @@ async function selectPhoto(source: 'camera' | 'library'): Promise<PickedPhoto | 
     source === 'camera'
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) return null;
+  if (!permission.granted) throw new PhotoPickerPermissionDeniedError(source);
   const result =
     source === 'camera'
       ? await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 1 })
@@ -42,15 +51,18 @@ async function selectPhoto(source: 'camera' | 'library'): Promise<PickedPhoto | 
 }
 
 function pickPhoto(copy: PhotoPickerCopy): Promise<PickedPhoto | null> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     Alert.alert(
       copy.title,
       copy.body,
       [
-        { text: copy.takePhoto, onPress: () => void selectPhoto('camera').then(resolve) },
+        {
+          text: copy.takePhoto,
+          onPress: () => void selectPhoto('camera').then(resolve, reject),
+        },
         {
           text: copy.chooseFromLibrary,
-          onPress: () => void selectPhoto('library').then(resolve),
+          onPress: () => void selectPhoto('library').then(resolve, reject),
         },
         { text: copy.cancel, style: 'cancel', onPress: () => resolve(null) },
       ],

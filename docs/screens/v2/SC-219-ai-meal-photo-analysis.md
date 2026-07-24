@@ -123,6 +123,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Edge Cases
 - Camera/picker cancellation: state returns to `idle`; no form field changes.
+- Camera/photo-library permission denial: state becomes a recoverable `permission_denied` error with localized device-settings guidance; no form field changes and manual entry remains available.
 - Confidence `'low'`: low-confidence warning shown alongside results; fields remain editable.
 - MyChampions server responds `401` or `403`: treated as `'unauthenticated'` error (D-128).
 - Compression is applied via `expo-image-manipulator`: resizes to ≤ 1600 px longest side, compresses at 0.75 JPEG quality (FR-230, BR-287, D-107).
@@ -140,6 +141,6 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Use case | UC-003.9 |
 | Acceptance criteria | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 |
 | Business rules | BR-286, BR-287, BR-288, BR-289, BR-290 |
-| Test cases | TC-271, TC-272, TC-273, TC-274 |
+| Test cases | TC-271, TC-272, TC-273, TC-273A, TC-274 |
 | Decisions | D-106, D-107, D-108, D-109, D-110, D-128, D-132 |
 | Backlog | BL-108 |

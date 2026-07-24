@@ -26,6 +26,9 @@ test('native photo picker actions resolve in every supported locale', () => {
   assert.equal(t('en-US', 'photo_picker.choose_from_library'), 'Choose from library');
   assert.equal(t('pt-BR', 'photo_picker.take_photo'), 'Tirar foto');
   assert.equal(t('es-ES', 'photo_picker.body'), 'Elige el origen de la foto');
+  assert.match(t('en-US', 'meal.photo_analysis.error.permission_denied'), /device settings/);
+  assert.match(t('pt-BR', 'custom_meal.image.permission_denied'), /configurações/);
+  assert.match(t('es-ES', 'meal.photo_analysis.error.permission_denied'), /ajustes/);
 });
 
 test('t interpolates params', () => {

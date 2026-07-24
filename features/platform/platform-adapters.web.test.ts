@@ -81,6 +81,13 @@ describe('web photo picker adapter', () => {
     assert.match(source, /copy\.chooseFromLibrary/);
     assert.doesNotMatch(source, /['"]Choose a photo source['"]/);
   });
+
+  it('keeps native permission denial distinct from picker cancellation', () => {
+    const source = readFileSync(new URL('./photo-picker-adapter.ts', import.meta.url).pathname, 'utf8');
+    assert.match(source, /class PhotoPickerPermissionDeniedError/);
+    assert.match(source, /if \(!permission\.granted\) throw new PhotoPickerPermissionDeniedError\(source\)/);
+    assert.match(source, /\.then\(resolve, reject\)/);
+  });
 });
 
 describe('web QR scanner adapter', () => {
