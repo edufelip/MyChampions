@@ -4,8 +4,16 @@ import * as ImagePicker from 'expo-image-picker';
 
 export type PickedPhoto = { uri: string; width: number; height: number };
 
+export type PhotoPickerCopy = {
+  title: string;
+  body: string;
+  takePhoto: string;
+  chooseFromLibrary: string;
+  cancel: string;
+};
+
 export type PhotoPickerAdapter = {
-  pickPhoto: () => Promise<PickedPhoto | null>;
+  pickPhoto: (copy: PhotoPickerCopy) => Promise<PickedPhoto | null>;
   compressToBlob: (photo: PickedPhoto) => Promise<Blob>;
   compressToBase64: (photo: PickedPhoto) => Promise<string>;
 };
@@ -33,15 +41,18 @@ async function selectPhoto(source: 'camera' | 'library'): Promise<PickedPhoto | 
     : null;
 }
 
-function pickPhoto(): Promise<PickedPhoto | null> {
+function pickPhoto(copy: PhotoPickerCopy): Promise<PickedPhoto | null> {
   return new Promise((resolve) => {
     Alert.alert(
-      'Upload Image',
-      'Choose a photo source',
+      copy.title,
+      copy.body,
       [
-        { text: 'Take Photo', onPress: () => void selectPhoto('camera').then(resolve) },
-        { text: 'Choose from Library', onPress: () => void selectPhoto('library').then(resolve) },
-        { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+        { text: copy.takePhoto, onPress: () => void selectPhoto('camera').then(resolve) },
+        {
+          text: copy.chooseFromLibrary,
+          onPress: () => void selectPhoto('library').then(resolve),
+        },
+        { text: copy.cancel, style: 'cancel', onPress: () => resolve(null) },
       ],
       { cancelable: true, onDismiss: () => resolve(null) }
     );

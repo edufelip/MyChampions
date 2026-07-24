@@ -12,12 +12,13 @@
  *       BR-261, BR-271, TC-287
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import type { AuthUser } from '@/features/auth/auth-user';
 import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
 import { getValidServerAccessToken } from '@/features/auth/server-auth-source';
 import { photoPickerAdapter } from '@/features/platform/photo-picker-adapter';
+import { useTranslation } from '@/localization';
 import {
   normalizeImageUploadError,
   type ImageUploadState,
@@ -38,10 +39,6 @@ import {
  * Presents an action sheet (Alert) and opens the appropriate native picker.
  * Returns the selected asset info or null on cancellation.
  */
-function productionPickImage(): Promise<{ uri: string; width: number; height: number } | null> {
-  return photoPickerAdapter.pickPhoto();
-}
-
 /**
  * Compresses a local image URI and returns a Blob.
  * Resizes to ≤ 1600 px longest side, compresses at 0.75 JPEG quality (D-061, BR-261).
@@ -97,13 +94,6 @@ function resolveServerBaseUrl(): string | undefined {
 }
 
 // ─── Production deps ──────────────────────────────────────────────────────────
-
-const productionDeps: ImageUploadSourceDeps = {
-  pickImage: productionPickImage,
-  compressImage: productionCompressImage,
-  uploadBlob: productionUploadBlob,
-  generateFilename,
-};
 
 const E2E_IMAGE_DATA_URI =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAI0lEQVR4nGPQ25j9XyhowX9yaQZKNINohlEXjLpg1AWDxAUAJPQmH5CACa8AAAAASUVORK5CYII=';
@@ -169,9 +159,26 @@ export type UseImageUploadResult = {
  */
 export function useImageUpload(
   user: AuthUser | null,
-  deps: ImageUploadSourceDeps = productionDeps
+  deps?: ImageUploadSourceDeps
 ): UseImageUploadResult {
-  const resolvedDeps = deps === productionDeps ? getE2EImageUploadDeps() ?? deps : deps;
+  const { t } = useTranslation();
+  const localizedProductionDeps = useMemo<ImageUploadSourceDeps>(
+    () => ({
+      pickImage: () =>
+        photoPickerAdapter.pickPhoto({
+          title: t('photo_picker.title'),
+          body: t('photo_picker.body'),
+          takePhoto: t('photo_picker.take_photo'),
+          chooseFromLibrary: t('photo_picker.choose_from_library'),
+          cancel: t('common.cta.cancel'),
+        }),
+      compressImage: productionCompressImage,
+      uploadBlob: productionUploadBlob,
+      generateFilename,
+    }),
+    [t]
+  );
+  const resolvedDeps = deps ?? getE2EImageUploadDeps() ?? localizedProductionDeps;
   const [uploadState, setUploadState] = useState<ImageUploadState>({ kind: 'idle' });
   // Store last mealId so retry can re-run the same upload
   const lastMealIdRef = useRef<string | null>(null);

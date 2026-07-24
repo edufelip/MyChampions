@@ -1,6 +1,10 @@
 export const enUS = {
   'common.error.generic': 'Something went wrong. Try again.',
   'common.back': 'Back',
+  'photo_picker.title': 'Upload image',
+  'photo_picker.body': 'Choose a photo source',
+  'photo_picker.take_photo': 'Take photo',
+  'photo_picker.choose_from_library': 'Choose from library',
   'settings.language_select.title': 'Language',
   'settings.language_select.save': 'Save',
   'settings.language_select.section_header': 'App Language',

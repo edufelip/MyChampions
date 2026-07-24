@@ -3,6 +3,10 @@ import type { TranslationKey } from './en-US';
 export const ptBR: Record<TranslationKey, string> = {
   'common.error.generic': 'Algo deu errado. Tente novamente.',
   'common.back': 'Voltar',
+  'photo_picker.title': 'Enviar imagem',
+  'photo_picker.body': 'Escolha a origem da foto',
+  'photo_picker.take_photo': 'Tirar foto',
+  'photo_picker.choose_from_library': 'Escolher da biblioteca',
   'settings.language_select.title': 'Idioma',
   'settings.language_select.save': 'Salvar',
   'settings.language_select.section_header': 'Idioma do App',

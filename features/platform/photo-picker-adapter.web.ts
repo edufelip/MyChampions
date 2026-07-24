@@ -1,4 +1,8 @@
-import type { PhotoPickerAdapter, PickedPhoto } from './photo-picker-adapter';
+import type {
+  PhotoPickerAdapter,
+  PhotoPickerCopy,
+  PickedPhoto,
+} from './photo-picker-adapter';
 
 const MAX_DIMENSION_PX = 1600;
 const JPEG_QUALITY = 0.75;
@@ -32,7 +36,7 @@ export async function resolveBrowserPhoto(
   }
 }
 
-function pickPhoto(): Promise<PickedPhoto | null> {
+function pickPhoto(_copy: PhotoPickerCopy): Promise<PickedPhoto | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';

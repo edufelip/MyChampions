@@ -82,12 +82,29 @@ function requestGoogleCredential(clientId: string): Promise<string> {
       },
     });
     google.accounts!.id!.prompt((notification) => {
-      if (!settled && (notification.isDismissedMoment() || notification.isNotDisplayed())) {
+      if (settled) return;
+      const promptError = resolveGooglePromptError(notification);
+      if (promptError) {
         settled = true;
-        reject(new GoogleWebAuthCanceledError());
+        reject(promptError);
       }
     });
   });
+}
+
+export function resolveGooglePromptError(
+  notification: GooglePromptMomentNotification
+): Error | null {
+  if (notification.isDismissedMoment()) {
+    return new GoogleWebAuthCanceledError();
+  }
+  if (notification.isNotDisplayed()) {
+    return new SocialAuthSourceError(
+      'configuration',
+      'Google sign-in could not be displayed in this browser.'
+    );
+  }
+  return null;
 }
 
 function makeDeps(): GoogleWebSocialAuthSourceDeps {

@@ -10,11 +10,12 @@
  * Refs: BL-108, D-106–D-110, FR-229–FR-239
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { AuthUser } from '@/features/auth/auth-user';
 import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
 import { photoPickerAdapter } from '@/features/platform/photo-picker-adapter';
+import { useTranslation } from '@/localization';
 import { analyzeMealPhoto, PhotoAnalysisSourceError } from './meal-photo-analysis-source';
 import {
   mapMacroEstimateToMealInput,
@@ -88,7 +89,18 @@ export type UseMealPhotoAnalysisResult = {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysisResult {
+  const { t } = useTranslation();
   const [state, setState] = useState<PhotoAnalysisState>({ kind: 'idle' });
+  const photoPickerCopy = useMemo(
+    () => ({
+      title: t('photo_picker.title'),
+      body: t('photo_picker.body'),
+      takePhoto: t('photo_picker.take_photo'),
+      chooseFromLibrary: t('photo_picker.choose_from_library'),
+      cancel: t('common.cta.cancel'),
+    }),
+    [t]
+  );
 
   // ── Core analyze step (exposed for direct injection in tests) ──────────────
   const analyze = useCallback(
@@ -127,7 +139,7 @@ export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysi
     void (async () => {
       setState({ kind: 'capturing' });
       try {
-        const photo = await photoPickerAdapter.pickPhoto();
+        const photo = await photoPickerAdapter.pickPhoto(photoPickerCopy);
         if (!photo) {
           setState({ kind: 'idle' });
           return;
@@ -138,7 +150,7 @@ export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysi
         setState({ kind: 'error', reason: 'unknown' });
       }
     })();
-  }, [analyze]);
+  }, [analyze, photoPickerCopy]);
 
   const reset = useCallback(() => {
     setState({ kind: 'idle' });

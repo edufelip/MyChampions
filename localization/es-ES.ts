@@ -3,6 +3,10 @@ import type { TranslationKey } from './en-US';
 export const esES: Record<TranslationKey, string> = {
   'common.error.generic': 'Algo salió mal. Inténtalo de nuevo.',
   'common.back': 'Atrás',
+  'photo_picker.title': 'Subir imagen',
+  'photo_picker.body': 'Elige el origen de la foto',
+  'photo_picker.take_photo': 'Tomar foto',
+  'photo_picker.choose_from_library': 'Elegir de la biblioteca',
   'settings.language_select.title': 'Idioma',
   'settings.language_select.save': 'Guardar',
   'settings.language_select.section_header': 'Idioma de la app',

@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { signInWithGoogleProviderTokenFromSource } from './google-social-auth-source.web';
+import {
+  resolveGooglePromptError,
+  signInWithGoogleProviderTokenFromSource,
+} from './google-social-auth-source.web';
 import { SocialAuthSourceError } from './social-auth-source';
 
 describe('Google web social auth source', () => {
@@ -45,6 +48,29 @@ describe('Google web social auth source', () => {
         signInWithSocialProviderToken: async () => {},
       }),
       (error: unknown) => error === cancellation
+    );
+  });
+
+  it('distinguishes a dismissed prompt from one the browser could not display', () => {
+    const dismissed = resolveGooglePromptError({
+      isDismissedMoment: () => true,
+      isNotDisplayed: () => false,
+    });
+    assert.equal((dismissed as { code?: string }).code, 'ERR_REQUEST_CANCELED');
+
+    const notDisplayed = resolveGooglePromptError({
+      isDismissedMoment: () => false,
+      isNotDisplayed: () => true,
+    });
+    assert.equal(notDisplayed instanceof SocialAuthSourceError, true);
+    assert.equal((notDisplayed as SocialAuthSourceError).code, 'configuration');
+
+    assert.equal(
+      resolveGooglePromptError({
+        isDismissedMoment: () => false,
+        isNotDisplayed: () => false,
+      }),
+      null
     );
   });
 });

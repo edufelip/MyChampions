@@ -74,6 +74,13 @@ describe('web photo picker adapter', () => {
     assert.match(source, /removeEventListener\(['"]focus['"]/);
     assert.match(source, /finally\s*\{[\s\S]*revokeObjectURL/);
   });
+
+  it('keeps native photo picker action-sheet copy injected by localized callers', () => {
+    const source = readFileSync(new URL('./photo-picker-adapter.ts', import.meta.url).pathname, 'utf8');
+    assert.match(source, /copy\.title/);
+    assert.match(source, /copy\.chooseFromLibrary/);
+    assert.doesNotMatch(source, /['"]Choose a photo source['"]/);
+  });
 });
 
 describe('web QR scanner adapter', () => {

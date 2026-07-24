@@ -22,6 +22,12 @@ test('t returns localized value for key', () => {
   assert.equal(t('es-ES', 'auth.signin.cta_primary'), 'Iniciar sesión');
 });
 
+test('native photo picker actions resolve in every supported locale', () => {
+  assert.equal(t('en-US', 'photo_picker.choose_from_library'), 'Choose from library');
+  assert.equal(t('pt-BR', 'photo_picker.take_photo'), 'Tirar foto');
+  assert.equal(t('es-ES', 'photo_picker.body'), 'Elige el origen de la foto');
+});
+
 test('t interpolates params', () => {
   assert.equal(t('en-US', 'student.hydration.progress', { consumed: 500, goal: 2000 }), '500 / 2000 ml');
 });

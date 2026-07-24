@@ -39,7 +39,7 @@ Platform behavior is selected by Metro's `.web` module resolution rather than sc
 - `<768px`: existing single-column flow with bottom tabs.
 - `768-1023px`: icon navigation rail and content constrained by `DsScreen`.
 - `>=1024px`: labeled 220px sidebar with centered content and wider surfaces.
-- `DsScreen` supports `form` (640), `content` (960), `wide` (1200), and `full` width modes.
+- `DsScreen` supports `form` (600px), `content` (680px on tablet / 880px on desktop), `wide` (680px on tablet / 1040px on desktop), and uncapped `full` width modes.
 - Browser focus rings use `:focus-visible`; pointer hover is additive and reduced-motion preferences are respected.
 - Shared dialogs close on Escape, trap Tab/Shift+Tab, focus their first control, and restore focus to the opener.
 - Error/status surfaces continue using React Native live regions and accessibility roles.
