@@ -33,6 +33,45 @@ function createMemoryStorage() {
   };
 }
 
+function persistedAccessToken(value: string): string | null {
+  try {
+    const payload = JSON.parse(value) as { accessToken?: unknown };
+    return typeof payload.accessToken === 'string' ? payload.accessToken : null;
+  } catch {
+    return null;
+  }
+}
+
+function createBlockedPersistenceStorage(blockedAccessToken: string) {
+  const values = new Map<string, string>();
+  let releaseBlockedWrite!: () => void;
+  let markBlockedWriteStarted!: () => void;
+  const blockedWriteStarted = new Promise<void>((resolve) => {
+    markBlockedWriteStarted = resolve;
+  });
+  const blockedWriteRelease = new Promise<void>((resolve) => {
+    releaseBlockedWrite = resolve;
+  });
+
+  return {
+    storage: {
+      getItem: async (key: string) => values.get(key) ?? null,
+      removeItem: async (key: string) => {
+        values.delete(key);
+      },
+      setItem: async (key: string, value: string) => {
+        if (persistedAccessToken(value) === blockedAccessToken) {
+          markBlockedWriteStarted();
+          await blockedWriteRelease;
+        }
+        values.set(key, value);
+      },
+    },
+    blockedWriteStarted,
+    releaseBlockedWrite,
+  };
+}
+
 describe('server-auth-source', () => {
   it('starts a local server session and exposes a bearer-token user', async () => {
     clearServerAuthSession();
@@ -557,6 +596,217 @@ describe('server-auth-source', () => {
     assert.equal(await staleRefresh, null);
     assert.equal(getCurrentServerAccessToken(), 'second-token');
     assert.equal(getCurrentServerUser()?.uid, 'second_user');
+  });
+
+  it('does not return or persist a refreshed token after sign-out races its storage write', async () => {
+    clearServerAuthSession();
+    const {
+      storage,
+      blockedWriteStarted,
+      releaseBlockedWrite,
+    } = createBlockedPersistenceStorage('stale-refreshed-token');
+
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'expiring-token',
+            refreshToken: 'refresh-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: new Date(Date.now() + 1_000).toISOString(),
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    const staleRefresh = getValidServerAccessToken({
+      fetch: async () =>
+        response({
+          accessToken: 'stale-refreshed-token',
+          refreshToken: 'refresh-token-2',
+          tokenType: 'Bearer',
+          profile: {
+            authUid: 'local_user',
+            displayName: 'User One',
+            emailNormalized: 'user@example.test',
+            lockedRole: 'student',
+            acceptedTermsVersion: 'v1',
+          },
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        }),
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    });
+
+    await blockedWriteStarted;
+    assert.equal(getCurrentServerAccessToken(), 'stale-refreshed-token');
+
+    await clearPersistedServerAuthSession({ storage });
+    releaseBlockedWrite();
+
+    assert.equal(await staleRefresh, null);
+    assert.equal(getCurrentServerAccessToken(), null);
+    assert.equal(await storage.getItem('auth.server.session'), null);
+    assert.equal(await restoreServerAuthSession({ storage }), null);
+  });
+
+  it('repairs persistence and returns no old token when account replacement races refresh storage', async () => {
+    clearServerAuthSession();
+    const {
+      storage,
+      blockedWriteStarted,
+      releaseBlockedWrite,
+    } = createBlockedPersistenceStorage('first-stale-refreshed-token');
+
+    await startLocalServerSession(
+      { email: 'first@example.test', displayName: 'First User' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'first-expiring-token',
+            refreshToken: 'first-refresh-token',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'first_user',
+              displayName: 'First User',
+              emailNormalized: 'first@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: new Date(Date.now() + 1_000).toISOString(),
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    const staleRefresh = getValidServerAccessToken({
+      fetch: async () =>
+        response({
+          accessToken: 'first-stale-refreshed-token',
+          refreshToken: 'first-refresh-token-2',
+          tokenType: 'Bearer',
+          profile: {
+            authUid: 'first_user',
+            displayName: 'First User',
+            emailNormalized: 'first@example.test',
+            lockedRole: 'student',
+            acceptedTermsVersion: 'v1',
+          },
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        }),
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    });
+
+    await blockedWriteStarted;
+
+    await startLocalServerSession(
+      { email: 'second@example.test', displayName: 'Second User' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'second-token',
+            refreshToken: 'second-refresh-token',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'second_user',
+              displayName: 'Second User',
+              emailNormalized: 'second@example.test',
+              lockedRole: 'professional',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: '2999-01-01T00:00:00.000Z',
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    releaseBlockedWrite();
+
+    assert.equal(await staleRefresh, null);
+    assert.equal(getCurrentServerAccessToken(), 'second-token');
+    assert.equal(getCurrentServerUser()?.uid, 'second_user');
+
+    clearServerAuthSession();
+    const restored = await restoreServerAuthSession({ storage });
+    assert.equal(restored?.accessToken, 'second-token');
+    assert.equal(restored?.user.uid, 'second_user');
+  });
+
+  it('keeps a refreshed in-memory session usable when its persistence write fails', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'expiring-token',
+            refreshToken: 'refresh-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: new Date(Date.now() + 1_000).toISOString(),
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+
+    const persistedBeforeRefresh = await storage.getItem('auth.server.session');
+    const failingStorage = {
+      ...storage,
+      setItem: async (key: string, value: string) => {
+        if (persistedAccessToken(value) === 'refreshed-token') {
+          throw new Error('storage unavailable');
+        }
+        await storage.setItem(key, value);
+      },
+    };
+
+    const token = await getValidServerAccessToken({
+      fetch: async () =>
+        response({
+          accessToken: 'refreshed-token',
+          refreshToken: 'refresh-token-2',
+          tokenType: 'Bearer',
+          profile: {
+            authUid: 'local_user',
+            displayName: 'User One',
+            emailNormalized: 'user@example.test',
+            lockedRole: 'student',
+            acceptedTermsVersion: 'v1',
+          },
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        }),
+      getServerBaseUrl: () => 'http://server.test',
+      storage: failingStorage,
+    });
+
+    assert.equal(token, 'refreshed-token');
+    assert.equal(getCurrentServerAccessToken(), 'refreshed-token');
+    assert.equal(getCurrentServerUser()?.uid, 'local_user');
+    assert.equal(
+      await storage.getItem('auth.server.session'),
+      persistedBeforeRefresh
+    );
   });
 
   it('clears the active session when token refresh is rejected', async () => {

@@ -283,6 +283,36 @@ function parsePersistedSession(value: string): ServerAuthSession | null {
   );
 }
 
+async function reconcilePersistedSessionWithCurrentState(
+  storage: ServerAuthStorage
+): Promise<void> {
+  while (true) {
+    const reconciliationRevision = sessionRevision;
+    const activeSession = currentSession;
+
+    try {
+      if (activeSession) {
+        await storage.setItem(
+          SERVER_AUTH_SESSION_STORAGE_KEY,
+          serializeSession(activeSession)
+        );
+      } else {
+        await storage.removeItem(SERVER_AUTH_SESSION_STORAGE_KEY);
+      }
+    } catch {
+      // In-memory auth remains authoritative when platform storage is unavailable.
+      return;
+    }
+
+    if (
+      sessionRevision === reconciliationRevision &&
+      currentSession === activeSession
+    ) {
+      return;
+    }
+  }
+}
+
 export function getCurrentServerAccessToken(): string | null {
   return currentSession && !isExpired(currentSession.expiresAt) ? currentSession.accessToken : null;
 }
@@ -534,6 +564,7 @@ async function refreshServerSession(
   if (!canCommit()) return { kind: 'stale' };
 
   setCurrentSession(session);
+  const committedRevision = sessionRevision;
   if (authSessionRuntime.persistsSession) {
     try {
       await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(session));
@@ -541,6 +572,17 @@ async function refreshServerSession(
       // Refreshed in-memory auth still works if platform storage is unavailable.
     }
   }
+
+  if (
+    sessionRevision !== committedRevision ||
+    currentSession !== session
+  ) {
+    if (authSessionRuntime.persistsSession) {
+      await reconcilePersistedSessionWithCurrentState(resolveStorage(deps));
+    }
+    return { kind: 'stale' };
+  }
+
   return { kind: 'success', session };
 }
 
