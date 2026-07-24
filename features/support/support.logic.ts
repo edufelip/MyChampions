@@ -51,3 +51,12 @@ export function normalizeSupportError(error: any): SupportErrorReason {
   if (msg.includes('network') || msg.includes('offline')) return 'network';
   return 'unknown';
 }
+
+export function requestSupportModalDismissal(input: {
+  isSubmitting: boolean;
+  onClose: () => void;
+}): boolean {
+  if (input.isSubmitting) return false;
+  input.onClose();
+  return true;
+}

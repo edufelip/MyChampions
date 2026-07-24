@@ -17,6 +17,7 @@ import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useSupport } from '@/features/support/use-support';
+import { requestSupportModalDismissal } from '@/features/support/support.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useAuthSession } from '@/features/auth/auth-session';
 import type { useTranslation } from '@/localization';
@@ -54,7 +55,7 @@ export function SupportModal({
   const isSubmitLocked = isSubmitting || isOffline;
   useWebDialogAccessibility({
     isVisible,
-    onClose,
+    onClose: handleClose,
     testID: 'settings.account.support.modal',
   });
 
@@ -87,12 +88,12 @@ export function SupportModal({
     }
   }, [state.kind]);
 
-  const handleClose = () => {
-    onClose();
-  };
+  function handleClose() {
+    requestSupportModalDismissal({ isSubmitting, onClose });
+  }
 
   return (
-    <Modal visible={isVisible} animationType="slide" onRequestClose={onClose} transparent>
+    <Modal visible={isVisible} animationType="slide" onRequestClose={handleClose} transparent>
       <View style={styles.flex}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
