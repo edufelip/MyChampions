@@ -7,6 +7,9 @@ const root = join(__dirname, '..', '..');
 
 test('production Android releases fail closed onto CI versioning and private release signing', () => {
   const buildGradle = readFileSync(join(root, 'android', 'app', 'build.gradle'), 'utf8');
+  const packageJson = JSON.parse(
+    readFileSync(join(root, 'package.json'), 'utf8')
+  ) as { scripts: Record<string, string> };
   const workflow = readFileSync(join(root, '.github', 'workflows', 'android-release.yml'), 'utf8');
   const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
 
@@ -45,6 +48,13 @@ test('production Android releases fail closed onto CI versioning and private rel
   assert.match(workflow, /bundleProductionRelease/);
   assert.match(workflow, /track: internal/);
   assert.match(workflow, /status: draft/);
+  for (const scriptName of ['android:release', 'android:release:device']) {
+    assert.match(
+      packageJson.scripts[scriptName],
+      /-PCI_VERSION_CODE=\$\{CI_VERSION_CODE:\?CI_VERSION_CODE_required\}/,
+      `${scriptName} must forward an explicit positive version code to the Gradle guard`,
+    );
+  }
   assert.match(gitignore, /^android\/keystore\.properties$/m);
   assert.match(gitignore, /^\*\.jks$/m);
 });
