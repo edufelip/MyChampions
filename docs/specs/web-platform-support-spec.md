@@ -25,6 +25,7 @@ Implemented as a code-structure phase on 2026-07-15. MyChampions supports Androi
 Platform behavior is selected by Metro's `.web` module resolution rather than screen-level `Platform.OS` billing/auth decisions:
 
 - `auth-session-runtime`: bearer + persisted refresh session on native; in-memory access token + credentialed HttpOnly refresh cookie on web.
+- Native proactive refresh distinguishes definitive authentication rejection from retryable transport/provider failure. Only rejection clears the persisted session; retryable failures preserve the refresh credential and any still-valid access token so cached offline/read-only state remains available and a later request can retry.
 - Google and Apple social sources: native SDKs on mobile; Google Identity Services and Sign in with Apple JS on web. Both preserve the server ID-token exchange contract.
 - `photo-picker-adapter`: native image picker/manipulator versus browser file/camera input and canvas JPEG compression.
 - `qr-scanner-adapter`: native Expo camera permission versus browser media-device permission. Manual invite-code entry remains available when camera access is denied or unavailable.

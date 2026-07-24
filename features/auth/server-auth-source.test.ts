@@ -592,9 +592,110 @@ describe('server-auth-source', () => {
 
     assert.equal(token, null);
     assert.equal(getCurrentServerUser(), null);
+    assert.equal(await storage.getItem('auth.server.session'), null);
   });
 
-  it('fails closed when persisted-session refresh transport fails', async () => {
+  it('keeps a still-valid session usable when proactive refresh has a transport failure', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'expiring-token',
+            refreshToken: 'refresh-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: new Date(Date.now() + 10_000).toISOString(),
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+    const persistedBeforeFailure = await storage.getItem('auth.server.session');
+
+    const token = await getValidServerAccessToken({
+      fetch: async () => {
+        throw new Error('refresh network unavailable');
+      },
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    });
+
+    assert.equal(token, 'expiring-token');
+    assert.equal(getCurrentServerUser()?.uid, 'local_user');
+    assert.equal(await storage.getItem('auth.server.session'), persistedBeforeFailure);
+  });
+
+  it('preserves an expired session and refresh credential across retryable 5xx failures', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'expired-token',
+            refreshToken: 'refresh-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
+            },
+            expiresAt: '2020-01-01T00:00:00.000Z',
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      }
+    );
+    const persistedBeforeFailure = await storage.getItem('auth.server.session');
+
+    const failedToken = await getValidServerAccessToken({
+      fetch: async () => response({ error: 'temporarily_unavailable' }, { status: 503 }),
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    });
+
+    assert.equal(failedToken, null);
+    assert.equal(getCurrentServerUser()?.uid, 'local_user');
+    assert.equal(await storage.getItem('auth.server.session'), persistedBeforeFailure);
+
+    const recoveredToken = await getValidServerAccessToken({
+      fetch: async () =>
+        response({
+          accessToken: 'refreshed-token',
+          refreshToken: 'refresh-token-2',
+          tokenType: 'Bearer',
+          profile: {
+            authUid: 'local_user',
+            displayName: 'User One',
+            emailNormalized: 'user@example.test',
+            lockedRole: 'student',
+            acceptedTermsVersion: 'v1',
+          },
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        }),
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    });
+
+    assert.equal(recoveredToken, 'refreshed-token');
+    assert.equal(getCurrentServerAccessToken(), 'refreshed-token');
+  });
+
+  it('preserves persisted-session refresh credentials when refresh transport fails', async () => {
     clearServerAuthSession();
     const storage = createMemoryStorage();
 
@@ -632,11 +733,13 @@ describe('server-auth-source', () => {
       storage,
     });
 
-    assert.equal(restored, null);
+    assert.equal(restored?.refreshToken, 'refresh-token-1');
     assert.equal(getCurrentServerAccessToken(), null);
+    assert.equal(getCurrentServerUser()?.uid, 'local_user');
+    assert.notEqual(await storage.getItem('auth.server.session'), null);
   });
 
-  it('fails closed when persisted-session refresh URL resolution fails', async () => {
+  it('preserves persisted-session refresh credentials when URL resolution fails', async () => {
     clearServerAuthSession();
     const storage = createMemoryStorage();
 
@@ -676,11 +779,13 @@ describe('server-auth-source', () => {
       storage,
     });
 
-    assert.equal(restored, null);
+    assert.equal(restored?.refreshToken, 'refresh-token-1');
     assert.equal(getCurrentServerAccessToken(), null);
+    assert.equal(getCurrentServerUser()?.uid, 'local_user');
+    assert.notEqual(await storage.getItem('auth.server.session'), null);
   });
 
-  it('fails closed when persisted-session refresh payload is malformed', async () => {
+  it('preserves persisted-session refresh credentials when a success payload is malformed', async () => {
     clearServerAuthSession();
     const storage = createMemoryStorage();
 
@@ -720,8 +825,10 @@ describe('server-auth-source', () => {
       storage,
     });
 
-    assert.equal(restored, null);
+    assert.equal(restored?.refreshToken, 'refresh-token-1');
     assert.equal(getCurrentServerAccessToken(), null);
+    assert.equal(getCurrentServerUser()?.uid, 'local_user');
+    assert.notEqual(await storage.getItem('auth.server.session'), null);
   });
 
   it('returns null instead of calling the network when the server URL is missing', async () => {

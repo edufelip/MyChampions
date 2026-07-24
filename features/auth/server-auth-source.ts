@@ -61,9 +61,14 @@ const ACCESS_TOKEN_REFRESH_LEEWAY_MS = 30_000;
 
 let currentSession: ServerAuthSession | null = null;
 let sessionRevision = 0;
+type RefreshServerSessionOutcome =
+  | { kind: 'success'; session: ServerAuthSession }
+  | { kind: 'rejected' }
+  | { kind: 'transient_failure' }
+  | { kind: 'stale' };
 let refreshInFlight: {
   revision: number;
-  promise: Promise<ServerAuthSession | null>;
+  promise: Promise<RefreshServerSessionOutcome>;
 } | null = null;
 const sessionListeners = new Set<(session: ServerAuthSession | null) => void>();
 
@@ -321,23 +326,25 @@ export async function getValidServerAccessToken(
   if (!refreshInFlight || refreshInFlight.revision !== refreshRevision) {
     const flight = {
       revision: refreshRevision,
-      promise: Promise.resolve<ServerAuthSession | null>(null),
+      promise: Promise.resolve<RefreshServerSessionOutcome>({
+        kind: 'transient_failure',
+      }),
     };
     flight.promise = refreshServerSession(
       session.refreshToken,
       deps,
       () => sessionRevision === refreshRevision && currentSession === session
     )
-      .then(async (refreshed) => {
-        if (refreshed) return refreshed;
+      .then(async (outcome) => {
+        if (outcome.kind !== 'rejected') return outcome;
         if (sessionRevision !== refreshRevision || currentSession !== session) {
-          return null;
+          return { kind: 'stale' } as const;
         }
         setCurrentSession(null);
         if (authSessionRuntime.persistsSession) {
           await removePersistedSession(resolveStorage(deps));
         }
-        return null;
+        return outcome;
       })
       .finally(() => {
         if (refreshInFlight === flight) {
@@ -347,7 +354,17 @@ export async function getValidServerAccessToken(
     refreshInFlight = flight;
   }
 
-  return (await refreshInFlight.promise)?.accessToken ?? null;
+  const outcome = await refreshInFlight.promise;
+  if (outcome.kind === 'success') return outcome.session.accessToken;
+  if (
+    outcome.kind === 'transient_failure' &&
+    sessionRevision === refreshRevision &&
+    currentSession === session &&
+    !isExpired(session.expiresAt)
+  ) {
+    return session.accessToken;
+  }
+  return null;
 }
 
 export async function clearPersistedServerAuthSession(
@@ -381,15 +398,16 @@ export async function restoreServerAuthSession(
 ): Promise<ServerAuthSession | null> {
   if (!authSessionRuntime.persistsSession) {
     const restoreRevision = sessionRevision;
-    const refreshed = await refreshServerSession(
+    const outcome = await refreshServerSession(
       null,
       deps,
       () => sessionRevision === restoreRevision
     );
-    if (!refreshed && sessionRevision === restoreRevision) {
+    if (outcome.kind === 'success') return outcome.session;
+    if (outcome.kind === 'rejected' && sessionRevision === restoreRevision) {
       setCurrentSession(null);
     }
-    return refreshed;
+    return outcome.kind === 'transient_failure' ? currentSession : null;
   }
 
   const storage = resolveStorage(deps);
@@ -420,16 +438,24 @@ export async function restoreServerAuthSession(
     }
 
     const restoreRevision = sessionRevision;
-    const refreshed = await refreshServerSession(
+    const outcome = await refreshServerSession(
       session.refreshToken,
       deps,
       () => sessionRevision === restoreRevision
     );
-    if (refreshed) return refreshed;
-    if (sessionRevision !== restoreRevision) return null;
-    await removePersistedSession(storage);
-    setCurrentSession(null);
-    return null;
+    if (outcome.kind === 'success') return outcome.session;
+    if (sessionRevision !== restoreRevision || outcome.kind === 'stale') return null;
+    if (outcome.kind === 'rejected') {
+      await removePersistedSession(storage);
+      setCurrentSession(null);
+      return null;
+    }
+
+    // Preserve the expired bearer session and rotating refresh token after
+    // retryable failures so cached read models remain available offline.
+    // Token-requiring operations still fail closed until refresh succeeds.
+    setCurrentSession(session);
+    return currentSession;
   }
 
   setCurrentSession(session);
@@ -440,16 +466,16 @@ async function refreshServerSession(
   refreshToken: string | null,
   deps: Partial<ServerAuthDeps> = makeDeps(),
   canCommit: () => boolean = () => true
-): Promise<ServerAuthSession | null> {
-  if (!deps.fetch || !deps.getServerBaseUrl) return null;
+): Promise<RefreshServerSessionOutcome> {
+  if (!deps.fetch || !deps.getServerBaseUrl) return { kind: 'transient_failure' };
 
   let baseUrl: string | undefined;
   try {
     baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
   } catch {
-    return null;
+    return { kind: 'transient_failure' };
   }
-  if (!baseUrl) return null;
+  if (!baseUrl) return { kind: 'transient_failure' };
 
   let response: Response;
   try {
@@ -460,18 +486,21 @@ async function refreshServerSession(
       body: JSON.stringify(authSessionRuntime.refreshRequestBody(refreshToken)),
     });
   } catch {
-    return null;
+    return { kind: 'transient_failure' };
   }
-  if (!response.ok) return null;
+  if (response.status === 401 || response.status === 403) {
+    return { kind: 'rejected' };
+  }
+  if (!response.ok) return { kind: 'transient_failure' };
 
   let session: ServerAuthSession | null;
   try {
     session = await sessionFromPayload(await response.json());
   } catch {
-    return null;
+    return { kind: 'transient_failure' };
   }
-  if (!session) return null;
-  if (!canCommit()) return null;
+  if (!session) return { kind: 'transient_failure' };
+  if (!canCommit()) return { kind: 'stale' };
 
   setCurrentSession(session);
   if (authSessionRuntime.persistsSession) {
@@ -481,7 +510,7 @@ async function refreshServerSession(
       // Refreshed in-memory auth still works if platform storage is unavailable.
     }
   }
-  return session;
+  return { kind: 'success', session };
 }
 
 export async function startLocalServerSession(

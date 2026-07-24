@@ -248,7 +248,7 @@
 
 - `D-150`: Profile hydration query for auth context is moving to deterministic key lookup (`userProfile(key: { id_expr: "auth.uid" })`) instead of filtered list query to prevent cross-UID row resolution anomalies. Client parser remains backward-compatible with legacy `userProfiles[]` payload shape until connector deployment + SDK regeneration is completed in all environments.
 
-- `D-151`: Superseded. The local migration removed mobile Firebase auth bootstrap. Relaunch persistence restores MyChampions server sessions from AsyncStorage, refreshes expired persisted sessions when a refresh token is available, and clears stale sessions when refresh is unavailable or rejected. Durable server-side session persistence is part of the self-managed auth migration.
+- `D-151`: Superseded. The local migration removed mobile Firebase auth bootstrap. Relaunch persistence restores MyChampions server sessions from AsyncStorage and refreshes expired persisted sessions when a refresh token is available. A definitive 401/403 refresh rejection or a missing refresh credential clears the session; transport, 5xx, URL-resolution, and malformed-success failures preserve the persisted refresh credential for a later retry while token-requiring operations remain closed. Durable server-side session persistence is part of the self-managed auth migration.
 
 - `D-152`: RevenueCat product catalog, entitlement mappings, and paywall offering routing finalized:
   - **Products registered in RevenueCat dashboard:**
