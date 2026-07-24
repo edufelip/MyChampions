@@ -230,6 +230,7 @@
 - Primary actor: Student or professional.
 - Trigger: User interacts with app while offline.
 - Preconditions: Device is offline and cached session/content exists.
+- Alternate startup: When native session refresh or profile hydration fails transiently, restore only the active UID's cached role and terms state for the read-only shell. Rejected sessions and missing or mismatched profiles return to normal auth/onboarding guards.
 - Main flow:
   1. App shows persistent offline/read-only banner.
   2. User attempts a write action.

@@ -53,7 +53,7 @@
 - `BR-242`: Pending connection requests awaiting professional action are capped at 10 unique Students per professional; one Student with two specialty-scoped pending requests counts once. Invite submission and pending Connection creation run through the governed backend path, which uses deterministic duplicate guard documents and ten pending-student slot documents so duplicate pending requests and cap checks are enforced transactionally before the Connection is created.
 - `BR-243`: Professional dashboard must show active and pending counts separately.
 - `BR-244`: Wrong-role route access is hard-blocked and redirected to role home.
-- `BR-245`: Offline mode allows read-only cached access; writes are blocked until connectivity is restored.
+- `BR-245`: Offline mode allows read-only cached access; writes are blocked until connectivity is restored. Cached auth profile state may bootstrap the shell only after a retryable failure and only when its UID matches the active persisted session; definitive auth rejection, missing profile state, and account mismatch fail closed.
 - `BR-246`: Mixed error UX strategy applies: field-level validation inline, recoverable load failures as screen state, and transient operation feedback via toast/snackbar.
 - `BR-247`: If entitlement lapses while professional is over cap, block new activations and lock professional plan updates for students until entitlement is active again.
 - `BR-248`: Student home prioritizes nutrition sections above training sections and highlights pending connection status.

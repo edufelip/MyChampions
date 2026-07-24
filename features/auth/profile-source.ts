@@ -17,6 +17,7 @@ type ProfileSourceErrorCode =
   | 'invalid_response'
   | 'role_update_not_persisted'
   | 'profile_row_not_found_after_upsert'
+  | 'token_unavailable'
   | 'unauthenticated';
 
 export class ProfileSourceError extends Error {
@@ -122,7 +123,7 @@ function normalizeServerError(status: number, payload: ServerProfileResponse | n
   const code = payload?.error?.code;
   const message = payload?.error?.message ?? `Profile server request failed with status ${status}.`;
 
-  if (status === 401 || code === 'unauthorized') {
+  if (status === 401 || status === 403 || code === 'unauthorized') {
     return new ProfileSourceError('unauthenticated', message);
   }
   if (status === 404 || code === 'profile_not_found') {
@@ -171,7 +172,7 @@ async function requestProfile(
 
   const accessToken = options.accessToken ?? (await deps.getCurrentAccessToken());
   if (!accessToken) {
-    throw new ProfileSourceError('unauthenticated', 'No authenticated server token found.');
+    throw new ProfileSourceError('token_unavailable', 'No usable server access token found.');
   }
 
   const response = await deps.fetch(`${baseUrl}${path}`, {

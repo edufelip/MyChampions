@@ -92,7 +92,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-180`: A professional may have at most 10 unique Students with pending connection requests awaiting accept/deny.
 - `FR-181`: Professional dashboards shall display active and pending student counts as separate values.
 - `FR-182`: Wrong-role route access shall be hard blocked and redirected to the role-appropriate home.
-- `FR-183`: MVP offline behavior shall support read-only cached content; write operations require connectivity.
+- `FR-183`: MVP offline behavior shall support read-only cached content; write operations require connectivity. Native startup may restore the same account's persisted role and terms state after a transient refresh/profile failure, while rejected sessions and mismatched identities fail closed.
 - `FR-184`: MVP error handling shall use mixed strategy (inline validation, full-screen error states, and toasts where context-appropriate).
 - `FR-185`: If professional subscription entitlement is inactive while over cap, the app shall block new activations and lock professional updates to student plans until entitlement is restored.
 - `FR-186`: Student home layout priority shall surface nutrition sections before training sections.

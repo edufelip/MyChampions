@@ -46,7 +46,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-240`: Student-visible credential info is available only for currently assigned professionals and includes only `registry_id`, `authority`, and `country`.
 - `AC-241`: Professional dashboard shows active and pending student counts separately.
 - `AC-242`: Student home prioritizes nutrition content above training content and highlights pending-connection status.
-- `AC-243`: Offline mode exposes read-only cached content while blocking write actions.
+- `AC-243`: Offline mode exposes read-only cached content while blocking write actions. A native cold start with transient session refresh/profile hydration failure retains only the matching account's persisted role and accepted-terms state; rejected sessions, missing profiles, and UID mismatches grant no shell access.
 - `AC-244`: Auth password fields provide reveal/hide controls on sign-in and create-account screens.
 - `AC-245`: Role-specific bottom navigation areas are enforced:
   - Professional: dashboard, students, nutrition, training, account/settings.

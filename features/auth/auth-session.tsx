@@ -6,8 +6,10 @@ import type { RoleIntent } from './role-selection.logic';
 import {
   hydrateProfileFromSource,
   lockRoleInSource,
+  ProfileSourceError,
   setAcceptedTermsVersionInSource,
 } from './profile-source';
+import { resolveProfileHydrationFailure } from './profile-hydration.logic';
 import { resolveTermsConfigFromExpo } from './terms-config';
 import { needsTermsAcceptance } from './terms.logic';
 import {
@@ -160,10 +162,11 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       setCurrentUser(serverUser as AuthSessionUser);
       setIsAuthenticated(true);
       setIsHydrated(false);
+      const hydrationAuthUid = serverUser.uid;
 
       try {
         const profile = await hydrateProfileFromSource(serverUser);
-        if (!cancelled) {
+        if (!cancelled && getCurrentServerUser()?.uid === hydrationAuthUid) {
           setLockedRole(profile.lockedRole);
           setAcceptedTermsVersion(profile.acceptedTermsVersion);
           setLastProfileSyncedAtIso(new Date().toISOString());
@@ -174,13 +177,23 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
             })
           );
         }
-      } catch {
-        if (!cancelled) {
-          setLockedRole(null);
-          setAcceptedTermsVersion(null);
-          setLastProfileSyncedAtIso(null);
-          setRequiresTermsAcceptance(true);
+      } catch (error) {
+        const activeAuthUid = getCurrentServerUser()?.uid ?? null;
+        if (cancelled || activeAuthUid !== hydrationAuthUid) {
+          return;
         }
+
+        const resolution = resolveProfileHydrationFailure({
+          hydrationAuthUid,
+          activeAuthUid,
+          errorCode: error instanceof ProfileSourceError ? error.code : null,
+          cachedProfile: getCurrentServerProfile(),
+          requiredTermsVersion: termsRequiredVersion,
+        });
+        setLockedRole(resolution.lockedRole);
+        setAcceptedTermsVersion(resolution.acceptedTermsVersion);
+        setLastProfileSyncedAtIso(resolution.lastProfileSyncedAtIso);
+        setRequiresTermsAcceptance(resolution.requiresTermsAcceptance);
       } finally {
         if (!cancelled) {
           setIsHydrated(true);

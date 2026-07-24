@@ -5,6 +5,7 @@ import {
   clearPersistedServerAuthSession,
   clearServerAuthSession,
   getCurrentServerAccessToken,
+  getCurrentServerProfile,
   getCurrentServerUser,
   getValidServerAccessToken,
   restoreServerAuthSession,
@@ -203,8 +204,8 @@ describe('server-auth-source', () => {
               authUid: 'local_user',
               displayName: 'User One',
               emailNormalized: 'user@example.test',
-              lockedRole: null,
-              acceptedTermsVersion: null,
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
               createdAt: '2026-01-01T00:00:00.000Z',
               updatedAt: '2026-01-01T00:00:00.000Z',
             },
@@ -711,8 +712,8 @@ describe('server-auth-source', () => {
               authUid: 'local_user',
               displayName: 'User One',
               emailNormalized: 'user@example.test',
-              lockedRole: null,
-              acceptedTermsVersion: null,
+              lockedRole: 'student',
+              acceptedTermsVersion: 'v1',
               createdAt: '2026-01-01T00:00:00.000Z',
               updatedAt: '2026-01-01T00:00:00.000Z',
             },
@@ -734,8 +735,13 @@ describe('server-auth-source', () => {
     });
 
     assert.equal(restored?.refreshToken, 'refresh-token-1');
+    assert.equal(restored?.profile.authUid, 'local_user');
+    assert.equal(restored?.profile.lockedRole, 'student');
+    assert.equal(restored?.profile.acceptedTermsVersion, 'v1');
     assert.equal(getCurrentServerAccessToken(), null);
     assert.equal(getCurrentServerUser()?.uid, 'local_user');
+    assert.equal(getCurrentServerProfile()?.lockedRole, 'student');
+    assert.equal(getCurrentServerProfile()?.acceptedTermsVersion, 'v1');
     assert.notEqual(await storage.getItem('auth.server.session'), null);
   });
 
