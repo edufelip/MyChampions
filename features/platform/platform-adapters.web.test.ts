@@ -4,6 +4,9 @@ import { describe, it } from 'node:test';
 
 import { impactAsync, notificationAsync } from './haptics-adapter.web';
 import {
+  BrowserPhotoTooLargeError,
+  compressBrowserPhotoWithinLimit,
+  MAX_COMPRESSED_PHOTO_BYTES,
   resolveBrowserPhoto,
   resolveCompressedPhotoSize,
 } from './photo-picker-adapter.web';
@@ -67,6 +70,39 @@ describe('web photo picker adapter', () => {
     });
   });
 
+  it('recompresses browser photos until the encoded JPEG is within 1.5 MB', async () => {
+    const attempts: Array<{ width: number; height: number; quality: number }> = [];
+    const result = await compressBrowserPhotoWithinLimit(
+      { width: 1600, height: 1200 },
+      async (attempt) => {
+        attempts.push(attempt);
+        return new Blob([
+          new Uint8Array(attempts.length === 1 ? MAX_COMPRESSED_PHOTO_BYTES + 1 : 128),
+        ]);
+      }
+    );
+
+    assert.equal(result.size, 128);
+    assert.equal(attempts.length, 2);
+    assert.ok(attempts[1].quality < attempts[0].quality);
+    assert.ok(attempts[1].width < attempts[0].width);
+  });
+
+  it('fails with file_too_large after every bounded browser compression attempt', async () => {
+    await assert.rejects(
+      () =>
+        compressBrowserPhotoWithinLimit(
+          { width: 1600, height: 1200 },
+          async () => new Blob([new Uint8Array(MAX_COMPRESSED_PHOTO_BYTES + 1)])
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof BrowserPhotoTooLargeError);
+        assert.equal(error.code, 'file_too_large');
+        return true;
+      }
+    );
+  });
+
   it('keeps browser cancellation and object URL cleanup in the picker boundary', () => {
     const source = readFileSync(new URL('./photo-picker-adapter.web.ts', import.meta.url).pathname, 'utf8');
     assert.doesNotMatch(source, /setAttribute\(['"]capture['"]/);
@@ -87,6 +123,10 @@ describe('web photo picker adapter', () => {
     assert.match(source, /class PhotoPickerPermissionDeniedError/);
     assert.match(source, /if \(!permission\.granted\) throw new PhotoPickerPermissionDeniedError\(source\)/);
     assert.match(source, /\.then\(resolve, reject\)/);
+    assert.match(source, /MAX_COMPRESSED_PHOTO_BYTES = 1_500_000/);
+    assert.match(source, /decodedBase64ByteLength/);
+    assert.match(source, /blob\.size <= MAX_COMPRESSED_PHOTO_BYTES/);
+    assert.match(source, /throw new PhotoCompressionTooLargeError\(\)/);
   });
 });
 

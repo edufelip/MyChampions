@@ -608,6 +608,7 @@ export const enUS = {
   'meal.photo_analysis.disclaimer': 'These are AI estimates. Please verify before saving.',
   'meal.photo_analysis.error.unrecognizable': "Couldn't identify a meal in this photo. Try again or fill in manually.",
   'meal.photo_analysis.error.permission_denied': 'Camera or photo library access is required. Grant permission in your device settings and try again.',
+  'meal.photo_analysis.error.file_too_large': 'This photo is still too large after compression. Choose a simpler or smaller image and try again.',
   'meal.photo_analysis.error.quota': 'AI analysis is temporarily unavailable. Please fill in manually.',
   'meal.photo_analysis.error.network': 'Network error during analysis. Check your connection and try again.',
   'meal.photo_analysis.error.generic': 'Analysis failed. You can still fill in the fields manually.',

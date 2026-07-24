@@ -686,6 +686,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'meal.photo_analysis.disclaimer': 'Estes são valores estimados pela IA. Verifique antes de salvar.',
   'meal.photo_analysis.error.unrecognizable': 'Não foi possível identificar uma refeição nesta foto. Tente novamente ou preencha manualmente.',
   'meal.photo_analysis.error.permission_denied': 'É necessário permitir o acesso à câmera ou à biblioteca de fotos. Conceda a permissão nas configurações do dispositivo e tente novamente.',
+  'meal.photo_analysis.error.file_too_large': 'Esta foto ainda é muito grande após a compactação. Escolha uma imagem mais simples ou menor e tente novamente.',
   'meal.photo_analysis.error.quota': 'A análise por IA está temporariamente indisponível. Por favor, preencha manualmente.',
   'meal.photo_analysis.error.network': 'Erro de rede durante a análise. Verifique sua conexão e tente novamente.',
   'meal.photo_analysis.error.generic': 'A análise falhou. Você ainda pode preencher os campos manualmente.',

@@ -29,6 +29,7 @@ test('native photo picker actions resolve in every supported locale', () => {
   assert.match(t('en-US', 'meal.photo_analysis.error.permission_denied'), /device settings/);
   assert.match(t('pt-BR', 'custom_meal.image.permission_denied'), /configurações/);
   assert.match(t('es-ES', 'meal.photo_analysis.error.permission_denied'), /ajustes/);
+  assert.match(t('en-US', 'meal.photo_analysis.error.file_too_large'), /too large/);
 });
 
 test('t interpolates params', () => {

@@ -29,6 +29,23 @@ export class PhotoPickerPermissionDeniedError extends Error {
 
 const MAX_DIMENSION_PX = 1600;
 const JPEG_QUALITY = 0.75;
+const MAX_COMPRESSED_PHOTO_BYTES = 1_500_000;
+const COMPRESSION_ATTEMPTS = [
+  { quality: JPEG_QUALITY, scale: 1 },
+  { quality: 0.65, scale: 0.9 },
+  { quality: 0.55, scale: 0.8 },
+  { quality: 0.45, scale: 0.7 },
+  { quality: 0.35, scale: 0.6 },
+] as const;
+
+class PhotoCompressionTooLargeError extends Error {
+  readonly code = 'file_too_large';
+
+  constructor() {
+    super('Compressed photo exceeds 1.5 MB');
+    this.name = 'PhotoCompressionTooLargeError';
+  }
+}
 
 async function selectPhoto(source: 'camera' | 'library'): Promise<PickedPhoto | null> {
   const permission =
@@ -71,34 +88,69 @@ function pickPhoto(copy: PhotoPickerCopy): Promise<PickedPhoto | null> {
   });
 }
 
-async function manipulate(photo: PickedPhoto, base64: boolean) {
+function decodedBase64ByteLength(value: string): number {
+  const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0;
+  return Math.floor((value.length * 3) / 4) - padding;
+}
+
+async function compressToBlob(photo: PickedPhoto): Promise<Blob> {
   const longestSide = Math.max(photo.width, photo.height);
-  const actions: ImageManipulator.Action[] = [];
-  if (longestSide > MAX_DIMENSION_PX) {
-    const scale = MAX_DIMENSION_PX / longestSide;
-    actions.push({
-      resize: {
-        width: Math.round(photo.width * scale),
-        height: Math.round(photo.height * scale),
-      },
-    });
+  const baseScale = Math.min(1, MAX_DIMENSION_PX / longestSide);
+  for (const attempt of COMPRESSION_ATTEMPTS) {
+    const scale = baseScale * attempt.scale;
+    const result = await ImageManipulator.manipulateAsync(
+      photo.uri,
+      [
+        {
+          resize: {
+            width: Math.max(1, Math.round(photo.width * scale)),
+            height: Math.max(1, Math.round(photo.height * scale)),
+          },
+        },
+      ],
+      {
+        base64: false,
+        compress: attempt.quality,
+        format: ImageManipulator.SaveFormat.JPEG,
+      }
+    );
+    const blob = await (await fetch(result.uri)).blob();
+    if (blob.size <= MAX_COMPRESSED_PHOTO_BYTES) return blob;
   }
-  return ImageManipulator.manipulateAsync(photo.uri, actions, {
-    base64,
-    compress: JPEG_QUALITY,
-    format: ImageManipulator.SaveFormat.JPEG,
-  });
+  throw new PhotoCompressionTooLargeError();
+}
+
+async function compressToBase64(photo: PickedPhoto): Promise<string> {
+  const longestSide = Math.max(photo.width, photo.height);
+  const baseScale = Math.min(1, MAX_DIMENSION_PX / longestSide);
+  for (const attempt of COMPRESSION_ATTEMPTS) {
+    const scale = baseScale * attempt.scale;
+    const result = await ImageManipulator.manipulateAsync(
+      photo.uri,
+      [
+        {
+          resize: {
+            width: Math.max(1, Math.round(photo.width * scale)),
+            height: Math.max(1, Math.round(photo.height * scale)),
+          },
+        },
+      ],
+      {
+        base64: true,
+        compress: attempt.quality,
+        format: ImageManipulator.SaveFormat.JPEG,
+      }
+    );
+    if (!result.base64) throw new Error('image_compression_failed');
+    if (decodedBase64ByteLength(result.base64) <= MAX_COMPRESSED_PHOTO_BYTES) {
+      return result.base64;
+    }
+  }
+  throw new PhotoCompressionTooLargeError();
 }
 
 export const photoPickerAdapter: PhotoPickerAdapter = {
   pickPhoto,
-  compressToBlob: async (photo) => {
-    const result = await manipulate(photo, false);
-    return (await fetch(result.uri)).blob();
-  },
-  compressToBase64: async (photo) => {
-    const result = await manipulate(photo, true);
-    if (!result.base64) throw new Error('image_compression_failed');
-    return result.base64;
-  },
+  compressToBlob,
+  compressToBase64,
 };

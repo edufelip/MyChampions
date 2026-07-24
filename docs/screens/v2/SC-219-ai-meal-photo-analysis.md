@@ -127,6 +127,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 - Confidence `'low'`: low-confidence warning shown alongside results; fields remain editable.
 - MyChampions server responds `401` or `403`: treated as `'unauthenticated'` error (D-128).
 - Compression is applied via `expo-image-manipulator`: resizes to ≤ 1600 px longest side, compresses at 0.75 JPEG quality (FR-230, BR-287, D-107).
+- Browser compression verifies the encoded JPEG byte size, then reduces quality and dimensions through a bounded retry sequence; output still above 1.5 MB fails with `file_too_large` before upload or analysis.
 - In SC-214: photo attachment after analysis is optional and independent of the analysis result (D-109).
 - Paywall dismissed without purchase: entitlement status is refreshed after `presentPaywall` resolves regardless of outcome; if user is still not entitled, paywall banner re-displays (D-132).
 - Professional route isolation: a professional can never initiate a new student-plan purchase from either AI gate; the professional offering is presented instead.

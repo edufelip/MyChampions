@@ -64,6 +64,7 @@ import {
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import { useTranslation } from '@/localization';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -496,6 +497,11 @@ function QuickLogPanel({
 }) {
   const { width: viewportWidth } = useWindowDimensions();
   const usesCenteredDialog = viewportWidth >= 768;
+  useWebDialogAccessibility({
+    isVisible: true,
+    onClose: onCancel,
+    testID: 'meal.library.quickLog.panel',
+  });
   const caloriesLabel = nutritionPreview
     ? (t('meal.library.quick_log.preview.calories') as string).replace(
         '{calories}',
@@ -741,6 +747,8 @@ function resolveQuickLogAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn):
   switch (reason) {
     case 'permission_denied':
       return t('meal.photo_analysis.error.permission_denied') as string;
+    case 'file_too_large':
+      return t('meal.photo_analysis.error.file_too_large') as string;
     case 'unrecognizable_image':
       return t('meal.photo_analysis.error.unrecognizable') as string;
     case 'quota_exceeded':
