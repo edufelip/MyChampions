@@ -8,6 +8,10 @@ import {
   syncSubscriptionEntitlementSnapshot,
   SubscriptionServerSourceError,
 } from './subscription-server-source';
+import {
+  clearServerAuthSession,
+  persistServerAuthSessionFromPayload,
+} from '../auth/server-auth-source';
 
 test('syncSubscriptionEntitlementSnapshot posts RevenueCat-derived statuses to the MyChampions server', async () => {
   const requests: { input: string | URL | Request; init?: RequestInit }[] = [];
@@ -24,7 +28,12 @@ test('syncSubscriptionEntitlementSnapshot posts RevenueCat-derived statuses to t
     {
       getCurrentAccessToken: async () => 'server-token',
       getServerBaseUrl: () => 'http://localhost:3400/',
-      fetchFn: async (input, init) => {
+      fetchFn: async function (
+        this: unknown,
+        input,
+        init
+      ) {
+        assert.equal(this, undefined);
         requests.push({ input, init });
         return new Response(JSON.stringify({ snapshot: { id: 'snapshot-1' } }), {
           status: 202,
@@ -283,6 +292,78 @@ test('getSubscriptionEntitlementSnapshot reads the current local server snapshot
     observedAt: '2026-07-03T17:45:00.000Z',
     updatedAt: '2026-07-03T17:46:00.000Z',
   });
+});
+
+test('default subscription fetch retains the browser global receiver', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalServerUrl = process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL;
+  const authUid = 'firefox-receiver-user';
+  let requestUrl: string | null = null;
+
+  try {
+    process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL = 'http://server.test';
+    const receiverAwareFetch = async function (
+      this: typeof globalThis,
+      input: string | URL | Request
+    ): Promise<Response> {
+      assert.equal(this, globalThis);
+      requestUrl = String(input);
+      return new Response(
+        JSON.stringify({
+          snapshot: {
+            authUid,
+            professionalEntitlementStatus: 'active',
+            aiEntitlementStatus: 'lapsed',
+            professionalEntitlementExpiresAt: null,
+            professionalEntitlementRenewalRisk: false,
+            activeStudentCount: 3,
+            source: 'revenuecat',
+            observedAt: '2026-07-24T18:30:00.000Z',
+            updatedAt: '2026-07-24T18:31:00.000Z',
+          },
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }
+      );
+    };
+    globalThis.fetch = receiverAwareFetch as typeof globalThis.fetch;
+
+    await persistServerAuthSessionFromPayload({
+      accessToken: 'server-token',
+      refreshToken: 'refresh-token',
+      tokenType: 'Bearer',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      authProviderIds: ['email_password'],
+      profile: {
+        authUid,
+        displayName: 'Firefox Receiver User',
+        emailNormalized: 'firefox-receiver@example.test',
+        lockedRole: 'professional',
+        acceptedTermsVersion: null,
+        createdAt: '2026-07-24T18:00:00.000Z',
+        updatedAt: '2026-07-24T18:00:00.000Z',
+      },
+    });
+
+    const snapshot = await getSubscriptionEntitlementSnapshot(undefined, authUid);
+
+    assert.equal(
+      requestUrl,
+      'http://server.test/subscription/entitlements/snapshot'
+    );
+    assert.equal(snapshot?.authUid, authUid);
+    assert.equal(snapshot?.professionalEntitlementStatus, 'active');
+  } finally {
+    clearServerAuthSession();
+    globalThis.fetch = originalFetch;
+    if (originalServerUrl === undefined) {
+      delete process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL;
+    } else {
+      process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL = originalServerUrl;
+    }
+  }
 });
 
 test('getSubscriptionEntitlementSnapshot returns null when the server has no snapshot', async () => {

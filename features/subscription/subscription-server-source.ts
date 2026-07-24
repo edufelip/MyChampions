@@ -75,7 +75,8 @@ const defaultDeps: SubscriptionServerSourceDeps = {
   getCurrentAccessToken: () => getValidServerAccessToken(),
   getCurrentAuthUid: () => getCurrentServerUser()?.uid ?? null,
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: (input, init) =>
+    Reflect.apply(globalThis.fetch, globalThis, [input, init]),
 };
 
 function joinUrl(baseUrl: string, path: string): string {
@@ -182,10 +183,11 @@ export async function syncSubscriptionEntitlementSnapshot(
   expectedAuthUid?: string
 ): Promise<void> {
   const { baseUrl, token } = await requireLocalServerAuth('sync', deps, expectedAuthUid);
+  const fetchFn = deps.fetchFn;
 
   let response: Response;
   try {
-    response = await deps.fetchFn(joinUrl(baseUrl, '/subscription/entitlements/snapshot'), {
+    response = await fetchFn(joinUrl(baseUrl, '/subscription/entitlements/snapshot'), {
       method: 'POST',
       headers: {
         authorization: `Bearer ${token}`,
@@ -247,10 +249,11 @@ export async function getSubscriptionEntitlementSnapshot(
   }
 
   const { baseUrl, token } = await requireLocalServerAuth('read', deps, expectedAuthUid);
+  const fetchFn = deps.fetchFn;
 
   let response: Response;
   try {
-    response = await deps.fetchFn(joinUrl(baseUrl, '/subscription/entitlements/snapshot'), {
+    response = await fetchFn(joinUrl(baseUrl, '/subscription/entitlements/snapshot'), {
       method: 'GET',
       headers: {
         authorization: `Bearer ${token}`,

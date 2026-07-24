@@ -32,7 +32,7 @@ Platform behavior is selected by Metro's `.web` module resolution rather than sc
 - `share-adapter`: native Share/Linking versus Web Share, clipboard fallback, and safe external tabs.
 - `haptics-adapter`: native feedback versus browser no-op.
 - `subscription-runtime`: native purchase capability versus browser mobile handoff/unavailable capability.
-- Server-backed plan-builder requests retain the browser fetch global receiver, including Firefox, while keeping injected fetch dependencies available for deterministic tests.
+- Server-backed plan-builder and subscription requests retain the browser fetch global receiver, including Firefox, while keeping injected fetch dependencies available as standalone functions for deterministic tests.
 
 ## Browser authentication
 
