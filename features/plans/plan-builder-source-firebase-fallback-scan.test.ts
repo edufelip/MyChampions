@@ -28,4 +28,18 @@ describe('plan-builder source Firebase fallback guard', () => {
     const presentMarkers = forbiddenMarkers.filter((marker) => source.includes(marker));
     assert.deepEqual(presentMarkers, []);
   });
+
+  it('keeps browser fetch receiver-safe for default and fallback dependencies', () => {
+    const sourcePath = path.join(__dirname, 'plan-builder-source.ts');
+    const source = fs.readFileSync(sourcePath, 'utf8');
+
+    assert.match(source, /fetchFn: globalThis\.fetch\.bind\(globalThis\)/);
+    assert.match(source, /const sourceFetch = deps\.fetchFn \?\? globalThis\.fetch/);
+    assert.match(
+      source,
+      /Reflect\.apply\(sourceFetch, globalThis, \[input, init\]\)/
+    );
+    assert.doesNotMatch(source, /fetchFn: fetch[,;]/);
+    assert.doesNotMatch(source, /deps\.fetchFn \?\? fetch/);
+  });
 });

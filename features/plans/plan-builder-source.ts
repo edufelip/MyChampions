@@ -100,7 +100,7 @@ export type StarterTemplateDeps = PlanBuilderSourceDeps;
 const defaultDeps: PlanBuilderSourceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
   getCurrentAccessToken: () => getValidServerAccessToken(),
-  fetchFn: fetch,
+  fetchFn: globalThis.fetch.bind(globalThis),
 };
 
 function nowIso(): string {
@@ -138,8 +138,14 @@ function resolveServerPlanBuilderSource(deps: PlanBuilderSourceDeps): {
   fetchFn: AppFetch;
 } | null {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
-  const fetchFn = deps.fetchFn ?? fetch;
-  if (!baseUrl || !fetchFn) return null;
+  const sourceFetch = deps.fetchFn ?? globalThis.fetch;
+  if (!baseUrl || !sourceFetch) return null;
+
+  // Browser fetch is a host function and must retain the global receiver. Calling it
+  // later as `source.fetchFn(...)` otherwise supplies the source object as `this`,
+  // which Firefox rejects with "Illegal invocation".
+  const fetchFn: AppFetch = (input, init) =>
+    Reflect.apply(sourceFetch, globalThis, [input, init]);
 
   return { baseUrl, fetchFn };
 }

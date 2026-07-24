@@ -52,6 +52,11 @@ test('Android Detox targets the committed dev and production flavors on an avail
     detoxConfig,
     /android\/app\/build\/outputs\/apk\/androidTest\/production\/release\/app-production-release-androidTest\.apk/
   );
+  assert.match(
+    detoxConfig,
+    /-PCI_VERSION_CODE="\$\{CI_VERSION_CODE:\?CI_VERSION_CODE_required\}"/,
+    'signed Android Detox builds must require and forward the release version code'
+  );
   assert.match(detoxConfig, /app:assembleProductionRelease app:assembleProductionReleaseAndroidTest/);
   assert.match(
     detoxConfig,

@@ -37,7 +37,7 @@ module.exports = {
       testBinaryPath:
         'android/app/build/outputs/apk/androidTest/production/release/app-production-release-androidTest.apk',
       build:
-        'cd android && APP_VARIANT=prod EXPO_PUBLIC_ENV=prod EXPO_NO_DEV_CLIENT=1 ./gradlew -DtestBuildType=release app:assembleProductionRelease app:assembleProductionReleaseAndroidTest',
+        'cd android && APP_VARIANT=prod EXPO_PUBLIC_ENV=prod EXPO_NO_DEV_CLIENT=1 ./gradlew -DtestBuildType=release -PCI_VERSION_CODE="${CI_VERSION_CODE:?CI_VERSION_CODE_required}" app:assembleProductionRelease app:assembleProductionReleaseAndroidTest',
     },
     'android.prodDebug': {
       type: 'android.apk',

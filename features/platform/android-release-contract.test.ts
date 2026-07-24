@@ -65,6 +65,12 @@ test('production Android releases fail closed onto CI versioning and private rel
     'detox build -c android.emu.release',
     'signed release Detox evidence must remain available only through an explicit command',
   );
+  const detoxConfig = readFileSync(join(root, '.detoxrc.js'), 'utf8');
+  assert.match(
+    detoxConfig,
+    /-PCI_VERSION_CODE="\$\{CI_VERSION_CODE:\?CI_VERSION_CODE_required\}"/,
+    'the explicit signed Detox build must forward an explicit version code to Gradle',
+  );
   assert.match(gitignore, /^android\/keystore\.properties$/m);
   assert.match(gitignore, /^\*\.jks$/m);
 });
