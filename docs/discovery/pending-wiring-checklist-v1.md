@@ -50,6 +50,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Detox smoke coverage now includes auth sign-in, onboarding role-lock, wrong-role redirects, and student invite entry through `auth-sign-in.e2e.test.js`, `auth-role-selection.e2e.test.js`, and `student-professionals.e2e.test.js`.
 - `Done`: Default Android Detox build/test commands use the secret-free `productionDebug` profile. Signed `productionRelease` Detox evidence remains available through explicit `*:android:release` commands and retains private signing/version-code guards.
 - `Done`: Web Playwright coverage is organized into smoke, functional, accessibility, evidence, and full batches. Each run creates ignored HTML/JSON/JUnit reports, screenshot attachments, metadata, and a manual-validation checklist. The expansion and review contract is documented in `docs/test-cases/web-playwright-batches-and-manual-validation.md`.
+- `Done`: The web PR workflow runs the server-backed cookie-session Playwright lane against its coordinated `mychampions-api` branch checkout. CI installs locked Bun dependencies without secrets; Playwright owns the in-memory backend and Expo processes on isolated ports and terminates them after the run.
 - `Pending`: Complete the server-backed, provider-live, browser-media, assistive-technology, and full student/professional workflow matrix in `docs/discovery/web-pending-items-and-future-improvements.md` before web release approval.
 
 ## CI/CD Wiring

@@ -13,7 +13,7 @@ Define repeatable browser test batches and a reviewable evidence package for MyC
 | Accessibility | `yarn test:e2e:web:accessibility` | Chromium, Firefox, WebKit | Keyboard, contrast, and dialog regression | Explicit readable enabled/disabled controls, visible focus, logical role-option order, focus containment, Escape close, and focus restoration. |
 | Evidence | `yarn test:e2e:web:evidence` | Chromium | Screenshot package for human review | Role selection, student home, and student account shell at three widths, professional home/unknown-entitlement handoff, and manual invite fallback. |
 | Complete flow atlas | `yarn test:e2e:web:flow-atlas` | Chromium at mobile/tablet/web widths | Exhaustive implemented-flow evidence and manual review | 13 flow folders, 65 exact checkpoints per platform, 195 expected screenshots, exact-name verifier, auth/app HTML reports. Local only; not wired to CI. |
-| Server auth | `yarn test:e2e:web:server` | Chromium, Firefox, WebKit | Real client/server browser contract | Email create/sign-in, terms, role onboarding, HttpOnly cookie attributes, refresh rotation, ready-home restoration with error-state rejection, and logout. Requires sibling `server`; never runs against production. |
+| Server auth | `yarn test:e2e:web:server` | Chromium, Firefox, WebKit | Real client/server browser contract and PR gate | Email create/sign-in, terms, role onboarding, HttpOnly cookie attributes, refresh rotation, ready-home restoration with error-state rejection, and logout. Local runs default to sibling `server`; CI passes the coordinated backend checkout through `MYCHAMPIONS_SERVER_ROOT`. The backend uses in-memory auth state and never runs against production. |
 | Full | `yarn test:e2e:web` | Chromium, Firefox, WebKit | Build-only CI/regression gate | All current tests, failure diagnostics, and cross-engine screenshot attachments. |
 
 Run both local lanes with `yarn test:e2e:web:all-local`. They intentionally use separate Expo ports and clear Metro state so fixture configuration cannot leak into the real-server bundle or vice versa.
@@ -42,7 +42,13 @@ Each command creates a timestamped directory under `.artifacts/web-e2e/<run-id>/
 - `screenshots` uses readable checkpoint names for manual comparison; these are evidence captures, not approved golden baselines.
 - `manual-validation.md` is generated after every batch and includes a review decision plus one row per explicit screenshot.
 
-The build-only PR workflow runs the automated browser gate but does not upload or retain `.artifacts/web-e2e`. Screenshot packages and manual-review checklists are local-only; CI test output is ephemeral.
+The build-only PR workflow runs both the deterministic browser gate and the
+server-auth gate but does not upload or retain `.artifacts/web-e2e`. CI installs
+the branch-paired backend's locked Bun dependencies, then Playwright starts and
+stops the in-memory backend on port `3401` and Expo web on port `8082`. No
+database, provider credential, or production secret is required. Screenshot
+packages and manual-review checklists are local-only; CI test output is
+ephemeral.
 
 ## Complete flow atlas status
 
@@ -75,5 +81,6 @@ The atlas is deliberately separate from the three-engine regression batches. It 
 - Smoke can gate every browser-affecting pull request.
 - Functional and accessibility should pass before browser-facing changes are reviewed.
 - Full is the automated code-structure regression gate.
+- Server auth is a required PR gate for the browser cookie-session contract.
 - Evidence plus a named human reviewer is required when accepting visual behavior.
 - Fixture success does not replace provider-live, server-backed, assistive-technology, or deployment evidence listed in `docs/discovery/web-pending-items-and-future-improvements.md`.

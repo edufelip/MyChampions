@@ -12,7 +12,9 @@ on:
       - 'package.json'
       - 'yarn.lock'
       - 'playwright.config.ts'
+      - 'playwright.server.config.ts'
       - 'e2e/web/**'
+      - 'e2e/web-server/**'
       - 'scripts/run-web-e2e-batch.mjs'
       - '.github/workflows/web-pr.yml'
 
@@ -43,6 +45,12 @@ jobs:
           repository: edufelip/mychampions-api
           ref: ${{ steps.backend-contract-ref.outputs.ref }}
           path: node_modules/.ci-my-champions-api
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - name: Install coordinated backend dependencies
+        working-directory: node_modules/.ci-my-champions-api
+        run: bun install --frozen-lockfile
       - run: yarn test:unit
         env:
           MYCHAMPIONS_SERVER_APP_PATH: node_modules/.ci-my-champions-api/src/app.ts
@@ -57,3 +65,8 @@ jobs:
           retention-days: 7
       - run: yarn playwright install --with-deps chromium firefox webkit
       - run: yarn test:e2e:web
+      - name: Run server-backed browser session E2E
+        timeout-minutes: 15
+        env:
+          MYCHAMPIONS_SERVER_ROOT: ${{ github.workspace }}/node_modules/.ci-my-champions-api
+        run: yarn test:e2e:web:server

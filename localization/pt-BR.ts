@@ -182,6 +182,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.custom_meal.badge': 'Snapshot',
   'common.loading.default': 'Carregando...',
   'common.empty.no_data': 'Ainda não há nada aqui.',
+  'common.value.unavailable': '—',
   'common.nutrition.calories': 'Calorias',
   'common.nutrition.carbs': 'Carbo',
   'common.nutrition.proteins': 'Proteína',

@@ -180,6 +180,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.custom_meal.badge': 'Snapshot',
   'common.loading.default': 'Cargando...',
   'common.empty.no_data': 'Todavía no hay nada aquí.',
+  'common.value.unavailable': '—',
   'common.nutrition.calories': 'Calorías',
   'common.nutrition.carbs': 'Carbohidratos',
   'common.nutrition.proteins': 'Proteínas',

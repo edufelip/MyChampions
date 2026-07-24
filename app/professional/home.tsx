@@ -202,9 +202,14 @@ export default function ProfessionalHomeScreen() {
     planChangeRequestCount: planChangeNotification.pendingCount,
     planChangeState,
   });
-  const activeStudentLabel = isActiveStudentCountKnown ? String(activeStudentCount) : '—';
+  const unavailableValue = t('common.value.unavailable');
+  const activeStudentLabel = isActiveStudentCountKnown
+    ? String(activeStudentCount)
+    : unavailableValue;
   const pendingConnectionLabel =
-    connectionsState.kind === 'ready' ? String(pendingConnections.length) : '—';
+    connectionsState.kind === 'ready'
+      ? String(pendingConnections.length)
+      : unavailableValue;
 
   function reloadAttention() {
     reloadConnections();

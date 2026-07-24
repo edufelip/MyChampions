@@ -264,7 +264,11 @@ export default function StudentHomeScreen() {
                 theme={theme}
                 icon="fitness-center"
                 label={t('student.home.training.section') as string}
-                value={displayState.canRenderPlans ? String(trainingPlanCount) : '—'}
+                value={
+                  displayState.canRenderPlans
+                    ? String(trainingPlanCount)
+                    : t('common.value.unavailable')
+                }
                 progress={hasTrainingPlan ? 100 : 0}
                 tint={theme.color.accentPrimary}
                 style={usesCompactStatsLayout ? styles.statCardCompact : undefined}
@@ -274,7 +278,11 @@ export default function StudentHomeScreen() {
                 theme={theme}
                 icon="restaurant"
                 label={t('student.home.nutrition.section') as string}
-                value={displayState.canRenderPlans ? String(nutritionPlanCount) : '—'}
+                value={
+                  displayState.canRenderPlans
+                    ? String(nutritionPlanCount)
+                    : t('common.value.unavailable')
+                }
                 progress={hasNutritionPlan ? 100 : 0}
                 tint={theme.color.accentPrimary}
                 style={usesCompactStatsLayout ? styles.statCardCompact : undefined}
@@ -284,7 +292,11 @@ export default function StudentHomeScreen() {
                 theme={theme}
                 icon="water-drop"
                 label={t('student.home.hydration.title') as string}
-                value={displayState.canRenderWater ? hydrationValue : '—'}
+                value={
+                  displayState.canRenderWater
+                    ? hydrationValue
+                    : t('common.value.unavailable')
+                }
                 progress={hydrationPercent}
                 tint={theme.color.accentCyan}
                 testID="student.home.hydrationCard"

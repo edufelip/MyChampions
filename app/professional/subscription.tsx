@@ -117,7 +117,10 @@ export default function ProfessionalSubscriptionScreen() {
 
   const hasCapacityData = isActiveStudentCountKnown;
   const capLabel = (t('pro.subscription.cap_usage') as string)
-    .replace('{count}', hasCapacityData ? String(activeStudentCount) : '—')
+    .replace(
+      '{count}',
+      hasCapacityData ? String(activeStudentCount) : t('common.value.unavailable')
+    )
     .replace('{limit}', String(FREE_STUDENT_CAP));
   const capProgress = hasCapacityData
     ? Math.min(100, (activeStudentCount / FREE_STUDENT_CAP) * 100)

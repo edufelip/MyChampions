@@ -4,6 +4,7 @@ import path from 'node:path';
 const artifactRoot = path.resolve(
   process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/server-current'
 );
+const serverRoot = path.resolve(process.env.MYCHAMPIONS_SERVER_ROOT ?? '../server');
 
 export default defineConfig({
   testDir: './e2e/web-server',
@@ -26,7 +27,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'PORT=3401 WEB_E2E_ORIGIN=http://127.0.0.1:8082 bun run dev:web-e2e',
-      cwd: '../server',
+      cwd: serverRoot,
       url: 'http://127.0.0.1:3401/health',
       reuseExistingServer: false,
       timeout: 60_000,

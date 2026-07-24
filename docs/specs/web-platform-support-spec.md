@@ -11,7 +11,14 @@ Implemented as a code-structure phase on 2026-07-15. MyChampions supports Androi
 - `yarn web:export` creates `dist/web`; it does not deploy or publish.
 - `yarn test:e2e:web` runs the full Playwright matrix in Chromium, Firefox, and WebKit. Focused smoke, functional, accessibility, and evidence commands are documented in `docs/test-cases/web-playwright-batches-and-manual-validation.md`.
 - Playwright runs write timestamped, gitignored screenshot/report packages under `.artifacts/web-e2e`; screenshots are review evidence, not tracked visual baselines.
-- Pull requests may run `.github/workflows/web-pr.yml`, which validates the browser suite and uploads only the web export. Playwright screenshots/reports remain local and are not uploaded by CI.
+- Pull requests may run `.github/workflows/web-pr.yml`, which validates both the
+  deterministic browser suite and `test:e2e:web:server` against the coordinated
+  `mychampions-api` branch checkout, then uploads only the web export. The
+  server-backed lane installs the backend's locked Bun dependencies, runs an
+  in-memory auth server on `127.0.0.1:3401`, runs Expo on `127.0.0.1:8082`, and
+  lets Playwright own and terminate both processes. It uses no provider or
+  production secrets. Playwright screenshots/reports remain local and are not
+  uploaded by CI.
 
 ## Platform adapters
 

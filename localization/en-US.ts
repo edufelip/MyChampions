@@ -170,6 +170,7 @@ export const enUS = {
   'pro.plan.custom_meal.badge': 'Snapshot',
   'common.loading.default': 'Loading...',
   'common.empty.no_data': 'Nothing here yet.',
+  'common.value.unavailable': '—',
   'common.nutrition.calories': 'Calories',
   'common.nutrition.carbs': 'Carbs',
   'common.nutrition.proteins': 'Proteins',

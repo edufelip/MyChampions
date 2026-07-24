@@ -416,6 +416,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `common.error.retry` | Common | Generic error action | Try again | Tentar novamente | Intentar de nuevo | Shared utility string |
 | `common.loading.default` | Common | Generic loading text | Loading... | Carregando... | Cargando... | Shared utility string |
 | `common.empty.no_data` | Common | Generic empty text | Nothing here yet. | Ainda não há nada aqui. | Aún no hay nada aquí. | Use only when screen-specific copy is unavailable |
+| `common.value.unavailable` | Common | Unavailable numeric or summary value | — | — | — | Shared placeholder for a value whose source has not resolved |
 
 | `a11y.loading.default` | Global | SR loading label | Loading… | Carregando… | Cargando… | |
 | `a11y.loading.submitting` | Global | SR submit loading label | Submitting… | Enviando… | Enviando… | |
