@@ -6,6 +6,7 @@
  * search/filter (BL-004 / D-070), bulk deny.
  */
 import { Stack, useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -152,7 +153,7 @@ export default function ProfessionalPendingScreen() {
   };
 
   return (
-    <DsScreen scheme={scheme} testID="pro.pending.screen" contentContainerStyle={styles.content}>
+    <DsScreen scheme={scheme} contentWidth="content" testID="pro.pending.screen" contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.pending.filter.label'), headerShown: false }} />
 
       <DsBackButton
@@ -177,6 +178,27 @@ export default function ProfessionalPendingScreen() {
           testID="pro.pending.offlineBanner"
         />
       ) : null}
+
+      <DsCard scheme={scheme} style={styles.heroCard} testID="pro.pending.hero">
+        <View style={[styles.heroIcon, { backgroundColor: theme.color.accentPrimarySoft }]}>
+          <MaterialIcons color={theme.color.accentPrimary} name="person-add-alt-1" size={24} />
+        </View>
+        <View style={styles.heroCopy}>
+          <Text style={[styles.pageTitle, { color: theme.color.textPrimary }]}>
+            {t('pro.pending.title')}
+          </Text>
+          <Text style={[styles.pageSubtitle, { color: theme.color.textSecondary }]}>
+            {t('pro.pending.description')}
+          </Text>
+        </View>
+        {state.kind === 'ready' ? (
+          <View style={[styles.pendingCountPill, { backgroundColor: theme.color.accentPrimarySoft }]}>
+            <Text style={[styles.pendingCountText, { color: theme.color.accentPrimary }]}>
+              {(t('pro.pending.count') as string).replace('{count}', String(pendingConnections.length))}
+            </Text>
+          </View>
+        ) : null}
+      </DsCard>
 
       <DsCard scheme={scheme} style={styles.searchCard}>
         <TextInput
@@ -350,6 +372,38 @@ const styles = StyleSheet.create({
     paddingBottom: DsSpace.xxl,
   },
   backButton: { marginBottom: -4 },
+  heroCard: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+  },
+  heroIcon: {
+    alignItems: 'center',
+    borderRadius: DsRadius.md,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  heroCopy: {
+    flex: 1,
+    gap: DsSpace.xxs,
+  },
+  pageTitle: {
+    ...DsTypography.screenTitle,
+    fontFamily: Fonts?.rounded ?? 'normal',
+  },
+  pageSubtitle: {
+    ...DsTypography.body,
+  },
+  pendingCountPill: {
+    borderRadius: DsRadius.pill,
+    paddingHorizontal: DsSpace.sm,
+    paddingVertical: 6,
+  },
+  pendingCountText: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
   searchCard: {
     gap: DsSpace.sm,
   },

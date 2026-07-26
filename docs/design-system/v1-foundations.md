@@ -4,7 +4,7 @@
 Define and operationalize the mobile design language inspired by the provided dashboard reference: balanced fitness palette, clean cards, and clear CTA hierarchy.
 
 ## Source Aesthetic Extracted From Reference
-- Primary accent is balanced green (`#1ea95a`) used for momentum actions and progress emphasis without visual glare.
+- Primary accent uses an accessible scheme-aware green (`#167a42` in light mode and `#4ade80` in dark mode) for momentum actions and progress emphasis without visual glare.
 - Secondary anchor is fitness navy (`#0A2463`) used for contrast text on bright CTA surfaces and key navigation emphasis.
 - Background strategy is low-noise neutral canvas (`#f6f8f6` light / `#102215` dark) with elevated white/dark cards.
 - Card-first composition with strong rounded corners, soft borders, and restrained shadows.
@@ -36,6 +36,7 @@ Define and operationalize the mobile design language inspired by the provided da
 - Surfaces: `color.surface`, `color.surfaceMuted`, `color.surfaceElevated`, `color.surfaceWarning`
 - Text: `color.textPrimary`, `color.textSecondary`, `color.textTertiary`
 - Accent family: `color.accentPrimary`, `color.accentPrimaryHover`, `color.accentPrimarySoft`, `color.accentBlue`, `color.accentBlueSoft`, `color.accentCyan`, `color.accentCyanSoft`
+- Disabled controls: `color.disabledSurface`, `color.disabledText`, `color.disabledBorder`; do not derive disabled states through opacity.
 - Status: `color.success`, `color.successSoft`, `color.warning`, `color.warningSoft`, `color.danger`, `color.dangerSoft`, `color.dangerBorder`, `color.readOnlyText`
 - Border/overlay: `color.border`, `color.borderStrong`, `color.onAccent`, `color.overlaySoft`, `color.overlayStrong`
 - Decorative blobs: `blob.topLeft`, `blob.bottomRight`
@@ -57,6 +58,7 @@ Define and operationalize the mobile design language inspired by the provided da
 ## Primitive Components
 ### `DsScreen`
 - Standardized screen canvas and optional decorative blob background.
+- Responsive content lanes are centered and capped instead of scaling phone layouts across large surfaces: `form` 600px, `content` 680px on tablet / 880px on desktop, and `wide` 680px on tablet / 1040px on desktop.
 
 ### `DsBlobBackground`
 - Decorative top-left / bottom-right blob rendering with theme-aware colors.
@@ -72,7 +74,7 @@ Define and operationalize the mobile design language inspired by the provided da
   - `primary`
   - `secondary`
 - Supports loading, icon slots, and full-width/compact mode.
-- Label/icon/loading foreground uses the light on-accent token across pill variants for consistent contrast.
+- Label/icon/loading foreground uses the scheme-aware `color.onAccent` token across pill variants for consistent contrast.
 
 ### `DsOfflineBanner`
 - Reusable offline alert banner pattern for BL-008 compliance.
@@ -99,6 +101,7 @@ Define and operationalize the mobile design language inspired by the provided da
 3. Offline/write-lock states must use `DsOfflineBanner` + existing business logic (`resolveOfflineDisplayState`).
 4. Business hooks (`usePlans`, `useWaterTracking`, etc.) remain outside DS components.
 5. New shared components must not introduce fixed hex values if an existing semantic token fits.
+6. Tablet and desktop screens must use the narrowest `DsScreen` content lane that fits the task; `wide` is reserved for true multi-column workbenches and never implies edge-to-edge content.
 
 ## Validation Checklist
 - Lint passes on migrated screens and DS files.

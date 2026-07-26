@@ -19,6 +19,7 @@ export type E2ESubscriptionOverride = {
   activeStudentCount: number;
   aiEntitlementStatus: 'active' | 'lapsed' | 'unknown';
   entitlementStatus: 'active' | 'lapsed' | 'unknown';
+  professionalEntitlementRenewalRisk: boolean;
 };
 
 type ResolveE2EAuthSessionOverrideInput = {
@@ -39,6 +40,7 @@ type ResolveE2ESubscriptionOverrideInput = ResolveE2EAuthSessionSourceOverrideIn
   activeStudentCount?: string;
   aiEntitlementStatus?: string;
   entitlementStatus?: string;
+  professionalEntitlementRenewalRisk?: string;
 };
 
 type ResolveE2EEmailPasswordSignInOverrideInput = ResolveE2EAuthSessionOverrideInput & {
@@ -69,9 +71,42 @@ export const E2E_AUTH_GOOGLE_UID = 'e2e-google-auth-user';
 export const E2E_AUTH_GOOGLE_EMAIL = 'e2e-google-auth@example.test';
 export const E2E_AUTH_APPLE_UID = 'e2e-apple-auth-user';
 export const E2E_AUTH_APPLE_EMAIL = 'e2e-apple-auth@example.test';
+const E2E_LOCKED_ROLE_STORAGE_KEY = 'mychampions.e2e.locked-role';
+const E2E_AUTH_UID_MAX_LENGTH = 96;
+const E2E_AUTH_UID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
+
+export function readPersistedE2ELockedRole(): RoleIntent | null {
+  if (typeof sessionStorage === 'undefined') return null;
+  const value = sessionStorage.getItem(E2E_LOCKED_ROLE_STORAGE_KEY);
+  return value === 'student' || value === 'professional' ? value : null;
+}
+
+export function persistE2ELockedRole(role: RoleIntent | null): void {
+  if (typeof sessionStorage === 'undefined') return;
+  if (role) sessionStorage.setItem(E2E_LOCKED_ROLE_STORAGE_KEY, role);
+  else sessionStorage.removeItem(E2E_LOCKED_ROLE_STORAGE_KEY);
+}
 
 function isEnabled(value: string | undefined) {
   return value?.trim().toLowerCase() === 'true';
+}
+
+function resolveConfiguredE2EAuthUid(
+  fallback: string,
+  suffix = '',
+  explicitOverride?: string
+): string | null {
+  const configuredOverride = explicitOverride?.trim();
+  const configuredBase = process.env.EXPO_PUBLIC_E2E_AUTH_UID?.trim();
+  const candidate = configuredOverride || (configuredBase ? `${configuredBase}${suffix}` : fallback);
+  if (
+    candidate.length > E2E_AUTH_UID_MAX_LENGTH ||
+    !E2E_AUTH_UID_PATTERN.test(candidate)
+  ) {
+    return null;
+  }
+
+  return candidate;
 }
 
 function normalizeE2EEntitlementStatus(value: string | undefined): E2ESubscriptionOverride['entitlementStatus'] | null {
@@ -105,13 +140,15 @@ export function resolveE2EAuthSessionOverride({
   if (!isDevE2EAuthSessionEnabled({ appVariant, enabledFlag, isDev })) {
     return null;
   }
+  const uid = resolveConfiguredE2EAuthUid(E2E_AUTH_SESSION_UID);
+  if (!uid) return null;
 
   return {
     acceptedTermsVersion: acceptedTermsVersion?.trim() || requiredTermsVersion,
     displayName: 'E2E Test User',
     email: E2E_AUTH_SESSION_EMAIL,
     lockedRole: null,
-    uid: E2E_AUTH_SESSION_UID,
+    uid,
   };
 }
 
@@ -128,16 +165,27 @@ export function resolveE2EEmailPasswordSignInOverride({
     return null;
   }
 
-  if (email.trim().toLowerCase() !== E2E_AUTH_SESSION_EMAIL || password !== E2E_AUTH_SESSION_PASSWORD) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const isPrimaryAccount =
+    normalizedEmail === E2E_AUTH_SESSION_EMAIL &&
+    password === E2E_AUTH_SESSION_PASSWORD;
+  const isCreatedAccount =
+    normalizedEmail === E2E_AUTH_CREATE_ACCOUNT_EMAIL &&
+    password === E2E_AUTH_CREATE_ACCOUNT_PASSWORD;
+  if (!isPrimaryAccount && !isCreatedAccount) {
     return null;
   }
+  const uid = isCreatedAccount
+    ? resolveConfiguredE2EAuthUid(E2E_AUTH_CREATE_ACCOUNT_UID, '-created')
+    : resolveConfiguredE2EAuthUid(E2E_AUTH_SESSION_UID);
+  if (!uid) return null;
 
   return {
     acceptedTermsVersion: acceptedTermsVersion?.trim() || requiredTermsVersion,
-    displayName: 'E2E Test User',
-    email: E2E_AUTH_SESSION_EMAIL,
+    displayName: isCreatedAccount ? 'New E2E User' : 'E2E Test User',
+    email: isCreatedAccount ? E2E_AUTH_CREATE_ACCOUNT_EMAIL : E2E_AUTH_SESSION_EMAIL,
     lockedRole: null,
-    uid: E2E_AUTH_SESSION_UID,
+    uid,
   };
 }
 
@@ -163,13 +211,15 @@ export function resolveE2EEmailPasswordCreateAccountOverride({
   ) {
     return null;
   }
+  const uid = resolveConfiguredE2EAuthUid(E2E_AUTH_CREATE_ACCOUNT_UID, '-created');
+  if (!uid) return null;
 
   return {
     acceptedTermsVersion: acceptedTermsVersion?.trim() || requiredTermsVersion,
     displayName,
     email: E2E_AUTH_CREATE_ACCOUNT_EMAIL,
     lockedRole: null,
-    uid: E2E_AUTH_CREATE_ACCOUNT_UID,
+    uid,
   };
 }
 
@@ -186,23 +236,31 @@ export function resolveE2ESocialAuthOverride({
   }
 
   if (provider === 'google') {
+    const uid = resolveConfiguredE2EAuthUid(
+      E2E_AUTH_GOOGLE_UID,
+      '-google',
+      process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID
+    );
+    if (!uid) return null;
     return {
       acceptedTermsVersion: acceptedTermsVersion?.trim() || requiredTermsVersion,
       displayName: 'E2E Google User',
       email: E2E_AUTH_GOOGLE_EMAIL,
       lockedRole: null,
       authProviderId: 'google',
-      uid: E2E_AUTH_GOOGLE_UID,
+      uid,
     };
   }
 
+  const uid = resolveConfiguredE2EAuthUid(E2E_AUTH_APPLE_UID, '-apple');
+  if (!uid) return null;
   return {
     acceptedTermsVersion: acceptedTermsVersion?.trim() || requiredTermsVersion,
     displayName: 'E2E Apple User',
     email: E2E_AUTH_APPLE_EMAIL,
     lockedRole: null,
     authProviderId: 'apple',
-    uid: E2E_AUTH_APPLE_UID,
+    uid,
   };
 }
 
@@ -214,10 +272,12 @@ export function resolveE2EAuthSessionSourceOverride({
   if (!isDevE2EAuthSessionEnabled({ appVariant, enabledFlag, isDev })) {
     return null;
   }
+  const uid = resolveConfiguredE2EAuthUid(E2E_AUTH_SESSION_UID);
+  if (!uid) return null;
 
   return {
     idToken: E2E_AUTH_SESSION_ID_TOKEN,
-    uid: E2E_AUTH_SESSION_UID,
+    uid,
   };
 }
 
@@ -228,6 +288,7 @@ export function resolveE2ESubscriptionOverride({
   enabledFlag,
   entitlementStatus,
   isDev,
+  professionalEntitlementRenewalRisk,
 }: ResolveE2ESubscriptionOverrideInput): E2ESubscriptionOverride | null {
   if (!isDevE2EAuthSessionEnabled({ appVariant, enabledFlag, isDev })) {
     return null;
@@ -249,5 +310,6 @@ export function resolveE2ESubscriptionOverride({
     activeStudentCount: normalizedActiveStudentCount,
     aiEntitlementStatus: normalizedAiEntitlementStatus,
     entitlementStatus: normalizedEntitlementStatus,
+    professionalEntitlementRenewalRisk: isEnabled(professionalEntitlementRenewalRisk),
   };
 }

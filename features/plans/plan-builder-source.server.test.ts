@@ -70,18 +70,42 @@ function makeServerDeps(
   return {
     getServerBaseUrl: () => 'http://server.test/',
     getCurrentAccessToken: async () => 'server-token',
-    fetchFn: handler as typeof fetch,
+    fetchFn: handler as AppFetch,
   } as import('./plan-builder-source').PlanBuilderSourceDeps;
 }
 
 describe('plan-builder server source', () => {
+  it('invokes browser fetch dependencies with the global receiver', async () => {
+    let requestUrl: string | null = null;
+    const receiverAwareFetch = async function (
+      this: typeof globalThis,
+      input: RequestInfo | URL
+    ): Promise<Response> {
+      assert.equal(this, globalThis);
+      requestUrl = String(input);
+      return new Response(JSON.stringify({ templates: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    };
+
+    const templates = await getStarterTemplates('nutrition', {
+      getServerBaseUrl: () => 'http://server.test',
+      getCurrentAccessToken: async () => 'server-token',
+      fetchFn: receiverAwareFetch as AppFetch,
+    });
+
+    assert.equal(requestUrl, 'http://server.test/plans/starter-templates?planType=nutrition');
+    assert.deepEqual(templates, []);
+  });
+
   it('fails closed when no local server source is available outside E2E fixtures', async () => {
     const deps: import('./plan-builder-source').PlanBuilderSourceDeps = {
       getServerBaseUrl: () => undefined,
       getCurrentAccessToken: async () => null,
       fetchFn: (async () => {
         throw new Error('fetch should not run without server config and auth.');
-      }) as typeof fetch,
+      }) as AppFetch,
     };
 
     await assert.rejects(

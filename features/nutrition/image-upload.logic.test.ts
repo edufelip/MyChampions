@@ -80,6 +80,16 @@ describe('normalizeImageUploadError', () => {
     assert.equal(normalizeImageUploadError({ code: 'unauthorized' }), 'unauthorized');
   });
 
+  it('returns "permission_denied" for native photo permission denial', () => {
+    assert.equal(
+      normalizeImageUploadError({
+        code: 'photo_permission_denied',
+        message: 'Photo permission denied for library',
+      }),
+      'permission_denied'
+    );
+  });
+
   it('returns "unauthorized" for permission denied message', () => {
     assert.equal(normalizeImageUploadError({ message: 'permission denied' }), 'unauthorized');
   });
@@ -151,6 +161,10 @@ describe('isRetryable', () => {
   // Non-retryable reasons (structural issues user cannot fix by retrying)
   it('returns false for "file_too_large" (user must recompress)', () => {
     assert.equal(isRetryable('file_too_large'), false);
+  });
+
+  it('returns false for "permission_denied" (user must change device settings)', () => {
+    assert.equal(isRetryable('permission_denied'), false);
   });
 
   it('returns false for "unauthorized" (user must re-authenticate)', () => {
@@ -234,6 +248,12 @@ describe('resolveImageUploadDisplay', () => {
   it('failed/file_too_large: errorMessageKey=custom_meal.image.file_too_large, canRetry=false', () => {
     const display = resolveImageUploadDisplay({ kind: 'failed', reason: 'file_too_large' });
     assert.equal(display.errorMessageKey, 'custom_meal.image.file_too_large');
+    assert.equal(display.canRetry, false);
+  });
+
+  it('failed/permission_denied: shows settings guidance and cannot retry immediately', () => {
+    const display = resolveImageUploadDisplay({ kind: 'failed', reason: 'permission_denied' });
+    assert.equal(display.errorMessageKey, 'custom_meal.image.permission_denied');
     assert.equal(display.canRetry, false);
   });
 
@@ -339,6 +359,7 @@ describe('ImageUploadState type coverage', () => {
 
 describe('ImageUploadErrorReason exhaustiveness', () => {
   const reasons: ImageUploadErrorReason[] = [
+    'permission_denied',
     'network',
     'storage_quota',
     'file_too_large',

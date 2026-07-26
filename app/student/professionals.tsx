@@ -6,7 +6,7 @@
  * connection status, canceled_code_rotated state (BL-003 / D-064 / D-069),
  * and unbind confirmation flow.
  */
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView } from 'expo-camera';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -17,6 +17,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -27,6 +28,7 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { useQrScannerAdapter } from '@/features/platform/qr-scanner-adapter';
 import { useConnections } from '@/features/connections/use-connections';
 import type { ConnectionDisplayState } from '@/features/connections/connection.logic';
 import { mapInviteSubmitReasonToMessageKey } from '@/features/connections/connection.logic';
@@ -40,8 +42,10 @@ import {
 import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 
 export default function StudentProfessionalsScreen() {
+  const { width: viewportWidth } = useWindowDimensions();
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
@@ -60,8 +64,9 @@ export default function StudentProfessionalsScreen() {
   const [isUnbinding, setIsUnbinding] = useState(false);
   const [unbindError, setUnbindError] = useState<string | null>(null);
   const canSubmitInviteCode = Boolean(inviteCode.trim());
+  const usesCompactInviteLayout = viewportWidth < 480;
 
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const qrScanner = useQrScannerAdapter();
 
   const emittedCanceledRef = useRef(false);
   useEffect(() => {
@@ -80,7 +85,7 @@ export default function StudentProfessionalsScreen() {
         return;
       }
 
-      const isCameraAvailable = await CameraView.isAvailableAsync();
+      const isCameraAvailable = await qrScanner.isAvailable();
       if (!isCameraAvailable) {
         setSubmitError(t('relationship.qr.camera_unavailable'));
         return;
@@ -90,7 +95,7 @@ export default function StudentProfessionalsScreen() {
     } catch {
       setSubmitError(t('relationship.qr.camera_unavailable'));
     }
-  }, [t]);
+  }, [qrScanner, t]);
 
   const onSubmitCode = useCallback(
     async (code: string, surface: 'manual' | 'qr') => {
@@ -123,17 +128,17 @@ export default function StudentProfessionalsScreen() {
   const onScanQr = useCallback(async () => {
     setSubmitError(null);
 
-    if (cameraPermission?.granted) {
+    if (qrScanner.permissionGranted) {
       await openQrScanner();
       return;
     }
-    const result = await requestCameraPermission();
-    if (result.granted) {
+    const granted = await qrScanner.requestPermission();
+    if (granted) {
       await openQrScanner();
     } else {
       setSubmitError(t('relationship.qr.permission_denied'));
     }
-  }, [cameraPermission, openQrScanner, requestCameraPermission, t]);
+  }, [openQrScanner, qrScanner, t]);
 
   const onQrCodeScanned = useCallback(
     (code: string) => {
@@ -172,7 +177,7 @@ export default function StudentProfessionalsScreen() {
 
   return (
     <>
-      <DsScreen scheme={scheme} testID="student.professionals.screen" contentContainerStyle={styles.content}>
+      <DsScreen scheme={scheme} contentWidth="content" testID="student.professionals.screen" contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: t('relationship.title'), headerShown: false }} />
 
         <DsBackButton
@@ -195,7 +200,7 @@ export default function StudentProfessionalsScreen() {
           {t('relationship.helper_self_guided')}
         </Text>
 
-        <View style={styles.row}>
+        <View style={[styles.row, usesCompactInviteLayout && styles.compactRow]}>
           <TextInput
             accessibilityLabel={t('relationship.input.invite_code')}
             autoCapitalize="characters"
@@ -230,7 +235,7 @@ export default function StudentProfessionalsScreen() {
             }}
             loading={isSubmitting}
             disabled={!canSubmitInviteCode}
-            fullWidth={false}
+            fullWidth={usesCompactInviteLayout}
             style={styles.connectButton}
             testID={
               canSubmitInviteCode
@@ -343,7 +348,7 @@ function QrScannerModal({
         closeTimerRef.current = null;
       }
     };
-  }, [isOpen]);
+  }, [e2eQrInvitePayload, isOpen]);
 
   const handleClose = useCallback(() => {
     scannedRef.current = true;
@@ -355,6 +360,11 @@ function QrScannerModal({
       onClose();
     }, 100);
   }, [onClose]);
+  useWebDialogAccessibility({
+    isVisible: isOpen,
+    onClose: handleClose,
+    testID: 'student.professionals.qrModal',
+  });
 
   const handleBarCodeScanned = useCallback(
     ({ data }: { data: string }) => {
@@ -597,6 +607,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: DsSpace.sm,
   },
+  compactRow: {
+    flexDirection: 'column',
+  },
   codeInput: {
     borderRadius: DsRadius.sm,
     borderWidth: 1.5,
@@ -604,6 +617,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 2,
     minHeight: 48,
+    minWidth: 0,
     paddingHorizontal: 12,
   },
   connectButton: {

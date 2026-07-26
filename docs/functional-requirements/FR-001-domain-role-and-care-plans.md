@@ -92,7 +92,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-180`: A professional may have at most 10 unique Students with pending connection requests awaiting accept/deny.
 - `FR-181`: Professional dashboards shall display active and pending student counts as separate values.
 - `FR-182`: Wrong-role route access shall be hard blocked and redirected to the role-appropriate home.
-- `FR-183`: MVP offline behavior shall support read-only cached content; write operations require connectivity.
+- `FR-183`: MVP offline behavior shall support read-only cached content; write operations require connectivity. Native startup may restore the same account's persisted role and terms state after a transient refresh/profile failure, while rejected sessions and mismatched identities fail closed.
 - `FR-184`: MVP error handling shall use mixed strategy (inline validation, full-screen error states, and toasts where context-appropriate).
 - `FR-185`: If professional subscription entitlement is inactive while over cap, the app shall block new activations and lock professional updates to student plans until entitlement is restored.
 - `FR-186`: Student home layout priority shall surface nutrition sections before training sections.
@@ -177,6 +177,10 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-264`: Professional Student Profile shall expose nutrition tracking review as read-only.
 - `FR-265`: TrackingLogs shall remain Student-owned while allowing plan/connection provenance.
 - `FR-266`: NutritionPlans and TrackingLogs shall store stable CustomMeal snapshots/provenance; Professionals cannot add Student-owned CustomMeals into assigned plans unless shared/imported first.
+- `FR-267`: The MyChampions server shall reconcile both known RevenueCat entitlements from the canonical subscriber record after every accepted webhook, including both affected customer IDs for transfer events, before persisting production privileges.
+- `FR-268`: The subscription snapshot contract shall carry optional professional-entitlement expiry and authoritative renewal-risk state through native customer info, server persistence, browser hydration, and professional warning UI.
+- `FR-269`: Native purchase, restore, and paywall outcomes shall distinguish success, user cancellation, network failure, and storefront/provider failure; cancellation shall preserve the current gate without being presented as a system error, while failures shall remain actionable after refresh.
+- `FR-270`: Browser sign-out shall clear local identity immediately while retaining the credentialed server request as a barrier that every subsequent email/password, Google, Apple, or local-development authentication request must await before establishing a replacement cookie session. Native bearer-session clearing remains local and does not wait on the browser barrier.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

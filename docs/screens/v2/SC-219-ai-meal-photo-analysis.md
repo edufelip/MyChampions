@@ -10,13 +10,13 @@ Allow users to capture or select a photo of their meal and receive AI-estimated 
 
 AI estimates are always advisory — all fields remain editable after pre-fill (BR-286, D-108).
 
-**Paywall gate (D-132):** The AI analysis CTA is only accessible to users with an active `professional_pro` OR `student_pro` RevenueCat entitlement. When neither entitlement is `'active'`, the CTA is replaced by a locked paywall banner with an "Upgrade to unlock" CTA that presents the native RevenueCat paywall (`default_student` offering, `AI_OFFERING_ID`). Status `'unknown'` (loading/error) is treated as locked (strict policy).
+**Paywall gate (D-132, BR-341):** The AI analysis CTA is only accessible to users with an active `professional_pro` OR `student_pro` RevenueCat entitlement. When neither entitlement is `'active'`, the CTA is replaced by a locked paywall banner with an "Upgrade to unlock" CTA. A locked student account presents the guarded student offering (`default_student`, or temporary `test_student` only in an explicit development Test Store build). A locked professional account presents `default_professional`, whose `professional_pro` entitlement already includes AI. Missing or malformed role state fails closed without presenting a paywall. Status `'unknown'` (loading/error) is treated as locked.
 
 After native RevenueCat customer info is read, the subscription hook best-effort syncs the latest professional and AI entitlement snapshot to the MyChampions server at `POST /subscription/entitlements/snapshot`. The server stores this in local Postgres `subscription_entitlement_snapshots` for future server-side AI-access enforcement; native paywall presentation remains mobile-owned for now.
 
 ## User Actions
 - When entitlement is active: tap "Analyze with AI" CTA to initiate capture.
-- When entitlement is not active: tap "Upgrade to unlock" CTA to open the native RevenueCat paywall for the `default_student` offering (`AI_OFFERING_ID`); after purchase/dismissal, entitlement status is refreshed.
+- When entitlement is not active: tap "Upgrade to unlock" to invoke `openAiUpgradePaywall(lockedRole)`; students receive the guarded student offering and professionals receive `default_professional`. After purchase/dismissal, both entitlement statuses are refreshed.
 - Action sheet presents "Take Photo" / "Choose from Library" / "Cancel".
 - On capture: image is compressed client-side via `expo-image-manipulator`, then sent to the MyChampions server with the local bearer token. Missing server config/token fails closed.
 - Review AI-estimated macros pre-filled into form fields.
@@ -116,18 +116,23 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | `features/nutrition/use-meal-photo-analysis.ts` | React hook `useMealPhotoAnalysis` — full pipeline: `startCapture` (expo-image-picker action sheet -> expo-image-manipulator compress -> MyChampions server), `analyze` (direct injection), `reset`, `preFillMealInput` |
 | `features/subscription/subscription.logic.ts` | Pure entitlement logic — `AI_ENTITLEMENT_ID = 'student_pro'`, `hasAiAnalysisAccess()` (D-132) |
 | `features/subscription/subscription-source.ts` | RevenueCat source layer — `AI_FEATURES_ENTITLEMENT_ID`, `mapCustomerInfoToAiEntitlementStatus`, `presentAiPaywall` (D-132) |
-| `features/subscription/use-subscription.ts` | React hook — exposes `aiEntitlementStatus`, `hasAiAccess`, `openAiPaywall`; single `getCustomerInfo()` call maps both entitlements (D-132) |
+| `features/subscription/use-subscription.ts` | React hook — exposes `aiEntitlementStatus`, `hasAiAccess`, and role-aware `openAiUpgradePaywall(role)`; single `getCustomerInfo()` call maps both entitlements (D-132, BR-341) |
 | `features/subscription/subscription-server-source.ts` | MyChampions server sync source for RevenueCat-derived entitlement snapshots |
 | `app/(tabs)/nutrition/custom-meals/[mealId].tsx` | SC-214 entry point — camera CTA gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill, attach-photo toggle |
 | `app/(tabs)/nutrition/custom-meals/index.tsx` | SC-215 entry point — camera CTA in quick-log panel gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill |
 
 ## Edge Cases
 - Camera/picker cancellation: state returns to `idle`; no form field changes.
+- Camera/photo-library permission denial: state becomes a recoverable `permission_denied` error with localized device-settings guidance; no form field changes and manual entry remains available.
 - Confidence `'low'`: low-confidence warning shown alongside results; fields remain editable.
 - MyChampions server responds `401` or `403`: treated as `'unauthenticated'` error (D-128).
 - Compression is applied via `expo-image-manipulator`: resizes to ≤ 1600 px longest side, compresses at 0.75 JPEG quality (FR-230, BR-287, D-107).
+- Browser compression verifies the encoded JPEG byte size, then reduces quality and dimensions through a bounded retry sequence; output still above 1.5 MB fails with `file_too_large` before upload or analysis.
 - In SC-214: photo attachment after analysis is optional and independent of the analysis result (D-109).
 - Paywall dismissed without purchase: entitlement status is refreshed after `presentPaywall` resolves regardless of outcome; if user is still not entitled, paywall banner re-displays (D-132).
+- Paywall not presented: RevenueCat `NOT_PRESENTED` is surfaced as a recoverable configuration failure after the entitlement refresh for both student and professional role routes; the gate stays locked and retry remains available.
+- Professional route isolation: a professional can never initiate a new student-plan purchase from either AI gate; the professional offering is presented instead.
+- Missing role isolation: no RevenueCat paywall is presented until a locked account role is available.
 - Subscription loading (`isSubscriptionLoading === true` and `hasAiAccess === false`): `ActivityIndicator` shown instead of locked banner — avoids false paywall flash before entitlement is known.
 - `aiEntitlementStatus === 'unknown'` (SDK not yet initialised or error): treated as locked — paywall banner shown (strict policy, D-132).
 
@@ -138,6 +143,6 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Use case | UC-003.9 |
 | Acceptance criteria | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 |
 | Business rules | BR-286, BR-287, BR-288, BR-289, BR-290 |
-| Test cases | TC-271, TC-272, TC-273, TC-274 |
+| Test cases | TC-271, TC-272, TC-273, TC-273A, TC-274 |
 | Decisions | D-106, D-107, D-108, D-109, D-110, D-128, D-132 |
 | Backlog | BL-108 |

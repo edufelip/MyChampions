@@ -7,9 +7,9 @@
  * server auth instead of mobile-owned provider tokens.
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import type { AuthProviderId } from './auth-user';
+import { authSessionRuntime, type AuthSessionRuntime } from './auth-session-runtime';
+import { serverAuthStorage } from './server-auth-storage';
 
 type ServerAuthProfile = {
   authUid: string;
@@ -53,18 +53,34 @@ export type ServerAuthStorage = {
 export type ServerAuthDeps = {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
   getServerBaseUrl: () => string | undefined;
+  runtime?: AuthSessionRuntime;
   storage?: ServerAuthStorage;
 };
 
 const SERVER_AUTH_SESSION_STORAGE_KEY = 'auth.server.session';
+const ACCESS_TOKEN_REFRESH_LEEWAY_MS = 30_000;
 
 let currentSession: ServerAuthSession | null = null;
+let sessionRevision = 0;
+type RefreshServerSessionOutcome =
+  | { kind: 'success'; session: ServerAuthSession }
+  | { kind: 'rejected' }
+  | { kind: 'transient_failure' }
+  | { kind: 'stale' };
+let refreshInFlight: {
+  revision: number;
+  promise: Promise<RefreshServerSessionOutcome>;
+} | null = null;
+let browserSignOutInFlight: Promise<void> | null = null;
+const sessionListeners = new Set<(session: ServerAuthSession | null) => void>();
 
 type LocalServerSocialAuthProvider = 'google' | 'apple';
 
 function resolveServerBaseUrl(): string | undefined {
   let expoExtra: unknown;
   try {
+    // Runtime loading keeps provider-free Node contract tests from importing React Native.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Constants = require('expo-constants') as {
       default?: { expoConfig?: { extra?: unknown } };
       expoConfig?: { extra?: unknown };
@@ -85,6 +101,8 @@ function resolveServerBaseUrl(): string | undefined {
 function isLocalServerAuthEnabled(): boolean {
   let appVariant: string | undefined;
   try {
+    // Runtime loading keeps provider-free Node contract tests from importing React Native.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Constants = require('expo-constants') as {
       default?: { expoConfig?: { extra?: { appVariant?: string } } };
       expoConfig?: { extra?: { appVariant?: string } };
@@ -102,12 +120,12 @@ function makeDeps(): ServerAuthDeps {
   return {
     fetch: globalThis.fetch.bind(globalThis),
     getServerBaseUrl: resolveServerBaseUrl,
-    storage: AsyncStorage,
+    ...(authSessionRuntime.persistsSession ? { storage: serverAuthStorage } : {}),
   };
 }
 
 function resolveStorage(deps: Pick<ServerAuthDeps, 'storage'>): ServerAuthStorage {
-  return deps.storage ?? AsyncStorage;
+  return deps.storage ?? serverAuthStorage;
 }
 
 async function removePersistedSession(storage: ServerAuthStorage): Promise<void> {
@@ -121,6 +139,19 @@ async function removePersistedSession(storage: ServerAuthStorage): Promise<void>
 function isExpired(expiresAt: string): boolean {
   const expiresAtMs = Date.parse(expiresAt);
   return !Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now();
+}
+
+function expiresWithin(expiresAt: string, leewayMs: number): boolean {
+  const expiresAtMs = Date.parse(expiresAt);
+  return !Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now() + leewayMs;
+}
+
+function setCurrentSession(session: ServerAuthSession | null): void {
+  sessionRevision += 1;
+  currentSession = session;
+  for (const listener of sessionListeners) {
+    listener(session);
+  }
 }
 
 function fallbackExpiresAt(): string {
@@ -252,28 +283,170 @@ function parsePersistedSession(value: string): ServerAuthSession | null {
   );
 }
 
-export function getCurrentServerAccessToken(): string | null {
-  if (currentSession && isExpired(currentSession.expiresAt)) {
-    currentSession = null;
+async function reconcilePersistedSessionWithCurrentState(
+  storage: ServerAuthStorage
+): Promise<void> {
+  while (true) {
+    const reconciliationRevision = sessionRevision;
+    const activeSession = currentSession;
+
+    try {
+      if (activeSession) {
+        await storage.setItem(
+          SERVER_AUTH_SESSION_STORAGE_KEY,
+          serializeSession(activeSession)
+        );
+      } else {
+        await storage.removeItem(SERVER_AUTH_SESSION_STORAGE_KEY);
+      }
+    } catch {
+      // In-memory auth remains authoritative when platform storage is unavailable.
+      return;
+    }
+
+    if (
+      sessionRevision === reconciliationRevision &&
+      currentSession === activeSession
+    ) {
+      return;
+    }
   }
-  return currentSession?.accessToken ?? null;
+}
+
+export function getCurrentServerAccessToken(): string | null {
+  return currentSession && !isExpired(currentSession.expiresAt) ? currentSession.accessToken : null;
 }
 
 export function getCurrentServerUser(): ServerAuthUser | null {
-  if (currentSession && isExpired(currentSession.expiresAt)) {
-    currentSession = null;
-  }
   return currentSession?.user ?? null;
 }
 
+export function getCurrentServerProfile(): ServerAuthProfile | null {
+  return currentSession?.profile ?? null;
+}
+
 export function clearServerAuthSession(): void {
-  currentSession = null;
+  refreshInFlight = null;
+  setCurrentSession(null);
+}
+
+export async function waitForPendingServerAuthSignOut(): Promise<void> {
+  if (browserSignOutInFlight) {
+    await browserSignOutInFlight;
+  }
+}
+
+export function subscribeServerAuthSession(
+  listener: (session: ServerAuthSession | null) => void
+): () => void {
+  sessionListeners.add(listener);
+  return () => {
+    sessionListeners.delete(listener);
+  };
+}
+
+export async function getValidServerAccessToken(
+  deps: Partial<ServerAuthDeps> = makeDeps()
+): Promise<string | null> {
+  const session = currentSession;
+  if (!session) return null;
+  if (!expiresWithin(session.expiresAt, ACCESS_TOKEN_REFRESH_LEEWAY_MS)) {
+    return session.accessToken;
+  }
+
+  if (authSessionRuntime.persistsSession && !session.refreshToken) {
+    setCurrentSession(null);
+    await removePersistedSession(resolveStorage(deps));
+    return null;
+  }
+
+  const refreshRevision = sessionRevision;
+  if (!refreshInFlight || refreshInFlight.revision !== refreshRevision) {
+    const flight = {
+      revision: refreshRevision,
+      promise: Promise.resolve<RefreshServerSessionOutcome>({
+        kind: 'transient_failure',
+      }),
+    };
+    flight.promise = refreshServerSession(
+      session.refreshToken,
+      deps,
+      () => sessionRevision === refreshRevision && currentSession === session
+    )
+      .then(async (outcome) => {
+        if (outcome.kind !== 'rejected') return outcome;
+        if (sessionRevision !== refreshRevision || currentSession !== session) {
+          return { kind: 'stale' } as const;
+        }
+        setCurrentSession(null);
+        if (authSessionRuntime.persistsSession) {
+          await removePersistedSession(resolveStorage(deps));
+        }
+        return outcome;
+      })
+      .finally(() => {
+        if (refreshInFlight === flight) {
+          refreshInFlight = null;
+        }
+      });
+    refreshInFlight = flight;
+  }
+
+  const outcome = await refreshInFlight.promise;
+  if (outcome.kind === 'success') return outcome.session.accessToken;
+  if (
+    outcome.kind === 'transient_failure' &&
+    sessionRevision === refreshRevision &&
+    currentSession === session &&
+    !isExpired(session.expiresAt)
+  ) {
+    return session.accessToken;
+  }
+  return null;
 }
 
 export async function clearPersistedServerAuthSession(
-  deps: Pick<ServerAuthDeps, 'storage'> = makeDeps()
+  deps: Partial<ServerAuthDeps> = makeDeps()
 ): Promise<void> {
-  currentSession = null;
+  const runtime = deps.runtime ?? authSessionRuntime;
+  if (!runtime.persistsSession) {
+    if (!browserSignOutInFlight) {
+      const signOut = (async () => {
+        try {
+          const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
+          if (baseUrl && deps.fetch) {
+            await deps.fetch(`${baseUrl}/auth/session/sign-out`, {
+              method: 'POST',
+              credentials: runtime.credentials,
+            });
+          }
+        } catch {
+          // Local identity is already cleared; a failed request still releases the login barrier.
+        }
+      })();
+      browserSignOutInFlight = signOut;
+    }
+
+    // Clear the local identity synchronously so the UI can leave the account
+    // immediately. The browser request remains a barrier for every subsequent
+    // session-establishing auth source until its response can no longer race
+    // the replacement cookie.
+    refreshInFlight = null;
+    setCurrentSession(null);
+
+    const signOut = browserSignOutInFlight;
+    try {
+      await signOut;
+    } finally {
+      if (browserSignOutInFlight === signOut) {
+        browserSignOutInFlight = null;
+      }
+    }
+    return;
+  }
+
+  refreshInFlight = null;
+  setCurrentSession(null);
   try {
     await resolveStorage(deps).removeItem(SERVER_AUTH_SESSION_STORAGE_KEY);
   } catch {
@@ -284,9 +457,18 @@ export async function clearPersistedServerAuthSession(
 export async function restoreServerAuthSession(
   deps: Partial<ServerAuthDeps> = makeDeps()
 ): Promise<ServerAuthSession | null> {
-  if (!isLocalServerAuthEnabled()) {
-    currentSession = null;
-    return null;
+  if (!authSessionRuntime.persistsSession) {
+    const restoreRevision = sessionRevision;
+    const outcome = await refreshServerSession(
+      null,
+      deps,
+      () => sessionRevision === restoreRevision
+    );
+    if (outcome.kind === 'success') return outcome.session;
+    if (outcome.kind === 'rejected' && sessionRevision === restoreRevision) {
+      setCurrentSession(null);
+    }
+    return outcome.kind === 'transient_failure' ? currentSession : null;
   }
 
   const storage = resolveStorage(deps);
@@ -294,87 +476,121 @@ export async function restoreServerAuthSession(
   try {
     value = await storage.getItem(SERVER_AUTH_SESSION_STORAGE_KEY);
   } catch {
-    currentSession = null;
+    setCurrentSession(null);
     return null;
   }
   if (!value) {
-    currentSession = null;
+    setCurrentSession(null);
     return null;
   }
 
   const session = parsePersistedSession(value);
   if (!session) {
     await removePersistedSession(storage);
-    currentSession = null;
+    setCurrentSession(null);
     return null;
   }
 
   if (isExpired(session.expiresAt)) {
     if (!session.refreshToken) {
       await removePersistedSession(storage);
-      currentSession = null;
+      setCurrentSession(null);
       return null;
     }
 
-    const refreshed = await refreshLocalServerSession(session.refreshToken, deps);
-    if (refreshed) return refreshed;
-    await removePersistedSession(storage);
-    currentSession = null;
-    return null;
+    const restoreRevision = sessionRevision;
+    const outcome = await refreshServerSession(
+      session.refreshToken,
+      deps,
+      () => sessionRevision === restoreRevision
+    );
+    if (outcome.kind === 'success') return outcome.session;
+    if (sessionRevision !== restoreRevision || outcome.kind === 'stale') return null;
+    if (outcome.kind === 'rejected') {
+      await removePersistedSession(storage);
+      setCurrentSession(null);
+      return null;
+    }
+
+    // Preserve the expired bearer session and rotating refresh token after
+    // retryable failures so cached read models remain available offline.
+    // Token-requiring operations still fail closed until refresh succeeds.
+    setCurrentSession(session);
+    return currentSession;
   }
 
-  currentSession = session;
+  setCurrentSession(session);
   return currentSession;
 }
 
-async function refreshLocalServerSession(
-  refreshToken: string,
-  deps: Partial<ServerAuthDeps> = makeDeps()
-): Promise<ServerAuthSession | null> {
-  if (!isLocalServerAuthEnabled()) return null;
-  if (!deps.fetch || !deps.getServerBaseUrl) return null;
+async function refreshServerSession(
+  refreshToken: string | null,
+  deps: Partial<ServerAuthDeps> = makeDeps(),
+  canCommit: () => boolean = () => true
+): Promise<RefreshServerSessionOutcome> {
+  if (!deps.fetch || !deps.getServerBaseUrl) return { kind: 'transient_failure' };
 
   let baseUrl: string | undefined;
   try {
     baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
   } catch {
-    return null;
+    return { kind: 'transient_failure' };
   }
-  if (!baseUrl) return null;
+  if (!baseUrl) return { kind: 'transient_failure' };
 
   let response: Response;
   try {
-    response = await deps.fetch(`${baseUrl}/auth/dev/refresh`, {
+    response = await deps.fetch(`${baseUrl}${authSessionRuntime.refreshPath}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      credentials: authSessionRuntime.credentials,
+      body: JSON.stringify(authSessionRuntime.refreshRequestBody(refreshToken)),
     });
   } catch {
-    return null;
+    return { kind: 'transient_failure' };
   }
-  if (!response.ok) return null;
+  if (response.status === 401 || response.status === 403) {
+    return { kind: 'rejected' };
+  }
+  if (!response.ok) return { kind: 'transient_failure' };
 
   let session: ServerAuthSession | null;
   try {
     session = await sessionFromPayload(await response.json());
   } catch {
-    return null;
+    return { kind: 'transient_failure' };
   }
-  if (!session) return null;
+  if (!session) return { kind: 'transient_failure' };
+  if (!canCommit()) return { kind: 'stale' };
 
-  currentSession = session;
-  try {
-    await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(currentSession));
-  } catch {
-    // Refreshed in-memory auth still works if platform storage is unavailable.
+  setCurrentSession(session);
+  const committedRevision = sessionRevision;
+  if (authSessionRuntime.persistsSession) {
+    try {
+      await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(session));
+    } catch {
+      // Refreshed in-memory auth still works if platform storage is unavailable.
+    }
   }
-  return currentSession;
+
+  if (
+    sessionRevision !== committedRevision ||
+    currentSession !== session
+  ) {
+    if (authSessionRuntime.persistsSession) {
+      await reconcilePersistedSessionWithCurrentState(resolveStorage(deps));
+    }
+    return { kind: 'stale' };
+  }
+
+  return { kind: 'success', session };
 }
 
 export async function startLocalServerSession(
   input: { email: string; displayName: string; authProviderId?: AuthProviderId },
   deps: ServerAuthDeps = makeDeps()
 ): Promise<ServerAuthSession | null> {
+  await waitForPendingServerAuthSignOut();
   if (!isLocalServerAuthEnabled()) return null;
 
   const baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
@@ -383,10 +599,12 @@ export async function startLocalServerSession(
   const response = await deps.fetch(`${baseUrl}/auth/dev/session`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
+    credentials: authSessionRuntime.credentials,
     body: JSON.stringify({
       email: input.email.trim().toLowerCase(),
       displayName: input.displayName.trim(),
       ...(input.authProviderId ? { authProviderId: input.authProviderId } : {}),
+      ...authSessionRuntime.sessionRequestFields,
     }),
   });
 
@@ -395,13 +613,15 @@ export async function startLocalServerSession(
   const session = await sessionFromPayload(await response.json());
   if (!session) return null;
 
-  currentSession = session;
-  try {
-    await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(currentSession));
-  } catch {
-    // Local dev auth must still work in test/runtime contexts where AsyncStorage is unavailable.
+  setCurrentSession(session);
+  if (authSessionRuntime.persistsSession) {
+    try {
+      await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(session));
+    } catch {
+      // Local dev auth must still work in test/runtime contexts where AsyncStorage is unavailable.
+    }
   }
-  return currentSession;
+  return session;
 }
 
 async function sessionFromPayload(payload: unknown): Promise<ServerAuthSession | null> {
@@ -447,16 +667,19 @@ export async function persistServerAuthSessionFromPayload(
   payload: unknown,
   deps: Pick<ServerAuthDeps, 'storage'> = makeDeps()
 ): Promise<ServerAuthSession | null> {
+  await waitForPendingServerAuthSignOut();
   const session = await sessionFromPayload(payload);
   if (!session) return null;
 
-  currentSession = session;
-  try {
-    await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(currentSession));
-  } catch {
-    // In-memory auth remains useful when platform storage is unavailable.
+  setCurrentSession(session);
+  if (authSessionRuntime.persistsSession) {
+    try {
+      await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(session));
+    } catch {
+      // In-memory auth remains useful when platform storage is unavailable.
+    }
   }
-  return currentSession;
+  return session;
 }
 
 export async function startLocalServerSocialSession(

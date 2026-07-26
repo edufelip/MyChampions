@@ -10,6 +10,7 @@ import { Fonts } from '@/constants/theme';
 import type { useExerciseSearch } from '@/features/plans/use-exercise-search';
 import type { ExerciseItem } from '@/features/plans/exercise-service-source';
 import { useTranslation, type TranslationKey } from '@/localization';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -51,6 +52,7 @@ export function ExerciseSearchModal({
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const notesRef = useRef<TextInput>(null);
+  useWebDialogAccessibility({ isVisible, onClose, testID: 'exerciseSearch.modal' });
 
   // Debounce search
   useEffect(() => {
@@ -92,7 +94,7 @@ export function ExerciseSearchModal({
   };
 
   return (
-    <Modal visible={isVisible} animationType="slide" transparent>
+    <Modal visible={isVisible} animationType="slide" onRequestClose={onClose} transparent>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>

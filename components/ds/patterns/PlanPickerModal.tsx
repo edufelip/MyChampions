@@ -4,6 +4,7 @@ import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/desig
 import { Fonts } from '@/constants/theme';
 import type { usePlans } from '@/features/plans/use-plans';
 import type { useTranslation } from '@/localization';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -24,13 +25,14 @@ export function PlanPickerModal({
   theme: DsTheme;
   t: TFn;
 }) {
+  useWebDialogAccessibility({ isVisible, onClose, testID: 'planPicker.modal' });
   const filteredPlans =
     plansState.kind === 'ready'
       ? plansState.predefinedPlans.filter((p) => (planType ? p.planType === planType : true))
       : [];
 
   return (
-    <Modal visible={isVisible} animationType="slide" transparent>
+    <Modal visible={isVisible} animationType="slide" onRequestClose={onClose} transparent>
       <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]} testID="planPicker.modal">
         <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
           <View style={styles.modalHeader}>

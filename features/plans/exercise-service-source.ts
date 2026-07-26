@@ -11,8 +11,9 @@
 
 import { getEffectiveLocale } from '../auth/language-storage';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { logNetworkDebug } from '../debug/logging';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 export type ExerciseVideo = {
   videoUrl?: string;
@@ -65,15 +66,15 @@ type ExerciseServiceDeps = {
   getServerBaseUrl: () => string | undefined;
   getCurrentAccessToken: () => Promise<string | null>;
   getLocale: () => Promise<string>;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
   createRequestId: () => string;
 };
 
 const defaultDeps: ExerciseServiceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getLocale: () => getEffectiveLocale(),
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
   createRequestId: () => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID();
@@ -244,9 +245,10 @@ async function catalogPost<T>(
   logNetworkDebug('exerciseService.catalogPost', 'Request endpoint:', endpoint);
   logNetworkDebug('exerciseService.catalogPost', 'Request body:', requestBody);
 
+  const fetchFn = deps.fetchFn;
   let response: Response;
   try {
-    response = await deps.fetchFn(endpoint, {
+    response = await fetchFn(endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(requestBody),
@@ -325,9 +327,10 @@ async function catalogGet<T>(
     Authorization: `Bearer ${serverConnection.accessToken}`,
   };
 
+  const fetchFn = deps.fetchFn;
   let response: Response;
   try {
-    response = await deps.fetchFn(endpoint, {
+    response = await fetchFn(endpoint, {
       method: 'GET',
       headers,
     });

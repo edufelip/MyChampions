@@ -25,10 +25,18 @@ trap cleanup EXIT
 metro_status_url="http://localhost:${metro_port}/status"
 
 if lsof -nP -iTCP:"$metro_port" -sTCP:LISTEN >/dev/null 2>&1; then
+  if [[ "${DETOX_REQUIRE_FRESH_METRO:-false}" == "true" ]]; then
+    echo "Refusing to reuse the process on Metro port ${metro_port}; this run requires a freshly owned Metro process." >&2
+    exit 2
+  fi
   echo "Reusing Metro on port ${metro_port}."
 else
   echo "Starting Metro on port ${metro_port}."
-  "$project_root/node_modules/.bin/expo" start --dev-client --localhost --port "$metro_port" >"$metro_log" 2>&1 &
+  if [[ "${DETOX_METRO_CLEAR_CACHE:-false}" == "true" ]]; then
+    "$project_root/node_modules/.bin/expo" start --dev-client --localhost --port "$metro_port" --clear >"$metro_log" 2>&1 &
+  else
+    "$project_root/node_modules/.bin/expo" start --dev-client --localhost --port "$metro_port" >"$metro_log" 2>&1 &
+  fi
   metro_pid=$!
 fi
 

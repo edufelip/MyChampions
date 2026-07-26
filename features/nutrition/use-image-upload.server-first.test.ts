@@ -28,6 +28,7 @@ test('server-backed image upload hook does not load Firebase Storage at module i
     }
     if (request === 'react') {
       return {
+        createContext: () => ({ Provider: Symbol('Provider') }),
         useCallback: (callback: unknown) => callback,
         useRef: (current: unknown) => ({ current }),
         useState: (initial: unknown) => [initial, () => undefined],

@@ -7,6 +7,12 @@
 - Let any authenticated user create and edit custom meals with nutrition totals, total weight, and optional ingredient cost.
 - The AI meal photo analysis CTA (SC-219) is embedded in this screen and is gated behind a RevenueCat paywall (D-132): only users with an active `professional_pro` OR `student_pro` entitlement can access the AI feature. Users without an active entitlement see a locked paywall banner with an "Upgrade to unlock" CTA.
 
+## Browser Behavior
+
+- Photo selection uses the browser image input/camera surface and canvas JPEG compression through `PhotoPickerAdapter`.
+- Recipe sharing uses Web Share when available and clipboard fallback otherwise.
+- AI entitlement checks use the server snapshot and the upgrade CTA performs mobile handoff rather than browser billing.
+
 ## UX Copy Intent
 - Keep meal creation simple and practical for self-guided users.
 - Explain that meal totals are used to calculate any logged portion size.
@@ -26,7 +32,7 @@
   - Optionally enter ingredient cost.
   - Save meal.
   - Tap "Analyze with AI" to pre-fill fields via photo analysis (entitlement-gated, SC-219, D-132).
-  - Tap "Upgrade to unlock" to open native RevenueCat paywall when entitlement is not active.
+  - Tap "Upgrade to unlock" to open the native RevenueCat paywall or browser mobile handoff when entitlement is not active.
 - Secondary:
   - Edit existing meal.
   - Generate share link for recipe.

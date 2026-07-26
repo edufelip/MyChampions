@@ -7,6 +7,15 @@
 - Let any authenticated user browse saved custom meals and log consumed grams quickly.
 - The AI meal photo analysis CTA (SC-219) is embedded in the quick-log panel (`QuickLogAnalysisRow`) and is gated behind a RevenueCat paywall (D-132): only users with an active `professional_pro` OR `student_pro` entitlement can access the AI feature. Users without an active entitlement see a locked paywall banner with an "Upgrade to unlock" CTA.
 
+## Browser Behavior
+
+- The library and builder use responsive `DsScreen` content constraints without changing mobile layouts.
+- Share actions use Web Share with clipboard fallback.
+- Browser meal-photo capture and compression use `PhotoPickerAdapter`; denied/unavailable media access returns to the existing idle/error state.
+- Subscription upgrade actions perform mobile handoff and never initialize RevenueCat preview mode.
+- Saved-meal actions form a compact, wrapping action row under the meal summary instead of a sparse trailing column.
+- Quick log is a bottom sheet on phones and a centered, width-capped dialog on tablet/desktop, with a dimmed backdrop and unchanged keyboard/accessibility behavior.
+
 ## UX Copy Intent
 - Emphasize fast logging from already-saved meals.
 - Keep the grams-to-nutrients outcome clear before confirmation.
@@ -18,6 +27,7 @@
 - Offline communication uses `DsOfflineBanner` while preserving BL-008 write-lock behavior.
 - Primary action hierarchy follows DS pill-button patterns and shared spacing/typography tokens.
 - AI/paywall and quick-log/builder sections keep existing business logic and localization keys, with DS visual structure.
+- Library content is capped to the `content` lane so meal rows and create actions remain readable on large displays.
 
 ## User Actions
 - Primary:
@@ -25,7 +35,7 @@
   - Select a meal and enter consumed grams.
   - Confirm and save quick log entry.
   - Tap "Analyze with AI" in the quick-log panel to pre-fill nutrition via photo analysis (entitlement-gated, SC-219, D-132).
-  - Tap "Upgrade to unlock" to open native RevenueCat paywall when entitlement is not active.
+  - Tap "Upgrade to unlock" to open the native RevenueCat paywall or browser mobile handoff when entitlement is not active.
 - Secondary:
   - Open meal builder to create/edit meal.
   - Open share action for owned recipes.

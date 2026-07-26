@@ -21,6 +21,8 @@
 - Error: tracking update failure.
 - Success: completion state and progress summary updated.
 - Plan context and plan-change request actions are consumed through centralized plans store via `usePlans`.
+- On narrow phones, the assigned-session title and exercise count receive the full card width; completion/log controls move to a second aligned row so long session names never collapse into single-character wrapping.
+- Tablet and desktop tracking content uses the centered `content` lane rather than the wide workbench lane.
 
 ## Validation Rules
 - If training plan is professionally assigned, student cannot edit plan structure.

@@ -18,6 +18,8 @@ export type SubscriptionState = {
   isAboveCapLocked: boolean;
 };
 
+export type SubscriptionStatusPresentation = 'loading' | 'active' | 'inactive' | 'unavailable';
+
 export type CapEnforcementResult =
   | { allowed: true }
   | { allowed: false; reason: 'requires_entitlement' | 'lapsed_above_cap' };
@@ -30,7 +32,8 @@ export const FREE_STUDENT_CAP = 10;
 /**
  * RevenueCat entitlement identifier for the student AI features subscription.
  * Grants access to AI meal photo analysis (BL-108) and future AI-powered features.
- * D-132: separate from professional_pro; purchasable by any role.
+ * D-132 / BR-341: separate from professional_pro; new purchases are offered
+ * only to locked student accounts, while existing valid entitlements remain honored.
  */
 export const AI_ENTITLEMENT_ID = 'student_pro';
 
@@ -60,8 +63,8 @@ export function checkStudentCapEnforcement(input: {
     return { allowed: false, reason: 'lapsed_above_cap' };
   }
 
-  // Status unknown — optimistic allow (do not block on unknown)
-  return { allowed: true };
+  // At or over cap, an authoritative active entitlement is required.
+  return { allowed: false, reason: 'requires_entitlement' };
 }
 
 /**
@@ -71,13 +74,12 @@ export function checkStudentCapEnforcement(input: {
 export function resolveSubscriptionState(input: {
   activeStudentCount: number;
   entitlementStatus: EntitlementStatus;
-  preLapseThreshold?: number;
+  isExpiringSoon?: boolean;
 }): SubscriptionState {
-  const threshold = input.preLapseThreshold ?? FREE_STUDENT_CAP;
   const isAboveCapLocked =
-    input.entitlementStatus === 'lapsed' && input.activeStudentCount > FREE_STUDENT_CAP;
+    input.entitlementStatus !== 'active' && input.activeStudentCount > FREE_STUDENT_CAP;
   const isPreLapseWarningVisible =
-    input.entitlementStatus === 'active' && input.activeStudentCount >= threshold;
+    input.entitlementStatus === 'active' && input.isExpiringSoon === true;
 
   return {
     entitlementStatus: input.entitlementStatus,
@@ -85,6 +87,16 @@ export function resolveSubscriptionState(input: {
     isPreLapseWarningVisible,
     isAboveCapLocked,
   };
+}
+
+export function resolveSubscriptionStatusPresentation(input: {
+  entitlementStatus: EntitlementStatus;
+  isLoading: boolean;
+  hasError: boolean;
+}): SubscriptionStatusPresentation {
+  if (input.isLoading) return 'loading';
+  if (input.hasError || input.entitlementStatus === 'unknown') return 'unavailable';
+  return input.entitlementStatus === 'active' ? 'active' : 'inactive';
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

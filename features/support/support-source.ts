@@ -3,7 +3,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import {
   SupportSourceError,
   type SupportMessageInput,
@@ -49,7 +49,7 @@ export function makeDeps(): SupportSourceDeps {
   return {
     fetch: globalThis.fetch.bind(globalThis),
     getCurrentAccessToken: async () => {
-      const serverAccessToken = getCurrentServerAccessToken();
+      const serverAccessToken = await getValidServerAccessToken();
       if (serverAccessToken) return serverAccessToken;
 
       const e2eSourceOverride = resolveSupportSourceE2EOverride();

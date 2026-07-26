@@ -11,6 +11,7 @@
 - Screen shell uses `DsScreen` with shared blob background and DS semantic color tokens.
 - Specialty rows, credential form, and removal-assist state are rendered as stacked `DsCard` containers.
 - Primary and secondary specialty actions use DS pill-button treatment, with destructive intent preserved.
+- The screen keeps explicit top breathing room, and blocked-removal assistance uses consistent internal spacing between its title, explanation, direct action, and dismiss control.
 - Offline communication uses `DsOfflineBanner` while keeping existing BL-008 write-lock behavior.
 - Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
 

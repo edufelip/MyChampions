@@ -76,3 +76,27 @@ test('server-backed plan reads do not load Firestore at module import', async ()
     delete require.cache[sourcePath];
   }
 });
+
+test('server-backed plan reads invoke fetch with the global receiver', async () => {
+  const { getMyPlans } = await import('./plan-source');
+  let fetchReceiver: unknown;
+
+  const fetchFn = function (this: unknown) {
+    fetchReceiver = this;
+    return Promise.resolve(
+      new Response(JSON.stringify({ plans: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+  } as AppFetch;
+
+  const plans = await getMyPlans({
+    getCurrentAccessToken: async () => 'server-token',
+    getServerBaseUrl: () => 'http://server.test',
+    fetchFn,
+  } as any);
+
+  assert.deepEqual(plans, []);
+  assert.equal(fetchReceiver, globalThis);
+});

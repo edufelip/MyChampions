@@ -8,7 +8,7 @@ import 'react-native-reanimated';
 import { getDsTheme } from '@/constants/design-system';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
-import { LocaleProvider } from '@/localization/locale-context';
+import { LocaleProvider, useLocale } from '@/localization/locale-context';
 import {
   normalizeAuthReturnTo,
   normalizeGuardPathname,
@@ -35,6 +35,7 @@ function RootLayoutContent() {
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const ds = getDsTheme(scheme);
   const { t } = useTranslation();
+  const { activeLocale } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useGlobalSearchParams<{ returnTo?: string | string[] }>();
@@ -43,6 +44,12 @@ function RootLayoutContent() {
   const lastRedirectAttemptRef = useRef<string | null>(null);
   const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance, currentUser } = useAuthSession();
   const currentUserUid = currentUser?.uid ?? null;
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.lang = activeLocale;
+    document.documentElement.dir = 'ltr';
+  }, [activeLocale]);
 
   useEffect(() => {
     if (!isHydrated) {

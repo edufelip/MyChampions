@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/features/platform/haptics-adapter';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
@@ -334,7 +334,7 @@ export default function NutritionPlanBuilderScreen() {
 
   if (nutritionGate === 'loading') {
     return (
-      <DsScreen scheme={scheme} contentContainerStyle={[styles.content, styles.centeredContent]}>
+      <DsScreen scheme={scheme} contentWidth="content" contentContainerStyle={[styles.content, styles.centeredContent]}>
         <Stack.Screen options={{ headerShown: false }} />
         <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
       </DsScreen>
@@ -348,6 +348,7 @@ export default function NutritionPlanBuilderScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      contentWidth="content"
       contentContainerStyle={styles.content}
       testID="pro.nutrition_plan.screen"
     >

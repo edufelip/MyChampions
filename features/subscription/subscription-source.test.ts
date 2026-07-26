@@ -23,6 +23,7 @@ import {
   resolveRevenueCatApiKey,
   mapCustomerInfoToEntitlementStatus,
   mapCustomerInfoToAiEntitlementStatus,
+  mapCustomerInfoToProfessionalEntitlementMetadata,
   normalizeSubscriptionError,
   fetchEntitlementStatus,
   purchasePackage,
@@ -30,11 +31,15 @@ import {
   configureRevenueCat,
   presentAiPaywall,
   presentProPaywall,
+  resolveAiUpgradeOfferingId,
+  resolveRequiredRevenueCatOffering,
   SubscriptionSourceError,
+  resolveStudentOfferingId,
   PRO_ENTITLEMENT_ID,
   AI_FEATURES_ENTITLEMENT_ID,
   PRO_OFFERING_ID,
   AI_OFFERING_ID,
+  AI_TEST_OFFERING_ID,
   type SubscriptionSourceDeps,
   type RawCustomerInfo,
 } from './subscription-source';
@@ -105,6 +110,59 @@ describe('resolveRevenueCatApiKey', () => {
   it('returns Android public API key when present', () => {
     const key = resolveRevenueCatApiKey('android', { revenueCatApiKeyAndroid: 'goog_live_abc123' });
     assert.equal(key, 'goog_live_abc123');
+  });
+
+  it('accepts the Test Store public key for either platform only in an explicit dev build', () => {
+    const extra = {
+      appVariant: 'dev',
+      revenueCatTestStoreEnabled: true,
+      revenueCatApiKeyIos: 'test_sandbox_abc123',
+      revenueCatApiKeyAndroid: 'test_sandbox_abc123',
+    };
+
+    assert.equal(resolveRevenueCatApiKey('ios', extra), 'test_sandbox_abc123');
+    assert.equal(resolveRevenueCatApiKey('android', extra), 'test_sandbox_abc123');
+  });
+
+  it('rejects Test Store keys without the explicit dev-only gate', () => {
+    assert.throws(
+      () => resolveRevenueCatApiKey('ios', { revenueCatApiKeyIos: 'test_sandbox_abc123' }),
+      (err: unknown) => {
+        assert.ok(err instanceof SubscriptionSourceError);
+        assert.equal(err.code, 'configuration');
+        return true;
+      }
+    );
+
+    assert.throws(
+      () =>
+        resolveRevenueCatApiKey('ios', {
+          appVariant: 'prod',
+          revenueCatTestStoreEnabled: true,
+          revenueCatApiKeyIos: 'test_sandbox_abc123',
+        }),
+      (err: unknown) => {
+        assert.ok(err instanceof SubscriptionSourceError);
+        assert.equal(err.code, 'configuration');
+        return true;
+      }
+    );
+  });
+
+  it('requires the Test Store prefix when its dev-only gate is enabled', () => {
+    assert.throws(
+      () =>
+        resolveRevenueCatApiKey('ios', {
+          appVariant: 'dev',
+          revenueCatTestStoreEnabled: true,
+          revenueCatApiKeyIos: 'appl_live_abc123',
+        }),
+      (err: unknown) => {
+        assert.ok(err instanceof SubscriptionSourceError);
+        assert.equal(err.code, 'configuration');
+        return true;
+      }
+    );
   });
 
   it('throws configuration error when secret sk_* key is provided', () => {
@@ -198,6 +256,94 @@ describe('mapCustomerInfoToEntitlementStatus', () => {
   });
 });
 
+describe('mapCustomerInfoToProfessionalEntitlementMetadata', () => {
+  it('maps an active auto-renewing entitlement without warning risk', () => {
+    assert.deepEqual(
+      mapCustomerInfoToProfessionalEntitlementMetadata({
+        entitlements: {
+          active: {
+            [PRO_ENTITLEMENT_ID]: {
+              isActive: true,
+              willRenew: true,
+              expirationDate: '2026-08-03T16:45:00Z',
+            },
+          },
+        },
+      }),
+      { expiresAt: '2026-08-03T16:45:00.000Z', renewalRisk: false }
+    );
+  });
+
+  it('flags explicit cancellation and billing issues only while access is active and expiring', () => {
+    for (const riskFields of [
+      { willRenew: false },
+      { billingIssueDetectedAt: '2026-07-20T12:00:00Z' },
+      { unsubscribeDetectedAt: '2026-07-20T12:00:00Z' },
+    ]) {
+      assert.equal(
+        mapCustomerInfoToProfessionalEntitlementMetadata({
+          entitlements: {
+            active: {
+              [PRO_ENTITLEMENT_ID]: {
+                isActive: true,
+                expirationDate: '2026-08-03T16:45:00Z',
+                ...riskFields,
+              },
+            },
+          },
+        }).renewalRisk,
+        true
+      );
+    }
+  });
+
+  it('fails closed to no warning for absent, inactive, lifetime, or malformed metadata', () => {
+    const inputs: RawCustomerInfo[] = [
+      { entitlements: { active: {} } },
+      {
+        entitlements: {
+          active: {
+            [PRO_ENTITLEMENT_ID]: {
+              isActive: false,
+              willRenew: false,
+              expirationDate: '2026-08-03T16:45:00Z',
+            },
+          },
+        },
+      },
+      {
+        entitlements: {
+          active: {
+            [PRO_ENTITLEMENT_ID]: {
+              isActive: true,
+              willRenew: false,
+              expirationDate: null,
+            },
+          },
+        },
+      },
+      {
+        entitlements: {
+          active: {
+            [PRO_ENTITLEMENT_ID]: {
+              isActive: true,
+              willRenew: false,
+              expirationDate: 'not-a-date',
+            },
+          },
+        },
+      },
+    ];
+
+    for (const input of inputs) {
+      assert.deepEqual(mapCustomerInfoToProfessionalEntitlementMetadata(input), {
+        expiresAt: null,
+        renewalRisk: false,
+      });
+    }
+  });
+});
+
 // ─── normalizeSubscriptionError ──────────────────────────────────────────────
 
 describe('normalizeSubscriptionError', () => {
@@ -256,7 +402,7 @@ describe('normalizeSubscriptionError', () => {
 
 describe('configureRevenueCat', () => {
   it('calls configure with the API key and self-managed auth UID', () => {
-    const calls: Array<{ apiKey: string; appUserId: string | undefined }> = [];
+    const calls: { apiKey: string; appUserId: string | undefined }[] = [];
     const deps = makeDeps({
       configure: (apiKey, appUserId) => { calls.push({ apiKey, appUserId }); },
       getApiKey: () => 'appl_live_test',
@@ -638,10 +784,23 @@ describe('presentAiPaywall', () => {
   it('calls deps.presentPaywall with AI_OFFERING_ID (default_student) offering identifier', async () => {
     let calledWith: string | undefined;
     const deps = makeDeps({
-      presentPaywall: async (id) => { calledWith = id; },
+      presentPaywall: async (id) => { calledWith = id; return 'CANCELLED'; },
     });
-    await presentAiPaywall(deps);
+    const result = await presentAiPaywall(deps);
     assert.equal(calledWith, AI_OFFERING_ID);
+    assert.equal(result, 'CANCELLED');
+  });
+
+  it('presents the guarded temporary student offering when explicitly supplied', async () => {
+    let calledWith: string | undefined;
+    const deps = makeDeps({
+      presentPaywall: async (id) => { calledWith = id; return 'NOT_PRESENTED'; },
+    });
+
+    const result = await presentAiPaywall(deps, AI_TEST_OFFERING_ID);
+
+    assert.equal(calledWith, 'test_student');
+    assert.equal(result, 'NOT_PRESENTED');
   });
 
   it('propagates network-like errors as SubscriptionSourceError', async () => {
@@ -672,6 +831,119 @@ describe('presentAiPaywall', () => {
   });
 });
 
+// ─── student offering and role routing ───────────────────────────────────────
+
+describe('resolveStudentOfferingId', () => {
+  it('defaults to default_student when configuration is absent', () => {
+    assert.equal(resolveStudentOfferingId({}), AI_OFFERING_ID);
+  });
+
+  it('accepts default_student in production', () => {
+    assert.equal(
+      resolveStudentOfferingId({
+        appVariant: 'prod',
+        revenueCatStudentOfferingId: 'default_student',
+        revenueCatTestStoreEnabled: false,
+      }),
+      AI_OFFERING_ID
+    );
+  });
+
+  it('accepts test_student only for an explicit dev Test Store config', () => {
+    assert.equal(
+      resolveStudentOfferingId({
+        appVariant: 'dev',
+        revenueCatStudentOfferingId: 'test_student',
+        revenueCatTestStoreEnabled: true,
+      }),
+      AI_TEST_OFFERING_ID
+    );
+  });
+
+  it('rejects test_student in production', () => {
+    assert.throws(
+      () =>
+        resolveStudentOfferingId({
+          appVariant: 'prod',
+          revenueCatStudentOfferingId: 'test_student',
+          revenueCatTestStoreEnabled: true,
+        }),
+      (err: unknown) =>
+        err instanceof SubscriptionSourceError && err.code === 'configuration'
+    );
+  });
+
+  it('rejects malformed offering configuration', () => {
+    assert.throws(
+      () => resolveStudentOfferingId({ revenueCatStudentOfferingId: 'student_preview' }),
+      (err: unknown) =>
+        err instanceof SubscriptionSourceError && err.code === 'configuration'
+    );
+  });
+});
+
+describe('resolveAiUpgradeOfferingId', () => {
+  it('routes students to the resolved student offering', () => {
+    assert.equal(
+      resolveAiUpgradeOfferingId('student', () => AI_TEST_OFFERING_ID),
+      AI_TEST_OFFERING_ID
+    );
+  });
+
+  it('routes professionals without evaluating student-only configuration', () => {
+    let studentResolutionCount = 0;
+    assert.equal(
+      resolveAiUpgradeOfferingId('professional', () => {
+        studentResolutionCount += 1;
+        throw new Error('malformed student configuration');
+      }),
+      PRO_OFFERING_ID
+    );
+    assert.equal(studentResolutionCount, 0);
+  });
+
+  it('fails closed for missing or malformed roles', () => {
+    assert.equal(resolveAiUpgradeOfferingId(null, () => AI_OFFERING_ID), null);
+    assert.equal(
+      resolveAiUpgradeOfferingId('coach' as never, () => AI_OFFERING_ID),
+      null
+    );
+  });
+});
+
+describe('resolveRequiredRevenueCatOffering', () => {
+  it('returns the exact requested offering', () => {
+    const studentOffering = { identifier: AI_OFFERING_ID };
+
+    assert.equal(
+      resolveRequiredRevenueCatOffering(
+        {
+          [AI_OFFERING_ID]: studentOffering,
+          [PRO_OFFERING_ID]: { identifier: PRO_OFFERING_ID },
+        },
+        AI_OFFERING_ID
+      ),
+      studentOffering
+    );
+  });
+
+  it('fails closed instead of falling back when the requested offering is missing', () => {
+    assert.throws(
+      () =>
+        resolveRequiredRevenueCatOffering(
+          {
+            [PRO_OFFERING_ID]: { identifier: PRO_OFFERING_ID },
+          },
+          AI_OFFERING_ID
+        ),
+      (err: unknown) =>
+        err instanceof SubscriptionSourceError &&
+        err.code === 'configuration' &&
+        err.message.includes(AI_OFFERING_ID)
+    );
+  });
+});
+
 // ─── presentProPaywall ────────────────────────────────────────────────────────
 
 describe('presentProPaywall', () => {
@@ -682,10 +954,11 @@ describe('presentProPaywall', () => {
   it('calls deps.presentPaywall with PRO_OFFERING_ID (default_professional) offering identifier', async () => {
     let calledWith: string | undefined | 'NOT_CALLED' = 'NOT_CALLED';
     const deps = makeDeps({
-      presentPaywall: async (id) => { calledWith = id; },
+      presentPaywall: async (id) => { calledWith = id; return 'ERROR'; },
     });
-    await presentProPaywall(deps);
+    const result = await presentProPaywall(deps);
     assert.equal(calledWith, PRO_OFFERING_ID);
+    assert.equal(result, 'ERROR');
   });
 
   it('propagates network-like errors as SubscriptionSourceError', async () => {

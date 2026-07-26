@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/features/platform/haptics-adapter';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
@@ -500,6 +500,7 @@ export default function TrainingPlanBuilderScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      contentWidth="content"
       contentContainerStyle={styles.content}
       testID="pro.training_plan.screen"
     >

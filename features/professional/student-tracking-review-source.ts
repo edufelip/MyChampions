@@ -1,7 +1,8 @@
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import type { PortionLog } from '../nutrition/custom-meal-source';
 import type { WaterIntakeLog } from '../nutrition/water-tracking.logic';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 import { buildStudentTrackingReview, type StudentTrackingReview } from './student-tracking-review.logic';
 
@@ -22,13 +23,13 @@ export class StudentTrackingReviewSourceError extends Error {
 export type StudentTrackingReviewSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 const defaultDeps: StudentTrackingReviewSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
 };
 
 function resolveServerBaseUrl(): string | undefined {
@@ -239,7 +240,7 @@ async function getStudentTrackingReviewFromServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(
+    response = await (deps.fetchFn ?? defaultAppFetch)(
       `${baseUrl}/professional/students/${encodeURIComponent(studentUid)}/tracking-review?${params.toString()}`,
       {
         headers: { authorization: `Bearer ${accessToken}` },

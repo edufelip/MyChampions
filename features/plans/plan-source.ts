@@ -11,7 +11,7 @@ import {
   type PlanChangeRequestStatus,
 } from './plan-change-request.logic';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 
 export type PlanSourceKind = 'predefined' | 'assigned' | 'self_managed';
 
@@ -173,7 +173,7 @@ export function validatePlanAssignmentTargets({
 export type PlanSourceDeps = {
   getServerBaseUrl?: () => string | undefined;
   getCurrentAccessToken?: () => Promise<string | null>;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 function nowIso(): string {
@@ -182,7 +182,7 @@ function nowIso(): string {
 
 const defaultDeps: PlanSourceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   fetchFn: fetch,
 };
 
@@ -245,7 +245,8 @@ function getE2EPlanSourceOverride() {
 
 function getE2EPredefinedPlans(): PredefinedPlan[] | null {
   const override = getE2EPlanSourceOverride();
-  if (!override || process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE !== 'basic') return null;
+  if (!override) return null;
+  if (process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE !== 'basic') return [];
 
   return [
     {
@@ -415,11 +416,17 @@ function requireServerResult<T>(result: T | null, operation: string): T {
 function resolveServerPlanSource(deps: PlanSourceDeps): {
   baseUrl: string;
   token: string;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
 } | null {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
-  const fetchFn = deps.fetchFn ?? fetch;
-  if (!baseUrl || !fetchFn) return null;
+  const sourceFetch = deps.fetchFn ?? fetch;
+  if (!baseUrl || !sourceFetch) return null;
+
+  // Browser fetch is a host function and must retain the global receiver. Calling it
+  // later as `source.fetchFn(...)` otherwise supplies the source object as `this`,
+  // which Firefox rejects with "Illegal invocation".
+  const fetchFn: AppFetch = (input, init) =>
+    Reflect.apply(sourceFetch, globalThis, [input, init]);
 
   return {
     baseUrl,
@@ -431,7 +438,7 @@ function resolveServerPlanSource(deps: PlanSourceDeps): {
 async function getServerPlanSource(deps: PlanSourceDeps): Promise<{
   baseUrl: string;
   token: string;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
 } | null> {
   const source = resolveServerPlanSource(deps);
   if (!source) return null;

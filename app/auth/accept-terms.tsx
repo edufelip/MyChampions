@@ -2,14 +2,14 @@ import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { getDsTheme } from '@/constants/design-system';
+import { DsRadius, DsShadow, DsSpace, getDsTheme } from '@/constants/design-system';
+import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,7 +19,6 @@ export default function AcceptTermsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
-  const primaryButtonForeground = '#F7FBFF';
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   const { acceptTerms, termsUrl, termsRequiredVersion } = useAuthSession();
@@ -88,7 +87,7 @@ export default function AcceptTermsScreen() {
           <Text style={[styles.subtitle, { color: palette.icon }]}>{t('auth.terms.description')}</Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.color.surface }]}>
+        <View style={[styles.card, { backgroundColor: theme.color.surface }]} testID="auth.terms.card">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('auth.terms.open_link')}
@@ -118,7 +117,8 @@ export default function AcceptTermsScreen() {
                   borderColor: isChecked ? theme.color.accentPrimary : isDark ? theme.color.borderStrong : theme.color.border,
                   backgroundColor: isChecked ? theme.color.accentPrimary : 'transparent',
                 },
-              ]}>
+              ]}
+              testID="auth.terms.checkbox.control">
               {isChecked ? <MaterialIcons color={theme.color.onAccent} name="check" size={15} /> : null}
             </View>
             <Text style={[styles.checkboxLabel, { color: palette.text }]}> {t('auth.terms.checkbox')}</Text>
@@ -136,26 +136,15 @@ export default function AcceptTermsScreen() {
             </View>
           ) : null}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !isChecked || submitting }}
+          <DsPillButton
+            scheme={isDark ? 'dark' : 'light'}
             disabled={!isChecked || submitting}
+            loading={submitting}
+            label={t('auth.terms.accept_button') as string}
             onPress={onAccept}
-            style={({ pressed }) => [
-              styles.acceptButton,
-              {
-                backgroundColor: theme.color.accentPrimary,
-                shadowColor: theme.color.accentPrimary,
-                opacity: !isChecked || submitting ? 0.6 : pressed ? 0.92 : 1,
-              },
-            ]}
-            testID={isChecked ? 'auth.terms.acceptButton' : 'auth.terms.acceptButton.disabled'}>
-            {submitting ? (
-              <ActivityIndicator color={primaryButtonForeground} />
-            ) : (
-              <Text style={[styles.acceptButtonText, { color: primaryButtonForeground }]}>{t('auth.terms.accept_button')}</Text>
-            )}
-          </Pressable>
+            style={styles.acceptButton}
+            testID={isChecked ? 'auth.terms.acceptButton' : 'auth.terms.acceptButton.disabled'}
+          />
 
           <Text style={[styles.offlineHint, { color: palette.icon }]}>{t('auth.terms.offline_hint')}</Text>
         </View>
@@ -191,8 +180,11 @@ const styles = StyleSheet.create({
     borderRadius: 140,
   },
   content: {
+    alignSelf: 'center',
+    maxWidth: 520,
     zIndex: 1,
-    gap: 20,
+    gap: DsSpace.lg,
+    width: '100%',
   },
   titleArea: {
     alignItems: 'center',
@@ -220,19 +212,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    borderRadius: 32,
-    padding: 20,
-    gap: 16,
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 3,
+    ...DsShadow.soft,
+    borderRadius: DsRadius.lg,
+    padding: DsSpace.lg,
+    gap: DsSpace.md,
   },
   linkButton: {
     minHeight: 52,
     borderWidth: 2,
-    borderRadius: 20,
+    borderRadius: DsRadius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -252,7 +240,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: 6,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -278,18 +266,6 @@ const styles = StyleSheet.create({
   },
   acceptButton: {
     minHeight: 54,
-    borderRadius: 27,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  acceptButtonText: {
-    fontFamily: Fonts.sans,
-    fontSize: 17,
-    fontWeight: '800',
   },
   offlineHint: {
     fontFamily: Fonts.sans,

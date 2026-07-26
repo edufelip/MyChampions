@@ -125,12 +125,14 @@ test('getMyConnections uses the dev E2E auth-session fixture through provider-fr
   const previousE2EFlag = process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
   const previousStudentNutritionFixture = process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
   const previousStudentTrainingFixture = process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
+  const previousProfessionalPendingFixture = process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
   const previousDev = (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
 
   process.env.APP_VARIANT = 'dev';
   process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = 'true';
   delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
   delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
+  delete process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
   (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
 
   try {
@@ -148,6 +150,45 @@ test('getMyConnections uses the dev E2E auth-session fixture through provider-fr
 
     if (previousStudentTrainingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE = previousStudentTrainingFixture;
+
+    if (previousProfessionalPendingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
+    else process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE = previousProfessionalPendingFixture;
+
+    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
+  }
+});
+
+test('getMyConnections exposes a deterministic professional pending-queue fixture', async () => {
+  const previousAppVariant = process.env.APP_VARIANT;
+  const previousE2EFlag = process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
+  const previousPendingFixture = process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
+  const previousDev = (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+
+  process.env.APP_VARIANT = 'dev';
+  process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = 'true';
+  process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE = 'basic';
+  (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
+
+  try {
+    assert.deepEqual(await getMyConnections(), [
+      {
+        id: 'e2e-professional-pending-connection',
+        status: 'pending_confirmation',
+        canceledReason: null,
+        specialty: 'nutritionist',
+        professionalAuthUid: 'e2e-nutritionist',
+      },
+    ]);
+  } finally {
+    if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
+    else process.env.APP_VARIANT = previousAppVariant;
+
+    if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
+    else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
+
+    if (previousPendingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
+    else process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE = previousPendingFixture;
 
     if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;

@@ -9,7 +9,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
 import { WeekStrip, type WeekStripItem } from '@/components/ds/patterns/WeekStrip';
@@ -61,6 +61,8 @@ export default function StudentTrainingScreen() {
   const { t, locale } = useTranslation();
   const { currentUser } = useAuthSession();
   const router = useRouter();
+  const { width: viewportWidth } = useWindowDimensions();
+  const usesCompactWorkoutHeader = viewportWidth < 480;
 
   const networkStatus = useNetworkStatus();
   const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
@@ -159,6 +161,7 @@ export default function StudentTrainingScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      contentWidth="content"
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
       testID="student.training.screen"
@@ -215,12 +218,13 @@ export default function StudentTrainingScreen() {
 
                     return (
                       <DsCard scheme={scheme} key={session.id} style={styles.workoutCard} testID={`student.training.sessionCard-${session.id}`}>
-                        <View style={styles.workoutHeaderRow}>
+                        <View style={[styles.workoutHeaderRow, usesCompactWorkoutHeader && styles.workoutHeaderRowCompact]}>
                           <Pressable
                             accessibilityRole="button"
                             onPress={() => toggleSessionExpand(session.id)}
                             style={({ pressed }) => [
                               styles.workoutHeaderLeft,
+                              usesCompactWorkoutHeader && styles.workoutHeaderLeftCompact,
                               { opacity: pressed ? 0.72 : 1 },
                             ]}
                           >
@@ -237,7 +241,7 @@ export default function StudentTrainingScreen() {
                             </View>
                           </Pressable>
 
-                          <View style={styles.workoutHeaderRight}>
+                          <View style={[styles.workoutHeaderRight, usesCompactWorkoutHeader && styles.workoutHeaderRightCompact]}>
                             <DsPillButton
                               scheme={scheme}
                               disabled={isWriteLocked || isLogged}
@@ -358,7 +362,7 @@ export default function StudentTrainingScreen() {
                   DsShadow.floating,
                   {
                     backgroundColor: theme.color.surface,
-                    shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                    shadowColor: scheme === 'dark' ? '#000000' : theme.color.accentPrimary,
                   },
                 ]}>
                 <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
@@ -434,7 +438,7 @@ export default function StudentTrainingScreen() {
                   DsShadow.floating,
                   {
                     backgroundColor: theme.color.surface,
-                    shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                    shadowColor: scheme === 'dark' ? '#000000' : theme.color.accentPrimary,
                   },
                 ]}>
                 <MaterialIcons color="#13ec49" name="fitness-center" size={58} />
@@ -487,7 +491,7 @@ export default function StudentTrainingScreen() {
 
 const styles = StyleSheet.create({
   shell: {
-    borderRadius: 28,
+    borderRadius: 16,
     flex: 1,
     marginHorizontal: 16,
     marginTop: 18,
@@ -630,12 +634,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  workoutHeaderRowCompact: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+  },
   workoutHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: DsSpace.sm,
     flex: 1,
     marginRight: 8,
+  },
+  workoutHeaderLeftCompact: {
+    marginRight: 0,
+    width: '100%',
   },
   workoutIconWrap: {
     alignItems: 'center',
@@ -658,6 +670,10 @@ const styles = StyleSheet.create({
   workoutHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  workoutHeaderRightCompact: {
+    alignSelf: 'flex-end',
+    marginTop: DsSpace.sm,
   },
   logButton: {
     minHeight: 36,

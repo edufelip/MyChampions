@@ -110,6 +110,34 @@ test('E2E auth source can load predefined plans and bulk assign through provider
   }
 });
 
+test('E2E auth source treats an omitted professional-plan fixture as an empty library', async () => {
+  const previousAppVariant = process.env.APP_VARIANT;
+  const previousE2EFlag = process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
+  const previousPlansFixture = process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE;
+  const previousDev = (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+
+  process.env.APP_VARIANT = 'dev';
+  process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = 'true';
+  delete process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE;
+  (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
+
+  try {
+    assert.deepEqual(await getMyPredefinedPlans(), []);
+  } finally {
+    if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
+    else process.env.APP_VARIANT = previousAppVariant;
+
+    if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
+    else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
+
+    if (previousPlansFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE;
+    else process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE = previousPlansFixture;
+
+    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
+  }
+});
+
 test('E2E auth source can create a draft assigned plan through provider-free paths', async () => {
   const previousAppVariant = process.env.APP_VARIANT;
   const previousE2EFlag = process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;

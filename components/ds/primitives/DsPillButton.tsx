@@ -47,10 +47,27 @@ export function DsPillButton({
 
   const secondaryBackgroundColor = theme.color.accentPrimarySoft;
 
-  const resolvedContentColor =
-    contentColor ?? (isOutline || isSecondary || isGhost ? theme.color.accentPrimary : theme.color.onAccent);
+  const resolvedContentColor = disabled
+    ? theme.color.disabledText
+    : contentColor ?? (isOutline || isSecondary || isGhost ? theme.color.accentPrimary : theme.color.onAccent);
 
   const getVariantStyles = () => {
+    if (disabled) {
+      if (isOutline || isGhost) {
+        return {
+          backgroundColor: 'transparent',
+          borderColor: theme.color.disabledBorder,
+          borderWidth: isOutline ? 1.5 : 0,
+        };
+      }
+
+      return {
+        backgroundColor: theme.color.disabledSurface,
+        borderColor: theme.color.disabledBorder,
+        borderWidth: 1,
+      };
+    }
+
     if (isPrimary) {
       return {
         backgroundColor: theme.color.accentPrimary,
@@ -92,6 +109,7 @@ export function DsPillButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ busy: loading, disabled: disabled || loading }}
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
@@ -99,7 +117,7 @@ export function DsPillButton({
         getSizeStyles(),
         getVariantStyles(),
         { width: fullWidth ? '100%' : undefined },
-        { opacity: disabled || loading ? 0.6 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+        { transform: [{ scale: pressed && !disabled && !loading ? 0.98 : 1 }] },
         style,
       ]}
       testID={testID}>

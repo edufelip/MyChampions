@@ -1,176 +1,113 @@
-/**
- * Tests for student home empty-state detection logic (BL-001).
- * Covers the logic that determines when to show self-guided CTAs.
- */
-
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { Plan } from '@/features/plans/plan-source';
 
-// Pure helper extracted from app/student/home.tsx
-function hasActivePlanForType(plans: Plan[], planType: string): boolean {
-  return plans.some((p) => p.planType === planType && !p.isArchived);
-}
+import { resolveStudentHomeDisplayState } from './student-home.logic';
 
-test('hasActivePlanForType returns false for empty plans array', () => {
-  assert.equal(hasActivePlanForType([], 'nutrition'), false);
-  assert.equal(hasActivePlanForType([], 'training'), false);
+test('student home waits until every initial source has settled', () => {
+  const state = resolveStudentHomeDisplayState({
+    connections: 'ready',
+    plans: 'loading',
+    water: 'ready',
+  });
+
+  assert.equal(state.hasCompletedInitialLoad, false);
+  assert.equal(state.isInitialLoading, true);
+  assert.deepEqual(state.errorSources, []);
 });
 
-test('hasActivePlanForType returns false when no matching planType exists', () => {
-  const plans: Plan[] = [
-    {
-      id: '1',
-      planType: 'nutrition',
-      isArchived: false,
-      sourceKind: 'assigned',
-      ownerProfessionalUid: 'prof-123',
-      studentUid: 'student-456',
-      name: 'Calorie deficit',
-      createdAt: '2026-03-01T00:00:00Z',
-      updatedAt: '2026-03-01T00:00:00Z',
-    },
-  ];
+test('student home preserves successful sections when one source fails', () => {
+  const state = resolveStudentHomeDisplayState({
+    connections: 'ready',
+    plans: 'error',
+    water: 'ready',
+  });
 
-  assert.equal(hasActivePlanForType(plans, 'training'), false);
+  assert.equal(state.hasCompletedInitialLoad, true);
+  assert.equal(state.isInitialLoading, false);
+  assert.deepEqual(state.errorSources, ['plans']);
+  assert.equal(state.canRenderPlans, false);
+  assert.equal(state.canRenderWater, true);
 });
 
-test('hasActivePlanForType returns false when matching plan is archived', () => {
-  const plans: Plan[] = [
-    {
-      id: '1',
-      planType: 'nutrition',
-      isArchived: true,
-      sourceKind: 'assigned',
-      ownerProfessionalUid: 'prof-123',
-      studentUid: 'student-456',
-      name: 'Calorie deficit',
-      createdAt: '2026-03-01T00:00:00Z',
-      updatedAt: '2026-03-01T00:00:00Z',
-    },
-  ];
+test('student home reports every failed source after settlement', () => {
+  const state = resolveStudentHomeDisplayState({
+    connections: 'error',
+    plans: 'error',
+    water: 'error',
+  });
 
-  assert.equal(hasActivePlanForType(plans, 'nutrition'), false);
+  assert.equal(state.isInitialLoading, false);
+  assert.deepEqual(state.errorSources, ['connections', 'plans', 'water']);
+  assert.equal(state.canRenderPlans, false);
+  assert.equal(state.canRenderWater, false);
 });
 
-test('hasActivePlanForType returns true when active plan exists', () => {
-  const plans: Plan[] = [
+test('student home keeps independently successful sections visible during every source retry', () => {
+  const settledState = resolveStudentHomeDisplayState({
+    connections: 'ready',
+    plans: 'ready',
+    water: 'ready',
+  });
+  const scenarios = [
     {
-      id: '1',
-      planType: 'nutrition',
-      isArchived: false,
-      sourceKind: 'assigned',
-      ownerProfessionalUid: 'prof-123',
-      studentUid: 'student-456',
-      name: 'Calorie deficit',
-      createdAt: '2026-03-01T00:00:00Z',
-      updatedAt: '2026-03-01T00:00:00Z',
+      source: 'connections',
+      connections: 'loading',
+      plans: 'ready',
+      water: 'ready',
+      canRenderPlans: true,
+      canRenderWater: true,
     },
-  ];
+    {
+      source: 'plans',
+      connections: 'ready',
+      plans: 'loading',
+      water: 'ready',
+      canRenderPlans: false,
+      canRenderWater: true,
+    },
+    {
+      source: 'water',
+      connections: 'ready',
+      plans: 'ready',
+      water: 'loading',
+      canRenderPlans: true,
+      canRenderWater: false,
+    },
+  ] as const;
 
-  assert.equal(hasActivePlanForType(plans, 'nutrition'), true);
+  for (const scenario of scenarios) {
+    const retryingState = resolveStudentHomeDisplayState({
+      connections: scenario.connections,
+      plans: scenario.plans,
+      water: scenario.water,
+      hasCompletedInitialLoad: settledState.hasCompletedInitialLoad,
+    });
+
+    assert.equal(
+      retryingState.hasCompletedInitialLoad,
+      true,
+      `${scenario.source} retry should retain initial-load completion`
+    );
+    assert.equal(
+      retryingState.isInitialLoading,
+      false,
+      `${scenario.source} retry should not restore the full-screen spinner`
+    );
+    assert.equal(retryingState.canRenderPlans, scenario.canRenderPlans);
+    assert.equal(retryingState.canRenderWater, scenario.canRenderWater);
+  }
 });
 
-test('hasActivePlanForType returns true with multiple plans when one matches', () => {
-  const plans: Plan[] = [
-    {
-      id: '1',
-      planType: 'nutrition',
-      isArchived: true,
-      sourceKind: 'assigned',
-      ownerProfessionalUid: 'prof-123',
-      studentUid: 'student-456',
-      name: 'Old plan',
-      createdAt: '2026-02-01T00:00:00Z',
-      updatedAt: '2026-02-01T00:00:00Z',
-    },
-    {
-      id: '2',
-      planType: 'training',
-      isArchived: false,
-      sourceKind: 'assigned',
-      ownerProfessionalUid: 'prof-123',
-      studentUid: 'student-456',
-      name: 'HIIT Program',
-      createdAt: '2026-03-01T00:00:00Z',
-      updatedAt: '2026-03-01T00:00:00Z',
-    },
-    {
-      id: '3',
-      planType: 'nutrition',
-      isArchived: false,
-      sourceKind: 'self_managed',
-      ownerProfessionalUid: null,
-      studentUid: 'student-456',
-      name: 'My custom plan',
-      createdAt: '2026-03-01T00:00:00Z',
-      updatedAt: '2026-03-01T00:00:00Z',
-    },
-  ];
+test('student home does not mistake a partially resolved first load for a retry', () => {
+  const state = resolveStudentHomeDisplayState({
+    connections: 'loading',
+    plans: 'ready',
+    water: 'ready',
+    hasCompletedInitialLoad: false,
+  });
 
-  assert.equal(hasActivePlanForType(plans, 'nutrition'), true);
-  assert.equal(hasActivePlanForType(plans, 'training'), true);
-});
-
-test('hasActivePlanForType ignores sourceKind (self-managed and assigned both count as active)', () => {
-  const selfManagedPlan: Plan[] = [
-    {
-      id: '1',
-      planType: 'nutrition',
-      isArchived: false,
-      sourceKind: 'self_managed',
-      ownerProfessionalUid: null,
-      studentUid: 'student-456',
-      name: 'My plan',
-      createdAt: '2026-03-01T00:00:00Z',
-      updatedAt: '2026-03-01T00:00:00Z',
-    },
-  ];
-
-  const assignedPlan: Plan[] = [
-    {
-      id: '2',
-      planType: 'nutrition',
-      isArchived: false,
-      sourceKind: 'assigned',
-      ownerProfessionalUid: 'prof-123',
-      studentUid: 'student-456',
-      name: 'Pro plan',
-      createdAt: '2026-03-01T00:00:00Z',
-      updatedAt: '2026-03-01T00:00:00Z',
-    },
-  ];
-
-  assert.equal(hasActivePlanForType(selfManagedPlan, 'nutrition'), true);
-  assert.equal(hasActivePlanForType(assignedPlan, 'nutrition'), true);
-});
-
-test('hasActivePlanForType distinguishes between nutrition and training correctly', () => {
-  const plans: Plan[] = [
-    {
-      id: '1',
-      planType: 'nutrition',
-      isArchived: false,
-      sourceKind: 'assigned',
-      ownerProfessionalUid: 'prof-123',
-      studentUid: 'student-456',
-      name: 'Diet plan',
-      createdAt: '2026-03-01T00:00:00Z',
-      updatedAt: '2026-03-01T00:00:00Z',
-    },
-    {
-      id: '2',
-      planType: 'training',
-      isArchived: true,
-      sourceKind: 'assigned',
-      ownerProfessionalUid: 'prof-123',
-      studentUid: 'student-456',
-      name: 'Old training',
-      createdAt: '2026-02-01T00:00:00Z',
-      updatedAt: '2026-02-01T00:00:00Z',
-    },
-  ];
-
-  assert.equal(hasActivePlanForType(plans, 'nutrition'), true);
-  assert.equal(hasActivePlanForType(plans, 'training'), false);
+  assert.equal(state.hasCompletedInitialLoad, false);
+  assert.equal(state.isInitialLoading, true);
+  assert.equal(state.canRenderPlans, true);
+  assert.equal(state.canRenderWater, true);
 });

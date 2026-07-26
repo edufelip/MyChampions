@@ -13,6 +13,7 @@
  */
 import { Redirect, Tabs, usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { Platform, useWindowDimensions } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -34,6 +35,9 @@ export default function TabLayout() {
   const currentUid = currentUser?.uid ?? null;
   const establishedUidRef = useRef<string | null>(null);
   const [establishedRole, setEstablishedRole] = useState<RoleIntent | null>(null);
+  const { width: viewportWidth } = useWindowDimensions();
+  const usesSideNavigation = Platform.OS === 'web' && viewportWidth >= 768;
+  const usesLabeledSidebar = Platform.OS === 'web' && viewportWidth >= 1024;
 
   useEffect(() => {
     if (!isHydrated) {
@@ -96,11 +100,17 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        tabBarPosition: usesSideNavigation ? 'left' : 'bottom',
+        tabBarVariant: usesSideNavigation ? 'material' : 'uikit',
+        tabBarShowLabel: !usesSideNavigation || usesLabeledSidebar,
+        tabBarLabelPosition: usesLabeledSidebar ? 'beside-icon' : 'below-icon',
         tabBarActiveTintColor: theme.color.accentPrimary,
         tabBarInactiveTintColor: theme.color.textTertiary,
         tabBarStyle: {
           backgroundColor: theme.color.surface,
           borderTopColor: theme.color.border,
+          borderRightColor: theme.color.border,
+          width: usesSideNavigation ? (usesLabeledSidebar ? 220 : 88) : undefined,
         },
         sceneStyle: {
           backgroundColor: theme.color.canvas,

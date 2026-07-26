@@ -44,7 +44,7 @@ export default function SignInScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const palette = Colors[colorScheme];
-  const primaryButtonForeground = '#F7FBFF';
+  const primaryButtonForeground = theme.color.onAccent;
   const router = useRouter();
   const searchParams = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const returnTo = normalizeAuthReturnTo(searchParams.returnTo);
@@ -54,6 +54,7 @@ export default function SignInScreen() {
     signInWithE2EEmailPassword,
     signInWithE2ESocialAuth,
     signInWithServerSocialAuth,
+    adoptCurrentServerSession,
   } = useAuthSession();
 
   const [email, setEmail] = useState('');
@@ -109,6 +110,7 @@ export default function SignInScreen() {
         return;
       }
       await signInWithEmailPasswordFromSource({ email, password });
+      if (!adoptCurrentServerSession()) throw new SignInFailure('unknown');
     } catch (error: unknown) {
       const reason = normalizeSignInReason(error);
       emitEvent(buildSignInFailed('email_password', reason));
@@ -128,6 +130,7 @@ export default function SignInScreen() {
       }
       try {
         await signInWithGoogleProviderTokenFromSource();
+        if (!adoptCurrentServerSession()) throw new SignInFailure('unknown');
         return;
       } catch (error: unknown) {
         if (normalizeSignInReason(error) !== 'configuration') {
@@ -161,6 +164,7 @@ export default function SignInScreen() {
       }
       try {
         await signInWithAppleProviderTokenFromSource();
+        if (!adoptCurrentServerSession()) throw new SignInFailure('unknown');
         return;
       } catch (error: unknown) {
         if (normalizeSignInReason(error) !== 'configuration') {
@@ -395,6 +399,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   blob: {
     borderRadius: 999,

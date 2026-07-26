@@ -6,8 +6,10 @@ import type { RoleIntent } from './role-selection.logic';
 import {
   hydrateProfileFromSource,
   lockRoleInSource,
+  ProfileSourceError,
   setAcceptedTermsVersionInSource,
 } from './profile-source';
+import { resolveProfileHydrationFailure } from './profile-hydration.logic';
 import { resolveTermsConfigFromExpo } from './terms-config';
 import { needsTermsAcceptance } from './terms.logic';
 import {
@@ -17,12 +19,16 @@ import {
   resolveE2ESocialAuthOverride,
   type E2EAuthSessionOverride,
   type E2ESocialAuthProvider,
+  persistE2ELockedRole,
+  readPersistedE2ELockedRole,
 } from './e2e-auth-session';
 import {
   clearPersistedServerAuthSession,
+  getCurrentServerProfile,
   getCurrentServerUser,
   restoreServerAuthSession,
   startLocalServerSocialSession,
+  subscribeServerAuthSession,
 } from './server-auth-source';
 
 type AuthSessionContextValue = {
@@ -45,9 +51,10 @@ type AuthSessionContextValue = {
   signInWithE2EEmailPassword: (email: string, password: string) => Promise<boolean>;
   signInWithE2ESocialAuth: (provider: E2ESocialAuthProvider) => Promise<boolean>;
   signInWithServerSocialAuth: (provider: E2ESocialAuthProvider) => Promise<boolean>;
+  adoptCurrentServerSession: () => boolean;
   lockRole: (role: RoleIntent) => Promise<void>;
   acceptTerms: () => Promise<void>;
-  clearSession: () => void;
+  clearSession: () => Promise<void>;
 };
 
 const AuthSessionContext = createContext<AuthSessionContextValue | undefined>(undefined);
@@ -122,9 +129,10 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     if (e2eSession) {
+      const persistedRole = readPersistedE2ELockedRole();
       setCurrentUser(createE2EUser(e2eSession));
       setIsAuthenticated(true);
-      setLockedRole(e2eSession.lockedRole);
+      setLockedRole(persistedRole ?? e2eSession.lockedRole);
       setAcceptedTermsVersion(e2eSession.acceptedTermsVersion);
       setLastProfileSyncedAtIso(new Date().toISOString());
       setRequiresTermsAcceptance(
@@ -154,10 +162,11 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       setCurrentUser(serverUser as AuthSessionUser);
       setIsAuthenticated(true);
       setIsHydrated(false);
+      const hydrationAuthUid = serverUser.uid;
 
       try {
         const profile = await hydrateProfileFromSource(serverUser);
-        if (!cancelled) {
+        if (!cancelled && getCurrentServerUser()?.uid === hydrationAuthUid) {
           setLockedRole(profile.lockedRole);
           setAcceptedTermsVersion(profile.acceptedTermsVersion);
           setLastProfileSyncedAtIso(new Date().toISOString());
@@ -168,13 +177,23 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
             })
           );
         }
-      } catch {
-        if (!cancelled) {
-          setLockedRole(null);
-          setAcceptedTermsVersion(null);
-          setLastProfileSyncedAtIso(null);
-          setRequiresTermsAcceptance(true);
+      } catch (error) {
+        const activeAuthUid = getCurrentServerUser()?.uid ?? null;
+        if (cancelled || activeAuthUid !== hydrationAuthUid) {
+          return;
         }
+
+        const resolution = resolveProfileHydrationFailure({
+          hydrationAuthUid,
+          activeAuthUid,
+          errorCode: error instanceof ProfileSourceError ? error.code : null,
+          cachedProfile: getCurrentServerProfile(),
+          requiredTermsVersion: termsRequiredVersion,
+        });
+        setLockedRole(resolution.lockedRole);
+        setAcceptedTermsVersion(resolution.acceptedTermsVersion);
+        setLastProfileSyncedAtIso(resolution.lastProfileSyncedAtIso);
+        setRequiresTermsAcceptance(resolution.requiresTermsAcceptance);
       } finally {
         if (!cancelled) {
           setIsHydrated(true);
@@ -198,6 +217,34 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [termsRequiredVersion]);
+
+  useEffect(() => {
+    if (e2eSession) return;
+
+    return subscribeServerAuthSession((session) => {
+      if (!session) {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+        setLockedRole(null);
+        setAcceptedTermsVersion(null);
+        setLastProfileSyncedAtIso(null);
+        setRequiresTermsAcceptance(false);
+        return;
+      }
+
+      setCurrentUser(session.user as AuthSessionUser);
+      setIsAuthenticated(true);
+      setLockedRole(session.profile.lockedRole);
+      setAcceptedTermsVersion(session.profile.acceptedTermsVersion);
+      setLastProfileSyncedAtIso(new Date().toISOString());
+      setRequiresTermsAcceptance(
+        needsTermsAcceptance({
+          requiredVersion: termsRequiredVersion,
+          acceptedVersion: session.profile.acceptedTermsVersion,
+        })
+      );
+    });
+  }, [e2eSession, termsRequiredVersion]);
 
   const value = useMemo<AuthSessionContextValue>(
     () => ({
@@ -331,12 +378,31 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setIsHydrated(true);
         return true;
       },
+      adoptCurrentServerSession: () => {
+        const serverUser = getCurrentServerUser();
+        const serverProfile = getCurrentServerProfile();
+        if (!serverUser || !serverProfile) return false;
+        setCurrentUser(serverUser as AuthSessionUser);
+        setIsAuthenticated(true);
+        setLockedRole(serverProfile.lockedRole);
+        setAcceptedTermsVersion(serverProfile.acceptedTermsVersion);
+        setRequiresTermsAcceptance(
+          needsTermsAcceptance({
+            requiredVersion: termsConfig.requiredVersion,
+            acceptedVersion: serverProfile.acceptedTermsVersion,
+          })
+        );
+        setLastProfileSyncedAtIso(new Date().toISOString());
+        setIsHydrated(true);
+        return true;
+      },
       lockRole: async (role: RoleIntent) => {
         if (!currentUser) {
           throw new Error('No authenticated user found.');
         }
 
         if (e2eSession) {
+          persistE2ELockedRole(role);
           setLockedRole(role);
           setLastProfileSyncedAtIso(new Date().toISOString());
           return;
@@ -363,8 +429,9 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setLastProfileSyncedAtIso(new Date().toISOString());
         setRequiresTermsAcceptance(false);
       },
-      clearSession: () => {
-        void clearPersistedServerAuthSession();
+      clearSession: async () => {
+        if (e2eSession) persistE2ELockedRole(null);
+        await clearPersistedServerAuthSession();
         setIsAuthenticated(false);
         setCurrentUser(null);
         setLockedRole(null);

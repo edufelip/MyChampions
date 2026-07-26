@@ -3,7 +3,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import {
   normalizeInviteCodeStatus,
   type InviteCode,
@@ -21,6 +21,7 @@ import {
   type ConnectionStatus,
 } from '../connections/connection.logic';
 import { endConnection } from '../connections/connection-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ export type SpecialtyBlockerCounts = {
 export type ProfessionalSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
   generateInviteCode: () => string;
 };
 
@@ -74,9 +75,9 @@ function nowIso(): string {
 }
 
 const defaultDeps: ProfessionalSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
   generateInviteCode: () => Math.random().toString(36).slice(2, 8).toUpperCase(),
 };
 
@@ -271,6 +272,15 @@ function normalizeProfessionalSourceError(error: unknown): ProfessionalSourceErr
 function requireServerResult<T>(result: T | null, operation: string): T {
   if (result !== null) return result;
   throw new ProfessionalSourceError('configuration', `${operation} requires local server auth.`);
+}
+
+function requestProfessionalSource(
+  deps: Pick<ProfessionalSourceDeps, 'fetchFn'>,
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  const fetchFn = deps.fetchFn;
+  return fetchFn(input, init);
 }
 
 function buildSpecialtyId(professionalUid: string, specialty: Specialty): string {
@@ -524,7 +534,7 @@ async function requestInviteCodeFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}${path}`, {
+    response = await requestProfessionalSource(deps, `${baseUrl}${path}`, {
       method: action === 'rotate' ? 'POST' : 'GET',
       headers: { authorization: `Bearer ${accessToken}` },
     });
@@ -549,7 +559,7 @@ async function requestProfessionalSpecialtiesFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties`, {
+    response = await requestProfessionalSource(deps, `${baseUrl}/professional/specialties`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
@@ -577,9 +587,13 @@ async function getSpecialtyBlockerCountsFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties/${specialty}/blockers`, {
-      headers: { authorization: `Bearer ${accessToken}` },
-    });
+    response = await requestProfessionalSource(
+      deps,
+      `${baseUrl}/professional/specialties/${specialty}/blockers`,
+      {
+        headers: { authorization: `Bearer ${accessToken}` },
+      }
+    );
   } catch {
     throw new ProfessionalSourceError('network', 'Network request to professional specialty blockers server failed.');
   }
@@ -609,7 +623,7 @@ async function addProfessionalSpecialtyToServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties`, {
+    response = await requestProfessionalSource(deps, `${baseUrl}/professional/specialties`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${accessToken}`,
@@ -643,10 +657,14 @@ async function removeProfessionalSpecialtyFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties/${encodeURIComponent(specialtyId)}`, {
-      method: 'DELETE',
-      headers: { authorization: `Bearer ${accessToken}` },
-    });
+    response = await requestProfessionalSource(
+      deps,
+      `${baseUrl}/professional/specialties/${encodeURIComponent(specialtyId)}`,
+      {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${accessToken}` },
+      }
+    );
   } catch {
     throw new ProfessionalSourceError('network', 'Network request to remove professional specialty failed.');
   }
@@ -668,14 +686,18 @@ async function upsertProfessionalCredentialToServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/specialties/${encodeURIComponent(specialtyId)}/credential`, {
-      method: 'PUT',
-      headers: {
-        authorization: `Bearer ${accessToken}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
+    response = await requestProfessionalSource(
+      deps,
+      `${baseUrl}/professional/specialties/${encodeURIComponent(specialtyId)}/credential`,
+      {
+        method: 'PUT',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(input),
+      }
+    );
   } catch {
     throw new ProfessionalSourceError('network', 'Network request to upsert professional credential failed.');
   }
@@ -803,7 +825,7 @@ async function requestProfessionalStudentRosterFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(`${baseUrl}/professional/students`, {
+    response = await requestProfessionalSource(deps, `${baseUrl}/professional/students`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
@@ -831,7 +853,8 @@ async function requestProfessionalStudentAssignmentSnapshotFromServer(
 
   let response: Response;
   try {
-    response = await deps.fetchFn(
+    response = await requestProfessionalSource(
+      deps,
       `${baseUrl}/professional/students/${encodeURIComponent(studentAuthUid)}/assignment-snapshot`,
       {
         headers: { authorization: `Bearer ${accessToken}` },
@@ -950,6 +973,18 @@ export async function getSpecialtyBlockerCounts(
   deps = defaultDeps
 ): Promise<SpecialtyBlockerCounts> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
+    const roster = getE2EProfessionalRosterFixture();
+    if (roster) {
+      return roster.reduce<SpecialtyBlockerCounts>(
+        (counts, student) => {
+          if (student.specialty !== specialty) return counts;
+          if (student.assignmentStatus === 'active') counts.activeCount += 1;
+          if (student.assignmentStatus === 'pending') counts.pendingCount += 1;
+          return counts;
+        },
+        { activeCount: 0, pendingCount: 0 }
+      );
+    }
     return { activeCount: 0, pendingCount: 0 };
   }
 

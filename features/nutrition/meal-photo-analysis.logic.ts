@@ -21,6 +21,8 @@ export type MacroEstimate = {
 };
 
 export type PhotoAnalysisErrorReason =
+  | 'permission_denied'
+  | 'file_too_large'
   | 'unrecognizable_image'
   | 'quota_exceeded'
   | 'network'
@@ -147,6 +149,15 @@ export function normalizePhotoAnalysisError(error: unknown): PhotoAnalysisErrorR
         ? String((error as { message: unknown }).message).toLowerCase()
         : null;
 
+    if (
+      code === 'photo_permission_denied' ||
+      msg?.includes('photo permission denied')
+    ) {
+      return 'permission_denied';
+    }
+    if (code === 'file_too_large' || msg?.includes('exceeds 1.5 mb')) {
+      return 'file_too_large';
+    }
     if (
       code === 'unrecognizable_image' ||
       msg?.includes('unrecognizable') ||

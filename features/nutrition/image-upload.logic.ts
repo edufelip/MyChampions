@@ -29,6 +29,7 @@ export type ImageUploadState =
  * Used to select user-facing message keys and retry eligibility.
  */
 export type ImageUploadErrorReason =
+  | 'permission_denied' // Native camera/library access denied — not retryable until settings change
   | 'network'         // Transient connectivity failure — retryable
   | 'storage_quota'   // Server storage quota exceeded — retryable
   | 'file_too_large'  // File exceeds post-compression limit (BR-261) — not retryable; recompress first
@@ -43,6 +44,7 @@ export type ImageUploadErrorReason =
 export type ImageUploadErrorMessageKey =
   | 'custom_meal.image.upload_failed'   // retryable fallback key
   | 'custom_meal.image.file_too_large'  // permanent — user must recompress
+  | 'custom_meal.image.permission_denied'
   | 'custom_meal.image.unauthorized';   // permanent — user must re-authenticate
 
 /**
@@ -77,6 +79,13 @@ export function normalizeImageUploadError(error: unknown): ImageUploadErrorReaso
   const e = error as { code?: unknown; message?: unknown };
   const code = typeof e.code === 'string' ? e.code.toLowerCase() : '';
   const message = typeof e.message === 'string' ? e.message.toLowerCase() : '';
+
+  if (
+    code === 'photo_permission_denied' ||
+    message.includes('photo permission denied')
+  ) {
+    return 'permission_denied';
+  }
 
   // File size
   if (
@@ -140,6 +149,7 @@ export function normalizeImageUploadError(error: unknown): ImageUploadErrorReaso
 export function isRetryable(reason: ImageUploadErrorReason): boolean {
   switch (reason) {
     case 'file_too_large':
+    case 'permission_denied':
     case 'unauthorized':
     case 'configuration':
       return false;
@@ -160,6 +170,8 @@ function mapErrorReasonToMessageKey(reason: ImageUploadErrorReason): ImageUpload
   switch (reason) {
     case 'file_too_large':
       return 'custom_meal.image.file_too_large';
+    case 'permission_denied':
+      return 'custom_meal.image.permission_denied';
     case 'unauthorized':
       return 'custom_meal.image.unauthorized';
     case 'configuration':

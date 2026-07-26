@@ -93,10 +93,27 @@ describe('profile-source server api', () => {
   });
 
   it('maps unauthorized hydration to unauthenticated error', async () => {
-    const deps = makeDeps(() => response({ error: { code: 'unauthorized' } }, { status: 401 }));
+    for (const status of [401, 403]) {
+      const deps = makeDeps(() => response({ error: { code: 'unauthorized' } }, { status }));
+      await assert.rejects(
+        () => hydrateProfileFromSource({ uid: 'uid-1', displayName: 'A', email: 'a@a.com' }, deps),
+        (error: unknown) => error instanceof ProfileSourceError && error.code === 'unauthenticated'
+      );
+    }
+  });
+
+  it('maps a missing current access token to retryable token_unavailable', async () => {
+    const deps: ProfileSourceDeps = {
+      fetch: async () => {
+        throw new Error('fetch must not run without a token');
+      },
+      getCurrentAccessToken: async () => null,
+      getServerBaseUrl: () => 'http://server.test',
+    };
+
     await assert.rejects(
       () => hydrateProfileFromSource({ uid: 'uid-1', displayName: 'A', email: 'a@a.com' }, deps),
-      (error: unknown) => error instanceof ProfileSourceError && error.code === 'unauthenticated'
+      (error: unknown) => error instanceof ProfileSourceError && error.code === 'token_unavailable'
     );
   });
 

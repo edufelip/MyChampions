@@ -18,6 +18,9 @@ Professional-only subscription tier and store-policy readiness for release.
 - `AC-312`: Professionals receive pre-lapse warning with clear renew/restore path before entitlement lock is applied.
 - `AC-313`: RevenueCat SDK operations are bound to the current self-managed server auth UID; an account switch finishes before the next SDK operation, and stale entitlement results cannot synchronize to another server account.
 - `AC-314`: A production mobile release fails before native compilation unless its platform Google OAuth client ID and matching public RevenueCat SDK key are present and correctly prefixed.
+- `AC-315`: A valid RevenueCat webhook reconciles `professional_pro` and `student_pro` from the canonical subscriber record, preserves the unrelated entitlement, and returns non-2xx when provider reconciliation cannot complete.
+- `AC-316`: A RevenueCat transfer reconciles every source and destination App User ID before acknowledgement so privileges do not remain attached to the wrong MyChampions account.
+- `AC-317`: Professional expiry warning appears only for an active entitlement with an authoritative expiration timestamp and explicit non-renewal, unsubscribe, or billing-issue risk; cancellation and provider failures do not grant access.
 
 ## Gherkin Scenarios
 ```gherkin
@@ -68,4 +71,17 @@ Feature: Monetization and policy compliance
     When a different MyChampions user signs in before the next subscription operation
     Then RevenueCat logs in the new server auth UID before that operation
     And entitlement state or snapshots from the first user are not applied to the second user
+
+  Scenario: Partial webhook preserves the other entitlement
+    Given a customer has independent professional and AI entitlements
+    When RevenueCat sends an event for only one product
+    Then the server reloads the canonical subscriber
+    And persists both entitlement states without revoking the unrelated privilege
+
+  Scenario: Authoritative pre-lapse warning
+    Given a professional entitlement is active with a provider expiration timestamp
+    And RevenueCat reports non-renewal, unsubscribe, or billing-issue risk
+    When the subscription state is refreshed
+    Then the professional sees the pre-lapse warning
+    And active-student count alone can never activate that warning
 ```

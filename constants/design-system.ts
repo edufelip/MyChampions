@@ -16,6 +16,9 @@ export type DsTheme = {
     accentPrimary: string;
     accentPrimaryHover: string;
     accentPrimarySoft: string;
+    disabledSurface: string;
+    disabledText: string;
+    disabledBorder: string;
     success: string;
     successSoft: string;
     warning: string;
@@ -49,10 +52,13 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       surfaceWarning: '#fff7ed',
       textPrimary: '#0f172a',
       textSecondary: '#475569',
-      textTertiary: '#94a3b8',
-      accentPrimary: '#1ea95a',
-      accentPrimaryHover: '#198a49',
-      accentPrimarySoft: '#1ea95a20',
+      textTertiary: '#5b6b7f',
+      accentPrimary: '#167a42',
+      accentPrimaryHover: '#126237',
+      accentPrimarySoft: '#167a421a',
+      disabledSurface: '#e2e8f0',
+      disabledText: '#475569',
+      disabledBorder: '#cbd5e1',
       success: '#16a34a',
       successSoft: '#dcfce7',
       warning: '#b45309',
@@ -85,9 +91,12 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       textPrimary: '#f8fafc',
       textSecondary: '#cbd5e1',
       textTertiary: '#94a3b8',
-      accentPrimary: '#1ea95a',
-      accentPrimaryHover: '#198a49',
-      accentPrimarySoft: '#1ea95a29',
+      accentPrimary: '#4ade80',
+      accentPrimaryHover: '#69e495',
+      accentPrimarySoft: '#4ade8029',
+      disabledSurface: '#334155',
+      disabledText: '#cbd5e1',
+      disabledBorder: '#475569',
       success: '#22c55e',
       successSoft: '#14532d',
       warning: '#f59e0b',
@@ -100,7 +109,7 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       borderStrong: '#4b5563',
       accentCyan: '#22d3ee',
       accentCyanSoft: '#22d3ee29',
-      onAccent: '#f8fafc',
+      onAccent: '#07150c',
       overlaySoft: 'rgba(30,169,90,0.3)',
       overlayStrong: 'rgba(30,169,90,0.7)',
     },

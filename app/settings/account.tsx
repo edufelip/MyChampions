@@ -44,7 +44,6 @@ import { useAuthSession } from '@/features/auth/auth-session';
 import type { AuthProviderId } from '@/features/auth/auth-user';
 import {
   requestPasswordResetFromSource,
-  signOutFromSource,
 } from '@/features/auth/account-auth-source';
 import { E2E_AUTH_SESSION_UID } from '@/features/auth/e2e-auth-session';
 import {
@@ -241,7 +240,7 @@ export default function AccountSettingsScreen() {
 
   function submitSignOut() {
     setIsSignOutConfirmVisible(false);
-    void signOutFromSource().finally(() => clearSession());
+    void clearSession();
   }
 
   function handleRequestDeletion() {
@@ -254,12 +253,7 @@ export default function AccountSettingsScreen() {
     setDeleteState({ kind: 'pending' });
     try {
       await deleteAccountAndDataFromSource();
-      try {
-        await signOutFromSource();
-      } catch {
-        // Account deletion already succeeded; local session state must still be cleared.
-      }
-      clearSession();
+      await clearSession();
       setDeleteState({ kind: 'success' });
     } catch (err) {
       if (err instanceof ProfileSourceError) {

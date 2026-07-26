@@ -31,10 +31,10 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -47,6 +47,7 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { shareAdapter } from '@/features/platform/share-adapter';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import {
   validatePortionLogInput,
@@ -63,6 +64,7 @@ import {
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import { useTranslation } from '@/localization';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -108,7 +110,7 @@ export default function CustomMealLibraryScreen({
   };
   const { t } = useTranslation();
   const router = useRouter();
-  const { currentUser } = useAuthSession();
+  const { currentUser, lockedRole } = useAuthSession();
   const { state, shareLink, remove, logPortion } = useCustomMeals(Boolean(currentUser));
 
   const networkStatus = useNetworkStatus();
@@ -128,7 +130,7 @@ export default function CustomMealLibraryScreen({
   const {
     hasAiAccess,
     isLoading: isSubscriptionLoading,
-    openAiPaywall,
+    openAiUpgradePaywall,
   } = useSubscription(currentUser?.uid ?? null);
 
   // ── AI photo analysis (BL-108) ─────────────────────────────────────────────
@@ -193,7 +195,7 @@ export default function CustomMealLibraryScreen({
   async function handleShare(meal: CustomMeal) {
     const result = await shareLink(meal.id);
     if (typeof result === 'string') return; // error — silently ignore in library (full error in builder)
-    await Share.share({ message: result.shareLinkId });
+    await shareAdapter.shareText(result.shareLinkId);
   }
 
   // ── Nutrition preview ──────────────────────────────────────────────────────
@@ -208,7 +210,7 @@ export default function CustomMealLibraryScreen({
       : null;
 
   return (
-    <DsScreen scheme={scheme} scrollable={false} testID="meal.library.screen">
+    <DsScreen scheme={scheme} contentWidth="content" scrollable={false} testID="meal.library.screen">
       <Stack.Screen options={{ title: t('meal.library.title'), headerShown: !hideHeader }} />
 
       {offlineDisplay.showOfflineBanner ? (
@@ -277,7 +279,7 @@ export default function CustomMealLibraryScreen({
           onResetAnalysis={analysis.reset}
           hasAiAccess={hasAiAccess}
           isSubscriptionLoading={isSubscriptionLoading}
-          onOpenPaywall={openAiPaywall}
+          onOpenPaywall={() => openAiUpgradePaywall(lockedRole)}
           palette={palette}
           t={t}
           onChangeGrams={handleGramsChange}
@@ -399,7 +401,7 @@ function MealRow({
         <Text style={[styles.mealName, { color: palette.text }]} numberOfLines={1}>
           {meal.name}
         </Text>
-        <Text style={[styles.meta, { color: palette.icon }]}>
+        <Text style={[styles.meta, styles.mealMeta, { color: palette.icon }]}>
           {meal.totalGrams}g · {meal.calories} kcal
         </Text>
       </View>
@@ -411,6 +413,7 @@ function MealRow({
           onPress={onLog}
           style={[styles.smallButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
           testID={`meal.library.row.${meal.id}.log`}>
+          <MaterialIcons color={palette.onAccent} name="add-circle-outline" size={17} />
           <Text style={[styles.smallButtonText, { color: palette.onAccent }]}>{t('meal.library.quick_log.cta_log')}</Text>
         </Pressable>
         <Pressable
@@ -419,6 +422,7 @@ function MealRow({
           onPress={onEdit}
           style={[styles.ghostAction]}
           testID={`meal.library.row.${meal.id}.edit`}>
+          <MaterialIcons color={palette.icon} name="edit" size={17} />
           <Text style={[styles.ghostActionText, { color: palette.icon }]}>
             {t('meal.library.cta_edit')}
           </Text>
@@ -430,6 +434,7 @@ function MealRow({
           onPress={onShare}
           style={[styles.ghostAction, { opacity: isWriteLocked ? 0.4 : 1 }]}
           testID={`meal.library.row.${meal.id}.share`}>
+          <MaterialIcons color={palette.tint} name="share" size={17} />
           <Text style={[styles.ghostActionText, { color: palette.tint }]}>
             {t('meal.library.cta_share')}
           </Text>
@@ -441,6 +446,7 @@ function MealRow({
           onPress={() => void onDelete()}
           style={[styles.ghostAction, { opacity: isWriteLocked ? 0.4 : 1 }]}
           testID={`meal.library.row.${meal.id}.delete`}>
+          <MaterialIcons color={palette.danger} name="delete-outline" size={17} />
           <Text style={[styles.ghostActionText, { color: palette.danger }]}>
             {t('common.cta.delete')}
           </Text>
@@ -489,6 +495,13 @@ function QuickLogPanel({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { width: viewportWidth } = useWindowDimensions();
+  const usesCenteredDialog = viewportWidth >= 768;
+  useWebDialogAccessibility({
+    isVisible: true,
+    onClose: onCancel,
+    testID: 'meal.library.quickLog.panel',
+  });
   const caloriesLabel = nutritionPreview
     ? (t('meal.library.quick_log.preview.calories') as string).replace(
         '{calories}',
@@ -505,8 +518,22 @@ function QuickLogPanel({
 
   return (
     <View
-      style={[styles.quickLogPanel, { backgroundColor: palette.background, borderColor: palette.tint + '66' }]}
-      testID="meal.library.quickLog.panel">
+      accessibilityViewIsModal
+      style={[styles.quickLogOverlay, usesCenteredDialog && styles.quickLogOverlayCentered]}>
+      <Pressable
+        accessibilityLabel={t('meal.library.quick_log.cta_cancel') as string}
+        accessibilityRole="button"
+        onPress={onCancel}
+        style={styles.quickLogBackdrop}
+        testID="meal.library.quickLog.backdrop"
+      />
+      <View
+        style={[
+          styles.quickLogPanel,
+          usesCenteredDialog && styles.quickLogPanelCentered,
+          { backgroundColor: palette.background, borderColor: palette.tint + '66' },
+        ]}
+        testID="meal.library.quickLog.panel">
       <Text style={[styles.panelTitle, { color: palette.text }]}>
         {t('meal.library.quick_log.title')}
       </Text>
@@ -589,7 +616,7 @@ function QuickLogPanel({
         </Pressable>
       </View>
 
-      {Platform.OS === 'ios' ? (
+        {Platform.OS === 'ios' ? (
         <InputAccessoryView nativeID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}>
           <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
             <Pressable
@@ -603,7 +630,8 @@ function QuickLogPanel({
             </Pressable>
           </View>
         </InputAccessoryView>
-      ) : null}
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -717,6 +745,10 @@ function QuickLogAnalysisRow({
 
 function resolveQuickLogAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string {
   switch (reason) {
+    case 'permission_denied':
+      return t('meal.photo_analysis.error.permission_denied') as string;
+    case 'file_too_large':
+      return t('meal.photo_analysis.error.file_too_large') as string;
     case 'unrecognizable_image':
       return t('meal.photo_analysis.error.unrecognizable') as string;
     case 'quota_exceeded':
@@ -806,27 +838,50 @@ const emptyStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  list: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100, gap: 12 },
+  list: {
+    alignSelf: 'center',
+    gap: 12,
+    maxWidth: 840,
+    paddingBottom: 100,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    width: '100%',
+  },
   meta: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
   mealRow: {
     borderRadius: 12,
     borderWidth: 1,
-    flexDirection: 'row',
     gap: 12,
     padding: 14,
-    alignItems: 'flex-start',
   },
-  mealInfo: { flex: 1, gap: 4 },
+  mealInfo: { gap: 4 },
   mealName: { fontSize: 15, fontWeight: '600' },
-  mealActions: { alignItems: 'flex-end', gap: 6 },
+  mealMeta: { textAlign: 'left' },
+  mealActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   smallButton: {
+    alignItems: 'center',
     borderRadius: 8,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    minHeight: 40,
+    minWidth: 104,
     paddingHorizontal: 12,
-    paddingVertical: 6,
   },
   smallButtonText: { fontSize: 13, fontWeight: '600' },
-  ghostAction: { paddingVertical: 2 },
-  ghostActionText: { fontSize: 13 },
+  ghostAction: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    minHeight: 40,
+    paddingHorizontal: 6,
+  },
+  ghostActionText: { fontSize: 13, fontWeight: '600' },
   createButton: {
     alignItems: 'center',
     borderRadius: 10,
@@ -845,16 +900,34 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   primaryButtonText: { fontSize: 15, fontWeight: '700' },
+  quickLogOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    zIndex: 20,
+  },
+  quickLogOverlayCentered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  quickLogBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.36)',
+  },
   quickLogPanel: {
-    bottom: 0,
+    borderColor: 'transparent',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderTopWidth: 1.5,
     gap: 12,
-    left: 0,
     padding: 20,
-    position: 'absolute',
-    right: 0,
+    width: '100%',
+  },
+  quickLogPanelCentered: {
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    borderWidth: 1.5,
+    maxWidth: 560,
   },
   keyboardAccessory: {
     alignItems: 'flex-end',

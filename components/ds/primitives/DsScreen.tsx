@@ -3,6 +3,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  useWindowDimensions,
   type ScrollViewProps,
   type StyleProp,
   type ViewStyle,
@@ -21,6 +22,7 @@ type DsScreenProps = {
   withBlobs?: boolean;
   scrollable?: boolean;
   withTopInset?: boolean;
+  contentWidth?: 'form' | 'content' | 'wide' | 'full';
 } & Omit<ScrollViewProps, 'style' | 'contentContainerStyle' | 'children'>;
 
 export function DsScreen({
@@ -31,10 +33,29 @@ export function DsScreen({
   withBlobs = true,
   scrollable = true,
   withTopInset = true,
+  contentWidth = 'content',
   ...scrollViewProps
 }: DsScreenProps) {
   const theme = getDsTheme(scheme);
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth } = useWindowDimensions();
+  const maxWidth =
+    viewportWidth < 768 || contentWidth === 'full'
+      ? undefined
+      : contentWidth === 'form'
+        ? 600
+        : contentWidth === 'wide'
+          ? viewportWidth < 1024
+            ? 680
+            : 1040
+          : viewportWidth < 1024
+            ? 680
+            : 880;
+  const responsiveContentStyle: ViewStyle = {
+    alignSelf: 'center',
+    maxWidth,
+    width: '100%',
+  };
 
   if (!scrollable) {
     return (
@@ -42,7 +63,7 @@ export function DsScreen({
         style={[styles.container, { backgroundColor: theme.color.canvas }]}
         testID={testID}>
         {withBlobs ? <DsBlobBackground scheme={scheme} /> : null}
-        <View style={[styles.content, contentContainerStyle]}>
+        <View style={[styles.content, responsiveContentStyle, contentContainerStyle]}>
           {withTopInset ? <View style={[styles.safeAreaSpacer, { height: insets.top / 2 }]} /> : null}
           {children}
         </View>
@@ -53,7 +74,7 @@ export function DsScreen({
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.color.canvas }]}
-      contentContainerStyle={[styles.content, contentContainerStyle]}
+      contentContainerStyle={[styles.content, responsiveContentStyle, contentContainerStyle]}
       testID={testID}
       {...scrollViewProps}>
       {withBlobs ? <DsBlobBackground scheme={scheme} /> : null}

@@ -7,6 +7,19 @@ Track the older backend-provider replacement pass and record that it has been su
 - Active backend baseline is the root-level MyChampions server with local Postgres/Drizzle persistence, self-managed bearer auth, and local filesystem image storage; production storage is private GCS when configured.
 - Older provider-replacement notes in this file are historical context only; current product planning docs must point to the MyChampions server migration path.
 
+## Current authority by data area
+
+- Identity, sessions, profiles, and app-domain records are authoritative in the
+  MyChampions server and its Postgres repositories.
+- Subscription status originates from RevenueCat SDK or signed webhook
+  observations and is materialized as MyChampions server entitlement snapshots.
+  Browser clients read those server snapshots and do not access a Firebase
+  persistence or billing runtime.
+- Media writes are owned by the MyChampions server. Local filesystem storage is
+  the default development path; private GCS is the configured production path.
+- Firebase Auth, Cloud Firestore, and Firebase Cloud Storage terminology is
+  retained only in explicitly retired, superseded, or legacy documentation.
+
 ## Migration Inventory
 
 | Area | File | Status | Notes |

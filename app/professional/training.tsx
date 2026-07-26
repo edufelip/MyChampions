@@ -56,7 +56,7 @@ export default function ProTrainingLibraryScreen() {
   );
 
   return (
-    <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>
+    <DsScreen scheme={scheme} contentWidth="wide" scrollable={false} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.library.training.title'), headerShown: false }} />
 
       <DsCard scheme={scheme} style={styles.heroCard}>

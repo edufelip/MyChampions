@@ -39,7 +39,6 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -53,6 +52,7 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { shareAdapter } from '@/features/platform/share-adapter';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import {
   validateCustomMealInput,
@@ -108,7 +108,7 @@ export default function CustomMealBuilderScreen() {
   };
   const { t } = useTranslation();
   const router = useRouter();
-  const { currentUser } = useAuthSession();
+  const { currentUser, lockedRole } = useAuthSession();
   const { mealId } = useLocalSearchParams<{ mealId: string }>();
 
   const isCreateMode = !mealId || mealId === 'new';
@@ -118,7 +118,7 @@ export default function CustomMealBuilderScreen() {
   const {
     hasAiAccess,
     isLoading: isSubscriptionLoading,
-    openAiPaywall,
+    openAiUpgradePaywall,
   } = useSubscription(currentUser?.uid ?? null);
 
   // ── AI photo analysis ──────────────────────────────────────────────────────
@@ -169,17 +169,27 @@ export default function CustomMealBuilderScreen() {
     hydrateExisting,
   } = useImageUpload(currentUser);
 
-  const didHydrateExistingImageRef = useRef(false);
+  const didHydrateExistingMealRef = useRef(false);
 
   useEffect(() => {
-    if (isCreateMode || didHydrateExistingImageRef.current) return;
+    if (isCreateMode || didHydrateExistingMealRef.current) return;
     if (customMealsState.kind !== 'ready') return;
 
     const meal = customMealsState.meals.find((entry) => entry.id === mealId);
     if (!meal) return;
 
+    setForm({
+      name: meal.name,
+      totalGrams: String(meal.totalGrams),
+      calories: String(meal.calories),
+      carbs: String(meal.carbs),
+      proteins: String(meal.proteins),
+      fats: String(meal.fats),
+      ingredientCost: meal.ingredientCost === null ? '' : String(meal.ingredientCost),
+    });
+    setSavedMealId(meal.id);
     hydrateExisting(meal.imageUrl);
-    didHydrateExistingImageRef.current = true;
+    didHydrateExistingMealRef.current = true;
   }, [customMealsState, hydrateExisting, isCreateMode, mealId]);
 
   const networkStatus = useNetworkStatus();
@@ -240,7 +250,7 @@ export default function CustomMealBuilderScreen() {
       Alert.alert('', t('meal.builder.share.error.unknown') as string);
       return;
     }
-    await Share.share({ message: result.shareLinkId });
+    await shareAdapter.shareText(result.shareLinkId);
   }
 
   // ── Title ──────────────────────────────────────────────────────────────────
@@ -251,6 +261,7 @@ export default function CustomMealBuilderScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      contentWidth="form"
       automaticallyAdjustKeyboardInsets
       contentContainerStyle={styles.content}
       keyboardDismissMode="on-drag"
@@ -295,7 +306,7 @@ export default function CustomMealBuilderScreen() {
         onToggleAttach={() => setAttachPhoto((v) => !v)}
         hasAiAccess={hasAiAccess}
         isSubscriptionLoading={isSubscriptionLoading}
-        onOpenPaywall={openAiPaywall}
+        onOpenPaywall={() => openAiUpgradePaywall(lockedRole)}
         palette={palette}
         t={t}
       />
@@ -600,6 +611,10 @@ function MealPhotoAnalysisSection({
 
 function resolveAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string {
   switch (reason) {
+    case 'permission_denied':
+      return t('meal.photo_analysis.error.permission_denied') as string;
+    case 'file_too_large':
+      return t('meal.photo_analysis.error.file_too_large') as string;
     case 'unrecognizable_image':
       return t('meal.photo_analysis.error.unrecognizable') as string;
     case 'quota_exceeded':

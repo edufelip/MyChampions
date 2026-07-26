@@ -23,6 +23,11 @@ prepare_react_native_project!
 target 'mychampions' do
   use_expo_modules!
 
+  # GoogleSignIn's AppCheckCore dependency is Swift, while these transitive
+  # Objective-C pods do not publish module maps by default under static linking.
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else

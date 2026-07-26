@@ -10,9 +10,10 @@
 
 import { getEffectiveLocale } from '../auth/language-storage';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { type FoodSearchResult } from '../plans/plan-builder.logic';
 import { isDevLoggingEnabled, logNetworkDebug } from '../debug/logging';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -38,14 +39,14 @@ export class FoodSearchSourceError extends Error {
 export type FoodSearchSourceDeps = {
   getServerBaseUrl: () => string | undefined;
   getCurrentAccessToken: () => Promise<string | null>;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
   getLocale: () => Promise<string>;
 };
 
 const defaultDeps: FoodSearchSourceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
-  fetchFn: fetch,
+  getCurrentAccessToken: () => getValidServerAccessToken(),
+  fetchFn: defaultAppFetch,
   getLocale: () => getEffectiveLocale(),
 };
 
@@ -266,10 +267,11 @@ export async function searchFoodsFromSource(
     logNetworkDebug('searchFoodsFromSource', 'Server auth token:', serverAccessToken);
   }
 
+  const fetchFn = deps.fetchFn;
   try {
     logNetworkDebug('searchFoodsFromSource', 'Fetching from service:', endpoint);
     logNetworkDebug('searchFoodsFromSource', 'Request payload:', requestPayload);
-    response = await deps.fetchFn(endpoint, {
+    response = await fetchFn(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

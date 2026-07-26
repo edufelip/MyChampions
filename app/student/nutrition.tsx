@@ -201,6 +201,7 @@ export default function StudentNutritionScreen() {
       keyboardDismissMode="interactive"
       keyboardShouldPersistTaps="handled"
       scheme={scheme}
+      contentWidth="wide"
       testID="student.nutrition.screen"
     >
       <Stack.Screen options={{ title: t('student.nutrition.title'), headerShown: false }} />
@@ -465,7 +466,7 @@ export default function StudentNutritionScreen() {
                     {
                       backgroundColor: theme.color.surface,
                       borderColor: scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
-                      shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                      shadowColor: scheme === 'dark' ? '#000000' : theme.color.accentPrimary,
                     },
                   ]}>
                   <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
@@ -536,7 +537,7 @@ export default function StudentNutritionScreen() {
                     {
                       backgroundColor: theme.color.surface,
                       borderColor: scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
-                      shadowColor: scheme === 'dark' ? '#000000' : '#1ea95a',
+                      shadowColor: scheme === 'dark' ? '#000000' : theme.color.accentPrimary,
                     },
                   ]}>
                   <View

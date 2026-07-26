@@ -27,6 +27,7 @@
 - Social sign-in with existing email must link to existing account instead of creating duplicate account.
 - Known sign-in failures must show reason-specific actionable copy.
 - Accessibility baseline applies for text scaling, contrast, focus order, and control labels.
+- Browser auth uses cookie session mode: the access token stays in memory and the rotating refresh token is HttpOnly. Reload restoration never reads browser storage.
 
 ## Data Contract
 - Inputs:
@@ -41,6 +42,7 @@
 - Existing email/password account + social login with same email links provider into existing account.
 - Locked-role account routes directly to role home after sign-in.
 - Wrong-role route attempts after sign-in are redirected to role home by route guard.
+- On web, a dismissed Google Identity Services prompt returns the screen to a settled cancellation state; skipped or undisplayable prompts fail closed through the configured fallback/error path rather than leaving the action pending.
 
 ## Copy Draft (Initial)
 - Title: `Welcome, Champion`
@@ -63,9 +65,11 @@
   - Email/password inputs with non-empty validation.
   - Password reveal/hide eye toggle embedded inside the password input field.
   - Contextual error copy mapping for `invalid_credentials`, `network`, `provider_conflict`, and `configuration`.
-  - Email/password sign-in is wired to the local MyChampions server auth bridge for explicit local/dev app variants.
+  - Email/password sign-in is wired to the MyChampions server auth boundary for native and browser runtimes.
   - Google social sign-in shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
   - Apple social sign-in shows the approved E2E fixture path in test mode, then tries native Apple identity-token capture and posts the token plus nonce to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer, audience, and nonce claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.
+  - On web, Google uses Google Identity Services and Apple uses Sign in with Apple JS. Both adapters forward ID tokens to the same server endpoint; missing browser client/redirect configuration fails closed, and every dismissed, skipped, or undisplayable Google prompt moment settles the active request. Skipped moments enter the configured fallback/error path because Google may have failed to issue a credential.
+  - Browser requests include credentials and `sessionMode: cookie`; native requests preserve bearer response-body refresh sessions.
   - Successful sign-in is driven by the MyChampions server auth session for route-guard enforcement.
   - Durable device session persistence is owned by the MyChampions server auth bridge instead of native provider config.
   - Successful sign-in routes to `/auth/accept-terms`; global guard then routes to role-selection or role home depending on terms + role state.
@@ -80,6 +84,6 @@
 - Use case: UC-002.0, UC-002.1, UC-002.10, UC-002.11, UC-002.18, UC-002.21
 - Acceptance criteria: AC-227, AC-231, AC-232, AC-233, AC-239, AC-244, AC-250, AC-251, AC-252, AC-266, AC-512
 - Business rules: BR-232, BR-234, BR-235, BR-236, BR-244, BR-264, BR-265, BR-266, BR-275, BR-297
-- Test cases: TC-228, TC-233, TC-234, TC-235, TC-242, TC-252, TC-254, TC-255, TC-288, TC-512
+- Test cases: TC-228, TC-233, TC-234, TC-235, TC-242, TC-252, TC-254, TC-255, TC-288, TC-330, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md

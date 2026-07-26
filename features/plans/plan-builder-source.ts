@@ -4,7 +4,7 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { searchFoodsFromSource } from '../nutrition/food-search-source';
 
 import type {
@@ -92,15 +92,15 @@ export type { FoodSearchResult } from './plan-builder.logic';
 export type PlanBuilderSourceDeps = {
   getServerBaseUrl?: () => string | undefined;
   getCurrentAccessToken?: () => Promise<string | null>;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 export type StarterTemplateDeps = PlanBuilderSourceDeps;
 
 const defaultDeps: PlanBuilderSourceDeps = {
   getServerBaseUrl: defaultGetServerBaseUrl,
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
-  fetchFn: fetch,
+  getCurrentAccessToken: () => getValidServerAccessToken(),
+  fetchFn: globalThis.fetch.bind(globalThis),
 };
 
 function nowIso(): string {
@@ -135,11 +135,17 @@ function normalizePlanBuilderSourceError(error: unknown): PlanBuilderSourceError
 
 function resolveServerPlanBuilderSource(deps: PlanBuilderSourceDeps): {
   baseUrl: string;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
 } | null {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
-  const fetchFn = deps.fetchFn ?? fetch;
-  if (!baseUrl || !fetchFn) return null;
+  const sourceFetch = deps.fetchFn ?? globalThis.fetch;
+  if (!baseUrl || !sourceFetch) return null;
+
+  // Browser fetch is a host function and must retain the global receiver. Calling it
+  // later as `source.fetchFn(...)` otherwise supplies the source object as `this`,
+  // which Firefox rejects with "Illegal invocation".
+  const fetchFn: AppFetch = (input, init) =>
+    Reflect.apply(sourceFetch, globalThis, [input, init]);
 
   return { baseUrl, fetchFn };
 }
@@ -147,7 +153,7 @@ function resolveServerPlanBuilderSource(deps: PlanBuilderSourceDeps): {
 async function getServerPlanBuilderSource(deps: PlanBuilderSourceDeps): Promise<{
   baseUrl: string;
   token: string;
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
 } | null> {
   const source = resolveServerPlanBuilderSource(deps);
   if (!source) return null;

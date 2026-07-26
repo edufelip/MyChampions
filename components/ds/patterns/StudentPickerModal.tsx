@@ -5,6 +5,7 @@ import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/desig
 import { Fonts } from '@/constants/theme';
 import type { ProfessionalStudentRosterItem } from '@/features/professional/professional-source';
 import type { useTranslation } from '@/localization';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -27,9 +28,10 @@ export function StudentPickerModal({
   theme: DsTheme;
   t: TFn;
 }) {
+  useWebDialogAccessibility({ isVisible, onClose, testID: 'studentPicker.modal' });
   return (
-    <Modal visible={isVisible} animationType="slide" transparent>
-      <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>
+    <Modal visible={isVisible} animationType="slide" onRequestClose={onClose} transparent>
+      <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]} testID="studentPicker.modal">
         <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>

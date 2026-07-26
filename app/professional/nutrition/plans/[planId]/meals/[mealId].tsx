@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/features/platform/haptics-adapter';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -235,7 +235,7 @@ export default function NutritionMealBuilderScreen() {
 
   if (nutritionGate === 'loading') {
     return (
-      <DsScreen scheme={scheme} contentContainerStyle={[styles.content, styles.centeredContent]}>
+      <DsScreen scheme={scheme} contentWidth="form" contentContainerStyle={[styles.content, styles.centeredContent]}>
         <Stack.Screen options={{ headerShown: false }} />
         <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
       </DsScreen>
@@ -248,7 +248,7 @@ export default function NutritionMealBuilderScreen() {
 
   if (!meal && state.kind === 'ready') {
     return (
-      <DsScreen scheme={scheme} contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
+      <DsScreen scheme={scheme} contentWidth="form" contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
         <Text style={{ color: palette.text }}>{t('pro.plan.meal.not_found')}</Text>
         <DsPillButton scheme={scheme} label={t('pro.plan.meal.go_back') as string} onPress={() => router.back()} />
       </DsScreen>
@@ -260,6 +260,7 @@ export default function NutritionMealBuilderScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      contentWidth="form"
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}
       testID="pro.nutrition_meal.screen"
     >
@@ -274,8 +275,26 @@ export default function NutritionMealBuilderScreen() {
           style={styles.backButton}
           testID="pro.nutrition_meal.backButton"
         />
-        <View style={{ flexDirection: 'row', gap: DsSpace.sm }}>
-          {meal && meal.items.length > 1 && (
+      </View>
+
+      {/* ── Meal Title & Totals ─────────────────────────────────────────── */}
+      <View style={styles.titleSection}>
+        <Text style={[styles.screenTitle, { color: palette.text }]}>{meal?.name}</Text>
+        <View style={styles.totalsRow}>
+          <TotalChip label={t('common.nutrition.calories')} value={`${totals.calories} kcal`} palette={palette} testID="pro.nutrition_meal.total.calories" />
+          <TotalChip label={t('common.nutrition.carbs')} value={`${totals.carbs}g`} palette={palette} testID="pro.nutrition_meal.total.carbs" />
+          <TotalChip label={t('common.nutrition.proteins')} value={`${totals.proteins}g`} palette={palette} testID="pro.nutrition_meal.total.proteins" />
+          <TotalChip label={t('common.nutrition.fats')} value={`${totals.fats}g`} palette={palette} testID="pro.nutrition_meal.total.fats" />
+        </View>
+      </View>
+
+      {/* ── Food items list ───────────────────────────────────────────────── */}
+      <View style={[styles.sectionHeaderRow, { zIndex: 10 }]}>
+        <View style={styles.sectionHeaderMainRow}>
+          <Text style={[styles.sectionHeader, { color: palette.text }]}>
+            {tr('pro.plan.section.meal_items', 'student.plan.section.meal_items')}
+          </Text>
+          {meal && meal.items.length > 1 ? (
             <DsPillButton
               scheme={scheme}
               variant="secondary"
@@ -292,26 +311,8 @@ export default function NutritionMealBuilderScreen() {
               style={styles.templateCta}
               leftIcon={<IconSymbol name={isSortMode ? "checkmark.circle.fill" : "arrow.up.arrow.down"} size={14} color={theme.color.accentPrimary} />}
             />
-          )}
+          ) : null}
         </View>
-      </View>
-
-      {/* ── Meal Title & Totals ─────────────────────────────────────────── */}
-      <View style={styles.titleSection}>
-        <Text style={[styles.screenTitle, { color: palette.text }]}>{meal?.name}</Text>
-        <View style={styles.totalsRow}>
-          <TotalChip label={t('common.nutrition.calories')} value={`${totals.calories} kcal`} palette={palette} testID="pro.nutrition_meal.total.calories" />
-          <TotalChip label={t('common.nutrition.carbs')} value={`${totals.carbs}g`} palette={palette} testID="pro.nutrition_meal.total.carbs" />
-          <TotalChip label={t('common.nutrition.proteins')} value={`${totals.proteins}g`} palette={palette} testID="pro.nutrition_meal.total.proteins" />
-          <TotalChip label={t('common.nutrition.fats')} value={`${totals.fats}g`} palette={palette} testID="pro.nutrition_meal.total.fats" />
-        </View>
-      </View>
-
-      {/* ── Food items list ───────────────────────────────────────────────── */}
-      <View style={[styles.sectionHeaderRow, { zIndex: 10 }]}>
-        <Text style={[styles.sectionHeader, { color: palette.text }]}>
-          {tr('pro.plan.section.meal_items', 'student.plan.section.meal_items')}
-        </Text>
 
         {/* ── Add item form (Floating Overlay inside header bounds) ───────── */}
         {!isSortMode && meal && addItemForm.kind === 'open' && (
@@ -557,6 +558,11 @@ const styles = StyleSheet.create({
   totalValue: { ...DsTypography.caption, fontWeight: '700' },
   itemsInsetWrapper: { borderRadius: DsRadius.lg, padding: 0, overflow: 'hidden', ...DsShadow.soft, backgroundColor: 'white' },
   sectionHeaderRow: { marginBottom: DsSpace.xs, paddingHorizontal: DsSpace.xs },
+  sectionHeaderMainRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   sectionHeader: { ...DsTypography.cardTitle, fontFamily: Fonts?.rounded ?? 'normal' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: DsSpace.xxl, gap: DsSpace.xs },
   emptyIconWrapper: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: DsSpace.xs },

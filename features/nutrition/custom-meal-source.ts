@@ -3,7 +3,8 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 import type { CustomMeal, SharedMealSnapshot } from './custom-meal.logic';
 import { calculatePortionNutrition } from './custom-meal.logic';
@@ -81,13 +82,13 @@ export function buildAssignedMealPortionLog(input: {
 export type CustomMealSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 const defaultDeps: CustomMealSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
 };
 
 const E2E_SHARED_MEAL_TOKEN = 'e2e-shared-recipe';
@@ -394,7 +395,7 @@ async function createMealShareLinkOnServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(
+    response = await (deps.fetchFn ?? defaultAppFetch)(
       `${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(mealId)}/share-links`,
       {
         method: 'POST',
@@ -425,7 +426,7 @@ async function previewSharedMealFromServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(
+    response = await (deps.fetchFn ?? defaultAppFetch)(
       `${baseUrl}/nutrition/custom-meal-shares/${encodeURIComponent(shareToken)}`
     );
   } catch {
@@ -454,7 +455,7 @@ async function importSharedMealOnServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(
+    response = await (deps.fetchFn ?? defaultAppFetch)(
       `${auth.baseUrl}/nutrition/custom-meal-shares/${encodeURIComponent(shareToken)}/import`,
       {
         method: 'POST',
@@ -484,7 +485,7 @@ async function getCustomMealsFromServer(deps: CustomMealSourceDeps): Promise<Cus
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${auth.baseUrl}/nutrition/custom-meals`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${auth.baseUrl}/nutrition/custom-meals`, {
       headers: { authorization: `Bearer ${auth.accessToken}` },
     });
   } catch {
@@ -510,7 +511,7 @@ async function getCustomMealFromServer(mealId: string, deps: CustomMealSourceDep
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(
+    response = await (deps.fetchFn ?? defaultAppFetch)(
       `${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(mealId)}`,
       { headers: { authorization: `Bearer ${auth.accessToken}` } }
     );
@@ -549,7 +550,7 @@ async function createCustomMealOnServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${auth.baseUrl}/nutrition/custom-meals`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${auth.baseUrl}/nutrition/custom-meals`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${auth.accessToken}`,
@@ -602,7 +603,7 @@ async function updateCustomMealOnServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(id)}`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(id)}`, {
       method: 'PUT',
       headers: {
         authorization: `Bearer ${auth.accessToken}`,
@@ -642,7 +643,7 @@ async function deleteCustomMealOnServer(id: string, deps: CustomMealSourceDeps):
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(id)}`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers: { authorization: `Bearer ${auth.accessToken}` },
     });
@@ -672,7 +673,7 @@ async function createPortionLogOnServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${auth.baseUrl}/nutrition/portion-logs`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${auth.baseUrl}/nutrition/portion-logs`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${auth.accessToken}`,
@@ -718,7 +719,7 @@ async function getPortionLogsFromServer(deps: CustomMealSourceDeps): Promise<Por
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(
+    response = await (deps.fetchFn ?? defaultAppFetch)(
       `${baseUrl}/nutrition/portion-logs?from=${encodeURIComponent(todayStartIso)}`,
       { headers: { authorization: `Bearer ${accessToken}` } }
     );

@@ -46,7 +46,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-240`: Student-visible credential info is available only for currently assigned professionals and includes only `registry_id`, `authority`, and `country`.
 - `AC-241`: Professional dashboard shows active and pending student counts separately.
 - `AC-242`: Student home prioritizes nutrition content above training content and highlights pending-connection status.
-- `AC-243`: Offline mode exposes read-only cached content while blocking write actions.
+- `AC-243`: Offline mode exposes read-only cached content while blocking write actions. A native cold start with transient session refresh/profile hydration failure retains only the matching account's persisted role and accepted-terms state; rejected sessions, missing profiles, and UID mismatches grant no shell access.
 - `AC-244`: Auth password fields provide reveal/hide controls on sign-in and create-account screens.
 - `AC-245`: Role-specific bottom navigation areas are enforced:
   - Professional: dashboard, students, nutrition, training, account/settings.
@@ -85,13 +85,14 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-536`: TrackingLogs stay Student-owned and expose only plan/connection provenance needed for review.
 - `AC-537`: Assigned NutritionPlans use stable meal snapshots; Professionals cannot insert Student-owned CustomMeals unless the meal has been shared/imported first.
 - `AC-538`: Students with an active assigned NutritionPlan see calorie/macro targets, assigned meal cards, hydration tracking using the effective assigned goal, meal log completion state, and a plan-change request form tied to the assigned plan context.
+- `AC-539`: In a browser, confirming sign-out clears the local identity and exposes unauthenticated entry immediately, but a subsequent email/password or social login cannot send its session-establishing request until the credentialed sign-out barrier is released, including when sign-out fails; native bearer-session clearing remains immediate.
 - `AC-266`: After successful sign-in or create-account, users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted.
 - `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
 - `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.
 - `AC-515`: In SC-214, AI macro estimates pre-fill all form fields (calories, carbs, proteins, fats, totalGrams) for user review and editing before saving.
 - `AC-516`: In SC-215, AI macro estimates pre-fill the quick-log grams/nutrition panel for user review and editing before logging.
 - `AC-517`: User can edit all AI-pre-filled fields before confirming; no field is locked or auto-saved after analysis.
-- `AC-518`: AI analysis failure (network, quota, unrecognizable image) surfaces a reason-specific recoverable error; form fields remain available for manual entry.
+- `AC-518`: AI analysis failure (permission denial, network, quota, unrecognizable image) surfaces reason-specific recoverable guidance; permission denial directs the user to device settings, and form fields remain available for manual entry.
 - `AC-519`: Meal-photo analyzer provider API key is not present in client binary or any client-accessible environment variable; analysis calls route through the MyChampions server with bearer-token validation.
 - `AC-520`: When an email/password account user taps "Change password" in account settings, a confirmation alert is shown before any email is dispatched.
 - `AC-521`: After confirming the password reset request, the app calls the MyChampions server password-reset request endpoint and the "Change password" row enters a loading state for the duration of the request.

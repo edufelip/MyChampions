@@ -22,6 +22,22 @@ test('t returns localized value for key', () => {
   assert.equal(t('es-ES', 'auth.signin.cta_primary'), 'Iniciar sesión');
 });
 
+test('native photo picker actions resolve in every supported locale', () => {
+  assert.equal(t('en-US', 'photo_picker.choose_from_library'), 'Choose from library');
+  assert.equal(t('pt-BR', 'photo_picker.take_photo'), 'Tirar foto');
+  assert.equal(t('es-ES', 'photo_picker.body'), 'Elige el origen de la foto');
+  assert.match(t('en-US', 'meal.photo_analysis.error.permission_denied'), /device settings/);
+  assert.match(t('pt-BR', 'custom_meal.image.permission_denied'), /configurações/);
+  assert.match(t('es-ES', 'meal.photo_analysis.error.permission_denied'), /ajustes/);
+  assert.match(t('en-US', 'meal.photo_analysis.error.file_too_large'), /too large/);
+});
+
+test('unavailable summary values resolve through every locale bundle', () => {
+  assert.equal(t('en-US', 'common.value.unavailable'), '—');
+  assert.equal(t('pt-BR', 'common.value.unavailable'), '—');
+  assert.equal(t('es-ES', 'common.value.unavailable'), '—');
+});
+
 test('t interpolates params', () => {
   assert.equal(t('en-US', 'student.hydration.progress', { consumed: 500, goal: 2000 }), '500 / 2000 ml');
 });

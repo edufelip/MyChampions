@@ -8,7 +8,8 @@
  */
 
 import type { AuthUser } from '../auth/auth-user';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 import {
   parseMacroEstimateFromResponse,
   type MacroEstimate,
@@ -37,7 +38,7 @@ export type MealPhotoAnalysisSourceDeps = {
   /** Returns the local MyChampions server bearer token. Missing auth fails closed. */
   getCurrentAccessToken: () => Promise<string | null>;
   /** fetch implementation. Defaults to global fetch. */
-  fetchFn: typeof fetch;
+  fetchFn: AppFetch;
 };
 
 function defaultGetServerBaseUrl(): string | undefined {
@@ -61,7 +62,7 @@ function defaultGetServerBaseUrl(): string | undefined {
 }
 
 async function defaultGetCurrentAccessToken(): Promise<string | null> {
-  return getCurrentServerAccessToken();
+  return getValidServerAccessToken();
 }
 
 function analysisErrorForResponse(responseStatus: number, body: RawAnalysisResponse): PhotoAnalysisSourceError | null {
@@ -90,7 +91,7 @@ async function fetchAnalysisEstimate(
   endpoint: string,
   token: string,
   base64Image: string,
-  fetchFn: typeof fetch,
+  fetchFn: AppFetch,
   invalidJsonMessage: string
 ): Promise<MacroEstimate> {
   let response: Response;
@@ -150,7 +151,7 @@ export async function analyzeMealPhoto(
 ): Promise<MacroEstimate> {
   const getServerBaseUrl = deps?.getServerBaseUrl ?? defaultGetServerBaseUrl;
   const getCurrentAccessToken = deps?.getCurrentAccessToken ?? defaultGetCurrentAccessToken;
-  const fetchFn = deps?.fetchFn ?? fetch;
+  const fetchFn = deps?.fetchFn ?? defaultAppFetch;
 
   const serverBaseUrl = getServerBaseUrl()?.replace(/\/+$/, '');
   if (!serverBaseUrl) {

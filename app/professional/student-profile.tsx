@@ -343,7 +343,7 @@ export default function ProfessionalStudentProfileScreen() {
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   return (
-    <DsScreen scheme={scheme} testID="pro.student_profile.screen" contentContainerStyle={styles.content}>
+    <DsScreen scheme={scheme} contentWidth="content" testID="pro.student_profile.screen" contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.student_profile.title'), headerShown: false }} />
 
       <DsBackButton

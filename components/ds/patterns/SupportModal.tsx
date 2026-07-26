@@ -11,15 +11,17 @@ import {
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/features/platform/haptics-adapter';
 
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useSupport } from '@/features/support/use-support';
+import { requestSupportModalDismissal } from '@/features/support/support.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useAuthSession } from '@/features/auth/auth-session';
 import type { useTranslation } from '@/localization';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -51,6 +53,11 @@ export function SupportModal({
   const isSuccess = state.kind === 'success';
   const isError = state.kind === 'error';
   const isSubmitLocked = isSubmitting || isOffline;
+  useWebDialogAccessibility({
+    isVisible,
+    onClose: handleClose,
+    testID: 'settings.account.support.modal',
+  });
 
   useEffect(() => {
     if (isVisible) {
@@ -81,12 +88,12 @@ export function SupportModal({
     }
   }, [state.kind]);
 
-  const handleClose = () => {
-    onClose();
-  };
+  function handleClose() {
+    requestSupportModalDismissal({ isSubmitting, onClose });
+  }
 
   return (
-    <Modal visible={isVisible} animationType="slide" transparent>
+    <Modal visible={isVisible} animationType="slide" onRequestClose={handleClose} transparent>
       <View style={styles.flex}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

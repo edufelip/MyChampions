@@ -18,7 +18,7 @@
 - `BR-215`: Students cannot edit professionally assigned plans; assigned plans are view-only on the student side.
 - `BR-216`: Student self-managed plans for a specialty are archived when professional assignment becomes active in that specialty.
 - `BR-217`: Archived student self-managed plans are visible to professionals only with student consent.
-- `BR-218`: Students are never payers in the subscription model.
+- `BR-218`: Standard student meal and progress tracking remains free. A locked student account may optionally purchase the `student_pro` AI meal-photo analysis add-on; that add-on grants no professional roster privilege.
 - `BR-219`: A professional can manage up to 10 active students without paid subscription.
 - `BR-220`: Active student count above 10 is blocked unless professional subscription entitlement is active.
 - `BR-221`: Subscription entitlement lifecycle is controlled by store billing and synchronized through RevenueCat.
@@ -53,7 +53,7 @@
 - `BR-242`: Pending connection requests awaiting professional action are capped at 10 unique Students per professional; one Student with two specialty-scoped pending requests counts once. Invite submission and pending Connection creation run through the governed backend path, which uses deterministic duplicate guard documents and ten pending-student slot documents so duplicate pending requests and cap checks are enforced transactionally before the Connection is created.
 - `BR-243`: Professional dashboard must show active and pending counts separately.
 - `BR-244`: Wrong-role route access is hard-blocked and redirected to role home.
-- `BR-245`: Offline mode allows read-only cached access; writes are blocked until connectivity is restored.
+- `BR-245`: Offline mode allows read-only cached access; writes are blocked until connectivity is restored. Cached auth profile state may bootstrap the shell only after a retryable failure and only when its UID matches the active persisted session; definitive auth rejection, missing profile state, and account mismatch fail closed.
 - `BR-246`: Mixed error UX strategy applies: field-level validation inline, recoverable load failures as screen state, and transient operation feedback via toast/snackbar.
 - `BR-247`: If entitlement lapses while professional is over cap, block new activations and lock professional plan updates for students until entitlement is active again.
 - `BR-248`: Student home prioritizes nutrition sections above training sections and highlights pending connection status.
@@ -127,6 +127,11 @@
 - `BR-335`: Nutritionist tracking review on the Professional Student Profile is read-only.
 - `BR-336`: TrackingLogs remain Student-owned but may carry plan/connection provenance for review and audit.
 - `BR-337`: CustomMeals are user-owned reusable meals/recipes; NutritionPlans and TrackingLogs carry stable snapshots/provenance, and Professionals cannot add Student-owned CustomMeals into assigned plans unless the meal is shared/imported first.
+- `BR-338`: Subscription privileges are keyed by the self-managed MyChampions auth UID. RevenueCat customer changes must be serialized before any entitlement read, restore, purchase, or paywall action, and stale results from a previous UID must never update the current account.
+- `BR-339`: Production subscription authorization is derived from a server-side canonical RevenueCat customer reconciliation. A single webhook event must not directly overwrite an unrelated entitlement, and transfer events must reconcile every affected App User ID before acknowledgement.
+- `BR-340`: Professional pre-lapse warning is driven only by authoritative active-entitlement expiry plus explicit renewal, unsubscribe, or billing-issue risk. Student capacity is never treated as a billing-expiry signal.
+- `BR-341`: New `student_pro` purchases may be initiated only by locked student accounts. A professional who enters an AI gate is routed to `default_professional`, because `professional_pro` already grants AI access. Existing valid `student_pro` entitlements continue to unlock AI regardless of current role, but missing or malformed role state presents no paywall.
+- `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native bearer-session persistence keeps its existing immediate-clear behavior.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

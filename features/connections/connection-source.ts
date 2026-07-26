@@ -3,7 +3,8 @@
  */
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getCurrentServerAccessToken } from '../auth/server-auth-source';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 import {
   normalizeConnectionStatus,
   normalizeCanceledReason,
@@ -95,13 +96,13 @@ export function getExistingInviteConnectionConflict(
 export type ConnectionSourceDeps = {
   getCurrentAccessToken?: () => Promise<string | null>;
   getServerBaseUrl?: () => string | undefined;
-  fetchFn?: typeof fetch;
+  fetchFn?: AppFetch;
 };
 
 const defaultConnectionSourceDeps: ConnectionSourceDeps = {
-  getCurrentAccessToken: async () => getCurrentServerAccessToken(),
+  getCurrentAccessToken: () => getValidServerAccessToken(),
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: fetch,
+  fetchFn: defaultAppFetch,
 };
 
 function resolveServerBaseUrl(): string | undefined {
@@ -182,6 +183,16 @@ function getE2EConnectionFixtures(): ConnectionRecord[] | null {
       canceledReason: null,
       specialty: 'fitness_coach',
       professionalAuthUid: 'e2e-fitness-coach',
+    });
+  }
+
+  if (process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE === 'basic') {
+    connections.push({
+      id: 'e2e-professional-pending-connection',
+      status: 'pending_confirmation',
+      canceledReason: null,
+      specialty: 'nutritionist',
+      professionalAuthUid: 'e2e-nutritionist',
     });
   }
 
@@ -303,7 +314,7 @@ async function getMyConnectionsFromServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
@@ -354,7 +365,7 @@ async function submitInviteCodeToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/invite-submissions`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/invite-submissions`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${accessToken}`,
@@ -415,7 +426,7 @@ async function confirmPendingConnectionToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/${connectionId}/confirm`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/${connectionId}/confirm`, {
       method: 'POST',
       headers: { authorization: `Bearer ${accessToken}` },
     });
@@ -445,7 +456,7 @@ async function endConnectionToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? fetch)(`${baseUrl}/connections/${connectionId}/end`, {
+    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/${connectionId}/end`, {
       method: 'POST',
       headers: { authorization: `Bearer ${accessToken}` },
     });

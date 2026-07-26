@@ -51,10 +51,17 @@ Whenever behavior changes, update all impacted artifacts:
 - Decisions/backlog mapping: `docs/discovery/`
 
 ## Backend Provider Tracking
-- Current backend baseline is Firebase (`Auth`, `Cloud Firestore`, `Cloud Storage`).
-- Track backend-provider migration references in:
+- Current app-domain backend baseline is the root-level MyChampions server:
+  server-owned auth/session handling, Postgres/Drizzle persistence, and
+  server-managed image storage (local filesystem by default and private GCS
+  when configured in production).
+- Firebase Auth, Cloud Firestore, and Firebase Cloud Storage are retired mobile
+  runtime context, not the current backend baseline.
+- Track the retired provider migration and its replacement references in:
   - `docs/discovery/backend-provider-migration-v1.md`
-- If a document introduces backend provider terminology, ensure it is consistent with Firebase baseline or explicitly marked as deprecated legacy context.
+- If a document introduces backend provider terminology, ensure it is
+  consistent with the MyChampions server baseline or explicitly marked as
+  retired, superseded, or legacy context.
 
 ## Deferred Wiring Policy
 - If wiring is intentionally deferred, add/update an entry in:

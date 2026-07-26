@@ -9,16 +9,15 @@
  *  - CTAs to student roster and subscription (card)
  *  - Offline read-only banner + write-lock feedback
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Alert,
-  ImageBackground,
   Pressable,
-  Share,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -30,7 +29,11 @@ import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { useConnections } from '@/features/connections/use-connections';
+import { shareAdapter } from '@/features/platform/share-adapter';
 import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
+import { resolveProfessionalHomeAttention } from '@/features/professional/professional-home.logic';
+import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
 import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
 import {
   buildProfessionalPlanChangeNotificationSummary,
@@ -66,20 +69,30 @@ export default function ProfessionalHomeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { currentUser } = useAuthSession();
+  const { width: viewportWidth } = useWindowDimensions();
+  const usesDesktopLayout = viewportWidth >= 1024;
 
   const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
   const inviteSpecialty =
     specialtiesState.kind === 'ready' ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties) : null;
+  const canUseNutrition = canAccessNutritionSurface({
+    role: 'professional',
+    specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+  });
   const { state: codeState, rotate } = useInviteCode(Boolean(currentUser), inviteSpecialty);
+  const { state: connectionsState, reload: reloadConnections } = useConnections(Boolean(currentUser));
   const {
     entitlementStatus,
+    professionalEntitlementRenewalRisk,
     activeStudentCount,
+    isActiveStudentCountKnown,
     lastSyncedAtIso: subscriptionSyncedAtIso,
   } = useSubscription(currentUser?.uid ?? null, { loadProfessionalActiveStudentCount: true });
   const networkStatus = useNetworkStatus();
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
     specialtiesState.kind === 'ready' ? specialtiesState.lastSyncedAtIso : null,
     codeState.kind === 'ready' ? codeState.lastSyncedAtIso : null,
+    connectionsState.kind === 'ready' ? connectionsState.lastSyncedAtIso : null,
     subscriptionSyncedAtIso,
   ]);
   const offlineDisplay: OfflineDisplayState = resolveOfflineDisplayState({
@@ -89,36 +102,53 @@ export default function ProfessionalHomeScreen() {
   const subState = resolveSubscriptionState({
     activeStudentCount,
     entitlementStatus,
+    isExpiringSoon: professionalEntitlementRenewalRisk,
   });
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   const [rotateError, setRotateError] = useState<string | null>(null);
   const [planChangeNotification, setPlanChangeNotification] =
     useState<ProfessionalPlanChangeNotificationSummary>(emptyPlanChangeNotificationSummary);
+  const [planChangeState, setPlanChangeState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const planChangeLoadGenerationRef = useRef(0);
 
-  useEffect(() => {
+  const loadPlanChangeNotifications = useCallback(() => {
+    const generation = planChangeLoadGenerationRef.current + 1;
+    planChangeLoadGenerationRef.current = generation;
+
     if (!currentUser) {
       setPlanChangeNotification(emptyPlanChangeNotificationSummary);
-      return;
+      setPlanChangeState('loading');
+      return () => {
+        if (planChangeLoadGenerationRef.current === generation) {
+          planChangeLoadGenerationRef.current += 1;
+        }
+      };
     }
 
-    let isActive = true;
+    setPlanChangeState('loading');
     getProfessionalPlanChangeRequests()
       .then((requests) => {
-        if (isActive) {
+        if (planChangeLoadGenerationRef.current === generation) {
           setPlanChangeNotification(buildProfessionalPlanChangeNotificationSummary(requests));
+          setPlanChangeState('ready');
         }
       })
       .catch(() => {
-        if (isActive) {
+        if (planChangeLoadGenerationRef.current === generation) {
           setPlanChangeNotification(emptyPlanChangeNotificationSummary);
+          setPlanChangeState('error');
         }
       });
 
     return () => {
-      isActive = false;
+      if (planChangeLoadGenerationRef.current === generation) {
+        planChangeLoadGenerationRef.current += 1;
+      }
     };
   }, [currentUser]);
+
+  useEffect(() => loadPlanChangeNotifications(), [loadPlanChangeNotifications]);
 
   function confirmRotate() {
     Alert.alert(
@@ -144,53 +174,97 @@ export default function ProfessionalHomeScreen() {
   }
 
   async function handleShareCode(code: string) {
-    await Share.share({ message: code });
+    await shareAdapter.shareText(code);
   }
 
   const codeValue =
     codeState.kind === 'ready' && codeState.displayCode.kind === 'active'
       ? codeState.displayCode.code.codeValue
       : null;
+  const pendingConnections = useMemo(
+    () =>
+      connectionsState.kind === 'ready'
+        ? connectionsState.connections.filter(
+            (connection) => connection.status === 'pending_confirmation'
+          )
+        : [],
+    [connectionsState]
+  );
+  const connectionSourceState =
+    connectionsState.kind === 'ready'
+      ? 'ready'
+      : connectionsState.kind === 'error'
+        ? 'error'
+        : 'loading';
+  const attentionState = resolveProfessionalHomeAttention({
+    connectionRequestCount: pendingConnections.length,
+    connectionState: connectionSourceState,
+    planChangeRequestCount: planChangeNotification.pendingCount,
+    planChangeState,
+  });
+  const unavailableValue = t('common.value.unavailable');
+  const activeStudentLabel = isActiveStudentCountKnown
+    ? String(activeStudentCount)
+    : unavailableValue;
+  const pendingConnectionLabel =
+    connectionsState.kind === 'ready'
+      ? String(pendingConnections.length)
+      : unavailableValue;
+
+  function reloadAttention() {
+    reloadConnections();
+    loadPlanChangeNotifications();
+  }
 
   return (
-    <DsScreen scheme={scheme} testID="pro.home.screen" contentContainerStyle={styles.content}>
+    <DsScreen
+      scheme={scheme}
+      contentWidth="wide"
+      withBlobs={false}
+      testID="pro.home.screen"
+      contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.home.title'), headerShown: false }} />
 
       <View style={styles.heroWrap}>
         <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>{t('pro.home.title')}</Text>
-        <View
-          style={[
-            styles.contextPill,
-            {
-              backgroundColor: subState.isPreLapseWarningVisible
-                ? theme.color.warningSoft
-                : theme.color.accentPrimarySoft,
-              borderColor: subState.isPreLapseWarningVisible
-                ? theme.color.warning
-                : theme.color.accentPrimary,
-            },
-          ]}>
-          <MaterialIcons
-            name={subState.isPreLapseWarningVisible ? 'warning-amber' : 'verified-user'}
-            size={16}
-            color={subState.isPreLapseWarningVisible ? theme.color.warning : theme.color.accentPrimary}
-          />
-          <Text
+        <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
+          {t('pro.home.subtitle')}
+        </Text>
+        {subState.isPreLapseWarningVisible || isActiveStudentCountKnown ? (
+          <View
             style={[
-              styles.contextPillText,
+              styles.contextPill,
               {
-                color: subState.isPreLapseWarningVisible
+                backgroundColor: subState.isPreLapseWarningVisible
+                  ? theme.color.warningSoft
+                  : theme.color.accentPrimarySoft,
+                borderColor: subState.isPreLapseWarningVisible
                   ? theme.color.warning
                   : theme.color.accentPrimary,
               },
             ]}>
-            {subState.isPreLapseWarningVisible
-              ? t('pro.subscription.pre_lapse.title')
-              : t('pro.subscription.cap_usage')
-                  .replace('{count}', String(activeStudentCount))
-                  .replace('{limit}', '10')}
-          </Text>
-        </View>
+            <MaterialIcons
+              name={subState.isPreLapseWarningVisible ? 'warning-amber' : 'verified-user'}
+              size={16}
+              color={subState.isPreLapseWarningVisible ? theme.color.warning : theme.color.accentPrimary}
+            />
+            <Text
+              style={[
+                styles.contextPillText,
+                {
+                  color: subState.isPreLapseWarningVisible
+                    ? theme.color.warning
+                    : theme.color.accentPrimary,
+                },
+              ]}>
+              {subState.isPreLapseWarningVisible
+                ? t('pro.subscription.pre_lapse.title')
+                : t('pro.subscription.cap_usage')
+                    .replace('{count}', activeStudentLabel)
+                    .replace('{limit}', '10')}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {offlineDisplay.showOfflineBanner ? (
@@ -225,60 +299,159 @@ export default function ProfessionalHomeScreen() {
         </DsCard>
       ) : null}
 
-      <View style={styles.statsRow}>
-        <StatCard
-          label={t('pro.home.active_students') as string}
-          value={String(activeStudentCount)}
-          scheme={scheme}
-          iconName="groups"
-          testID="pro.home.activeStudents"
-        />
-        <StatCard
-          label={t('pro.home.pending_requests') as string}
-          value={String(planChangeNotification.pendingCount)}
-          scheme={scheme}
-          iconName="schedule-send"
-          testID="pro.home.pendingRequests"
-        />
-      </View>
-
-      {planChangeNotification.latestRequest ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            router.push(
-              `/professional/student-profile?studentId=${encodeURIComponent(
-                planChangeNotification.latestRequest?.studentUid ?? ''
-              )}`
-            );
-          }}
-          style={[
-            styles.planChangeNotificationCard,
-            {
-              backgroundColor: theme.color.accentPrimarySoft,
-              borderColor: theme.color.accentPrimary,
-            },
-          ]}
-          testID="pro.home.planChangeNotification">
-          <View style={[styles.planChangeNotificationIcon, { backgroundColor: theme.color.accentPrimary }]}>
-            <MaterialIcons name="notifications-active" size={18} color="#FFFFFF" />
+      <View style={[styles.dashboardColumns, usesDesktopLayout ? styles.dashboardColumnsDesktop : null]}>
+        <View
+          style={[styles.primaryColumn, usesDesktopLayout ? styles.primaryColumnDesktop : null]}
+          testID="pro.home.primaryColumn">
+          <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+            {t('pro.home.overview')}
+          </Text>
+          <View style={styles.statsRow}>
+            <SummaryLinkCard
+              label={t('pro.home.active_students') as string}
+              value={activeStudentLabel}
+              scheme={scheme}
+              iconName="groups"
+              onPress={() => router.push('/(tabs)/students')}
+              testID="pro.home.activeStudents"
+            />
+            <SummaryLinkCard
+              label={t('pro.home.connection_requests') as string}
+              value={pendingConnectionLabel}
+              scheme={scheme}
+              iconName="person-add-alt-1"
+              onPress={() => router.push('/professional/pending')}
+              testID="pro.home.pendingConnections"
+            />
           </View>
-          <View style={styles.planChangeNotificationCopy}>
-            <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
-              {t('pro.home.plan_change_notification.title')}
+
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+              {t('pro.home.needs_attention')}
             </Text>
-            <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
-              {(t('pro.home.plan_change_notification.body') as string)
+            {attentionState.hasLoadError ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={reloadAttention}
+                style={({ pressed }) => [styles.retryLink, pressed ? styles.pressed : null]}
+                testID="pro.home.attentionRetry">
+                <MaterialIcons name="refresh" size={16} color={theme.color.accentPrimary} />
+                <Text style={[styles.retryLinkText, { color: theme.color.accentPrimary }]}>
+                  {t('common.error.retry')}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          {attentionState.hasConnectionRequests ? (
+            <TaskCard
+              scheme={scheme}
+              iconName="person-add-alt-1"
+              title={t('pro.home.connection_requests') as string}
+              body={(t('pro.home.connection_requests_body') as string).replace(
+                '{count}',
+                String(pendingConnections.length)
+              )}
+              cta={t('pro.home.cta_pending') as string}
+              onPress={() => router.push('/professional/pending')}
+              testID="pro.home.connectionRequestTask"
+            />
+          ) : null}
+
+          {attentionState.hasPlanChangeRequests && planChangeNotification.latestRequest ? (
+            <TaskCard
+              scheme={scheme}
+              iconName="notifications-active"
+              title={t('pro.home.plan_change_notification.title') as string}
+              body={(t('pro.home.plan_change_notification.body') as string)
                 .replace('{count}', String(planChangeNotification.pendingCount))
                 .replace('{studentUid}', planChangeNotification.latestRequest.studentUid)}
-            </Text>
-          </View>
-          <Text style={[styles.planChangeNotificationCta, { color: theme.color.accentPrimary }]}>
-            {t('pro.home.plan_change_notification.cta')}
-          </Text>
-        </Pressable>
-      ) : null}
+              cta={t('pro.home.plan_change_notification.cta') as string}
+              onPress={() => {
+                router.push(
+                  `/professional/student-profile?studentId=${encodeURIComponent(
+                    planChangeNotification.latestRequest?.studentUid ?? ''
+                  )}`
+                );
+              }}
+              testID="pro.home.planChangeNotification"
+            />
+          ) : null}
 
+          {attentionState.showAllCaughtUp ? (
+            <DsCard scheme={scheme} variant="muted" style={styles.clearCard} testID="pro.home.allCaughtUp">
+              <View style={[styles.clearIcon, { backgroundColor: theme.color.successSoft }]}>
+                <MaterialIcons name="done-all" size={20} color={theme.color.success} />
+              </View>
+              <View style={styles.clearCopy}>
+                <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
+                  {t('pro.home.all_caught_up_title')}
+                </Text>
+                <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
+                  {t('pro.home.all_caught_up_body')}
+                </Text>
+              </View>
+            </DsCard>
+          ) : null}
+
+          {attentionState.isLoading && !attentionState.hasAnyAttention ? (
+            <DsCard scheme={scheme} variant="muted" style={styles.loadingCard} testID="pro.home.attentionLoading">
+              <ActivityIndicator color={theme.color.accentPrimary} />
+              <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
+                {t('pro.home.attention_loading')}
+              </Text>
+            </DsCard>
+          ) : null}
+
+          {attentionState.hasLoadError ? (
+            <DsCard scheme={scheme} variant="warning" style={styles.inlineIssue} testID="pro.home.attentionError">
+              <MaterialIcons name="info-outline" size={18} color={theme.color.warning} />
+              <Text style={[styles.cardSubtitle, styles.inlineIssueText, { color: theme.color.textPrimary }]}>
+                {t('pro.home.attention_error')}
+              </Text>
+            </DsCard>
+          ) : null}
+
+          <Text style={[styles.sectionTitle, styles.manageTitle, { color: theme.color.textPrimary }]}>
+            {t('pro.home.manage')}
+          </Text>
+          <View
+            style={[
+              styles.quickActionsGrid,
+              usesDesktopLayout ? styles.quickActionsGridDesktop : null,
+            ]}>
+            <QuickActionCard
+              scheme={scheme}
+              iconName="groups"
+              label={t('pro.home.cta_roster') as string}
+              onPress={() => router.push('/(tabs)/students')}
+              usesGridLayout={usesDesktopLayout}
+              testID="pro.home.rosterCta"
+            />
+            {canUseNutrition ? (
+              <QuickActionCard
+                scheme={scheme}
+                iconName="restaurant-menu"
+                label={t('pro.home.cta_nutrition') as string}
+                onPress={() => router.push('/professional/nutrition')}
+                usesGridLayout={usesDesktopLayout}
+                testID="pro.home.nutritionCta"
+              />
+            ) : null}
+            <QuickActionCard
+              scheme={scheme}
+              iconName="fitness-center"
+              label={t('pro.home.cta_training') as string}
+              onPress={() => router.push('/professional/training')}
+              usesGridLayout={usesDesktopLayout}
+              testID="pro.home.trainingCta"
+            />
+          </View>
+        </View>
+
+        <View
+          style={[styles.secondaryColumn, usesDesktopLayout ? styles.secondaryColumnDesktop : null]}
+          testID="pro.home.secondaryColumn">
       <DsCard scheme={scheme} testID="pro.home.inviteCodeCard" style={styles.inviteCard} variant="muted">
         <View style={styles.cardHeader}>
           <View
@@ -351,35 +524,54 @@ export default function ProfessionalHomeScreen() {
           </>
         ) : codeState.kind === 'error' ? (
           <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('pro.home.error')}</Text>
-        ) : null}
+        ) : specialtiesState.kind === 'loading' ? (
+          <ActivityIndicator color={theme.color.accentPrimary} />
+        ) : (
+          <View style={styles.inviteSetup} testID="pro.home.inviteSpecialtyRequired">
+            <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
+              {t('pro.home.invite_code.specialty_required')}
+            </Text>
+            <DsPillButton
+              scheme={scheme}
+              variant="outline"
+              size="xs"
+              label={t('pro.home.invite_code.add_specialty') as string}
+              onPress={() => router.push('/professional/specialty')}
+              fullWidth={false}
+              testID="pro.home.inviteSpecialtyCta"
+            />
+          </View>
+        )}
       </DsCard>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/professional/subscription')}
-        style={styles.subscriptionCard}
-        testID="pro.home.subscriptionCta">
-        <ImageBackground
-          source={require('@/assets/images/hero-workout.jpg')}
-          style={StyleSheet.absoluteFillObject}
-          resizeMode="cover"
-        />
-        <View style={styles.subscriptionOverlay} />
-        <View style={styles.subscriptionContent}>
-          <View style={styles.subscriptionHeader}>
-            <MaterialIcons name="star" size={24} color="#FFD700" />
-            <Text style={styles.subscriptionTitle}>{t('pro.subscription.title')}</Text>
-          </View>
-          <Text style={styles.subscriptionSubtitle}>
-            {t('pro.subscription.cap_usage')
-              .replace('{count}', String(activeStudentCount))
-              .replace('{limit}', '10')}
-          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/professional/subscription')}
+            style={({ pressed }) => [
+              styles.subscriptionCard,
+              { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+              pressed ? styles.pressed : null,
+            ]}
+            testID="pro.home.subscriptionCta">
+            <View style={[styles.subscriptionIcon, { backgroundColor: theme.color.accentPrimarySoft }]}>
+              <MaterialIcons name="workspace-premium" size={22} color={theme.color.accentPrimary} />
+            </View>
+            <View style={styles.subscriptionContent}>
+              <Text style={[styles.subscriptionTitle, { color: theme.color.textPrimary }]}>
+                {t('pro.subscription.title')}
+              </Text>
+              <Text style={[styles.subscriptionSubtitle, { color: theme.color.textSecondary }]}>
+                {isActiveStudentCountKnown
+                  ? t('pro.subscription.cap_usage')
+                      .replace('{count}', activeStudentLabel)
+                      .replace('{limit}', '10')
+                  : t('pro.home.subscription_status_unknown')}
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={theme.color.textTertiary} />
+          </Pressable>
         </View>
-        <View style={styles.subscriptionArrowWrap}>
-          <MaterialIcons name="chevron-right" size={28} color="white" />
-        </View>
-      </Pressable>
+      </View>
     </DsScreen>
   );
 }
@@ -402,29 +594,127 @@ function buildOfflineText(
   return `${t('offline.banner')} • ${stalePart}`;
 }
 
-function StatCard({
+function SummaryLinkCard({
   label,
   value,
   scheme,
   iconName,
+  onPress,
   testID,
 }: {
   label: string;
   value: string;
   scheme: 'light' | 'dark';
   iconName: keyof typeof MaterialIcons.glyphMap;
+  onPress: () => void;
   testID: string;
 }) {
   const theme = getDsTheme(scheme);
 
   return (
-    <DsCard scheme={scheme} style={styles.statCard} testID={testID}>
-      <View style={[styles.statIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
-        <MaterialIcons color={theme.color.accentPrimary} name={iconName} size={16} />
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${value} ${label}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.statCard,
+        { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+        pressed ? styles.pressed : null,
+      ]}
+      testID={testID}>
+      <View style={styles.statTopRow}>
+        <View style={[styles.statIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+          <MaterialIcons color={theme.color.accentPrimary} name={iconName} size={18} />
+        </View>
+        <MaterialIcons color={theme.color.textTertiary} name="arrow-forward" size={18} />
       </View>
       <Text style={[styles.statValue, { color: theme.color.accentPrimary }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: theme.color.textSecondary }]}>{label}</Text>
-    </DsCard>
+    </Pressable>
+  );
+}
+
+function TaskCard({
+  body,
+  cta,
+  iconName,
+  onPress,
+  scheme,
+  testID,
+  title,
+}: {
+  body: string;
+  cta: string;
+  iconName: keyof typeof MaterialIcons.glyphMap;
+  onPress: () => void;
+  scheme: 'light' | 'dark';
+  testID: string;
+  title: string;
+}) {
+  const theme = getDsTheme(scheme);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.taskCard,
+        {
+          backgroundColor: theme.color.accentPrimarySoft,
+          borderColor: theme.color.accentPrimary,
+        },
+        pressed ? styles.pressed : null,
+      ]}
+      testID={testID}>
+      <View style={[styles.taskIcon, { backgroundColor: theme.color.accentPrimary }]}>
+        <MaterialIcons name={iconName} size={20} color={theme.color.onAccent} />
+      </View>
+      <View style={styles.taskCopy}>
+        <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{title}</Text>
+        <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>{body}</Text>
+      </View>
+      <View style={styles.taskCta}>
+        <Text style={[styles.taskCtaText, { color: theme.color.accentPrimary }]}>{cta}</Text>
+        <MaterialIcons name="chevron-right" size={20} color={theme.color.accentPrimary} />
+      </View>
+    </Pressable>
+  );
+}
+
+function QuickActionCard({
+  iconName,
+  label,
+  onPress,
+  scheme,
+  testID,
+  usesGridLayout,
+}: {
+  iconName: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+  onPress: () => void;
+  scheme: 'light' | 'dark';
+  testID: string;
+  usesGridLayout: boolean;
+}) {
+  const theme = getDsTheme(scheme);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.quickActionCard,
+        usesGridLayout ? styles.quickActionCardDesktop : null,
+        { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+        pressed ? styles.pressed : null,
+      ]}
+      testID={testID}>
+      <View style={[styles.quickActionIcon, { backgroundColor: theme.color.accentPrimarySoft }]}>
+        <MaterialIcons name={iconName} size={20} color={theme.color.accentPrimary} />
+      </View>
+      <Text style={[styles.quickActionLabel, { color: theme.color.textPrimary }]}>{label}</Text>
+      <MaterialIcons name="chevron-right" size={20} color={theme.color.textTertiary} />
+    </Pressable>
   );
 }
 
@@ -447,6 +737,7 @@ const styles = StyleSheet.create({
   },
   screenSubtitle: {
     ...DsTypography.body,
+    maxWidth: 680,
   },
   contextPill: {
     alignItems: 'center',
@@ -475,13 +766,56 @@ const styles = StyleSheet.create({
   warningText: {
     ...DsTypography.caption,
   },
+  dashboardColumns: {
+    gap: DsSpace.lg,
+  },
+  dashboardColumnsDesktop: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+  },
+  primaryColumn: {
+    gap: DsSpace.sm,
+    minWidth: 0,
+  },
+  primaryColumnDesktop: {
+    flex: 1.65,
+  },
+  secondaryColumn: {
+    gap: DsSpace.md,
+    minWidth: 0,
+  },
+  secondaryColumnDesktop: {
+    flex: 1,
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: DsSpace.md,
+  },
+  sectionTitle: {
+    fontFamily: Fonts.rounded,
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  manageTitle: {
+    marginTop: DsSpace.md,
+  },
   statsRow: { flexDirection: 'row', gap: DsSpace.sm },
   statCard: {
-    alignItems: 'center',
+    borderWidth: 1,
     borderRadius: DsRadius.lg,
     flex: 1,
     gap: 6,
-    paddingVertical: DsSpace.md,
+    minHeight: 126,
+    minWidth: 0,
+    padding: DsSpace.md,
+  },
+  statTopRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   statIconWrap: {
     alignItems: 'center',
@@ -495,7 +829,117 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
   },
-  statLabel: { fontSize: 12, textAlign: 'center' },
+  statLabel: { fontSize: 13, fontWeight: '600' },
+  retryLink: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    minHeight: 44,
+    paddingHorizontal: DsSpace.xs,
+  },
+  retryLinkText: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
+  pressed: {
+    opacity: 0.76,
+  },
+  taskCard: {
+    alignItems: 'center',
+    borderRadius: DsRadius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+    minHeight: 78,
+    padding: DsSpace.md,
+  },
+  taskIcon: {
+    alignItems: 'center',
+    borderRadius: DsRadius.pill,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  taskCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  taskCta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+  },
+  taskCtaText: {
+    ...DsTypography.caption,
+    fontWeight: '700',
+  },
+  clearCard: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+  },
+  clearIcon: {
+    alignItems: 'center',
+    borderRadius: DsRadius.pill,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  clearCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  loadingCard: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+    minHeight: 72,
+  },
+  inlineIssue: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+  },
+  inlineIssueText: {
+    flex: 1,
+  },
+  quickActionsGrid: {
+    gap: DsSpace.sm,
+  },
+  quickActionsGridDesktop: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  quickActionCard: {
+    alignItems: 'center',
+    borderRadius: DsRadius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+    minHeight: 64,
+    minWidth: 0,
+    padding: DsSpace.sm,
+    width: '100%',
+  },
+  quickActionCardDesktop: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    width: 'auto',
+  },
+  quickActionIcon: {
+    alignItems: 'center',
+    borderRadius: DsRadius.md,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  quickActionLabel: {
+    flex: 1,
+    fontFamily: Fonts.rounded,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   inviteCard: {
     borderRadius: DsRadius.xl,
     gap: DsSpace.sm,
@@ -527,6 +971,9 @@ const styles = StyleSheet.create({
     ...DsTypography.caption,
   },
   inviteCode: { fontSize: 28, fontWeight: '800', letterSpacing: 4, textAlign: 'center' },
+  inviteSetup: {
+    gap: DsSpace.sm,
+  },
   codeActionsRow: { flexDirection: 'row', gap: DsSpace.sm },
   outlineButtonCompact: {
     flex: 1,
@@ -534,66 +981,33 @@ const styles = StyleSheet.create({
   },
   meta: { ...DsTypography.caption },
   errorText: { ...DsTypography.caption },
-  planChangeNotificationCard: {
+  subscriptionCard: {
     alignItems: 'center',
-    borderRadius: DsRadius.lg,
+    borderRadius: DsRadius.xl,
     borderWidth: 1,
     flexDirection: 'row',
     gap: DsSpace.sm,
+    minHeight: 92,
     padding: DsSpace.md,
   },
-  planChangeNotificationIcon: {
+  subscriptionIcon: {
     alignItems: 'center',
-    borderRadius: DsRadius.pill,
-    height: 34,
+    borderRadius: DsRadius.md,
+    height: 44,
     justifyContent: 'center',
-    width: 34,
-  },
-  planChangeNotificationCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  planChangeNotificationCta: {
-    ...DsTypography.caption,
-    fontWeight: '700',
-  },
-  subscriptionCard: {
-    borderRadius: DsRadius.xl,
-    height: 120,
-    marginTop: DsSpace.sm,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  subscriptionOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 51, 0.6)',
+    width: 44,
   },
   subscriptionContent: {
     flex: 1,
     justifyContent: 'center',
-    padding: DsSpace.lg,
-  },
-  subscriptionHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: DsSpace.xs,
-    marginBottom: 4,
+    gap: 3,
   },
   subscriptionTitle: {
     ...DsTypography.cardTitle,
-    color: '#FFFFFF',
     fontFamily: Fonts.rounded,
-    fontSize: 22,
+    fontSize: 16,
   },
   subscriptionSubtitle: {
-    ...DsTypography.body,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 14,
-  },
-  subscriptionArrowWrap: {
-    position: 'absolute',
-    right: DsSpace.lg,
-    top: '50%',
-    transform: [{ translateY: -14 }],
+    ...DsTypography.caption,
   },
 });

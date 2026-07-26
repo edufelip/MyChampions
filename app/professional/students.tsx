@@ -21,10 +21,10 @@ import {
   Alert,
   FlatList,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -35,6 +35,7 @@ import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import {
   DsRadius,
+  DsShadow,
   DsSpace,
   DsTypography,
   getDsTheme,
@@ -48,6 +49,7 @@ import {
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { shareAdapter } from '@/features/platform/share-adapter';
 import {
   filterStudentRosterRows,
   filterBulkAssignmentStudentsByPlanType,
@@ -76,6 +78,8 @@ export default function ProfessionalStudentsScreen() {
   const theme = getDsTheme(scheme);
   const { t } = useTranslation();
   const router = useRouter();
+  const { width: viewportWidth } = useWindowDimensions();
+  const usesCompactRows = viewportWidth < 480;
   const { currentUser } = useAuthSession();
   const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
   const inviteSpecialty =
@@ -197,7 +201,7 @@ export default function ProfessionalStudentsScreen() {
 
   async function handleShareLink() {
     if (inviteCodeState.kind === 'ready' && inviteCodeState.displayCode.kind === 'active') {
-      await Share.share({ message: inviteCodeState.displayCode.code.codeValue });
+      await shareAdapter.shareText(inviteCodeState.displayCode.code.codeValue);
       return;
     }
     router.push('/professional/home');
@@ -206,6 +210,7 @@ export default function ProfessionalStudentsScreen() {
   return (
     <DsScreen
       scheme={scheme}
+      contentWidth="wide"
       scrollable={false}
       testID="pro.students.screen"
       contentContainerStyle={styles.content}>
@@ -382,6 +387,7 @@ export default function ProfessionalStudentsScreen() {
                     t={t}
                     isSelectionMode={isSelectionMode}
                     isSelected={selectedStudentUids.includes(item.studentAuthUid)}
+                    isCompact={usesCompactRows}
                     onPress={() => {
                       if (isSelectionMode) {
                         toggleSelection(item.studentAuthUid);
@@ -415,7 +421,11 @@ export default function ProfessionalStudentsScreen() {
           </DsCard>
 
           {isSelectionMode && (
-            <View style={styles.bulkActionContainer}>
+            <View style={[
+              styles.bulkActionContainer,
+              DsShadow.soft,
+              { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+            ]} testID="pro.students.bulkActionTray">
               <View style={styles.bulkPlanTypeRow}>
                 <DsPillButton
                   scheme={scheme}
@@ -517,6 +527,7 @@ function StudentRowItem({
   t,
   isSelectionMode,
   isSelected,
+  isCompact,
   onPress,
 }: {
   student: StudentRow;
@@ -524,6 +535,7 @@ function StudentRowItem({
   t: TFn;
   isSelectionMode: boolean;
   isSelected: boolean;
+  isCompact: boolean;
   onPress: () => void;
 }) {
   const specialtyLabel =
@@ -572,8 +584,11 @@ function StudentRowItem({
           {student.displayName}
         </Text>
         <Text style={[styles.rowMeta, { color: theme.color.textSecondary }]}>{specialtyLabel}</Text>
+        {isCompact && !isSelectionMode ? (
+          <Text style={[styles.compactStatus, { color: statusColor }]}>{statusLabel}</Text>
+        ) : null}
       </View>
-      {!isSelectionMode && (
+      {!isSelectionMode && !isCompact && (
         <View style={[styles.badge, { backgroundColor: statusBg }]}>
           <Text style={[styles.badgeText, { color: statusColor }]}>{statusLabel}</Text>
         </View>
@@ -773,6 +788,7 @@ const styles = StyleSheet.create({
   rowMain: {
     flex: 1,
     gap: 2,
+    minWidth: 0,
   },
   studentName: {
     fontFamily: Fonts?.rounded ?? 'normal',
@@ -781,6 +797,10 @@ const styles = StyleSheet.create({
   },
   rowMeta: {
     ...DsTypography.caption,
+  },
+  compactStatus: {
+    ...DsTypography.caption,
+    fontWeight: '700',
   },
   badge: {
     borderRadius: DsRadius.pill,
@@ -801,14 +821,17 @@ const styles = StyleSheet.create({
   },
   bulkActionContainer: {
     position: 'absolute',
-    bottom: 30,
-    left: DsSpace.lg,
-    right: DsSpace.lg,
-    backgroundColor: 'transparent',
+    bottom: DsSpace.xl,
+    borderRadius: DsRadius.lg,
+    borderWidth: 1,
     gap: DsSpace.sm,
+    left: DsSpace.xl,
+    padding: DsSpace.sm,
+    right: DsSpace.xl,
   },
   bulkPlanTypeRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: DsSpace.sm,
   },
   // Modal

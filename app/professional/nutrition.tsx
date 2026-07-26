@@ -65,7 +65,7 @@ export default function ProNutritionLibraryScreen() {
 
   if (nutritionGate === 'loading') {
     return (
-      <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>
+      <DsScreen scheme={scheme} contentWidth="wide" scrollable={false} contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: t('pro.library.nutrition.title'), headerShown: false }} />
         <ActivityIndicator
           style={styles.loader}
@@ -81,7 +81,7 @@ export default function ProNutritionLibraryScreen() {
   }
 
   return (
-    <DsScreen scheme={scheme} scrollable={false} contentContainerStyle={styles.content}>
+    <DsScreen scheme={scheme} contentWidth="wide" scrollable={false} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t('pro.library.nutrition.title'), headerShown: false }} />
 
       <DsCard scheme={scheme} style={styles.heroCard}>

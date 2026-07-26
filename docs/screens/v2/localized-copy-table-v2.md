@@ -56,6 +56,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.terms.offline_hint` | SC-221 | Link/open hint | You need internet access to open the legal link. | Você precisa de internet para abrir o link acima. | Necesitas internet para abrir el enlace legal. | |
 | `auth.terms.version` | SC-221 | Required version label | Required version: {version} | Versão obrigatória: {version} | Versión obligatoria: {version} | |
 | `auth.terms.error.link_unavailable` | SC-221 | Terms link error | Could not open the terms link right now. Try again. | Não foi possível abrir o link dos termos agora. Tente novamente. | No se pudo abrir el enlace de términos ahora. Inténtalo de nuevo. | |
+| `auth.terms.invalid_link` | SC-221 | Missing or unsafe legal URL | This link is unavailable because its address is missing or unsafe. | Este link está indisponível porque o endereço está ausente ou não é seguro. | Este enlace no está disponible porque falta la dirección o no es segura. | Web safe-link guard |
 | `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | Crea tu cuenta | |
 | `auth.field.name` | SC-218 | Name label | Name | Nome | Nombre | Shared auth field label |
 | `auth.field.email` | SC-218 | Email label | Email | E-mail | Correo electrónico | Shared create-account field label |
@@ -92,6 +93,13 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.home.offline.banner_read_only` | SC-203 | Offline persistent banner | You're offline. You can view cached data, but updates are locked until connection returns. | Você está offline. Você pode ver dados em cache, mas as atualizações ficam bloqueadas até a conexão voltar. | Estás sin conexión. Puedes ver los datos en caché, pero las actualizaciones están bloqueadas hasta que vuelva la conexión. | BL-008 |
 | `student.home.offline.write_lock` | SC-203 | Offline blocked-write helper | Connect to the internet to save changes. | Conecte-se à internet para salvar alterações. | Conéctate a internet para guardar los cambios. | BL-008 |
 | `student.home.title` | SC-203 | Screen title | Home | Início | Inicio | |
+| `student.home.welcome` | SC-203 | Personalized return cue | Welcome back | Que bom ter você de volta | Qué bueno verte de nuevo | Shown above the user's first name |
+| `student.home.your_day` | SC-203 | Dashboard heading | Your day | Seu dia | Tu día | Primary page identity |
+| `student.home.summary` | SC-203 | Dashboard helper | Your plans and progress at a glance. | Seus planos e progresso em um só lugar. | Tus planes y progreso de un vistazo. | |
+| `student.home.professionals_short` | SC-203 | Compact relationship action | My coaches | Meus coaches | Mis coaches | Visible header CTA |
+| `student.home.error.connections` | SC-203 | Partial connection error | Professional connections could not be loaded. | Não foi possível carregar as conexões profissionais. | No se pudieron cargar las conexiones profesionales. | Source-specific retry |
+| `student.home.error.plans` | SC-203 | Partial plan error | Your plans could not be loaded. | Não foi possível carregar seus planos. | No se pudieron cargar tus planes. | Source-specific retry |
+| `student.home.error.hydration` | SC-203 | Partial hydration error | Hydration progress could not be loaded. | Não foi possível carregar o progresso de hidratação. | No se pudo cargar el progreso de hidratación. | Source-specific retry |
 | `student.home.pending_connection` | SC-203 | Pending pill label | Pending Connection | Conexão Pendente | Conexión Pendiente | Stitch compact status pill |
 | `student.home.hydration.title` | SC-203 | Hydration card title | Hydration | Hidratação | Hidratación | Stitch card title |
 | `student.home.hydration.progress` | SC-203 | Hydration progress value | {consumed} / {goal} ml | {consumed} / {goal} ml | {consumed} / {goal} ml | |
@@ -129,6 +137,9 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `relationship.pending.helper` | SC-211 | Pending assignment state | Waiting for professional confirmation to activate this connection. | Aguardando confirmação do profissional para ativar esta conexão. | Esperando confirmación del profesional para activar esta conexión. | |
 | `relationship.pending.canceled_code_rotated` | SC-211 | Pending request canceled state | This request was canceled because the professional regenerated their invite code. Ask for the new code to reconnect. | Esta solicitação foi cancelada porque o profissional regenerou o código de convite. Peça o novo código para se conectar novamente. | Esta solicitud fue cancelada porque el profesional regeneró su código de invitación. Pide el nuevo código para volver a conectarte. | |
 | `pro.pending.search.placeholder` | SC-205 | Pending queue search | Search pending requests | Buscar solicitações pendentes | Buscar solicitudes pendientes | BL-004 |
+| `pro.pending.title` | SC-205 | Pending queue title | Connection requests | Solicitações de conexão | Solicitudes de conexión | Informative queue header |
+| `pro.pending.description` | SC-205 | Pending queue helper | Review students who want to work with you. Accept requests individually or select several to decline. | Revise os alunos que querem trabalhar com você. Aceite individualmente ou selecione vários para recusar. | Revisa a los estudiantes que quieren trabajar contigo. Acepta solicitudes individualmente o selecciona varias para rechazarlas. | Informative queue header |
+| `pro.pending.count` | SC-205 | Pending queue count | {count} pending | {count} pendentes | {count} pendientes | Informative queue header |
 | `pro.pending.filter.label` | SC-205 | Pending queue filter | Filter requests | Filtrar solicitações | Filtrar solicitudes | BL-004 |
 | `pro.pending.bulk_deny.cta` | SC-205 | Bulk deny action | Deny selected | Negar selecionadas | Rechazar seleccionadas | BL-004 |
 | `pro.pending.bulk_deny.confirm_title` | SC-205 | Bulk deny confirmation | Deny selected requests? | Negar solicitações selecionadas? | ¿Rechazar solicitudes seleccionadas? | BL-004 |
@@ -175,6 +186,21 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.home.plan_change_notification.title` | SC-204 | Pending plan-change notification title | Plan change request | Solicitação de alteração de plano | Solicitud de cambio de plan | Local in-app notification; push remains future provider work |
 | `pro.home.plan_change_notification.body` | SC-204 | Pending plan-change notification body | {count} pending request from {studentUid}. | {count} solicitação pendente de {studentUid}. | {count} solicitud pendiente de {studentUid}. | Deep links to student profile review card |
 | `pro.home.plan_change_notification.cta` | SC-204 | Pending plan-change notification CTA | Review | Revisar | Revisar | Opens `/professional/student-profile?studentId=...` |
+| `pro.home.subtitle` | SC-204 | Dashboard purpose | Priorities, students, and plans in one place. | Prioridades, alunos e planos em um só lugar. | Prioridades, alumnos y planes en un solo lugar. | Sets task-oriented context |
+| `pro.home.overview` | SC-204 | Summary section | Overview | Visão geral | Resumen | |
+| `pro.home.connection_requests` | SC-204 | Pending connection label | Connection requests | Solicitações de conexão | Solicitudes de conexión | Distinct from plan-change requests |
+| `pro.home.connection_requests_body` | SC-204 | Pending connection summary | {count} awaiting your review. | {count} aguardando sua análise. | {count} esperando tu revisión. | |
+| `pro.home.needs_attention` | SC-204 | Priority section | Needs attention | Precisa da sua atenção | Necesita tu atención | |
+| `pro.home.all_caught_up_title` | SC-204 | Settled empty task state | You're all caught up | Tudo em dia | Todo está al día | Only shown after both task sources settle successfully |
+| `pro.home.all_caught_up_body` | SC-204 | Settled empty task explanation | No student requests need your review right now. | Nenhuma solicitação de aluno precisa da sua análise agora. | Ninguna solicitud de alumno necesita tu revisión ahora. | |
+| `pro.home.attention_loading` | SC-204 | Task loading state | Checking for new student requests… | Verificando novas solicitações de alunos… | Comprobando nuevas solicitudes de alumnos… | |
+| `pro.home.attention_error` | SC-204 | Partial task-source failure | Some requests could not be checked. Available dashboard data is still shown. | Não foi possível verificar algumas solicitações. Os dados disponíveis continuam visíveis. | No se pudieron comprobar algunas solicitudes. Los datos disponibles siguen visibles. | Preserves successful task data |
+| `pro.home.manage` | SC-204 | Quick-action section | Manage your work | Gerencie seu trabalho | Gestiona tu trabajo | |
+| `pro.home.cta_nutrition` | SC-204 | Nutrition plan shortcut | Nutrition plans | Planos de nutrição | Planes de nutrición | |
+| `pro.home.cta_training` | SC-204 | Training plan shortcut | Training plans | Planos de treino | Planes de entrenamiento | |
+| `pro.home.subscription_status_unknown` | SC-204 | Unknown capacity shortcut | Capacity data unavailable. Open to refresh. | Dados de capacidade indisponíveis. Abra para atualizar. | Datos de capacidad no disponibles. Abre para actualizar. | Avoids presenting an inferred zero |
+| `pro.home.invite_code.specialty_required` | SC-204 | Invite prerequisite | Add a specialty before creating an invite code. | Adicione uma especialidade antes de criar um código de convite. | Añade una especialidad antes de crear un código de invitación. | Replaces a silent empty invite panel |
+| `pro.home.invite_code.add_specialty` | SC-204 | Invite prerequisite action | Manage specialties | Gerenciar especialidades | Gestionar especialidades | Opens specialty management |
 | `student.nutrition.water.log.label` | SC-209 | Hydration intake label | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
 | `student.nutrition.water.log.placeholder` | SC-209 | Hydration intake placeholder | Amount (ml) | Quantidade (ml) | Cantidad (ml) | BL-104 |
 | `student.nutrition.water.goal_defined_in_plan` | SC-209 | Hydration helper | Water goal is defined in your nutrition plan. | A meta de água é definida no seu plano alimentar. | El objetivo de agua se define en tu plan de nutrición. | BL-104 |
@@ -237,7 +263,12 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `custom_meal.image.upload_failed` | SC-214 | Upload failure helper | We couldn't upload the image. Check your connection and try again. | Não foi possível enviar a imagem. Verifique sua conexão e tente novamente. | No se pudo subir la imagen. Comprueba tu conexión e inténtalo de nuevo. | BL-007 |
 | `custom_meal.image.retry` | SC-214 | Upload retry CTA | Retry upload | Tentar envio novamente | Reintentar subida | BL-007 |
 | `custom_meal.image.file_too_large` | SC-214 | Upload error — file size | The image is too large. Please choose a smaller file. | A imagem é muito grande. Por favor, escolha um arquivo menor. | La imagen es demasiado grande. Por favor, elige un archivo más pequeño. | BL-007 |
+| `custom_meal.image.permission_denied` | SC-214 | Upload error — native permission | Camera or photo library access is required. Grant permission in your device settings and try again. | É necessário permitir o acesso à câmera ou à biblioteca de fotos. Conceda a permissão nas configurações do dispositivo e tente novamente. | Se necesita acceso a la cámara o a la fototeca. Concede el permiso en los ajustes del dispositivo e inténtalo de nuevo. | BL-007 |
 | `custom_meal.image.unauthorized` | SC-214 | Upload error — auth | Upload failed. Please sign out and sign in again. | Falha no envio. Por favor, saia e entre novamente. | Error al subir. Por favor, cierra sesión y vuelve a iniciarla. | BL-007 |
+| `photo_picker.title` | SC-214/SC-215/SC-219 | Native photo-source dialog title | Upload image | Enviar imagem | Subir imagen | Shared by meal image upload and AI analysis |
+| `photo_picker.body` | SC-214/SC-215/SC-219 | Native photo-source dialog helper | Choose a photo source | Escolha a origem da foto | Elige el origen de la foto | Shared by meal image upload and AI analysis |
+| `photo_picker.take_photo` | SC-214/SC-215/SC-219 | Camera action | Take photo | Tirar foto | Tomar foto | Native action sheet |
+| `photo_picker.choose_from_library` | SC-214/SC-215/SC-219 | Photo-library action | Choose from library | Escolher da biblioteca | Elegir de la biblioteca | Native action sheet |
 | `custom_meal.builder.cta_save` | SC-214 | Save action | Save meal | Salvar refeição | Guardar comida | |
 | `custom_meal.builder.validation.grams_positive` | SC-214 | Validation message | Total grams must be greater than zero. | O total em gramas deve ser maior que zero. | El total en gramos debe ser mayor que cero. | |
 | `custom_meal.library.empty.title` | SC-215 | Empty-state title | No custom meals yet | Ainda não há refeições personalizadas | Aún no hay comidas personalizadas | |
@@ -286,6 +317,16 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.subscription.cta_subscribe` | SC-212 | Purchase CTA | Upgrade now | Fazer upgrade agora | Actualizar ahora | |
 | `pro.subscription.cta_restore` | SC-212 | Restore CTA | Restore purchase | Restaurar compra | Restaurar compra | |
 | `pro.subscription.status_active` | SC-212 | Entitlement badge | Subscription active | Assinatura ativa | Suscripción activa | |
+| `pro.subscription.subtitle` | SC-212 | Screen helper | Manage professional access and student capacity. | Gerencie o acesso profissional e a capacidade de alunos. | Gestiona el acceso profesional y la capacidad de alumnos. | Separates access from capacity |
+| `pro.subscription.current_status` | SC-212 | Status section title | Current status | Status atual | Estado actual | |
+| `pro.subscription.status.unknown` | SC-212 | Settled unknown state | Status unavailable | Status indisponível | Estado no disponible | Never used as loading copy |
+| `pro.subscription.status.checking` | SC-212 | Loading state | Checking your subscription status… | Verificando o status da sua assinatura… | Comprobando el estado de tu suscripción… | Progress only |
+| `pro.subscription.status.active_body` | SC-212 | Active entitlement explanation | Your professional subscription tools are available. | As ferramentas da sua assinatura profissional estão disponíveis. | Las herramientas de tu suscripción profesional están disponibles. | |
+| `pro.subscription.status.inactive_body` | SC-212 | Inactive entitlement explanation | Free-tier limits apply until the subscription is reactivated. | Os limites do plano gratuito se aplicam até a assinatura ser reativada. | Los límites del plan gratuito se aplican hasta que se reactive la suscripción. | |
+| `pro.subscription.status.unavailable_body` | SC-212 | Unverified entitlement explanation | We could not verify your entitlement. Restricted actions remain locked. | Não foi possível verificar seu direito de acesso. As ações restritas continuam bloqueadas. | No pudimos verificar tu derecho de acceso. Las acciones restringidas siguen bloqueadas. | Fail-closed state |
+| `pro.subscription.capacity_title` | SC-212 | Capacity section title | Student capacity | Capacidade de alunos | Capacidad de alumnos | |
+| `pro.subscription.free_tier` | SC-212/SC-213 | Free-tier capacity explanation | Free for up to 10 active students. | Grátis para até 10 alunos ativos. | Gratis para hasta 10 alumnos activos. | Active-student limit |
+| `pro.subscription.locked_unknown` | SC-212 | Unknown-entitlement lock explanation | Student-plan actions are temporarily locked until subscription status can be verified. | As ações de plano de aluno estão temporariamente bloqueadas até o status da assinatura ser verificado. | Las acciones de plan de alumno están bloqueadas temporalmente hasta verificar el estado de la suscripción. | Fail-closed state |
 | `pro.subscription.pre_lapse.title` | SC-212 | Pre-lapse warning title | Your subscription is close to expiring | Sua assinatura está perto de expirar | Tu suscripción está a punto de expirar | BL-009 |
 | `pro.subscription.pre_lapse.body` | SC-212 | Pre-lapse warning helper | Renew now to avoid student management locks. | Renove agora para evitar bloqueios no gerenciamento de alunos. | Renueva ahora para evitar bloqueos en la gestión de alumnos. | BL-009 |
 | `pro.subscription.pre_lapse.cta_renew` | SC-212 | Pre-lapse warning CTA | Renew subscription | Renovar assinatura | Renovar suscripción | BL-009 |
@@ -385,6 +426,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `common.error.retry` | Common | Generic error action | Try again | Tentar novamente | Intentar de nuevo | Shared utility string |
 | `common.loading.default` | Common | Generic loading text | Loading... | Carregando... | Cargando... | Shared utility string |
 | `common.empty.no_data` | Common | Generic empty text | Nothing here yet. | Ainda não há nada aqui. | Aún no hay nada aquí. | Use only when screen-specific copy is unavailable |
+| `common.value.unavailable` | Common | Unavailable numeric or summary value | — | — | — | Shared placeholder for a value whose source has not resolved |
 
 | `a11y.loading.default` | Global | SR loading label | Loading… | Carregando… | Cargando… | |
 | `a11y.loading.submitting` | Global | SR submit loading label | Submitting… | Enviando… | Enviando… | |
@@ -398,6 +440,8 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `meal.photo_analysis.analyzing` | SC-219 | In-progress loading text | Analyzing your meal… | Analisando sua refeição… | Analizando tu comida… | BL-108 |
 | `meal.photo_analysis.disclaimer` | SC-219 | Estimate disclaimer | These are AI estimates. Please verify before saving. | Estes são valores estimados pela IA. Verifique antes de salvar. | Estos son valores estimados por IA. Verifícalos antes de guardar. | BR-290; always shown with results |
 | `meal.photo_analysis.error.unrecognizable` | SC-219 | Unrecognizable image error | Couldn't identify a meal in this photo. Try again or fill in manually. | Não foi possível identificar uma refeição nesta foto. Tente novamente ou preencha manualmente. | No se pudo identificar una comida en esta foto. Inténtalo de nuevo o rellena manualmente. | BL-108 |
+| `meal.photo_analysis.error.permission_denied` | SC-219 | Camera/library permission guidance | Camera or photo library access is required. Grant permission in your device settings and try again. | É necessário permitir o acesso à câmera ou à biblioteca de fotos. Conceda a permissão nas configurações do dispositivo e tente novamente. | Se necesita acceso a la cámara o a la fototeca. Concede el permiso en los ajustes del dispositivo e inténtalo de nuevo. | BL-108 |
+| `meal.photo_analysis.error.file_too_large` | SC-219 | Post-compression size error | This photo is still too large after compression. Choose a simpler or smaller image and try again. | Esta foto ainda é muito grande após a compactação. Escolha uma imagem mais simples ou menor e tente novamente. | Esta foto sigue siendo demasiado grande después de comprimirla. Elige una imagen más simple o más pequeña e inténtalo de nuevo. | BL-108 |
 | `meal.photo_analysis.error.quota` | SC-219 | Quota exceeded error | AI analysis is temporarily unavailable. Please fill in manually. | A análise por IA está temporariamente indisponível. Por favor, preencha manualmente. | El análisis de IA no está disponible temporalmente. Por favor, rellena manualmente. | BL-108 |
 | `meal.photo_analysis.error.network` | SC-219 | Network error | Network error during analysis. Check your connection and try again. | Erro de rede durante a análise. Verifique sua conexão e tente novamente. | Error de red durante el análisis. Comprueba tu conexión e inténtalo de nuevo. | BL-108 |
 | `meal.photo_analysis.error.generic` | SC-219 | Generic fallback error | Analysis failed. You can still fill in the fields manually. | A análise falhou. Você ainda pode preencher os campos manualmente. | El análisis falló. Aún puedes rellenar los campos manualmente. | BL-108 |
@@ -497,7 +541,16 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `exercise.muscle_group.full_body` | SC-208 | Muscle group label | Full Body | Corpo Inteiro | Cuerpo Completo | |
 | `pro.plan.predefined.label` | SC-207/208 | Plan kind badge | Predefined plan | Plano predefinido | Plan predefinido | BR-281 |
 
-## Shell — Bottom Tab Navigator
+## Web Subscription Handoff
+
+| Key | Screen | Usage | en-US | pt-BR | es-ES | Notes |
+|---|---|---|---|---|---|---|
+| `pro.subscription.handoff_note` | SC-212 | Browser billing explanation | Browser purchases are unavailable. Continue on mobile to manage your subscription. | Compras no navegador não estão disponíveis. Continue no celular para gerenciar sua assinatura. | Las compras en el navegador no están disponibles. Continúa en el móvil para gestionar tu suscripción. | Web only |
+| `pro.subscription.cta_mobile_handoff` | SC-212/219 | Mobile handoff CTA | Continue on mobile | Continuar no celular | Continuar en el móvil | Replaces purchase/restore on web |
+| `pro.subscription.unavailable_note` | SC-212 | Browser billing unavailable explanation | Subscription changes are not available in this browser right now. You can still refresh your status. | Alterações na assinatura não estão disponíveis neste navegador agora. Você ainda pode atualizar o status. | Los cambios de suscripción no están disponibles ahora en este navegador. Aún puedes actualizar el estado. | Web only; refresh remains available |
+| `pro.subscription.cta_unavailable` | SC-212 | Browser billing unavailable label | Subscription unavailable | Assinatura indisponível | Suscripción no disponible | Capability label; no dead purchase action |
+
+## Shell — Responsive Tab Navigator
 
 | Key | Screen | Usage | en-US | pt-BR | es-ES | Notes |
 |---|---|---|---|---|---|---|

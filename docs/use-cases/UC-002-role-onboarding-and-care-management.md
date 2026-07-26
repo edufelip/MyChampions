@@ -206,12 +206,14 @@
 ## UC-002.15 Subscription Pre-Lapse Warning
 - Primary actor: Professional.
 - Trigger: Entitlement risk window is detected before subscription lapse lock.
-- Preconditions: Professional is near or above cap and entitlement is nearing inactive state.
+- Preconditions: Professional is near or above cap; `professional_pro` remains active; RevenueCat provides a valid expiration timestamp and explicit non-renewal, unsubscribe, or billing-issue risk.
 - Main flow:
-  1. System evaluates entitlement and cap state.
+  1. Native customer info or the server canonical customer manager evaluates entitlement expiry and renewal-risk data independently from cap state.
   2. System surfaces pre-lapse warning in professional surfaces.
   3. Professional is offered renew/restore path before lock.
 - Expected result: Professional receives early warning and recovery path before write lock.
+- Alternate flow:
+  - If expiry/risk metadata is absent, malformed, healthy, or the entitlement is already inactive, the pre-lapse warning is not inferred from student count; normal active, locked, or unknown behavior applies.
 
 ## UC-002.16 Specialty Removal Assist
 - Primary actor: Professional.
@@ -228,6 +230,7 @@
 - Primary actor: Student or professional.
 - Trigger: User interacts with app while offline.
 - Preconditions: Device is offline and cached session/content exists.
+- Alternate startup: When native session refresh or profile hydration fails transiently, restore only the active UID's cached role and terms state for the read-only shell. Rejected sessions and missing or mismatched profiles return to normal auth/onboarding guards.
 - Main flow:
   1. App shows persistent offline/read-only banner.
   2. User attempts a write action.
@@ -307,6 +310,20 @@
 - Alternate flow:
   - If required terms version changes, user is re-routed to terms gate until new version is accepted.
 - Expected result: Onboarding and role journeys only continue after required terms version acceptance.
+
+## UC-002.23 Browser Sign-Out Before Account Switch
+- Primary actor: Authenticated browser user.
+- Trigger: User confirms sign-out and then attempts to authenticate another account.
+- Preconditions: Browser session uses an in-memory access token and rotating HttpOnly refresh cookie.
+- Main flow:
+  1. App starts one credentialed `POST /auth/session/sign-out` request.
+  2. App clears the current in-memory identity and exposes unauthenticated entry immediately while retaining the request as a sign-out barrier.
+  3. Any subsequent email/password, Google, Apple, or local-development authentication waits for that barrier before sending its session-establishing request.
+  4. Sign-out completion releases the barrier.
+  5. Replacement account response becomes the only active in-memory and cookie session.
+- Alternate flow:
+  - If sign-out fails because the server is unreachable, the already-cleared local state remains unauthenticated, the barrier settles, and a later login may retry without deadlock.
+- Expected result: A delayed sign-out response can never clear the replacement account's refresh cookie or leak the prior account state.
 
 ## UC-003.9 Capture Meal Photo For AI Macronutrient Estimation
 - Primary actor: Student (or professional).

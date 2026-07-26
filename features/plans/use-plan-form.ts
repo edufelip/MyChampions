@@ -1,7 +1,7 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { Alert, Keyboard } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/features/platform/haptics-adapter';
 import type { TranslationBinding } from '@/localization';
 
 type TFn = TranslationBinding['t'];

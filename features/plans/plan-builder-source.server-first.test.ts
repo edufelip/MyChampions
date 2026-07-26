@@ -84,7 +84,7 @@ describe('plan-builder source server-first module loading', () => {
             }),
             { status: 200, headers: { 'content-type': 'application/json' } }
           );
-        }) as typeof fetch,
+        }) as AppFetch,
       });
 
       assert.equal(plan.id, 'nutrition-plan-1');
