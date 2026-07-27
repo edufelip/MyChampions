@@ -402,6 +402,7 @@ export function resolveImpact(
   const platforms = new Set<string>();
   const directFeatures = new Set<string>();
   const affectedFeatures = new Set<string>();
+  let globallyWidened = false;
 
   if (options.forceFull) fallbackReasons.push('full execution was explicitly requested');
   if (validationErrors.length > 0) {
@@ -438,6 +439,7 @@ export function resolveImpact(
       sharedRuleIds.add(rule.id);
       for (const platform of rule.platforms ?? []) platforms.add(platform);
       if (rule.impact === 'all') {
+        globallyWidened = true;
         for (const featureId of Object.keys(manifest.features)) affectedFeatures.add(featureId);
         reasons.push(`${path} matched global shared rule ${rule.id}`);
       }
@@ -525,7 +527,7 @@ export function resolveImpact(
     (suiteId) =>
       manifest.suites[suiteId]?.runner === 'detox' &&
       manifest.suites[suiteId]?.platforms?.includes('android') &&
-      (fallbackReasons.length > 0 || platforms.has('android'))
+      (fallbackReasons.length > 0 || globallyWidened || platforms.has('android'))
   );
 
   return {

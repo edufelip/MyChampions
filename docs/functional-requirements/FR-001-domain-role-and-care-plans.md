@@ -181,6 +181,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-268`: The subscription snapshot contract shall carry optional professional-entitlement expiry and authoritative renewal-risk state through native customer info, server persistence, browser hydration, and professional warning UI.
 - `FR-269`: Native purchase, restore, and paywall outcomes shall distinguish success, user cancellation, network failure, and storefront/provider failure; cancellation shall preserve the current gate without being presented as a system error, while failures shall remain actionable after refresh.
 - `FR-270`: Browser sign-out shall clear local identity immediately while retaining the credentialed server request as a barrier that every subsequent email/password, Google, Apple, or local-development authentication request must await before establishing a replacement cookie session. Native bearer-session clearing remains local and does not wait on the browser barrier.
+- `FR-271`: Pull-request UI testing shall resolve changed paths against the target branch merge base, select affected Detox and Playwright suites from explicit feature ownership plus reverse dependency data, widen cross-cutting changes to every applicable platform suite, and fail closed to the complete relevant matrix when impact cannot be determined safely.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

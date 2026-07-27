@@ -84,7 +84,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 ## Delivery NFR Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
-| BL-016 Feature-aware selective test execution | In progress — feature/suite manifest, conservative resolver, ownership, contract tests, and shadow GitHub Actions reporting are implemented; selective Detox/Playwright enforcement remains gated on the documented observation window. | FR-192, FR-193 | N/A | AC-516 | D-192 | TC-518 |
+| BL-016 Feature-aware selective test execution | In progress — feature/suite manifest, conservative resolver, ownership, contract tests, and shadow GitHub Actions reporting are implemented; selective Detox/Playwright enforcement remains gated on the documented observation window. | FR-271 | N/A | AC-516 | D-192 | TC-518 |
 
 All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/TC traceability.
 

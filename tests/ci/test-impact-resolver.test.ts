@@ -78,21 +78,21 @@ function syntheticManifest(): TestImpactManifest {
       },
       'detox:a': {
         runner: 'detox',
-        platforms: ['ios'],
+        platforms: ['ios', 'android'],
         specs: ['e2e/a.e2e.test.js'],
         tier: 'feature',
         ci: true,
       },
       'detox:b': {
         runner: 'detox',
-        platforms: ['ios'],
+        platforms: ['ios', 'android'],
         specs: ['e2e/b.e2e.test.js'],
         tier: 'feature',
         ci: true,
       },
       'detox:c': {
         runner: 'detox',
-        platforms: ['ios'],
+        platforms: ['ios', 'android'],
         specs: ['e2e/c.e2e.test.js'],
         tier: 'feature',
         ci: true,
@@ -124,6 +124,7 @@ test('a feature-only change selects A and its declared reverse dependent, not un
   assert.deepEqual(result.affectedFeatures, ['a', 'c']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:c']);
   assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:c']);
+  assert.deepEqual(result.detoxAndroidSuites, []);
   assert.equal(result.selectedSuites.includes('web:b'), false);
   assert.equal(result.selectedSuites.includes('detox:b'), false);
 });
@@ -151,6 +152,7 @@ test('navigation changes select the complete registered CI matrix', () => {
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
   assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:b', 'detox:c']);
+  assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
 });
 
 test('renames and copies preserve old and new paths', () => {
