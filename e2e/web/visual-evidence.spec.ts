@@ -24,7 +24,9 @@ async function openProfessionalSubscription(page: Page) {
   await expect(page.getByTestId('pro.subscription.warning')).toHaveCount(0);
 }
 
-test.describe('@evidence visual checkpoints', () => {
+test.describe(
+  '@evidence @feature:student @feature:professional @feature:subscription @feature:connections visual checkpoints',
+  () => {
   for (const viewport of viewports) {
     test(`${viewport.name} student onboarding and account shell`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport);
@@ -90,4 +92,5 @@ test.describe('@evidence visual checkpoints', () => {
     await captureEvidence(page, testInfo, 'mobile-manual-invite-fallback');
     await context.close();
   });
-});
+  }
+);

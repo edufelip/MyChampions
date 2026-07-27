@@ -10,7 +10,7 @@ async function capture(page: Page, testInfo: TestInfo, checkpoint: string, testI
   await captureFlowEvidence(page, testInfo, '00-authentication-and-terms', checkpoint);
 }
 
-test.describe('@flow-atlas authentication and terms', () => {
+test.describe('@flow-atlas @feature:auth authentication and terms', () => {
   test('email sign-in validation and terms continuation', async ({ page }, testInfo) => {
     await page.goto('/auth/sign-in');
     await capture(page, testInfo, '01-sign-in', 'auth.signIn.title');

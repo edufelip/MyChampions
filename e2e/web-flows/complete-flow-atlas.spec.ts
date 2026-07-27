@@ -35,7 +35,7 @@ async function capture(
   await captureFlowEvidence(page, testInfo, flow, checkpoint);
 }
 
-test.describe('@flow-atlas complete product flow atlas', () => {
+test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
   test('role onboarding and quick student start', async ({ page }, testInfo) => {
     await page.goto('/auth/role-selection');
     await capture(page, testInfo, '01-role-onboarding', '01-role-selection', 'auth.roleSelection.screen');
