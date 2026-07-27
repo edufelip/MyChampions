@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import {
   changedFilesFromGit,
+  buildWorkingTreeGraph,
   globToRegExp,
   loadManifest,
   parseNameStatus,
@@ -28,7 +29,16 @@ function syntheticManifest(): TestImpactManifest {
     fullFallbackPaths: ['config/test-impact.json', 'scripts/ci/**'],
     sharedRules: [
       { id: 'navigation', paths: ['app/_layout.tsx'], impact: 'all' },
-      { id: 'design-system', paths: ['components/ds/**'], impact: 'reverse-importers' },
+      {
+        id: 'localization',
+        paths: ['docs/screens/v2/localized-copy-table-v2.md'],
+        impact: 'all',
+      },
+      {
+        id: 'design-system',
+        paths: ['components/ds/**', 'components/ui/**'],
+        impact: 'reverse-importers',
+      },
     ],
     features: {
       a: {
@@ -144,6 +154,39 @@ test('reverse import consumers widen a design-system change only to actual consu
   assert.match(result.reasons.join(' '), /reverse import consumers: a/);
 });
 
+test('reverse import graph includes platform-specific module variants', () => {
+  const repository = mkdtempSync(join(tmpdir(), 'mychampions-platform-import-'));
+
+  try {
+    mkdirSync(join(repository, 'components', 'ui'), { recursive: true });
+    mkdirSync(join(repository, 'features', 'a'), { recursive: true });
+    writeFileSync(join(repository, 'components', 'ui', 'icon-symbol.tsx'), 'export const Icon = 1;\n');
+    writeFileSync(
+      join(repository, 'components', 'ui', 'icon-symbol.ios.tsx'),
+      'export const Icon = 2;\n'
+    );
+    writeFileSync(
+      join(repository, 'features', 'a', 'screen.tsx'),
+      "import { Icon } from '@/components/ui/icon-symbol';\nexport const Screen = Icon;\n"
+    );
+
+    const graph = buildWorkingTreeGraph(repository);
+    assert.deepEqual(
+      [...(graph.get('components/ui/icon-symbol.ios.tsx') ?? [])],
+      ['features/a/screen.tsx']
+    );
+
+    const result = resolveImpact(
+      syntheticManifest(),
+      [{ status: 'M', path: 'components/ui/icon-symbol.ios.tsx' }],
+      [graph]
+    );
+    assert.deepEqual(result.affectedFeatures, ['a', 'c']);
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
+
 test('navigation changes select the complete registered CI matrix', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'M', path: 'app/_layout.tsx' },
@@ -211,6 +254,16 @@ test('documentation-only changes skip expensive suites', () => {
 
   assert.equal(result.mode, 'documentation-only');
   assert.deepEqual(result.selectedSuites, []);
+});
+
+test('documentation paths owned by a global rule still select the complete matrix', () => {
+  const result = resolveImpact(syntheticManifest(), [
+    { status: 'M', path: 'docs/screens/v2/localized-copy-table-v2.md' },
+  ]);
+
+  assert.equal(result.mode, 'selective');
+  assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
+  assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
 });
 
 test('impact infrastructure changes fail closed even when they are otherwise unmapped', () => {

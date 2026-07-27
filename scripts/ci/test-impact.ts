@@ -234,17 +234,28 @@ function listWorkingTreeSourceFiles(root: string): string[] {
   return files.sort();
 }
 
-function resolveImportPath(fromPath: string, specifier: string, knownFiles: Set<string>): string | null {
-  if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return null;
+function resolveImportPaths(fromPath: string, specifier: string, knownFiles: Set<string>): string[] {
+  if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return [];
   const base = specifier.startsWith('@/')
     ? specifier.slice(2)
     : posix.normalize(posix.join(posix.dirname(fromPath), specifier));
+  const platformSuffixes = ['.ios', '.android', '.web', '.native'];
   const candidates = [
     base,
+    ...platformSuffixes.flatMap((suffix) =>
+      sourceExtensions.map((extension) => `${base}${suffix}${extension}`)
+    ),
     ...sourceExtensions.map((extension) => `${base}${extension}`),
+    ...platformSuffixes.flatMap((suffix) =>
+      sourceExtensions.map((extension) => `${base}/index${suffix}${extension}`)
+    ),
     ...sourceExtensions.map((extension) => `${base}/index${extension}`),
   ].map(normalizePath);
-  return candidates.find((candidate) => knownFiles.has(candidate)) ?? null;
+  return [...new Set(candidates.filter((candidate) => knownFiles.has(candidate)))];
+}
+
+function resolveImportPath(fromPath: string, specifier: string, knownFiles: Set<string>): string | null {
+  return resolveImportPaths(fromPath, specifier, knownFiles)[0] ?? null;
 }
 
 function createReverseGraph(files: Map<string, string>): ImportGraph {
@@ -254,11 +265,11 @@ function createReverseGraph(files: Map<string, string>): ImportGraph {
   for (const [path, content] of files) {
     const imports = ts.preProcessFile(content, true, true).importedFiles;
     for (const imported of imports) {
-      const resolvedImport = resolveImportPath(path, imported.fileName, knownFiles);
-      if (!resolvedImport) continue;
-      const consumers = reverseGraph.get(resolvedImport) ?? new Set<string>();
-      consumers.add(path);
-      reverseGraph.set(resolvedImport, consumers);
+      for (const resolvedImport of resolveImportPaths(path, imported.fileName, knownFiles)) {
+        const consumers = reverseGraph.get(resolvedImport) ?? new Set<string>();
+        consumers.add(path);
+        reverseGraph.set(resolvedImport, consumers);
+      }
     }
   }
   return reverseGraph;
@@ -466,7 +477,12 @@ export function resolveImpact(
     fallbackReasons.push(`unmapped runtime paths: ${unmappedRuntimePaths.join(', ')}`);
   }
 
-  if (documentationOnly && fallbackReasons.length === 0) {
+  if (
+    documentationOnly &&
+    fallbackReasons.length === 0 &&
+    directFeatures.size === 0 &&
+    sharedRuleIds.size === 0
+  ) {
     return {
       schemaVersion: 1,
       mode: 'documentation-only',
