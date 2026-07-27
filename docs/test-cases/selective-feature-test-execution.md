@@ -24,7 +24,7 @@ selection misses.
 ## Resolution contract
 
 For pull requests, the resolver computes the Git merge base and uses
-`git diff --name-status -M -C <merge-base> <head>`. Rename and copy entries
+`git diff --name-status -M -C --find-copies-harder <merge-base> <head>`. Rename and copy entries
 contribute old and new paths; deletion entries retain the deleted path.
 
 The selected feature set is the union of direct path owners, suite owners,

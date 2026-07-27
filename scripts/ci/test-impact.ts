@@ -210,11 +210,15 @@ export function mergeBaseFromGit(root: string, base: string, head: string): stri
 
 export function changedFilesFromGit(root: string, base: string, head: string): ChangedFile[] {
   const mergeBase = mergeBaseFromGit(root, base, head);
-  const output = execFileSync('git', ['diff', '--name-status', '-M', '-C', mergeBase, head], {
-    cwd: root,
-    encoding: 'utf8',
-    maxBuffer: 20 * 1024 * 1024,
-  });
+  const output = execFileSync(
+    'git',
+    ['diff', '--name-status', '-M', '-C', '--find-copies-harder', mergeBase, head],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+    }
+  );
   return parseNameStatus(output);
 }
 

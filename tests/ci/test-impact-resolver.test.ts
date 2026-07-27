@@ -315,3 +315,36 @@ test('merge-base change detection ignores base-only commits merged into a featur
     rmSync(repository, { recursive: true, force: true });
   }
 });
+
+test('Git change detection preserves the source path for copies of unchanged files', () => {
+  const repository = mkdtempSync(join(tmpdir(), 'mychampions-test-impact-copy-'));
+  const git = (...args: string[]) =>
+    execFileSync('git', args, { cwd: repository, encoding: 'utf8' });
+  const source = 'export const copiedValue = "stable source content";\n';
+
+  try {
+    git('init', '-b', 'develop');
+    git('config', 'user.name', 'Test Impact');
+    git('config', 'user.email', 'test-impact@example.invalid');
+    mkdirSync(join(repository, 'features', 'a'), { recursive: true });
+    writeFileSync(join(repository, 'features', 'a', 'source.ts'), source);
+    git('add', '.');
+    git('commit', '-m', 'base');
+
+    git('checkout', '-b', 'feature/copy');
+    mkdirSync(join(repository, 'features', 'b'), { recursive: true });
+    writeFileSync(join(repository, 'features', 'b', 'copy.ts'), source);
+    git('add', '.');
+    git('commit', '-m', 'copy unchanged feature source');
+
+    assert.deepEqual(changedFilesFromGit(repository, 'develop', 'feature/copy'), [
+      {
+        status: 'C',
+        previousPath: 'features/a/source.ts',
+        path: 'features/b/copy.ts',
+      },
+    ]);
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
