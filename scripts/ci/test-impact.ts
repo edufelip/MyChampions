@@ -571,18 +571,25 @@ export function resolveImpact(
 }
 
 export function discoverRegisteredTestFiles(root: string): string[] {
-  const directories = ['e2e', 'e2e/web', 'e2e/web-server', 'e2e/web-flows', 'e2e/web-flows-auth'];
+  const directory = 'e2e';
   const files = new Set<string>();
-  for (const directory of directories) {
-    const absolute = resolve(root, directory);
-    if (!existsSync(absolute)) continue;
-    for (const entry of readdirSync(absolute)) {
-      const path = normalizePath(join(directory, entry));
-      if (statSync(join(root, path)).isFile() && /\.(e2e\.test\.js|spec\.ts)$/.test(path)) {
+  const absolute = resolve(root, directory);
+  if (!existsSync(absolute)) return [];
+
+  const walk = (current: string): void => {
+    for (const entry of readdirSync(current)) {
+      const entryPath = join(current, entry);
+      if (statSync(entryPath).isDirectory()) {
+        walk(entryPath);
+        continue;
+      }
+      const path = normalizePath(relative(root, entryPath));
+      if (/\.(e2e\.test\.js|spec\.ts)$/.test(path)) {
         files.add(path);
       }
     }
-  }
+  };
+  walk(absolute);
   return [...files].sort();
 }
 

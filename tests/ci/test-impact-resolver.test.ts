@@ -7,6 +7,7 @@ import test from 'node:test';
 import {
   changedFilesFromGit,
   buildWorkingTreeGraph,
+  discoverRegisteredTestFiles,
   globToRegExp,
   loadManifest,
   parseNameStatus,
@@ -25,7 +26,7 @@ function syntheticManifest(): TestImpactManifest {
     maxChangedFiles: 500,
     criticalSuites: ['detox:a'],
     documentationPaths: ['docs/**', '*.md'],
-    runtimePaths: ['features/**', 'components/**', 'app/**'],
+    runtimePaths: ['features/**', 'components/**', 'app/**', '**/*.ts'],
     fullFallbackPaths: ['config/test-impact.json', 'scripts/ci/**'],
     sharedRules: [
       { id: 'navigation', paths: ['app/_layout.tsx'], impact: 'all' },
@@ -247,6 +248,15 @@ test('unmapped runtime changes fail closed to the full matrix', () => {
   assert.deepEqual(result.unmappedRuntimePaths, ['features/unknown/new-source.ts']);
 });
 
+test('source files in unknown nested directories fail closed to the full matrix', () => {
+  const result = resolveImpact(syntheticManifest(), [
+    { status: 'A', path: 'utils/nested/new-helper.ts' },
+  ]);
+
+  assert.equal(result.mode, 'full-fallback');
+  assert.deepEqual(result.unmappedRuntimePaths, ['utils/nested/new-helper.ts']);
+});
+
 test('documentation-only changes skip expensive suites', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'M', path: 'docs/architecture/selective-tests.md' },
@@ -343,6 +353,27 @@ test('Git change detection preserves the source path for copies of unchanged fil
         previousPath: 'features/a/source.ts',
         path: 'features/b/copy.ts',
       },
+    ]);
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
+
+test('registered UI spec discovery recurses through nested E2E directories', () => {
+  const repository = mkdtempSync(join(tmpdir(), 'mychampions-test-impact-specs-'));
+
+  try {
+    mkdirSync(join(repository, 'e2e', 'web', 'auth'), { recursive: true });
+    mkdirSync(join(repository, 'e2e', 'native', 'student'), { recursive: true });
+    writeFileSync(join(repository, 'e2e', 'web', 'auth', 'login.spec.ts'), 'test("login", () => {});\n');
+    writeFileSync(
+      join(repository, 'e2e', 'native', 'student', 'home.e2e.test.js'),
+      'describe("home", () => {});\n'
+    );
+
+    assert.deepEqual(discoverRegisteredTestFiles(repository), [
+      'e2e/native/student/home.e2e.test.js',
+      'e2e/web/auth/login.spec.ts',
     ]);
   } finally {
     rmSync(repository, { recursive: true, force: true });
