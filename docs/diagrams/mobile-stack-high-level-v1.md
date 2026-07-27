@@ -45,3 +45,7 @@ flowchart LR
 - Remote auth/storage provider wiring is future work; mobile source modules must not depend on a mobile-owned Firebase runtime path.
 - NFR baseline assumes no hard dependency on EAS for build/release.
 - Native iOS and Android pipelines are owned in CI/CD with native toolchains.
+- PR CI resolves changed paths through feature ownership, declared dependencies,
+  and reverse import consumers before proposing focused Detox and Playwright
+  suites. Shared-global or unknown runtime changes fail closed to the complete
+  registered matrix; the initial rollout remains shadow-only.

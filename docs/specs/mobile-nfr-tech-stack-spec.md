@@ -114,6 +114,15 @@ Define non-functional architecture constraints and technology options for the mo
   - Cons: Additional vendor dependency.
 - Recommended starting point: GitHub Actions + Fastlane.
 
+Feature-aware test selection uses `config/test-impact.json` plus
+`scripts/ci/resolve-test-impact.ts`. The resolver combines path ownership,
+declared reverse feature dependencies, and TypeScript reverse import consumers.
+It fails closed to the full registered UI matrix for shared-global, tooling,
+native, invalid, unknown, or unresolved changes. The first rollout stage is
+shadow-only: current PR workflows remain authoritative while the selective
+workflow records proposed Detox and Playwright matrices and universal fast
+checks remain required.
+
 ## High-Level Architecture (Target)
 1. Expo/React Native client handles UI, routing, and offline read models.
 2. MyChampions server and Postgres manage identity and sessions.
@@ -135,10 +144,10 @@ Current local server contract: root-level `server/` plus this migration task car
 - Observability: structured logs with no sensitive token/link leakage.
 
 ## Traceability Links
-- Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`.
+- Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`, `FR-271`.
 - Business rules: `BR-253`, `BR-254`, `BR-255`, `BR-256`, `BR-257`, `BR-258`, `BR-259`, `BR-260`, `BR-261`, `BR-275`, `BR-284`, `BR-285`.
-- Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`.
-- Test cases: `TC-501`, `TC-502`, `TC-503`, `TC-504`, `TC-505`, `TC-506`, `TC-507`, `TC-508`, `TC-509`, `TC-510`, `TC-511`, `TC-512`, `TC-513`, `TC-514`.
+- Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-516`.
+- Test cases: `TC-501`, `TC-502`, `TC-503`, `TC-504`, `TC-505`, `TC-506`, `TC-507`, `TC-508`, `TC-509`, `TC-510`, `TC-511`, `TC-512`, `TC-513`, `TC-514`, `TC-515`, `TC-516`, `TC-517`, `TC-518`.
 - Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
 
 ## Open Questions

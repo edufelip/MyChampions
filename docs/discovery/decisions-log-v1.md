@@ -98,7 +98,7 @@
 - `D-091`: Superseded. Native backend config selection now exposes the MyChampions server URL and no longer ships mobile-owned provider config files.
 - `D-092`: CI/CD workflow baseline is inherited from `meer` and adapted to `my-champions`:
   - Workflows cover Android/iOS PR checks, native CI artifacts, and release-branch validation pipelines.
-  - This project standardizes JS dependency installation in CI with `npm ci` (not `yarn`).
+  - This project standardizes JS dependency installation in CI with Yarn 1.22.22, `yarn.lock`, and `yarn install --frozen-lockfile`; npm lockfiles and `npm ci` are not used.
 - `D-093`: CI/CD secret names and requirements are governed by `docs/discovery/ci-secrets-matrix-v1.md`; workflow secret changes must update that document in the same change.
 - `D-094`: CI/CD bootstrap/validation execution should be tracked through issue template `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` for operational consistency.
 - `D-095`: Primary app-domain database model is MyChampions server-owned Postgres through Drizzle. New persistence planning must extend server migrations, route/repository tests, and current product docs.
@@ -433,6 +433,13 @@
   - `test_student` and `Student Paywall v1 Test` are temporary provider artifacts for the approved Test Store evidence batch. Promotion to `default_student` is a separate provider approval.
 
 - `D-191`: Browser account switching is serialized behind a single in-flight cookie sign-out barrier. `clearSession()` is the only account-screen cleanup boundary and remains awaitable; it clears local identity immediately while the credentialed sign-out attempt continues. Every server-backed email/password, social, and local-development session-establishment path waits for that barrier. Native bearer sessions retain immediate local clearing and persisted-token removal.
+
+- `D-192`: Feature-aware UI-test selection uses one checked-in manifest and a fail-closed resolver for Detox and Playwright.
+  - Feature ownership, declared dependencies, suite membership, fixture profiles, shared rules, and platform scope live in `config/test-impact.json`; `.github/CODEOWNERS` starts with `@edufelip` as the fallback owner.
+  - Pull requests compare the merge base with the exact head. Renames/copies include old and new paths, deletions retain old ownership, and base/head reverse-import graphs widen indirect impact.
+  - Navigation, localization, global design tokens, native/tooling inputs, resolver changes, invalid metadata, unknown runtime paths, resolution errors, or more than 500 changed files fail closed to the complete registered CI matrix. `ci:full` and `CI_FORCE_FULL` may only broaden selection.
+  - The initial workflow is intentionally shadow-only: it reports proposed Playwright/Detox matrices while existing Android, iOS, and web PR workflows remain authoritative. Fast unit/lint/type checks run universally. Selective device/browser execution becomes enforceable only after at least two weeks and 20 representative PRs with zero known selection misses.
+  - Full expensive coverage remains the target for nightly and release/hotfix gates after fixture-profile execution and runner capacity are proven. Existing `nutrition`/`plans` and `professional`/`subscription` bidirectional implementation dependencies are explicit legacy boundary exceptions; new undeclared cycles fail validation.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
