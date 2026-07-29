@@ -57,7 +57,7 @@ in-app support access.
 ### 6. Danger Zone
 - Danger-tinted background group.
 - Body copy explaining data retention policy.
-- **Request account deletion** — destructive button; inline confirmation panel → `deleteAccountAndDataFromSource()` → awaited `clearSession()`; inline success/error feedback when the user remains on the screen; disabled when offline. The MyChampions server removes direct account-owned local rows and rewrites retained relationship/history rows to a `deleted_account_*` pseudonym so the deleted auth UID is not preserved.
+- **Request account deletion** — destructive button; inline confirmation panel → `deleteAccountAndDataFromSource()` → awaited `clearSession()`; inline success/error feedback when the user remains on the screen; disabled when offline. The MyChampions server removes direct account-owned local rows and rewrites retained relationship/history rows to a `deleted_account_*` pseudonym so the deleted auth UID is not preserved. The explicit development E2E auth fixture completes this source operation without a server/provider mutation, then exercises the same awaited local-session cleanup and sign-in redirect.
 
 ### 7. App Version Footer
 - Subtle centered text: "Version {app version}" from `Constants.expoConfig.version`.
@@ -87,7 +87,7 @@ in-app support access.
   - `useNetworkStatus()`: connectivity state.
   - `useLocale()`: `activeLocale` (current effective locale for the language row label).
 - Outputs:
-  - `deleteAccountAndDataFromSource()` + `signOutFromSource()`: account deletion.
+  - `deleteAccountAndDataFromSource()` + awaited `clearSession()`: account deletion and post-deletion session cleanup.
   - `requestPasswordResetFromSource()`: password reset request.
   - `router.push('/settings/language-select')`: navigates to SC-222 for language selection.
   - `router.push('/shared/webview')`: opens legal URLs in the shared in-app WebView screen.
