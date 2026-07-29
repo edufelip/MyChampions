@@ -87,7 +87,7 @@ reproducible and auditable.
 ## Configured Self-Hosted Runner Boundaries
 | Selected lane | Exact labels | Required host capabilities | Current evidence status |
 |---|---|---|---|
-| Web | `self-hosted, Linux, X64, mychampions-ci, mychampions-web` | Repository-scoped Linux/WSL runner; Git and outbound access; Playwright browser/system dependencies; capacity for Expo and the optional in-memory backend | `mychampions-ci-ubuntu` is registered and online; the promotion PR supplies exact-head browser proof |
+| Web | `self-hosted, Linux, X64, mychampions-ci, mychampions-web` | Repository-scoped Linux/WSL runner; Git and outbound access; Playwright browser/system dependencies; `unzip` for pinned Bun bootstrap; capacity for Expo and the optional in-memory backend | `mychampions-ci-ubuntu` is registered and online; the promotion PR supplies exact-head browser proof |
 | Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; `Pixel_10` AVD; Gradle wrapper support | The same `mychampions-ci-ubuntu` service is registered and online; the promotion PR supplies exact-head emulator proof |
 | iOS | `self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios` | Repository-scoped Apple Silicon runner; Xcode 26 with iOS SDK 26+; `iPhone 17` simulator; CocoaPods; Homebrew path | `mychampions-ios-ci-m5` is registered and online; the promotion PR supplies exact-head simulator proof |
 
@@ -127,6 +127,10 @@ the user manager. The existing Meer WSL root service remains enabled but
 inactive; its listener was restarted manually and must be checked as online
 before relying on that peer. This known service-manager difference does not
 weaken the shared hook lock while either listener is running.
+
+The WSL runner path includes a user-local Ubuntu `unzip` 6.00 installation at
+`/home/eduardo/.local/bin/unzip`. It is required by `oven-sh/setup-bun` and was
+validated by extracting and executing Bun 1.3.10 without elevated privileges.
 
 Runner registration tokens are ephemeral bootstrap credentials and must not be
 stored in repository secrets, issue comments, screenshots, or logs.

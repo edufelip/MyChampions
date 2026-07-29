@@ -88,6 +88,11 @@ Expensive jobs run only when selected:
 - WSL Android: Gradle lint/unit checks, one `devDebug` app/test build, and
   selected Android Detox phases.
 
+The Android lint boundary is part of the gate. API-33 splash-only attributes
+live in `values-v33`, camera hardware is optional because manual invite entry
+remains available, and the manifest declares the notification capability used
+by the Expo video playback service.
+
 `mychampions-ios-ci-m5` serves the Mac lane and
 `mychampions-ci-ubuntu` serves both WSL lanes. Each runner service accepts one
 job at a time, and repository concurrency prevents same-platform overlap.

@@ -29,7 +29,8 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   deletions preserve historical and current ownership; invalid, unknown,
   oversized, unresolved, merge-queue, scheduled, release/hotfix, or explicit-full
   inputs select the complete registered CI matrix. Every selected executable
-  profile must pass, and a selected skipped/empty lane fails the stable gate.
+  profile must pass, the Android lane must pass native lint/unit/build checks,
+  and a selected skipped/empty lane fails the stable gate.
 
 ## Gherkin Scenarios
 ```gherkin

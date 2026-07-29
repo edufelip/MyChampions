@@ -46,6 +46,12 @@ Define non-functional architecture constraints and technology options for the mo
   profile; signed `productionRelease` Detox evidence is an explicit command
   that requires `CI_VERSION_CODE`, forwards it to Gradle, and retains the
   private-keystore requirements.
+- The selected Android lane runs `lintDevDebug` before Detox. The manually
+  maintained native baseline keeps camera hardware optional because manual
+  invite entry remains available, declares Android 13 notification capability
+  required by the Expo video playback service, and places
+  `windowSplashScreenBehavior` in `values-v33` so the API-33 attribute does not
+  violate the API-24 minimum.
 
 ## Constraints From Platform Docs
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.

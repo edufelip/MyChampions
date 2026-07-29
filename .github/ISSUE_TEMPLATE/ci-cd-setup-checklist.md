@@ -51,7 +51,8 @@ workflows. Leave every item unchecked until its evidence is attached.
       `self-hosted,Linux,X64,mychampions-ci,mychampions-web,mychampions-android`;
       the web and Android jobs intentionally select capability subsets of this
       same runner.
-- [ ] Verify Playwright browser/system dependencies for web.
+- [ ] Verify Playwright browser/system dependencies and `unzip` for the pinned
+      Bun bootstrap used by server-backed web suites.
 - [ ] Verify Android SDK/platform tools, hardware acceleration, and the
       `Pixel_10` AVD for Android.
 - [ ] Install the runner as a persistent service and record service-status
