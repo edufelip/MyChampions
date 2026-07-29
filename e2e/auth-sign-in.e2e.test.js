@@ -79,16 +79,19 @@ describe('Auth Sign-In', () => {
 
     await element(by.id('auth.createAccount.submitButton')).tap();
 
-    await waitFor(element(by.id('auth.createAccount.error.passwordConfirmation')))
-      .toBeVisible()
-      .whileElement(by.id('auth.createAccount.scrollView'))
-      .scroll(120, 'down');
+    const createAccountScrollView = element(by.id('auth.createAccount.scrollView'));
+    const passwordConfirmationError = element(
+      by.id('auth.createAccount.error.passwordConfirmation'),
+    );
+    await waitFor(passwordConfirmationError).toExist().withTimeout(5000);
+    await createAccountScrollView.scrollTo('bottom', NaN, 0.2);
+    await waitFor(passwordConfirmationError).toBeVisible().withTimeout(5000);
     await expect(element(by.id('auth.createAccount.error.password'))).toBeVisible();
-    await expect(element(by.id('auth.createAccount.error.passwordConfirmation'))).toBeVisible();
+    await expect(passwordConfirmationError).toBeVisible();
+    await createAccountScrollView.scrollTo('top', NaN, 0.2);
     await waitFor(element(by.id('auth.createAccount.error.nameRequired')))
       .toBeVisible()
-      .whileElement(by.id('auth.createAccount.scrollView'))
-      .scroll(360, 'up');
+      .withTimeout(5000);
     await expect(element(by.id('auth.createAccount.error.emailRequired'))).toBeVisible();
   });
 
