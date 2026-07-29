@@ -10,7 +10,64 @@ import {
   type SelectivePlatform,
 } from './selective-execution';
 import { prewarmMetroBundle } from './metro-bundle-prewarm';
-import { stopMetroProcessGroup } from './metro-process-group';
+import {
+  stopMetroProcessGroup,
+  stopRunnerOwnedProcessGroup,
+} from './metro-process-group';
+
+type TrackedProcessKind = 'invocation' | 'metro';
+
+const activeProcessGroups = new Map<ChildProcess, TrackedProcessKind>();
+const cancellationStops = new Map<ChildProcess, Promise<void>>();
+let cancellationSignal: NodeJS.Signals | undefined;
+
+function cancellationExitCode(signal: NodeJS.Signals): number {
+  return signal === 'SIGINT' ? 130 : 143;
+}
+
+function throwIfCancellationRequested(): void {
+  if (cancellationSignal) {
+    throw new Error(`Selective execution cancelled by ${cancellationSignal}`);
+  }
+}
+
+function stopForCancellation(
+  child: ChildProcess,
+  kind: TrackedProcessKind
+): Promise<void> {
+  const existing = cancellationStops.get(child);
+  if (existing) return existing;
+
+  const options = { exitTimeoutMs: 500, pollIntervalMs: 50 };
+  const stop =
+    kind === 'metro'
+      ? stopMetroProcessGroup(child, options)
+      : stopRunnerOwnedProcessGroup(child, options);
+  cancellationStops.set(child, stop);
+  void stop.catch(() => {
+    // The top-level cancellation path reports the retained rejection.
+  });
+  return stop;
+}
+
+function trackProcessGroup(
+  child: ChildProcess,
+  kind: TrackedProcessKind
+): void {
+  activeProcessGroups.set(child, kind);
+  if (cancellationSignal) void stopForCancellation(child, kind);
+}
+
+function requestCancellation(signal: NodeJS.Signals): void {
+  if (cancellationSignal) return;
+  cancellationSignal = signal;
+  for (const [child, kind] of activeProcessGroups) {
+    void stopForCancellation(child, kind);
+  }
+}
+
+process.on('SIGINT', () => requestCancellation('SIGINT'));
+process.on('SIGTERM', () => requestCancellation('SIGTERM'));
 
 function valueAfter(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -48,19 +105,31 @@ async function runChild(
   cwd: string,
   env: NodeJS.ProcessEnv
 ): Promise<void> {
+  throwIfCancellationRequested();
   console.log(`$ ${JSON.stringify([command, ...args])}`);
   const child = spawn(command, args, {
     cwd,
+    detached: process.platform !== 'win32',
     env,
     shell: false,
     stdio: 'inherit',
   });
-  const result = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
-    (resolveResult, reject) => {
+  trackProcessGroup(child, 'invocation');
+  let result: { code: number | null; signal: NodeJS.Signals | null };
+  try {
+    result = await new Promise<{
+      code: number | null;
+      signal: NodeJS.Signals | null;
+    }>((resolveResult, reject) => {
       child.once('error', reject);
       child.once('exit', (code, signal) => resolveResult({ code, signal }));
-    }
-  );
+    });
+    const cancellationStop = cancellationStops.get(child);
+    if (cancellationStop) await cancellationStop;
+  } finally {
+    activeProcessGroups.delete(child);
+  }
+  throwIfCancellationRequested();
   if (result.code !== 0) {
     throw new Error(
       `${command} failed with ${result.code === null ? `signal ${result.signal}` : `exit code ${result.code}`}`
@@ -127,6 +196,7 @@ async function runWithFreshMetro(
   invocation: CommandInvocation,
   cwd: string
 ): Promise<void> {
+  throwIfCancellationRequested();
   const port = invocation.metro!.port;
   if (await portIsOpen(port)) {
     throw new Error(
@@ -146,10 +216,13 @@ async function runWithFreshMetro(
       stdio: 'inherit',
     }
   );
+  trackProcessGroup(metro, 'metro');
 
   try {
     await waitForMetro(port, metro);
+    throwIfCancellationRequested();
     const bundleByteLength = await prewarmMetroBundle(invocation.metro!);
+    throwIfCancellationRequested();
     if (metro.exitCode !== null || metro.signalCode !== null) {
       throw new Error(
         `Metro exited with ${
@@ -165,10 +238,17 @@ async function runWithFreshMetro(
     let cleanupFailed = false;
     let cleanupError: unknown;
     try {
-      await stopMetroProcessGroup(metro);
+      const cancellationStop = cancellationStops.get(metro);
+      if (cancellationStop) {
+        await cancellationStop;
+      } else {
+        await stopMetroProcessGroup(metro);
+      }
     } catch (error) {
       cleanupFailed = true;
       cleanupError = error;
+    } finally {
+      activeProcessGroups.delete(metro);
     }
 
     if (!(await waitForPortToClose(port, 5_000))) {
@@ -186,6 +266,7 @@ async function runWithFreshMetro(
 }
 
 async function runInvocation(invocation: CommandInvocation, cwd: string): Promise<void> {
+  throwIfCancellationRequested();
   assertRequiredEnvironment(invocation);
   if (invocation.metro) {
     await runWithFreshMetro(invocation, cwd);
@@ -200,6 +281,7 @@ async function runInvocation(invocation: CommandInvocation, cwd: string): Promis
 }
 
 async function main(): Promise<void> {
+  throwIfCancellationRequested();
   const root = resolve(process.cwd());
   const platform = parsePlatform(valueAfter('--platform'));
   const suitesJson = valueAfter('--suites-json') ?? process.env.SELECTED_SUITES_JSON;
@@ -236,9 +318,22 @@ async function main(): Promise<void> {
   for (const invocation of plan.invocations) {
     await runInvocation(invocation, root);
   }
+  throwIfCancellationRequested();
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
+  const cleanupResults = await Promise.allSettled(cancellationStops.values());
+  for (const result of cleanupResults) {
+    if (result.status === 'rejected') {
+      console.error(
+        result.reason instanceof Error
+          ? result.reason.message
+          : String(result.reason)
+      );
+    }
+  }
   console.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
+  process.exitCode = cancellationSignal
+    ? cancellationExitCode(cancellationSignal)
+    : 1;
 });

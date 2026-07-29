@@ -51,7 +51,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Native fixture lifecycle hardening isolates image-upload source-sheet and synthetic-success assertions in separate scenario-gated phases, rejects missing authenticated scenarios, and routes Android React Native debug traffic through the configured localhost ADB reverse tunnel before every instrumented launch.
 - `Done`: Default Android Detox build/test commands use the secret-free `productionDebug` profile. Signed `productionRelease` Detox evidence remains available through explicit `*:android:release` commands; its build command requires and forwards `CI_VERSION_CODE` and retains the private signing guards.
 - `Done`: Web Playwright coverage is organized into smoke, functional, accessibility, evidence, and full batches. Each run creates ignored HTML/JSON/JUnit reports, screenshot attachments, metadata, and a manual-validation checklist. The expansion and review contract is documented in `docs/test-cases/web-playwright-batches-and-manual-validation.md`.
-- `Done`: The authoritative selective workflow runs affected browser suites and checks out the coordinated `mychampions-api` branch only when a selected server-backed cookie-session suite requires it. The legacy `.github/workflows/web-pr.yml` path is manual-only. Both configurations install locked Bun dependencies without secrets; Playwright owns the in-memory backend and Expo processes on isolated ports and terminates them after the run.
+- `In progress`: The protected-default-branch trusted selective workflow runs affected browser suites and checks out the coordinated `mychampions-api` branch only when a selected server-backed cookie-session suite requires it. The legacy `.github/workflows/web-pr.yml` path is manual-only. Both configurations install locked Bun dependencies without provider or production secrets, and Playwright owns the in-memory backend and Expo processes on isolated ports. D-195 promotion still requires resolving the backend branch once to a full commit SHA, checking out that detached SHA, and recording it with the mobile head evidence.
 - `Pending`: Complete the server-backed, provider-live, browser-media, assistive-technology, and full student/professional workflow matrix in `docs/discovery/web-pending-items-and-future-improvements.md` before web release approval.
 
 ## CI/CD Wiring
@@ -60,10 +60,107 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Workflows are adapted to this repository conventions (`yarn install --frozen-lockfile` with `yarn.lock`, `mychampions` iOS workspace/scheme, and `com.edufelip.mychampions` package identifiers).
 - `Done`: CI secret inventory documented in `docs/discovery/ci-secrets-matrix-v1.md` with required/optional scope per workflow.
 - `Done`: BL-016 manifest and ownership foundation inventories the feature domains, UI suites, executable fixture profiles, shared/global rules, and platform scope; resolver and contract tests cover feature-only changes, reverse dependencies, shared imports, renames, copies, deletions, documentation-only changes, conservative full fallback, dedicated iOS Metro routing that leaves unrelated listeners untouched, and fail-closed Metro cleanup when macOS process groups contain foreign-UID members.
-- `Done`: `.github/workflows/pr-selective-tests.yml` is the authoritative exact-head gate for `main` PRs. It keeps universal unit/lint/type checks, runs selected Playwright and both-platform Detox suites through validated executors, and runs a complete scheduled/merge-queue/release/hotfix matrix. The former elapsed-time/PR-count shadow gate was explicitly superseded by D-193; the promotion PR itself must pass the complete matrix.
-- `Done`: Green selective runs create no GitHub Actions artifact or cache. Native apps/APKs remain on the runner for their single job; bounded failure diagnostics alone use one-day retention. `CI_FORCE_FULL=true` and `ci:full` remain broaden-only rollback controls.
-- `Done`: Repository-scoped `mychampions-ios-ci-m5` and `mychampions-ci-ubuntu` runners are registered with the exact labels in `docs/discovery/ci-secrets-matrix-v1.md`. Both physical hosts use the same fail-closed job-hook lock contract as their Meer peer, and the frozen implementation passed cross-platform contention, bounded-wait, worker-crash, and keeper-crash stress coverage without overlap or leaked ownership. The WSL listener has effective KVM access; its Android lane rejects stale emulator state, preboots and health-checks `Pixel_10` on `emulator-5554`, and verifies exact cleanup; and its web lane uses a MyChampions-only browser cache with service-context Chromium, Firefox, and WebKit launch probes.
-- `Promotion evidence gate`: The promotion pull request must pass the complete web/iOS/Android matrix on its exact head. GitHub check results, not checked-in workflow text or local tests, are the evidence; this is a merge gate rather than deferred wiring.
+- `In progress`: `.github/workflows/trusted-selective-freshness.yml` is the protected-default-branch, GitHub-hosted-only `pull_request_target` metadata invalidator for owner-authored same-upstream pull requests. `.github/workflows/pr-selective-tests.yml` is the GitHub-hosted-only `pull_request` preflight for bases `main`, `release/**`, and `hotfix/**`, plus future-compatible `merge_group`; it never checks out candidate code or targets self-hosted labels, and its pull-request job waits for the pending description matching the canonical fingerprint of its exact event. `.github/workflows/trusted-selective-tests.yml` is the protected-default-branch authoritative workflow for authorized `workflow_run`, direct `main` push, schedule, and `workflow_dispatch` at ref `main` with a live-resolved PR number and forced full selection. Push/schedule runs do not publish the pull-request gate. It has no direct merge-group/release/hotfix trigger; merge-group authorization validates every associated live PR, and authorized release/hotfix PR runs force the complete matrix. It keeps universal unit/lint/type checks, runs selected Playwright and both-platform Detox suites through validated executors, and runs complete safety matrices. D-193 supersedes the former elapsed-time/PR-count shadow precondition for selection/execution, while D-195 keeps authoritative promotion and merge blocked until the security and enforcement gates below are verified.
+- `Done`: Green selective runs create no GitHub Actions artifact or cache. Native apps/APKs remain on the runner for their single job; bounded failure diagnostics alone use one-day retention. The 2026-07-29 repository read-back after failure cleanup is zero Actions artifacts and zero Actions caches; the exact-head promotion run must preserve that baseline. The `ci:full` label and owner `workflow_dispatch` remain broaden-only full-matrix controls. `CI_FORCE_FULL` remains available only to local/direct resolver invocation; the trusted workflow does not consume a repository variable by that name.
+- `Done (capacity only)`: Repository-scoped `mychampions-ios-ci-m5` and `mychampions-ci-ubuntu` runners are registered with the exact labels in `docs/discovery/ci-secrets-matrix-v1.md`. Both physical hosts use the same fail-closed resource-lock contract as their Meer peer, and the frozen lock implementation passed contention/crash coverage. Existing KVM, emulator, and browser launch probes establish capacity only; they do not establish the D-195 authorization boundary.
+- `In progress (D-195 promotion gate)`: The complete persistent-runner security and repository-enforcement boundary requires the trusted-workflow and live evidence below.
+  - Keep `trusted-selective-freshness.yml` as a protected-`main`,
+    GitHub-hosted-only `pull_request_target` metadata workflow with no candidate
+    checkout. It posts event-fingerprinted freshness pending only for a live
+    owner-authored, same-upstream eligible pull request. Keep the `pull_request` preflight for
+    bases `main`, `release/**`, and `hotfix/**`, plus future-compatible
+    `merge_group`, GitHub-hosted-only; its pull-request job has only
+    `statuses: read` and waits for its matching fingerprinted pending status. The supported candidate
+    path dispatches from `trusted-selective-tests.yml` loaded from protected
+    default branch `main` after `workflow_run`; release/hotfix PRs force full,
+    and static runner labels are not technically restricted to that workflow.
+  - Before candidate checkout or self-hosted scheduling, use a GitHub-hosted authorization job to validate the triggering run against the live PR API: exact current head SHA, same upstream/base, owner actor/triggering actor/sender, workflow path/ref/SHA, and event/ref. Prove fork, identity, provenance, malformed-input, head-mismatch, and stale-run negatives.
+  - Give candidate and self-hosted jobs only `contents: read`. Give
+    `statuses: write` only to the trusted hosted freshness invalidator,
+    authorization/status initializer, and always-run finalizer. Serialize all
+    three in one repository-global `queue: max` writer group so pending writers
+    are queued rather than replaced. Freshness replaces reusable
+    exact-head success with pending before preflight completes; the initializer
+    requires exactly one eligible open, ready, owner-authored same-upstream PR for
+    the head and posts its own pending; the finalizer repeats that unique binding
+    and writes success/failure only while the latest pending target is still
+    owned by its run. Fork/unidentifiable denials publish no status. Separately,
+    keep stable per-pull-request `cancel-in-progress: true` on the freshness
+    workflow so superseded metadata work is coalesced before the writer job
+    enters the global queue; retain stable per-PR/head cancellation for
+    superseded trusted validation work.
+  - `Done (2026-07-29 setting read-back)`: GitHub approval is required for all external fork contributors, the default workflow token is read-only, and workflows cannot approve pull requests. Treat host started/completed hooks as resource locks and defense-in-depth only, and never approve or run fork/untrusted workflow changes on the persistent self-hosted runners.
+  - Record the personal-public-repository limitation: static runner labels are
+    targetable by any GitHub-approved workflow and cannot use organization
+    runner-group workflow allowlists. Keep `edufelip` as sole collaborator,
+    never approve fork or untrusted workflow changes, and pause the runners
+    before adding a collaborator or granting such approval. That scope expansion
+    requires a private broker, JIT, or ephemeral-runner architecture.
+  - `Done (2026-07-29 policy read-back and contract audit)`: selected-actions mode allows GitHub-owned actions plus `oven-sh/setup-bun@*` and `r0adkll/upload-google-play@*`, does not generally allow verified-creator actions, and requires SHA pins; every checked-in `uses:` reference has a reviewed full commit SHA.
+  - Bootstrap `trusted-selective-freshness.yml` and
+    `trusted-selective-tests.yml` onto default branch `main`, prove their live
+    registration and one matching freshness/preflight fingerprint handshake,
+    and only then enable the PR preflight as a required check.
+  - Resolve the coordinated backend once to a 40-character SHA, checkout that detached object, and record it in exact-run evidence.
+  - In each native creation/use step, arm idempotent `EXIT`, `INT`, and `TERM`
+    handlers before materializing secrets. Treat `ENV_FILE_CONTENT` only as the
+    initial step-environment transport consumed by the atomic writer, then unset
+    it immediately before Yarn, Gradle, `xcrun`, or recovery subprocesses. The
+    secret bytes then live only in a validated per-job regular file below
+    `$RUNNER_TEMP` with mode `0600`; make workspace `.env` an absolute symlink to
+    that exact target. Normal/signal cleanup removes the link without following
+    it, removes the target, and verifies both absent. Treat runner-temp teardown
+    as hard-kill defense-in-depth, and make the next trusted
+    checkout/preflight remove and verify absence of any unexpected workspace
+    `.env` entry or fail closed. Run long build/test commands as supervised
+    isolated process groups behind an interruptible shell wait. The outer
+    supervisor grace must include coordinator detached invocation/Metro group
+    `TERM`/`KILL`, the outer fallback, and the executable fixture for that
+    nested path. Finish bounded exact-device cleanup within GitHub's documented
+    7.5-second `SIGINT` plus 2.5-second `SIGTERM` grace window.
+  - Store non-secret ownership recovery records in a permission-hardened
+    runner-local persistent directory supplied by the runner service environment
+    `MYCHAMPIONS_NATIVE_STATE_ROOT`. Require an absolute canonical, runner-owned,
+    non-symlink, mode-`0700` directory outside the workspace and `$RUNNER_TEMP`.
+    Access it only while the host lock is held and validate each ledger file's
+    owner, mode, type/no-symlink status, completeness, and strict
+    numeric/UUID/name fields. Never place `.env`, its runner-temp target, or
+    secrets there.
+  - `Done (Mac service configuration/read-back 2026-07-29)`: the Mac runner
+    service provides
+    `MYCHAMPIONS_NATIVE_STATE_ROOT=/Users/eduwaldo/.local/state/github-actions/mychampions-native-recovery`.
+    `Pending WSL endpoint recovery`: configure and read back
+    `MYCHAMPIONS_NATIVE_STATE_ROOT=/home/eduardo/.local/state/github-actions/mychampions-native-recovery`
+    in the WSL runner service before accepting native recovery evidence there.
+  - Close the creation-to-metadata cancellation window. Before iOS creation,
+    persist the unique workflow-owned simulator name/namespace so an interrupted
+    `simctl create` can be recovered before UUID handoff. Make Android
+    launch-to-PID capture and durable PID/UID/start-time/AVD/port/serial/command
+    handoff cancellation-safe, or recover only a process proving that complete
+    exact identity.
+  - Before new device creation, the next locked trusted run consumes any stale
+    workflow-owned record, revalidates exact identity, and deletes/verifies only
+    that resource. Remove records only after exact absence is proved. Cleanup or
+    recovery failure retains evidence and fails closed; never use global
+    `simctl shutdown all`, `pkill`, arbitrary QEMU signaling, or unrelated
+    ADB/device mutation. Treat later `if: always()` verifiers as defense-in-depth
+    and keep host hooks resource-lock-only.
+  - `Pending executable recovery contract`: Exercise both `SIGINT` and `SIGTERM`,
+    interruption before UUID/PID metadata handoff, cleanup failure with retained
+    records, exact next-run recovery, malformed/incomplete record rejection,
+    bounded `130`/`143` exit, workspace-link plus runner-temp secret-target
+    removal, outer-supervisor grace through coordinator detached-group
+    `TERM`/`KILL`, supervised-child termination, and unrelated-resource
+    preservation.
+  - `Pending live cancellation evidence`: cancel both native lanes during a supervised build and during selected test execution. Prove workspace `.env` link and exact runner-temp secret target absence, no supervised child/process-group survivor, exact owned-device absence with owner-record removal on success or retained validated recovery evidence on cleanup failure, unrelated-device preservation, and host-lock release within the documented runner cancellation boundary; then prove the next locked run recovers the exact stale resource before creating a replacement.
+  - Record that GitHub merge queues are unavailable to this personal public
+    repository; checked-in `merge_group` support is future-compatible. Require
+    `main` protection with pull requests, strict up-to-date branches, exact
+    `Hosted candidate preflight`, exact `Selective CI gate`, conversation
+    resolution, administrator enforcement, zero approvals, and no direct-push or
+    merge bypass. CODEOWNERS provides routing only because the sole author cannot
+    approve their own pull request.
+- `Promotion evidence gate`: The promotion pull request must pass TC-519's trusted-workflow provenance, authorization-negative, stale-run, token-isolation, sole-collaborator/external-approval, repository-setting, cleanup, and exact-status probes plus the complete web/iOS/Android matrix on the same exact candidate head. Read-only workflow/run, host resource-lock, repository-setting, collaborator-roster, and GitHub status evidence—not checked-in workflow text, prior runner registration, or local tests—are required. No D-195 live deployment/settings evidence is claimed here yet.
 
 ## Professional Screen Wiring (Phase 5)
 - `Done`: SC-202 Specialty screen (`app/professional/specialty.tsx`) implemented — specialty list/add, blocker counts, removal, and credential upsert now use MyChampions server `GET /professional/specialties`, `POST /professional/specialties`, `GET /professional/specialties/:specialty/blockers`, `DELETE /professional/specialties/:specialtyId`, and `PUT /professional/specialties/:specialtyId/credential` with local bearer auth and fail closed without local/E2E auth.

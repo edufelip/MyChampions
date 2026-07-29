@@ -8,7 +8,17 @@ Code structure, fixture-based Playwright coverage, responsive navigation,
 platform adapters, cookie-session contracts, and the feature-selective workflow
 contract are implemented. The legacy `web-pr.yml` workflow is manual-only.
 The combined WSL web/Android runner is registered with its shared-host lock.
-The promotion pull request must still supply a green remote exact-head matrix.
+The promotion pull request must still satisfy D-195's GitHub-hosted-only PR
+preflight, protected-`main` trusted-workflow provenance, triggering-run/live-PR
+authorization, token isolation, exact-status publishing, all-external fork
+approval, stale-safe same-head rerun handling, pinned-action policy, exact
+backend SHA, cleanup, and
+required-main-gate evidence, then supply a green remote exact-head matrix. No
+live D-195 workflow/repository setting is claimed here.
+Static personal-repository runner labels remain targetable by any approved
+workflow, so promotion also requires sole-owner collaborator evidence and a
+never-approve-fork/untrusted-workflow operating rule; those runners must pause
+before that scope changes.
 Nothing in this document authorizes deployment, provider-console changes,
 production origins, browser billing, secrets, or infrastructure mutation.
 

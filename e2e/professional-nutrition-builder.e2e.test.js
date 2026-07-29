@@ -2,7 +2,12 @@ const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? des
 const {
   advanceFocusedEditor,
   dismissFocusedEditor,
+  submitFocusedEditor,
+  waitForElementAbsent,
+  waitForElementActionable,
   waitForElementEnabled,
+  waitForElementPresent,
+  waitForElementText,
 } = require('./native-editor-actions');
 const { tapCredentialSkip } = require('./professional-specialty-actions');
 
@@ -92,13 +97,16 @@ describeWithE2EAuthSession('Professional Nutrition Builder', () => {
     await searchInput.tap();
     await searchInput.replaceText('rice');
     await expect(searchInput).toHaveText('rice');
-    await dismissFocusedEditor('pro.nutrition_item.searchInput');
-    await waitFor(element(by.id('pro.nutrition_item.searchResult.e2e-food-rice')))
+    await submitFocusedEditor('pro.nutrition_item.searchInput');
+    const searchResult = element(by.id('pro.nutrition_item.searchResult.e2e-food-rice'));
+    await waitFor(searchResult)
       .toBeVisible()
       .whileElement(by.id('pro.nutrition_meal.screen'))
       .scroll(180, 'down', 0.5, 0.75);
-    await element(by.id('pro.nutrition_item.searchResult.e2e-food-rice')).tap();
+    await waitForElementActionable('pro.nutrition_item.searchResult.e2e-food-rice');
+    await searchResult.tap();
 
+    await waitForElementPresent('pro.nutrition_item.selectedFood', 10000);
     await waitFor(element(by.id('pro.nutrition_item.selectedFood')))
       .toBeVisible()
       .whileElement(by.id('pro.nutrition_meal.screen'))
@@ -114,7 +122,7 @@ describeWithE2EAuthSession('Professional Nutrition Builder', () => {
       .scroll(360, 'down', 0.5, 0.75);
     await element(by.id('pro.nutrition_item.add')).tap();
 
-    await waitFor(element(by.id('pro.nutrition_item.form'))).not.toExist().withTimeout(10000);
+    await waitFor(element(by.id('pro.nutrition_item.form'))).not.toBeVisible().withTimeout(10000);
     await waitFor(element(by.id('pro.nutrition_meal.foodRow.E2E_Brown_Rice')))
       .toBeVisible()
       .whileElement(by.id('pro.nutrition_meal.screen'))
@@ -128,7 +136,8 @@ describeWithE2EAuthSession('Professional Nutrition Builder', () => {
     await waitFor(deleteAction).toBeVisible().withTimeout(5000);
     await deleteAction.tap();
 
-    await waitFor(element(by.id('pro.nutrition_meal.foodRow.E2E_Brown_Rice'))).not.toExist().withTimeout(10000);
+    await waitForElementText('pro.nutrition_meal.total.calories', '0 kcal', 15000);
+    await waitForElementAbsent('pro.nutrition_meal.foodRow.E2E_Brown_Rice', 10000);
     await expect(element(by.id('pro.nutrition_meal.total.calories'))).toHaveText('0 kcal');
   });
 });

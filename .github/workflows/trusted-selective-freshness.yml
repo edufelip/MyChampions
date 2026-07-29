@@ -1,0 +1,359 @@
+name: Trusted selective CI freshness
+
+on:
+  pull_request_target:
+    branches:
+      - main
+      - release/**
+      - hotfix/**
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - converted_to_draft
+      - edited
+      - labeled
+      - unlabeled
+
+permissions: {}
+
+concurrency:
+  group: trusted-selective-freshness-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  invalidate-stale-status:
+    name: Invalidate stale selective status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: mychampions-selective-status-writer
+      queue: max
+    permissions:
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Replace any stale exact-head success with pending
+        env:
+          ACTIONS_TOKEN: ${{ github.token }}
+          EVENT_ACTION: ${{ github.event.action }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          REPOSITORY_OWNER_ID: ${{ github.repository_owner_id }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import re
+          import sys
+          import urllib.error
+          import urllib.request
+          from typing import Any
+
+
+          REPOSITORY = "edufelip/MyChampions"
+          OWNER = "edufelip"
+          OWNER_ID = 34727187
+          TRUSTED_PATH = ".github/workflows/trusted-selective-freshness.yml"
+          TRUSTED_REF = f"{REPOSITORY}/{TRUSTED_PATH}@refs/heads/main"
+          STATUS_CONTEXT = "Selective CI gate"
+          SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+          ALLOWED_ACTIONS = {
+              "opened",
+              "synchronize",
+              "reopened",
+              "ready_for_review",
+              "converted_to_draft",
+              "edited",
+              "labeled",
+              "unlabeled",
+          }
+
+
+          def fail(message: str) -> None:
+              raise RuntimeError(message)
+
+
+          def env(name: str) -> str:
+              value = os.environ.get(name, "")
+              if not value or value != value.strip() or any(ord(char) < 32 for char in value):
+                  fail(f"{name} is missing or malformed")
+              return value
+
+
+          def mapping(value: Any, field: str) -> dict[str, Any]:
+              if not isinstance(value, dict):
+                  fail(f"{field} is not an object")
+              return value
+
+
+          def positive_integer(value: Any, field: str) -> int:
+              if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+                  fail(f"{field} is not a positive integer")
+              return value
+
+
+          def exact_sha(value: Any, field: str) -> str:
+              if not isinstance(value, str) or SHA_RE.fullmatch(value) is None:
+                  fail(f"{field} is not an exact commit SHA")
+              return value
+
+
+          def allowed_base(value: Any, field: str) -> str:
+              if not isinstance(value, str) or not value:
+                  fail(f"{field} is missing")
+              if (
+                  value != "main"
+                  and not value.startswith("release/")
+                  and not value.startswith("hotfix/")
+              ):
+                  fail(f"{field} is outside the protected CI bases")
+              return value
+
+
+          def api(path: str) -> dict[str, Any]:
+              request = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {env('ACTIONS_TOKEN')}",
+                      "User-Agent": "mychampions-selective-freshness",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          fail(f"GitHub API returned {response.status}")
+                      payload = json.load(response)
+              except (
+                  OSError,
+                  urllib.error.HTTPError,
+                  urllib.error.URLError,
+                  json.JSONDecodeError,
+              ):
+                  fail(f"GitHub API request failed for {path}")
+              return mapping(payload, f"GitHub API response for {path}")
+
+
+          def upstream_repository(value: Any, field: str) -> None:
+              repository = mapping(value, field)
+              if repository.get("full_name") != REPOSITORY:
+                  fail(f"{field} is not the upstream repository")
+              if positive_integer(repository.get("id"), f"{field}.id") != int(
+                  env("REPOSITORY_ID")
+              ):
+                  fail(f"{field} has the wrong repository ID")
+              owner = mapping(repository.get("owner"), f"{field}.owner")
+              if owner.get("login") != OWNER:
+                  fail(f"{field} has an untrusted owner")
+
+
+          def event_fingerprint(event: object) -> str:
+              if not isinstance(event, dict):
+                  raise RuntimeError("Pull-request event payload is malformed.")
+              pull = event.get("pull_request")
+              if not isinstance(pull, dict):
+                  raise RuntimeError("Pull-request event payload is missing.")
+
+              def identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "login": value.get("login"),
+                      "node_id": value.get("node_id"),
+                  }
+
+              def repository_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "full_name": value.get("full_name"),
+                      "node_id": value.get("node_id"),
+                      "owner": identity(value.get("owner")),
+                  }
+
+              def ref_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "label": value.get("label"),
+                      "ref": value.get("ref"),
+                      "sha": value.get("sha"),
+                      "repo": repository_identity(value.get("repo")),
+                      "user": identity(value.get("user")),
+                  }
+
+              def label_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "name": value.get("name"),
+                      "node_id": value.get("node_id"),
+                  }
+
+              labels = pull.get("labels")
+              if not isinstance(labels, list):
+                  labels = []
+              label_identities = sorted(
+                  (label_identity(label) for label in labels),
+                  key=lambda label: (
+                      str(label.get("id", "")),
+                      str(label.get("name", "")),
+                  ),
+              )
+              projection = {
+                  "action": event.get("action"),
+                  "after": event.get("after"),
+                  "before": event.get("before"),
+                  "changes": event.get("changes"),
+                  "event_label": label_identity(event.get("label")),
+                  "number": event.get("number"),
+                  "sender": identity(event.get("sender")),
+                  "pull_request": {
+                      "base": ref_identity(pull.get("base")),
+                      "body": pull.get("body"),
+                      "draft": pull.get("draft"),
+                      "head": ref_identity(pull.get("head")),
+                      "id": pull.get("id"),
+                      "labels": label_identities,
+                      "merge_commit_sha": pull.get("merge_commit_sha"),
+                      "merged": pull.get("merged"),
+                      "node_id": pull.get("node_id"),
+                      "number": pull.get("number"),
+                      "state": pull.get("state"),
+                      "title": pull.get("title"),
+                      "updated_at": pull.get("updated_at"),
+                      "user": identity(pull.get("user")),
+                  },
+              }
+              encoded = json.dumps(
+                  projection,
+                  ensure_ascii=True,
+                  separators=(",", ":"),
+                  sort_keys=True,
+              ).encode("utf-8")
+              return hashlib.sha256(encoded).hexdigest()[:24]
+
+
+          def post_pending(candidate: str, fingerprint: str) -> None:
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{REPOSITORY}/statuses/{candidate}",
+                  data=json.dumps(
+                      {
+                          "state": "pending",
+                          "context": STATUS_CONTEXT,
+                          "description": (
+                              f"Freshness event {fingerprint} awaits trusted validation."
+                          ),
+                          "target_url": (
+                              f"https://github.com/{REPOSITORY}/actions/runs/"
+                              f"{env('GITHUB_RUN_ID')}"
+                          ),
+                      }
+                  ).encode("utf-8"),
+                  method="POST",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {env('ACTIONS_TOKEN')}",
+                      "Content-Type": "application/json",
+                      "User-Agent": "mychampions-selective-freshness",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 201:
+                          fail(f"GitHub status API returned {response.status}")
+              except (OSError, urllib.error.HTTPError, urllib.error.URLError):
+                  fail("GitHub status invalidation failed")
+
+
+          try:
+              if env("REPOSITORY") != REPOSITORY or env("REPOSITORY_OWNER") != OWNER:
+                  fail("workflow repository is not trusted")
+              if env("GITHUB_REF_VALUE") != "refs/heads/main":
+                  fail("freshness workflow is not executing from main")
+              if env("WORKFLOW_REF") != TRUSTED_REF:
+                  fail("freshness workflow_ref is not the default-branch workflow")
+              if exact_sha(env("WORKFLOW_SHA"), "WORKFLOW_SHA") != exact_sha(
+                  env("GITHUB_SHA_VALUE"), "GITHUB_SHA"
+              ):
+                  fail("freshness workflow SHA does not match main")
+              if env("EVENT_ACTION") not in ALLOWED_ACTIONS:
+                  fail("pull-request action is not allowlisted")
+
+              with open(env("GITHUB_EVENT_PATH"), "r", encoding="utf-8") as event_file:
+                  event = mapping(json.load(event_file), "event")
+              upstream_repository(event.get("repository"), "event.repository")
+              if event.get("action") != env("EVENT_ACTION"):
+                  fail("event action changed")
+
+              raw_number = env("PULL_REQUEST_NUMBER")
+              if not raw_number.isdigit():
+                  fail("pull-request number is malformed")
+              number = int(raw_number)
+              event_pull = mapping(event.get("pull_request"), "event.pull_request")
+              if positive_integer(event_pull.get("number"), "event.pull_request.number") != number:
+                  fail("event pull-request number changed")
+
+              pull = api(f"/repos/{REPOSITORY}/pulls/{number}")
+              if positive_integer(pull.get("number"), "pull_request.number") != number:
+                  fail("live pull-request number changed")
+              if pull.get("state") != "open" or pull.get("merged") is not False:
+                  fail("pull request is not open and unmerged")
+
+              event_base = mapping(event_pull.get("base"), "event.pull_request.base")
+              event_head = mapping(event_pull.get("head"), "event.pull_request.head")
+              event_user = mapping(event_pull.get("user"), "event.pull_request.user")
+              live_base = mapping(pull.get("base"), "pull_request.base")
+              live_head = mapping(pull.get("head"), "pull_request.head")
+              live_user = mapping(pull.get("user"), "pull_request.user")
+              if int(env("REPOSITORY_OWNER_ID")) != OWNER_ID:
+                  fail("repository owner ID is not trusted")
+              for user, field in (
+                  (event_user, "event.pull_request.user"),
+                  (live_user, "pull_request.user"),
+              ):
+                  if (
+                      user.get("login") != OWNER
+                      or positive_integer(user.get("id"), f"{field}.id") != OWNER_ID
+                  ):
+                      fail(f"{field} is not the trusted repository owner")
+              upstream_repository(event_base.get("repo"), "event.pull_request.base.repo")
+              upstream_repository(live_base.get("repo"), "pull_request.base.repo")
+              upstream_repository(event_head.get("repo"), "event.pull_request.head.repo")
+              upstream_repository(live_head.get("repo"), "pull_request.head.repo")
+              event_base_ref = allowed_base(
+                  event_base.get("ref"), "event.pull_request.base.ref"
+              )
+              live_base_ref = allowed_base(live_base.get("ref"), "pull_request.base.ref")
+              if event_base_ref != live_base_ref:
+                  fail("live pull-request base changed after the event")
+              event_head_sha = exact_sha(
+                  event_head.get("sha"), "event.pull_request.head.sha"
+              )
+              live_head_sha = exact_sha(live_head.get("sha"), "pull_request.head.sha")
+              if event_head_sha != live_head_sha:
+                  fail("live pull-request head changed after the event")
+
+              post_pending(live_head_sha, event_fingerprint(event))
+              print(f"Invalidated stale selective status for {live_head_sha}.")
+          except Exception as error:
+              print(f"Selective status invalidation failed: {error}", file=sys.stderr)
+              raise SystemExit(1)
+          PY

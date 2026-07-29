@@ -16,7 +16,13 @@ describeWithE2EAuthSession('Student Home Dashboard', () => {
 
     await waitFor(element(by.id('student.home.screen'))).toBeVisible().withTimeout(10000);
     await waitFor(element(by.id('student.home.hydrationCard'))).toBeVisible().withTimeout(10000);
-    await waitFor(element(by.id('student.home.training.emptyCta'))).toBeVisible().withTimeout(5000);
-    await waitFor(element(by.id('student.home.nutrition.emptyCta'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('student.home.training.emptyCta')))
+      .toBeVisible()
+      .whileElement(by.id('student.home.screen'))
+      .scroll(320, 'down', 0.5, 0.75);
+    await waitFor(element(by.id('student.home.nutrition.emptyCta')))
+      .toBeVisible()
+      .whileElement(by.id('student.home.screen'))
+      .scroll(320, 'down', 0.5, 0.75);
   });
 });

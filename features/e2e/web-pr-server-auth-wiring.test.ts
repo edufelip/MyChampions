@@ -16,7 +16,10 @@ test('web PR workflow runs the real cookie-session browser contract against its 
   assert.doesNotMatch(workflow, /^\s{2}pull_request:/m);
   assert.match(workflow, /repository: edufelip\/mychampions-api/);
   assert.match(workflow, /path: node_modules\/\.ci-my-champions-api/);
-  assert.match(workflow, /uses: oven-sh\/setup-bun@v2[\s\S]*?bun-version: 1\.3\.10/);
+  assert.match(
+    workflow,
+    /uses: oven-sh\/setup-bun@[0-9a-f]{40} # v2\.2\.0[\s\S]*?bun-version: 1\.3\.10/
+  );
   assert.match(
     workflow,
     /name: Install coordinated backend dependencies[\s\S]*?working-directory: node_modules\/\.ci-my-champions-api[\s\S]*?run: bun install --frozen-lockfile/

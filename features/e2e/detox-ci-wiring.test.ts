@@ -158,11 +158,32 @@ test('selective native execution fully prewarms Metro before Detox launches', ()
     readinessIndex < prewarmIndex && prewarmIndex < detoxIndex,
     'executor must finish Metro bundle prewarming before Detox launches'
   );
+  assert.match(
+    executor,
+    /process\.on\('SIGINT', \(\) => requestCancellation\('SIGINT'\)\)/
+  );
+  assert.match(
+    executor,
+    /process\.on\('SIGTERM', \(\) => requestCancellation\('SIGTERM'\)\)/
+  );
+  assert.match(
+    executor,
+    /detached: process\.platform !== 'win32'[\s\S]*?trackProcessGroup\(child, 'invocation'\)/
+  );
+  assert.match(executor, /trackProcessGroup\(metro, 'metro'\)/);
+  assert.match(
+    executor,
+    /stopRunnerOwnedProcessGroup\(child, options\)/
+  );
+  assert.match(
+    executor,
+    /exitTimeoutMs: 500, pollIntervalMs: 50/
+  );
 });
 
 test('iOS selective CI reserves a dedicated Metro port and routes every app launch to it', () => {
   const workflow = readFileSync(
-    join(root, '.github', 'workflows', 'pr-selective-tests.yml'),
+    join(root, '.github', 'workflows', 'trusted-selective-tests.yml'),
     'utf8'
   );
   const detoxConfig = readFileSync(join(root, '.detoxrc.js'), 'utf8');

@@ -9,8 +9,9 @@ Mobile platform constraints and delivery workflow without EAS dependency.
 - `AC-503`: Mobile UI utility-class styling is implemented with NativeWind in MVP.
 - `AC-504`: Release branch iOS builds are distributed through TestFlight.
 - `AC-505`: Pull requests targeting `main` run the required feature-aware native
-  and web checks. Successful build outputs stay ephemeral on self-hosted runners;
-  only bounded failure diagnostics may be uploaded for one day.
+  and web checks after AC-542's persistent-runner promotion gates pass.
+  Successful build outputs stay ephemeral on self-hosted runners; only bounded
+  failure diagnostics may be uploaded for one day.
 - `AC-506`: Image/media uploads are client-compressed before upload through the MyChampions server.
 - `AC-507`: Runtime crash/ANR monitoring provider is selected before production release.
 - `AC-508`: Additional non-crash monitoring tooling is not required for MVP.
@@ -61,6 +62,89 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   signaling return `EPERM`; surviving runner-owned members or an occupied Metro
   port fail the lane. The Android lane must pass native lint/unit/build checks,
   and a selected skipped/empty lane fails the stable gate.
+- `AC-542`: Persistent-runner promotion passes only when the supported
+  pull-request path for bases `main`, `release/**`, and `hotfix/**` begins with a
+  protected-`main`, GitHub-hosted-only `pull_request_target` freshness workflow
+  that checks out no candidate code and posts event-fingerprinted pending only
+  for a live owner-authored same-upstream pull request. A GitHub-hosted-only
+  preflight with `statuses: read` must observe the pending description for the
+  canonical fingerprint of its exact event before it dispatches self-hosted work from
+  `.github/workflows/trusted-selective-tests.yml` loaded from protected
+  default branch `main` after a completed `workflow_run`. Before candidate
+  checkout or self-hosted scheduling, that trusted workflow's GitHub-hosted
+  authorization job must compare the triggering run and event with the live
+  pull-request API and validate the exact head SHA, same upstream/base
+  repository, owner actor/triggering actor/sender, workflow path/ref/SHA, and
+  allowed event/ref/base. A live release/hotfix PR must use the same
+  protected-`main` trusted workflow and force the complete matrix; no trusted
+  workflow definition is loaded directly from its target branch. Fork,
+  identity, workflow-provenance, malformed-event, and
+  live-head mismatch or stale-run probes must fail authorization. Merge-group
+  authorization must validate every associated live pull request with the same
+  upstream and owner provenance. Candidate and self-hosted jobs have only
+  `contents: read`. Only three trusted GitHub-hosted jobs may have
+  `statuses: write`: the freshness invalidator, authorization/status initializer,
+  and always-run finalizer. They must share one repository-global `queue: max`
+  writer group. Initial and final publication must each prove that the exact head
+  identifies one eligible open, ready, owner-authored same-upstream pull request;
+  the finalizer may post success or failure only while the latest status remains
+  its own in-progress pending target. Fork or unidentifiable authorization
+  denials publish no candidate status. The freshness workflow must use stable
+  per-pull-request `cancel-in-progress: true` to coalesce superseded metadata
+  work before its job enters the global writer queue. That layered concurrency,
+  stable per-PR/head validation cancellation, and serialized status writes must
+  ensure a `ci:full` label change cannot leave or overwrite stale success.
+  Direct `main` push and schedule events use the
+  trusted default-branch workflow without publishing the SHA-global pull-request
+  context. Manual runs must dispatch that workflow at
+  ref `main`, supply a pull-request number, resolve its live head/base through
+  the API, and force the complete matrix; the trusted workflow has no direct
+  `merge_group` trigger. Merge-group support is future-compatible only because a
+  personal public repository cannot enable GitHub merge queues; current
+  enforcement must require strict up-to-date branches. Repository evidence must
+  also prove
+  all-external fork approval, an approved action allowlist with full-SHA pinning
+  enforcement, and `main` protection requiring a pull request, strict up-to-date
+  branches, exact check `Hosted candidate preflight`, exact status
+  `Selective CI gate`, conversation resolution, administrator enforcement, zero
+  approvals, and no bypass. Exact backend-SHA recording and ephemeral secret
+  handling remain required: `ENV_FILE_CONTENT` is only the initial
+  step-environment transport consumed by the atomic writer and is immediately
+  unset before Yarn, Gradle, `xcrun`, or recovery subprocesses. Secret bytes
+  then exist only in a validated per-job mode-`0600` regular file below
+  `$RUNNER_TEMP`, while workspace `.env` is an absolute symlink to that exact
+  target. Same-step `EXIT`/`INT`/`TERM` cleanup must remove and verify both link
+  and target; runner-temp cleanup is hard-kill defense-in-depth, and a trusted
+  next checkout removes without following any unexpected workspace `.env`
+  entry and fails closed unless absence is proved. Interruptible
+  isolated-process-group supervision, including outer grace for coordinator
+  detached-group `TERM`/`KILL` cleanup and its executable fixture,
+  cancellation-safe durable native ownership, bounded exact-device signal
+  cleanup, retained recovery metadata after cleanup failure, and next-run exact
+  stale-resource recovery before new device creation remain required. The
+  separate non-secret recovery ledger must live below the runner service
+  environment `MYCHAMPIONS_NATIVE_STATE_ROOT`, an absolute canonical,
+  runner-owned, non-symlink, mode-`0700` persistent directory outside the
+  workspace and `$RUNNER_TEMP`; it may be touched only while the host lock is
+  held and only after validated path, owner/mode, file type/no-symlink,
+  complete-record, and strict numeric/UUID/name checks. `.env`, its target, and
+  secrets remain ephemeral and never enter the ledger. The proof must cover
+  interrupted creation before UUID/PID handoff,
+  live mid-build/mid-test cancellation within GitHub's ten-second signal grace
+  window, the exact-UDID/workflow-namespace iOS simulator, the exact
+  PID/UID/start-time/AVD/port/serial/command Android emulator, preservation of
+  unrelated resources, the complete exact-head matrix, and zero successful-run
+  artifacts/caches. Owner records may be removed only after absence is proved;
+  malformed, incomplete, or failed recovery retains evidence and fails closed.
+  Host hooks are resource locks and defense-in-depth only, never the
+  authorization boundary.
+  Because a personal repository has no organization runner-group workflow
+  allowlist, static repository runner labels remain technically targetable by
+  any GitHub-approved workflow. The enforceable operational boundary is
+  all-external manual workflow approval, sole-owner collaborator access, and
+  never approving fork or untrusted workflow changes. Adding a collaborator or
+  approving external workflow changes requires pausing the runners until a
+  private broker, JIT, or ephemeral-runner boundary is in place.
 
 ## Gherkin Scenarios
 ```gherkin
@@ -141,4 +225,13 @@ Feature: Mobile platform and delivery constraints
     Given a pull request changes navigation, localization, native configuration, or CI tooling
     When feature-aware impact is resolved
     Then the complete applicable web, iOS, and Android matrix is selected
+
+  Scenario: Trusted default-branch workflow authorizes persistent-runner work
+    Given a GitHub-hosted-only pull-request preflight completed
+    When the default-branch workflow-run authorization compares the triggering run with the live pull-request API
+    Then fork, identity, workflow-provenance, event, ref, or stale-head mismatches are rejected before candidate checkout
+    And only an authorized exact head may reach a self-hosted job with contents-read permission
+    And trusted freshness posts the exact event-fingerprinted pending status before the hosted preflight completes
+    And the hosted initializer and finalizer publish owned pending then terminal Selective CI gate on that candidate SHA
+    And a superseded same-head run cannot overwrite the newer status cycle
 ```

@@ -66,9 +66,10 @@
 - `BR-255`: MVP utility-class styling standard in mobile UI is NativeWind.
 - `BR-256`: QA distribution policy is branch-driven:
   - Release branches publish to TestFlight.
-  - Pull requests into `main` prove selected native builds/tests on self-hosted
-    runners without publishing successful build artifacts; bounded failure
-    diagnostics expire after one day.
+  - After BR-344 promotion gates are verified, pull requests into `main` prove
+    selected native builds/tests on self-hosted runners without publishing
+    successful build artifacts; bounded failure diagnostics expire after one
+    day.
   - A selected native phase is ready to launch Detox only after its freshly
     owned Metro process has returned and fully streamed the exact platform
     development bundle under that phase's runtime fixture environment.
@@ -148,6 +149,78 @@
 - `BR-341`: New `student_pro` purchases may be initiated only by locked student accounts. A professional who enters an AI gate is routed to `default_professional`, because `professional_pro` already grants AI access. Existing valid `student_pro` entitlements continue to unlock AI regardless of current role, but missing or malformed role state presents no paywall.
 - `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native bearer-session persistence keeps its existing immediate-clear behavior.
 - `BR-343`: The SC-207 add-food editor participates in the meal screen's measured layout. It may not be positioned outside the scroll extent, and native automation must use stable fields/actions and semantic confirmation copy rather than hidden coordinates.
+- `BR-344`: The supported PR path for target bases `main`, `release/**`, and
+  `hotfix/**` begins with protected-`main`, GitHub-hosted-only
+  `pull_request_target` event-fingerprinted freshness invalidation for a live
+  owner-authored same-upstream pull request. A GitHub-hosted-only preflight with
+  `statuses: read` waits for the pending description matching the canonical
+  fingerprint of its exact event and dispatches persistent CI work from
+  `.github/workflows/trusted-selective-tests.yml`, sourced from protected
+  default branch `main` and triggered after that preflight by `workflow_run`.
+  Its GitHub-hosted authorization job must run before candidate checkout or
+  self-hosted scheduling and validate the triggering run, live API head SHA,
+  same-upstream/base provenance, owner actor/triggering actor/sender, workflow
+  path/ref/SHA, and allowed event/ref/base. Release/hotfix PRs force the complete
+  matrix through this protected-`main` workflow; those branches never provide a
+  direct trusted workflow source. Candidate and self-hosted jobs receive only
+  `contents: read`. Only the trusted GitHub-hosted freshness invalidator,
+  authorization/status initializer, and always-run finalizer receive
+  `statuses: write`; they share one repository-global `queue: max` writer group.
+  The initializer and finalizer each require one unique eligible open, ready,
+  owner-authored same-upstream pull request for the exact head. The finalizer
+  publishes terminal context `Selective CI gate` only while the latest status is
+  still the in-progress pending target owned by its run. Fork or unidentifiable
+  authorization denials publish no candidate status. The freshness workflow's
+  stable per-pull-request `cancel-in-progress: true` coalesces superseded
+  metadata work before its job enters the global writer queue. That layered
+  concurrency, per-PR/head validation cancellation, and serialized status
+  writes ensure a `ci:full` label change cannot leave or overwrite earlier
+  success. Forks and stale or inconsistent provenance fail closed. A merge-group run validates every associated live
+  pull request for the same
+  upstream and owner provenance. Checked-in merge-group handling is
+  future-compatible because this personal public repository cannot enable
+  GitHub merge queues; current merge enforcement requires strict up-to-date
+  branches. Direct `main` push and schedule events use the trusted default-branch
+  workflow but never publish the SHA-global pull-request context. Manual
+  execution is allowed only when
+  `workflow_dispatch` runs at ref `main`, accepts a PR number, resolves its live
+  head/base through the API, and forces the complete matrix; there is no direct
+  trusted `merge_group` trigger. Host hooks serialize shared
+  resources and add defense-in-depth only; they do not authorize jobs.
+  Promotion also requires all-external fork approval,
+  repository-enforced full-SHA action pinning, an exact recorded backend SHA,
+  and ephemeral native secrets. Secret bytes live only in a validated per-job
+  mode-`0600` regular file below `$RUNNER_TEMP`; workspace `.env` is an absolute
+  symlink to that exact target. Same-step `EXIT`/`INT`/`TERM` handlers remove and
+  verify both entries. Runner-temp cleanup and trusted next-checkout sanitation
+  of an unexpected workspace `.env` are hard-kill defense-in-depth.
+  Interruptible isolated-process-group supervision and live cancellation proof
+  must finish within GitHub's ten-second signal grace window. Native
+  creation must establish a durable recovery namespace/intent before an
+  interrupt can strand an unrecorded device. The non-secret ledger is
+  permission-hardened runner-local persistent state outside the workspace and
+  `$RUNNER_TEMP`, is accessed only while the host lock is held, and must pass
+  absolute-path, owner/mode, regular-file/no-symlink, completeness, and strict
+  field validation; `.env`, its target, and secrets never enter it. iOS recovers an
+  interrupted create by its unique workflow-owned name before exact UUID
+  handoff, and Android makes launch-to-PID/UID/start-time/AVD/port/serial/command
+  identity handoff cancellation-safe or recovers only a provably exact process.
+  Exact-identity cleanup removes owner records only after absence is proved.
+  Failure retains validated records, fails closed, and must be recovered by the
+  next locked trusted run before new device creation; broad or unrelated-device
+  cleanup is prohibited. `main` enforcement must require a
+  pull request, strict up-to-date branches, exact check
+  `Hosted candidate preflight`, exact status `Selective CI gate`, conversation
+  resolution, administrators, zero approvals, and no bypass. CODEOWNERS routes
+  review but is not an approval gate.
+  Static repository-scoped labels remain technically targetable by any
+  GitHub-approved workflow because a personal repository has no organization
+  runner-group workflow allowlist. Therefore all external workflows require
+  manual approval, the sole owner remains the only collaborator, and fork or
+  untrusted workflow changes are never approved. Adding a collaborator or
+  approving an external workflow change requires pausing the runners until a
+  private broker, JIT, or ephemeral-runner architecture replaces this
+  operational boundary.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

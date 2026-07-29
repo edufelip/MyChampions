@@ -313,7 +313,7 @@ test('standalone specialty story distinguishes mounted fields from visible contr
 test('nutrition builders submit native editors before saving', () => {
   assert.match(
     nativeEditorHelperSource,
-    /async function submitFocusedEditor\(testId\) \{\s+await waitFor\(element\(by\.id\(testId\)\)\)\.toBeFocused\(\)\.withTimeout\(2000\);\s+if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.getUiDevice\(\)\.pressEnter\(\);\s+\} else \{\s+await element\(by\.id\(testId\)\)\.tapReturnKey\(\);\s+\}\s+\}/
+    /async function submitFocusedEditor\(testId\) \{\s+await waitFor\(element\(by\.id\(testId\)\)\)\.toBeFocused\(\)\.withTimeout\(2000\);\s+if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.getUiDevice\(\)\.pressEnter\(\);\s+\} else \{\s+await element\(by\.id\(testId\)\)\.tapReturnKey\(\);\s+await waitFor\(element\(by\.id\(testId\)\)\)\.not\.toBeFocused\(\)\.withTimeout\(2000\);\s+\}\s+\}/
   );
   assert.doesNotMatch(
     nativeEditorHelperSource,
@@ -321,7 +321,7 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     nativeEditorHelperSource,
-    /async function dismissFocusedEditor\(testId\) \{\s+await waitFor\(element\(by\.id\(testId\)\)\)\.toBeFocused\(\)\.withTimeout\(2000\);\s+if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.pressBack\(\);\s+\} else \{\s+await element\(by\.id\(testId\)\)\.tapReturnKey\(\);\s+\}\s+\}/
+    /async function dismissFocusedEditor\(testId\) \{\s+await waitFor\(element\(by\.id\(testId\)\)\)\.toBeFocused\(\)\.withTimeout\(2000\);\s+if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.pressBack\(\);\s+\} else \{\s+await element\(by\.id\(testId\)\)\.tapReturnKey\(\);\s+await waitFor\(element\(by\.id\(testId\)\)\)\.not\.toBeFocused\(\)\.withTimeout\(2000\);\s+\}\s+\}/
   );
   assert.match(
     nativeEditorHelperSource,
@@ -333,7 +333,7 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     nativeEditorHelperSource,
-    /async function waitForElementEnabled\(testId, timeoutMs = 5000\) \{[\s\S]*getAttributes\(\);[\s\S]*candidates\.some\(\(attributes\) => attributes\.enabled\)[\s\S]*\}/
+    /async function waitForElementEnabled\(testId, timeoutMs = 5000\) \{\s+await waitForElementAttributes\(\s+testId,\s+\(attributes\) => attributes\?\.enabled === true,\s+timeoutMs,\s+'to become enabled'\s+\);\s+\}/
   );
 
   for (const {
@@ -354,7 +354,7 @@ test('nutrition builders submit native editors before saving', () => {
   ]) {
     assert.match(
       source,
-      /const \{\s+advanceFocusedEditor,\s+dismissFocusedEditor,\s+waitForElementEnabled,\s+\} = require\('\.\/native-editor-actions'\);/
+      /const \{[\s\S]*?advanceFocusedEditor,[\s\S]*?dismissFocusedEditor,[\s\S]*?waitForElementEnabled,[\s\S]*?\} = require\('\.\/native-editor-actions'\);/
     );
     assert.match(
       source,
@@ -402,7 +402,7 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     professionalNutritionBuilderSource,
-    /const searchInput = element\(by\.id\('pro\.nutrition_item\.searchInput'\)\);\s+await searchInput\.tap\(\);\s+await searchInput\.replaceText\('rice'\);\s+await expect\(searchInput\)\.toHaveText\('rice'\);\s+await dismissFocusedEditor\('pro\.nutrition_item\.searchInput'\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.searchResult\.e2e-food-rice'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.nutrition_meal\.screen'\)\)\s+\.scroll\(180, 'down', 0\.5, 0\.75\);/
+    /const searchInput = element\(by\.id\('pro\.nutrition_item\.searchInput'\)\);\s+await searchInput\.tap\(\);\s+await searchInput\.replaceText\('rice'\);\s+await expect\(searchInput\)\.toHaveText\('rice'\);\s+await submitFocusedEditor\('pro\.nutrition_item\.searchInput'\);\s+const searchResult = element\(by\.id\('pro\.nutrition_item\.searchResult\.e2e-food-rice'\)\);\s+await waitFor\(searchResult\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.nutrition_meal\.screen'\)\)\s+\.scroll\(180, 'down', 0\.5, 0\.75\);/
   );
   assert.match(
     professionalNutritionBuilderSource,
@@ -414,7 +414,7 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     professionalNutritionBuilderSource,
-    /element\(by\.id\('pro\.nutrition_item\.add'\)\)\.tap\(\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\.not\.toExist\(\)\.withTimeout\(10000\);[\s\S]*?const removeButton = element\(by\.id\('pro\.nutrition_meal\.foodRow\.E2E_Brown_Rice\.remove'\)\);\s+await waitFor\(removeButton\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await removeButton\.tap\(\);/
+    /element\(by\.id\('pro\.nutrition_item\.add'\)\)\.tap\(\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\.not\.toBeVisible\(\)\.withTimeout\(10000\);[\s\S]*?const removeButton = element\(by\.id\('pro\.nutrition_meal\.foodRow\.E2E_Brown_Rice\.remove'\)\);\s+await waitFor\(removeButton\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await removeButton\.tap\(\);/
   );
   assert.match(
     professionalNutritionBuilderSource,

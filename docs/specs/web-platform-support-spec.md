@@ -11,20 +11,36 @@ Implemented as a code-structure phase on 2026-07-15. MyChampions supports Androi
 - `yarn web:export` creates `dist/web`; it does not deploy or publish.
 - `yarn test:e2e:web` runs the full Playwright matrix in Chromium, Firefox, and WebKit. Focused smoke, functional, accessibility, and evidence commands are documented in `docs/test-cases/web-playwright-batches-and-manual-validation.md`.
 - Playwright runs write timestamped, gitignored screenshot/report packages under `.artifacts/web-e2e`; screenshots are review evidence, not tracked visual baselines.
-- Pull requests use `.github/workflows/pr-selective-tests.yml` as the
-  authoritative exact-head gate. Its selected web lane validates the export and
-  runs the affected registered Playwright suites; it checks out the coordinated
-  `mychampions-api` branch only when a selected suite needs the server-backed
-  configuration. That configuration installs locked Bun dependencies, runs an
+- Pull requests into `main`, `release/**`, and `hotfix/**` use
+  `.github/workflows/pr-selective-tests.yml` only as a GitHub-hosted preflight.
+  After it completes,
+  `.github/workflows/trusted-selective-tests.yml` is loaded from protected
+  default branch `main`, authorizes the triggering run against the live PR, and
+  dispatches the selected web lane. That lane validates the export and runs the
+  affected registered Playwright suites; it checks out the coordinated
+  `mychampions-api` source only when a selected suite needs the server-backed
+  configuration. D-195 promotion requires resolving that source once to a full
+  commit SHA, checking out the detached SHA, and recording it with the mobile
+  exact head. That configuration installs locked Bun dependencies, runs an
   in-memory auth server on `127.0.0.1:3401`, runs Expo on
   `127.0.0.1:8082`, and lets Playwright own and terminate both processes. It
   uses no provider or production secret.
+  Release/hotfix PRs force the complete matrix through the same
+  protected-`main` trusted workflow; that workflow is never loaded or triggered
+  directly from the target branch.
 - `.github/workflows/web-pr.yml` is a legacy manual-only validation path.
   Successful selective runs upload no web export, screenshots, reports, or
   GitHub Actions cache. Only bounded web failure diagnostics may be uploaded,
   with one-day retention. The combined WSL web/Android runner is registered and
-  protected by the shared physical-host lock; every promotion still requires
-  remote exact-head proof from its own GitHub checks.
+  serialized by the shared physical-host lock. D-195's GitHub-hosted-only PR
+  preflight, protected-`main` `workflow_run` provenance, GitHub-hosted
+  triggering-run/live-PR authorization, isolated token permissions,
+  action-policy gates, and remote exact-head proof remain required before
+  authoritative promotion; the resource lock is not an authorization boundary.
+  Static repository runner labels remain targetable by any approved workflow,
+  so the public personal-repository operating contract keeps the owner as sole
+  collaborator, requires approval for all external workflows, and never approves
+  fork or untrusted workflow changes while persistent runners are enabled.
 
 ## Platform adapters
 

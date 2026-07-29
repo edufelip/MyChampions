@@ -19,6 +19,8 @@ export type StopMetroProcessGroupOptions = {
   runtime?: Partial<MetroProcessGroupRuntime>;
 };
 
+export type StopRunnerOwnedProcessGroupOptions = StopMetroProcessGroupOptions;
+
 function readProcessTable(): Promise<string> {
   return new Promise((resolveResult, reject) => {
     execFile(
@@ -94,11 +96,12 @@ export function parseOwnedProcessGroupPids(
 
 async function ownedProcessGroupPids(
   processGroupId: number,
-  runtime: MetroProcessGroupRuntime
+  runtime: MetroProcessGroupRuntime,
+  label: string
 ): Promise<number[]> {
   if (runtime.currentUid === undefined) {
     throw new Error(
-      `Cannot inspect Metro process group ${processGroupId}: current UID is unavailable`
+      `Cannot inspect ${label} ${processGroupId}: current UID is unavailable`
     );
   }
 
@@ -109,7 +112,7 @@ async function ownedProcessGroupPids(
   );
   if (ownedPids.includes(runtime.currentPid)) {
     throw new Error(
-      `Refusing to clean Metro process group ${processGroupId}: it contains the selective executor`
+      `Refusing to clean ${label} ${processGroupId}: it contains the selective executor`
     );
   }
   return ownedPids;
@@ -117,7 +120,8 @@ async function ownedProcessGroupPids(
 
 async function metroProcessGroupExists(
   metro: ChildProcess,
-  runtime: MetroProcessGroupRuntime
+  runtime: MetroProcessGroupRuntime,
+  label: string
 ): Promise<boolean> {
   if (runtime.platform === 'win32' || metro.pid === undefined) {
     return metro.exitCode === null && metro.signalCode === null;
@@ -131,7 +135,7 @@ async function metroProcessGroupExists(
     if (errorCode(error) === 'EPERM') {
       // Darwin reports EPERM when any group member is not signalable, so
       // inspect the group and retain only processes owned by the runner UID.
-      return (await ownedProcessGroupPids(metro.pid, runtime)).length > 0;
+      return (await ownedProcessGroupPids(metro.pid, runtime, label)).length > 0;
     }
     throw error;
   }
@@ -140,7 +144,8 @@ async function metroProcessGroupExists(
 async function signalMetroProcessGroup(
   metro: ChildProcess,
   signal: NodeJS.Signals,
-  runtime: MetroProcessGroupRuntime
+  runtime: MetroProcessGroupRuntime,
+  label: string
 ): Promise<void> {
   if (runtime.platform === 'win32' || metro.pid === undefined) {
     if (metro.exitCode === null && metro.signalCode === null) metro.kill(signal);
@@ -155,14 +160,14 @@ async function signalMetroProcessGroup(
     if (errorCode(error) !== 'EPERM') throw error;
   }
 
-  const ownedPids = await ownedProcessGroupPids(metro.pid, runtime);
+  const ownedPids = await ownedProcessGroupPids(metro.pid, runtime, label);
   for (const pid of ownedPids) {
     try {
       runtime.killProcess(pid, signal);
     } catch (error) {
       if (errorCode(error) === 'ESRCH') continue;
       throw new Error(
-        `Cannot send ${signal} to runner-owned Metro process ${pid}: ${
+        `Cannot send ${signal} to ${label} member ${pid}: ${
           errorCode(error) ?? String(error)
         }`
       );
@@ -174,46 +179,68 @@ async function waitForMetroProcessGroupExit(
   metro: ChildProcess,
   timeoutMs: number,
   pollIntervalMs: number,
-  runtime: MetroProcessGroupRuntime
+  runtime: MetroProcessGroupRuntime,
+  label: string
 ): Promise<boolean> {
   const deadline = runtime.now() + timeoutMs;
   while (runtime.now() < deadline) {
-    if (!(await metroProcessGroupExists(metro, runtime))) return true;
+    if (!(await metroProcessGroupExists(metro, runtime, label))) return true;
     await runtime.delay(pollIntervalMs);
   }
-  return !(await metroProcessGroupExists(metro, runtime));
+  return !(await metroProcessGroupExists(metro, runtime, label));
+}
+
+async function stopProcessGroup(
+  child: ChildProcess,
+  label: string,
+  options: StopRunnerOwnedProcessGroupOptions
+): Promise<void> {
+  const runtime = { ...defaultRuntime(), ...options.runtime };
+  const exitTimeoutMs = options.exitTimeoutMs ?? 5_000;
+  const pollIntervalMs = options.pollIntervalMs ?? 100;
+
+  if (!(await metroProcessGroupExists(child, runtime, label))) return;
+  await signalMetroProcessGroup(child, 'SIGTERM', runtime, label);
+  if (
+    await waitForMetroProcessGroupExit(
+      child,
+      exitTimeoutMs,
+      pollIntervalMs,
+      runtime,
+      label
+    )
+  ) {
+    return;
+  }
+
+  await signalMetroProcessGroup(child, 'SIGKILL', runtime, label);
+  if (
+    !(await waitForMetroProcessGroupExit(
+      child,
+      exitTimeoutMs,
+      pollIntervalMs,
+      runtime,
+      label
+    ))
+  ) {
+    throw new Error(`${label} did not stop after SIGKILL`);
+  }
+}
+
+export async function stopRunnerOwnedProcessGroup(
+  child: ChildProcess,
+  options: StopRunnerOwnedProcessGroupOptions = {}
+): Promise<void> {
+  return stopProcessGroup(child, 'Runner-owned child process group', options);
 }
 
 export async function stopMetroProcessGroup(
   metro: ChildProcess,
   options: StopMetroProcessGroupOptions = {}
 ): Promise<void> {
-  const runtime = { ...defaultRuntime(), ...options.runtime };
-  const exitTimeoutMs = options.exitTimeoutMs ?? 5_000;
-  const pollIntervalMs = options.pollIntervalMs ?? 100;
-
-  if (!(await metroProcessGroupExists(metro, runtime))) return;
-  await signalMetroProcessGroup(metro, 'SIGTERM', runtime);
-  if (
-    await waitForMetroProcessGroupExit(
-      metro,
-      exitTimeoutMs,
-      pollIntervalMs,
-      runtime
-    )
-  ) {
-    return;
-  }
-
-  await signalMetroProcessGroup(metro, 'SIGKILL', runtime);
-  if (
-    !(await waitForMetroProcessGroupExit(
-      metro,
-      exitTimeoutMs,
-      pollIntervalMs,
-      runtime
-    ))
-  ) {
-    throw new Error('Runner-owned Metro process group did not stop after SIGKILL');
-  }
+  return stopProcessGroup(
+    metro,
+    'Runner-owned Metro process group',
+    options
+  );
 }

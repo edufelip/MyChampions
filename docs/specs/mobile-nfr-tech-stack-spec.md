@@ -143,11 +143,31 @@ Feature-aware test selection uses `config/test-impact.json` plus
 `scripts/ci/resolve-test-impact.ts`. The resolver combines path ownership,
 declared reverse feature dependencies, and TypeScript reverse import consumers.
 It fails closed to the full registered UI matrix for shared-global, tooling,
-native, invalid, unknown, or unresolved changes. Under D-193, the selective
-workflow is the authoritative exact-head pull-request gate: universal fast checks
-always run, affected Playwright and both-platform Detox suites execute on
-dedicated self-hosted lanes, and workflow/tooling, scheduled, merge-queue,
-release/hotfix, or explicit-full inputs select the complete registered matrix.
+native, invalid, unknown, or unresolved changes. D-193 defines the candidate
+exact-head gate: universal fast checks always run, affected Playwright and
+both-platform Detox suites execute on dedicated self-hosted lanes, and
+workflow/tooling, scheduled, merge-queue, release/hotfix, or explicit-full
+inputs select the complete registered matrix. D-195 makes persistent-runner
+promotion conditional on a GitHub-hosted-only PR preflight, a
+`workflow_run`-triggered trusted workflow sourced from protected default branch
+`main`, a GitHub-hosted triggering-run/live-PR authorization job before
+candidate checkout, read-only candidate/self-hosted tokens, trusted hosted
+pending/terminal exact-status publishers with stale-run protection, all-external fork approval, pinned-action
+policy, an exact recorded backend SHA, ephemeral mode-`0600` environment
+cleanup, owned disposable iOS simulator cleanup, required `main` PR/status
+enforcement, and one complete exact-head matrix. Host hooks remain resource
+locks only. Those promotion controls remain pending verified workflow,
+repository, and exact-head evidence.
+The hosted preflight covers PR bases `main`, `release/**`, and `hotfix/**` plus
+merge groups. Release/hotfix PRs use the protected-`main` workflow-run path and
+force the complete matrix; the trusted workflow is not sourced or triggered
+directly from those branches.
+Static repository labels remain technically targetable by any GitHub-approved
+workflow because this personal repository has no organization runner-group
+workflow allowlist. The operational boundary therefore keeps the owner as sole
+collaborator, requires approval for all external workflows, never approves fork
+or untrusted workflow changes, and pauses runners before either constraint is
+relaxed pending private-broker/JIT/ephemeral isolation.
 Contradictory native fixture states execute in scenario-gated fresh-Metro phases,
 each of which fully prewarms its exact platform bundle before Detox launches, and
 the iOS lane keeps its app launch route and compiled fallback on dedicated port
@@ -178,10 +198,10 @@ Current local server contract: root-level `server/` plus this migration task car
 - Observability: structured logs with no sensitive token/link leakage.
 
 ## Traceability Links
-- Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`, `FR-271`.
-- Business rules: `BR-253`, `BR-254`, `BR-255`, `BR-256`, `BR-257`, `BR-258`, `BR-259`, `BR-260`, `BR-261`, `BR-275`, `BR-284`, `BR-285`.
-- Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-540`.
-- Test cases: `TC-501`, `TC-502`, `TC-503`, `TC-504`, `TC-505`, `TC-506`, `TC-507`, `TC-508`, `TC-509`, `TC-510`, `TC-511`, `TC-512`, `TC-513`, `TC-514`, `TC-515`, `TC-516`, `TC-517`, `TC-518`.
+- Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`, `FR-271`, `FR-272`.
+- Business rules: `BR-253`, `BR-254`, `BR-255`, `BR-256`, `BR-257`, `BR-258`, `BR-259`, `BR-260`, `BR-261`, `BR-275`, `BR-284`, `BR-285`, `BR-344`.
+- Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-540`, `AC-542`.
+- Test cases: `TC-501`, `TC-502`, `TC-503`, `TC-504`, `TC-505`, `TC-506`, `TC-507`, `TC-508`, `TC-509`, `TC-510`, `TC-511`, `TC-512`, `TC-513`, `TC-514`, `TC-515`, `TC-516`, `TC-517`, `TC-518`, `TC-519`.
 - Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
 
 ## Open Questions

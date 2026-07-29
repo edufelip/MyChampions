@@ -1,4 +1,4 @@
-name: Selective feature CI
+name: Selective feature CI preflight
 
 on:
   pull_request:
@@ -11,846 +11,289 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+      - edited
       - labeled
       - unlabeled
-  push:
-    branches:
-      - main
   merge_group:
-  schedule:
-    - cron: '0 5 * * *'
-  workflow_dispatch:
-    inputs:
-      force_full:
-        description: Select every registered CI suite
-        required: false
-        type: boolean
-        default: false
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
-  group: selective-feature-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+  group: selective-feature-preflight-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  impact:
-    name: Resolve affected features
+  hosted-preflight:
+    name: Hosted candidate preflight
     runs-on: ubuntu-latest
-    outputs:
-      base_sha: ${{ steps.refs.outputs.base_sha }}
-      head_sha: ${{ steps.refs.outputs.head_sha }}
-      mode: ${{ steps.resolve.outputs.mode }}
-      has_web: ${{ steps.resolve.outputs.has_web }}
-      has_web_server: ${{ steps.resolve.outputs.has_web_server }}
-      has_detox_ios: ${{ steps.resolve.outputs.has_detox_ios }}
-      has_detox_android: ${{ steps.resolve.outputs.has_detox_android }}
-      web_suites: ${{ steps.resolve.outputs.web_suites }}
-      detox_ios_suites: ${{ steps.resolve.outputs.detox_ios_suites }}
-      detox_android_suites: ${{ steps.resolve.outputs.detox_android_suites }}
+    timeout-minutes: 5
+    permissions:
+      statuses: read
     steps:
-      - id: refs
-        name: Resolve exact comparison refs
+      - name: Validate hosted-only candidate metadata
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MERGE_HEAD_REF: ${{ github.event.merge_group.head_ref }}
           MERGE_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
-          PUSH_BASE_SHA: ${{ github.event.before }}
-          PUSH_HEAD_SHA: ${{ github.sha }}
-          FORCE_FULL_INPUT: ${{ inputs.force_full }}
-          FORCE_FULL_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
-          FORCE_FULL_REPOSITORY: ${{ vars.CI_FORCE_FULL }}
-          BASE_REF: ${{ github.base_ref }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
         run: |
           set -euo pipefail
-          base_sha="${PR_BASE_SHA:-${MERGE_BASE_SHA:-${PUSH_BASE_SHA:-}}}"
-          head_sha="${PR_HEAD_SHA:-${MERGE_HEAD_SHA:-${PUSH_HEAD_SHA:-$GITHUB_SHA}}}"
-          force_full=false
+          sha_pattern='^[0-9a-f]{40}$'
 
-          if [[ "$EVENT_NAME" == "merge_group" ||
-                "$EVENT_NAME" == "schedule" ||
-                "$FORCE_FULL_INPUT" == "true" ||
-                "$FORCE_FULL_LABEL" == "true" ||
-                "$FORCE_FULL_REPOSITORY" == "true" ||
-                "$BASE_REF" == release/* ||
-                "$BASE_REF" == hotfix/* ]]; then
-            force_full=true
-          fi
-
-          if [[ -z "$head_sha" ]]; then
-            echo "Unable to resolve the exact head SHA." >&2
+          if [[ "$REPOSITORY" != "edufelip/MyChampions" ]]; then
+            echo "Unexpected repository." >&2
             exit 1
           fi
-          if [[ "$base_sha" =~ ^0+$ ]]; then
-            base_sha=""
-            force_full=true
-          fi
-          if [[ -z "$base_sha" ]]; then
-            force_full=true
-          fi
 
-          echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
-          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
-          echo "force_full=$force_full" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ steps.refs.outputs.head_sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - run: yarn install --frozen-lockfile --no-progress
-      - name: Validate ownership and suite metadata
-        run: yarn test:impact
-      - id: resolve
-        name: Resolve selective test suites
-        env:
-          BASE_SHA: ${{ steps.refs.outputs.base_sha }}
-          HEAD_SHA: ${{ steps.refs.outputs.head_sha }}
-          FORCE_FULL: ${{ steps.refs.outputs.force_full }}
-        run: |
-          set -euo pipefail
-          args=(--head "$HEAD_SHA")
-          if [[ -n "$BASE_SHA" ]]; then
-            args+=(--base "$BASE_SHA")
-          fi
-          if [[ "$FORCE_FULL" == "true" ]]; then
-            args+=(--all)
-          fi
-          yarn test:impact:resolve "${args[@]}"
+          case "$EVENT_NAME" in
+            pull_request)
+              if [[
+                "$PR_BASE_REPOSITORY" != "$REPOSITORY" ||
+                "$PR_HEAD_REPOSITORY" != "$REPOSITORY" ||
+                ! "$PR_HEAD_SHA" =~ $sha_pattern ||
+                "$GITHUB_REF_VALUE" != refs/pull/*/merge
+              ]]; then
+                echo "Pull-request metadata is outside the hosted preflight contract." >&2
+                exit 1
+              fi
+              case "$PR_BASE_REF" in
+                main|release/*|hotfix/*) ;;
+                *)
+                  echo "Pull request targets a disallowed base branch." >&2
+                  exit 1
+                  ;;
+              esac
+              ;;
+            merge_group)
+              if [[
+                ! "$MERGE_HEAD_SHA" =~ $sha_pattern ||
+                "$GITHUB_REF_VALUE" != "$MERGE_HEAD_REF"
+              ]]; then
+                echo "Merge-group metadata is outside the hosted preflight contract." >&2
+                exit 1
+              fi
+              merge_base_branch="${MERGE_BASE_REF#refs/heads/}"
+              if [[ "$MERGE_BASE_REF" != "refs/heads/$merge_base_branch" ]]; then
+                echo "Merge group has an invalid base ref." >&2
+                exit 1
+              fi
+              case "$merge_base_branch" in
+                main|release/*|hotfix/*) ;;
+                *)
+                  echo "Merge group targets a disallowed base branch." >&2
+                  exit 1
+                  ;;
+              esac
+              if [[ "$MERGE_HEAD_REF" != "refs/heads/gh-readonly-queue/${merge_base_branch}/"* ]]; then
+                echo "Merge group is outside the expected protected-branch queue." >&2
+                exit 1
+              fi
+              ;;
+            *)
+              echo "Unexpected preflight event: $EVENT_NAME" >&2
+              exit 1
+              ;;
+          esac
 
-  fast-quality:
-    name: Fast quality checks
-    needs: impact
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ needs.impact.outputs.head_sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - run: yarn install --frozen-lockfile --no-progress
-      - run: yarn test:impact
-      - run: yarn test:unit
-      - run: yarn lint
-      - run: yarn tsc --noEmit
-      - name: Validate the pull-request diff
-        if: needs.impact.outputs.base_sha != ''
+          echo "Hosted candidate metadata passed preflight."
+      - name: Await trusted stale-status invalidation
+        if: github.event_name == 'pull_request'
         env:
-          BASE_SHA: ${{ needs.impact.outputs.base_sha }}
-          HEAD_SHA: ${{ needs.impact.outputs.head_sha }}
+          ACTIONS_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          git diff --check "$merge_base" "$HEAD_SHA"
+          /usr/bin/python3 - <<'PY'
+          from __future__ import annotations
 
-  web-selected:
-    name: Selected web UI suites
-    needs:
-      - impact
-      - fast-quality
-    if: >-
-      needs.fast-quality.result == 'success' &&
-      needs.impact.outputs.has_web == 'true' &&
-      (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-web]
-    timeout-minutes: 45
-    concurrency:
-      group: mychampions-wsl-ui
-      cancel-in-progress: false
-    env:
-      CI: 'true'
-      PLAYWRIGHT_BROWSERS_PATH: /home/eduardo/.cache/ms-playwright-mychampions
-      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'
-      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.web_suites }}
-      MYCHAMPIONS_SERVER_ROOT: ${{ github.workspace }}/.ci/mychampions-api
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.impact.outputs.head_sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - run: yarn install --frozen-lockfile --no-progress
-      - id: backend-contract-ref
-        if: needs.impact.outputs.has_web_server == 'true'
-        name: Resolve coordinated backend contract ref
-        env:
-          MOBILE_HEAD_REF: ${{ github.head_ref }}
-        run: |
-          set -euo pipefail
-          backend_ref="${MOBILE_HEAD_REF:-main}"
-          if ! git ls-remote --exit-code --heads https://github.com/edufelip/mychampions-api.git "refs/heads/${backend_ref}" >/dev/null; then
-            backend_ref=main
-          fi
-          echo "ref=$backend_ref" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
-        if: needs.impact.outputs.has_web_server == 'true'
-        with:
-          repository: edufelip/mychampions-api
-          ref: ${{ steps.backend-contract-ref.outputs.ref }}
-          path: .ci/mychampions-api
-      - uses: oven-sh/setup-bun@v2
-        if: needs.impact.outputs.has_web_server == 'true'
-        with:
-          bun-version: 1.3.10
-      - if: needs.impact.outputs.has_web_server == 'true'
-        working-directory: .ci/mychampions-api
-        run: bun install --frozen-lockfile
-      - name: Ensure selected browsers are installed locally
-        run: yarn playwright install chromium firefox webkit
-      - name: Preserve user-local browser libraries
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -d '' browser_wrapper_directories < <(
-            find "$PLAYWRIGHT_BROWSERS_PATH" \
-              -type d \
-              \( -name minibrowser-wpe -o -name minibrowser-gtk \) \
-              -print0
+          import hashlib
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+
+          repository = os.environ["REPOSITORY"]
+          candidate = os.environ["CANDIDATE_SHA"]
+          token = os.environ["ACTIONS_TOKEN"]
+          if repository != "edufelip/MyChampions":
+              raise SystemExit("Unexpected repository.")
+          if re.fullmatch(r"[0-9a-f]{40}", candidate) is None:
+              raise SystemExit("Candidate SHA is malformed.")
+
+          def event_fingerprint(event: object) -> str:
+              if not isinstance(event, dict):
+                  raise RuntimeError("Pull-request event payload is malformed.")
+              pull = event.get("pull_request")
+              if not isinstance(pull, dict):
+                  raise RuntimeError("Pull-request event payload is missing.")
+
+              def identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "login": value.get("login"),
+                      "node_id": value.get("node_id"),
+                  }
+
+              def repository_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "full_name": value.get("full_name"),
+                      "node_id": value.get("node_id"),
+                      "owner": identity(value.get("owner")),
+                  }
+
+              def ref_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "label": value.get("label"),
+                      "ref": value.get("ref"),
+                      "sha": value.get("sha"),
+                      "repo": repository_identity(value.get("repo")),
+                      "user": identity(value.get("user")),
+                  }
+
+              def label_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "name": value.get("name"),
+                      "node_id": value.get("node_id"),
+                  }
+
+              labels = pull.get("labels")
+              if not isinstance(labels, list):
+                  labels = []
+              label_identities = sorted(
+                  (label_identity(label) for label in labels),
+                  key=lambda label: (
+                      str(label.get("id", "")),
+                      str(label.get("name", "")),
+                  ),
+              )
+              projection = {
+                  "action": event.get("action"),
+                  "after": event.get("after"),
+                  "before": event.get("before"),
+                  "changes": event.get("changes"),
+                  "event_label": label_identity(event.get("label")),
+                  "number": event.get("number"),
+                  "sender": identity(event.get("sender")),
+                  "pull_request": {
+                      "base": ref_identity(pull.get("base")),
+                      "body": pull.get("body"),
+                      "draft": pull.get("draft"),
+                      "head": ref_identity(pull.get("head")),
+                      "id": pull.get("id"),
+                      "labels": label_identities,
+                      "merge_commit_sha": pull.get("merge_commit_sha"),
+                      "merged": pull.get("merged"),
+                      "node_id": pull.get("node_id"),
+                      "number": pull.get("number"),
+                      "state": pull.get("state"),
+                      "title": pull.get("title"),
+                      "updated_at": pull.get("updated_at"),
+                      "user": identity(pull.get("user")),
+                  },
+              }
+              encoded = json.dumps(
+                  projection,
+                  ensure_ascii=True,
+                  separators=(",", ":"),
+                  sort_keys=True,
+              ).encode("utf-8")
+              return hashlib.sha256(encoded).hexdigest()[:24]
+
+          try:
+              with open(
+                  os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"
+              ) as event_file:
+                  event = json.load(event_file)
+          except (KeyError, OSError, json.JSONDecodeError) as error:
+              raise SystemExit(f"Cannot read pull-request event payload: {error}")
+          expected_description = (
+              f"Freshness event {event_fingerprint(event)} awaits trusted validation."
           )
-          if (( ${#browser_wrapper_directories[@]} == 0 )); then
-            echo "No WebKit MiniBrowser wrappers were installed." >&2
-            exit 1
-          fi
-          for directory in "${browser_wrapper_directories[@]}"; do
-            wrapper="$directory/MiniBrowser"
-            if [[ ! -f "$wrapper" || ! -x "$wrapper" ]]; then
-              echo "Invalid WebKit MiniBrowser wrapper: $wrapper" >&2
-              exit 1
-            fi
-            sed -i \
-              's|^export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib"$|export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"|' \
-              "$wrapper"
-            grep -Fqx \
-              'export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"' \
-              "$wrapper"
-          done
-      - name: Validate the web bundle
-        run: yarn web:export
-      - name: Run selected Playwright suites
-        run: yarn test:impact:execute --platform web
-      - name: Upload bounded web failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mychampions-web-failure-${{ github.run_id }}
-          path: .artifacts/ci-diagnostics/web
-          if-no-files-found: warn
-          retention-days: 1
 
-  detox-ios-selected:
-    name: Selected iOS Detox suites
-    needs:
-      - impact
-      - fast-quality
-    if: >-
-      needs.fast-quality.result == 'success' &&
-      needs.impact.outputs.has_detox_ios == 'true' &&
-      (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
-    timeout-minutes: 120
-    concurrency:
-      group: mychampions-ios-detox
-      cancel-in-progress: false
-    env:
-      APP_VARIANT: dev
-      CI: 'true'
-      CI_REQUIRE_E2E_EXECUTION: 'true'
-      DETOX_IOS_SIMULATOR: iPhone 17
-      DETOX_METRO_PORT: '18081'
-      DETOX_REQUIRE_FRESH_METRO: 'true'
-      EXPO_PUBLIC_ENV: dev
-      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_ios_suites }}
-      XCODE_REQUIRED_MAJOR: '26'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.impact.outputs.head_sha }}
-      - name: Select Xcode 26 and verify the SDK
-        run: |
-          set -euo pipefail
-          xcode_app="$(
-            for candidate in /Applications/Xcode_"${XCODE_REQUIRED_MAJOR}"*.app; do
-              if [[ -d "$candidate" ]]; then
-                printf '%s\n' "$candidate"
-              fi
-            done | sort | tail -n 1
-          )"
-          if [[ -z "$xcode_app" && -d /Applications/Xcode.app ]]; then
-            xcode_app=/Applications/Xcode.app
-          fi
-          if [[ -z "$xcode_app" ]]; then
-            echo "Xcode ${XCODE_REQUIRED_MAJOR}.x is not installed." >&2
-            exit 1
-          fi
-          developer_path="$xcode_app/Contents/Developer"
-          echo "DEVELOPER_DIR=$developer_path" >> "$GITHUB_ENV"
-          export DEVELOPER_DIR="$developer_path"
-          sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
-          if [[ "${sdk_version%%.*}" -lt "$XCODE_REQUIRED_MAJOR" ]]; then
-            echo "Expected iPhoneOS SDK ${XCODE_REQUIRED_MAJOR}.0+; found $sdk_version." >&2
-            exit 1
-          fi
-      - name: Verify the isolated iOS Metro port
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! "$DETOX_METRO_PORT" =~ ^[0-9]+$ ]] ||
-             (( DETOX_METRO_PORT < 1024 || DETOX_METRO_PORT > 49151 )); then
-            echo "Invalid isolated iOS Metro port: ${DETOX_METRO_PORT}" >&2
-            exit 1
-          fi
-          if lsof -nP -iTCP:"$DETOX_METRO_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
-            echo "Isolated iOS Metro port ${DETOX_METRO_PORT} is already occupied." >&2
-            exit 1
-          fi
-          echo "Verified isolated iOS Metro port ${DETOX_METRO_PORT}."
-      - name: Write environment
-        run: |
-          cat <<'EOF' > .env
-          ${{ secrets.ENV_FILE }}
-          EOF
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Add Homebrew to PATH
-        run: echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
-      - run: yarn install --frozen-lockfile --no-progress
-      - name: Install pods
-        env:
-          COCOAPODS_CACHE_DIR: ${{ runner.temp }}/.cocoapods-cache
-        run: |
-          set -euo pipefail
-          cd ios
-          pod install --silent
-      - name: Build the debug app once
-        run: yarn test:e2e:build:ios:debug
-      - name: Run selected iOS suites
-        env:
-          DETOX_SKIP_BUILD: 'true'
-        run: yarn test:impact:execute --platform ios
-      - name: Shut down simulator services
-        if: always()
-        run: xcrun simctl shutdown all || true
-      - name: Upload bounded iOS failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mychampions-ios-failure-${{ github.run_id }}
-          path: .artifacts/ci-diagnostics/ios
-          if-no-files-found: warn
-          retention-days: 1
+          path = (
+              f"/repos/{repository}/commits/"
+              f"{urllib.parse.quote(candidate, safe='')}/statuses?per_page=100"
+          )
+          expected_target = re.compile(
+              r"^https://github\.com/edufelip/MyChampions/actions/runs/[1-9][0-9]*$"
+          )
 
-  detox-android-selected:
-    name: Selected Android Detox suites
-    needs:
-      - impact
-      - fast-quality
-    if: >-
-      needs.fast-quality.result == 'success' &&
-      needs.impact.outputs.has_detox_android == 'true' &&
-      (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
-    timeout-minutes: 120
-    concurrency:
-      group: mychampions-wsl-ui
-      cancel-in-progress: false
-    env:
-      APP_VARIANT: dev
-      CI: 'true'
-      CI_REQUIRE_E2E_EXECUTION: 'true'
-      DETOX_ANDROID_AVD: Pixel_10
-      DETOX_CONFIGURATION: android.emu.debug
-      DETOX_REQUIRE_FRESH_METRO: 'true'
-      EXPO_PUBLIC_ENV: dev
-      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_android_suites }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.impact.outputs.head_sha }}
-      - name: Write environment
-        run: |
-          cat <<'EOF' > .env
-          ${{ secrets.ENV_FILE }}
-          EOF
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-      - run: yarn install --frozen-lockfile --no-progress
-      - name: Run native checks and build the debug APKs once
-        working-directory: android
-        run: |
-          ./gradlew \
-            lintDevDebug \
-            testDevDebugUnitTest \
-            app:assembleDevDebug \
-            app:assembleDevDebugAndroidTest \
-            -DtestBuildType=debug
-      - name: Run selected Android suites on a supported emulator port
-        env:
-          DETOX_SKIP_BUILD: 'true'
-        run: |
-          emulator_serial=emulator-5554
-          diagnostics_dir=.artifacts/ci-diagnostics/android
-          emulator_log="$diagnostics_dir/emulator-5554.log"
-          owner_prefix="$RUNNER_TEMP/mychampions-emulator-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          owner_pid_file="$owner_prefix.pid"
-          owner_uid_file="$owner_prefix.uid"
-          owner_start_file="$owner_prefix.start"
-          emulator_pid=
-          emulator_uid="$(id -u)"
-          emulator_start_time=
-          mkdir -p "$diagnostics_dir"
-          rm -f "$owner_pid_file" "$owner_uid_file" "$owner_start_file"
+          for _ in range(60):
+              request = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {token}",
+                      "User-Agent": "mychampions-selective-preflight",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          raise RuntimeError(
+                              f"GitHub status API returned {response.status}"
+                          )
+                      statuses = json.load(response)
+              except (
+                  OSError,
+                  urllib.error.HTTPError,
+                  urllib.error.URLError,
+                  json.JSONDecodeError,
+              ) as error:
+                  print(f"Waiting for trusted invalidation: {error}", file=sys.stderr)
+                  time.sleep(2)
+                  continue
 
-          timeout 10s adb kill-server || true
-          timeout 10s adb start-server
-          preflight_devices="$(timeout 5s adb devices)" || {
-            echo "Android emulator preflight could not inspect ADB devices" >&2
-            exit 1
-          }
-          if grep -Eq '^emulator-[0-9]+[[:space:]]' <<<"$preflight_devices"; then
-            echo "Android emulator preflight found a stale ADB device" >&2
-            printf '%s\n' "$preflight_devices" >&2
-            exit 1
-          fi
-          if preflight_qemu="$(timeout 5s pgrep -af '[q]emu-system' 2>/dev/null)"; then
-            echo "Android emulator preflight found a stale QEMU process" >&2
-            printf '%s\n' "$preflight_qemu" >&2
-            exit 1
-          else
-            preflight_qemu_status=$?
-            if [[ "$preflight_qemu_status" -ne 1 ]]; then
-              echo "Android emulator preflight could not inspect QEMU processes" >&2
-              exit 1
-            fi
-          fi
-          preflight_listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )')" || {
-            echo "Android emulator preflight could not inspect ports 5554/5555" >&2
-            exit 1
-          }
-          if [[ -n "$preflight_listeners" ]]; then
-            echo "Android emulator preflight found occupied ports 5554/5555" >&2
-            timeout 5s ss -H -ltnp '( sport = :5554 or sport = :5555 )' >&2 || true
-            exit 1
-          fi
-
-          emulator_pid_is_owned() {
-            local actual_start actual_uid
-            [[
-              "$emulator_pid" =~ ^[0-9]+$ &&
-              "$emulator_uid" =~ ^[0-9]+$ &&
-              "$emulator_start_time" =~ ^[0-9]+$ &&
-              -r "/proc/$emulator_pid/stat"
-            ]] || return 1
-            actual_uid="$(stat -c '%u' "/proc/$emulator_pid")" || return 1
-            actual_start="$(awk '{ print $22 }' "/proc/$emulator_pid/stat")" || return 1
-            [[
-              "$actual_uid" == "$emulator_uid" &&
-              "$actual_start" == "$emulator_start_time"
-            ]]
-          }
-          emulator_pid_matches() {
-            local command_line
-            emulator_pid_is_owned || return 1
-            command_line="$(tr '\0' ' ' < "/proc/$emulator_pid/cmdline")"
-            [[
-              "$command_line" == *"@$DETOX_ANDROID_AVD"* &&
-              "$command_line" == *"-port 5554"*
-            ]]
-          }
-          emulator_qemu_present_or_unknown() {
-            local processes status
-            if processes="$(timeout 5s pgrep -af '[q]emu-system' 2>/dev/null)"; then
-              return 0
-            else
-              status=$?
-              [[ "$status" -eq 1 ]] && return 1
-              return 0
-            fi
-          }
-          emulator_device_present_or_unknown() {
-            local devices
-            devices="$(timeout 5s adb devices 2>/dev/null)" || return 0
-            grep -Eq '^emulator-[0-9]+[[:space:]]' <<<"$devices"
-          }
-          emulator_ports_present_or_unknown() {
-            local listeners
-            listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )' 2>/dev/null)" ||
-              return 0
-            [[ -n "$listeners" ]]
-          }
-          reap_emulator_if_zombie() {
-            local process_state
-            emulator_pid_is_owned || return 0
-            process_state="$(awk '{ print $3 }' "/proc/$emulator_pid/stat")" || return 0
-            if [[ "$process_state" == "Z" ]]; then
-              wait "$emulator_pid" 2>/dev/null || true
-            fi
-          }
-          emulator_cleanup_complete() {
-            reap_emulator_if_zombie
-            ! emulator_pid_is_owned &&
-              ! emulator_qemu_present_or_unknown &&
-              ! emulator_device_present_or_unknown &&
-              ! emulator_ports_present_or_unknown
-          }
-          cleanup_emulator() {
-            local cleanup_status=0
-            if emulator_pid_matches; then
-              timeout 10s adb -s "$emulator_serial" emu kill >/dev/null 2>&1 || true
-            elif emulator_pid_is_owned; then
-              echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal its serial" >&2
-              cleanup_status=1
-            elif emulator_device_present_or_unknown; then
-              echo "Android emulator serial is present or unknown without its saved process identity; refusing to signal it" >&2
-              cleanup_status=1
-            fi
-            for _ in $(seq 1 30); do
-              if emulator_cleanup_complete; then
-                break
-              fi
-              sleep 1
-            done
-            if emulator_pid_matches; then
-              kill -TERM "$emulator_pid" 2>/dev/null || true
-            fi
-            for _ in $(seq 1 10); do
-              if emulator_cleanup_complete; then
-                break
-              fi
-              sleep 1
-            done
-            if emulator_pid_matches; then
-              kill -KILL "$emulator_pid" 2>/dev/null || true
-            fi
-            for _ in $(seq 1 5); do
-              if emulator_cleanup_complete; then
-                break
-              fi
-              sleep 1
-            done
-            if emulator_pid_is_owned; then
-              if emulator_pid_matches; then
-                echo "Android emulator PID $emulator_pid survived cleanup" >&2
-              else
-                echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal it" >&2
-              fi
-              cleanup_status=1
-            fi
-            if emulator_qemu_present_or_unknown; then
-              echo "A QEMU process survived cleanup or process state could not be inspected" >&2
-              timeout 5s pgrep -af '[q]emu-system' >&2 || true
-              cleanup_status=1
-            fi
-            if emulator_device_present_or_unknown; then
-              echo "An Android emulator device survived cleanup or ADB could not prove absence" >&2
-              cleanup_status=1
-            fi
-            if emulator_ports_present_or_unknown; then
-              echo "Android emulator ports 5554/5555 survived cleanup or could not be inspected" >&2
-              cleanup_status=1
-            fi
-            timeout 10s adb kill-server || cleanup_status=1
-            return "$cleanup_status"
-          }
-          on_exit() {
-            local command_status=$?
-            local cleanup_status=0
-            trap - EXIT INT TERM
-            set +e
-            cleanup_emulator
-            cleanup_status=$?
-            if [[ "$command_status" -ne 0 ]]; then
-              exit "$command_status"
-            fi
-            exit "$cleanup_status"
-          }
-          trap on_exit EXIT
-          trap 'exit 130' INT TERM
-
-          android_sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
-          emulator_path="$android_sdk_root/emulator/emulator"
-          if [[ -z "$android_sdk_root" || ! -x "$emulator_path" ]]; then
-            echo "Android emulator executable is unavailable under ANDROID_SDK_ROOT/ANDROID_HOME" >&2
-            exit 1
-          fi
-          "$emulator_path" @"$DETOX_ANDROID_AVD" \
-            -port 5554 \
-            -no-audio \
-            -no-boot-anim \
-            -no-window \
-            -no-snapshot \
-            -read-only \
-            -gpu swiftshader_indirect \
-            >"$emulator_log" 2>&1 &
-          emulator_pid=$!
-          emulator_start_time="$(awk '{ print $22 }' "/proc/$emulator_pid/stat")" || {
-            echo "Android emulator ownership metadata could not be captured" >&2
-            exit 1
-          }
-          if ! emulator_pid_matches; then
-            echo "Android emulator PID did not match the expected owner and command identity" >&2
-            exit 1
-          fi
-          printf '%s\n' "$emulator_pid" > "$diagnostics_dir/emulator-5554.pid"
-          printf '%s\n' "$emulator_pid" > "$owner_pid_file"
-          printf '%s\n' "$emulator_uid" > "$owner_uid_file"
-          printf '%s\n' "$emulator_start_time" > "$owner_start_file"
-
-          booted=false
-          boot_deadline=$((SECONDS + 120))
-          while (( SECONDS < boot_deadline )); do
-            if ! emulator_pid_matches; then
-              echo "Android emulator exited or changed identity before boot completed" >&2
-              tail -n 160 "$emulator_log" >&2
-              exit 1
-            fi
-            state="$(timeout 2s adb -s "$emulator_serial" get-state 2>/dev/null || true)"
-            complete="$(timeout 2s adb -s "$emulator_serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-            avd_name="$(timeout 2s adb -s "$emulator_serial" shell getprop ro.boot.qemu.avd_name 2>/dev/null | tr -d '\r' || true)"
-            attached_emulators="$(timeout 2s adb devices 2>/dev/null | awk '/^emulator-[0-9]+[[:space:]]+device$/ { print $1 }' || true)"
-            if [[
-              "$state" == "device" &&
-              "$complete" == "1" &&
-              "$avd_name" == "$DETOX_ANDROID_AVD" &&
-              "$attached_emulators" == "$emulator_serial"
-            ]]; then
-              booted=true
-              break
-            fi
-            sleep 1
-          done
-          if [[ "$booted" != "true" ]]; then
-            echo "Android emulator did not become healthy on port 5554" >&2
-            tail -n 160 "$emulator_log" >&2
-            exit 1
-          fi
-
-          timeout 10s adb -s "$emulator_serial" shell settings put global window_animation_scale 0
-          timeout 10s adb -s "$emulator_serial" shell settings put global transition_animation_scale 0
-          timeout 10s adb -s "$emulator_serial" shell settings put global animator_duration_scale 0
-          yarn test:impact:execute --platform android
-      - name: Verify Android emulator cleanup
-        if: always()
-        run: |
-          cleanup_failed=false
-          owner_prefix="$RUNNER_TEMP/mychampions-emulator-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          owner_pid_file="$owner_prefix.pid"
-          owner_uid_file="$owner_prefix.uid"
-          owner_start_file="$owner_prefix.start"
-          emulator_pid=
-          emulator_uid=
-          emulator_start_time=
-          if [[
-            -f "$owner_pid_file" &&
-            -f "$owner_uid_file" &&
-            -f "$owner_start_file"
-          ]]; then
-            IFS= read -r emulator_pid < "$owner_pid_file"
-            IFS= read -r emulator_uid < "$owner_uid_file"
-            IFS= read -r emulator_start_time < "$owner_start_file"
-            if [[
-              ! "$emulator_pid" =~ ^[0-9]+$ ||
-              ! "$emulator_uid" =~ ^[0-9]+$ ||
-              ! "$emulator_start_time" =~ ^[0-9]+$
-            ]]; then
-              echo "Android emulator ownership metadata is invalid" >&2
-              cleanup_failed=true
-              emulator_pid=
-              emulator_uid=
-              emulator_start_time=
-            fi
-          elif [[
-            -f "$owner_pid_file" ||
-            -f "$owner_uid_file" ||
-            -f "$owner_start_file"
-          ]]; then
-            echo "Android emulator ownership metadata is incomplete" >&2
-            cleanup_failed=true
-          fi
-
-          emulator_pid_is_owned() {
-            local actual_start actual_uid
-            [[
-              "$emulator_pid" =~ ^[0-9]+$ &&
-              "$emulator_uid" =~ ^[0-9]+$ &&
-              "$emulator_start_time" =~ ^[0-9]+$ &&
-              -r "/proc/$emulator_pid/stat"
-            ]] || return 1
-            actual_uid="$(stat -c '%u' "/proc/$emulator_pid")" || return 1
-            actual_start="$(awk '{ print $22 }' "/proc/$emulator_pid/stat")" || return 1
-            [[
-              "$actual_uid" == "$emulator_uid" &&
-              "$actual_start" == "$emulator_start_time"
-            ]]
-          }
-          emulator_pid_matches() {
-            local command_line
-            emulator_pid_is_owned || return 1
-            command_line="$(tr '\0' ' ' < "/proc/$emulator_pid/cmdline")"
-            [[
-              "$command_line" == *"@$DETOX_ANDROID_AVD"* &&
-              "$command_line" == *"-port 5554"*
-            ]]
-          }
-          emulator_qemu_present_or_unknown() {
-            local processes status
-            if processes="$(timeout 5s pgrep -af '[q]emu-system' 2>/dev/null)"; then
-              return 0
-            else
-              status=$?
-              [[ "$status" -eq 1 ]] && return 1
-              return 0
-            fi
-          }
-          emulator_device_present_or_unknown() {
-            local devices
-            devices="$(timeout 5s adb devices 2>/dev/null)" || return 0
-            grep -Eq '^emulator-[0-9]+[[:space:]]' <<<"$devices"
-          }
-          emulator_ports_present_or_unknown() {
-            local listeners
-            listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )' 2>/dev/null)" ||
-              return 0
-            [[ -n "$listeners" ]]
-          }
-          emulator_cleanup_complete() {
-            ! emulator_pid_is_owned &&
-              ! emulator_qemu_present_or_unknown &&
-              ! emulator_device_present_or_unknown &&
-              ! emulator_ports_present_or_unknown
-          }
-
-          if emulator_pid_matches; then
-            timeout 10s adb -s emulator-5554 emu kill >/dev/null 2>&1 || true
-            cleanup_failed=true
-          elif emulator_pid_is_owned; then
-            echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal its serial" >&2
-            cleanup_failed=true
-          elif emulator_device_present_or_unknown; then
-            echo "Android emulator serial is present or unknown without its saved process identity; refusing to signal it" >&2
-            cleanup_failed=true
-          fi
-          if emulator_pid_matches; then
-            kill -TERM "$emulator_pid" 2>/dev/null || true
-            cleanup_failed=true
-          elif emulator_pid_is_owned; then
-            echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal it" >&2
-            cleanup_failed=true
-          fi
-          for _ in $(seq 1 20); do
-            if emulator_cleanup_complete; then
-              break
-            fi
-            sleep 1
-          done
-          if emulator_pid_matches; then
-            kill -KILL "$emulator_pid" 2>/dev/null || true
-            cleanup_failed=true
-          fi
-          for _ in $(seq 1 10); do
-            if emulator_cleanup_complete; then
-              break
-            fi
-            sleep 1
-          done
-
-          if emulator_pid_is_owned; then
-            if emulator_pid_matches; then
-              echo "Android emulator PID $emulator_pid survived final cleanup" >&2
-            else
-              echo "Owned Android emulator PID $emulator_pid survived with an unexpected command identity" >&2
-            fi
-            cleanup_failed=true
-          fi
-          if emulator_qemu_present_or_unknown; then
-            echo "A QEMU process survived final cleanup or process state could not be inspected" >&2
-            timeout 5s pgrep -af '[q]emu-system' >&2 || true
-            cleanup_failed=true
-          fi
-          if emulator_device_present_or_unknown; then
-            echo "emulator-5554 survived final cleanup or ADB could not prove absence" >&2
-            cleanup_failed=true
-          fi
-          if emulator_ports_present_or_unknown; then
-            echo "Android emulator ports 5554/5555 survived final cleanup or could not be inspected" >&2
-            cleanup_failed=true
-          fi
-          timeout 10s adb kill-server || cleanup_failed=true
-          rm -f "$owner_pid_file" "$owner_uid_file" "$owner_start_file"
-          if [[ "$cleanup_failed" == "true" ]]; then
-            exit 1
-          fi
-      - name: Upload bounded Android failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mychampions-android-failure-${{ github.run_id }}
-          path: .artifacts/ci-diagnostics/android
-          if-no-files-found: warn
-          retention-days: 1
-
-  selective-ci-gate:
-    name: Selective CI gate
-    if: always()
-    needs:
-      - impact
-      - fast-quality
-      - web-selected
-      - detox-ios-selected
-      - detox-android-selected
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify every selected lane passed
-        env:
-          IMPACT_RESULT: ${{ needs.impact.result }}
-          FAST_RESULT: ${{ needs.fast-quality.result }}
-          HAS_WEB: ${{ needs.impact.outputs.has_web }}
-          HAS_IOS: ${{ needs.impact.outputs.has_detox_ios }}
-          HAS_ANDROID: ${{ needs.impact.outputs.has_detox_android }}
-          WEB_RESULT: ${{ needs.web-selected.result }}
-          IOS_RESULT: ${{ needs.detox-ios-selected.result }}
-          ANDROID_RESULT: ${{ needs.detox-android-selected.result }}
-        run: |
-          set -euo pipefail
-          if [[ "$IMPACT_RESULT" != "success" || "$FAST_RESULT" != "success" ]]; then
-            echo "Impact resolution or fast quality checks failed." >&2
-            exit 1
-          fi
-
-          require_selected_lane() {
-            local selected="$1"
-            local result="$2"
-            local lane="$3"
-            if [[ "$selected" != "true" && "$selected" != "false" ]]; then
-              echo "$lane selection output was missing or invalid: $selected" >&2
-              exit 1
-            fi
-            if [[ "$selected" == "true" && "$result" != "success" ]]; then
-              echo "$lane was selected but finished with result: $result" >&2
-              exit 1
-            fi
-            if [[ "$selected" == "false" && "$result" != "skipped" ]]; then
-              echo "$lane was not selected but finished with unexpected result: $result" >&2
-              exit 1
-            fi
-          }
-
-          require_selected_lane "$HAS_WEB" "$WEB_RESULT" web
-          require_selected_lane "$HAS_IOS" "$IOS_RESULT" ios
-          require_selected_lane "$HAS_ANDROID" "$ANDROID_RESULT" android
-          echo "Every selected feature lane passed."
+              if not isinstance(statuses, list):
+                  raise SystemExit("GitHub status response is malformed.")
+              latest = next(
+                  (
+                      status
+                      for status in statuses
+                      if isinstance(status, dict)
+                      and status.get("context") == "Selective CI gate"
+                  ),
+                  None,
+              )
+              if isinstance(latest, dict):
+                  creator = latest.get("creator")
+                  if (
+                      latest.get("state") == "pending"
+                      and latest.get("description") == expected_description
+                      and isinstance(latest.get("target_url"), str)
+                      and expected_target.fullmatch(latest["target_url"])
+                      and isinstance(creator, dict)
+                      and creator.get("login") == "github-actions[bot]"
+                      and creator.get("type") == "Bot"
+                  ):
+                      print("Trusted stale-status invalidation is active.")
+                      break
+              time.sleep(2)
+          else:
+              raise SystemExit(
+                  "Trusted stale-status invalidation was not observed before timeout."
+              )
+          PY
