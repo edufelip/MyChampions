@@ -50,3 +50,7 @@ flowchart LR
   suites. Shared-global or unknown runtime changes fail closed to the complete
   registered matrix, and D-193 makes the exact-head selective workflow the
   authoritative pull-request gate.
+- The iOS lane reserves dedicated non-ephemeral Metro port `18081`, compiles it
+  as the debug fallback, and routes every launch plus freshly owned phase
+  through it. Android keeps fixed port `8081` coordinated with its
+  instrumentation and ADB reverse tunnel.

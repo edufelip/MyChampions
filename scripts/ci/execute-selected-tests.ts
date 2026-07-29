@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { loadManifest } from './test-impact';
 import {
   createSelectiveExecutionPlan,
+  parseNativeMetroPort,
   parseSelectedSuitesJson,
   type CommandInvocation,
   type SelectivePlatform,
@@ -203,6 +204,10 @@ async function main(): Promise<void> {
   const platform = parsePlatform(valueAfter('--platform'));
   const suitesJson = valueAfter('--suites-json') ?? process.env.SELECTED_SUITES_JSON;
   const selectedSuites = parseSelectedSuitesJson(suitesJson);
+  const metroPort =
+    platform === 'ios' || platform === 'android'
+      ? parseNativeMetroPort(platform, process.env.DETOX_METRO_PORT)
+      : undefined;
   const plan = createSelectiveExecutionPlan(
     loadManifest(root),
     platform,
@@ -211,6 +216,7 @@ async function main(): Promise<void> {
       skipNativeBuild: isTrue(process.env.DETOX_SKIP_BUILD),
       diagnosticsRoot:
         process.env.SELECTIVE_TEST_DIAGNOSTICS_ROOT ?? '.artifacts/ci-diagnostics',
+      metroPort,
     }
   );
 

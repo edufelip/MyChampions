@@ -5,6 +5,7 @@ import test from 'node:test';
 import { loadManifest } from '../../scripts/ci/test-impact';
 import {
   createSelectiveExecutionPlan,
+  parseNativeMetroPort,
   parseSelectedSuitesJson,
   validateSelectiveExecutionManifest,
 } from '../../scripts/ci/selective-execution';
@@ -146,6 +147,40 @@ test('DETOX_SKIP_BUILD transfers the single native build to the workflow', () =>
         invocation.metro.platform === 'ios' &&
         invocation.metro.appId === 'com.edufelip.mychampions.dev'
     )
+  );
+});
+
+test('iOS accepts a validated run-isolated Metro port and propagates it to every command', () => {
+  const metroPort = parseNativeMetroPort('ios', '27828');
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:support'], {
+    metroPort,
+  });
+
+  assert.equal(plan.nativeBuild?.command.env.DETOX_METRO_PORT, '27828');
+  assert.ok(
+    plan.invocations.every(
+      (invocation) =>
+        invocation.metro?.port === 27828 &&
+        invocation.env.DETOX_METRO_PORT === '27828'
+    )
+  );
+});
+
+test('native Metro port overrides fail closed outside the supported platform contract', () => {
+  assert.equal(parseNativeMetroPort('ios', undefined), 8081);
+  assert.throws(
+    () => parseNativeMetroPort('ios', '8081x'),
+    /must contain only decimal digits/
+  );
+  assert.throws(
+    () => parseNativeMetroPort('ios', '65535'),
+    /must be an integer from 1024 to 49151/
+  );
+  assert.throws(
+    () => createSelectiveExecutionPlan(manifest, 'android', ['detox:support'], {
+      metroPort: 27828,
+    }),
+    /Android Metro port must remain 8081/
   );
 });
 

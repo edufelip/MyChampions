@@ -40,6 +40,8 @@
 - Plan change requests are advisory and must not grant direct student edit rights to assigned plans.
 - Nutrition tracking review is read-only; TrackingLogs remain Student-owned even when plan/connection provenance is shown.
 - Nutrition plan assignment/update requires an active nutritionist Connection; route actions are unavailable to Professionals without nutritionist Specialty.
+- Each plan-picker row exposes a stable semantic assignment control for native
+  interaction; viewport coordinates are not part of the selection contract.
 
 ## Data Contract
 - Inputs:

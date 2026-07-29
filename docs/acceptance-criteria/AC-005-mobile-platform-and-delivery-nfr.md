@@ -36,7 +36,12 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   launches; timeout, response, body-stream, or Metro-exit failures fail the
   phase instead of consuming the test's first UI wait. Contradictory image-upload
   sheet and fixture-success expectations execute in separate scenario-gated
-  phases, and authenticated runs reject a missing or invalid scenario. Android
+  phases, and authenticated runs reject a missing or invalid scenario. iOS CI
+  reserves dedicated Metro port `18081`, verifies that it is unoccupied before
+  building, compiles it as the React Native fallback, routes every debug-app
+  launch to the same port through `RCT_jsLocation`, and forwards it to every
+  prewarm/Detox phase without killing an unrelated
+  listener on the local default `8081`. Android
   instrumentation persists `debug_http_host=localhost:8081` before React Native
   starts so the configured ADB reverse tunnel, rather than the emulator gateway,
   owns the Metro route; failure to persist that setting fails the invocation.

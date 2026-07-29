@@ -26,6 +26,13 @@ const nativeEditorHelperSource = readSource('e2e/native-editor-actions.js');
 const planMetadataFormSource = readSource(
   'features/plans/components/PlanMetadataForm.tsx'
 );
+const planPickerModalSource = readSource('components/ds/patterns/PlanPickerModal.tsx');
+const professionalBulkAssignSource = readSource(
+  'e2e/professional-bulk-assign.e2e.test.js'
+);
+const professionalStudentProfileSource = readSource(
+  'e2e/professional-student-profile.e2e.test.js'
+);
 const sharedWebViewSource = readSource('e2e/shared-webview.e2e.test.js');
 const standaloneSpecialtySource = readSource('e2e/professional-specialty.e2e.test.js');
 const specialtyConsumerPaths = [
@@ -140,6 +147,24 @@ test('training builders scroll the save action above compact native chrome', () 
     studentSelfManagedBuilderSource.match(/await scrollToTrainingPlanSave\(\);/g)?.length,
     1
   );
+});
+
+test('professional plan pickers use semantic assignment controls across native viewports', () => {
+  assert.match(
+    planPickerModalSource,
+    /testID=\{`planPicker\.assign\.\$\{plan\.id\}`\}/
+  );
+
+  for (const source of [
+    professionalBulkAssignSource,
+    professionalStudentProfileSource,
+  ]) {
+    assert.match(
+      source,
+      /element\(by\.id\('planPicker\.assign\.e2e-nutrition-predefined-plan'\)\)\.tap\(\)/
+    );
+    assert.doesNotMatch(source, /device\.tap\(\{ x: 336, y: 520 \}\)/);
+  }
 });
 
 test('account settings scrolls compact legal and support controls before interaction', () => {

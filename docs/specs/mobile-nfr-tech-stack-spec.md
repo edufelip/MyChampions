@@ -53,6 +53,12 @@ Define non-functional architecture constraints and technology options for the mo
   requests and fully consumes the current platform's rewritten Expo development
   bundle before Detox launches; cold transformation, response, or stream failure
   therefore belongs to phase setup rather than a screen assertion.
+- The selected iOS job reserves dedicated non-ephemeral Metro port `18081`,
+  verifies it is free before building, compiles it as React Native's Debug
+  fallback, and routes every app launch to it through the app-level
+  `RCT_jsLocation` argument. The executor uses the same validated
+  `DETOX_METRO_PORT` for prewarming and phase ownership, so an unrelated
+  developer process on default port `8081` is neither reused nor signalled.
 - The selected Android lane runs `lintDevDebug` before Detox. The manually
   maintained native baseline keeps camera hardware optional because manual
   invite entry remains available, declares Android 13 notification capability
@@ -144,7 +150,8 @@ dedicated self-hosted lanes, and workflow/tooling, scheduled, merge-queue,
 release/hotfix, or explicit-full inputs select the complete registered matrix.
 Contradictory native fixture states execute in scenario-gated fresh-Metro phases,
 each of which fully prewarms its exact platform bundle before Detox launches, and
-Android instrumentation routes Metro through the configured localhost ADB
+the iOS lane keeps its app launch route and compiled fallback on dedicated port
+`18081`. Android instrumentation routes Metro through the configured localhost ADB
 reverse tunnel before React Native starts. The Android runner supplies one
 health-checked `emulator-5554` for the job instead of delegating console-port
 allocation to Detox. Successful runs create no GitHub

@@ -159,3 +159,28 @@ test('selective native execution fully prewarms Metro before Detox launches', ()
     'executor must finish Metro bundle prewarming before Detox launches'
   );
 });
+
+test('iOS selective CI reserves a dedicated Metro port and routes every app launch to it', () => {
+  const workflow = readFileSync(
+    join(root, '.github', 'workflows', 'pr-selective-tests.yml'),
+    'utf8'
+  );
+  const detoxConfig = readFileSync(join(root, '.detoxrc.js'), 'utf8');
+
+  assert.match(
+    workflow,
+    /DETOX_METRO_PORT: '18081'/
+  );
+  assert.match(
+    workflow,
+    /lsof -nP -iTCP:"\$DETOX_METRO_PORT" -sTCP:LISTEN/
+  );
+  assert.match(
+    detoxConfig,
+    /RCT_jsLocation: `localhost:\$\{iosMetroPort\}`/
+  );
+  assert.match(
+    detoxConfig,
+    /-derivedDataPath ios\/build RCT_METRO_PORT="\$\{DETOX_METRO_PORT:-8081\}"/
+  );
+});

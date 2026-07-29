@@ -44,6 +44,8 @@
 - Pending-queue filtering/search cannot expose records outside professional scope.
 - Bulk deny can operate only on `pending_confirmation` requests and must preserve lifecycle audit metadata.
 - Bulk assignment target list must include only active students eligible for selected plan domain.
+- Each plan-picker row exposes a stable semantic assignment control for native
+  interaction; viewport coordinates are not part of the selection contract.
 
 ## Data Contract
 - Inputs:

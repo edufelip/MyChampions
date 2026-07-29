@@ -487,6 +487,15 @@
     controlled grams value, dismisses the active keyboard through the
     platform-owned path, and uses stable element identifiers rather than
     coordinate fallbacks.
+    The iOS job reserves dedicated non-ephemeral Metro port `18081`, verifies it
+    is free before the one-time native build, passes it through
+    `DETOX_METRO_PORT`, compiles it as `RCT_METRO_PORT`, and routes every
+    debug-app launch through the matching `RCT_jsLocation`. Every subsequent
+    phase rechecks ownership before binding. An unrelated
+    listener, including a developer server on the default `8081`, is never
+    reused or terminated. Android retains fixed port `8081` because its app,
+    instrumentation preference, and ADB reverse tunnel form one coordinated
+    contract.
     The WSL lane rejects stale Android emulator state, restarts ADB, and
     preboots `Pixel_10` at console port `5554` before selected Detox execution.
     Its 120-second gate revalidates the saved PID, runner UID, Linux process

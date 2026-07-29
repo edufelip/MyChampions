@@ -98,7 +98,15 @@ authenticated missing or invalid scenarios fail closed. The student dashboard
 and relationship stories launch a fresh app instance with
 synchronization disabled in `launchArgs` for every case; Android CI-eligible
 Detox specs must not call `reloadReactNative()` across the native idling
-registry. Before each Android instrumented launch, `DetoxTest` synchronously
+registry. The iOS job reserves dedicated non-ephemeral Metro port `18081` and
+rejects an existing listener before the one-time native build. The Debug build
+compiles that value through `RCT_METRO_PORT`, and Detox's app-level
+`RCT_jsLocation` launch argument routes every fresh app instance to the same
+port while merging with per-story launch arguments. The executor independently
+validates and forwards `DETOX_METRO_PORT` to prewarming and every phase, so an
+unrelated listener on the local default `8081` remains untouched; a listener on
+the dedicated port still fails closed. Before each Android instrumented launch,
+`DetoxTest` synchronously
 sets React Native's `debug_http_host` to `localhost:8081` and aborts if the
 preference cannot be persisted. Together with the `reversePorts: [8081]`
 setting in `.detoxrc.js`, this keeps Metro traffic on ADB's proven reverse tunnel

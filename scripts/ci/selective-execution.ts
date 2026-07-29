@@ -41,9 +41,47 @@ export type SelectiveExecutionPlan = {
 export type SelectiveExecutionOptions = {
   skipNativeBuild?: boolean;
   diagnosticsRoot?: string;
+  metroPort?: number;
 };
 
 const supportedWebRunners = new Set(['playwright', 'playwright-server']);
+const defaultNativeMetroPort = 8081;
+const minimumUnprivilegedPort = 1024;
+const maximumNonEphemeralPort = 49151;
+
+export function validateNativeMetroPort(
+  platform: 'ios' | 'android',
+  port: number
+): number {
+  if (
+    !Number.isInteger(port) ||
+    port < minimumUnprivilegedPort ||
+    port > maximumNonEphemeralPort
+  ) {
+    throw new Error(
+      `native Metro port must be an integer from ${minimumUnprivilegedPort} to ${maximumNonEphemeralPort}`
+    );
+  }
+  if (platform === 'android' && port !== defaultNativeMetroPort) {
+    throw new Error(
+      `Android Metro port must remain ${defaultNativeMetroPort} until the instrumentation and ADB reverse contract are changed together`
+    );
+  }
+  return port;
+}
+
+export function parseNativeMetroPort(
+  platform: 'ios' | 'android',
+  value: string | undefined
+): number {
+  if (value === undefined || value.trim() === '') {
+    return defaultNativeMetroPort;
+  }
+  if (!/^[0-9]+$/.test(value)) {
+    throw new Error('DETOX_METRO_PORT must contain only decimal digits');
+  }
+  return validateNativeMetroPort(platform, Number(value));
+}
 
 function uniqueSorted(values: Iterable<string>): string[] {
   return [...new Set(values)].sort();
@@ -244,11 +282,18 @@ function createNativePlan(
   diagnosticsRoot: string
 ): SelectiveExecutionPlan {
   const configuration = platform === 'ios' ? 'ios.sim.debug' : 'android.emu.debug';
+  const metroPort = validateNativeMetroPort(
+    platform,
+    options.metroPort ?? defaultNativeMetroPort
+  );
   const buildCommand: CommandInvocation = {
     id: `build-${platform}-debug`,
     command: 'yarn',
     args: ['detox', 'build', '-c', configuration],
-    env: baseExecutionEnvironment(),
+    env: {
+      ...baseExecutionEnvironment(),
+      DETOX_METRO_PORT: String(metroPort),
+    },
   };
   const invocations: CommandInvocation[] = [];
 
@@ -290,11 +335,12 @@ function createNativePlan(
             CI_REQUIRE_E2E_EXECUTION: 'true',
             DETOX_JEST_CONFIG: 'e2e/jest.config.js',
             DETOX_METRO_CLEAR_CACHE: 'true',
+            DETOX_METRO_PORT: String(metroPort),
             DETOX_REQUIRE_FRESH_METRO: 'true',
             EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX: 'true',
           },
           metro: {
-            port: 8081,
+            port: metroPort,
             platform,
             appId: 'com.edufelip.mychampions.dev',
           },

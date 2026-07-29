@@ -265,6 +265,7 @@ jobs:
       CI: 'true'
       CI_REQUIRE_E2E_EXECUTION: 'true'
       DETOX_IOS_SIMULATOR: iPhone 17
+      DETOX_METRO_PORT: '18081'
       DETOX_REQUIRE_FRESH_METRO: 'true'
       EXPO_PUBLIC_ENV: dev
       SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_ios_suites }}
@@ -298,6 +299,20 @@ jobs:
             echo "Expected iPhoneOS SDK ${XCODE_REQUIRED_MAJOR}.0+; found $sdk_version." >&2
             exit 1
           fi
+      - name: Verify the isolated iOS Metro port
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$DETOX_METRO_PORT" =~ ^[0-9]+$ ]] ||
+             (( DETOX_METRO_PORT < 1024 || DETOX_METRO_PORT > 49151 )); then
+            echo "Invalid isolated iOS Metro port: ${DETOX_METRO_PORT}" >&2
+            exit 1
+          fi
+          if lsof -nP -iTCP:"$DETOX_METRO_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+            echo "Isolated iOS Metro port ${DETOX_METRO_PORT} is already occupied." >&2
+            exit 1
+          fi
+          echo "Verified isolated iOS Metro port ${DETOX_METRO_PORT}."
       - name: Write environment
         run: |
           cat <<'EOF' > .env

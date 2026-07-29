@@ -73,7 +73,7 @@ describeWithE2EAuthSession('Professional Student Profile', () => {
     await waitFor(element(by.id('planPicker.modal'))).toBeVisible().withTimeout(5000);
     await expect(element(by.id('planPicker.row.e2e-nutrition-predefined-plan'))).toBeVisible();
     await expect(element(by.id('planPicker.row.e2e-training-predefined-plan'))).not.toBeVisible();
-    await device.tap({ x: 336, y: 520 });
+    await element(by.id('planPicker.assign.e2e-nutrition-predefined-plan')).tap();
 
     await waitFor(element(by.text('Plan assigned successfully.'))).toBeVisible().withTimeout(5000);
     await element(by.text('OK')).tap();

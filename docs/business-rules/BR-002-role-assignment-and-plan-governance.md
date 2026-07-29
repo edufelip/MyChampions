@@ -72,6 +72,10 @@
   - A selected native phase is ready to launch Detox only after its freshly
     owned Metro process has returned and fully streamed the exact platform
     development bundle under that phase's runtime fixture environment.
+  - The selected iOS job reserves dedicated non-ephemeral Metro port `18081`
+    before building, compiles it as the debug fallback, routes every debug-app
+    launch to that port, and fails closed rather than reusing or terminating an
+    unrelated listener.
   - The selected Android job rejects stale devices, QEMU processes, or console
     listeners; boots `Pixel_10` on `emulator-5554`; proves the exact healthy AVD
     and PID/UID/start-time command identity within a bounded wait; and fails if
