@@ -81,11 +81,20 @@ states run as separate scenario-gated phases: the AI meal-analysis spec runs
 once with both AI and professional entitlement access lapsed and once with both
 active, so no invocation observes an impossible mixed expectation. An
 authenticated direct run with a missing or invalid AI-analysis scenario fails
-immediately instead of reporting both expectations as skipped. The student
-dashboard and relationship stories launch a fresh app instance with
+immediately instead of reporting both expectations as skipped. Custom-meal image
+upload likewise runs once with the synthetic upload fixture cleared to exercise
+the native source sheet and once with the success fixture enabled to prove the
+preview; only the assertion matching `E2E_IMAGE_UPLOAD_SCENARIO` executes, and
+authenticated missing or invalid scenarios fail closed. The student dashboard
+and relationship stories launch a fresh app instance with
 synchronization disabled in `launchArgs` for every case; Android CI-eligible
 Detox specs must not call `reloadReactNative()` across the native idling
-registry. Native selective phases explicitly suppress the in-app development
+registry. Before each Android instrumented launch, `DetoxTest` synchronously
+sets React Native's `debug_http_host` to `localhost:8081` and aborts if the
+preference cannot be persisted. Together with the `reversePorts: [8081]`
+setting in `.detoxrc.js`, this keeps Metro traffic on ADB's proven reverse tunnel
+instead of the emulator's `10.0.2.2` gateway. Native selective phases explicitly
+suppress the in-app development
 LogBox notification overlay while retaining warning text in runner logs and
 failure diagnostics, so diagnostics cannot intercept stable Detox action
 targets. Tests scroll lower auth actions into view before interaction so the

@@ -69,6 +69,8 @@
   - Pull requests into `main` prove selected native builds/tests on self-hosted
     runners without publishing successful build artifacts; bounded failure
     diagnostics expire after one day.
+  - Android Detox debug traffic must use the test-owned ADB reverse tunnel;
+    instrumented launches may not depend on the emulator's host-gateway route.
 - `BR-257`: Client-side compression is required before any image/media upload through the MyChampions server upload boundary.
 - `BR-258`: Production monitoring scope in MVP requires a selected crash/ANR provider before release and excludes additional non-crash error-monitoring platforms.
 - `BR-259`: Release updates in MVP are delivered only through App Store/Play Store binaries; OTA update channels are disabled.

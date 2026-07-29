@@ -135,7 +135,10 @@ workflow is the authoritative exact-head pull-request gate: universal fast check
 always run, affected Playwright and both-platform Detox suites execute on
 dedicated self-hosted lanes, and workflow/tooling, scheduled, merge-queue,
 release/hotfix, or explicit-full inputs select the complete registered matrix.
-Successful runs create no GitHub Actions artifact or cache.
+Contradictory native fixture states execute in scenario-gated fresh-Metro phases,
+and Android instrumentation routes Metro through the configured localhost ADB
+reverse tunnel before React Native starts. Successful runs create no GitHub
+Actions artifact or cache.
 
 ## High-Level Architecture (Target)
 1. Expo/React Native client handles UI, routing, and offline read models.

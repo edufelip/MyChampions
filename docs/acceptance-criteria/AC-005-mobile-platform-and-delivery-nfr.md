@@ -30,7 +30,13 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   oversized, unresolved, merge-queue, scheduled, release/hotfix, or explicit-full
   inputs select the complete registered CI matrix. Every selected executable
   profile must pass; native jobs build once while freshly owned Metro phases
-  override or clear embedded dev-only fixture values. Native selective phases
+  override or clear embedded dev-only fixture values. Contradictory image-upload
+  sheet and fixture-success expectations execute in separate scenario-gated
+  phases, and authenticated runs reject a missing or invalid scenario. Android
+  instrumentation persists `debug_http_host=localhost:8081` before React Native
+  starts so the configured ADB reverse tunnel, rather than the emulator gateway,
+  owns the Metro route; failure to persist that setting fails the invocation.
+  Native selective phases
   preserve warning diagnostics without allowing the development LogBox overlay
   to intercept Detox actions, and tests bring compact-viewport targets into view
   before interaction. Metro cleanup targets and

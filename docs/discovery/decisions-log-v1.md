@@ -470,9 +470,12 @@
     analysis proves the locked state only when both AI and professional
     entitlements are lapsed, then proves success in a separate active-entitlement
     phase. Missing or invalid scenarios fail authenticated direct runs instead of
-    skipping both expectations. The student dashboard and relationship native
-    stories launch a fresh app per case, and Android CI specs never reload React
-    Native across Detox's idling registry.
+    skipping both expectations. Image-upload source-sheet and synthetic-success
+    assertions likewise execute in separate scenario-gated phases; the success
+    fixture is cleared for the source-sheet phase, and a missing or invalid
+    scenario fails an authenticated direct run. The student dashboard and
+    relationship native stories launch a fresh app per case, and Android CI specs
+    never reload React Native across Detox's idling registry.
     The executor explicitly suppresses only the in-app development LogBox
     notification layer during native E2E phases while warnings remain in runner
     logs, and compact-viewport tests scroll stable targets into view before
@@ -481,6 +484,11 @@
     group makes group signaling return `EPERM`, then verifies that no runner-owned
     member or Metro listener survives. A run that executes no test or cannot
     prove cleanup fails closed. Provider-live suites remain ineligible for PR CI.
+    Android Detox instrumentation synchronously persists React Native's
+    `debug_http_host` as `localhost:8081` before each instrumented launch. This
+    makes the existing `reversePorts: [8081]` tunnel authoritative instead of the
+    stock emulator's `10.0.2.2` gateway, and a failed preference write aborts the
+    invocation before React Native starts.
   - The three legacy PR workflows are manual-only. The stable selective gate fails
     when any selected lane is skipped or fails, including fork PRs that cannot
     safely execute on self-hosted runners.

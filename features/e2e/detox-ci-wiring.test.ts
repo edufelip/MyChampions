@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import test from 'node:test';
 
 const root = join(__dirname, '..', '..');
+const requireFromTest = createRequire(import.meta.url);
 
 test('iOS PR workflow runs split-mode Detox smoke coverage for migrated auth/server flows', () => {
   const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
@@ -33,6 +35,24 @@ test('iOS PR workflow runs split-mode Detox smoke coverage for migrated auth/ser
 
 test('Android Detox targets the committed dev and production flavors on an available AVD', () => {
   const detoxConfig = readFileSync(join(root, '.detoxrc.js'), 'utf8');
+  const detoxConfiguration = requireFromTest(join(root, '.detoxrc.js')) as {
+    apps: Record<string, { reversePorts?: number[] }>;
+  };
+  const instrumentation = readFileSync(
+    join(
+      root,
+      'android',
+      'app',
+      'src',
+      'androidTest',
+      'java',
+      'com',
+      'eduardo880',
+      'mychampions',
+      'DetoxTest.java'
+    ),
+    'utf8'
+  );
   const androidSettings = readFileSync(join(root, 'android', 'settings.gradle'), 'utf8');
   const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
     scripts?: Record<string, string>;
@@ -100,6 +120,19 @@ test('Android Detox targets the committed dev and production flavors on an avail
   assert.doesNotMatch(detoxConfig, /outputs\/apk\/debug\/app-debug\.apk/);
   assert.doesNotMatch(detoxConfig, /\bassembleDebug\b/);
   assert.doesNotMatch(detoxConfig, /Pixel_9/);
+  assert.deepEqual(detoxConfiguration.apps['android.debug']?.reversePorts, [8081]);
+  assert.match(instrumentation, /REACT_NATIVE_DEBUG_SERVER_HOST = "debug_http_host"/);
+  assert.match(instrumentation, /DETOX_METRO_HOST = "localhost:8081"/);
+  assert.match(instrumentation, /\.putString\(REACT_NATIVE_DEBUG_SERVER_HOST, DETOX_METRO_HOST\)/);
+  assert.match(instrumentation, /\.commit\(\)/);
+  const metroRouteIndex = instrumentation.indexOf('routeMetroThroughAdbReverse();');
+  const detoxRunIndex = instrumentation.indexOf('Detox.runTests(activityRule);');
+  assert.notEqual(metroRouteIndex, -1, 'instrumentation must call the Metro route helper');
+  assert.notEqual(detoxRunIndex, -1, 'instrumentation must call Detox.runTests');
+  assert.ok(
+    metroRouteIndex < detoxRunIndex,
+    'instrumentation must configure the localhost Metro route before React Native launches'
+  );
   assert.match(androidSettings, /require\.resolve\('detox\/package\.json'\)/);
   assert.match(androidSettings, /new File\(detoxPackageDir, 'android\/detox'\)/);
   assert.doesNotMatch(androidSettings, /\.\.\/node_modules\/detox/);

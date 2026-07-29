@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 
+import { enUS } from '@/localization/en-US';
+
 type ManifestSuite = {
   runner: string;
   ci: boolean;
@@ -124,6 +126,73 @@ test('authenticated AI meal analysis fails closed without a valid scenario', () 
     evaluate({
       E2E_AUTH_SESSION: 'true',
       E2E_MEAL_ANALYSIS_SCENARIO: 'success',
+    })
+  );
+  assert.doesNotThrow(() => evaluate({}));
+});
+
+test('custom meal image upload executes only the fixture phase matching its scenario', () => {
+  const source = readFileSync(
+    join(root, 'e2e/custom-meal-image-upload.e2e.test.js'),
+    'utf8'
+  );
+
+  assert.match(
+    source,
+    /imageUploadScenario === 'sheet' \? it : it\.skip/
+  );
+  assert.match(
+    source,
+    /imageUploadScenario === 'success' \? it : it\.skip/
+  );
+  assert.match(
+    source,
+    /itWithSheetScenario\('opens the upload source sheet/
+  );
+  assert.match(
+    source,
+    /itWithSuccessScenario\('uploads a selected image/
+  );
+  assert.equal(enUS['photo_picker.title'], 'Upload image');
+  assert.match(source, /by\.text\('Upload image'\)/);
+});
+
+test('authenticated custom meal image upload fails closed without a valid scenario', () => {
+  const source = readFileSync(
+    join(root, 'e2e/custom-meal-image-upload.e2e.test.js'),
+    'utf8'
+  );
+  const noop = () => {};
+  const selectable = Object.assign(noop, { skip: noop });
+  const evaluate = (env: Record<string, string>) =>
+    runInNewContext(source, {
+      describe: selectable,
+      it: selectable,
+      process: { env },
+    });
+
+  assert.throws(
+    () => evaluate({ E2E_AUTH_SESSION: 'true' }),
+    /requires E2E_IMAGE_UPLOAD_SCENARIO=sheet\|success/
+  );
+  assert.throws(
+    () =>
+      evaluate({
+        E2E_AUTH_SESSION: 'true',
+        E2E_IMAGE_UPLOAD_SCENARIO: 'typo',
+      }),
+    /requires E2E_IMAGE_UPLOAD_SCENARIO=sheet\|success/
+  );
+  assert.doesNotThrow(() =>
+    evaluate({
+      E2E_AUTH_SESSION: 'true',
+      E2E_IMAGE_UPLOAD_SCENARIO: 'sheet',
+    })
+  );
+  assert.doesNotThrow(() =>
+    evaluate({
+      E2E_AUTH_SESSION: 'true',
+      E2E_IMAGE_UPLOAD_SCENARIO: 'success',
     })
   );
   assert.doesNotThrow(() => evaluate({}));

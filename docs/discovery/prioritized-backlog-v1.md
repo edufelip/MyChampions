@@ -84,7 +84,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 ## Delivery NFR Coverage
 | Backlog Item | Status | FR | UC | AC | BR | TC |
 |---|---|---|---|---|---|---|
-| BL-016 Feature-aware selective test execution | Implemented — the manifest, fail-closed dependency resolver, typed executor/profile contracts, exact-head authoritative workflow, both-platform feature selection, full safety fallbacks, registered Mac/WSL runners, stress-proven shared-host locks, zero-success-artifact policy, and contract tests are in place. Delivery is complete only when the promotion pull request's exact head passes the full web/iOS/Android matrix. | FR-271 | N/A | AC-540 | BR-256 | TC-518 |
+| BL-016 Feature-aware selective test execution | Implemented — the manifest, fail-closed dependency resolver, typed executor/profile contracts, scenario-isolated native fixtures, ADB-reversed Android Metro routing, exact-head authoritative workflow, both-platform feature selection, full safety fallbacks, registered Mac/WSL runners, stress-proven shared-host locks, zero-success-artifact policy, and contract tests are in place. Delivery is complete only when the promotion pull request's exact head passes the full web/iOS/Android matrix. | FR-271 | N/A | AC-540 | BR-256 | TC-518 |
 
 All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/TC traceability.
 

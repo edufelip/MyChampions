@@ -204,20 +204,48 @@ test('self-managed plan building is isolated from assigned-plan fixtures', () =>
   assert.equal(bulkAssign.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE, 'assigned');
 });
 
-test('nutrition profile isolates locked and unlocked AI analysis scenarios', () => {
+test('nutrition profile isolates scenario-specific native fixtures', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:nutrition'], {
     skipNativeBuild: true,
   });
   const aiAnalysisInvocations = plan.invocations.filter((invocation) =>
     invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js')
   );
+  const imageUploadInvocations = plan.invocations.filter((invocation) =>
+    invocation.args.includes('e2e/custom-meal-image-upload.e2e.test.js')
+  );
+  const unrelatedNutritionInvocations = plan.invocations.filter(
+    (invocation) =>
+      !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js') &&
+      !invocation.args.includes('e2e/custom-meal-image-upload.e2e.test.js')
+  );
   const regularNutritionInvocations = plan.invocations.filter(
     (invocation) =>
       !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js')
   );
 
-  assert.equal(plan.invocations.length, 8);
+  assert.equal(plan.invocations.length, 9);
   assert.equal(aiAnalysisInvocations.length, 2);
+  assert.equal(imageUploadInvocations.length, 2);
+  assert.deepEqual(
+    imageUploadInvocations.map(
+      (invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO
+    ),
+    ['sheet', 'success']
+  );
+  assert.equal(
+    imageUploadInvocations[0]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
+    ''
+  );
+  assert.equal(
+    imageUploadInvocations[1]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
+    'success'
+  );
+  assert.ok(
+    unrelatedNutritionInvocations.every(
+      (invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO === ''
+    )
+  );
   assert.deepEqual(
     aiAnalysisInvocations.map(
       (invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO
