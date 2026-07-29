@@ -469,9 +469,10 @@
     Contradictory story states execute in separate scenario-gated phases; AI meal
     analysis proves the locked state only when both AI and professional
     entitlements are lapsed, then proves success in a separate active-entitlement
-    phase. The student dashboard and relationship native stories launch a fresh
-    app per case, and Android CI specs never reload React Native across Detox's
-    idling registry.
+    phase. Missing or invalid scenarios fail authenticated direct runs instead of
+    skipping both expectations. The student dashboard and relationship native
+    stories launch a fresh app per case, and Android CI specs never reload React
+    Native across Detox's idling registry.
     The executor explicitly suppresses only the in-app development LogBox
     notification layer during native E2E phases while warnings remain in runner
     logs, and compact-viewport tests scroll stable targets into view before

@@ -79,7 +79,9 @@ embedded by the one-time native build; an explicit empty runtime value clears a
 fixture from the preceding phase. Stories that require contradictory fixture
 states run as separate scenario-gated phases: the AI meal-analysis spec runs
 once with both AI and professional entitlement access lapsed and once with both
-active, so no invocation observes an impossible mixed expectation. The student
+active, so no invocation observes an impossible mixed expectation. An
+authenticated direct run with a missing or invalid AI-analysis scenario fails
+immediately instead of reporting both expectations as skipped. The student
 dashboard and relationship stories launch a fresh app instance with
 synchronization disabled in `launchArgs` for every case; Android CI-eligible
 Detox specs must not call `reloadReactNative()` across the native idling

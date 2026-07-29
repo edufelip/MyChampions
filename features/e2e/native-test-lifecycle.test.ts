@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
 
 type ManifestSuite = {
   runner: string;
@@ -71,11 +72,11 @@ test('AI meal analysis executes only the fixture phase matching its scenario', (
 
   assert.match(
     source,
-    /E2E_MEAL_ANALYSIS_SCENARIO === 'paywall' \? it : it\.skip/
+    /mealAnalysisScenario === 'paywall' \? it : it\.skip/
   );
   assert.match(
     source,
-    /E2E_MEAL_ANALYSIS_SCENARIO === 'success' \? it : it\.skip/
+    /mealAnalysisScenario === 'success' \? it : it\.skip/
   );
   assert.match(
     source,
@@ -85,4 +86,45 @@ test('AI meal analysis executes only the fixture phase matching its scenario', (
     source,
     /itWithSuccessScenario\('analyzes a selected meal photo/
   );
+});
+
+test('authenticated AI meal analysis fails closed without a valid scenario', () => {
+  const source = readFileSync(
+    join(root, 'e2e/custom-meal-ai-analysis.e2e.test.js'),
+    'utf8'
+  );
+  const noop = () => {};
+  const selectable = Object.assign(noop, { skip: noop });
+  const evaluate = (env: Record<string, string>) =>
+    runInNewContext(source, {
+      describe: selectable,
+      it: selectable,
+      process: { env },
+    });
+
+  assert.throws(
+    () => evaluate({ E2E_AUTH_SESSION: 'true' }),
+    /requires E2E_MEAL_ANALYSIS_SCENARIO=paywall\|success/
+  );
+  assert.throws(
+    () =>
+      evaluate({
+        E2E_AUTH_SESSION: 'true',
+        E2E_MEAL_ANALYSIS_SCENARIO: 'typo',
+      }),
+    /requires E2E_MEAL_ANALYSIS_SCENARIO=paywall\|success/
+  );
+  assert.doesNotThrow(() =>
+    evaluate({
+      E2E_AUTH_SESSION: 'true',
+      E2E_MEAL_ANALYSIS_SCENARIO: 'paywall',
+    })
+  );
+  assert.doesNotThrow(() =>
+    evaluate({
+      E2E_AUTH_SESSION: 'true',
+      E2E_MEAL_ANALYSIS_SCENARIO: 'success',
+    })
+  );
+  assert.doesNotThrow(() => evaluate({}));
 });
