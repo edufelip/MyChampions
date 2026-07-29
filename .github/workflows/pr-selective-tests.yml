@@ -1,9 +1,9 @@
-name: Selective test impact (shadow)
+name: Selective feature CI preflight
 
 on:
   pull_request:
     branches:
-      - develop
+      - main
       - release/**
       - hotfix/**
     types:
@@ -11,174 +11,289 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+      - edited
       - labeled
       - unlabeled
-  push:
-    branches:
-      - develop
   merge_group:
-  workflow_dispatch:
-    inputs:
-      force_full:
-        description: Select every registered CI suite
-        required: false
-        type: boolean
-        default: false
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
-  group: selective-tests-${{ github.event.pull_request.number || github.ref }}
+  group: selective-feature-preflight-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  impact:
-    name: Resolve affected features
+  hosted-preflight:
+    name: Hosted candidate preflight
     runs-on: ubuntu-latest
-    outputs:
-      mode: ${{ steps.resolve.outputs.mode }}
-      has_web: ${{ steps.resolve.outputs.has_web }}
-      has_detox_ios: ${{ steps.resolve.outputs.has_detox_ios }}
-      has_detox_android: ${{ steps.resolve.outputs.has_detox_android }}
-      full_fallback: ${{ steps.resolve.outputs.full_fallback }}
-      web_matrix: ${{ steps.resolve.outputs.web_matrix }}
-      detox_ios_matrix: ${{ steps.resolve.outputs.detox_ios_matrix }}
-      detox_android_matrix: ${{ steps.resolve.outputs.detox_android_matrix }}
+    timeout-minutes: 5
+    permissions:
+      statuses: read
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: yarn
-          cache-dependency-path: yarn.lock
-      - run: yarn install --frozen-lockfile --no-progress
-      - name: Validate ownership and suite metadata
-        run: yarn test:impact
-      - id: resolve
-        name: Resolve selective test matrix
+      - name: Validate hosted-only candidate metadata
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PUSH_BASE_SHA: ${{ github.event.before }}
-          PUSH_HEAD_SHA: ${{ github.sha }}
-          FORCE_FULL_INPUT: ${{ inputs.force_full }}
-          FORCE_FULL_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
-          FORCE_FULL_REPOSITORY: ${{ vars.CI_FORCE_FULL }}
           EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MERGE_HEAD_REF: ${{ github.event.merge_group.head_ref }}
+          MERGE_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
         run: |
-          base_sha="${PR_BASE_SHA:-${PUSH_BASE_SHA:-}}"
-          head_sha="${PR_HEAD_SHA:-${PUSH_HEAD_SHA:-HEAD}}"
-          force_full=false
+          set -euo pipefail
+          sha_pattern='^[0-9a-f]{40}$'
 
-          if [[ "$EVENT_NAME" == "merge_group" || "$FORCE_FULL_INPUT" == "true" || "$FORCE_FULL_LABEL" == "true" || "$FORCE_FULL_REPOSITORY" == "true" ]]; then
-            force_full=true
+          if [[ "$REPOSITORY" != "edufelip/MyChampions" ]]; then
+            echo "Unexpected repository." >&2
+            exit 1
           fi
 
-          if [[ "$base_sha" =~ ^0+$ ]]; then
-            force_full=true
-            base_sha=""
-          fi
-
-          if [[ "$force_full" == "true" && -z "$base_sha" ]]; then
-            yarn test:impact:resolve --all
-          elif [[ "$force_full" == "true" ]]; then
-            yarn test:impact:resolve --base "$base_sha" --head "$head_sha" --all
-          else
-            yarn test:impact:resolve --base "$base_sha" --head "$head_sha"
-          fi
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: selective-test-impact
-          path: .artifacts/test-impact
-          if-no-files-found: error
-          retention-days: 14
-
-  fast-quality:
-    name: Fast quality checks
-    needs: impact
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: yarn
-          cache-dependency-path: yarn.lock
-      - run: yarn install --frozen-lockfile --no-progress
-      - run: yarn test:impact
-      - run: yarn test:unit
-      - run: yarn lint
-      - run: yarn tsc --noEmit
-
-  web-ui-shadow:
-    name: Web UI selection (shadow)
-    needs: impact
-    if: needs.impact.outputs.has_web == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: selective-test-impact
-          path: .artifacts/test-impact
-      - name: Report selected Playwright suites
-        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.webSuites.join('\n'))"
-
-  detox-ios-shadow:
-    name: Detox iOS selection (shadow)
-    needs: impact
-    if: needs.impact.outputs.has_detox_ios == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: selective-test-impact
-          path: .artifacts/test-impact
-      - name: Report selected iOS suites and fixture profiles
-        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.detoxIosSuites.join('\n'))"
-
-  detox-android-shadow:
-    name: Detox Android selection (shadow)
-    needs: impact
-    if: needs.impact.outputs.has_detox_android == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: selective-test-impact
-          path: .artifacts/test-impact
-      - name: Report selected Android suites and fixture profiles
-        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.detoxAndroidSuites.join('\n'))"
-
-  selective-ci-gate:
-    name: Selective CI gate (shadow)
-    if: always()
-    needs:
-      - impact
-      - fast-quality
-      - web-ui-shadow
-      - detox-ios-shadow
-      - detox-android-shadow
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify required shadow jobs
-        env:
-          IMPACT_RESULT: ${{ needs.impact.result }}
-          FAST_RESULT: ${{ needs.fast-quality.result }}
-          WEB_RESULT: ${{ needs.web-ui-shadow.result }}
-          IOS_RESULT: ${{ needs.detox-ios-shadow.result }}
-          ANDROID_RESULT: ${{ needs.detox-android-shadow.result }}
-        run: |
-          for result in "$IMPACT_RESULT" "$FAST_RESULT" "$WEB_RESULT" "$IOS_RESULT" "$ANDROID_RESULT"; do
-            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
-              echo "Selective CI shadow dependency failed with result: $result" >&2
+          case "$EVENT_NAME" in
+            pull_request)
+              if [[
+                "$PR_BASE_REPOSITORY" != "$REPOSITORY" ||
+                "$PR_HEAD_REPOSITORY" != "$REPOSITORY" ||
+                ! "$PR_HEAD_SHA" =~ $sha_pattern ||
+                "$GITHUB_REF_VALUE" != refs/pull/*/merge
+              ]]; then
+                echo "Pull-request metadata is outside the hosted preflight contract." >&2
+                exit 1
+              fi
+              case "$PR_BASE_REF" in
+                main|release/*|hotfix/*) ;;
+                *)
+                  echo "Pull request targets a disallowed base branch." >&2
+                  exit 1
+                  ;;
+              esac
+              ;;
+            merge_group)
+              if [[
+                ! "$MERGE_HEAD_SHA" =~ $sha_pattern ||
+                "$GITHUB_REF_VALUE" != "$MERGE_HEAD_REF"
+              ]]; then
+                echo "Merge-group metadata is outside the hosted preflight contract." >&2
+                exit 1
+              fi
+              merge_base_branch="${MERGE_BASE_REF#refs/heads/}"
+              if [[ "$MERGE_BASE_REF" != "refs/heads/$merge_base_branch" ]]; then
+                echo "Merge group has an invalid base ref." >&2
+                exit 1
+              fi
+              case "$merge_base_branch" in
+                main|release/*|hotfix/*) ;;
+                *)
+                  echo "Merge group targets a disallowed base branch." >&2
+                  exit 1
+                  ;;
+              esac
+              if [[ "$MERGE_HEAD_REF" != "refs/heads/gh-readonly-queue/${merge_base_branch}/"* ]]; then
+                echo "Merge group is outside the expected protected-branch queue." >&2
+                exit 1
+              fi
+              ;;
+            *)
+              echo "Unexpected preflight event: $EVENT_NAME" >&2
               exit 1
-            fi
-          done
-          echo "Shadow-mode impact resolution and fast checks passed."
+              ;;
+          esac
+
+          echo "Hosted candidate metadata passed preflight."
+      - name: Await trusted stale-status invalidation
+        if: github.event_name == 'pull_request'
+        env:
+          ACTIONS_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+
+          repository = os.environ["REPOSITORY"]
+          candidate = os.environ["CANDIDATE_SHA"]
+          token = os.environ["ACTIONS_TOKEN"]
+          if repository != "edufelip/MyChampions":
+              raise SystemExit("Unexpected repository.")
+          if re.fullmatch(r"[0-9a-f]{40}", candidate) is None:
+              raise SystemExit("Candidate SHA is malformed.")
+
+          def event_fingerprint(event: object) -> str:
+              if not isinstance(event, dict):
+                  raise RuntimeError("Pull-request event payload is malformed.")
+              pull = event.get("pull_request")
+              if not isinstance(pull, dict):
+                  raise RuntimeError("Pull-request event payload is missing.")
+
+              def identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "login": value.get("login"),
+                      "node_id": value.get("node_id"),
+                  }
+
+              def repository_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "full_name": value.get("full_name"),
+                      "node_id": value.get("node_id"),
+                      "owner": identity(value.get("owner")),
+                  }
+
+              def ref_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "label": value.get("label"),
+                      "ref": value.get("ref"),
+                      "sha": value.get("sha"),
+                      "repo": repository_identity(value.get("repo")),
+                      "user": identity(value.get("user")),
+                  }
+
+              def label_identity(value: object) -> dict[str, object]:
+                  if not isinstance(value, dict):
+                      return {}
+                  return {
+                      "id": value.get("id"),
+                      "name": value.get("name"),
+                      "node_id": value.get("node_id"),
+                  }
+
+              labels = pull.get("labels")
+              if not isinstance(labels, list):
+                  labels = []
+              label_identities = sorted(
+                  (label_identity(label) for label in labels),
+                  key=lambda label: (
+                      str(label.get("id", "")),
+                      str(label.get("name", "")),
+                  ),
+              )
+              projection = {
+                  "action": event.get("action"),
+                  "after": event.get("after"),
+                  "before": event.get("before"),
+                  "changes": event.get("changes"),
+                  "event_label": label_identity(event.get("label")),
+                  "number": event.get("number"),
+                  "sender": identity(event.get("sender")),
+                  "pull_request": {
+                      "base": ref_identity(pull.get("base")),
+                      "body": pull.get("body"),
+                      "draft": pull.get("draft"),
+                      "head": ref_identity(pull.get("head")),
+                      "id": pull.get("id"),
+                      "labels": label_identities,
+                      "merge_commit_sha": pull.get("merge_commit_sha"),
+                      "merged": pull.get("merged"),
+                      "node_id": pull.get("node_id"),
+                      "number": pull.get("number"),
+                      "state": pull.get("state"),
+                      "title": pull.get("title"),
+                      "updated_at": pull.get("updated_at"),
+                      "user": identity(pull.get("user")),
+                  },
+              }
+              encoded = json.dumps(
+                  projection,
+                  ensure_ascii=True,
+                  separators=(",", ":"),
+                  sort_keys=True,
+              ).encode("utf-8")
+              return hashlib.sha256(encoded).hexdigest()[:24]
+
+          try:
+              with open(
+                  os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"
+              ) as event_file:
+                  event = json.load(event_file)
+          except (KeyError, OSError, json.JSONDecodeError) as error:
+              raise SystemExit(f"Cannot read pull-request event payload: {error}")
+          expected_description = (
+              f"Freshness event {event_fingerprint(event)} awaits trusted validation."
+          )
+
+          path = (
+              f"/repos/{repository}/commits/"
+              f"{urllib.parse.quote(candidate, safe='')}/statuses?per_page=100"
+          )
+          expected_target = re.compile(
+              r"^https://github\.com/edufelip/MyChampions/actions/runs/[1-9][0-9]*$"
+          )
+
+          for _ in range(60):
+              request = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {token}",
+                      "User-Agent": "mychampions-selective-preflight",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          raise RuntimeError(
+                              f"GitHub status API returned {response.status}"
+                          )
+                      statuses = json.load(response)
+              except (
+                  OSError,
+                  urllib.error.HTTPError,
+                  urllib.error.URLError,
+                  json.JSONDecodeError,
+              ) as error:
+                  print(f"Waiting for trusted invalidation: {error}", file=sys.stderr)
+                  time.sleep(2)
+                  continue
+
+              if not isinstance(statuses, list):
+                  raise SystemExit("GitHub status response is malformed.")
+              latest = next(
+                  (
+                      status
+                      for status in statuses
+                      if isinstance(status, dict)
+                      and status.get("context") == "Selective CI gate"
+                  ),
+                  None,
+              )
+              if isinstance(latest, dict):
+                  creator = latest.get("creator")
+                  if (
+                      latest.get("state") == "pending"
+                      and latest.get("description") == expected_description
+                      and isinstance(latest.get("target_url"), str)
+                      and expected_target.fullmatch(latest["target_url"])
+                      and isinstance(creator, dict)
+                      and creator.get("login") == "github-actions[bot]"
+                      and creator.get("type") == "Bot"
+                  ):
+                      print("Trusted stale-status invalidation is active.")
+                      break
+              time.sleep(2)
+          else:
+              raise SystemExit(
+                  "Trusted stale-status invalidation was not observed before timeout."
+              )
+          PY
