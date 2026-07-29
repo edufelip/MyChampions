@@ -12,6 +12,11 @@
 - Primary/secondary actions use DS pill button treatment; destructive action keeps warning color semantics.
 - Offline/write-lock communication uses DS warning/offline surfaces while preserving existing business gating logic.
 - Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
+- Compact native validation asserts the visible nutrition assignment state,
+  scrolls the shared screen until the stacked training assignment card is fully
+  visible, and identifies each status by its specialty-specific semantic ID.
+  Returning from a draft nutrition plan uses the plan builder's semantic back
+  button rather than a viewport coordinate.
 
 ## User Actions
 - Primary:
@@ -41,7 +46,15 @@
 - Nutrition tracking review is read-only; TrackingLogs remain Student-owned even when plan/connection provenance is shown.
 - Nutrition plan assignment/update requires an active nutritionist Connection; route actions are unavailable to Professionals without nutritionist Specialty.
 - Each plan-picker row exposes a stable semantic assignment control for native
-  interaction; viewport coordinates are not part of the selection contract.
+  interaction. Native automation waits for the modal's presentation-complete
+  signal before activating that control; viewport coordinates and fixed delays
+  are not part of the selection contract.
+- Native assignment-state and draft-return coverage uses semantic card, status,
+  and back-button controls; stacked cards must be scrolled fully into the
+  compact viewport before visibility assertions.
+- Draft discard confirmation remains a semantic native-alert action. Automation
+  accounts for iOS's duplicate accessible label and Android's single visible
+  action without falling back to screen coordinates.
 
 ## Data Contract
 - Inputs:
@@ -79,5 +92,5 @@
 - Use case: UC-002.2, UC-002.3, UC-002.5, UC-002.6, UC-002.13
 - Acceptance criteria: AC-203, AC-204, AC-205, AC-214, AC-216, AC-217, AC-218, AC-222, AC-255, AC-311
 - Business rules: BR-203, BR-204, BR-205, BR-213, BR-215, BR-216, BR-217, BR-222, BR-223, BR-247, BR-269, BR-332, BR-333, BR-335, BR-336
-- Test cases: TC-204, TC-205, TC-214, TC-216, TC-217, TC-218, TC-219, TC-223, TC-259, TC-310
+- Test cases: TC-204, TC-205, TC-214, TC-216, TC-217, TC-218, TC-219, TC-223, TC-259, TC-269A, TC-310
 - Diagram: docs/diagrams/domain-relationships.md

@@ -25,7 +25,8 @@ async function scrollToSignOutConfirmation() {
 }
 
 async function scrollToDeleteCta() {
-  await scrollAccountRowIntoView('settings.account.deleteCta');
+  await scrollAccountRowIntoView('settings.account.version');
+  await expect(element(by.id('settings.account.deleteCta'))).toBeVisible();
 }
 
 async function scrollToAccountFooter() {

@@ -139,7 +139,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `searchFoods` | MyChampions server food-search source backed by the local catalog mirror |
 | `getMyCustomMeals` | Load the current user's saved CustomMeal library for snapshot insertion |
 
-Plan library and builder persistence use the MyChampions server through `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`; outside E2E fixtures, missing local server auth fails closed.
+Plan library and builder persistence use the MyChampions server through `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`; outside E2E fixtures, missing local server auth fails closed. Under the explicit provider-free E2E plan fixture, detail resolution loads a newly created assigned draft when its runtime ID is absent from the static builder catalog; an ID absent from both fixture stores still fails closed.
 
 ## Localization Keys
 
@@ -220,6 +220,6 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Use case | UC-002.14, UC-002.20 |
 | Acceptance criteria | AC-256, AC-264, AC-265, AC-541 |
 | Business rules | BR-281, BR-282, BR-283, BR-291, BR-292, BR-328, BR-331, BR-332, BR-334, BR-337, BR-343 |
-| Test cases | TC-268, TC-269, TC-270, TC-275, TC-276, TC-277, TC-280, TC-328 |
+| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-275, TC-276, TC-277, TC-280, TC-328 |
 | Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114, D-173, D-194 |
 | Backlog | BL-106 |

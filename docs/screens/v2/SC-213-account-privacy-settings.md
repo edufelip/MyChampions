@@ -22,9 +22,12 @@ in-app support access.
 - Interactive settings rows use icon chevrons and refined row height/spacing while preserving existing behavior contracts.
 - Native validation uses the screen `ScrollView` to bring compact legal rows,
   the delete-account CTA, and the version footer into view instead of swiping
-  partially visible controls. Offline coverage uses the fully visible semantic
-  delete CTA and proves its disabled handler does not mount the confirmation,
-  without a coordinate tap. It then scrolls upward until the always-available
+  partially visible controls. Deletion coverage anchors the scroll on the
+  trailing version footer before asserting and tapping the semantic delete CTA,
+  so the complete control clears the lower scroll viewport and bottom
+  navigation boundary. Offline coverage uses that fully visible semantic delete
+  CTA and proves its disabled handler does not mount the confirmation, without
+  a coordinate tap. It then scrolls upward until the always-available
   quick-support action is visible before using it, waits on the focused
   support-dialog field rather than an unfocused background root, and scrolls
   the inline sign-out confirmation CTA fully above the lower viewport boundary
@@ -119,5 +122,5 @@ in-app support access.
 - Use case: UC-002.5
 - Acceptance criteria: AC-305, AC-306, AC-307, AC-308, AC-310, AC-520, AC-521, AC-522, AC-523, AC-524
 - Business rules: BR-225, BR-231, BR-299, BR-300, BR-301, BR-302
-- Test cases: TC-304, TC-305, TC-306, TC-307, TC-309, TC-310, TC-311, TC-312, TC-313, TC-314
+- Test cases: TC-261, TC-304, TC-305, TC-306, TC-307, TC-309, TC-310, TC-311, TC-312, TC-313, TC-314
 - Decisions: D-045, D-103, D-025, D-014

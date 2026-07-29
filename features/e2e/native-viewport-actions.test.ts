@@ -10,6 +10,9 @@ const professionalHomeHelperSource = readSource('e2e/professional-home-actions.j
 const professionalHomeInviteCodeSource = readSource('e2e/professional-home-invite-code.e2e.test.js');
 const trainingPlanHelperSource = readSource('e2e/training-plan-actions.js');
 const professionalNutritionBuilderSource = readSource('e2e/professional-nutrition-builder.e2e.test.js');
+const professionalNutritionPlanScreenSource = readSource(
+  'app/professional/nutrition/plans/[planId].tsx'
+);
 const professionalNutritionMealScreenSource = readSource(
   'app/professional/nutrition/plans/[planId]/meals/[mealId].tsx'
 );
@@ -154,6 +157,15 @@ test('professional plan pickers use semantic assignment controls across native v
     planPickerModalSource,
     /testID=\{`planPicker\.assign\.\$\{plan\.id\}`\}/
   );
+  assert.match(planPickerModalSource, /onShow=\{\(\) => setIsPresented\(true\)\}/);
+  assert.match(
+    planPickerModalSource,
+    /if \(!isVisible\) \{\s+setIsPresented\(false\);\s+\}/
+  );
+  assert.match(
+    planPickerModalSource,
+    /testID=\{isVisible && isPresented \? 'planPicker\.ready' : undefined\}/
+  );
 
   for (const source of [
     professionalBulkAssignSource,
@@ -161,10 +173,38 @@ test('professional plan pickers use semantic assignment controls across native v
   ]) {
     assert.match(
       source,
-      /element\(by\.id\('planPicker\.assign\.e2e-nutrition-predefined-plan'\)\)\.tap\(\)/
+      /waitFor\(element\(by\.id\('planPicker\.ready'\)\)\)\.toBeVisible\(\)\.withTimeout\(5000\);[\s\S]*element\(by\.id\('planPicker\.assign\.e2e-nutrition-predefined-plan'\)\)\.tap\(\)/
     );
     assert.doesNotMatch(source, /device\.tap\(\{ x: 336, y: 520 \}\)/);
   }
+});
+
+test('professional student profile scrolls stacked states and returns through semantic controls', () => {
+  assert.match(
+    professionalStudentProfileSource,
+    /expect\(element\(by\.id\('pro\.student_profile\.nutrition\.status'\)\)\)\.toHaveText\('Active, awaiting plan'\);[\s\S]*waitFor\(element\(by\.id\('pro\.student_profile\.training\.assignmentCard'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.student_profile\.screen'\)\)\s+\.scroll\(260, 'down', 0\.5, 0\.8\);[\s\S]*expect\(element\(by\.id\('pro\.student_profile\.training\.status'\)\)\)\.toHaveText\('Active, awaiting plan'\);/
+  );
+  assert.match(
+    professionalNutritionPlanScreenSource,
+    /testID="pro\.nutrition_plan\.backButton"/
+  );
+  assert.match(
+    professionalStudentProfileSource,
+    /waitFor\(element\(by\.text\('Draft Assignment: Customize this nutrition plan for the student before sending\.'\)\)\)\s+\.toBeVisible\(\)\s+\.withTimeout\(10000\);\s+await expect\(element\(by\.id\('pro\.plan\.metadata\.name'\)\)\)\.toHaveText\('Balanced Nutrition Template'\);\s+await expect\(element\(by\.text\('Could not load plan\. Try again\.'\)\)\)\.not\.toExist\(\);[\s\S]*waitFor\(element\(by\.id\('pro\.nutrition_plan\.backButton'\)\)\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await element\(by\.id\('pro\.nutrition_plan\.backButton'\)\)\.tap\(\);\s+await waitFor\(element\(by\.id\('pro\.student_profile\.screen'\)\)\)\.toBeVisible\(\)\.withTimeout\(10000\);/
+  );
+  assert.match(
+    professionalStudentProfileSource,
+    /waitFor\(element\(by\.id\('pro\.student_profile\.nutrition\.status'\)\)\)\s+\.toHaveText\('Draft pending send'\)\s+\.withTimeout\(10000\);[\s\S]*waitFor\(element\(by\.id\('pro\.student_profile\.nutrition\.status'\)\)\)\s+\.toHaveText\('Active, awaiting plan'\)\s+\.withTimeout\(10000\);/
+  );
+  assert.match(
+    professionalStudentProfileSource,
+    /const discardConfirmation = element\(by\.text\('Discard'\)\);\s+if \(device\.getPlatform\(\) === 'ios'\) \{\s+await discardConfirmation\.atIndex\(1\)\.tap\(\);\s+\} else \{\s+await discardConfirmation\.tap\(\);\s+\}/
+  );
+  assert.doesNotMatch(professionalStudentProfileSource, /device\.tap\(/);
+  assert.doesNotMatch(
+    professionalStudentProfileSource,
+    /element\(by\.text\('(Draft pending send|Active, awaiting plan)'\)\)\.atIndex/
+  );
 });
 
 test('account settings scrolls compact legal and support controls before interaction', () => {
@@ -186,7 +226,11 @@ test('account settings scrolls compact legal and support controls before interac
   );
   assert.match(
     accountSettingsHelperSource,
-    /async function scrollToDeleteCta\(\) \{\s+await scrollAccountRowIntoView\('settings\.account\.deleteCta'\);\s+\}/
+    /async function scrollToDeleteCta\(\) \{\s+await scrollAccountRowIntoView\('settings\.account\.version'\);\s+await expect\(element\(by\.id\('settings\.account\.deleteCta'\)\)\)\.toBeVisible\(\);\s+\}/
+  );
+  assert.doesNotMatch(
+    accountSettingsHelperSource,
+    /async function scrollToDeleteCta\(\) \{\s+await scrollAccountRowIntoView\('settings\.account\.deleteCta'\);/
   );
   assert.match(
     accountSettingsHelperSource,

@@ -71,7 +71,7 @@
 | TC-258 | Pending Queue Bulk Deny | Professional has multiple pending requests | Select multiple pending items and run bulk deny | Selected requests transition to denied/closed and pending counters update |
 | TC-259 | Student Plan Change Request | Student has assigned nutrition or training plan | Open assigned plan and submit change request | Request is stored and visible to assigned professional while plan remains read-only |
 | TC-260 | Starter Template Clone Flow | Professional opens nutrition/training plan builder | Select starter template and begin editing | Editable cloned draft is created and original starter template remains unchanged |
-| TC-261 | Offline Banner + Write-Lock Reason | Device offline with cached content | Open the account screen, assert the persistent banner, scroll the account `ScrollView` until the delete-account CTA is fully visible, and invoke that semantic control | The disabled deletion handler performs no write and mounts no confirmation without a coordinate interaction; the persistent offline/read-only banner plus write-lock reason remain visible |
+| TC-261 | Offline Banner + Write-Lock Reason | Device offline with cached content | Open the account screen, assert the persistent banner, anchor the account `ScrollView` on the trailing app-version footer, assert that the delete-account CTA fully clears the lower viewport, and invoke that semantic control | The disabled deletion handler performs no write and mounts no confirmation without a coordinate interaction; the persistent offline/read-only banner plus write-lock reason remain visible |
 | TC-262 | Specialty Removal Assist Guidance | Specialty removal is blocked by active/pending records | Attempt specialty removal in settings | UI shows direct actions to resolve blockers (view active/pending and queue actions) |
 | TC-263 | Specialty Removal After Assisted Resolution | Specialty previously blocked for removal | Resolve blockers using assist actions and retry removal | Specialty removal succeeds when constraints are satisfied |
 | TC-264 | Water Tracking Scope Boundaries | Habit tracking surfaces enabled | Inspect available habit modules | Water tracker is available and sleep/steps are absent from BL-104 scope |
@@ -80,6 +80,7 @@
 | TC-267 | Water Goal Precedence Fallback | Student has personal goal and receives nutritionist goal, then assignment ends | Track intake with active assignment, then after unbind | Active assignment uses nutritionist goal; post-unbind uses stored personal goal |
 | TC-268 | Named Predefined Plan Creation | Professional has specialty access | Create predefined plan with custom name (for example `Caloric Deficit A`) | Predefined plan appears in professional private library with saved name |
 | TC-269 | Predefined Plan Bulk Assignment With Fine-Tuning | Professional has predefined plan and multiple target students | Select the eligible students, open the domain-filtered plan picker, activate the chosen row through its semantic assignment control without a viewport-coordinate fallback, and adjust each student draft | The picker exposes only eligible plans, assignment succeeds through the selected plan control on compact native viewports, and per-student customizations are preserved |
+| TC-269A | Predefined Plan Assignment Draft Resolution Smoke | Professional has predefined plan and one or more eligible target students; explicit provider-free E2E plan fixtures are enabled | Select the eligible student or students, open the domain-filtered plan picker, wait for its native presentation-complete signal, activate the chosen row through its semantic assignment control without a viewport-coordinate or fixed-delay fallback, verify that a newly created single-student draft loads the expected template detail in the builder without the error state, return through the semantic back control, and use the platform-aware semantic native-alert action when discarding the draft | The provider-free fixture resolves the runtime draft ID with its assigned-plan metadata, an ID absent from both fixture stores still fails closed, and the single-student profile exposes then clears the specialty-scoped pending draft state; this smoke does not claim plan-content customization coverage |
 | TC-270 | Assigned Copy Independence | Predefined plan already assigned to students | Edit source predefined plan after assignment | Existing assigned student plans remain unchanged |
 | TC-297 | SC-205 Empty-State CTA Behavior | Professional has no linked students | Open `/professional/students`; tap primary empty-state CTA; return and tap secondary CTA with and without active invite code | Primary CTA navigates to `/professional/home`; secondary CTA opens native share when invite code is available and falls back to `/professional/home` when invite code is unavailable |
 | TC-271 | AI Meal Photo — Success | User in SC-214 or SC-215 with camera permission | Capture meal photo; analysis returns estimates | Form fields are pre-filled with AI estimates; AI disclaimer is visible; all fields are editable |
@@ -133,10 +134,11 @@
 
 ## Notes
 - TC-261 native coverage drives compact scrolling through
-  `settings.account.screen`, then invokes the fully visible semantic deletion
-  CTA and asserts absence of the confirmation hierarchy; the source contract
-  also pins `disabled={isDeleteLocked}`. Coverage never depends on a swipe from
-  a partially visible child or a screen-coordinate tap.
+  `settings.account.screen` by anchoring on the trailing
+  `settings.account.version` footer, then asserts and invokes the fully visible
+  semantic deletion CTA and verifies absence of the confirmation hierarchy; the
+  source contract also pins `disabled={isDeleteLocked}`. Coverage never depends
+  on a visibility match from a clipped child or a screen-coordinate tap.
 - TC-275 native coverage asserts the exact controlled name and hydration values,
   advances through Android Back plus a semantic hydration tap or through the
   iOS form's declared Return-to-hydration focus handoff, and verifies hydration

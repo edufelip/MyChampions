@@ -1385,15 +1385,15 @@ function mapE2ENutritionPlanDetail(planId: string): NutritionPlanDetail | undefi
   }
 
   const builderFixture = findE2ENutritionPlanDetail(planId);
-  if (builderFixture !== undefined) {
-    if (!builderFixture) {
-      throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
-    }
-    return builderFixture;
-  }
+  if (builderFixture) return builderFixture;
 
   const fixture = getE2EAssignedPlanFixture(planId, 'nutrition');
-  if (fixture === undefined) return undefined;
+  if (fixture === undefined) {
+    if (builderFixture === null) {
+      throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
+    }
+    return undefined;
+  }
   if (!fixture) {
     throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
   }
@@ -1501,15 +1501,15 @@ function mapE2ETrainingPlanDetail(planId: string): TrainingPlanDetail | undefine
   }
 
   const builderFixture = findE2ETrainingPlanDetail(planId);
-  if (builderFixture !== undefined) {
-    if (!builderFixture) {
-      throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
-    }
-    return builderFixture;
-  }
+  if (builderFixture) return builderFixture;
 
   const fixture = getE2EAssignedPlanFixture(planId, 'training');
-  if (fixture === undefined) return undefined;
+  if (fixture === undefined) {
+    if (builderFixture === null) {
+      throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
+    }
+    return undefined;
+  }
   if (!fixture) {
     throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
   }
