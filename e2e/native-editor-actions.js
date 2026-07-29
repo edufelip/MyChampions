@@ -18,6 +18,21 @@ async function dismissFocusedEditor(testId) {
   }
 }
 
+async function advanceFocusedEditor(currentTestId, nextTestId) {
+  const currentEditor = element(by.id(currentTestId));
+  const nextEditor = element(by.id(nextTestId));
+
+  await waitFor(currentEditor).toBeFocused().withTimeout(2000);
+  await waitFor(nextEditor).toBeVisible().withTimeout(5000);
+  if (device.getPlatform() === 'android') {
+    await device.pressBack();
+    await nextEditor.tap();
+  } else {
+    await currentEditor.tapReturnKey();
+  }
+  await waitFor(nextEditor).toBeFocused().withTimeout(2000);
+}
+
 async function waitForElementEnabled(testId, timeoutMs = 5000) {
   const deadline = Date.now() + timeoutMs;
   let lastAttributes;
@@ -39,6 +54,7 @@ async function waitForElementEnabled(testId, timeoutMs = 5000) {
 }
 
 module.exports = {
+  advanceFocusedEditor,
   dismissFocusedEditor,
   submitFocusedEditor,
   waitForElementEnabled,

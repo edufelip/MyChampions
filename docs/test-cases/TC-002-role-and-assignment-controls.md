@@ -71,7 +71,7 @@
 | TC-258 | Pending Queue Bulk Deny | Professional has multiple pending requests | Select multiple pending items and run bulk deny | Selected requests transition to denied/closed and pending counters update |
 | TC-259 | Student Plan Change Request | Student has assigned nutrition or training plan | Open assigned plan and submit change request | Request is stored and visible to assigned professional while plan remains read-only |
 | TC-260 | Starter Template Clone Flow | Professional opens nutrition/training plan builder | Select starter template and begin editing | Editable cloned draft is created and original starter template remains unchanged |
-| TC-261 | Offline Banner + Write-Lock Reason | Device offline with cached content | Open core screen and attempt a write action | Persistent offline/read-only banner is shown and blocked action shows explicit reason |
+| TC-261 | Offline Banner + Write-Lock Reason | Device offline with cached content | Open the account screen, assert the persistent banner, scroll the account `ScrollView` until the delete-account CTA is fully visible, and invoke that semantic control | The disabled deletion handler performs no write and mounts no confirmation without a coordinate interaction; the persistent offline/read-only banner plus write-lock reason remain visible |
 | TC-262 | Specialty Removal Assist Guidance | Specialty removal is blocked by active/pending records | Attempt specialty removal in settings | UI shows direct actions to resolve blockers (view active/pending and queue actions) |
 | TC-263 | Specialty Removal After Assisted Resolution | Specialty previously blocked for removal | Resolve blockers using assist actions and retry removal | Specialty removal succeeds when constraints are satisfied |
 | TC-264 | Water Tracking Scope Boundaries | Habit tracking surfaces enabled | Inspect available habit modules | Water tracker is available and sleep/steps are absent from BL-104 scope |
@@ -87,7 +87,7 @@
 | TC-273 | AI Meal Photo — Analysis Failure | User captures photo; MyChampions server analyzer returns error (network/quota/unrecognizable) | Analysis completes with error | Reason-specific recoverable error is shown; form fields remain available for manual entry |
 | TC-273A | AI Meal Photo — Permission Denied | User opens the AI camera or photo-library action and denies the requested native permission | Permission request completes without launching the picker | Localized device-settings guidance is shown; no analysis is started; manual entry remains available |
 | TC-274 | AI Meal Photo — Optional Attachment | User completes analysis in SC-214 | User declines to attach the captured photo | Meal saves without image; no error is shown |
-| TC-275 | SC-207 Create Named Nutrition Plan | Professional on plan builder; native automation has the platform editor available | Enter and assert the exact plan name; dismiss Gboard with native Back or iOS with Return; explicitly focus, enter, and assert hydration; dismiss that editor through the same platform path; wait for save to become enabled; and save | The test does not depend on Android synthetic Enter, implicit cross-field focus, or screen-coordinate taps; the exact named plan appears in the predefined nutrition library |
+| TC-275 | SC-207 Create Named Nutrition Plan | Professional on plan builder; native automation has the platform editor available | Enter and assert the exact plan name; advance to hydration by dismissing Gboard with native Back and tapping the semantic field on Android, or by invoking Return and waiting for the form's declared focus handoff on iOS; enter and assert hydration; dismiss that editor through the same platform path; wait for save to become enabled; and save | The test does not depend on Android synthetic Enter, an unverified cross-field handoff, an iOS tap through the keyboard-type transition, or screen-coordinate taps; the exact named plan appears in the predefined nutrition library |
 | TC-276 | SC-207 Validation — Name Required | Professional on plan builder | Attempt save with empty name | Validation error shown; save blocked |
 | TC-277 | SC-207 Add/Remove Food Item | Professional editing nutrition plan on a compact native viewport | Enter and assert the exact meal name; dismiss its editor with Android Back or iOS Return; scroll to and confirm the meal; open the in-flow add-food editor; scroll to search; assert the exact query and dismiss Gboard before waiting for the debounced Android result or submit through iOS Return; scroll to and select the result; review quantity; scroll to Add; wait for the editor to leave the native hierarchy and the new row remove action to become visible; then remove the item through the semantic confirmation action | Every actionable control is reachable in measured scroll content without synthetic Android Enter or coordinate taps; stale editor elements cannot intercept the row action; item list and totals reflect add and remove operations |
 | TC-278 | SC-208 Create Named Training Plan With Session | Professional on training plan builder | Enter plan name, add session with one custom item, save | Plan appears in predefined training library |
@@ -132,12 +132,19 @@
 | TC-331 | Browser Sign-Out And Account-Switch Serialization | Browser account A has an active cookie session; delay the sign-out response and immediately attempt email or social authentication as account B | Observe the sign-out barrier, request order, active access token, and the failure path | Account A clears locally immediately; account B's authentication request does not start until sign-out settles; only account B becomes active afterward; a failed sign-out releases the barrier and does not deadlock later authentication |
 
 ## Notes
+- TC-261 native coverage drives compact scrolling through
+  `settings.account.screen`, then invokes the fully visible semantic deletion
+  CTA and asserts absence of the confirmation hierarchy; the source contract
+  also pins `disabled={isDeleteLocked}`. Coverage never depends on a swipe from
+  a partially visible child or a screen-coordinate tap.
 - TC-275 native coverage asserts the exact controlled name and hydration values,
-  dismisses each focused editor through Android Back or iOS Return, explicitly
-  focuses hydration rather than relying on an asynchronous keyboard handoff,
-  waits for the nutrition tab transition and save control before tapping, and
-  never uses Android's synthetic Enter or a screen-coordinate tap to dismiss
-  either keyboard.
+  advances through Android Back plus a semantic hydration tap or through the
+  iOS form's declared Return-to-hydration focus handoff, and verifies hydration
+  focus before replacing its value. It does not re-tap through the iOS
+  keyboard-type transition; after dismissing hydration through the platform
+  path it waits for the nutrition tab transition and save control before
+  tapping, and never uses Android's synthetic Enter or a screen-coordinate tap
+  to dismiss either keyboard.
 - TC-277 native coverage asserts the exact meal name, dismisses the editor
   through Android Back or iOS Return, scrolls the mounted add-meal confirmation
   fully into the compact viewport, and only then taps it.

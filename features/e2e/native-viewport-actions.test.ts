@@ -17,7 +17,15 @@ const professionalTrainingBuilderSource = readSource('e2e/professional-training-
 const studentSelfManagedBuilderSource = readSource('e2e/student-self-managed-builder.e2e.test.js');
 const accountSettingsHelperSource = readSource('e2e/account-settings-actions.js');
 const accountSettingsSource = readSource('e2e/account-settings.e2e.test.js');
+const accountDeletionSource = readSource('e2e/account-deletion.e2e.test.js');
+const offlineAccountWriteLockSource = readSource(
+  'e2e/offline-account-write-lock.e2e.test.js'
+);
+const accountScreenSource = readSource('app/settings/account.tsx');
 const nativeEditorHelperSource = readSource('e2e/native-editor-actions.js');
+const planMetadataFormSource = readSource(
+  'features/plans/components/PlanMetadataForm.tsx'
+);
 const sharedWebViewSource = readSource('e2e/shared-webview.e2e.test.js');
 const standaloneSpecialtySource = readSource('e2e/professional-specialty.e2e.test.js');
 const specialtyConsumerPaths = [
@@ -152,11 +160,21 @@ test('account settings scrolls compact legal and support controls before interac
     /async function scrollToSignOutConfirmation\(\) \{[\s\S]*waitFor\(element\(by\.id\('settings\.account\.signOutConfirmCta'\)\)\)[\s\S]*\.toBeVisible\(\)[\s\S]*\.whileElement\(by\.id\('settings\.account\.screen'\)\)[\s\S]*\.scroll\(240, 'down', 0\.5, 0\.5\);[\s\S]*\}/
   );
   assert.match(
+    accountSettingsHelperSource,
+    /async function scrollToDeleteCta\(\) \{\s+await scrollAccountRowIntoView\('settings\.account\.deleteCta'\);\s+\}/
+  );
+  assert.match(
+    accountSettingsHelperSource,
+    /async function scrollToAccountFooter\(\) \{\s+await scrollAccountRowIntoView\('settings\.account\.version'\);\s+\}/
+  );
+  assert.match(
     accountSettingsSource,
     /require\('\.\/account-settings-actions'\)/
   );
   assert.equal(accountSettingsSource.match(/await scrollToLegalRows\(\);/g)?.length, 2);
   assert.equal(accountSettingsSource.match(/await scrollToSupportQuickAction\(\);/g)?.length, 1);
+  assert.equal(accountSettingsSource.match(/await scrollToDeleteCta\(\);/g)?.length, 1);
+  assert.equal(accountSettingsSource.match(/await scrollToAccountFooter\(\);/g)?.length, 1);
   assert.match(
     accountSettingsSource,
     /await scrollToSupportQuickAction\(\);\s+await element\(by\.id\('settings\.account\.supportQuickCta'\)\)\.tap\(\);/
@@ -172,6 +190,23 @@ test('account settings scrolls compact legal and support controls before interac
   assert.match(
     accountSettingsSource,
     /waitFor\(element\(by\.id\('settings\.account\.signOutCta'\)\)\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await element\(by\.id\('settings\.account\.signOutCta'\)\)\.tap\(\);\s+await scrollToSignOutConfirmation\(\);\s+await expect\(element\(by\.text\('Sign out\?'\)\)\)\.toBeVisible\(\);\s+await element\(by\.id\('settings\.account\.signOutConfirmCta'\)\)\.tap\(\);/
+  );
+  for (const source of [accountDeletionSource, offlineAccountWriteLockSource]) {
+    assert.match(
+      source,
+      /const \{[\s\S]*scrollToDeleteCta[\s\S]*\} = require\('\.\/account-settings-actions'\);/
+    );
+    assert.match(source, /await scrollToDeleteCta\(\);/);
+    assert.doesNotMatch(source, /settings\.account\.signOutCta'\)\)\.swipe/);
+    assert.doesNotMatch(source, /tapAtPoint\(\{ x: 180, y: 24 \}\)/);
+  }
+  assert.match(
+    offlineAccountWriteLockSource,
+    /await element\(by\.id\('settings\.account\.deleteCta'\)\)\.tap\(\);\s+await expect\(element\(by\.id\('settings\.account\.deleteConfirm'\)\)\)\.not\.toExist\(\);/
+  );
+  assert.match(
+    accountScreenSource,
+    /onPress=\{handleRequestDeletion\}\s+disabled=\{isDeleteLocked\}[\s\S]*testID="settings\.account\.deleteCta"/
   );
   assert.match(
     sharedWebViewSource,
@@ -221,6 +256,14 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     nativeEditorHelperSource,
+    /async function advanceFocusedEditor\(currentTestId, nextTestId\) \{[\s\S]*await waitFor\(currentEditor\)\.toBeFocused\(\)\.withTimeout\(2000\);[\s\S]*await waitFor\(nextEditor\)\.toBeVisible\(\)\.withTimeout\(5000\);[\s\S]*if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.pressBack\(\);\s+await nextEditor\.tap\(\);\s+\} else \{\s+await currentEditor\.tapReturnKey\(\);\s+\}[\s\S]*await waitFor\(nextEditor\)\.toBeFocused\(\)\.withTimeout\(2000\);[\s\S]*\}/
+  );
+  assert.match(
+    planMetadataFormSource,
+    /returnKeyType="next"\s+onSubmitEditing=\{\(\) => hydrationInputRef\.current\?\.focus\(\)\}/
+  );
+  assert.match(
+    nativeEditorHelperSource,
     /async function waitForElementEnabled\(testId, timeoutMs = 5000\) \{[\s\S]*getAttributes\(\);[\s\S]*candidates\.some\(\(attributes\) => attributes\.enabled\)[\s\S]*\}/
   );
 
@@ -242,20 +285,18 @@ test('nutrition builders submit native editors before saving', () => {
   ]) {
     assert.match(
       source,
-      /const \{ dismissFocusedEditor, waitForElementEnabled \} = require\('\.\/native-editor-actions'\);/
+      /const \{\s+advanceFocusedEditor,\s+dismissFocusedEditor,\s+waitForElementEnabled,\s+\} = require\('\.\/native-editor-actions'\);/
     );
     assert.match(
       source,
       new RegExp(
         `replaceText\\('${planName}'\\);\\s+` +
           `await expect\\(element\\(by\\.id\\('pro\\.plan\\.metadata\\.name'\\)\\)\\)\\.toHaveText\\('${planName}'\\);?\\s+` +
-          `await dismissFocusedEditor\\('pro\\.plan\\.metadata\\.name'\\);\\s+` +
+          `await advanceFocusedEditor\\(\\s+` +
+          `'pro\\.plan\\.metadata\\.name',\\s+` +
+          `'pro\\.plan\\.metadata\\.hydrationGoalMl'\\s+` +
+          `\\);\\s+` +
           `const hydrationInput = element\\(by\\.id\\('pro\\.plan\\.metadata\\.hydrationGoalMl'\\)\\);\\s+` +
-          `await waitFor\\(hydrationInput\\)\\.toBeVisible\\(\\)\\.withTimeout\\(5000\\);\\s+` +
-          `await hydrationInput\\.tap\\(\\);\\s+` +
-          `await waitFor\\(hydrationInput\\)\\s+` +
-          `\\.toBeFocused\\(\\)\\s+` +
-          `\\.withTimeout\\(2000\\);\\s+` +
           `await hydrationInput\\.replaceText\\('${hydrationGoalMl}'\\);\\s+` +
           `await expect\\(hydrationInput\\)\\.toHaveText\\('${hydrationGoalMl}'\\);\\s+` +
           `await dismissFocusedEditor\\('pro\\.plan\\.metadata\\.hydrationGoalMl'\\);\\s+` +
@@ -263,6 +304,7 @@ test('nutrition builders submit native editors before saving', () => {
           `await element\\(by\\.id\\('pro\\.nutrition_plan\\.saveButton'\\)\\)\\.tap\\(\\);`
       )
     );
+    assert.doesNotMatch(source, /hydrationInput\.tap\(\)/);
   }
 
   assert.doesNotMatch(

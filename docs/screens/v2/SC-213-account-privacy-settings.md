@@ -20,7 +20,15 @@ in-app support access.
 - Spacing between profile card and the first section header is reduced to half for a tighter layout.
 - Top safe-area spacing is role-aware: Student Profile tab uses full top inset; Professional Account tab uses half inset.
 - Interactive settings rows use icon chevrons and refined row height/spacing while preserving existing behavior contracts.
-- Native validation scrolls compact legal rows into view, then scrolls upward until the always-available quick-support action is visible before using it. It waits on the focused support-dialog field rather than an unfocused background root and scrolls the inline sign-out confirmation CTA fully above the lower viewport boundary before confirming.
+- Native validation uses the screen `ScrollView` to bring compact legal rows,
+  the delete-account CTA, and the version footer into view instead of swiping
+  partially visible controls. Offline coverage uses the fully visible semantic
+  delete CTA and proves its disabled handler does not mount the confirmation,
+  without a coordinate tap. It then scrolls upward until the always-available
+  quick-support action is visible before using it, waits on the focused
+  support-dialog field rather than an unfocused background root, and scrolls
+  the inline sign-out confirmation CTA fully above the lower viewport boundary
+  before confirming.
 
 ## Screen Sections (top → bottom)
 

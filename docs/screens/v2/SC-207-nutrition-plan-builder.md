@@ -22,10 +22,13 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
 - Native professional and self-managed builder validation submits the controlled
-  name and hydration values before save, verifies both exact values, dismisses
-  Gboard through native Back or iOS through Detox Return, explicitly focuses
-  hydration instead of depending on a platform keyboard handoff, and waits
-  until the save control reports enabled.
+  name and hydration values before save and verifies both exact values. From
+  name to hydration, Android dismisses Gboard through native Back and taps the
+  semantic hydration field; iOS Return invokes the form's intentional focus
+  handoff and validation waits for hydration to report focused without
+  re-tapping through the keyboard-type transition. The hydration editor is then
+  dismissed through the same platform path before waiting for the save control
+  to report enabled.
 - Native compact-viewport coverage scrolls the mounted add-meal confirmation
   control fully into view after asserting the exact meal name and dismissing
   its editor through native Back on Android or Return on iOS, and before

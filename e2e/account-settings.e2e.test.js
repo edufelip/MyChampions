@@ -1,5 +1,7 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
 const {
+  scrollToAccountFooter,
+  scrollToDeleteCta,
   scrollToLegalRows,
   scrollToSignOutConfirmation,
   scrollToSupportQuickAction,
@@ -69,10 +71,8 @@ describeWithE2EAuthSession('Account Settings', () => {
     await selectStudentRole();
     await openAccountTab();
 
-    await element(by.id('settings.account.signOutCta')).swipe('up', 'fast', 0.9);
-    await waitFor(element(by.id('settings.account.termsRow'))).toBeVisible().withTimeout(5000);
-    await element(by.id('settings.account.termsRow')).swipe('up', 'fast', 0.9);
-    await waitFor(element(by.id('settings.account.deleteCta'))).toBeVisible().withTimeout(5000);
+    await scrollToDeleteCta();
+    await scrollToAccountFooter();
     await expect(element(by.id('settings.account.version'))).toBeVisible();
 
     await device.launchApp({ newInstance: true });

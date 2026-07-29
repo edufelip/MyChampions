@@ -24,8 +24,18 @@ async function scrollToSignOutConfirmation() {
     .scroll(240, 'down', 0.5, 0.5);
 }
 
+async function scrollToDeleteCta() {
+  await scrollAccountRowIntoView('settings.account.deleteCta');
+}
+
+async function scrollToAccountFooter() {
+  await scrollAccountRowIntoView('settings.account.version');
+}
+
 module.exports = {
   scrollAccountRowIntoView,
+  scrollToAccountFooter,
+  scrollToDeleteCta,
   scrollToLegalRows,
   scrollToSignOutConfirmation,
   scrollToSupportQuickAction,

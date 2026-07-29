@@ -1,5 +1,9 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
-const { dismissFocusedEditor, waitForElementEnabled } = require('./native-editor-actions');
+const {
+  advanceFocusedEditor,
+  dismissFocusedEditor,
+  waitForElementEnabled,
+} = require('./native-editor-actions');
 const { tapCredentialSkip } = require('./professional-specialty-actions');
 
 async function selectProfessionalRole() {
@@ -42,13 +46,11 @@ describeWithE2EAuthSession('Professional Nutrition Builder', () => {
     await waitFor(element(by.id('pro.nutrition_plan.screen'))).toBeVisible().withTimeout(10000);
     await element(by.id('pro.plan.metadata.name')).replaceText('E2E Builder Nutrition Plan');
     await expect(element(by.id('pro.plan.metadata.name'))).toHaveText('E2E Builder Nutrition Plan');
-    await dismissFocusedEditor('pro.plan.metadata.name');
+    await advanceFocusedEditor(
+      'pro.plan.metadata.name',
+      'pro.plan.metadata.hydrationGoalMl'
+    );
     const hydrationInput = element(by.id('pro.plan.metadata.hydrationGoalMl'));
-    await waitFor(hydrationInput).toBeVisible().withTimeout(5000);
-    await hydrationInput.tap();
-    await waitFor(hydrationInput)
-      .toBeFocused()
-      .withTimeout(2000);
     await hydrationInput.replaceText('2200');
     await expect(hydrationInput).toHaveText('2200');
     await dismissFocusedEditor('pro.plan.metadata.hydrationGoalMl');
