@@ -66,8 +66,11 @@ is installed only when a selected suite uses the server-backed configuration.
 iOS uses `ios.sim.debug`; Android uses `android.emu.debug`/`devDebug` so the
 dev-only deterministic fixture harness remains enabled. Each native job builds
 once, then runs isolated fixture phases with a freshly owned Metro process and
-explicit environment. CI fails if a selected Detox invocation skips every test.
-`detox:revenuecat-live` remains manual/provider-live and is never PR-eligible.
+explicit environment. Runtime phase values take precedence over the app config
+embedded by the one-time native build; an explicit empty runtime value clears a
+fixture from the preceding phase. CI fails if a selected Detox invocation skips
+every test. `detox:revenuecat-live` remains manual/provider-live and is never
+PR-eligible.
 
 ## Fast and expensive checks
 

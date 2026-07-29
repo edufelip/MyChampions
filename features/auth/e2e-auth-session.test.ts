@@ -7,9 +7,18 @@ import {
   resolveE2EAuthSessionSourceOverride,
   resolveE2EEmailPasswordCreateAccountOverride,
   resolveE2EEmailPasswordSignInOverride,
+  resolveE2EPhaseConfigValue,
   resolveE2ESocialAuthOverride,
   resolveE2ESubscriptionOverride,
 } from './e2e-auth-session';
+
+test('runtime E2E phase config overrides and clears the embedded native config', () => {
+  assert.equal(resolveE2EPhaseConfigValue('true', ''), 'true');
+  assert.equal(resolveE2EPhaseConfigValue('', 'true'), '');
+  assert.equal(resolveE2EPhaseConfigValue('outdated-v1', 'current-v2'), 'outdated-v1');
+  assert.equal(resolveE2EPhaseConfigValue(undefined, 'embedded'), 'embedded');
+  assert.equal(resolveE2EPhaseConfigValue(undefined, undefined), undefined);
+});
 
 test('resolveE2EAuthSessionOverride enables an unlocked dev auth session for E2E', () => {
   const session = resolveE2EAuthSessionOverride({

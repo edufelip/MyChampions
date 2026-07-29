@@ -75,6 +75,18 @@ const E2E_LOCKED_ROLE_STORAGE_KEY = 'mychampions.e2e.locked-role';
 const E2E_AUTH_UID_MAX_LENGTH = 96;
 const E2E_AUTH_UID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
+/**
+ * Selective native CI builds the app once and changes fixture state by
+ * restarting Metro for each phase. A runtime value must therefore win even
+ * when it intentionally clears a value embedded in the native app config.
+ */
+export function resolveE2EPhaseConfigValue(
+  runtimeValue: string | undefined,
+  embeddedValue: string | undefined
+): string | undefined {
+  return runtimeValue ?? embeddedValue;
+}
+
 export function readPersistedE2ELockedRole(): RoleIntent | null {
   if (typeof sessionStorage === 'undefined') return null;
   const value = sessionStorage.getItem(E2E_LOCKED_ROLE_STORAGE_KEY);

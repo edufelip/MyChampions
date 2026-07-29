@@ -463,9 +463,11 @@
     runtime, invalid metadata, merge-queue, scheduled, release/hotfix, `ci:full`,
     and `CI_FORCE_FULL` inputs broaden to the complete applicable matrix.
   - Detox fixture profiles are executable, validated contracts. Every selected
-    phase owns a fresh Metro process and explicit app/test environment, the native
-    debug binary is built once per platform job, and a run that executes no test
-    fails closed. Provider-live suites remain ineligible for PR CI.
+    phase owns a fresh Metro process and explicit app/test environment. Runtime
+    phase values, including explicit empty clears, take precedence over fixture
+    values embedded when the native debug binary is built once per platform job.
+    A run that executes no test fails closed. Provider-live suites remain
+    ineligible for PR CI.
   - The three legacy PR workflows are manual-only. The stable selective gate fails
     when any selected lane is skipped or fails, including fork PRs that cannot
     safely execute on self-hosted runners.

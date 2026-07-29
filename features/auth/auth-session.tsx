@@ -16,6 +16,7 @@ import {
   resolveE2EAuthSessionOverride,
   resolveE2EEmailPasswordCreateAccountOverride,
   resolveE2EEmailPasswordSignInOverride,
+  resolveE2EPhaseConfigValue,
   resolveE2ESocialAuthOverride,
   type E2EAuthSessionOverride,
   type E2ESocialAuthProvider,
@@ -100,20 +101,40 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       socialAuth?: string;
     };
   };
+  const appVariant = expoExtra.appVariant ?? process.env.APP_VARIANT;
+  const e2eAcceptedTermsVersion = resolveE2EPhaseConfigValue(
+    process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
+    expoExtra.e2e?.acceptedTermsVersion
+  );
+  const e2eAuthSession = resolveE2EPhaseConfigValue(
+    process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+    expoExtra.e2e?.authSession
+  );
+  const e2eCreateAccount = resolveE2EPhaseConfigValue(
+    process.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT,
+    expoExtra.e2e?.createAccount
+  );
+  const e2eEmailPasswordSignIn = resolveE2EPhaseConfigValue(
+    process.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN,
+    expoExtra.e2e?.emailPasswordSignIn
+  );
+  const e2eSocialAuth = resolveE2EPhaseConfigValue(
+    process.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH,
+    expoExtra.e2e?.socialAuth
+  );
   const e2eSession = useMemo(
     () =>
       resolveE2EAuthSessionOverride({
-        acceptedTermsVersion:
-          expoExtra.e2e?.acceptedTermsVersion ?? process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
-        appVariant: expoExtra.appVariant ?? process.env.APP_VARIANT,
-        enabledFlag: expoExtra.e2e?.authSession ?? process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
+        acceptedTermsVersion: e2eAcceptedTermsVersion,
+        appVariant,
+        enabledFlag: e2eAuthSession,
         isDev: __DEV__,
         requiredTermsVersion: termsRequiredVersion,
       }),
     [
-      expoExtra.appVariant,
-      expoExtra.e2e?.acceptedTermsVersion,
-      expoExtra.e2e?.authSession,
+      appVariant,
+      e2eAcceptedTermsVersion,
+      e2eAuthSession,
       termsRequiredVersion,
     ]
   );
@@ -260,11 +281,10 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       lastProfileSyncedAtIso,
       createAccountWithE2EEmailPassword: async ({ email, name, password }) => {
         const session = resolveE2EEmailPasswordCreateAccountOverride({
-          acceptedTermsVersion:
-            expoExtra.e2e?.acceptedTermsVersion ?? process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
-          appVariant: expoExtra.appVariant ?? process.env.APP_VARIANT,
+          acceptedTermsVersion: e2eAcceptedTermsVersion,
+          appVariant,
           email,
-          enabledFlag: expoExtra.e2e?.createAccount ?? process.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT,
+          enabledFlag: e2eCreateAccount,
           isDev: __DEV__,
           name,
           password,
@@ -291,10 +311,9 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       },
       canUseE2ESocialAuth: Boolean(
         resolveE2ESocialAuthOverride({
-          acceptedTermsVersion:
-            expoExtra.e2e?.acceptedTermsVersion ?? process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
-          appVariant: expoExtra.appVariant ?? process.env.APP_VARIANT,
-          enabledFlag: expoExtra.e2e?.socialAuth ?? process.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH,
+          acceptedTermsVersion: e2eAcceptedTermsVersion,
+          appVariant,
+          enabledFlag: e2eSocialAuth,
           isDev: __DEV__,
           provider: 'google',
           requiredTermsVersion: termsConfig.requiredVersion,
@@ -302,12 +321,10 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       ),
       signInWithE2EEmailPassword: async (email: string, password: string) => {
         const session = resolveE2EEmailPasswordSignInOverride({
-          acceptedTermsVersion:
-            expoExtra.e2e?.acceptedTermsVersion ?? process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
-          appVariant: expoExtra.appVariant ?? process.env.APP_VARIANT,
+          acceptedTermsVersion: e2eAcceptedTermsVersion,
+          appVariant,
           email,
-          enabledFlag:
-            expoExtra.e2e?.emailPasswordSignIn ?? process.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN,
+          enabledFlag: e2eEmailPasswordSignIn,
           isDev: __DEV__,
           password,
           requiredTermsVersion: termsConfig.requiredVersion,
@@ -333,10 +350,9 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       },
       signInWithE2ESocialAuth: async (provider: E2ESocialAuthProvider) => {
         const session = resolveE2ESocialAuthOverride({
-          acceptedTermsVersion:
-            expoExtra.e2e?.acceptedTermsVersion ?? process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
-          appVariant: expoExtra.appVariant ?? process.env.APP_VARIANT,
-          enabledFlag: expoExtra.e2e?.socialAuth ?? process.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH,
+          acceptedTermsVersion: e2eAcceptedTermsVersion,
+          appVariant,
+          enabledFlag: e2eSocialAuth,
           isDev: __DEV__,
           provider,
           requiredTermsVersion: termsConfig.requiredVersion,
@@ -442,13 +458,13 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     }),
     [
       acceptedTermsVersion,
+      appVariant,
       currentUser,
       e2eSession,
-      expoExtra.appVariant,
-      expoExtra.e2e?.acceptedTermsVersion,
-      expoExtra.e2e?.createAccount,
-      expoExtra.e2e?.emailPasswordSignIn,
-      expoExtra.e2e?.socialAuth,
+      e2eAcceptedTermsVersion,
+      e2eCreateAccount,
+      e2eEmailPasswordSignIn,
+      e2eSocialAuth,
       isAuthenticated,
       isHydrated,
       lockedRole,

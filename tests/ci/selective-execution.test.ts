@@ -140,15 +140,24 @@ test('auth profile isolates entry, authenticated, and outdated-terms phases', ()
   )!;
 
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_AUTH_SESSION, '');
+  assert.equal(signIn.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION, '');
+  assert.equal(signIn.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT, 'true');
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN, 'true');
+  assert.equal(signIn.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, 'true');
   assert.equal(signIn.env.E2E_AUTH_SIGN_IN, 'true');
   assert.equal(terms.env.EXPO_PUBLIC_E2E_AUTH_SESSION, 'true');
   assert.equal(
     terms.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
     'outdated-e2e-version'
   );
+  assert.equal(terms.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT, '');
+  assert.equal(terms.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN, '');
+  assert.equal(terms.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, '');
   assert.equal(role.env.EXPO_PUBLIC_E2E_AUTH_SESSION, 'true');
   assert.equal(role.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION, '');
+  assert.equal(role.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT, '');
+  assert.equal(role.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN, '');
+  assert.equal(role.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, '');
 });
 
 test('student empty-state profile actively clears incompatible assigned fixtures', () => {

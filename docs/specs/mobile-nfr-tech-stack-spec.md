@@ -46,6 +46,10 @@ Define non-functional architecture constraints and technology options for the mo
   profile; signed `productionRelease` Detox evidence is an explicit command
   that requires `CI_VERSION_CODE`, forwards it to Gradle, and retains the
   private-keystore requirements.
+- Selective native CI builds each debug app once. Every isolated fixture phase
+  starts a freshly owned Metro process whose explicit runtime E2E values take
+  precedence over the app config embedded by the build, including empty values
+  that clear the preceding phase.
 - The selected Android lane runs `lintDevDebug` before Detox. The manually
   maintained native baseline keeps camera hardware optional because manual
   invite entry remains available, declares Android 13 notification capability
