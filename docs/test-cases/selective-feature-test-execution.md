@@ -22,6 +22,8 @@ must prove the complete matrix on its exact head before merge.
   conservative impact resolution.
 - `scripts/ci/execute-selected-tests.ts`: allowlisted, argument-safe execution
   of selected Playwright and Detox suites.
+- `scripts/ci/metro-process-group.ts`: owned-member Metro termination and
+  fail-closed process-group verification.
 - `scripts/ci/detox-fixture-profiles.ts`: isolated Detox phase contracts.
 - `.github/workflows/pr-selective-tests.yml`: exact-head resolution, universal
   fast checks, selected lanes, full fallbacks, and the stable gate.
@@ -39,6 +41,9 @@ Rename and copy entries contribute old and new paths; deletion entries retain
 the deleted path. The affected feature set is the union of direct path owners,
 suite owners, reverse TypeScript import consumers from both base and head graphs,
 and transitive reverse dependents declared by the manifest.
+A direct change to a registered suite spec selects that suite when it is
+CI-eligible, even if no feature references it; non-CI provider/evidence suites
+remain excluded.
 
 A normal feature change selects only its affected Playwright and Detox suites.
 Every selected Detox suite runs on both declared mobile platforms. Shared
@@ -47,7 +52,10 @@ workflow or resolver changes, invalid metadata, unmapped runtime paths, Git
 resolution errors, or more than 500 changed files select the complete registered
 CI matrix. `merge_group`, scheduled runs, release/hotfix PRs, `ci:full`, and
 `CI_FORCE_FULL=true` also force the complete matrix. These controls may only
-broaden selection.
+broaden selection. A complete-matrix decision selects every suite registered
+with `ci: true`, including CI suites that are not referenced by a feature.
+Detox suites enter only the platform lanes declared by their `platforms` field;
+non-CI provider-live and evidence suites remain excluded.
 
 Unowned documentation-only changes run universal fast checks and no expensive
 UI lane.
@@ -68,9 +76,13 @@ dev-only deterministic fixture harness remains enabled. Each native job builds
 once, then runs isolated fixture phases with a freshly owned Metro process and
 explicit environment. Runtime phase values take precedence over the app config
 embedded by the one-time native build; an explicit empty runtime value clears a
-fixture from the preceding phase. CI fails if a selected Detox invocation skips
-every test. `detox:revenuecat-live` remains manual/provider-live and is never
-PR-eligible.
+fixture from the preceding phase. On macOS, process-group probing can return
+`EPERM` when even one group member has another UID. The cleanup fallback reads
+the numeric process table, signals only runner-UID group members, verifies TERM
+and KILL outcomes, and separately proves that the Metro port closed. Foreign
+processes are never signaled, while a surviving runner-owned member or listener
+fails the lane. CI also fails if a selected Detox invocation skips every test.
+`detox:revenuecat-live` remains manual/provider-live and is never PR-eligible.
 
 ## Fast and expensive checks
 
@@ -86,7 +98,10 @@ git diff --check <merge-base> <head>
 
 Expensive jobs run only when selected:
 
-- WSL web: web export plus selected Playwright suites.
+- WSL web: web export plus selected Playwright suites. Its browser binaries live
+  in a MyChampions-only cache; a post-install guard updates only the isolated
+  WebKit launchers to inherit user-local libraries, and the job-scoped static
+  validation bypass remains accountable to actual browser-suite execution.
 - macOS: one iOS debug build plus selected iOS Detox phases.
 - WSL Android: Gradle lint/unit checks, one `devDebug` app/test build, and
   selected Android Detox phases.
@@ -138,7 +153,8 @@ remove the override.
 - A feature-A-only source change selects A, its reverse dependents, and their
   registered web/iOS/Android suites; unrelated B suites do not run.
 - `app/_layout.tsx`, localization, native configuration, global tokens, workflow
-  changes, or invalid metadata select the full applicable matrix.
+  changes, or invalid metadata select every registered CI suite in the full
+  applicable matrix, including an otherwise unowned suite.
 - A design-system component change widens through actual reverse importers.
 - Renames/copies use old and new ownership; deletions preserve old ownership.
 - Documentation-only changes run fast checks and skip expensive lanes.

@@ -53,8 +53,18 @@ workflows. Leave every item unchecked until its evidence is attached.
       same runner.
 - [ ] Verify Playwright browser/system dependencies and `unzip` for the pinned
       Bun bootstrap used by server-backed web suites.
+- [ ] On an unprivileged Ubuntu/WSL host, verify the pinned Playwright `1.61.1`
+      WebKit `2311` user-library directory, MyChampions-only browser cache,
+      inherited `LD_LIBRARY_PATH`, and patched MiniBrowser launchers with a
+      service-context WebKit launch probe.
+      Scope `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1` to the selected web
+      job because Playwright's `ldconfig` check cannot see user-local
+      `LD_LIBRARY_PATH` libraries; do not disable host validation globally, and
+      require the selected browser suites themselves to prove runtime launch.
 - [ ] Verify Android SDK/platform tools, hardware acceleration, and the
-      `Pixel_10` AVD for Android.
+      `Pixel_10` AVD for Android. Confirm the persistent runner listener itself
+      has the effective `kvm` group and that a service-context
+      `emulator -accel-check` reports KVM usable.
 - [ ] Install the runner as a persistent service and record service-status
       evidence without exposing registration tokens.
 - [ ] Configure and prove the host-wide lock shared with Meer so only one runner

@@ -87,9 +87,52 @@ reproducible and auditable.
 ## Configured Self-Hosted Runner Boundaries
 | Selected lane | Exact labels | Required host capabilities | Current evidence status |
 |---|---|---|---|
-| Web | `self-hosted, Linux, X64, mychampions-ci, mychampions-web` | Repository-scoped Linux/WSL runner; Git and outbound access; Playwright browser/system dependencies; `unzip` for pinned Bun bootstrap; capacity for Expo and the optional in-memory backend | `mychampions-ci-ubuntu` is registered and online; the promotion PR supplies exact-head browser proof |
-| Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; `Pixel_10` AVD; Gradle wrapper support | The same `mychampions-ci-ubuntu` service is registered and online; the promotion PR supplies exact-head emulator proof |
+| Web | `self-hosted, Linux, X64, mychampions-ci, mychampions-web` | Repository-scoped Linux/WSL runner; Git and outbound access; Playwright browser/system dependencies; `unzip` for pinned Bun bootstrap; capacity for Expo and the optional in-memory backend | `mychampions-ci-ubuntu` is registered and online; Bun extraction and a service-context WebKit launch probe pass; the promotion PR supplies exact-head browser-suite proof |
+| Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; `Pixel_10` AVD; Gradle wrapper support | The same `mychampions-ci-ubuntu` service is registered and online; its listener has effective `kvm` membership and the service context reports KVM usable; the promotion PR supplies exact-head emulator-suite proof |
 | iOS | `self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios` | Repository-scoped Apple Silicon runner; Xcode 26 with iOS SDK 26+; `iPhone 17` simulator; CocoaPods; Homebrew path | `mychampions-ios-ci-m5` is registered and online; the promotion PR supplies exact-head simulator proof |
+
+## WSL Browser And Emulator Prerequisite Record
+
+The unprivileged Ubuntu 24.04 runner keeps Playwright `1.61.1` / WebKit `2311`
+runtime libraries under
+`/home/eduardo/.local/playwright-libs-1.61.1-ubuntu24.04`. They were extracted
+from official Ubuntu packages with `apt-get download` and `dpkg-deb -x`, without
+altering system packages. A curated soname directory at
+`/home/eduardo/.local/playwright-runtime-libs-1.61.1-ubuntu24.04` is first in
+the runner `LD_LIBRARY_PATH`. `web-selected` uses the MyChampions-only browser
+cache `/home/eduardo/.cache/ms-playwright-mychampions`; it does not mutate the
+default cache used by Meer. After each browser install, the workflow makes the
+isolated WPE and GTK MiniBrowser wrappers append a nonempty inherited path after
+their bundled paths instead of replacing it.
+
+Playwright validates `dlopen` dependencies only through the system `ldconfig`
+inventory, which cannot discover these user-local libraries. After the complete
+user-library closure was proved by launching headless WebKit from the same
+systemd service environment, creating a page, and reading
+`WEBKIT_SERVICE_PROBE=webkit-ready`, only the selected web job sets
+`PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1`. The runner service does not set
+that variable globally. Actual selected Playwright suites remain the runtime
+proof, and the scheduled complete matrix regularly launches every configured
+browser. Re-run the service-context probe and rebuild the user-library closure
+whenever Playwright, WebKit, or Ubuntu changes. The pre-change files remain
+recoverable as:
+
+- `/home/eduardo/actions-runner-mychampions-ci/.env.before-playwright-libs-20260729`
+
+The earlier default-cache probe was fully reverted: its temporary WebKit marker
+and MyChampions `.links` entry were removed, and both shared WPE/GTK launchers
+were restored byte-for-byte from their
+`MiniBrowser.before-user-libs-20260729` backups. The final MyChampions runtime
+uses only its isolated browser cache.
+
+The Ubuntu login user belongs to `kvm`, but the previously long-lived user
+manager predated that membership. An idle user-manager restart refreshed the
+persistent MyChampions service; both the manager and
+`mychampions-ci-ubuntu` listener now include group ID `993`. A transient probe
+started from that same service manager completed `emulator -accel-check` with
+`KVM (version 12) is installed and usable`. This proves acceleration
+availability, while the promotion PR remains the required exact-head Detox
+proof.
 
 ## Shared Host Lock Operational Record
 

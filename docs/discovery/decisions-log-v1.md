@@ -466,8 +466,10 @@
     phase owns a fresh Metro process and explicit app/test environment. Runtime
     phase values, including explicit empty clears, take precedence over fixture
     values embedded when the native debug binary is built once per platform job.
-    A run that executes no test fails closed. Provider-live suites remain
-    ineligible for PR CI.
+    Cleanup enumerates and signals runner-UID members when a mixed-UID process
+    group makes group signaling return `EPERM`, then verifies that no runner-owned
+    member or Metro listener survives. A run that executes no test or cannot
+    prove cleanup fails closed. Provider-live suites remain ineligible for PR CI.
   - The three legacy PR workflows are manual-only. The stable selective gate fails
     when any selected lane is skipped or fails, including fork PRs that cannot
     safely execute on self-hosted runners.

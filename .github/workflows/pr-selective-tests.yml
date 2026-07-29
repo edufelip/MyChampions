@@ -166,6 +166,8 @@ jobs:
       cancel-in-progress: false
     env:
       CI: 'true'
+      PLAYWRIGHT_BROWSERS_PATH: /home/eduardo/.cache/ms-playwright-mychampions
+      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'
       SELECTED_SUITES_JSON: ${{ needs.impact.outputs.web_suites }}
       MYCHAMPIONS_SERVER_ROOT: ${{ github.workspace }}/.ci/mychampions-api
     steps:
@@ -203,6 +205,33 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Ensure selected browsers are installed locally
         run: yarn playwright install chromium firefox webkit
+      - name: Preserve user-local browser libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' browser_wrapper_directories < <(
+            find "$PLAYWRIGHT_BROWSERS_PATH" \
+              -type d \
+              \( -name minibrowser-wpe -o -name minibrowser-gtk \) \
+              -print0
+          )
+          if (( ${#browser_wrapper_directories[@]} == 0 )); then
+            echo "No WebKit MiniBrowser wrappers were installed." >&2
+            exit 1
+          fi
+          for directory in "${browser_wrapper_directories[@]}"; do
+            wrapper="$directory/MiniBrowser"
+            if [[ ! -f "$wrapper" || ! -x "$wrapper" ]]; then
+              echo "Invalid WebKit MiniBrowser wrapper: $wrapper" >&2
+              exit 1
+            fi
+            sed -i \
+              's|^export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib"$|export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"|' \
+              "$wrapper"
+            grep -Fqx \
+              'export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"' \
+              "$wrapper"
+          done
       - name: Validate the web bundle
         run: yarn web:export
       - name: Run selected Playwright suites

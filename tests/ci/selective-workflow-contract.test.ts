@@ -193,6 +193,28 @@ test('self-hosted selected lanes are same-repository only and selected skips fai
   );
 });
 
+test('selected web browsers use an isolated cache and preserve user-local libraries', () => {
+  const webLane = jobBlock(workflow('pr-selective-tests.yml'), 'web-selected');
+
+  assert.match(
+    webLane,
+    /^      PLAYWRIGHT_BROWSERS_PATH: \/home\/eduardo\/\.cache\/ms-playwright-mychampions$/m
+  );
+  assert.match(
+    webLane,
+    /^      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'$/m
+  );
+  assert.match(webLane, /find "\$PLAYWRIGHT_BROWSERS_PATH"/);
+  assert.match(webLane, /-name minibrowser-wpe -o -name minibrowser-gtk/);
+  assert.match(webLane, /wrapper="\$directory\/MiniBrowser"/);
+  assert.ok(
+    webLane.includes(
+      'export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"'
+    )
+  );
+  assert.doesNotMatch(webLane, /\/home\/eduardo\/\.cache\/ms-playwright\/webkit-/);
+});
+
 test('legacy platform workflows are manual-only and have no PR-event job guards', () => {
   for (const name of ['android-pr.yml', 'ios-pr.yml', 'web-pr.yml']) {
     const source = workflow(name);

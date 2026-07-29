@@ -8,6 +8,7 @@ import {
   type CommandInvocation,
   type SelectivePlatform,
 } from './selective-execution';
+import { stopMetroProcessGroup } from './metro-process-group';
 
 function valueAfter(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -111,54 +112,13 @@ async function waitForMetro(port: number, metro: ChildProcess): Promise<void> {
   throw new Error(`Metro did not become ready at ${statusUrl}`);
 }
 
-function metroProcessGroupExists(metro: ChildProcess): boolean {
-  if (process.platform === 'win32' || metro.pid === undefined) {
-    return metro.exitCode === null && metro.signalCode === null;
-  }
-  try {
-    process.kill(-metro.pid, 0);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false;
-    throw error;
-  }
-}
-
-function signalMetroProcessGroup(
-  metro: ChildProcess,
-  signal: NodeJS.Signals
-): void {
-  if (process.platform === 'win32' || metro.pid === undefined) {
-    if (metro.exitCode === null && metro.signalCode === null) metro.kill(signal);
-    return;
-  }
-  try {
-    process.kill(-metro.pid, signal);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
-  }
-}
-
-async function waitForMetroProcessGroupExit(
-  metro: ChildProcess,
-  timeoutMs: number
-): Promise<boolean> {
+async function waitForPortToClose(port: number, timeoutMs: number): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (!metroProcessGroupExists(metro)) return true;
+    if (!(await portIsOpen(port))) return true;
     await new Promise((resolveDelay) => setTimeout(resolveDelay, 100));
   }
-  return !metroProcessGroupExists(metro);
-}
-
-async function stopMetro(metro: ChildProcess): Promise<void> {
-  if (!metroProcessGroupExists(metro)) return;
-  signalMetroProcessGroup(metro, 'SIGTERM');
-  if (await waitForMetroProcessGroupExit(metro, 5_000)) return;
-  signalMetroProcessGroup(metro, 'SIGKILL');
-  if (!(await waitForMetroProcessGroupExit(metro, 5_000))) {
-    throw new Error('Metro process group did not stop after SIGKILL');
-  }
+  return !(await portIsOpen(port));
 }
 
 async function runWithFreshMetro(
@@ -189,7 +149,26 @@ async function runWithFreshMetro(
     await waitForMetro(port, metro);
     await runChild(invocation.command, invocation.args, cwd, env);
   } finally {
-    await stopMetro(metro);
+    let cleanupFailed = false;
+    let cleanupError: unknown;
+    try {
+      await stopMetroProcessGroup(metro);
+    } catch (error) {
+      cleanupFailed = true;
+      cleanupError = error;
+    }
+
+    if (!(await waitForPortToClose(port, 5_000))) {
+      const cleanupContext = cleanupFailed
+        ? `; process cleanup also failed: ${
+            cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
+          }`
+        : '';
+      throw new Error(
+        `Metro port ${port} remained occupied after process-group cleanup${cleanupContext}`
+      );
+    }
+    if (cleanupFailed) throw cleanupError;
   }
 }
 
