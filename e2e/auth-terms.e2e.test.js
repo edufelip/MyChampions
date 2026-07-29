@@ -1,14 +1,11 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
 
 describeWithE2EAuthSession('Auth Terms Acceptance', () => {
-  beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
-    await device.disableSynchronization();
-  });
-
   beforeEach(async () => {
-    await device.reloadReactNative();
-    await device.disableSynchronization();
+    await device.launchApp({
+      newInstance: true,
+      launchArgs: { detoxEnableSynchronization: 0 },
+    });
   });
 
   it('requires the checkbox before accepting terms', async () => {
