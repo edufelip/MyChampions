@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -63,6 +63,7 @@ export default function CreateAccountScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const passwordConfirmationRef = useRef('');
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
   const [errors, setErrors] = useState<CreateAccountValidationErrors>({});
@@ -82,8 +83,20 @@ export default function CreateAccountScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onCreateAccount = async () => {
-    const nextErrors = validateCreateAccountInput({ name, email, password, passwordConfirmation });
+  const onPasswordConfirmationChange = (value: string) => {
+    passwordConfirmationRef.current = value;
+    setPasswordConfirmation(value);
+  };
+
+  const onCreateAccount = async (submittedPasswordConfirmation?: string) => {
+    const submissionInput = {
+      name,
+      email,
+      password,
+      passwordConfirmation:
+        submittedPasswordConfirmation ?? passwordConfirmationRef.current,
+    };
+    const nextErrors = validateCreateAccountInput(submissionInput);
     setErrors(nextErrors);
     setSubmitError(null);
 
@@ -98,10 +111,10 @@ export default function CreateAccountScreen() {
     emitEvent(buildSignUpSubmitted('email_password'));
     setSubmitting(true);
     try {
-      if (await createAccountWithE2EEmailPassword({ name, email, password })) {
+      if (await createAccountWithE2EEmailPassword(submissionInput)) {
         return;
       }
-      await createAccountWithEmailPasswordFromSource({ name, email, password, passwordConfirmation });
+      await createAccountWithEmailPasswordFromSource(submissionInput);
       if (!adoptCurrentServerSession()) throw new CreateAccountFailure('unknown');
     } catch (error: unknown) {
       const reason = normalizeCreateAccountReason(error);
@@ -358,8 +371,10 @@ export default function CreateAccountScreen() {
                 autoCapitalize="none"
                 autoComplete="password-new"
                 blurOnSubmit
-                onChangeText={setPasswordConfirmation}
-                onSubmitEditing={onCreateAccount}
+                onChangeText={onPasswordConfirmationChange}
+                onSubmitEditing={({ nativeEvent }) => {
+                  void onCreateAccount(nativeEvent.text);
+                }}
                 placeholder={t('auth.placeholder.password_confirmation')}
                 placeholderTextColor={palette.icon}
                 returnKeyType="done"
@@ -413,7 +428,9 @@ export default function CreateAccountScreen() {
           <Pressable
             accessibilityRole="button"
             disabled={submitting}
-            onPress={onCreateAccount}
+            onPress={() => {
+              void onCreateAccount();
+            }}
             style={({ pressed }) => [
               styles.primaryButton,
               {

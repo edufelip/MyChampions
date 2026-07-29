@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -59,6 +59,8 @@ export default function SignInScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const emailRef = useRef('');
+  const passwordRef = useRef('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<SignInValidationErrors>({});
   const [submitError, setSubmitError] = useState<SignInErrorMessageKey | null>(null);
@@ -90,8 +92,22 @@ export default function SignInScreen() {
     };
   }, []);
 
-  const onEmailPasswordSignIn = async () => {
-    const nextErrors = validateSignInInput({ email, password });
+  const onEmailChange = (value: string) => {
+    emailRef.current = value;
+    setEmail(value);
+  };
+
+  const onPasswordChange = (value: string) => {
+    passwordRef.current = value;
+    setPassword(value);
+  };
+
+  const onEmailPasswordSignIn = async (submittedPassword?: string) => {
+    const submissionInput = {
+      email: emailRef.current,
+      password: submittedPassword ?? passwordRef.current,
+    };
+    const nextErrors = validateSignInInput(submissionInput);
     setErrors(nextErrors);
     setSubmitError(null);
 
@@ -106,10 +122,10 @@ export default function SignInScreen() {
     emitEvent(buildSignInSubmitted('email_password'));
     setSubmitting(true);
     try {
-      if (await signInWithE2EEmailPassword(email, password)) {
+      if (await signInWithE2EEmailPassword(submissionInput.email, submissionInput.password)) {
         return;
       }
-      await signInWithEmailPasswordFromSource({ email, password });
+      await signInWithEmailPasswordFromSource(submissionInput);
       if (!adoptCurrentServerSession()) throw new SignInFailure('unknown');
     } catch (error: unknown) {
       const reason = normalizeSignInReason(error);
@@ -242,7 +258,7 @@ export default function SignInScreen() {
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
-              onChangeText={setEmail}
+              onChangeText={onEmailChange}
               placeholder={t('auth.signin.placeholder.email')}
               placeholderTextColor={palette.icon}
               style={[
@@ -268,8 +284,10 @@ export default function SignInScreen() {
                 accessibilityLabel={t('auth.field.password')}
                 autoCapitalize="none"
                 autoComplete="password"
-                onChangeText={setPassword}
-                onSubmitEditing={onEmailPasswordSignIn}
+                onChangeText={onPasswordChange}
+                onSubmitEditing={({ nativeEvent }) => {
+                  void onEmailPasswordSignIn(nativeEvent.text);
+                }}
                 placeholder={t('auth.signin.placeholder.password')}
                 placeholderTextColor={palette.icon}
                 returnKeyType="done"
@@ -303,7 +321,9 @@ export default function SignInScreen() {
             </View>
             <Pressable
               accessibilityRole="button"
-              onPress={onEmailPasswordSignIn}
+              onPress={() => {
+                void onEmailPasswordSignIn();
+              }}
               disabled={submitting}
               style={({ pressed }) => [
                 styles.primaryButton,

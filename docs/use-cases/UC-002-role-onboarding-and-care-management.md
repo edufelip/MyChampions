@@ -6,9 +6,9 @@
 - Preconditions: App launched.
 - Main flow:
   1. User chooses sign in or create account.
-  2. User authenticates with email/password, Google, or Apple.
+  2. User authenticates with email/password, Google, or Apple; email/password submission uses the latest entered credentials whether triggered from the password Done/Return key or the primary CTA.
   3. If create-account via email/password, user provides name, email, password, and password confirmation.
-  4. System validates password policy and confirmation match.
+  4. System validates password policy and the latest entered confirmation value when the user submits from either the confirmation Done/Return key or the primary CTA.
   5. If social email matches existing account, system links provider to existing account.
 - Expected result: Authenticated session is created without duplicate-account creation for same email.
 

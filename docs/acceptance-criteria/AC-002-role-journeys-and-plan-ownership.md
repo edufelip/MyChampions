@@ -31,9 +31,10 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-225`: Student dashboard, relationship, and tracking empty states include explicit self-guided continuation messaging and direct actions.
 - `AC-226`: Student-facing connection flows do not display professional credential/verification status as badge/filter.
 - `AC-227`: Auth entry supports email/password, Google, and Apple login methods.
+- `AC-227A`: Submitting email/password sign-in immediately after editing a credential, from either the password Done/Return key or the primary CTA, honors the currently displayed values without a stale required-field error.
 - `AC-228`: Create-account form requires `name`, `email`, `password`, and `password_confirmation`.
 - `AC-229`: Password validation enforces minimum 8 characters, at least one uppercase letter, one number, one special character, and no emojis.
-- `AC-230`: Password and password-confirmation values must match before account creation.
+- `AC-230`: Password and password-confirmation values must match before account creation; submitting immediately from the confirmation Done/Return key or primary CTA honors the currently displayed confirmation value without a stale required-field error.
 - `AC-231`: Email addresses are unique per account and cannot create duplicates.
 - `AC-232`: Social login with email matching existing account links provider identity into existing account.
 - `AC-233`: Users with locked role are auto-redirected away from role-selection to role home.

@@ -74,10 +74,11 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-162`: Recipe record identifiers shall use UUIDv7 format.
 - `FR-163`: Authentication methods supported in MVP shall include email/password, Google Sign-In, and Apple Sign-In.
 - `FR-164`: Auth entry flows shall provide both sign-in and create-account paths, and both screens shall expose Google and Apple social actions.
+- `FR-164A`: Email/password sign-in submission from the password Done/Return key or primary CTA shall validate and submit the latest entered credential values rather than stale rendered snapshots.
 - `FR-165`: Account creation via email/password shall require `name`, `email`, `password`, and `password_confirmation`.
 - `FR-166`: Password policy shall enforce minimum 8 characters, at least 1 uppercase letter, at least 1 number, and at least 1 special character.
 - `FR-167`: Password input shall reject emoji characters.
-- `FR-168`: Password confirmation must exactly match the password value before account creation can continue.
+- `FR-168`: Password confirmation must exactly match the password value before account creation can continue, and an immediate Done/Return-key or primary-CTA submission must validate the latest entered confirmation value rather than a stale rendered snapshot.
 - `FR-169`: Password fields on auth forms shall support reveal/hide toggle control.
 - `FR-170`: Email verification is deferred and is not required to enter product flows in MVP.
 - `FR-171`: Email address uniqueness shall be global per account; the same email shall not create multiple accounts.

@@ -113,7 +113,18 @@ describe('Auth Sign-In', () => {
     await element(by.id('auth.createAccount.passwordInput')).tapReturnKey();
     await waitFor(element(by.id('auth.createAccount.passwordConfirmationInput'))).toBeVisible().withTimeout(5000);
     await element(by.id('auth.createAccount.passwordConfirmationInput')).replaceText(createAccountPassword);
-    await element(by.id('auth.createAccount.passwordConfirmationInput')).tapReturnKey();
+    await element(by.id('auth.createAccount.passwordConfirmationInput')).tap();
+    await waitFor(element(by.id('auth.createAccount.passwordConfirmationInput')))
+      .toBeFocused()
+      .withTimeout(2000);
+    if (device.getPlatform() === 'android') {
+      // Detox 20.47.0 implements Android tapReturnKey() as typeText('\\n'),
+      // which mutates the submitted value. UiAutomator dispatches the real
+      // focused-editor Enter action instead.
+      await device.getUiDevice().pressEnter();
+    } else {
+      await element(by.id('auth.createAccount.passwordConfirmationInput')).tapReturnKey();
+    }
 
     await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(10000);
   });
