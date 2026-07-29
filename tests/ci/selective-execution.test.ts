@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import test from 'node:test';
 import { loadManifest } from '../../scripts/ci/test-impact';
@@ -89,6 +90,7 @@ test('Android uses one dev-debug build and never rebuilds per suite', () => {
     '-c',
     'android.emu.debug',
   ]);
+  assert.equal(plan.nativeBuild?.command.env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX, '');
   assert.equal(plan.invocations.length, 2);
   for (const invocation of plan.invocations) {
     assert.deepEqual(invocation.args.slice(0, 4), [
@@ -101,7 +103,18 @@ test('Android uses one dev-debug build and never rebuilds per suite', () => {
     assert.equal(invocation.env.APP_VARIANT, 'dev');
     assert.equal(invocation.env.EXPO_PUBLIC_ENV, 'dev');
     assert.equal(invocation.env.CI_REQUIRE_E2E_EXECUTION, 'true');
+    assert.equal(invocation.env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX, 'true');
   }
+});
+
+test('native E2E LogBox suppression is explicit and dev-only', () => {
+  const rootLayout = readFileSync(`${root}/app/_layout.tsx`, 'utf8');
+
+  assert.match(
+    rootLayout,
+    /if \(__DEV__ && process\.env\.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX === 'true'\)/
+  );
+  assert.match(rootLayout, /LogBox\.ignoreAllLogs\(\)/);
 });
 
 test('DETOX_SKIP_BUILD transfers the single native build to the workflow', () => {

@@ -76,7 +76,12 @@ dev-only deterministic fixture harness remains enabled. Each native job builds
 once, then runs isolated fixture phases with a freshly owned Metro process and
 explicit environment. Runtime phase values take precedence over the app config
 embedded by the one-time native build; an explicit empty runtime value clears a
-fixture from the preceding phase. On macOS, process-group probing can return
+fixture from the preceding phase. Native selective phases explicitly suppress
+the in-app development LogBox notification overlay while retaining warning text
+in runner logs and failure diagnostics, so diagnostics cannot intercept stable
+Detox action targets. Tests scroll lower auth actions into view before
+interaction so the same contract holds on the configured compact Android
+viewport. On macOS, process-group probing can return
 `EPERM` when even one group member has another UID. The cleanup fallback reads
 the numeric process table, signals only runner-UID group members, verifies TERM
 and KILL outcomes, and separately proves that the Metro port closed. Foreign

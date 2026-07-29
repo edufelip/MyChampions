@@ -30,7 +30,10 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   oversized, unresolved, merge-queue, scheduled, release/hotfix, or explicit-full
   inputs select the complete registered CI matrix. Every selected executable
   profile must pass; native jobs build once while freshly owned Metro phases
-  override or clear embedded dev-only fixture values. Metro cleanup targets and
+  override or clear embedded dev-only fixture values. Native selective phases
+  preserve warning diagnostics without allowing the development LogBox overlay
+  to intercept Detox actions, and tests bring compact-viewport targets into view
+  before interaction. Metro cleanup targets and
   verifies runner-owned members even when a mixed-UID process group makes group
   signaling return `EPERM`; surviving runner-owned members or an occupied Metro
   port fail the lane. The Android lane must pass native lint/unit/build checks,

@@ -288,6 +288,7 @@ function createNativePlan(
             DETOX_JEST_CONFIG: 'e2e/jest.config.js',
             DETOX_METRO_CLEAR_CACHE: 'true',
             DETOX_REQUIRE_FRESH_METRO: 'true',
+            EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX: 'true',
           },
           metro: {
             port: 8081,

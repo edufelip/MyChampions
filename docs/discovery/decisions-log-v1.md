@@ -466,6 +466,10 @@
     phase owns a fresh Metro process and explicit app/test environment. Runtime
     phase values, including explicit empty clears, take precedence over fixture
     values embedded when the native debug binary is built once per platform job.
+    The executor explicitly suppresses only the in-app development LogBox
+    notification layer during native E2E phases while warnings remain in runner
+    logs, and compact-viewport tests scroll stable targets into view before
+    interaction.
     Cleanup enumerates and signals runner-UID members when a mixed-UID process
     group makes group signaling return `EPERM`, then verifies that no runner-owned
     member or Metro listener survives. A run that executes no test or cannot

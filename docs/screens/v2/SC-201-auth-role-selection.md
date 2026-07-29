@@ -51,6 +51,7 @@
   - `features/auth/role-selection.logic.test.ts`
 - Current implementation status:
   - Full role-card UX is implemented with student/professional options, role-lock helper copy, and required-selection validation.
+  - Native E2E coverage verifies the Continue control's disabled accessibility state before role selection instead of attempting to activate the intentionally inert control.
   - Self-guided start path is implemented through Student selection + Continue, commits `student` role lock through auth profile source abstraction, and routes to student home.
   - Continue action commits selected role lock through auth profile source abstraction and routes to role-specific journeys:
     - Student -> `/` (self-managed tracking shell).

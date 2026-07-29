@@ -4,7 +4,7 @@
 
 | ID | Area | Preconditions | Steps | Expected Result |
 |---|---|---|---|---|
-| TC-201 | Role Onboarding | New account | Select Student role | Student journey/dashboard is shown |
+| TC-201 | Role Onboarding | Authenticated new account with no selected role | Verify Continue, then select Student and tap Continue | Continue exposes a disabled accessibility state before selection; after Student is selected, the student journey/dashboard is shown |
 | TC-202 | Role Onboarding | New account | Select Professional and choose nutritionist only | Nutritionist professional journey is shown |
 | TC-203 | Role Onboarding | New account | Select Professional and choose both specialties | Dual-specialty dashboard is shown |
 | TC-204 | Assignment Rule | Student has one active nutritionist | Attempt to activate second nutritionist | System blocks action and explains rule |

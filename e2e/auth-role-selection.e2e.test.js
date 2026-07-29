@@ -1,3 +1,5 @@
+const assert = require('node:assert/strict');
+
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
 
 describeWithE2EAuthSession('Auth Role Selection', () => {
@@ -6,12 +8,12 @@ describeWithE2EAuthSession('Auth Role Selection', () => {
     await device.disableSynchronization();
   });
 
-  it('requires a role before continuing', async () => {
+  it('keeps Continue disabled until a role is selected', async () => {
     await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
 
-    await element(by.id('auth.roleSelection.continueButton')).tap();
-
-    await waitFor(element(by.id('auth.roleSelection.error.roleRequired'))).toBeVisible().withTimeout(5000);
+    const attributes = await element(by.id('auth.roleSelection.continueButton')).getAttributes();
+    assert.equal(attributes.enabled, false);
+    await expect(element(by.id('auth.roleSelection.error.roleRequired'))).not.toExist();
   });
 
   it('routes students to student home after role selection', async () => {
