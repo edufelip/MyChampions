@@ -166,11 +166,97 @@ test('self-hosted selected lanes are same-repository only and selected skips fai
 
   const gate = jobBlock(source, 'selective-ci-gate');
   const iosLane = jobBlock(source, 'detox-ios-selected');
+  const androidLane = jobBlock(source, 'detox-android-selected');
   assert.match(
     iosLane,
     /for candidate in \/Applications\/Xcode_"\$\{XCODE_REQUIRED_MAJOR\}"\*\.app/
   );
   assert.doesNotMatch(iosLane, /find \/Applications -maxdepth/);
+  assert.match(androidLane, /emulator_serial=emulator-5554/);
+  assert.match(
+    androidLane,
+    /"\$emulator_path" @"\$DETOX_ANDROID_AVD"[\s\S]*?-port 5554[\s\S]*?-no-snapshot[\s\S]*?-read-only/
+  );
+  assert.match(
+    androidLane,
+    /android_sdk_root="\$\{ANDROID_SDK_ROOT:-\$\{ANDROID_HOME:-\}\}"\s+emulator_path="\$android_sdk_root\/emulator\/emulator"\s+if \[\[ -z "\$android_sdk_root" \|\| ! -x "\$emulator_path" \]\]; then/
+  );
+  assert.match(
+    androidLane,
+    /boot_deadline=\$\(\(SECONDS \+ 120\)\)[\s\S]*?while \(\( SECONDS < boot_deadline \)\); do[\s\S]*?if ! emulator_pid_matches; then[\s\S]*?timeout 2s adb[\s\S]*?getprop sys\.boot_completed[\s\S]*?getprop ro\.boot\.qemu\.avd_name[\s\S]*?"\$attached_emulators" == "\$emulator_serial"/
+  );
+  assert.match(
+    androidLane,
+    /trap on_exit EXIT[\s\S]*?yarn test:impact:execute --platform android[\s\S]*?- name: Verify Android emulator cleanup[\s\S]*?adb -s emulator-5554 emu kill[\s\S]*?adb kill-server/
+  );
+  assert.match(
+    androidLane,
+    /owner_prefix="\$RUNNER_TEMP\/mychampions-emulator-\$\{GITHUB_RUN_ID\}-\$\{GITHUB_RUN_ATTEMPT\}"[\s\S]*?owner_uid_file="\$owner_prefix\.uid"[\s\S]*?owner_start_file="\$owner_prefix\.start"/
+  );
+  assert.equal(
+    androidLane.match(/emulator_pid_is_owned\(\) \{/g)?.length,
+    2,
+    'both the execution trap and always-run cleanup must validate PID ownership'
+  );
+  assert.match(
+    androidLane,
+    /emulator_pid_is_owned\(\) \{[\s\S]*?stat -c '%u' "\/proc\/\$emulator_pid"[\s\S]*?awk '\{ print \$22 \}' "\/proc\/\$emulator_pid\/stat"[\s\S]*?"\$actual_uid" == "\$emulator_uid"[\s\S]*?"\$actual_start" == "\$emulator_start_time"[\s\S]*?\}/
+  );
+  assert.match(
+    androidLane,
+    /emulator_pid_matches\(\) \{\s+local command_line\s+emulator_pid_is_owned \|\| return 1[\s\S]*?\/proc\/\$emulator_pid\/cmdline[\s\S]*?@\$DETOX_ANDROID_AVD[\s\S]*?-port 5554[\s\S]*?\}/
+  );
+  assert.match(
+    androidLane,
+    /if emulator_pid_matches; then\s+kill -TERM "\$emulator_pid"[\s\S]*?if emulator_pid_matches; then\s+kill -KILL "\$emulator_pid"/
+  );
+  assert.match(
+    androidLane,
+    /emulator_cleanup_complete\(\) \{[\s\S]*?! emulator_pid_is_owned &&\s+! emulator_qemu_present_or_unknown &&\s+! emulator_device_present_or_unknown &&\s+! emulator_ports_present_or_unknown\s+\}/
+  );
+  assert.match(androidLane, /timeout 5s pgrep -af '\[q\]emu-system'/);
+  assert.match(
+    androidLane,
+    /if \[\[ "\$process_state" == "Z" \]\]; then\s+wait "\$emulator_pid"/
+  );
+  assert.doesNotMatch(
+    androidLane,
+    /if \[\[ -n "\$emulator_pid" \]\] && ! emulator_pid_matches; then\s+wait "\$emulator_pid"/,
+    'cleanup must never wait on a live process whose command identity changed'
+  );
+  const adbEmulatorKills =
+    androidLane.match(
+      /timeout 10s adb -s (?:"\$emulator_serial"|emulator-5554) emu kill/g
+    ) ?? [];
+  const identityGuardedAdbEmulatorKills =
+    androidLane.match(
+      /if emulator_pid_matches; then\s+timeout 10s adb -s (?:"\$emulator_serial"|emulator-5554) emu kill/g
+    ) ?? [];
+  assert.equal(adbEmulatorKills.length, 2);
+  assert.equal(
+    identityGuardedAdbEmulatorKills.length,
+    adbEmulatorKills.length,
+    'every ADB emulator kill must follow exact saved PID identity validation'
+  );
+  assert.match(
+    androidLane,
+    /elif emulator_device_present_or_unknown; then\s+echo "Android emulator serial is present or unknown without its saved process identity; refusing to signal it"/
+  );
+  assert.match(androidLane, /timeout 10s adb kill-server/);
+  assert.match(
+    androidLane,
+    /timeout 5s ss -H -ltn '\( sport = :5554 or sport = :5555 \)'/
+  );
+  assert.doesNotMatch(
+    androidLane,
+    /adb devices[\s\S]{0,200}while read -r serial[\s\S]{0,200}emu kill/,
+    'Android cleanup must target only the fixed emulator and validated PID'
+  );
+  assert.ok(
+    androidLane.indexOf('-port 5554') <
+      androidLane.indexOf('yarn test:impact:execute --platform android'),
+    'Android lane must preboot the supported-port emulator before Detox'
+  );
 
   assert.match(gate, /^    if: always\(\)$/m);
   assert.match(

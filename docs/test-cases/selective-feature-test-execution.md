@@ -22,6 +22,8 @@ must prove the complete matrix on its exact head before merge.
   conservative impact resolution.
 - `scripts/ci/execute-selected-tests.ts`: allowlisted, argument-safe execution
   of selected Playwright and Detox suites.
+- `scripts/ci/metro-bundle-prewarm.ts`: platform-specific Expo bundle readiness
+  and full response-stream verification before native test launch.
 - `scripts/ci/metro-process-group.ts`: owned-member Metro termination and
   fail-closed process-group verification.
 - `scripts/ci/detox-fixture-profiles.ts`: isolated Detox phase contracts.
@@ -76,7 +78,14 @@ dev-only deterministic fixture harness remains enabled. Each native job builds
 once, then runs isolated fixture phases with a freshly owned Metro process and
 explicit environment. Runtime phase values take precedence over the app config
 embedded by the one-time native build; an explicit empty runtime value clears a
-fixture from the preceding phase. Stories that require contradictory fixture
+fixture from the preceding phase. The Metro status endpoint proves only that the
+listener exists. The executor next requests the platform-specific Expo magic
+development-bundle URL and fully consumes its rewritten response before spawning
+Detox, so the first screen wait never owns a cold transform. The cold transform
+has a bounded four-minute request window; a timeout, non-success response,
+missing or empty body, interrupted stream, or Metro exit after prewarming fails
+the phase and still enters owned-process cleanup. Stories
+that require contradictory fixture
 states run as separate scenario-gated phases: the AI meal-analysis spec runs
 once with both AI and professional entitlement access lapsed and once with both
 active, so no invocation observes an impossible mixed expectation. An
@@ -127,7 +136,12 @@ Expensive jobs run only when selected:
   validation bypass remains accountable to actual browser-suite execution.
 - macOS: one iOS debug build plus selected iOS Detox phases.
 - WSL Android: Gradle lint/unit checks, one `devDebug` app/test build, and
-  selected Android Detox phases.
+  selected Android Detox phases. After rejecting stale device/QEMU/console
+  state, the job preboots `Pixel_10` at `emulator-5554`, requires its saved
+  PID/UID/Linux start time and AVD/port command identity, exact serial, AVD name,
+  and completed boot within 120 seconds, and lets Detox reuse it. In-step and
+  always-run teardown target only that serial and revalidated process and fail
+  if any QEMU process, emulator device, or `5554/5555` listener remains.
 
 The Android lint boundary is part of the gate. API-33 splash-only attributes
 live in `values-v33`, camera hardware is optional because manual invite entry

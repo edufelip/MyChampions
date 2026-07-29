@@ -49,13 +49,20 @@ Define non-functional architecture constraints and technology options for the mo
 - Selective native CI builds each debug app once. Every isolated fixture phase
   starts a freshly owned Metro process whose explicit runtime E2E values take
   precedence over the app config embedded by the build, including empty values
-  that clear the preceding phase.
+  that clear the preceding phase. After the listener becomes ready, the executor
+  requests and fully consumes the current platform's rewritten Expo development
+  bundle before Detox launches; cold transformation, response, or stream failure
+  therefore belongs to phase setup rather than a screen assertion.
 - The selected Android lane runs `lintDevDebug` before Detox. The manually
   maintained native baseline keeps camera hardware optional because manual
   invite entry remains available, declares Android 13 notification capability
   required by the Expo video playback service, and places
   `windowSplashScreenBehavior` in `values-v33` so the API-33 attribute does not
-  violate the API-24 minimum.
+  violate the API-24 minimum. The lane rejects stale emulator/QEMU/console
+  state, preboots `Pixel_10` on `emulator-5554`, bounds exact AVD readiness to
+  120 seconds while revalidating PID/UID/Linux start time plus AVD/port command
+  identity, lets Detox reuse that instance, and verifies that no QEMU process,
+  emulator device, or owned port survives teardown.
 
 ## Constraints From Platform Docs
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.
@@ -136,8 +143,11 @@ always run, affected Playwright and both-platform Detox suites execute on
 dedicated self-hosted lanes, and workflow/tooling, scheduled, merge-queue,
 release/hotfix, or explicit-full inputs select the complete registered matrix.
 Contradictory native fixture states execute in scenario-gated fresh-Metro phases,
-and Android instrumentation routes Metro through the configured localhost ADB
-reverse tunnel before React Native starts. Successful runs create no GitHub
+each of which fully prewarms its exact platform bundle before Detox launches, and
+Android instrumentation routes Metro through the configured localhost ADB
+reverse tunnel before React Native starts. The Android runner supplies one
+health-checked `emulator-5554` for the job instead of delegating console-port
+allocation to Detox. Successful runs create no GitHub
 Actions artifact or cache.
 
 ## High-Level Architecture (Target)

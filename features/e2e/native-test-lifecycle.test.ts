@@ -197,3 +197,33 @@ test('authenticated custom meal image upload fails closed without a valid scenar
   );
   assert.doesNotThrow(() => evaluate({}));
 });
+
+test('custom meal quick logging preserves grams and dismisses each native keyboard explicitly', () => {
+  const source = readFileSync(
+    join(root, 'e2e/custom-meal-library.e2e.test.js'),
+    'utf8'
+  );
+
+  assert.match(
+    source,
+    /await gramsInput\.tap\(\);\s+await gramsInput\.replaceText\(customMealLogGrams\);\s+await expect\(gramsInput\)\.toHaveText\(customMealLogGrams\);\s+await dismissQuickLogKeyboard\(\);/
+  );
+  assert.match(
+    source,
+    /if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.pressBack\(\);\s+return;\s+\}/
+  );
+  assert.match(
+    source,
+    /waitFor\(doneButton\)\.toBeVisible\(\)\.withTimeout\(3000\);\s+await sleep\(750\);\s+await expect\(doneButton\)\.toBeVisible\(\);\s+await doneButton\.tap\(\);/
+  );
+  assert.match(
+    source,
+    /waitFor\(confirmButton\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await confirmButton\.tap\(\);/
+  );
+  assert.match(
+    source,
+    /waitFor\(element\(by\.id\('meal\.library\.quickLog\.panel'\)\)\)\.not\.toExist\(\)\.withTimeout\(10000\);/
+  );
+  assert.doesNotMatch(source, /typeText\(customMealLogGrams\)/);
+  assert.doesNotMatch(source, /device\.tap\(\{/);
+});

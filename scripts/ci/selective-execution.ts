@@ -6,6 +6,7 @@ import {
   validateDetoxFixtureProfile,
   type Environment,
 } from './detox-fixture-profiles';
+import type { NativeMetroPlatform } from './metro-bundle-prewarm';
 import type { SuiteConfig, TestImpactManifest } from './test-impact';
 
 export type SelectivePlatform = 'web' | 'ios' | 'android';
@@ -18,6 +19,8 @@ export type CommandInvocation = {
   requiredEnv?: string[];
   metro?: {
     port: number;
+    platform: NativeMetroPlatform;
+    appId: string;
   };
 };
 
@@ -292,6 +295,8 @@ function createNativePlan(
           },
           metro: {
             port: 8081,
+            platform,
+            appId: 'com.edufelip.mychampions.dev',
           },
         });
       }

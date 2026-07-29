@@ -9,6 +9,10 @@ const specialtyHelperSource = readSource('e2e/professional-specialty-actions.js'
 const professionalHomeHelperSource = readSource('e2e/professional-home-actions.js');
 const professionalHomeInviteCodeSource = readSource('e2e/professional-home-invite-code.e2e.test.js');
 const trainingPlanHelperSource = readSource('e2e/training-plan-actions.js');
+const professionalNutritionBuilderSource = readSource('e2e/professional-nutrition-builder.e2e.test.js');
+const professionalNutritionMealScreenSource = readSource(
+  'app/professional/nutrition/plans/[planId]/meals/[mealId].tsx'
+);
 const professionalTrainingBuilderSource = readSource('e2e/professional-training-builder.e2e.test.js');
 const studentSelfManagedBuilderSource = readSource('e2e/student-self-managed-builder.e2e.test.js');
 const accountSettingsHelperSource = readSource('e2e/account-settings-actions.js');
@@ -202,7 +206,7 @@ test('standalone specialty story distinguishes mounted fields from visible contr
   assert.doesNotMatch(standaloneSpecialtySource, /pro\.specialty\.keyboard\.done/);
 });
 
-test('student nutrition builder submits native editors before saving', () => {
+test('nutrition builders submit native editors before saving', () => {
   assert.match(
     nativeEditorHelperSource,
     /async function submitFocusedEditor\(testId\) \{\s+await waitFor\(element\(by\.id\(testId\)\)\)\.toBeFocused\(\)\.withTimeout\(2000\);\s+if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.getUiDevice\(\)\.pressEnter\(\);\s+\} else \{\s+await element\(by\.id\(testId\)\)\.tapReturnKey\(\);\s+\}\s+\}/
@@ -212,16 +216,102 @@ test('student nutrition builder submits native editors before saving', () => {
     /async function submitFocusedEditor\(testId\) \{[\s\S]*element\(by\.id\(testId\)\)\.tap\(\);[\s\S]*\}/
   );
   assert.match(
-    studentSelfManagedBuilderSource,
-    /const \{ submitFocusedEditor \} = require\('\.\/native-editor-actions'\);/
+    nativeEditorHelperSource,
+    /async function dismissFocusedEditor\(testId\) \{\s+await waitFor\(element\(by\.id\(testId\)\)\)\.toBeFocused\(\)\.withTimeout\(2000\);\s+if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.pressBack\(\);\s+\} else \{\s+await element\(by\.id\(testId\)\)\.tapReturnKey\(\);\s+\}\s+\}/
   );
   assert.match(
-    studentSelfManagedBuilderSource,
+    nativeEditorHelperSource,
     /async function waitForElementEnabled\(testId, timeoutMs = 5000\) \{[\s\S]*getAttributes\(\);[\s\S]*candidates\.some\(\(attributes\) => attributes\.enabled\)[\s\S]*\}/
   );
+
+  for (const {
+    source,
+    planName,
+    hydrationGoalMl,
+  } of [
+    {
+      source: professionalNutritionBuilderSource,
+      planName: 'E2E Builder Nutrition Plan',
+      hydrationGoalMl: '2200',
+    },
+    {
+      source: studentSelfManagedBuilderSource,
+      planName: 'E2E Student Nutrition Plan',
+      hydrationGoalMl: '2100',
+    },
+  ]) {
+    assert.match(
+      source,
+      /const \{ dismissFocusedEditor, waitForElementEnabled \} = require\('\.\/native-editor-actions'\);/
+    );
+    assert.match(
+      source,
+      new RegExp(
+        `replaceText\\('${planName}'\\);\\s+` +
+          `await expect\\(element\\(by\\.id\\('pro\\.plan\\.metadata\\.name'\\)\\)\\)\\.toHaveText\\('${planName}'\\);?\\s+` +
+          `await dismissFocusedEditor\\('pro\\.plan\\.metadata\\.name'\\);\\s+` +
+          `const hydrationInput = element\\(by\\.id\\('pro\\.plan\\.metadata\\.hydrationGoalMl'\\)\\);\\s+` +
+          `await waitFor\\(hydrationInput\\)\\.toBeVisible\\(\\)\\.withTimeout\\(5000\\);\\s+` +
+          `await hydrationInput\\.tap\\(\\);\\s+` +
+          `await waitFor\\(hydrationInput\\)\\s+` +
+          `\\.toBeFocused\\(\\)\\s+` +
+          `\\.withTimeout\\(2000\\);\\s+` +
+          `await hydrationInput\\.replaceText\\('${hydrationGoalMl}'\\);\\s+` +
+          `await expect\\(hydrationInput\\)\\.toHaveText\\('${hydrationGoalMl}'\\);\\s+` +
+          `await dismissFocusedEditor\\('pro\\.plan\\.metadata\\.hydrationGoalMl'\\);\\s+` +
+          `await waitForElementEnabled\\('pro\\.nutrition_plan\\.saveButton'\\);\\s+` +
+          `await element\\(by\\.id\\('pro\\.nutrition_plan\\.saveButton'\\)\\)\\.tap\\(\\);`
+      )
+    );
+  }
+
+  assert.doesNotMatch(
+    professionalNutritionBuilderSource,
+    /device\.tap\(\{ x: 350, y: 420 \}\);/
+  );
   assert.match(
-    studentSelfManagedBuilderSource,
-    /replaceText\('E2E Student Nutrition Plan'\);\s+await submitFocusedEditor\('pro\.plan\.metadata\.name'\);\s+await waitFor\(element\(by\.id\('pro\.plan\.metadata\.hydrationGoalMl'\)\)\)\s+\.toBeFocused\(\)\s+\.withTimeout\(2000\);\s+await element\(by\.id\('pro\.plan\.metadata\.hydrationGoalMl'\)\)\.replaceText\('2100'\);\s+await expect\(element\(by\.id\('pro\.plan\.metadata\.hydrationGoalMl'\)\)\)\.toHaveText\('2100'\);\s+await submitFocusedEditor\('pro\.plan\.metadata\.hydrationGoalMl'\);\s+await waitForElementEnabled\('pro\.nutrition_plan\.saveButton'\);\s+await element\(by\.id\('pro\.nutrition_plan\.saveButton'\)\)\.tap\(\);/
+    professionalNutritionBuilderSource,
+    /waitFor\(element\(by\.id\('tabs\.nutrition'\)\)\)\.toBeVisible\(\)\.withTimeout\(10000\);\s+await element\(by\.id\('tabs\.nutrition'\)\)\.tap\(\);/
+  );
+  assert.match(
+    professionalNutritionBuilderSource,
+    /const mealNameInput = element\(by\.id\('pro\.nutrition_plan\.addMeal\.input'\)\);\s+await mealNameInput\.replaceText\('Breakfast'\);\s+await expect\(mealNameInput\)\.toHaveText\('Breakfast'\);\s+await dismissFocusedEditor\('pro\.nutrition_plan\.addMeal\.input'\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_plan\.addMeal\.confirm'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.nutrition_plan\.screen'\)\)\s+\.scroll\(180, 'down', 0\.5, 0\.75\);\s+await element\(by\.id\('pro\.nutrition_plan\.addMeal\.confirm'\)\)\.tap\(\);/
+  );
+  assert.match(
+    professionalNutritionBuilderSource,
+    /waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\.toExist\(\)\.withTimeout\(5000\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.searchInput'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.nutrition_meal\.screen'\)\)\s+\.scroll\(240, 'down', 0\.5, 0\.75\);/
+  );
+  assert.match(
+    professionalNutritionMealScreenSource,
+    /style=\{\{ position: 'relative', top: 0, left: 0, right: 0, marginTop: 16 \}\}/
+  );
+  assert.doesNotMatch(
+    professionalNutritionMealScreenSource,
+    /style=\{\{ top: '100%', left: 0, right: 0, marginTop: 16 \}\}/
+  );
+  assert.match(
+    professionalNutritionBuilderSource,
+    /const searchInput = element\(by\.id\('pro\.nutrition_item\.searchInput'\)\);\s+await searchInput\.tap\(\);\s+await searchInput\.replaceText\('rice'\);\s+await expect\(searchInput\)\.toHaveText\('rice'\);\s+await dismissFocusedEditor\('pro\.nutrition_item\.searchInput'\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.searchResult\.e2e-food-rice'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.nutrition_meal\.screen'\)\)\s+\.scroll\(180, 'down', 0\.5, 0\.75\);/
+  );
+  assert.match(
+    professionalNutritionBuilderSource,
+    /pro\.nutrition_item\.quantity[\s\S]*?\.scroll\(180, 'down', 0\.5, 0\.75\);[\s\S]*?pro\.nutrition_item\.add[\s\S]*?\.scroll\(360, 'down', 0\.5, 0\.75\);/
+  );
+  assert.doesNotMatch(
+    professionalNutritionBuilderSource,
+    /waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\.toBeVisible\(\)/
+  );
+  assert.match(
+    professionalNutritionBuilderSource,
+    /element\(by\.id\('pro\.nutrition_item\.add'\)\)\.tap\(\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\.not\.toExist\(\)\.withTimeout\(10000\);[\s\S]*?const removeButton = element\(by\.id\('pro\.nutrition_meal\.foodRow\.E2E_Brown_Rice\.remove'\)\);\s+await waitFor\(removeButton\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await removeButton\.tap\(\);/
+  );
+  assert.match(
+    professionalNutritionBuilderSource,
+    /const deleteAction = element\(by\.text\('Delete'\)\)\.atIndex\(1\);[\s\S]*?await deleteAction\.tap\(\);/
+  );
+  assert.doesNotMatch(
+    professionalNutritionBuilderSource,
+    /device\.tap\(\{ x: 276, y: 520 \}\);/
   );
   assert.equal(
     studentSelfManagedBuilderSource.match(/device\.tap\(\{ x: 350, y: 420 \}\);/g)?.length,

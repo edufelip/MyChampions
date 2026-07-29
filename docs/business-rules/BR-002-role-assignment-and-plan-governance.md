@@ -69,6 +69,13 @@
   - Pull requests into `main` prove selected native builds/tests on self-hosted
     runners without publishing successful build artifacts; bounded failure
     diagnostics expire after one day.
+  - A selected native phase is ready to launch Detox only after its freshly
+    owned Metro process has returned and fully streamed the exact platform
+    development bundle under that phase's runtime fixture environment.
+  - The selected Android job rejects stale devices, QEMU processes, or console
+    listeners; boots `Pixel_10` on `emulator-5554`; proves the exact healthy AVD
+    and PID/UID/start-time command identity within a bounded wait; and fails if
+    any QEMU process, emulator device, or owned ports survive targeted teardown.
   - Android Detox debug traffic must use the test-owned ADB reverse tunnel;
     instrumented launches may not depend on the emulator's host-gateway route.
 - `BR-257`: Client-side compression is required before any image/media upload through the MyChampions server upload boundary.
@@ -136,6 +143,7 @@
 - `BR-340`: Professional pre-lapse warning is driven only by authoritative active-entitlement expiry plus explicit renewal, unsubscribe, or billing-issue risk. Student capacity is never treated as a billing-expiry signal.
 - `BR-341`: New `student_pro` purchases may be initiated only by locked student accounts. A professional who enters an AI gate is routed to `default_professional`, because `professional_pro` already grants AI access. Existing valid `student_pro` entitlements continue to unlock AI regardless of current role, but missing or malformed role state presents no paywall.
 - `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native bearer-session persistence keeps its existing immediate-clear behavior.
+- `BR-343`: The SC-207 add-food editor participates in the meal screen's measured layout. It may not be positioned outside the scroll extent, and native automation must use stable fields/actions and semantic confirmation copy rather than hidden coordinates.
 
 ## Constraints
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

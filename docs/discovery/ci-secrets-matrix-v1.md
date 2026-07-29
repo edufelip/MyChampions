@@ -88,7 +88,7 @@ reproducible and auditable.
 | Selected lane | Exact labels | Required host capabilities | Current evidence status |
 |---|---|---|---|
 | Web | `self-hosted, Linux, X64, mychampions-ci, mychampions-web` | Repository-scoped Linux/WSL runner; Git and outbound access; Playwright browser/system dependencies; `unzip` for pinned Bun bootstrap; capacity for Expo and the optional in-memory backend | `mychampions-ci-ubuntu` is registered and online; Bun extraction and a service-context WebKit launch probe pass; the promotion PR supplies exact-head browser-suite proof |
-| Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; `Pixel_10` AVD; Gradle wrapper support | The same `mychampions-ci-ubuntu` service is registered and online; its listener has effective `kvm` membership and the service context reports KVM usable; the promotion PR supplies exact-head emulator-suite proof |
+| Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; `Pixel_10` AVD; Gradle wrapper support | The same `mychampions-ci-ubuntu` service is registered and online; its listener has effective `kvm` membership and the service context reports KVM usable; the lane rejects stale state and preboots the AVD at health-checked `emulator-5554`; the promotion PR supplies exact-head emulator-suite proof |
 | iOS | `self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios` | Repository-scoped Apple Silicon runner; Xcode 26 with iOS SDK 26+; `iPhone 17` simulator; CocoaPods; Homebrew path | `mychampions-ios-ci-m5` is registered and online; the promotion PR supplies exact-head simulator proof |
 
 ## WSL Browser And Emulator Prerequisite Record
@@ -133,6 +133,17 @@ started from that same service manager completed `emulator -accel-check` with
 `KVM (version 12) is installed and usable`. This proves acceleration
 availability, while the promotion PR remains the required exact-head Detox
 proof.
+
+The installed Android Emulator `36.6.11` booted `Pixel_10` successfully at
+console port `5554`, and pinned Detox `20.47.0` reused that running AVD across
+sequential specs. The selected workflow therefore restarts ADB only under the
+existing job-hook lease, fails closed on stale emulator/QEMU or `5554/5555`
+state, preboots the exact AVD with snapshots disabled and read-only state, and
+bounds readiness to 120 seconds. Teardown targets `emulator-5554` and only a
+saved PID whose runner UID, Linux start time, and command line still match the
+captured owner and expected AVD/port, verifies all QEMU processes, emulator
+devices, and owned ports disappear, and stops ADB; the workflow does not create
+a second shell-level host lock.
 
 ## Shared Host Lock Operational Record
 

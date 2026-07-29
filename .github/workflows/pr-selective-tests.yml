@@ -384,16 +384,402 @@ jobs:
             app:assembleDevDebug \
             app:assembleDevDebugAndroidTest \
             -DtestBuildType=debug
-      - name: Run selected Android suites
+      - name: Run selected Android suites on a supported emulator port
         env:
           DETOX_SKIP_BUILD: 'true'
-        run: yarn test:impact:execute --platform android
-      - name: Stop Android emulators
+        run: |
+          emulator_serial=emulator-5554
+          diagnostics_dir=.artifacts/ci-diagnostics/android
+          emulator_log="$diagnostics_dir/emulator-5554.log"
+          owner_prefix="$RUNNER_TEMP/mychampions-emulator-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          owner_pid_file="$owner_prefix.pid"
+          owner_uid_file="$owner_prefix.uid"
+          owner_start_file="$owner_prefix.start"
+          emulator_pid=
+          emulator_uid="$(id -u)"
+          emulator_start_time=
+          mkdir -p "$diagnostics_dir"
+          rm -f "$owner_pid_file" "$owner_uid_file" "$owner_start_file"
+
+          timeout 10s adb kill-server || true
+          timeout 10s adb start-server
+          preflight_devices="$(timeout 5s adb devices)" || {
+            echo "Android emulator preflight could not inspect ADB devices" >&2
+            exit 1
+          }
+          if grep -Eq '^emulator-[0-9]+[[:space:]]' <<<"$preflight_devices"; then
+            echo "Android emulator preflight found a stale ADB device" >&2
+            printf '%s\n' "$preflight_devices" >&2
+            exit 1
+          fi
+          if preflight_qemu="$(timeout 5s pgrep -af '[q]emu-system' 2>/dev/null)"; then
+            echo "Android emulator preflight found a stale QEMU process" >&2
+            printf '%s\n' "$preflight_qemu" >&2
+            exit 1
+          else
+            preflight_qemu_status=$?
+            if [[ "$preflight_qemu_status" -ne 1 ]]; then
+              echo "Android emulator preflight could not inspect QEMU processes" >&2
+              exit 1
+            fi
+          fi
+          preflight_listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )')" || {
+            echo "Android emulator preflight could not inspect ports 5554/5555" >&2
+            exit 1
+          }
+          if [[ -n "$preflight_listeners" ]]; then
+            echo "Android emulator preflight found occupied ports 5554/5555" >&2
+            timeout 5s ss -H -ltnp '( sport = :5554 or sport = :5555 )' >&2 || true
+            exit 1
+          fi
+
+          emulator_pid_is_owned() {
+            local actual_start actual_uid
+            [[
+              "$emulator_pid" =~ ^[0-9]+$ &&
+              "$emulator_uid" =~ ^[0-9]+$ &&
+              "$emulator_start_time" =~ ^[0-9]+$ &&
+              -r "/proc/$emulator_pid/stat"
+            ]] || return 1
+            actual_uid="$(stat -c '%u' "/proc/$emulator_pid")" || return 1
+            actual_start="$(awk '{ print $22 }' "/proc/$emulator_pid/stat")" || return 1
+            [[
+              "$actual_uid" == "$emulator_uid" &&
+              "$actual_start" == "$emulator_start_time"
+            ]]
+          }
+          emulator_pid_matches() {
+            local command_line
+            emulator_pid_is_owned || return 1
+            command_line="$(tr '\0' ' ' < "/proc/$emulator_pid/cmdline")"
+            [[
+              "$command_line" == *"@$DETOX_ANDROID_AVD"* &&
+              "$command_line" == *"-port 5554"*
+            ]]
+          }
+          emulator_qemu_present_or_unknown() {
+            local processes status
+            if processes="$(timeout 5s pgrep -af '[q]emu-system' 2>/dev/null)"; then
+              return 0
+            else
+              status=$?
+              [[ "$status" -eq 1 ]] && return 1
+              return 0
+            fi
+          }
+          emulator_device_present_or_unknown() {
+            local devices
+            devices="$(timeout 5s adb devices 2>/dev/null)" || return 0
+            grep -Eq '^emulator-[0-9]+[[:space:]]' <<<"$devices"
+          }
+          emulator_ports_present_or_unknown() {
+            local listeners
+            listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )' 2>/dev/null)" ||
+              return 0
+            [[ -n "$listeners" ]]
+          }
+          reap_emulator_if_zombie() {
+            local process_state
+            emulator_pid_is_owned || return 0
+            process_state="$(awk '{ print $3 }' "/proc/$emulator_pid/stat")" || return 0
+            if [[ "$process_state" == "Z" ]]; then
+              wait "$emulator_pid" 2>/dev/null || true
+            fi
+          }
+          emulator_cleanup_complete() {
+            reap_emulator_if_zombie
+            ! emulator_pid_is_owned &&
+              ! emulator_qemu_present_or_unknown &&
+              ! emulator_device_present_or_unknown &&
+              ! emulator_ports_present_or_unknown
+          }
+          cleanup_emulator() {
+            local cleanup_status=0
+            if emulator_pid_matches; then
+              timeout 10s adb -s "$emulator_serial" emu kill >/dev/null 2>&1 || true
+            elif emulator_pid_is_owned; then
+              echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal its serial" >&2
+              cleanup_status=1
+            elif emulator_device_present_or_unknown; then
+              echo "Android emulator serial is present or unknown without its saved process identity; refusing to signal it" >&2
+              cleanup_status=1
+            fi
+            for _ in $(seq 1 30); do
+              if emulator_cleanup_complete; then
+                break
+              fi
+              sleep 1
+            done
+            if emulator_pid_matches; then
+              kill -TERM "$emulator_pid" 2>/dev/null || true
+            fi
+            for _ in $(seq 1 10); do
+              if emulator_cleanup_complete; then
+                break
+              fi
+              sleep 1
+            done
+            if emulator_pid_matches; then
+              kill -KILL "$emulator_pid" 2>/dev/null || true
+            fi
+            for _ in $(seq 1 5); do
+              if emulator_cleanup_complete; then
+                break
+              fi
+              sleep 1
+            done
+            if emulator_pid_is_owned; then
+              if emulator_pid_matches; then
+                echo "Android emulator PID $emulator_pid survived cleanup" >&2
+              else
+                echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal it" >&2
+              fi
+              cleanup_status=1
+            fi
+            if emulator_qemu_present_or_unknown; then
+              echo "A QEMU process survived cleanup or process state could not be inspected" >&2
+              timeout 5s pgrep -af '[q]emu-system' >&2 || true
+              cleanup_status=1
+            fi
+            if emulator_device_present_or_unknown; then
+              echo "An Android emulator device survived cleanup or ADB could not prove absence" >&2
+              cleanup_status=1
+            fi
+            if emulator_ports_present_or_unknown; then
+              echo "Android emulator ports 5554/5555 survived cleanup or could not be inspected" >&2
+              cleanup_status=1
+            fi
+            timeout 10s adb kill-server || cleanup_status=1
+            return "$cleanup_status"
+          }
+          on_exit() {
+            local command_status=$?
+            local cleanup_status=0
+            trap - EXIT INT TERM
+            set +e
+            cleanup_emulator
+            cleanup_status=$?
+            if [[ "$command_status" -ne 0 ]]; then
+              exit "$command_status"
+            fi
+            exit "$cleanup_status"
+          }
+          trap on_exit EXIT
+          trap 'exit 130' INT TERM
+
+          android_sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          emulator_path="$android_sdk_root/emulator/emulator"
+          if [[ -z "$android_sdk_root" || ! -x "$emulator_path" ]]; then
+            echo "Android emulator executable is unavailable under ANDROID_SDK_ROOT/ANDROID_HOME" >&2
+            exit 1
+          fi
+          "$emulator_path" @"$DETOX_ANDROID_AVD" \
+            -port 5554 \
+            -no-audio \
+            -no-boot-anim \
+            -no-window \
+            -no-snapshot \
+            -read-only \
+            -gpu swiftshader_indirect \
+            >"$emulator_log" 2>&1 &
+          emulator_pid=$!
+          emulator_start_time="$(awk '{ print $22 }' "/proc/$emulator_pid/stat")" || {
+            echo "Android emulator ownership metadata could not be captured" >&2
+            exit 1
+          }
+          if ! emulator_pid_matches; then
+            echo "Android emulator PID did not match the expected owner and command identity" >&2
+            exit 1
+          fi
+          printf '%s\n' "$emulator_pid" > "$diagnostics_dir/emulator-5554.pid"
+          printf '%s\n' "$emulator_pid" > "$owner_pid_file"
+          printf '%s\n' "$emulator_uid" > "$owner_uid_file"
+          printf '%s\n' "$emulator_start_time" > "$owner_start_file"
+
+          booted=false
+          boot_deadline=$((SECONDS + 120))
+          while (( SECONDS < boot_deadline )); do
+            if ! emulator_pid_matches; then
+              echo "Android emulator exited or changed identity before boot completed" >&2
+              tail -n 160 "$emulator_log" >&2
+              exit 1
+            fi
+            state="$(timeout 2s adb -s "$emulator_serial" get-state 2>/dev/null || true)"
+            complete="$(timeout 2s adb -s "$emulator_serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            avd_name="$(timeout 2s adb -s "$emulator_serial" shell getprop ro.boot.qemu.avd_name 2>/dev/null | tr -d '\r' || true)"
+            attached_emulators="$(timeout 2s adb devices 2>/dev/null | awk '/^emulator-[0-9]+[[:space:]]+device$/ { print $1 }' || true)"
+            if [[
+              "$state" == "device" &&
+              "$complete" == "1" &&
+              "$avd_name" == "$DETOX_ANDROID_AVD" &&
+              "$attached_emulators" == "$emulator_serial"
+            ]]; then
+              booted=true
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$booted" != "true" ]]; then
+            echo "Android emulator did not become healthy on port 5554" >&2
+            tail -n 160 "$emulator_log" >&2
+            exit 1
+          fi
+
+          timeout 10s adb -s "$emulator_serial" shell settings put global window_animation_scale 0
+          timeout 10s adb -s "$emulator_serial" shell settings put global transition_animation_scale 0
+          timeout 10s adb -s "$emulator_serial" shell settings put global animator_duration_scale 0
+          yarn test:impact:execute --platform android
+      - name: Verify Android emulator cleanup
         if: always()
         run: |
-          adb devices | awk '/^emulator-[0-9]+[[:space:]]/ { print $1 }' | while read -r serial; do
-            adb -s "$serial" emu kill || true
+          cleanup_failed=false
+          owner_prefix="$RUNNER_TEMP/mychampions-emulator-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          owner_pid_file="$owner_prefix.pid"
+          owner_uid_file="$owner_prefix.uid"
+          owner_start_file="$owner_prefix.start"
+          emulator_pid=
+          emulator_uid=
+          emulator_start_time=
+          if [[
+            -f "$owner_pid_file" &&
+            -f "$owner_uid_file" &&
+            -f "$owner_start_file"
+          ]]; then
+            IFS= read -r emulator_pid < "$owner_pid_file"
+            IFS= read -r emulator_uid < "$owner_uid_file"
+            IFS= read -r emulator_start_time < "$owner_start_file"
+            if [[
+              ! "$emulator_pid" =~ ^[0-9]+$ ||
+              ! "$emulator_uid" =~ ^[0-9]+$ ||
+              ! "$emulator_start_time" =~ ^[0-9]+$
+            ]]; then
+              echo "Android emulator ownership metadata is invalid" >&2
+              cleanup_failed=true
+              emulator_pid=
+              emulator_uid=
+              emulator_start_time=
+            fi
+          elif [[
+            -f "$owner_pid_file" ||
+            -f "$owner_uid_file" ||
+            -f "$owner_start_file"
+          ]]; then
+            echo "Android emulator ownership metadata is incomplete" >&2
+            cleanup_failed=true
+          fi
+
+          emulator_pid_is_owned() {
+            local actual_start actual_uid
+            [[
+              "$emulator_pid" =~ ^[0-9]+$ &&
+              "$emulator_uid" =~ ^[0-9]+$ &&
+              "$emulator_start_time" =~ ^[0-9]+$ &&
+              -r "/proc/$emulator_pid/stat"
+            ]] || return 1
+            actual_uid="$(stat -c '%u' "/proc/$emulator_pid")" || return 1
+            actual_start="$(awk '{ print $22 }' "/proc/$emulator_pid/stat")" || return 1
+            [[
+              "$actual_uid" == "$emulator_uid" &&
+              "$actual_start" == "$emulator_start_time"
+            ]]
+          }
+          emulator_pid_matches() {
+            local command_line
+            emulator_pid_is_owned || return 1
+            command_line="$(tr '\0' ' ' < "/proc/$emulator_pid/cmdline")"
+            [[
+              "$command_line" == *"@$DETOX_ANDROID_AVD"* &&
+              "$command_line" == *"-port 5554"*
+            ]]
+          }
+          emulator_qemu_present_or_unknown() {
+            local processes status
+            if processes="$(timeout 5s pgrep -af '[q]emu-system' 2>/dev/null)"; then
+              return 0
+            else
+              status=$?
+              [[ "$status" -eq 1 ]] && return 1
+              return 0
+            fi
+          }
+          emulator_device_present_or_unknown() {
+            local devices
+            devices="$(timeout 5s adb devices 2>/dev/null)" || return 0
+            grep -Eq '^emulator-[0-9]+[[:space:]]' <<<"$devices"
+          }
+          emulator_ports_present_or_unknown() {
+            local listeners
+            listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )' 2>/dev/null)" ||
+              return 0
+            [[ -n "$listeners" ]]
+          }
+          emulator_cleanup_complete() {
+            ! emulator_pid_is_owned &&
+              ! emulator_qemu_present_or_unknown &&
+              ! emulator_device_present_or_unknown &&
+              ! emulator_ports_present_or_unknown
+          }
+
+          if emulator_pid_matches; then
+            timeout 10s adb -s emulator-5554 emu kill >/dev/null 2>&1 || true
+            cleanup_failed=true
+          elif emulator_pid_is_owned; then
+            echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal its serial" >&2
+            cleanup_failed=true
+          elif emulator_device_present_or_unknown; then
+            echo "Android emulator serial is present or unknown without its saved process identity; refusing to signal it" >&2
+            cleanup_failed=true
+          fi
+          if emulator_pid_matches; then
+            kill -TERM "$emulator_pid" 2>/dev/null || true
+            cleanup_failed=true
+          elif emulator_pid_is_owned; then
+            echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal it" >&2
+            cleanup_failed=true
+          fi
+          for _ in $(seq 1 20); do
+            if emulator_cleanup_complete; then
+              break
+            fi
+            sleep 1
           done
+          if emulator_pid_matches; then
+            kill -KILL "$emulator_pid" 2>/dev/null || true
+            cleanup_failed=true
+          fi
+          for _ in $(seq 1 10); do
+            if emulator_cleanup_complete; then
+              break
+            fi
+            sleep 1
+          done
+
+          if emulator_pid_is_owned; then
+            if emulator_pid_matches; then
+              echo "Android emulator PID $emulator_pid survived final cleanup" >&2
+            else
+              echo "Owned Android emulator PID $emulator_pid survived with an unexpected command identity" >&2
+            fi
+            cleanup_failed=true
+          fi
+          if emulator_qemu_present_or_unknown; then
+            echo "A QEMU process survived final cleanup or process state could not be inspected" >&2
+            timeout 5s pgrep -af '[q]emu-system' >&2 || true
+            cleanup_failed=true
+          fi
+          if emulator_device_present_or_unknown; then
+            echo "emulator-5554 survived final cleanup or ADB could not prove absence" >&2
+            cleanup_failed=true
+          fi
+          if emulator_ports_present_or_unknown; then
+            echo "Android emulator ports 5554/5555 survived final cleanup or could not be inspected" >&2
+            cleanup_failed=true
+          fi
+          timeout 10s adb kill-server || cleanup_failed=true
+          rm -f "$owner_pid_file" "$owner_uid_file" "$owner_start_file"
+          if [[ "$cleanup_failed" == "true" ]]; then
+            exit 1
+          fi
       - name: Upload bounded Android failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

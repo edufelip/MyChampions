@@ -30,7 +30,11 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   oversized, unresolved, merge-queue, scheduled, release/hotfix, or explicit-full
   inputs select the complete registered CI matrix. Every selected executable
   profile must pass; native jobs build once while freshly owned Metro phases
-  override or clear embedded dev-only fixture values. Contradictory image-upload
+  override or clear embedded dev-only fixture values. After Metro reports
+  listening, the executor fully consumes the exact iOS or Android Expo
+  development bundle within a bounded four-minute request window before Detox
+  launches; timeout, response, body-stream, or Metro-exit failures fail the
+  phase instead of consuming the test's first UI wait. Contradictory image-upload
   sheet and fixture-success expectations execute in separate scenario-gated
   phases, and authenticated runs reject a missing or invalid scenario. Android
   instrumentation persists `debug_http_host=localhost:8081` before React Native
@@ -39,7 +43,15 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   Native selective phases
   preserve warning diagnostics without allowing the development LogBox overlay
   to intercept Detox actions, and tests bring compact-viewport targets into view
-  before interaction. Metro cleanup targets and
+  before interaction. The SC-215 quick-log story uses atomic grams replacement,
+  an exact-value assertion, explicit platform keyboard dismissal, and stable
+  element targets. The Android job starts with no stale device, QEMU process, or
+  `5554/5555` listener; preboots the declared AVD on `emulator-5554`; requires
+  the saved PID, runner UID, Linux start time, expected AVD/port command, exact
+  device state, completed boot, and AVD name within 120 seconds; and fails if
+  any QEMU process, emulator device, validated PID, or owned port survives
+  cleanup.
+  Metro cleanup targets and
   verifies runner-owned members even when a mixed-UID process group makes group
   signaling return `EPERM`; surviving runner-owned members or an occupied Metro
   port fail the lane. The Android lane must pass native lint/unit/build checks,

@@ -1,7 +1,6 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const { dismissFocusedEditor, waitForElementEnabled } = require('./native-editor-actions');
 const { tapCredentialSkip } = require('./professional-specialty-actions');
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function selectProfessionalRole() {
   await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
@@ -35,15 +34,25 @@ describeWithE2EAuthSession('Professional Nutrition Builder', () => {
     await selectProfessionalRole();
     await addNutritionistSpecialty();
 
+    await waitFor(element(by.id('tabs.nutrition'))).toBeVisible().withTimeout(10000);
     await element(by.id('tabs.nutrition')).tap();
     await waitFor(element(by.id('pro.library.nutrition.create'))).toBeVisible().withTimeout(10000);
     await element(by.id('pro.library.nutrition.create')).tap();
 
     await waitFor(element(by.id('pro.nutrition_plan.screen'))).toBeVisible().withTimeout(10000);
     await element(by.id('pro.plan.metadata.name')).replaceText('E2E Builder Nutrition Plan');
-    await device.tap({ x: 350, y: 420 });
-    await element(by.id('pro.plan.metadata.hydrationGoalMl')).replaceText('2200');
-    await device.tap({ x: 350, y: 420 });
+    await expect(element(by.id('pro.plan.metadata.name'))).toHaveText('E2E Builder Nutrition Plan');
+    await dismissFocusedEditor('pro.plan.metadata.name');
+    const hydrationInput = element(by.id('pro.plan.metadata.hydrationGoalMl'));
+    await waitFor(hydrationInput).toBeVisible().withTimeout(5000);
+    await hydrationInput.tap();
+    await waitFor(hydrationInput)
+      .toBeFocused()
+      .withTimeout(2000);
+    await hydrationInput.replaceText('2200');
+    await expect(hydrationInput).toHaveText('2200');
+    await dismissFocusedEditor('pro.plan.metadata.hydrationGoalMl');
+    await waitForElementEnabled('pro.nutrition_plan.saveButton');
     await element(by.id('pro.nutrition_plan.saveButton')).tap();
 
     await waitFor(element(by.id('pro.library.nutrition.row.e2e-nutrition-builder-plan-1')))
@@ -55,8 +64,14 @@ describeWithE2EAuthSession('Professional Nutrition Builder', () => {
     await waitFor(element(by.id('pro.nutrition_plan.addMeal'))).toBeVisible().withTimeout(5000);
     await element(by.id('pro.nutrition_plan.addMeal')).tap();
     await waitFor(element(by.id('pro.nutrition_plan.addMeal.input'))).toBeVisible().withTimeout(5000);
-    await element(by.id('pro.nutrition_plan.addMeal.input')).replaceText('Breakfast');
-    await element(by.id('pro.nutrition_plan.addMeal.input')).tapReturnKey();
+    const mealNameInput = element(by.id('pro.nutrition_plan.addMeal.input'));
+    await mealNameInput.replaceText('Breakfast');
+    await expect(mealNameInput).toHaveText('Breakfast');
+    await dismissFocusedEditor('pro.nutrition_plan.addMeal.input');
+    await waitFor(element(by.id('pro.nutrition_plan.addMeal.confirm')))
+      .toBeVisible()
+      .whileElement(by.id('pro.nutrition_plan.screen'))
+      .scroll(180, 'down', 0.5, 0.75);
     await element(by.id('pro.nutrition_plan.addMeal.confirm')).tap();
 
     await waitFor(element(by.id('pro.nutrition_plan.mealRow.Breakfast'))).toBeVisible().withTimeout(10000);
@@ -66,24 +81,52 @@ describeWithE2EAuthSession('Professional Nutrition Builder', () => {
     await expect(element(by.id('pro.nutrition_meal.total.calories'))).toHaveText('0 kcal');
     await element(by.id('pro.nutrition_meal.addFood')).tap();
 
-    await waitFor(element(by.id('pro.nutrition_item.form'))).toBeVisible().withTimeout(5000);
-    await element(by.id('pro.nutrition_item.searchInput')).replaceText('rice');
-    await element(by.id('pro.nutrition_item.searchButton')).tap();
-    await waitFor(element(by.id('pro.nutrition_item.searchResult.e2e-food-rice'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.nutrition_item.form'))).toExist().withTimeout(5000);
+    await waitFor(element(by.id('pro.nutrition_item.searchInput')))
+      .toBeVisible()
+      .whileElement(by.id('pro.nutrition_meal.screen'))
+      .scroll(240, 'down', 0.5, 0.75);
+    const searchInput = element(by.id('pro.nutrition_item.searchInput'));
+    await searchInput.tap();
+    await searchInput.replaceText('rice');
+    await expect(searchInput).toHaveText('rice');
+    await dismissFocusedEditor('pro.nutrition_item.searchInput');
+    await waitFor(element(by.id('pro.nutrition_item.searchResult.e2e-food-rice')))
+      .toBeVisible()
+      .whileElement(by.id('pro.nutrition_meal.screen'))
+      .scroll(180, 'down', 0.5, 0.75);
     await element(by.id('pro.nutrition_item.searchResult.e2e-food-rice')).tap();
 
-    await waitFor(element(by.id('pro.nutrition_item.selectedFood'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('pro.nutrition_item.selectedFood')))
+      .toBeVisible()
+      .whileElement(by.id('pro.nutrition_meal.screen'))
+      .scroll(180, 'down', 0.5, 0.75);
+    await waitFor(element(by.id('pro.nutrition_item.quantity')))
+      .toBeVisible()
+      .whileElement(by.id('pro.nutrition_meal.screen'))
+      .scroll(180, 'down', 0.5, 0.75);
     await expect(element(by.id('pro.nutrition_item.quantity'))).toHaveText('100');
+    await waitFor(element(by.id('pro.nutrition_item.add')))
+      .toBeVisible()
+      .whileElement(by.id('pro.nutrition_meal.screen'))
+      .scroll(360, 'down', 0.5, 0.75);
     await element(by.id('pro.nutrition_item.add')).tap();
 
-    await waitFor(element(by.id('pro.nutrition_meal.foodRow.E2E_Brown_Rice'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.nutrition_item.form'))).not.toExist().withTimeout(10000);
+    await waitFor(element(by.id('pro.nutrition_meal.foodRow.E2E_Brown_Rice')))
+      .toBeVisible()
+      .whileElement(by.id('pro.nutrition_meal.screen'))
+      .scroll(240, 'up', 0.5, 0.25);
     await expect(element(by.id('pro.nutrition_meal.total.calories'))).toHaveText('111 kcal');
 
-    await element(by.id('pro.nutrition_meal.foodRow.E2E_Brown_Rice.remove')).tap();
-    await sleep(750);
-    await device.tap({ x: 276, y: 520 });
+    const removeButton = element(by.id('pro.nutrition_meal.foodRow.E2E_Brown_Rice.remove'));
+    await waitFor(removeButton).toBeVisible().withTimeout(5000);
+    await removeButton.tap();
+    const deleteAction = element(by.text('Delete')).atIndex(1);
+    await waitFor(deleteAction).toBeVisible().withTimeout(5000);
+    await deleteAction.tap();
 
-    await waitFor(element(by.id('pro.nutrition_meal.foodRow.E2E_Brown_Rice'))).not.toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.nutrition_meal.foodRow.E2E_Brown_Rice'))).not.toExist().withTimeout(10000);
     await expect(element(by.id('pro.nutrition_meal.total.calories'))).toHaveText('0 kcal');
   });
 });

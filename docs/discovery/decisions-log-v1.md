@@ -466,6 +466,13 @@
     phase owns a fresh Metro process and explicit app/test environment. Runtime
     phase values, including explicit empty clears, take precedence over fixture
     values embedded when the native debug binary is built once per platform job.
+    Metro's status endpoint proves only that the server is listening: before
+    Detox launches, the executor must fetch and fully consume the current
+    platform's Expo development bundle under that phase's exact environment,
+    with a four-minute bounded request window that tolerates a healthy cold
+    transform on the shared host. A timeout, non-success response, missing,
+    empty, or interrupted body, or Metro exit during prewarming fails the phase;
+    the bundle is never shared across fresh fixture phases.
     Contradictory story states execute in separate scenario-gated phases; AI meal
     analysis proves the locked state only when both AI and professional
     entitlements are lapsed, then proves success in a separate active-entitlement
@@ -476,6 +483,18 @@
     scenario fails an authenticated direct run. The student dashboard and
     relationship native stories launch a fresh app per case, and Android CI specs
     never reload React Native across Detox's idling registry.
+    The SC-215 custom-meal quick-log story atomically replaces and asserts its
+    controlled grams value, dismisses the active keyboard through the
+    platform-owned path, and uses stable element identifiers rather than
+    coordinate fallbacks.
+    The WSL lane rejects stale Android emulator state, restarts ADB, and
+    preboots `Pixel_10` at console port `5554` before selected Detox execution.
+    Its 120-second gate revalidates the saved PID, runner UID, Linux process
+    start time, expected AVD/port command identity, exact `emulator-5554`
+    readiness, `sys.boot_completed=1`, and reported AVD name. Detox then reuses
+    that running AVD, while both in-step and always-run cleanup target only its
+    exact serial and revalidated process and fail if any QEMU process, emulator
+    device, or `5554/5555` listener survives.
     The executor explicitly suppresses only the in-app development LogBox
     notification layer during native E2E phases while warnings remain in runner
     logs, and compact-viewport tests scroll stable targets into view before
@@ -500,6 +519,15 @@
     full matrix provide ongoing omission detection. Any reproducible selection
     miss immediately sets `CI_FORCE_FULL=true` until ownership or dependency
     metadata is corrected.
+
+- `D-194`: SC-207 meal-item authoring renders the tall add-food editor in normal
+  measured page flow rather than as an absolute child outside the parent scroll
+  extent. Compact native clients can therefore scroll search, result selection,
+  quantity review, and Add into view. Deterministic coverage asserts the exact
+  meal name and dismisses its editor without synthetic Android Enter, then
+  asserts the exact search query and waits for the debounced result after
+  dismissing Gboard on Android or uses iOS Return, and uses the semantic
+  localized removal confirmation instead of screen coordinates.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

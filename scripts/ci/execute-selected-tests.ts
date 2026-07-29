@@ -8,6 +8,7 @@ import {
   type CommandInvocation,
   type SelectivePlatform,
 } from './selective-execution';
+import { prewarmMetroBundle } from './metro-bundle-prewarm';
 import { stopMetroProcessGroup } from './metro-process-group';
 
 function valueAfter(flag: string): string | undefined {
@@ -147,6 +148,17 @@ async function runWithFreshMetro(
 
   try {
     await waitForMetro(port, metro);
+    const bundleByteLength = await prewarmMetroBundle(invocation.metro!);
+    if (metro.exitCode !== null || metro.signalCode !== null) {
+      throw new Error(
+        `Metro exited with ${
+          metro.exitCode === null ? `signal ${metro.signalCode}` : `code ${metro.exitCode}`
+        } after prewarming the ${invocation.metro!.platform} bundle`
+      );
+    }
+    console.log(
+      `Prewarmed ${invocation.metro!.platform} Metro bundle (${bundleByteLength} bytes)`
+    );
     await runChild(invocation.command, invocation.args, cwd, env);
   } finally {
     let cleanupFailed = false;

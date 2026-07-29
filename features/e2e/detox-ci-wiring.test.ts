@@ -137,3 +137,25 @@ test('Android Detox targets the committed dev and production flavors on an avail
   assert.match(androidSettings, /new File\(detoxPackageDir, 'android\/detox'\)/);
   assert.doesNotMatch(androidSettings, /\.\.\/node_modules\/detox/);
 });
+
+test('selective native execution fully prewarms Metro before Detox launches', () => {
+  const executor = readFileSync(
+    join(root, 'scripts', 'ci', 'execute-selected-tests.ts'),
+    'utf8'
+  );
+  const readinessIndex = executor.indexOf('await waitForMetro(port, metro);');
+  const prewarmIndex = executor.indexOf(
+    'await prewarmMetroBundle(invocation.metro!)'
+  );
+  const detoxIndex = executor.indexOf(
+    'await runChild(invocation.command, invocation.args, cwd, env);'
+  );
+
+  assert.notEqual(readinessIndex, -1, 'executor must wait for Metro readiness');
+  assert.notEqual(prewarmIndex, -1, 'executor must fully prewarm the native bundle');
+  assert.notEqual(detoxIndex, -1, 'executor must launch the selected Detox command');
+  assert.ok(
+    readinessIndex < prewarmIndex && prewarmIndex < detoxIndex,
+    'executor must finish Metro bundle prewarming before Detox launches'
+  );
+});

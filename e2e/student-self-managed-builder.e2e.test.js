@@ -1,28 +1,6 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
-const { submitFocusedEditor } = require('./native-editor-actions');
+const { dismissFocusedEditor, waitForElementEnabled } = require('./native-editor-actions');
 const { scrollToTrainingPlanSave } = require('./training-plan-actions');
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function waitForElementEnabled(testId, timeoutMs = 5000) {
-  const deadline = Date.now() + timeoutMs;
-  let lastAttributes;
-
-  do {
-    lastAttributes = await element(by.id(testId)).getAttributes();
-    const candidates = Array.isArray(lastAttributes.elements)
-      ? lastAttributes.elements
-      : [lastAttributes];
-    if (candidates.some((attributes) => attributes.enabled)) {
-      return;
-    }
-    await sleep(100);
-  } while (Date.now() < deadline);
-
-  throw new Error(
-    `Timed out waiting for ${testId} to become enabled: ${JSON.stringify(lastAttributes)}`
-  );
-}
 
 async function selectStudentRole() {
   await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
@@ -48,13 +26,17 @@ describeWithE2EAuthSession('Student Self-Managed Builder', () => {
     await device.openURL({ url: 'mychampions://student/nutrition/plans/new' });
     await waitFor(element(by.id('pro.nutrition_plan.screen'))).toBeVisible().withTimeout(10000);
     await element(by.id('pro.plan.metadata.name')).replaceText('E2E Student Nutrition Plan');
-    await submitFocusedEditor('pro.plan.metadata.name');
-    await waitFor(element(by.id('pro.plan.metadata.hydrationGoalMl')))
+    await expect(element(by.id('pro.plan.metadata.name'))).toHaveText('E2E Student Nutrition Plan');
+    await dismissFocusedEditor('pro.plan.metadata.name');
+    const hydrationInput = element(by.id('pro.plan.metadata.hydrationGoalMl'));
+    await waitFor(hydrationInput).toBeVisible().withTimeout(5000);
+    await hydrationInput.tap();
+    await waitFor(hydrationInput)
       .toBeFocused()
       .withTimeout(2000);
-    await element(by.id('pro.plan.metadata.hydrationGoalMl')).replaceText('2100');
-    await expect(element(by.id('pro.plan.metadata.hydrationGoalMl'))).toHaveText('2100');
-    await submitFocusedEditor('pro.plan.metadata.hydrationGoalMl');
+    await hydrationInput.replaceText('2100');
+    await expect(hydrationInput).toHaveText('2100');
+    await dismissFocusedEditor('pro.plan.metadata.hydrationGoalMl');
     await waitForElementEnabled('pro.nutrition_plan.saveButton');
     await element(by.id('pro.nutrition_plan.saveButton')).tap();
 

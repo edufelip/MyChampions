@@ -104,6 +104,11 @@ test('Android uses one dev-debug build and never rebuilds per suite', () => {
     assert.equal(invocation.env.EXPO_PUBLIC_ENV, 'dev');
     assert.equal(invocation.env.CI_REQUIRE_E2E_EXECUTION, 'true');
     assert.equal(invocation.env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX, 'true');
+    assert.deepEqual(invocation.metro, {
+      port: 8081,
+      platform: 'android',
+      appId: 'com.edufelip.mychampions.dev',
+    });
   }
 });
 
@@ -134,6 +139,14 @@ test('DETOX_SKIP_BUILD transfers the single native build to the workflow', () =>
     'ios.sim.debug',
   ]);
   assert.equal(plan.invocations.some((invocation) => invocation.args.includes('build')), false);
+  assert.ok(
+    plan.invocations.every(
+      (invocation) =>
+        invocation.metro?.port === 8081 &&
+        invocation.metro.platform === 'ios' &&
+        invocation.metro.appId === 'com.edufelip.mychampions.dev'
+    )
+  );
 });
 
 test('auth profile isolates entry, authenticated, and outdated-terms phases', () => {

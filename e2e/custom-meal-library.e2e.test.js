@@ -15,22 +15,23 @@ async function openCustomMealsScreen() {
   await waitFor(element(by.id('meal.library.screen'))).toBeVisible().withTimeout(10000);
 }
 
-async function dismissQuickLogKeyboardIfVisible() {
-  try {
-    await waitFor(element(by.id('meal.library.quickLog.keyboard.done'))).toBeVisible().withTimeout(3000);
-    await element(by.id('meal.library.quickLog.keyboard.done')).tap();
-    await sleep(750);
-  } catch (_error) {
-    // Keyboard is already dismissed or the accessory is unavailable on this platform.
+async function dismissQuickLogKeyboard() {
+  if (device.getPlatform() === 'android') {
+    await device.pressBack();
+    return;
   }
+
+  const doneButton = element(by.id('meal.library.quickLog.keyboard.done'));
+  await waitFor(doneButton).toBeVisible().withTimeout(3000);
+  await sleep(750);
+  await expect(doneButton).toBeVisible();
+  await doneButton.tap();
 }
 
 async function tapQuickLogConfirm() {
-  try {
-    await element(by.id('meal.library.quickLog.cta.confirm')).tap();
-  } catch (_error) {
-    await device.tap({ x: 168, y: 631 });
-  }
+  const confirmButton = element(by.id('meal.library.quickLog.cta.confirm'));
+  await waitFor(confirmButton).toBeVisible().withTimeout(5000);
+  await confirmButton.tap();
 }
 
 async function openQuickLogPanel() {
@@ -79,10 +80,12 @@ describeWithE2EAuthSession('Custom Meal Library', () => {
     await tapQuickLogConfirm();
     await waitFor(element(by.id('meal.library.quickLog.error'))).toBeVisible().withTimeout(5000);
 
-    await element(by.id('meal.library.quickLog.input')).tap();
-    await element(by.id('meal.library.quickLog.input')).typeText(customMealLogGrams);
-    await dismissQuickLogKeyboardIfVisible();
+    const gramsInput = element(by.id('meal.library.quickLog.input'));
+    await gramsInput.tap();
+    await gramsInput.replaceText(customMealLogGrams);
+    await expect(gramsInput).toHaveText(customMealLogGrams);
+    await dismissQuickLogKeyboard();
     await tapQuickLogConfirm();
-    await waitFor(element(by.id('meal.library.quickLog.panel'))).not.toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('meal.library.quickLog.panel'))).not.toExist().withTimeout(10000);
   });
 });

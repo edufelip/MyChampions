@@ -264,7 +264,7 @@
 - Trigger: Professional wants to reuse plan patterns across multiple students.
 - Preconditions: Professional authenticated with relevant specialty; target students available.
 - Main flow:
-  1. Professional creates named predefined plan in private library (for example, `Caloric Deficit A`).
+  1. Professional creates named predefined plan in private library (for example, `Caloric Deficit A`). In nutrition meal editing, the add-food editor expands in measured page flow so search, quantity, add, and removal confirmation remain reachable on compact native viewports.
   2. Professional selects one predefined plan and chooses multiple students for assignment.
   3. System clones plan into per-student draft copies.
   4. Professional fine-tunes each student draft as needed.

@@ -87,9 +87,9 @@
 | TC-273 | AI Meal Photo — Analysis Failure | User captures photo; MyChampions server analyzer returns error (network/quota/unrecognizable) | Analysis completes with error | Reason-specific recoverable error is shown; form fields remain available for manual entry |
 | TC-273A | AI Meal Photo — Permission Denied | User opens the AI camera or photo-library action and denies the requested native permission | Permission request completes without launching the picker | Localized device-settings guidance is shown; no analysis is started; manual entry remains available |
 | TC-274 | AI Meal Photo — Optional Attachment | User completes analysis in SC-214 | User declines to attach the captured photo | Meal saves without image; no error is shown |
-| TC-275 | SC-207 Create Named Nutrition Plan | Professional on plan builder | Enter plan name, calorie/macro targets, save | Plan appears in predefined nutrition library |
+| TC-275 | SC-207 Create Named Nutrition Plan | Professional on plan builder; native automation has the platform editor available | Enter and assert the exact plan name; dismiss Gboard with native Back or iOS with Return; explicitly focus, enter, and assert hydration; dismiss that editor through the same platform path; wait for save to become enabled; and save | The test does not depend on Android synthetic Enter, implicit cross-field focus, or screen-coordinate taps; the exact named plan appears in the predefined nutrition library |
 | TC-276 | SC-207 Validation — Name Required | Professional on plan builder | Attempt save with empty name | Validation error shown; save blocked |
-| TC-277 | SC-207 Add/Remove Food Item | Professional editing nutrition plan | Add food item then remove it | Item list reflects add and remove operations |
+| TC-277 | SC-207 Add/Remove Food Item | Professional editing nutrition plan on a compact native viewport | Enter and assert the exact meal name; dismiss its editor with Android Back or iOS Return; scroll to and confirm the meal; open the in-flow add-food editor; scroll to search; assert the exact query and dismiss Gboard before waiting for the debounced Android result or submit through iOS Return; scroll to and select the result; review quantity; scroll to Add; wait for the editor to leave the native hierarchy and the new row remove action to become visible; then remove the item through the semantic confirmation action | Every actionable control is reachable in measured scroll content without synthetic Android Enter or coordinate taps; stale editor elements cannot intercept the row action; item list and totals reflect add and remove operations |
 | TC-278 | SC-208 Create Named Training Plan With Session | Professional on training plan builder | Enter plan name, add session with one custom item, save | Plan appears in predefined training library |
 | TC-279 | SC-208 Validation — Name Required | Professional on training plan builder | Attempt save with empty name | Validation error shown; save blocked |
 | TC-280 | SC-207/SC-208 Starter Template Clone | Professional opens starter template | Begin editing | Editable cloned draft created; original starter unchanged |
@@ -132,5 +132,20 @@
 | TC-331 | Browser Sign-Out And Account-Switch Serialization | Browser account A has an active cookie session; delay the sign-out response and immediately attempt email or social authentication as account B | Observe the sign-out barrier, request order, active access token, and the failure path | Account A clears locally immediately; account B's authentication request does not start until sign-out settles; only account B becomes active afterward; a failed sign-out releases the barrier and does not deadlock later authentication |
 
 ## Notes
+- TC-275 native coverage asserts the exact controlled name and hydration values,
+  dismisses each focused editor through Android Back or iOS Return, explicitly
+  focuses hydration rather than relying on an asynchronous keyboard handoff,
+  waits for the nutrition tab transition and save control before tapping, and
+  never uses Android's synthetic Enter or a screen-coordinate tap to dismiss
+  either keyboard.
+- TC-277 native coverage asserts the exact meal name, dismisses the editor
+  through Android Back or iOS Return, scrolls the mounted add-meal confirmation
+  fully into the compact viewport, and only then taps it.
+  The tall add-food form participates in measured page flow; coverage scrolls
+  search, result, quantity, and Add into view, asserts the exact search query
+  and waits for the debounced result after dismissing Gboard on Android or uses
+  iOS Return, waits for the editor to leave the native hierarchy before
+  targeting the visible new-row remove action, and selects the semantic removal
+  confirmation without coordinate fallbacks.
 - API contract tests are required once food/calorie provider is selected.
 - Add negative-path tests for invalid macro totals and incomplete plan assignments.
