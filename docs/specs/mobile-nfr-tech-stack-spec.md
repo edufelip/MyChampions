@@ -34,7 +34,9 @@ Define non-functional architecture constraints and technology options for the mo
 - Core MVP screens must meet accessibility baseline (contrast, dynamic text scaling, focus order, screen-reader labels).
 - QA distribution policy:
   - Release branch iOS builds are distributed through TestFlight.
-  - Pull requests targeting `develop` publish CI build artifacts from native toolchain jobs.
+  - Pull requests targeting `main` run feature-aware native toolchain jobs on the
+    exact head. Successful binaries remain ephemeral; only bounded one-day
+    failure diagnostics may be uploaded.
 - Post-compression media constraints:
   - max upload size: `1.5 MB`.
   - max image dimension: `1600 px` on longest side.
@@ -118,10 +120,12 @@ Feature-aware test selection uses `config/test-impact.json` plus
 `scripts/ci/resolve-test-impact.ts`. The resolver combines path ownership,
 declared reverse feature dependencies, and TypeScript reverse import consumers.
 It fails closed to the full registered UI matrix for shared-global, tooling,
-native, invalid, unknown, or unresolved changes. The first rollout stage is
-shadow-only: current PR workflows remain authoritative while the selective
-workflow records proposed Detox and Playwright matrices and universal fast
-checks remain required.
+native, invalid, unknown, or unresolved changes. Under D-193, the selective
+workflow is the authoritative exact-head pull-request gate: universal fast checks
+always run, affected Playwright and both-platform Detox suites execute on
+dedicated self-hosted lanes, and workflow/tooling, scheduled, merge-queue,
+release/hotfix, or explicit-full inputs select the complete registered matrix.
+Successful runs create no GitHub Actions artifact or cache.
 
 ## High-Level Architecture (Target)
 1. Expo/React Native client handles UI, routing, and offline read models.
@@ -146,7 +150,7 @@ Current local server contract: root-level `server/` plus this migration task car
 ## Traceability Links
 - Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`, `FR-271`.
 - Business rules: `BR-253`, `BR-254`, `BR-255`, `BR-256`, `BR-257`, `BR-258`, `BR-259`, `BR-260`, `BR-261`, `BR-275`, `BR-284`, `BR-285`.
-- Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-516`.
+- Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-540`.
 - Test cases: `TC-501`, `TC-502`, `TC-503`, `TC-504`, `TC-505`, `TC-506`, `TC-507`, `TC-508`, `TC-509`, `TC-510`, `TC-511`, `TC-512`, `TC-513`, `TC-514`, `TC-515`, `TC-516`, `TC-517`, `TC-518`.
 - Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
 

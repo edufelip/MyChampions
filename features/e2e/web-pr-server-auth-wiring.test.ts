@@ -12,8 +12,8 @@ test('web PR workflow runs the real cookie-session browser contract against its 
     scripts?: Record<string, string>;
   };
 
-  assert.match(workflow, /- 'playwright\.server\.config\.ts'/);
-  assert.match(workflow, /- 'e2e\/web-server\/\*\*'/);
+  assert.match(workflow, /on:\s*\n\s+workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /^\s{2}pull_request:/m);
   assert.match(workflow, /repository: edufelip\/mychampions-api/);
   assert.match(workflow, /path: node_modules\/\.ci-my-champions-api/);
   assert.match(workflow, /uses: oven-sh\/setup-bun@v2[\s\S]*?bun-version: 1\.3\.10/);

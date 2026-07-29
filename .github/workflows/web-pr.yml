@@ -1,22 +1,7 @@
 name: Web build validation
 
 on:
-  pull_request:
-    paths:
-      - 'app/**'
-      - 'components/**'
-      - 'features/**'
-      - 'hooks/**'
-      - 'localization/**'
-      - 'app.config.ts'
-      - 'package.json'
-      - 'yarn.lock'
-      - 'playwright.config.ts'
-      - 'playwright.server.config.ts'
-      - 'e2e/web/**'
-      - 'e2e/web-server/**'
-      - 'scripts/run-web-e2e-batch.mjs'
-      - '.github/workflows/web-pr.yml'
+  workflow_dispatch:
 
 jobs:
   export-web:
@@ -28,7 +13,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
       - run: yarn install --frozen-lockfile --no-progress
       - id: backend-contract-ref
         name: Resolve coordinated backend contract ref
@@ -57,12 +41,6 @@ jobs:
       - run: yarn lint
       - run: yarn tsc --noEmit
       - run: yarn web:export
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mychampions-web-export
-          path: dist/web
-          if-no-files-found: error
-          retention-days: 7
       - run: yarn playwright install --with-deps chromium firefox webkit
       - run: yarn test:e2e:web
       - name: Run server-backed browser session E2E

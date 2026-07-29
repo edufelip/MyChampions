@@ -105,7 +105,10 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-193`: CI/CD and release pipelines shall not depend on EAS services for build/distribution.
 - `FR-194`: Tailwind-style UI implementation in React Native shall use NativeWind for MVP.
 - `FR-195`: iOS QA distribution on release branches shall publish builds through TestFlight.
-- `FR-196`: Pull requests targeting `develop` shall run native CI checks and publish QA build artifacts from the workflow.
+- `FR-196`: Pull requests targeting `main` shall run the required feature-aware
+  native and web CI checks on the exact head. Successful build outputs shall stay
+  ephemeral on self-hosted runners; only bounded one-day failure diagnostics may
+  be uploaded.
 - `FR-197`: Image/media uploads shall apply mandatory client-side compression before sending media through the MyChampions server upload boundary.
 - `FR-198`: Runtime crash/ANR monitoring provider shall be selected and configured before production release.
 - `FR-199`: Non-crash monitoring tooling (for example Sentry) is out of MVP scope.

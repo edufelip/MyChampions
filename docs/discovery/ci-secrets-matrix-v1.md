@@ -1,26 +1,57 @@
 # CI Secrets Matrix V1
 
 ## Purpose
-Define all GitHub Actions secrets required by `.github/workflows/` so CI/CD setup is reproducible and auditable.
+Define the GitHub Actions secrets, repository variables, runner capabilities,
+and storage boundaries required by `.github/workflows/` so CI/CD setup is
+reproducible and auditable.
 
-## Scope
-- Android PR checks
-- Android release pipeline
-- iOS PR checks
-- iOS release/TestFlight pipeline
+## Current CI Contract
+- `.github/workflows/pr-selective-tests.yml` is the authoritative pull-request
+  gate. It resolves the merge-base-to-exact-head change set, always runs the
+  universal fast checks, and dispatches affected web, iOS, and Android suites.
+- `.github/workflows/android-pr.yml`, `ios-pr.yml`, and `web-pr.yml` are
+  legacy/manual validation workflows. They run only through
+  `workflow_dispatch`; they are not automatic or required PR gates.
+- `.github/workflows/android-release.yml` and `ios-release.yml` remain the
+  credentialed distribution workflows for release/hotfix branches or an
+  explicitly approved manual dispatch.
+- The repository-scoped self-hosted runners and the host-wide locks shared with
+  Meer are configured. Their labels, service posture, hook installation, and
+  recovery checks are recorded below. A promotion is still incomplete until
+  GitHub Actions proves the complete matrix on that pull request's exact head.
 
 ## Global Notes
-- Store all values in **GitHub repository secrets** (or environment-level secrets for stricter release controls).
-- `ENV_FILE` must contain **all** variables listed in `.env.example`: `APP_VARIANT`, MyChampions server URL, terms config, E2E fixture flags when needed, and RevenueCat keys used by the app.
-- Native builds no longer require Firebase config files (`google-services.json`, `GoogleService-Info*.plist`), Firebase project files, or Firebase service accounts after the local-server migration.
-- Workflows set `APP_VARIANT` explicitly (`dev` for PR, `prod` for release) to prevent accidental cross-environment native/release routing.
-- `.env.example` in the repository root lists all required variable names with empty values. Copy to `.env` locally and populate. `.env` is gitignored.
-- Use issue template `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` to track repository bootstrap and validation runs.
+- Store credentials in GitHub repository secrets, or in protected environment
+  secrets for stricter release controls.
+- `ENV_FILE` must contain the applicable variables listed in `.env.example`,
+  including the MyChampions server URL and public RevenueCat keys used by the
+  requested native build. E2E fixture flags are included only when the selected
+  deterministic profile requires them.
+- Native builds no longer require Firebase config files
+  (`google-services.json`, `GoogleService-Info*.plist`), Firebase project files,
+  or Firebase service accounts after the local-server migration.
+- Workflows set `APP_VARIANT` explicitly (`dev` for selected/manual validation,
+  `prod` for release) to prevent accidental cross-environment routing.
+- Selected self-hosted jobs run only for branches in this repository. A fork PR
+  that selects one of those jobs leaves it skipped and therefore fails the
+  stable gate instead of running untrusted code on a private runner.
+- GitHub Actions-backed dependency caches are disabled, including setup-node
+  caching and Gradle cache actions. Host-local caches may exist on a
+  self-hosted runner, but they must never be uploaded through the Actions cache
+  service.
+- A successful selective run uploads no impact report, web export, app, APK, or
+  test artifact. Only bounded failure diagnostics may be uploaded, with
+  `retention-days: 1`. Necessary release AAB/IPA artifacts also retain for one
+  day.
+- `.env.example` lists variable names with empty values. Copy it to `.env` for
+  local work; `.env` remains gitignored.
+- Use `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` to track bootstrap and
+  remote evidence without exposing registration tokens or credentials.
 
 ## Secret Inventory
 | Secret | Required In | Purpose | Expected Format | Required |
 |---|---|---|---|---|
-| `ENV_FILE` | `android-pr`, `android-release`, `ios-pr`, `ios-release` | Writes root `.env` used to export `EXPO_PUBLIC_*` vars | Raw multiline `.env` content | Yes |
+| `ENV_FILE` | `pr-selective-tests` native lanes; manual `android-pr`/`ios-pr`; Android/iOS release | Writes the root `.env` consumed by native builds | Raw multiline `.env` content | Yes for native/full-matrix and release execution |
 | `ANDROID_KEYSTORE_BASE64` | `android-release` | Release keystore injection | Base64 of `.jks` file | Yes |
 | `ANDROID_KEYSTORE_PASSWORD` | `android-release` | Keystore password | Plain string | Yes |
 | `ANDROID_KEY_ALIAS` | `android-release` | Keystore key alias | Plain string | Yes |
@@ -36,16 +67,83 @@ Define all GitHub Actions secrets required by `.github/workflows/` so CI/CD setu
 | `APP_STORE_CONNECT_API_KEY_ISSUER_ID` | `ios-release` | TestFlight upload auth | ASC Issuer ID (UUID) | Yes |
 | `APP_STORE_CONNECT_API_KEY_CONTENT` | `ios-release` | TestFlight upload auth | Base64 of `.p8` key content | Yes |
 
-## Workflow Mapping
-| Workflow | Secrets |
-|---|---|
-| `android-pr.yml` | `ENV_FILE` |
-| `android-release.yml` | `ENV_FILE`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_ALIAS_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON` |
-| `ios-pr.yml` | `ENV_FILE` |
-| `ios-release.yml` | `ENV_FILE`, `IOS_KEYCHAIN_PASSWORD`, `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROFILE_BASE64`, `IOS_PROFILE_NAME`, `IOS_TEAM_ID`, `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_CONTENT` |
+## Non-Secret Repository Controls
+| Control | Scope | Contract |
+|---|---|---|
+| `CI_FORCE_FULL` repository variable | `pr-selective-tests` | Optional broaden-only rollback switch. `true` selects the complete registered matrix; it must never narrow coverage. |
+| `ci:full` pull-request label | `pr-selective-tests` | Optional broaden-only request for the complete registered matrix. |
+| `force_full` manual input | `pr-selective-tests` | Optional manual request for the complete registered matrix. A run with no usable base also fails closed to full selection. |
 
-## Setup Checklist
-1. Add all required secrets in GitHub repository settings.
-2. Trigger each workflow once via `workflow_dispatch` to validate secret resolution.
-3. Confirm iOS signing/import steps succeed with current certificates/profiles.
-4. Rotate secrets on certificate/profile renewal and update this matrix if names change.
+## Workflow Mapping
+| Workflow | Role | Secrets |
+|---|---|---|
+| `pr-selective-tests.yml` | Authoritative exact-head PR gate plus scheduled/merge-queue/manual safety matrix | `ENV_FILE` only in selected iOS/Android jobs; impact, fast-quality, and web jobs use no repository secret |
+| `android-pr.yml` | Manual-only legacy Android validation | `ENV_FILE` |
+| `ios-pr.yml` | Manual-only legacy iOS validation | `ENV_FILE` |
+| `web-pr.yml` | Manual-only legacy web validation | None |
+| `android-release.yml` | Android signing and Play upload | `ENV_FILE`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_ALIAS_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON` |
+| `ios-release.yml` | iOS signing and TestFlight upload | `ENV_FILE`, `IOS_KEYCHAIN_PASSWORD`, `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROFILE_BASE64`, `IOS_PROFILE_NAME`, `IOS_TEAM_ID`, `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_CONTENT` |
+
+## Configured Self-Hosted Runner Boundaries
+| Selected lane | Exact labels | Required host capabilities | Current evidence status |
+|---|---|---|---|
+| Web | `self-hosted, Linux, X64, mychampions-ci, mychampions-web` | Repository-scoped Linux/WSL runner; Git and outbound access; Playwright browser/system dependencies; capacity for Expo and the optional in-memory backend | `mychampions-ci-ubuntu` is registered and online; the promotion PR supplies exact-head browser proof |
+| Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; `Pixel_10` AVD; Gradle wrapper support | The same `mychampions-ci-ubuntu` service is registered and online; the promotion PR supplies exact-head emulator proof |
+| iOS | `self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios` | Repository-scoped Apple Silicon runner; Xcode 26 with iOS SDK 26+; `iPhone 17` simulator; CocoaPods; Homebrew path | `mychampions-ios-ci-m5` is registered and online; the promotion PR supplies exact-head simulator proof |
+
+## Shared Host Lock Operational Record
+
+The Mac iOS lane and the WSL web/Android lanes share their physical hosts with
+Meer runner services. Both pairs use GitHub runner job-started and job-completed
+hooks to acquire and release one POSIX file lock per physical host. The start
+hook waits at most 10,800 seconds and fails closed if ownership cannot be
+established. A tokenized owner/holder fence binds the lease to the exact
+`Runner.Worker` boot ID, start identity, and command identity so a killed worker
+is recoverable without allowing an overlapping successor.
+
+The host-owned hook files are installed at:
+
+- macOS: `/Users/eduwaldo/.local/libexec/github-actions/`
+- WSL: `/home/eduardo/.local/libexec/github-actions/`
+
+The installed production hashes on both hosts are:
+
+```text
+69fd3be3dcca9c1a3bac5b64f36eca5ac910bff1a91f2237fe33b36b6badbf69  mobile-host-lock.py
+343dafbca37a3a72d2ed7c4850d971dba09831b1e0cecee9e2832199275ceba3  mobile-host-lock-start.sh
+e45740b98d4e0e6f7fbeeaed57b0533ed7a46f4dc70134c6a16a659e46b885d8  mobile-host-lock-completed.sh
+```
+
+The final implementation passed 12 complete Darwin and 12 complete WSL stress
+suites: 96 behavioral scenarios and 384 contending jobs with zero overlap,
+correct bounded-wait failure, crash fencing/recovery, and no live lease, holder,
+owner, or prototype process afterward. Runner `.env` backups with the suffix
+`.before-mobile-host-lock-20260728` preserve the pre-hook configuration.
+
+`mychampions-ios-ci-m5` and the Meer Mac service run as launchd services.
+`mychampions-ci-ubuntu` runs as an enabled and active user systemd service. The
+WSL user has `Linger=no`, so reboot-survival is not claimed until a login starts
+the user manager. The existing Meer WSL root service remains enabled but
+inactive; its listener was restarted manually and must be checked as online
+before relying on that peer. This known service-manager difference does not
+weaken the shared hook lock while either listener is running.
+
+Runner registration tokens are ephemeral bootstrap credentials and must not be
+stored in repository secrets, issue comments, screenshots, or logs.
+
+## Setup And Evidence Checklist
+1. Add only the secrets required by the workflow being validated.
+2. Verify the registered runner names, exact labels, service state, installed
+   hook hashes, and empty lock state before an authoritative run.
+3. Use the manual-only Android, iOS, and web workflows for isolated validation
+   when useful; do not treat them as the pull-request gate.
+4. Run the authoritative workflow against the exact promotion head with full
+   selection and record every selected lane result before making the gate
+   required.
+5. Confirm a green selective run has zero Actions artifacts and zero Actions
+   caches. If failure diagnostics exist, verify their path is bounded and their
+   retention is one day.
+6. Validate Android/iOS release workflows only through an explicitly approved
+   release test because they sign and upload store binaries.
+7. Rotate secrets on certificate/profile renewal and update this matrix if
+   names, scopes, runner labels, or workflow responsibilities change.

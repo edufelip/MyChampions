@@ -86,8 +86,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: yarn
-          cache-dependency-path: yarn.lock
       - name: Install JS deps
         run: yarn install --frozen-lockfile
         working-directory: .
@@ -114,15 +112,13 @@ jobs:
         working-directory: android
 
       - name: Build release bundle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: wrapper
-          build-root-directory: android
-          arguments: |
-            clean
-            bundleProductionRelease
-            -PCI_VERSION_CODE=${{ env.CI_VERSION_CODE }}
-            --no-daemon
+        run: |
+          ./gradlew \
+            clean \
+            bundleProductionRelease \
+            -PCI_VERSION_CODE=${{ env.CI_VERSION_CODE }} \
+            --no-daemon \
+            --no-build-cache \
             -Dorg.gradle.parallel=false
       - name: Verify mapping file (if generated)
         run: |
@@ -240,6 +236,7 @@ jobs:
         with:
           name: app-release.aab
           path: android/app/build/outputs/bundle/productionRelease/app-production-release.aab
+          retention-days: 1
 
       - name: Upload to Play (internal track)
         uses: r0adkll/upload-google-play@v1

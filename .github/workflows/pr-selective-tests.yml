@@ -1,9 +1,9 @@
-name: Selective test impact (shadow)
+name: Selective feature CI
 
 on:
   pull_request:
     branches:
-      - develop
+      - main
       - release/**
       - hotfix/**
     types:
@@ -15,8 +15,10 @@ on:
       - unlabeled
   push:
     branches:
-      - develop
+      - main
   merge_group:
+  schedule:
+    - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       force_full:
@@ -29,74 +31,96 @@ permissions:
   contents: read
 
 concurrency:
-  group: selective-tests-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: selective-feature-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
 
 jobs:
   impact:
     name: Resolve affected features
     runs-on: ubuntu-latest
     outputs:
+      base_sha: ${{ steps.refs.outputs.base_sha }}
+      head_sha: ${{ steps.refs.outputs.head_sha }}
       mode: ${{ steps.resolve.outputs.mode }}
       has_web: ${{ steps.resolve.outputs.has_web }}
+      has_web_server: ${{ steps.resolve.outputs.has_web_server }}
       has_detox_ios: ${{ steps.resolve.outputs.has_detox_ios }}
       has_detox_android: ${{ steps.resolve.outputs.has_detox_android }}
-      full_fallback: ${{ steps.resolve.outputs.full_fallback }}
-      web_matrix: ${{ steps.resolve.outputs.web_matrix }}
-      detox_ios_matrix: ${{ steps.resolve.outputs.detox_ios_matrix }}
-      detox_android_matrix: ${{ steps.resolve.outputs.detox_android_matrix }}
+      web_suites: ${{ steps.resolve.outputs.web_suites }}
+      detox_ios_suites: ${{ steps.resolve.outputs.detox_ios_suites }}
+      detox_android_suites: ${{ steps.resolve.outputs.detox_android_suites }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: yarn
-          cache-dependency-path: yarn.lock
-      - run: yarn install --frozen-lockfile --no-progress
-      - name: Validate ownership and suite metadata
-        run: yarn test:impact
-      - id: resolve
-        name: Resolve selective test matrix
+      - id: refs
+        name: Resolve exact comparison refs
         env:
+          EVENT_NAME: ${{ github.event_name }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           PUSH_BASE_SHA: ${{ github.event.before }}
           PUSH_HEAD_SHA: ${{ github.sha }}
           FORCE_FULL_INPUT: ${{ inputs.force_full }}
           FORCE_FULL_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
           FORCE_FULL_REPOSITORY: ${{ vars.CI_FORCE_FULL }}
-          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          base_sha="${PR_BASE_SHA:-${PUSH_BASE_SHA:-}}"
-          head_sha="${PR_HEAD_SHA:-${PUSH_HEAD_SHA:-HEAD}}"
+          set -euo pipefail
+          base_sha="${PR_BASE_SHA:-${MERGE_BASE_SHA:-${PUSH_BASE_SHA:-}}}"
+          head_sha="${PR_HEAD_SHA:-${MERGE_HEAD_SHA:-${PUSH_HEAD_SHA:-$GITHUB_SHA}}}"
           force_full=false
 
-          if [[ "$EVENT_NAME" == "merge_group" || "$FORCE_FULL_INPUT" == "true" || "$FORCE_FULL_LABEL" == "true" || "$FORCE_FULL_REPOSITORY" == "true" ]]; then
+          if [[ "$EVENT_NAME" == "merge_group" ||
+                "$EVENT_NAME" == "schedule" ||
+                "$FORCE_FULL_INPUT" == "true" ||
+                "$FORCE_FULL_LABEL" == "true" ||
+                "$FORCE_FULL_REPOSITORY" == "true" ||
+                "$BASE_REF" == release/* ||
+                "$BASE_REF" == hotfix/* ]]; then
             force_full=true
           fi
 
+          if [[ -z "$head_sha" ]]; then
+            echo "Unable to resolve the exact head SHA." >&2
+            exit 1
+          fi
           if [[ "$base_sha" =~ ^0+$ ]]; then
-            force_full=true
             base_sha=""
+            force_full=true
+          fi
+          if [[ -z "$base_sha" ]]; then
+            force_full=true
           fi
 
-          if [[ "$force_full" == "true" && -z "$base_sha" ]]; then
-            yarn test:impact:resolve --all
-          elif [[ "$force_full" == "true" ]]; then
-            yarn test:impact:resolve --base "$base_sha" --head "$head_sha" --all
-          else
-            yarn test:impact:resolve --base "$base_sha" --head "$head_sha"
-          fi
-      - uses: actions/upload-artifact@v4
-        if: always()
+          echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "force_full=$force_full" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
         with:
-          name: selective-test-impact
-          path: .artifacts/test-impact
-          if-no-files-found: error
-          retention-days: 14
+          fetch-depth: 0
+          ref: ${{ steps.refs.outputs.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: yarn install --frozen-lockfile --no-progress
+      - name: Validate ownership and suite metadata
+        run: yarn test:impact
+      - id: resolve
+        name: Resolve selective test suites
+        env:
+          BASE_SHA: ${{ steps.refs.outputs.base_sha }}
+          HEAD_SHA: ${{ steps.refs.outputs.head_sha }}
+          FORCE_FULL: ${{ steps.refs.outputs.force_full }}
+        run: |
+          set -euo pipefail
+          args=(--head "$HEAD_SHA")
+          if [[ -n "$BASE_SHA" ]]; then
+            args+=(--base "$BASE_SHA")
+          fi
+          if [[ "$FORCE_FULL" == "true" ]]; then
+            args+=(--all)
+          fi
+          yarn test:impact:resolve "${args[@]}"
 
   fast-quality:
     name: Fast quality checks
@@ -105,80 +129,298 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          ref: ${{ needs.impact.outputs.head_sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: yarn
-          cache-dependency-path: yarn.lock
       - run: yarn install --frozen-lockfile --no-progress
       - run: yarn test:impact
       - run: yarn test:unit
       - run: yarn lint
       - run: yarn tsc --noEmit
+      - name: Validate the pull-request diff
+        if: needs.impact.outputs.base_sha != ''
+        env:
+          BASE_SHA: ${{ needs.impact.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.impact.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          git diff --check "$merge_base" "$HEAD_SHA"
 
-  web-ui-shadow:
-    name: Web UI selection (shadow)
-    needs: impact
-    if: needs.impact.outputs.has_web == 'true'
-    runs-on: ubuntu-latest
+  web-selected:
+    name: Selected web UI suites
+    needs:
+      - impact
+      - fast-quality
+    if: >-
+      needs.fast-quality.result == 'success' &&
+      needs.impact.outputs.has_web == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-web]
+    timeout-minutes: 45
+    concurrency:
+      group: mychampions-wsl-ui
+      cancel-in-progress: false
+    env:
+      CI: 'true'
+      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.web_suites }}
+      MYCHAMPIONS_SERVER_ROOT: ${{ github.workspace }}/.ci/mychampions-api
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: selective-test-impact
-          path: .artifacts/test-impact
-      - name: Report selected Playwright suites
-        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.webSuites.join('\n'))"
+          ref: ${{ needs.impact.outputs.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: yarn install --frozen-lockfile --no-progress
+      - id: backend-contract-ref
+        if: needs.impact.outputs.has_web_server == 'true'
+        name: Resolve coordinated backend contract ref
+        env:
+          MOBILE_HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          backend_ref="${MOBILE_HEAD_REF:-main}"
+          if ! git ls-remote --exit-code --heads https://github.com/edufelip/mychampions-api.git "refs/heads/${backend_ref}" >/dev/null; then
+            backend_ref=main
+          fi
+          echo "ref=$backend_ref" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: needs.impact.outputs.has_web_server == 'true'
+        with:
+          repository: edufelip/mychampions-api
+          ref: ${{ steps.backend-contract-ref.outputs.ref }}
+          path: .ci/mychampions-api
+      - uses: oven-sh/setup-bun@v2
+        if: needs.impact.outputs.has_web_server == 'true'
+        with:
+          bun-version: 1.3.10
+      - if: needs.impact.outputs.has_web_server == 'true'
+        working-directory: .ci/mychampions-api
+        run: bun install --frozen-lockfile
+      - name: Ensure selected browsers are installed locally
+        run: yarn playwright install chromium firefox webkit
+      - name: Validate the web bundle
+        run: yarn web:export
+      - name: Run selected Playwright suites
+        run: yarn test:impact:execute --platform web
+      - name: Upload bounded web failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mychampions-web-failure-${{ github.run_id }}
+          path: .artifacts/ci-diagnostics/web
+          if-no-files-found: warn
+          retention-days: 1
 
-  detox-ios-shadow:
-    name: Detox iOS selection (shadow)
-    needs: impact
-    if: needs.impact.outputs.has_detox_ios == 'true'
-    runs-on: ubuntu-latest
+  detox-ios-selected:
+    name: Selected iOS Detox suites
+    needs:
+      - impact
+      - fast-quality
+    if: >-
+      needs.fast-quality.result == 'success' &&
+      needs.impact.outputs.has_detox_ios == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
+    timeout-minutes: 120
+    concurrency:
+      group: mychampions-ios-detox
+      cancel-in-progress: false
+    env:
+      APP_VARIANT: dev
+      CI: 'true'
+      CI_REQUIRE_E2E_EXECUTION: 'true'
+      DETOX_IOS_SIMULATOR: iPhone 17
+      DETOX_REQUIRE_FRESH_METRO: 'true'
+      EXPO_PUBLIC_ENV: dev
+      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_ios_suites }}
+      XCODE_REQUIRED_MAJOR: '26'
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: selective-test-impact
-          path: .artifacts/test-impact
-      - name: Report selected iOS suites and fixture profiles
-        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.detoxIosSuites.join('\n'))"
+          ref: ${{ needs.impact.outputs.head_sha }}
+      - name: Select Xcode 26 and verify the SDK
+        run: |
+          set -euo pipefail
+          xcode_app="$(
+            for candidate in /Applications/Xcode_"${XCODE_REQUIRED_MAJOR}"*.app; do
+              if [[ -d "$candidate" ]]; then
+                printf '%s\n' "$candidate"
+              fi
+            done | sort | tail -n 1
+          )"
+          if [[ -z "$xcode_app" && -d /Applications/Xcode.app ]]; then
+            xcode_app=/Applications/Xcode.app
+          fi
+          if [[ -z "$xcode_app" ]]; then
+            echo "Xcode ${XCODE_REQUIRED_MAJOR}.x is not installed." >&2
+            exit 1
+          fi
+          developer_path="$xcode_app/Contents/Developer"
+          echo "DEVELOPER_DIR=$developer_path" >> "$GITHUB_ENV"
+          export DEVELOPER_DIR="$developer_path"
+          sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
+          if [[ "${sdk_version%%.*}" -lt "$XCODE_REQUIRED_MAJOR" ]]; then
+            echo "Expected iPhoneOS SDK ${XCODE_REQUIRED_MAJOR}.0+; found $sdk_version." >&2
+            exit 1
+          fi
+      - name: Write environment
+        run: |
+          cat <<'EOF' > .env
+          ${{ secrets.ENV_FILE }}
+          EOF
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Add Homebrew to PATH
+        run: echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+      - run: yarn install --frozen-lockfile --no-progress
+      - name: Install pods
+        env:
+          COCOAPODS_CACHE_DIR: ${{ runner.temp }}/.cocoapods-cache
+        run: |
+          set -euo pipefail
+          cd ios
+          pod install --silent
+      - name: Build the debug app once
+        run: yarn test:e2e:build:ios:debug
+      - name: Run selected iOS suites
+        env:
+          DETOX_SKIP_BUILD: 'true'
+        run: yarn test:impact:execute --platform ios
+      - name: Shut down simulator services
+        if: always()
+        run: xcrun simctl shutdown all || true
+      - name: Upload bounded iOS failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mychampions-ios-failure-${{ github.run_id }}
+          path: .artifacts/ci-diagnostics/ios
+          if-no-files-found: warn
+          retention-days: 1
 
-  detox-android-shadow:
-    name: Detox Android selection (shadow)
-    needs: impact
-    if: needs.impact.outputs.has_detox_android == 'true'
-    runs-on: ubuntu-latest
+  detox-android-selected:
+    name: Selected Android Detox suites
+    needs:
+      - impact
+      - fast-quality
+    if: >-
+      needs.fast-quality.result == 'success' &&
+      needs.impact.outputs.has_detox_android == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
+    timeout-minutes: 120
+    concurrency:
+      group: mychampions-wsl-ui
+      cancel-in-progress: false
+    env:
+      APP_VARIANT: dev
+      CI: 'true'
+      CI_REQUIRE_E2E_EXECUTION: 'true'
+      DETOX_ANDROID_AVD: Pixel_10
+      DETOX_CONFIGURATION: android.emu.debug
+      DETOX_REQUIRE_FRESH_METRO: 'true'
+      EXPO_PUBLIC_ENV: dev
+      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_android_suites }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: selective-test-impact
-          path: .artifacts/test-impact
-      - name: Report selected Android suites and fixture profiles
-        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.detoxAndroidSuites.join('\n'))"
+          ref: ${{ needs.impact.outputs.head_sha }}
+      - name: Write environment
+        run: |
+          cat <<'EOF' > .env
+          ${{ secrets.ENV_FILE }}
+          EOF
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: yarn install --frozen-lockfile --no-progress
+      - name: Run native checks and build the debug APKs once
+        working-directory: android
+        run: |
+          ./gradlew \
+            lintDevDebug \
+            testDevDebugUnitTest \
+            app:assembleDevDebug \
+            app:assembleDevDebugAndroidTest \
+            -DtestBuildType=debug
+      - name: Run selected Android suites
+        env:
+          DETOX_SKIP_BUILD: 'true'
+        run: yarn test:impact:execute --platform android
+      - name: Stop Android emulators
+        if: always()
+        run: |
+          adb devices | awk '/^emulator-[0-9]+[[:space:]]/ { print $1 }' | while read -r serial; do
+            adb -s "$serial" emu kill || true
+          done
+      - name: Upload bounded Android failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mychampions-android-failure-${{ github.run_id }}
+          path: .artifacts/ci-diagnostics/android
+          if-no-files-found: warn
+          retention-days: 1
 
   selective-ci-gate:
-    name: Selective CI gate (shadow)
+    name: Selective CI gate
     if: always()
     needs:
       - impact
       - fast-quality
-      - web-ui-shadow
-      - detox-ios-shadow
-      - detox-android-shadow
+      - web-selected
+      - detox-ios-selected
+      - detox-android-selected
     runs-on: ubuntu-latest
     steps:
-      - name: Verify required shadow jobs
+      - name: Verify every selected lane passed
         env:
           IMPACT_RESULT: ${{ needs.impact.result }}
           FAST_RESULT: ${{ needs.fast-quality.result }}
-          WEB_RESULT: ${{ needs.web-ui-shadow.result }}
-          IOS_RESULT: ${{ needs.detox-ios-shadow.result }}
-          ANDROID_RESULT: ${{ needs.detox-android-shadow.result }}
+          HAS_WEB: ${{ needs.impact.outputs.has_web }}
+          HAS_IOS: ${{ needs.impact.outputs.has_detox_ios }}
+          HAS_ANDROID: ${{ needs.impact.outputs.has_detox_android }}
+          WEB_RESULT: ${{ needs.web-selected.result }}
+          IOS_RESULT: ${{ needs.detox-ios-selected.result }}
+          ANDROID_RESULT: ${{ needs.detox-android-selected.result }}
         run: |
-          for result in "$IMPACT_RESULT" "$FAST_RESULT" "$WEB_RESULT" "$IOS_RESULT" "$ANDROID_RESULT"; do
-            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
-              echo "Selective CI shadow dependency failed with result: $result" >&2
+          set -euo pipefail
+          if [[ "$IMPACT_RESULT" != "success" || "$FAST_RESULT" != "success" ]]; then
+            echo "Impact resolution or fast quality checks failed." >&2
+            exit 1
+          fi
+
+          require_selected_lane() {
+            local selected="$1"
+            local result="$2"
+            local lane="$3"
+            if [[ "$selected" != "true" && "$selected" != "false" ]]; then
+              echo "$lane selection output was missing or invalid: $selected" >&2
               exit 1
             fi
-          done
-          echo "Shadow-mode impact resolution and fast checks passed."
+            if [[ "$selected" == "true" && "$result" != "success" ]]; then
+              echo "$lane was selected but finished with result: $result" >&2
+              exit 1
+            fi
+            if [[ "$selected" == "false" && "$result" != "skipped" ]]; then
+              echo "$lane was not selected but finished with unexpected result: $result" >&2
+              exit 1
+            fi
+          }
+
+          require_selected_lane "$HAS_WEB" "$WEB_RESULT" web
+          require_selected_lane "$HAS_IOS" "$IOS_RESULT" ios
+          require_selected_lane "$HAS_ANDROID" "$ANDROID_RESULT" android
+          echo "Every selected feature lane passed."

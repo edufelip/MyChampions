@@ -61,9 +61,15 @@ if (githubOutput) {
   const output = {
     mode: result.mode,
     has_web: String(result.webSuites.length > 0),
+    has_web_server: String(
+      result.webSuites.some((suite) => manifest.suites[suite]?.runner === 'playwright-server')
+    ),
     has_detox_ios: String(result.detoxIosSuites.length > 0),
     has_detox_android: String(result.detoxAndroidSuites.length > 0),
     full_fallback: String(result.mode === 'full-fallback'),
+    web_suites: JSON.stringify(result.webSuites),
+    detox_ios_suites: JSON.stringify(result.detoxIosSuites),
+    detox_android_suites: JSON.stringify(result.detoxAndroidSuites),
     web_matrix: JSON.stringify({ include: result.webSuites.map((suite) => ({ suite })) }),
     detox_ios_matrix: JSON.stringify({
       include: result.detoxIosSuites.map((suite) => ({

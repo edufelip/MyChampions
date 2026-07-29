@@ -1,15 +1,10 @@
 name: iOS PR Checks
 
 on:
-  pull_request:
-    branches:
-      - develop
-      - release/**
-      - hotfix/**
+  workflow_dispatch:
 
 jobs:
   build:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,8 +20,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: yarn
-          cache-dependency-path: yarn.lock
       - name: Install JS deps
         run: yarn install --frozen-lockfile
         working-directory: .

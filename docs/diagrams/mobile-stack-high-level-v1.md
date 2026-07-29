@@ -46,6 +46,7 @@ flowchart LR
 - NFR baseline assumes no hard dependency on EAS for build/release.
 - Native iOS and Android pipelines are owned in CI/CD with native toolchains.
 - PR CI resolves changed paths through feature ownership, declared dependencies,
-  and reverse import consumers before proposing focused Detox and Playwright
+  and reverse import consumers before executing focused Detox and Playwright
   suites. Shared-global or unknown runtime changes fail closed to the complete
-  registered matrix; the initial rollout remains shadow-only.
+  registered matrix, and D-193 makes the exact-head selective workflow the
+  authoritative pull-request gate.

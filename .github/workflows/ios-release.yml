@@ -101,8 +101,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: yarn
-          cache-dependency-path: yarn.lock
 
       - name: Install JS deps
         run: yarn install --frozen-lockfile
@@ -253,6 +251,7 @@ jobs:
         with:
           name: mychampions.ipa
           path: ios/build/*.ipa
+          retention-days: 1
 
       - name: Clean keychain and profiles
         if: always()

@@ -12,15 +12,18 @@ const workflowFiles = [
   '.github/workflows/ios-release.yml',
 ];
 
-test('mobile CI workflows install dependencies with the checked-in Yarn lockfile', () => {
+test('mobile CI workflows install dependencies without Actions-backed caches', () => {
   assert.equal(existsSync(join(root, 'yarn.lock')), true, 'mobile package should keep yarn.lock');
   assert.equal(existsSync(join(root, 'package-lock.json')), false, 'mobile package should not keep package-lock.json');
 
   for (const workflowFile of workflowFiles) {
     const workflow = readFileSync(join(root, workflowFile), 'utf8');
 
-    assert.match(workflow, /cache:\s*yarn/, `${workflowFile} should cache Yarn dependencies`);
-    assert.match(workflow, /cache-dependency-path:\s*yarn\.lock/, `${workflowFile} should key cache from yarn.lock`);
+    assert.doesNotMatch(workflow, /^\s+cache:/m, `${workflowFile} should not configure setup caches`);
+    assert.doesNotMatch(workflow, /cache-dependency-path:/, `${workflowFile} should not configure cache keys`);
+    assert.doesNotMatch(workflow, /actions\/cache@/, `${workflowFile} should not use the Actions cache`);
+    assert.doesNotMatch(workflow, /gradle\/gradle-build-action@/, `${workflowFile} should not use the legacy Gradle cache action`);
+    assert.doesNotMatch(workflow, /gradle\/actions\/setup-gradle@/, `${workflowFile} should not use the Gradle cache action`);
     assert.match(workflow, /yarn install --frozen-lockfile/, `${workflowFile} should install through Yarn`);
     assert.equal(workflow.includes('npm ci'), false, `${workflowFile} should not run npm ci`);
     assert.equal(workflow.includes('cache: npm'), false, `${workflowFile} should not cache npm`);

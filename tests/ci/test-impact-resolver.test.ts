@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -135,7 +135,7 @@ test('a feature-only change selects A and its declared reverse dependent, not un
   assert.deepEqual(result.affectedFeatures, ['a', 'c']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:c']);
   assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:c']);
-  assert.deepEqual(result.detoxAndroidSuites, []);
+  assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:c']);
   assert.equal(result.selectedSuites.includes('web:b'), false);
   assert.equal(result.selectedSuites.includes('detox:b'), false);
 });
@@ -246,6 +246,9 @@ test('unmapped runtime changes fail closed to the full matrix', () => {
   assert.equal(result.mode, 'full-fallback');
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
   assert.deepEqual(result.unmappedRuntimePaths, ['features/unknown/new-source.ts']);
+  assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
+  assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:b', 'detox:c']);
+  assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
 });
 
 test('source files in unknown nested directories fail closed to the full matrix', () => {
@@ -283,6 +286,69 @@ test('impact infrastructure changes fail closed even when they are otherwise unm
 
   assert.equal(result.mode, 'full-fallback');
   assert.match(result.fallbackReasons.join(' '), /tooling file changed/);
+});
+
+test('CLI emits compact suite arrays and web-server workflow outputs', () => {
+  const outputDirectory = mkdtempSync(join(tmpdir(), 'mychampions-test-impact-output-'));
+  const githubOutput = join(outputDirectory, 'github-output.txt');
+  const impactOutput = join(outputDirectory, 'impact.json');
+  const markdownOutput = join(outputDirectory, 'summary.md');
+
+  try {
+    execFileSync(
+      join(root, 'node_modules', '.bin', 'tsx'),
+      [
+        'scripts/ci/resolve-test-impact.ts',
+        '--all',
+        '--output',
+        impactOutput,
+        '--markdown',
+        markdownOutput,
+      ],
+      {
+        cwd: root,
+        env: {
+          ...process.env,
+          GITHUB_OUTPUT: githubOutput,
+          GITHUB_STEP_SUMMARY: '',
+        },
+        encoding: 'utf8',
+      }
+    );
+
+    const outputs = Object.fromEntries(
+      readFileSync(githubOutput, 'utf8')
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const separator = line.indexOf('=');
+          return [line.slice(0, separator), line.slice(separator + 1)];
+        })
+    );
+    const result = JSON.parse(readFileSync(impactOutput, 'utf8'));
+    const manifest = loadManifest(root);
+
+    assert.match(outputs.has_web_server, /^(true|false)$/);
+    assert.equal(
+      outputs.has_web_server,
+      String(
+        result.webSuites.some(
+          (suite: string) => manifest.suites[suite]?.runner === 'playwright-server'
+        )
+      )
+    );
+
+    for (const [outputName, resultKey] of [
+      ['web_suites', 'webSuites'],
+      ['detox_ios_suites', 'detoxIosSuites'],
+      ['detox_android_suites', 'detoxAndroidSuites'],
+    ] as const) {
+      assert.deepEqual(JSON.parse(outputs[outputName]), result[resultKey]);
+      assert.equal(outputs[outputName], JSON.stringify(result[resultKey]));
+    }
+  } finally {
+    rmSync(outputDirectory, { recursive: true, force: true });
+  }
 });
 
 test('undeclared dependency cycles fail manifest validation', () => {

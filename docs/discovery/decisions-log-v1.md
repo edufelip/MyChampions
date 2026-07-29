@@ -60,7 +60,11 @@
 - `D-055`: Native projects (`ios/`, `android/`) are committed from day 1 after a single `expo prebuild`, and are then maintained directly without recurring prebuild regeneration.
 - `D-056`: QA distribution strategy:
   - Release branches distribute iOS builds via TestFlight.
-  - Pull requests use native CI artifacts and repository-owned distribution checks; the retired Firebase distribution workflows are no longer part of the mobile package.
+  - Pull requests use repository-owned native build and test checks. Successful PR
+    builds remain ephemeral on the self-hosted runners instead of being uploaded to
+    GitHub Actions; only bounded failure diagnostics may be retained for one day.
+    The retired Firebase distribution workflows are no longer part of the mobile
+    package.
 - `D-057`: Client-side media compression is mandatory before server-backed upload.
 - `D-058`: Non-crash monitoring tooling (for example Sentry) is out of MVP; crash/ANR provider selection is deferred while the mobile-owned Firebase runtime is retired.
 - `D-059`: MVP update delivery strategy is store-only (no OTA channel).
@@ -97,7 +101,7 @@
 - `D-090`: Auth entry providers use MyChampions server-owned auth boundaries. Email/password establishes sessions through Postgres `local_email_auth_credentials`; Google and Apple ID tokens are verified directly by the server against configured issuer/audience claims. Deterministic local sessions are reserved for explicit local/dev provider-token configuration gaps outside E2E fixtures.
 - `D-091`: Superseded. Native backend config selection now exposes the MyChampions server URL and no longer ships mobile-owned provider config files.
 - `D-092`: CI/CD workflow baseline is inherited from `meer` and adapted to `my-champions`:
-  - Workflows cover Android/iOS PR checks, native CI artifacts, and release-branch validation pipelines.
+  - Workflows cover Android/iOS PR checks, ephemeral native build proof, and release-branch validation pipelines.
   - This project standardizes JS dependency installation in CI with Yarn 1.22.22, `yarn.lock`, and `yarn install --frozen-lockfile`; npm lockfiles and `npm ci` are not used.
 - `D-093`: CI/CD secret names and requirements are governed by `docs/discovery/ci-secrets-matrix-v1.md`; workflow secret changes must update that document in the same change.
 - `D-094`: CI/CD bootstrap/validation execution should be tracked through issue template `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` for operational consistency.
@@ -402,7 +406,11 @@
   - The former browser-based `expo-auth-session` adapter is removed because custom-scheme Android redirects are not a supported production Google OAuth path.
   - Sign in with Apple remains native. The source entitlement and release-profile guard require `com.apple.developer.applesignin = Default`; local device Release signing now proves that entitlement after the Apple account holder accepted the current Program License Agreement. CI/App Store signing still requires a conforming Apple Distribution profile with production push entitlement.
 
-- `D-184`: Expo web is a responsive SPA target with platform-specific adapter modules. Under 768px it keeps bottom navigation; 768-1023px uses an icon rail; 1024px and above uses a labeled sidebar. `DsScreen` owns form/content/wide constraints. The PR workflow exports an artifact only; website deployment remains a separate approval boundary.
+- `D-184`: Expo web is a responsive SPA target with platform-specific adapter
+  modules. Under 768px it keeps bottom navigation; 768-1023px uses an icon rail;
+  1024px and above uses a labeled sidebar. `DsScreen` owns form/content/wide
+  constraints. The PR workflow validates the export ephemerally and does not
+  publish it; website deployment remains a separate approval boundary.
 - `D-185`: Browser auth uses an in-memory access token plus rotating HttpOnly refresh cookie selected by `sessionMode: cookie`. Exact credentialed CORS origins come from `WEB_ALLOWED_ORIGINS`; production defaults fail closed. Native bearer response contracts remain backward compatible.
 - `D-186`: Browser subscriptions read server entitlement snapshots and expose `mobile_handoff` or `unavailable`; RevenueCat stays native-only. Unknown paid entitlement fails closed. In-browser purchase/restore is deferred.
 - `D-187`: Subscription UI keeps entitlement verification, student capacity, and purchase capability as separate states. Unknown entitlement and count are shown as unavailable rather than as an endless check or fabricated zero. Plan-write locks never disable purchase/restore/handoff recovery. Pre-lapse warnings require an explicit billing-expiry risk signal and are not inferred from active-student count; adding that authoritative signal remains required before enabling the warning.
@@ -440,6 +448,35 @@
   - Navigation, localization, global design tokens, native/tooling inputs, resolver changes, invalid metadata, unknown runtime paths, resolution errors, or more than 500 changed files fail closed to the complete registered CI matrix. `ci:full` and `CI_FORCE_FULL` may only broaden selection.
   - The initial workflow is intentionally shadow-only: it reports proposed Playwright/Detox matrices while existing Android, iOS, and web PR workflows remain authoritative. Fast unit/lint/type checks run universally. Selective device/browser execution becomes enforceable only after at least two weeks and 20 representative PRs with zero known selection misses.
   - Full expensive coverage remains the target for nightly and release/hotfix gates after fixture-profile execution and runner capacity are proven. Existing `nutrition`/`plans` and `professional`/`subscription` bidirectional implementation dependencies are explicit legacy boundary exceptions; new undeclared cycles fail validation.
+
+- `D-193`: The feature-aware workflow is promoted from shadow reporting to the
+  authoritative PR gate under an explicit delivery decision; this supersedes the
+  elapsed-time and PR-count precondition in D-192 without claiming that the former
+  observation window completed.
+  - The promotion pull request changes workflow/test infrastructure, so the
+    resolver must fail closed and execute the complete registered CI matrix on its
+    exact head before the gate is made required.
+  - Pull requests to `main`, `release/**`, and `hotfix/**` always run universal
+    manifest, unit, lint, type, and diff checks. A normal feature change runs the
+    affected Playwright and Detox suites on every platform declared by those
+    suites. Shared navigation, localization, native, global design-system, unknown
+    runtime, invalid metadata, merge-queue, scheduled, release/hotfix, `ci:full`,
+    and `CI_FORCE_FULL` inputs broaden to the complete applicable matrix.
+  - Detox fixture profiles are executable, validated contracts. Every selected
+    phase owns a fresh Metro process and explicit app/test environment, the native
+    debug binary is built once per platform job, and a run that executes no test
+    fails closed. Provider-live suites remain ineligible for PR CI.
+  - The three legacy PR workflows are manual-only. The stable selective gate fails
+    when any selected lane is skipped or fails, including fork PRs that cannot
+    safely execute on self-hosted runners.
+  - Green runs upload no impact report, web export, app, APK, or test artifact.
+    Only bounded failure diagnostics may be uploaded, with one-day retention.
+    GitHub Actions-backed caches are disabled; persistent caches are local to the
+    self-hosted hosts.
+  - A daily scheduled full matrix, merge-queue full matrix, and release/hotfix
+    full matrix provide ongoing omission detection. Any reproducible selection
+    miss immediately sets `CI_FORCE_FULL=true` until ownership or dependency
+    metadata is corrected.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
