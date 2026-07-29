@@ -21,6 +21,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
+- Native self-managed-builder validation submits the controlled name and hydration fields through their real editor actions before save (guarded platform Enter on Android and Detox Return on iOS), verifies the hydration value, and waits until the save control reports enabled.
 - State orchestration uses centralized plans store (`features/plans/plans-store.ts`) through the existing `useNutritionPlanBuilder` adapter hook.
 
 ## User Actions

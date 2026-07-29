@@ -1,4 +1,10 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const { tapCredentialSkip } = require('./professional-specialty-actions');
+const {
+  scrollTrainingPlanControlIntoView,
+  scrollToTrainingPlanSave,
+  scrollToTrainingPlanSaveAboveNavigation,
+} = require('./training-plan-actions');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -12,8 +18,8 @@ async function selectProfessionalRole() {
 async function addFitnessCoachSpecialty() {
   await waitFor(element(by.id('pro.specialty.add.fitness_coach'))).toBeVisible().withTimeout(5000);
   await element(by.id('pro.specialty.add.fitness_coach')).tap();
-  await waitFor(element(by.id('pro.specialty.credentialForm'))).toBeVisible().withTimeout(5000);
-  await element(by.id('pro.specialty.credential.skip')).tap();
+  await waitFor(element(by.id('pro.specialty.credentialForm'))).toExist().withTimeout(5000);
+  await tapCredentialSkip();
   await waitFor(element(by.id('pro.specialty.row.fitness_coach'))).toBeVisible().withTimeout(5000);
   await element(by.id('pro.specialty.cta_continue')).tap();
   await waitFor(element(by.id('pro.home.screen'))).toBeVisible().withTimeout(10000);
@@ -41,6 +47,7 @@ describeWithE2EAuthSession('Professional Training Builder', () => {
     await waitFor(element(by.id('pro.training_plan.screen'))).toBeVisible().withTimeout(10000);
     await element(by.id('pro.training_plan.name')).replaceText('E2E Builder Training Plan');
     await device.tap({ x: 350, y: 420 });
+    await scrollToTrainingPlanSave();
     await element(by.id('pro.training_plan.saveButton')).tap();
 
     await waitFor(element(by.id('pro.library.training.row.e2e-training-builder-plan-1')))
@@ -49,7 +56,7 @@ describeWithE2EAuthSession('Professional Training Builder', () => {
     await element(by.id('pro.library.training.row.e2e-training-builder-plan-1')).tap();
     await waitFor(element(by.id('pro.training_plan.screen'))).toBeVisible().withTimeout(10000);
 
-    await waitFor(element(by.id('pro.training_plan.addSession'))).toBeVisible().withTimeout(5000);
+    await scrollTrainingPlanControlIntoView('pro.training_plan.addSession');
     await element(by.id('pro.training_plan.addSession')).tap();
     await waitFor(element(by.id('pro.training_plan.addSession.name'))).toBeVisible().withTimeout(5000);
     await element(by.id('pro.training_plan.addSession.name')).replaceText('Push Day');
@@ -82,9 +89,11 @@ describeWithE2EAuthSession('Professional Training Builder', () => {
       .scroll(220, 'down', 0.5, 0.75);
     await element(by.id('exerciseSearch.confirm')).tap();
 
+    await waitFor(element(by.id('exerciseSearch.modal'))).not.toExist().withTimeout(5000);
     await waitFor(element(by.id('pro.training_plan.itemRow.E2E_Push-Up'))).toBeVisible().withTimeout(10000);
     await expect(element(by.id('pro.training_plan.itemRow.E2E_Push-Up.quantity'))).toHaveText('3 x 10');
 
+    await scrollToTrainingPlanSaveAboveNavigation();
     await element(by.id('pro.training_plan.saveButton')).tap();
     await waitFor(element(by.id('pro.library.training.row.e2e-training-builder-plan-1')))
       .toBeVisible()

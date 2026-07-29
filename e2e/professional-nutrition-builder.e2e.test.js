@@ -1,4 +1,5 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const { tapCredentialSkip } = require('./professional-specialty-actions');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -12,8 +13,8 @@ async function selectProfessionalRole() {
 async function addNutritionistSpecialty() {
   await waitFor(element(by.id('pro.specialty.add.nutritionist'))).toBeVisible().withTimeout(5000);
   await element(by.id('pro.specialty.add.nutritionist')).tap();
-  await waitFor(element(by.id('pro.specialty.credentialForm'))).toBeVisible().withTimeout(5000);
-  await element(by.id('pro.specialty.credential.skip')).tap();
+  await waitFor(element(by.id('pro.specialty.credentialForm'))).toExist().withTimeout(5000);
+  await tapCredentialSkip();
   await waitFor(element(by.id('pro.specialty.row.nutritionist'))).toBeVisible().withTimeout(5000);
   await element(by.id('pro.specialty.cta_continue')).tap();
   await waitFor(element(by.id('pro.home.screen'))).toBeVisible().withTimeout(10000);

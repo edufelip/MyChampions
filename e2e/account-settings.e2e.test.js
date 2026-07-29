@@ -1,4 +1,9 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const {
+  scrollToLegalRows,
+  scrollToSignOutConfirmation,
+  scrollToSupportQuickAction,
+} = require('./account-settings-actions');
 
 async function selectStudentRole() {
   await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
@@ -37,6 +42,7 @@ describeWithE2EAuthSession('Account Settings', () => {
     await expect(element(by.id('settings.account.emailRow'))).toBeVisible();
     await expect(element(by.id('settings.account.languageRow'))).toBeVisible();
     await expect(element(by.id('settings.account.signOutCta'))).toBeVisible();
+    await scrollToLegalRows();
     await expect(element(by.id('settings.account.privacyPolicyRow'))).toBeVisible();
     await expect(element(by.id('settings.account.termsRow'))).toBeVisible();
 
@@ -44,13 +50,16 @@ describeWithE2EAuthSession('Account Settings', () => {
     await waitFor(element(by.id('shared.webview.webview'))).toBeVisible().withTimeout(10000);
 
     await reopenAccountRoute();
+    await scrollToLegalRows();
     await element(by.id('settings.account.termsRow')).tap();
     await waitFor(element(by.id('shared.webview.webview'))).toBeVisible().withTimeout(10000);
 
     await reopenAccountRoute();
+    await scrollToSupportQuickAction();
     await element(by.id('settings.account.supportQuickCta')).tap();
-    await waitFor(element(by.id('settings.account.support.modal'))).toBeVisible().withTimeout(5000);
-    await expect(element(by.id('settings.account.support.subjectInput'))).toBeVisible();
+    await waitFor(element(by.id('settings.account.support.subjectInput')))
+      .toBeVisible()
+      .withTimeout(5000);
     await expect(element(by.id('settings.account.support.bodyInput'))).toBeVisible();
     await expect(element(by.id('settings.account.support.submitCta'))).toBeVisible();
     await expect(element(by.id('settings.account.support.cancelCta'))).toBeVisible();
@@ -72,8 +81,8 @@ describeWithE2EAuthSession('Account Settings', () => {
     await openAccountTab();
     await waitFor(element(by.id('settings.account.signOutCta'))).toBeVisible().withTimeout(5000);
 
-    await element(by.text('Sign out')).tap();
-    await waitFor(element(by.id('settings.account.signOutConfirm'))).toBeVisible().withTimeout(5000);
+    await element(by.id('settings.account.signOutCta')).tap();
+    await scrollToSignOutConfirmation();
     await expect(element(by.text('Sign out?'))).toBeVisible();
     await element(by.id('settings.account.signOutConfirmCta')).tap();
     await waitFor(element(by.id('auth.signIn.title'))).toBeVisible().withTimeout(10000);
