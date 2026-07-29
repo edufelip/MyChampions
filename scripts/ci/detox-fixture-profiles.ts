@@ -40,6 +40,7 @@ export const SELECTIVE_FIXTURE_ENV_KEYS = [
   'E2E_AUTH_SESSION',
   'E2E_AUTH_SIGN_IN',
   'E2E_AUTH_SOCIAL',
+  'E2E_MEAL_ANALYSIS_SCENARIO',
   'E2E_SUBSCRIPTION_ACTION_OUTCOME',
   'E2E_SUBSCRIPTION_SCENARIO',
   'EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION',
@@ -172,10 +173,18 @@ export const DETOX_FIXTURE_PROFILES = {
   },
   'authenticated-nutrition': {
     selectiveCi: true,
+    allowRepeatedSpecs: true,
     phases: [
       {
         id: 'nutrition',
-        specs: '*',
+        specs: [
+          'e2e/student-nutrition.e2e.test.js',
+          'e2e/custom-meal-builder.e2e.test.js',
+          'e2e/custom-meal-image-upload.e2e.test.js',
+          'e2e/custom-meal-library.e2e.test.js',
+          'e2e/professional-nutrition-builder.e2e.test.js',
+          'e2e/shared-recipe.e2e.test.js',
+        ],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
@@ -187,6 +196,38 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
         runnerEnv: authenticatedRunnerEnv,
+      },
+      {
+        id: 'meal-analysis-paywall',
+        specs: ['e2e/custom-meal-ai-analysis.e2e.test.js'],
+        appEnv: {
+          ...activeProfessionalAppEnv,
+          EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS: 'lapsed',
+          EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_MEAL_ANALYSIS_FIXTURE: 'success',
+          EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS: 'lapsed',
+          EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
+        },
+        runnerEnv: {
+          ...authenticatedRunnerEnv,
+          E2E_MEAL_ANALYSIS_SCENARIO: 'paywall',
+        },
+      },
+      {
+        id: 'meal-analysis-success',
+        specs: ['e2e/custom-meal-ai-analysis.e2e.test.js'],
+        appEnv: {
+          ...activeProfessionalAppEnv,
+          EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_MEAL_ANALYSIS_FIXTURE: 'success',
+          EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
+        },
+        runnerEnv: {
+          ...authenticatedRunnerEnv,
+          E2E_MEAL_ANALYSIS_SCENARIO: 'success',
+        },
       },
     ],
   },

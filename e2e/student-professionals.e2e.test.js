@@ -14,14 +14,12 @@ async function openProfessionalsScreen() {
 }
 
 describeWithE2EAuthSession('Student Professionals Invite Code', () => {
-  beforeAll(async () => {
-    await device.launchApp({ newInstance: true, permissions: { camera: 'YES' } });
-    await device.disableSynchronization();
-  });
-
   beforeEach(async () => {
-    await device.reloadReactNative();
-    await device.disableSynchronization();
+    await device.launchApp({
+      newInstance: true,
+      permissions: { camera: 'YES' },
+      launchArgs: { detoxEnableSynchronization: 0 },
+    });
   });
 
   it('shows manual invite-code controls and blocks empty submission', async () => {

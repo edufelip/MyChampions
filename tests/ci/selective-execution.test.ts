@@ -204,6 +204,49 @@ test('self-managed plan building is isolated from assigned-plan fixtures', () =>
   assert.equal(bulkAssign.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE, 'assigned');
 });
 
+test('nutrition profile isolates locked and unlocked AI analysis scenarios', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:nutrition'], {
+    skipNativeBuild: true,
+  });
+  const aiAnalysisInvocations = plan.invocations.filter((invocation) =>
+    invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js')
+  );
+  const regularNutritionInvocations = plan.invocations.filter(
+    (invocation) =>
+      !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js')
+  );
+
+  assert.equal(plan.invocations.length, 8);
+  assert.equal(aiAnalysisInvocations.length, 2);
+  assert.deepEqual(
+    aiAnalysisInvocations.map(
+      (invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO
+    ),
+    ['paywall', 'success']
+  );
+  assert.equal(
+    aiAnalysisInvocations[0]!.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS,
+    'lapsed'
+  );
+  assert.equal(
+    aiAnalysisInvocations[0]!.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS,
+    'lapsed'
+  );
+  assert.equal(
+    aiAnalysisInvocations[1]!.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS,
+    'active'
+  );
+  assert.equal(
+    aiAnalysisInvocations[1]!.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS,
+    'active'
+  );
+  assert.ok(
+    regularNutritionInvocations.every(
+      (invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO === ''
+    )
+  );
+});
+
 test('subscription profile expands the existing seven deterministic scenarios', () => {
   const plan = createSelectiveExecutionPlan(
     manifest,
