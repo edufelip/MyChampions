@@ -61,18 +61,18 @@ describeWithE2EAuthSession('Professional Training Builder', () => {
     await waitFor(element(by.id('pro.training_plan.addSession.name'))).toBeVisible().withTimeout(5000);
     await element(by.id('pro.training_plan.addSession.name')).replaceText('Push Day');
     if (device.getPlatform() === 'android') {
-      // The name field autoFocuses, so the Android soft keyboard is open over
-      // the modal. Submit through the notes field's IME "Done" action
-      // (returnKeyType="done" -> onSubmitEditing={handleAddSession}) via the
-      // real UiAutomator Enter: it creates the session AND dismisses the
-      // keyboard, so the IME does not stay open over the plan screen covering
-      // the new session row. tapReturnKey is TypeTextAction('\n') and injected a
-      // stray character into the name in CI ("gPush Day"); a blind coordinate
-      // tap left the keyboard up.
+      // Both fields are controlled inputs, so replaceText sets their state
+      // directly — no focusing or IME submit is needed. The name field
+      // autoFocuses, so the soft keyboard is open; dismiss it now, while it is
+      // certainly up, with the hardware back (the screen registers no
+      // BackHandler and the open IME consumes this press, so the modal stays).
+      // Otherwise the keyboard lingers over the plan screen after the modal
+      // closes and covers the new session row. tapReturnKey would be
+      // TypeTextAction('\n') and inject a stray character into the name
+      // ("gPush Day" in CI).
       await element(by.id('pro.training_plan.addSession.notes')).replaceText('Upper body focus');
-      await element(by.id('pro.training_plan.addSession.notes')).tap();
-      await waitFor(element(by.id('pro.training_plan.addSession.notes'))).toBeFocused().withTimeout(2000);
-      await device.getUiDevice().pressEnter();
+      await device.getUiDevice().pressBack();
+      await element(by.id('pro.training_plan.addSession.confirm')).tap();
     } else {
       await element(by.id('pro.training_plan.addSession.name')).tapReturnKey();
       await element(by.id('pro.training_plan.addSession.notes')).replaceText('Upper body focus');
