@@ -61,19 +61,24 @@ describeWithE2EAuthSession('Professional Training Builder', () => {
     await waitFor(element(by.id('pro.training_plan.addSession.name'))).toBeVisible().withTimeout(5000);
     await element(by.id('pro.training_plan.addSession.name')).replaceText('Push Day');
     if (device.getPlatform() === 'android') {
-      // Espresso replaceText neither focuses the field nor opens the IME, so
-      // there is no keyboard to advance past or dismiss here. tapReturnKey is
-      // TypeTextAction('\n') on Android — its focusing click plus IME traffic
-      // is what typed a stray character into the submitted session name in CI
-      // ("gPush Day"), and the blind coordinate tap next to the IME edge is
-      // the same typing hazard.
+      // The name field autoFocuses, so the Android soft keyboard is open over
+      // the modal. Submit through the notes field's IME "Done" action
+      // (returnKeyType="done" -> onSubmitEditing={handleAddSession}) via the
+      // real UiAutomator Enter: it creates the session AND dismisses the
+      // keyboard, so the IME does not stay open over the plan screen covering
+      // the new session row. tapReturnKey is TypeTextAction('\n') and injected a
+      // stray character into the name in CI ("gPush Day"); a blind coordinate
+      // tap left the keyboard up.
       await element(by.id('pro.training_plan.addSession.notes')).replaceText('Upper body focus');
+      await element(by.id('pro.training_plan.addSession.notes')).tap();
+      await waitFor(element(by.id('pro.training_plan.addSession.notes'))).toBeFocused().withTimeout(2000);
+      await device.getUiDevice().pressEnter();
     } else {
       await element(by.id('pro.training_plan.addSession.name')).tapReturnKey();
       await element(by.id('pro.training_plan.addSession.notes')).replaceText('Upper body focus');
       await device.tap({ x: 350, y: 420 });
+      await element(by.id('pro.training_plan.addSession.confirm')).tap();
     }
-    await element(by.id('pro.training_plan.addSession.confirm')).tap();
 
     await waitFor(element(by.id('pro.training_plan.sessionRow.Push_Day'))).toBeVisible().withTimeout(10000);
     await element(by.id('pro.training_plan.sessionRow.Push_Day.addItem')).tap();

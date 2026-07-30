@@ -2,6 +2,7 @@ const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? des
 const {
   advanceFocusedEditor,
   dismissFocusedEditor,
+  isElementNotFoundError,
   submitFocusedEditor,
   waitForElementAbsent,
   waitForElementActionable,
@@ -134,7 +135,26 @@ describeWithE2EAuthSession('Professional Nutrition Builder', () => {
     await removeButton.tap();
     const deleteAction = element(by.text('Delete')).atIndex(1);
     await waitFor(deleteAction).toBeVisible().withTimeout(5000);
-    await deleteAction.tap();
+    // The destructive action lives in a native UIAlertController presented with a
+    // spring animation. With synchronization disabled a tap during that animation
+    // is accepted by Detox (reports success) but never routed to onPress, so the
+    // item is not removed and the total stays put. Confirm the outcome — the meal
+    // total recalculating to zero — and re-tap if the alert is still up. This is
+    // animation-duration-agnostic, unlike a fixed settle.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await deleteAction.tap();
+      } catch (error) {
+        // A prior tap already dismissed the alert; the outcome check decides.
+        if (!isElementNotFoundError(error)) throw error;
+      }
+      try {
+        await waitForElementText('pro.nutrition_meal.total.calories', '0 kcal', 5000);
+        break;
+      } catch (_error) {
+        // Total has not recalculated: the tap raced the present animation. Retry.
+      }
+    }
 
     await waitForElementText('pro.nutrition_meal.total.calories', '0 kcal', 15000);
     await waitForElementAbsent('pro.nutrition_meal.foodRow.E2E_Brown_Rice', 10000);
