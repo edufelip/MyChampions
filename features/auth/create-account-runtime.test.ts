@@ -56,3 +56,17 @@ test('create-account E2E dispatches a platform-safe confirmation editor action',
     /device\.getPlatform\(\) === 'android'[\s\S]+device\.getUiDevice\(\)\.pressEnter\(\)[\s\S]+tapReturnKey\(\)/
   );
 });
+
+test('create-account E2E taps the confirmation editor only where focus requires it', () => {
+  // iOS dtx_replaceText() already leaves the field first responder, and tap()
+  // asserts hittability, which the software keyboard defeats. Pin the tap inside
+  // the Android guard so the iOS-fatal unconditional tap cannot come back.
+  assert.equal(
+    authSignInE2ESource.match(/passwordConfirmationInput'\)\)\.tap\(\);/g)?.length,
+    1
+  );
+  assert.match(
+    authSignInE2ESource,
+    /if \(device\.getPlatform\(\) === 'android'\) \{[\s\S]*?element\(by\.id\('auth\.createAccount\.passwordConfirmationInput'\)\)\.tap\(\);\s*\}\s*await waitFor\(element\(by\.id\('auth\.createAccount\.passwordConfirmationInput'\)\)\)\s*\.toBeFocused\(\)/
+  );
+});

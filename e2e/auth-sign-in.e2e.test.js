@@ -116,7 +116,14 @@ describe('Auth Sign-In', () => {
     await element(by.id('auth.createAccount.passwordInput')).tapReturnKey();
     await waitFor(element(by.id('auth.createAccount.passwordConfirmationInput'))).toBeVisible().withTimeout(5000);
     await element(by.id('auth.createAccount.passwordConfirmationInput')).replaceText(createAccountPassword);
-    await element(by.id('auth.createAccount.passwordConfirmationInput')).tap();
+    if (device.getPlatform() === 'android') {
+      // Espresso ViewActions.replaceText() only sets the value, so the editor
+      // still has to be tapped to take focus. On iOS dtx_replaceText() already
+      // leaves the field first responder, and tapping it again asserts
+      // hittability, which the software keyboard defeats once the confirmation
+      // field sits low in a scroll view with no keyboard-inset handling.
+      await element(by.id('auth.createAccount.passwordConfirmationInput')).tap();
+    }
     await waitFor(element(by.id('auth.createAccount.passwordConfirmationInput')))
       .toBeFocused()
       .withTimeout(2000);
