@@ -2925,7 +2925,9 @@ jobs:
           expected_avd = f"@{sys.argv[2]}".encode()
           expected_port = sys.argv[3].encode()
           executable = os.path.realpath(f"/proc/{sys.argv[1]}/exe")
-          if executable not in {sys.argv[4], sys.argv[5]}:
+          # -no-window launches make the emulator shim exec the -headless QEMU
+          # sibling of the recorded binary (same directory, "-headless" suffix).
+          if executable not in {sys.argv[4], sys.argv[5], f"{sys.argv[5]}-headless"}:
               raise SystemExit(1)
           if expected_avd not in arguments:
               raise SystemExit(1)
@@ -3608,6 +3610,8 @@ jobs:
                   in {
                       values["executable"],
                       values["qemu_executable"],
+                      # -headless sibling: what -no-window launches exec into
+                      values["qemu_executable"] + "-headless",
                   }
                   and f"@{avd}".encode() in arguments
                   and any(
