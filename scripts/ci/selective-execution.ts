@@ -321,6 +321,13 @@ function createNativePlan(
             '-c',
             configuration,
             '--headless',
+            // One bounded retry per failing spec file. Native suites run ~74
+            // hardware invocations per gate; without a retry the gate needs
+            // every one to pass first try, which the flake record shows is a
+            // coin flip. Detox logs retried files, so a flaky pass stays
+            // visible in the lane output rather than hidden.
+            '--retries',
+            '1',
             '--artifacts-location',
             join(diagnosticsRoot, platform, id),
             '--record-logs',

@@ -101,6 +101,11 @@ test('Android uses one dev-debug build and never rebuilds per suite', () => {
       'android.emu.debug',
     ]);
     assert.equal(invocation.args.includes('build'), false);
+    // Bounded retry: native hardware invocations get exactly one Detox retry,
+    // and Detox logs retried files so a flaky pass stays visible.
+    const retriesIndex = invocation.args.indexOf('--retries');
+    assert.notEqual(retriesIndex, -1);
+    assert.equal(invocation.args[retriesIndex + 1], '1');
     assert.equal(invocation.env.APP_VARIANT, 'dev');
     assert.equal(invocation.env.EXPO_PUBLIC_ENV, 'dev');
     assert.equal(invocation.env.CI_REQUIRE_E2E_EXECUTION, 'true');
