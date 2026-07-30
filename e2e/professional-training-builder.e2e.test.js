@@ -60,9 +60,19 @@ describeWithE2EAuthSession('Professional Training Builder', () => {
     await element(by.id('pro.training_plan.addSession')).tap();
     await waitFor(element(by.id('pro.training_plan.addSession.name'))).toBeVisible().withTimeout(5000);
     await element(by.id('pro.training_plan.addSession.name')).replaceText('Push Day');
-    await element(by.id('pro.training_plan.addSession.name')).tapReturnKey();
-    await element(by.id('pro.training_plan.addSession.notes')).replaceText('Upper body focus');
-    await device.tap({ x: 350, y: 420 });
+    if (device.getPlatform() === 'android') {
+      // Espresso replaceText neither focuses the field nor opens the IME, so
+      // there is no keyboard to advance past or dismiss here. tapReturnKey is
+      // TypeTextAction('\n') on Android — its focusing click plus IME traffic
+      // is what typed a stray character into the submitted session name in CI
+      // ("gPush Day"), and the blind coordinate tap next to the IME edge is
+      // the same typing hazard.
+      await element(by.id('pro.training_plan.addSession.notes')).replaceText('Upper body focus');
+    } else {
+      await element(by.id('pro.training_plan.addSession.name')).tapReturnKey();
+      await element(by.id('pro.training_plan.addSession.notes')).replaceText('Upper body focus');
+      await device.tap({ x: 350, y: 420 });
+    }
     await element(by.id('pro.training_plan.addSession.confirm')).tap();
 
     await waitFor(element(by.id('pro.training_plan.sessionRow.Push_Day'))).toBeVisible().withTimeout(10000);
