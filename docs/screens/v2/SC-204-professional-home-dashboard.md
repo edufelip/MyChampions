@@ -38,6 +38,7 @@
 - Dashboard blocks use DS surface primitives (`DsCard`) and unified CTA primitives (`DsPillButton`) with clear primary/secondary hierarchy.
 - Offline and lock warnings follow DS semantic alert structure while preserving existing gating logic.
 - Invite-code actions and navigation CTAs remain behavior-equivalent; presentation is standardized for cleaner visual rhythm.
+- On compact native viewports, native validation scrolls the dashboard until the invite-code value and share/regenerate controls are visible before interacting with them.
 
 ## Validation Rules
 - Any operation that would exceed 10 active students must trigger subscription gate if no entitlement.

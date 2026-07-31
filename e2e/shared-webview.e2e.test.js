@@ -1,4 +1,5 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const { scrollToLegalRows } = require('./account-settings-actions');
 
 async function selectStudentRole() {
   await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
@@ -27,12 +28,14 @@ describeWithE2EAuthSession('Shared WebView', () => {
     await selectStudentRole();
     await openAccountTab();
 
+    await scrollToLegalRows();
     await element(by.id('settings.account.privacyPolicyRow')).tap();
     await waitFor(element(by.id('shared.webview.screen'))).toBeVisible().withTimeout(10000);
     await waitFor(element(by.id('shared.webview.webview'))).toBeVisible().withTimeout(10000);
 
     await reopenAccountRoute();
 
+    await scrollToLegalRows();
     await element(by.id('settings.account.termsRow')).tap();
     await waitFor(element(by.id('shared.webview.screen'))).toBeVisible().withTimeout(10000);
     await waitFor(element(by.id('shared.webview.webview'))).toBeVisible().withTimeout(10000);

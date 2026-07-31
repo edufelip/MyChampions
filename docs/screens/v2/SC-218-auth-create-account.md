@@ -9,6 +9,7 @@
 ## User Actions
 - Primary:
   - Create account with name, email, password, and password confirmation.
+  - Submit the completed form from the confirmation field's Done/Return key or the primary create-account CTA.
   - Create/sign in with Google.
   - Create/sign in with Apple.
 - Secondary:
@@ -27,6 +28,7 @@
 - Password must not contain emoji.
 - Special character validation uses ASCII punctuation symbols only.
 - Password confirmation must exactly match password.
+- Done/Return-key and primary-CTA submission must validate the latest displayed confirmation value, even when submission immediately follows text replacement.
 - Duplicate email account creation is blocked.
 - Social login with existing email must link to existing account.
 - Known sign-up failures must show reason-specific actionable copy.
@@ -53,6 +55,7 @@
 - Email already used by existing account blocks duplicate creation.
 - Social provider with existing email links provider into existing account.
 - Password reveal toggle must not alter stored field value.
+- Immediate submission after editing password confirmation must not validate a stale rendered value or surface a false required-field error.
 
 ## Copy Draft (Initial)
 - Title: `Create your account`
@@ -70,6 +73,7 @@
   - Full create-account form is implemented with localized fields for `name`, `email`, `password`, and `password_confirmation`.
   - Password and password-confirmation reveal/hide toggles are implemented.
   - Validation rules are enforced in tested domain logic (`required`, password policy, no emoji, ASCII symbol, password confirmation match).
+  - Confirmation changes are mirrored synchronously for CTA submission, while Done/Return submission also supplies the native field snapshot; validation and the server request consume one immutable submission input.
   - Contextual submit error mapping is implemented for `duplicate_email`, `network`, `provider_conflict`, and `configuration`.
   - Email/password sign-up is wired to the MyChampions server auth boundary for native and browser runtimes.
   - Google social auth shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
@@ -89,6 +93,6 @@
 - Use case: UC-002.0, UC-002.10, UC-002.11, UC-002.18, UC-002.21
 - Acceptance criteria: AC-227, AC-228, AC-229, AC-230, AC-231, AC-232, AC-239, AC-244, AC-246, AC-250, AC-251, AC-252, AC-266, AC-512
 - Business rules: BR-232, BR-233, BR-234, BR-235, BR-244, BR-251, BR-264, BR-265, BR-266, BR-275, BR-297
-- Test cases: TC-228, TC-229, TC-230, TC-231, TC-232, TC-233, TC-234, TC-242, TC-247, TC-252, TC-254, TC-255, TC-288, TC-330, TC-512
+- Test cases: TC-228, TC-229, TC-230, TC-231, TC-231A, TC-232, TC-233, TC-234, TC-242, TC-247, TC-252, TC-254, TC-255, TC-288, TC-330, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md

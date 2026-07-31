@@ -135,6 +135,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 - Missing role isolation: no RevenueCat paywall is presented until a locked account role is available.
 - Subscription loading (`isSubscriptionLoading === true` and `hasAiAccess === false`): `ActivityIndicator` shown instead of locked banner — avoids false paywall flash before entitlement is known.
 - `aiEntitlementStatus === 'unknown'` (SDK not yet initialised or error): treated as locked — paywall banner shown (strict policy, D-132).
+- Deterministic native validation runs locked and unlocked expectations in separate fresh-Metro phases. The locked phase sets both AI and professional entitlements to `lapsed`; the unlocked phase sets both to `active`, and each invocation executes only its matching scenario.
 
 ## Links
 | Artifact | IDs |

@@ -6,6 +6,11 @@ on:
       - Selective feature CI preflight
     types:
       - completed
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       pull_request_number:

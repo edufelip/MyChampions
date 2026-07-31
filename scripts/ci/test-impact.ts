@@ -417,7 +417,8 @@ export function resolveImpact(
   const platforms = new Set<string>();
   const directFeatures = new Set<string>();
   const affectedFeatures = new Set<string>();
-  let globallyWidened = false;
+  const directlyMatchedSuites = new Set<string>();
+  let matchedCompleteMatrixRule = false;
 
   if (options.forceFull) fallbackReasons.push('full execution was explicitly requested');
   if (validationErrors.length > 0) {
@@ -442,6 +443,7 @@ export function resolveImpact(
     }
     for (const [suiteId, suite] of Object.entries(manifest.suites)) {
       if (!suite.specs.includes(path)) continue;
+      if (suite.ci) directlyMatchedSuites.add(suiteId);
       for (const [featureId, feature] of Object.entries(manifest.features)) {
         if ([...feature.webSuites, ...feature.detoxSuites].includes(suiteId)) {
           directFeatures.add(featureId);
@@ -454,7 +456,7 @@ export function resolveImpact(
       sharedRuleIds.add(rule.id);
       for (const platform of rule.platforms ?? []) platforms.add(platform);
       if (rule.impact === 'all') {
-        globallyWidened = true;
+        matchedCompleteMatrixRule = true;
         for (const featureId of Object.keys(manifest.features)) affectedFeatures.add(featureId);
         reasons.push(`${path} matched global shared rule ${rule.id}`);
       }
@@ -485,6 +487,7 @@ export function resolveImpact(
     documentationOnly &&
     fallbackReasons.length === 0 &&
     directFeatures.size === 0 &&
+    directlyMatchedSuites.size === 0 &&
     sharedRuleIds.size === 0
   ) {
     return {
@@ -513,6 +516,13 @@ export function resolveImpact(
 
   const selectedSuites = new Set<string>();
   const unitTestPatterns = new Set<string>();
+  const completeMatrixRequired = fallbackReasons.length > 0 || matchedCompleteMatrixRule;
+  if (completeMatrixRequired) {
+    for (const [suiteId, suite] of Object.entries(manifest.suites)) {
+      if (suite.ci) selectedSuites.add(suiteId);
+    }
+  }
+  for (const suiteId of directlyMatchedSuites) selectedSuites.add(suiteId);
   for (const featureId of affectedFeatures) {
     const feature = manifest.features[featureId];
     if (!feature) continue;
@@ -546,8 +556,7 @@ export function resolveImpact(
   const detoxAndroidSuites = [...selectedSuites].filter(
     (suiteId) =>
       manifest.suites[suiteId]?.runner === 'detox' &&
-      manifest.suites[suiteId]?.platforms?.includes('android') &&
-      (fallbackReasons.length > 0 || globallyWidened || platforms.has('android'))
+      manifest.suites[suiteId]?.platforms?.includes('android')
   );
 
   return {

@@ -21,6 +21,7 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 - Primary create/retry actions use DS pill buttons and localization-key copy only.
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
+- On compact native viewports, native validation scrolls the builder until the current action (including a reopened plan's `Add session` CTA) is visible. After confirming an exercise it waits for the native modal transition to leave the hierarchy, then adds bottom-navigation clearance before tapping the footer save action below longer session/item content.
 - State orchestration uses centralized plans store (`features/plans/plans-store.ts`) through the existing `useTrainingPlanBuilder` adapter hook.
 
 ## User Actions
@@ -134,7 +135,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | `addTrainingSessionItem` | Add exercise item to session |
 | `removeTrainingSessionItem` | Remove exercise item from session |
 
-Plan library reads, predefined assignment/draft operations, and builder mutations use the MyChampions server through `features/plans/plan-source.ts` and `features/plans/plan-builder-source.ts`; outside E2E fixtures, missing local server auth fails closed.
+Plan library reads, predefined assignment/draft operations, and builder mutations use the MyChampions server through `features/plans/plan-source.ts` and `features/plans/plan-builder-source.ts`; outside E2E fixtures, missing local server auth fails closed. Under the explicit provider-free E2E plan fixture, detail resolution loads a newly created assigned draft when its runtime ID is absent from the static builder catalog; an ID absent from both fixture stores still fails closed.
 
 ## Localization Keys
 
@@ -222,6 +223,6 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Use case | UC-002.14, UC-002.20 |
 | Acceptance criteria | AC-256, AC-264, AC-265 |
 | Business rules | BR-281, BR-282, BR-283, BR-293, BR-294, BR-303, BR-304, BR-305, BR-306 |
-| Test cases | TC-268, TC-269, TC-270, TC-277, TC-278, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
+| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-277, TC-278, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
 | Decisions | D-013, D-072, D-080, D-082, D-111, D-112, D-114, D-157, D-173 |
 | Backlog | BL-106 |

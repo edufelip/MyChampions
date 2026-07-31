@@ -44,6 +44,10 @@
 - Pending-queue filtering/search cannot expose records outside professional scope.
 - Bulk deny can operate only on `pending_confirmation` requests and must preserve lifecycle audit metadata.
 - Bulk assignment target list must include only active students eligible for selected plan domain.
+- Each plan-picker row exposes a stable semantic assignment control for native
+  interaction. Native automation waits for the modal's presentation-complete
+  signal before activating that control; viewport coordinates and fixed delays
+  are not part of the selection contract.
 
 ## Data Contract
 - Inputs:
@@ -66,5 +70,5 @@
 - Use case: UC-002.2, UC-002.5, UC-002.12, UC-002.20
 - Acceptance criteria: AC-206, AC-215, AC-254, AC-265
 - Business rules: BR-206, BR-214, BR-268, BR-283
-- Test cases: TC-206, TC-215, TC-257, TC-258, TC-269, TC-301, TC-302
+- Test cases: TC-206, TC-215, TC-257, TC-258, TC-269, TC-269A, TC-301, TC-302
 - Diagram: docs/diagrams/domain-relationships.md

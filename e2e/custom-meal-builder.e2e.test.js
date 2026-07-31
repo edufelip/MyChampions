@@ -1,4 +1,8 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const {
+  waitForElementAbsent,
+  waitForElementActionable,
+} = require('./native-editor-actions');
 
 const mealInput = {
   name: process.env.E2E_CUSTOM_MEAL_NAME || 'E2E Recovery Bowl',
@@ -46,20 +50,22 @@ async function scrollToSaveButton() {
 }
 
 async function dismissKeyboardIfVisible() {
+  // The Done button lives in an iOS InputAccessoryView docked to the keyboard,
+  // so it exists only while the keyboard is presented — and it animates with
+  // the keyboard's spring. Synchronization is disabled in this suite, so a
+  // bare tap can race that animation and land on the moving keyboard host.
+  // waitForElementActionable requires hittability plus two stable frames,
+  // which rides the animation out. On Android the accessory never exists
+  // (Espresso replaceText does not focus, so no keyboard comes up).
   try {
-    await waitFor(element(by.text('Done'))).toBeVisible().withTimeout(3000);
-    await element(by.text('Done')).tap();
-    return true;
+    await waitForElementActionable('meal.builder.keyboard.done', 3000);
   } catch (_error) {
-    try {
-      await waitFor(element(by.id('meal.builder.keyboard.done'))).toBeVisible().withTimeout(1000);
-      await element(by.id('meal.builder.keyboard.done')).tap();
-      return true;
-    } catch (_fallbackError) {
-      // Keyboard is already dismissed.
-      return false;
-    }
+    // No actionable accessory within the window: the keyboard is not up.
+    return false;
   }
+  await element(by.id('meal.builder.keyboard.done')).tap();
+  await waitForElementAbsent('meal.builder.keyboard.done', 5000);
+  return true;
 }
 
 async function fillField(testID, value) {
@@ -87,11 +93,14 @@ describeWithE2EAuthSession('Custom Meal Builder', () => {
     await openCreateMealScreen();
 
     await scrollToBottom();
-    const didDismissKeyboard = await dismissKeyboardIfVisible();
-    if (!didDismissKeyboard) {
-      await device.tap({ x: 352, y: 500 });
-    }
+    await dismissKeyboardIfVisible();
+    await waitForElementAbsent('meal.builder.keyboard.done', 5000);
     await scrollToSaveButton();
+    // The save tap follows a scroll gesture; with synchronization disabled a
+    // tap injected into scroll momentum lets the ScrollView steal the
+    // responder, cancelling the press without any Detox error. The stable-
+    // frame gate guarantees the scroll has settled before the tap.
+    await waitForElementActionable('meal.builder.cta.save');
     await element(by.id('meal.builder.cta.save')).tap();
 
     await scrollToTop();
@@ -116,11 +125,12 @@ describeWithE2EAuthSession('Custom Meal Builder', () => {
     await fillField('meal.builder.field.proteins', mealInput.proteins);
     await fillField('meal.builder.field.fats', mealInput.fats);
 
-    const didDismissKeyboard = await dismissKeyboardIfVisible();
-    if (!didDismissKeyboard) {
-      await device.tap({ x: 352, y: 500 });
-    }
+    await dismissKeyboardIfVisible();
+    await waitForElementAbsent('meal.builder.keyboard.done', 5000);
     await scrollToBottom();
+    // Same settled-scroll gate as the validation test: a tap injected into
+    // scroll momentum is silently cancelled by the responder system.
+    await waitForElementActionable('meal.builder.cta.save');
     await element(by.id('meal.builder.cta.save')).tap();
 
     await waitFor(element(by.id('meal.library.screen'))).toBeVisible().withTimeout(10000);

@@ -47,6 +47,7 @@
   - `app/auth/accept-terms.tsx`
   - `features/auth/terms.logic.ts`
   - `features/auth/terms-config.ts`
+  - `features/auth/auth-terms-runtime.test.ts`
   - `features/auth/auth-session.tsx`
   - `features/auth/profile-source.ts`
   - `features/auth/auth-route-guard.logic.ts`
@@ -56,6 +57,7 @@
   - Terms acceptance persistence is MyChampions server-backed (`acceptedTermsVersion` in profile source).
   - Route guard enforces terms gate globally for authenticated sessions.
   - Primary accept action uses `DsPillButton`; foreground and disabled colors are scheme-aware and covered by contrast tests.
+  - Native E2E launches a fresh app instance with Detox synchronization disabled in the launch arguments before each terms case; it does not use `reloadReactNative` across the idling-registry boundary because that corrupts the Android Detox/Espresso registry, and startup analytics cannot block a later synchronization transition.
 
 ## Links
 - Functional requirement: FR-101, FR-164, FR-249

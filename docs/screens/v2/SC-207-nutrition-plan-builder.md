@@ -21,6 +21,25 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
+- Native professional and self-managed builder validation submits the controlled
+  name and hydration values before save and verifies both exact values. From
+  name to hydration, Android dismisses Gboard through native Back and taps the
+  semantic hydration field; iOS Return invokes the form's intentional focus
+  handoff and validation waits for hydration to report focused without
+  re-tapping through the keyboard-type transition. The hydration editor is then
+  dismissed through the same platform path before waiting for the save control
+  to report enabled.
+- Native compact-viewport coverage scrolls the mounted add-meal confirmation
+  control fully into view after asserting the exact meal name and dismissing
+  its editor through native Back on Android or Return on iOS, and before
+  tapping it. After opening the taller add-food form, coverage asserts that the
+  form is mounted in measured page flow and scrolls the search input, result,
+  quantity, and add action into view instead of requiring the entire form to
+  satisfy a visibility threshold. Search asserts the exact query, dismisses
+  Gboard, and waits for the debounced result on Android or uses iOS Return, and
+  after a successful Add the editor leaves the native hierarchy before coverage
+  targets the new row's visible remove action. Removal selects the semantic
+  localized confirmation action without screen coordinates.
 - State orchestration uses centralized plans store (`features/plans/plans-store.ts`) through the existing `useNutritionPlanBuilder` adapter hook.
 
 ## User Actions
@@ -120,7 +139,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | `searchFoods` | MyChampions server food-search source backed by the local catalog mirror |
 | `getMyCustomMeals` | Load the current user's saved CustomMeal library for snapshot insertion |
 
-Plan library and builder persistence use the MyChampions server through `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`; outside E2E fixtures, missing local server auth fails closed.
+Plan library and builder persistence use the MyChampions server through `features/plans/plan-builder-source.ts` and `features/plans/plan-source.ts`; outside E2E fixtures, missing local server auth fails closed. Under the explicit provider-free E2E plan fixture, detail resolution loads a newly created assigned draft when its runtime ID is absent from the static builder catalog; an ID absent from both fixture stores still fails closed.
 
 ## Localization Keys
 
@@ -199,8 +218,8 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | Functional requirements | FR-240, FR-241, FR-242, FR-243, FR-247, FR-248, FR-223, FR-224, FR-225, FR-226 |
 | Use case | UC-002.14, UC-002.20 |
-| Acceptance criteria | AC-256, AC-264, AC-265 |
-| Business rules | BR-281, BR-282, BR-283, BR-291, BR-292, BR-328, BR-331, BR-332, BR-334, BR-337 |
-| Test cases | TC-268, TC-269, TC-270, TC-275, TC-276, TC-280, TC-328 |
-| Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114, D-173 |
+| Acceptance criteria | AC-256, AC-264, AC-265, AC-541 |
+| Business rules | BR-281, BR-282, BR-283, BR-291, BR-292, BR-328, BR-331, BR-332, BR-334, BR-337, BR-343 |
+| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-275, TC-276, TC-277, TC-280, TC-328 |
+| Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114, D-173, D-194 |
 | Backlog | BL-106 |

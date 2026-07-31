@@ -162,4 +162,45 @@ describe('profile-source server api', () => {
     await deleteAccountAndDataFromSource(deps);
     assert.equal(method, 'DELETE');
   });
+
+  it('keeps the explicit dev E2E deletion fixture provider-free', async () => {
+    const previousVariant = process.env.APP_VARIANT;
+    const previousE2EFlag = process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
+    const previousDev = (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    const previousFetch = globalThis.fetch;
+    let fetchCalls = 0;
+    let injectedFetchCalls = 0;
+
+    process.env.APP_VARIANT = 'dev';
+    process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = 'true';
+    (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
+    globalThis.fetch = async () => {
+      fetchCalls += 1;
+      throw new Error('E2E account deletion must not call the server.');
+    };
+
+    try {
+      await deleteAccountAndDataFromSource(
+        makeDeps((request) => {
+          injectedFetchCalls += 1;
+          assert.equal(request.method, 'DELETE');
+          return new Response(null, { status: 204 });
+        })
+      );
+      await deleteAccountAndDataFromSource();
+      assert.equal(injectedFetchCalls, 1);
+      assert.equal(fetchCalls, 0);
+    } finally {
+      if (previousVariant === undefined) delete process.env.APP_VARIANT;
+      else process.env.APP_VARIANT = previousVariant;
+      if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
+      else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
+      if (previousDev === undefined) {
+        delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+      } else {
+        (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
+      }
+      globalThis.fetch = previousFetch;
+    }
+  });
 });

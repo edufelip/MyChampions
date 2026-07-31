@@ -34,18 +34,24 @@ describeWithE2EAuthSession('Professional Student Roster', () => {
     await expect(element(by.id('pro.students.row.e2e-pending-student'))).toBeVisible();
 
     await element(by.id('pro.students.filter.active')).tap();
+    await waitFor(element(by.id('pro.students.row.e2e-pending-student')))
+      .not.toExist()
+      .withTimeout(5000);
     await expect(element(by.id('pro.students.row.e2e-active-student'))).toBeVisible();
     await expect(element(by.id('pro.students.row.e2e-dual-student'))).toBeVisible();
-    await expect(element(by.id('pro.students.row.e2e-pending-student'))).not.toBeVisible();
 
     await element(by.id('pro.students.search')).replaceText('Drew');
-    await waitFor(element(by.id('pro.students.row.e2e-dual-student'))).toBeVisible().withTimeout(5000);
-    await expect(element(by.id('pro.students.row.e2e-active-student'))).not.toBeVisible();
+    await waitFor(element(by.id('pro.students.row.e2e-active-student')))
+      .not.toExist()
+      .withTimeout(5000);
+    await expect(element(by.id('pro.students.row.e2e-dual-student'))).toBeVisible();
 
     await element(by.id('pro.students.search')).replaceText('');
     await element(by.id('pro.students.filter.pending')).tap();
     await waitFor(element(by.id('pro.students.row.e2e-pending-student'))).toBeVisible().withTimeout(5000);
-    await expect(element(by.id('pro.students.row.e2e-active-student'))).not.toBeVisible();
+    await waitFor(element(by.id('pro.students.row.e2e-active-student')))
+      .not.toExist()
+      .withTimeout(5000);
 
     await element(by.id('pro.students.row.e2e-pending-student')).tap();
     await waitFor(element(by.id('pro.student_profile.screen'))).toBeVisible().withTimeout(10000);

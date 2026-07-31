@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useGlobalSearchParams, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, LogBox, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { getDsTheme } from '@/constants/design-system';
@@ -15,6 +15,11 @@ import {
   resolveAuthGuardRedirect,
 } from '@/features/auth/auth-route-guard.logic';
 import { AuthSessionProvider, useAuthSession } from '@/features/auth/auth-session';
+
+if (__DEV__ && process.env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX === 'true') {
+  // Runner output still records warnings; only the in-app overlay is disabled.
+  LogBox.ignoreAllLogs();
+}
 
 export const unstable_settings = {
   anchor: '(tabs)',

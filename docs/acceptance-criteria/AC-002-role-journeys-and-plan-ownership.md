@@ -31,9 +31,10 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-225`: Student dashboard, relationship, and tracking empty states include explicit self-guided continuation messaging and direct actions.
 - `AC-226`: Student-facing connection flows do not display professional credential/verification status as badge/filter.
 - `AC-227`: Auth entry supports email/password, Google, and Apple login methods.
+- `AC-227A`: Submitting email/password sign-in immediately after editing a credential, from either the password Done/Return key or the primary CTA, honors the currently displayed values without a stale required-field error.
 - `AC-228`: Create-account form requires `name`, `email`, `password`, and `password_confirmation`.
 - `AC-229`: Password validation enforces minimum 8 characters, at least one uppercase letter, one number, one special character, and no emojis.
-- `AC-230`: Password and password-confirmation values must match before account creation.
+- `AC-230`: Password and password-confirmation values must match before account creation; submitting immediately from the confirmation Done/Return key or primary CTA honors the currently displayed confirmation value without a stale required-field error.
 - `AC-231`: Email addresses are unique per account and cannot create duplicates.
 - `AC-232`: Social login with email matching existing account links provider identity into existing account.
 - `AC-233`: Users with locked role are auto-redirected away from role-selection to role home.
@@ -87,6 +88,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-538`: Students with an active assigned NutritionPlan see calorie/macro targets, assigned meal cards, hydration tracking using the effective assigned goal, meal log completion state, and a plan-change request form tied to the assigned plan context.
 - `AC-539`: In a browser, confirming sign-out clears the local identity and exposes unauthenticated entry immediately, but a subsequent email/password or social login cannot send its session-establishing request until the credentialed sign-out barrier is released, including when sign-out fails; native bearer-session clearing remains immediate.
 - `AC-266`: After successful sign-in or create-account, users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted.
+- `AC-541`: SC-207 renders the complete add-food editor in measured screen flow rather than as clipped absolute content, so search, result selection, quantity review, add, and removal confirmation are reachable without coordinate-only interaction on compact iOS and Android viewports. A successful Add removes the editor from the native hierarchy before exposing the new row action.
 - `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
 - `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.
 - `AC-515`: In SC-214, AI macro estimates pre-fill all form fields (calories, carbs, proteins, fats, totalGrams) for user review and editing before saving.
@@ -359,6 +361,7 @@ Feature: Role-based onboarding and care assignments
     When they add a food item with name, quantity, and notes
     And then remove it
     Then the item list updates accordingly
+    And compact native viewports can scroll every add-food action into view
 
   Scenario: SC-207 Nutrition plan builder — starter template clone
     Given a professional opens a starter template in the nutrition plan builder

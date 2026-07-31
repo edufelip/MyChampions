@@ -9,6 +9,7 @@
 ## User Actions
 - Primary:
   - Sign in with email and password.
+  - Submit the completed form from the password field's Done/Return key or the primary sign-in CTA.
   - Sign in with Google.
   - Sign in with Apple.
 - Secondary:
@@ -23,6 +24,7 @@
 
 ## Validation Rules
 - Email/password path requires non-empty email and password.
+- Done/Return-key and primary-CTA submission must validate and submit the latest displayed credential values, even when submission immediately follows text replacement.
 - Password field supports reveal/hide toggle.
 - Social sign-in with existing email must link to existing account instead of creating duplicate account.
 - Known sign-in failures must show reason-specific actionable copy.
@@ -40,6 +42,7 @@
 
 ## Edge Cases
 - Existing email/password account + social login with same email links provider into existing account.
+- Immediate submission after editing an email/password credential must not validate a stale rendered value or surface a false required-field error.
 - Locked-role account routes directly to role home after sign-in.
 - Wrong-role route attempts after sign-in are redirected to role home by route guard.
 - On web, a dismissed Google Identity Services prompt returns the screen to a settled cancellation state; skipped or undisplayable prompts fail closed through the configured fallback/error path rather than leaving the action pending.
@@ -63,6 +66,7 @@
 - Current implemented behavior:
   - No back button in header; sign-in is treated as the primary auth entry state.
   - Email/password inputs with non-empty validation.
+  - Email and password changes are mirrored synchronously for CTA submission, while Done/Return submission also supplies the native password snapshot; validation, the E2E fixture, and the server request consume one immutable submission input.
   - Password reveal/hide eye toggle embedded inside the password input field.
   - Contextual error copy mapping for `invalid_credentials`, `network`, `provider_conflict`, and `configuration`.
   - Email/password sign-in is wired to the MyChampions server auth boundary for native and browser runtimes.
@@ -80,10 +84,10 @@
   - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
 
 ## Links
-- Functional requirement: FR-101, FR-163, FR-164, FR-169, FR-171, FR-172, FR-173, FR-182, FR-205, FR-206, FR-207, FR-208, FR-217, FR-249
+- Functional requirement: FR-101, FR-163, FR-164, FR-164A, FR-169, FR-171, FR-172, FR-173, FR-182, FR-205, FR-206, FR-207, FR-208, FR-217, FR-249
 - Use case: UC-002.0, UC-002.1, UC-002.10, UC-002.11, UC-002.18, UC-002.21
-- Acceptance criteria: AC-227, AC-231, AC-232, AC-233, AC-239, AC-244, AC-250, AC-251, AC-252, AC-266, AC-512
+- Acceptance criteria: AC-227, AC-227A, AC-231, AC-232, AC-233, AC-239, AC-244, AC-250, AC-251, AC-252, AC-266, AC-512
 - Business rules: BR-232, BR-234, BR-235, BR-236, BR-244, BR-264, BR-265, BR-266, BR-275, BR-297
-- Test cases: TC-228, TC-233, TC-234, TC-235, TC-242, TC-252, TC-254, TC-255, TC-288, TC-330, TC-512
+- Test cases: TC-228, TC-228A, TC-233, TC-234, TC-235, TC-242, TC-252, TC-254, TC-255, TC-288, TC-330, TC-512
 - Diagram: docs/diagrams/role-journey-flow.md
 - Diagram: docs/diagrams/screen-state-flows-v2-batch1.md

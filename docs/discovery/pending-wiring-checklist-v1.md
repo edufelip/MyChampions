@@ -46,21 +46,121 @@ Track intentionally deferred implementation wiring so it is completed before rel
 
 ## E2E Wiring
 - `Done`: Detox project scaffolding added (`.detoxrc.js`, `e2e/jest.config.js`, auth smoke specs, Android instrumentation wiring, auth screen `testID` selectors).
-- `Done`: Focused iOS Detox PR smoke wiring added. `.detoxrc.js` supports `DETOX_JEST_CONFIG`, `e2e/jest.smoke.config.js` selects the migration-critical smoke specs, `package.json` exposes `test:e2e:ios:debug:smoke`, and `.github/workflows/ios-pr.yml` runs the debug Detox build/test commands.
-- `Done`: Detox smoke coverage now includes auth sign-in, onboarding role-lock, wrong-role redirects, and student invite entry through `auth-sign-in.e2e.test.js`, `auth-role-selection.e2e.test.js`, and `student-professionals.e2e.test.js`.
+- `Done`: Focused iOS Detox manual smoke wiring added. `.detoxrc.js` supports `DETOX_JEST_CONFIG`, `e2e/jest.smoke.config.js` selects the migration-critical smoke specs, `package.json` exposes `test:e2e:ios:debug:smoke`, and the legacy manual-only `.github/workflows/ios-pr.yml` runs the debug Detox build/test commands when dispatched.
+- `Done`: Detox smoke coverage now includes auth sign-in, onboarding role-lock, wrong-role redirects, and student invite entry through `auth-sign-in.e2e.test.js`, `auth-role-selection.e2e.test.js`, and `student-professionals.e2e.test.js`; compact auth actions are scrolled into view, role selection uses a deterministic runtime source contract for the disabled Continue accessibility/interaction wiring plus native E2E for the preselection route state, and native selective phases suppress the in-app development LogBox overlay while preserving runner diagnostics.
+- `Done`: Native fixture lifecycle hardening isolates image-upload source-sheet and synthetic-success assertions in separate scenario-gated phases, rejects missing authenticated scenarios, and routes Android React Native debug traffic through the configured localhost ADB reverse tunnel before every instrumented launch.
 - `Done`: Default Android Detox build/test commands use the secret-free `productionDebug` profile. Signed `productionRelease` Detox evidence remains available through explicit `*:android:release` commands; its build command requires and forwards `CI_VERSION_CODE` and retains the private signing guards.
 - `Done`: Web Playwright coverage is organized into smoke, functional, accessibility, evidence, and full batches. Each run creates ignored HTML/JSON/JUnit reports, screenshot attachments, metadata, and a manual-validation checklist. The expansion and review contract is documented in `docs/test-cases/web-playwright-batches-and-manual-validation.md`.
-- `Done`: The web PR workflow runs the server-backed cookie-session Playwright lane against its coordinated `mychampions-api` branch checkout. CI installs locked Bun dependencies without secrets; Playwright owns the in-memory backend and Expo processes on isolated ports and terminates them after the run.
+- `In progress`: The protected-default-branch trusted selective workflow runs affected browser suites and checks out the coordinated `mychampions-api` branch only when a selected server-backed cookie-session suite requires it. The legacy `.github/workflows/web-pr.yml` path is manual-only. Both configurations install locked Bun dependencies without provider or production secrets, and Playwright owns the in-memory backend and Expo processes on isolated ports. D-195 promotion still requires resolving the backend branch once to a full commit SHA, checking out that detached SHA, and recording it with the mobile head evidence.
 - `Pending`: Complete the server-backed, provider-live, browser-media, assistive-technology, and full student/professional workflow matrix in `docs/discovery/web-pending-items-and-future-improvements.md` before web release approval.
 
 ## CI/CD Wiring
-- `Done`: GitHub Actions workflow baseline copied/adapted from `meer` into `.github/workflows/` with Android/iOS PR checks and release pipelines.
+- `Done`: GitHub Actions workflow baseline copied/adapted from `meer` into `.github/workflows/`; the original Android/iOS/web PR-named checks remain as manual-only validation paths and the release pipelines remain separate.
 - `Retired`: Firebase App Distribution workflows and Firebase config injection steps were removed during the local-server migration.
 - `Done`: Workflows are adapted to this repository conventions (`yarn install --frozen-lockfile` with `yarn.lock`, `mychampions` iOS workspace/scheme, and `com.edufelip.mychampions` package identifiers).
 - `Done`: CI secret inventory documented in `docs/discovery/ci-secrets-matrix-v1.md` with required/optional scope per workflow.
-- `Done`: BL-016 shadow foundation added: `config/test-impact.json` inventories 12 feature domains, 24 UI suites, fixture profiles, shared/global rules, and platform scope; `.github/CODEOWNERS` aligns initial ownership; resolver and contract tests cover feature-only changes, reverse dependencies, shared imports, renames, copies, deletions, documentation-only changes, and conservative full fallback.
-- `In progress`: `.github/workflows/pr-selective-tests.yml` reports affected Playwright/Detox suites and keeps universal unit/lint/type checks while the existing PR workflows remain authoritative. Collect at least two weeks and 20 representative PRs of shadow evidence with zero known misses before enabling selective browser/device execution.
-- `Pending`: Implement and validate fixture-profile-specific Detox execution, split native build artifacts from test shards where safe, add the full nightly iOS/Android/Playwright matrix, then make the stable selective gate required. `CI_FORCE_FULL=true` and `ci:full` remain broaden-only fallbacks.
+- `Done`: BL-016 manifest and ownership foundation inventories the feature domains, UI suites, executable fixture profiles, shared/global rules, and platform scope; resolver and contract tests cover feature-only changes, reverse dependencies, shared imports, renames, copies, deletions, documentation-only changes, conservative full fallback, dedicated iOS Metro routing that leaves unrelated listeners untouched, and fail-closed Metro cleanup when macOS process groups contain foreign-UID members.
+- `In progress`: `.github/workflows/trusted-selective-freshness.yml` is the protected-default-branch, GitHub-hosted-only `pull_request_target` metadata invalidator for owner-authored same-upstream pull requests. `.github/workflows/pr-selective-tests.yml` is the GitHub-hosted-only `pull_request` preflight for bases `main`, `release/**`, and `hotfix/**`, plus future-compatible `merge_group`; it never checks out candidate code or targets self-hosted labels, and its pull-request job waits for the pending description matching the canonical fingerprint of its exact event. `.github/workflows/trusted-selective-tests.yml` is the protected-default-branch authoritative workflow for authorized `workflow_run`, direct `main` push, schedule, and `workflow_dispatch` at ref `main` with a live-resolved PR number and forced full selection. Push/schedule runs do not publish the pull-request gate. It has no direct merge-group/release/hotfix trigger; merge-group authorization validates every associated live PR, and authorized release/hotfix PR runs force the complete matrix. It keeps universal unit/lint/type checks, runs selected Playwright and both-platform Detox suites through validated executors, and runs complete safety matrices. D-193 supersedes the former elapsed-time/PR-count shadow precondition for selection/execution, while D-195 keeps authoritative promotion and merge blocked until the security and enforcement gates below are verified.
+- `Done`: Green selective runs create no GitHub Actions artifact or cache. Native apps/APKs remain on the runner for their single job; bounded failure diagnostics alone use one-day retention. The 2026-07-29 repository read-back after failure cleanup is zero Actions artifacts and zero Actions caches; the exact-head promotion run must preserve that baseline. The `ci:full` label and owner `workflow_dispatch` remain broaden-only full-matrix controls. `CI_FORCE_FULL` remains available only to local/direct resolver invocation; the trusted workflow does not consume a repository variable by that name.
+- `Done (capacity only)`: Repository-scoped `mychampions-ios-ci-m5` and `mychampions-ci-ubuntu` runners are registered with the exact labels in `docs/discovery/ci-secrets-matrix-v1.md`. Both physical hosts use the same fail-closed resource-lock contract as their Meer peer, and the frozen lock implementation passed contention/crash coverage. Existing KVM, emulator, and browser launch probes establish capacity only; they do not establish the D-195 authorization boundary.
+- `In progress (D-195 promotion gate)`: The complete persistent-runner security and repository-enforcement boundary requires the trusted-workflow and live evidence below.
+  - Keep `trusted-selective-freshness.yml` as a protected-`main`,
+    GitHub-hosted-only `pull_request_target` metadata workflow with no candidate
+    checkout. It posts event-fingerprinted freshness pending only for a live
+    owner-authored, same-upstream eligible pull request. Keep the `pull_request` preflight for
+    bases `main`, `release/**`, and `hotfix/**`, plus future-compatible
+    `merge_group`, GitHub-hosted-only; its pull-request job has only
+    `statuses: read` and waits for its matching fingerprinted pending status. The supported candidate
+    path dispatches from `trusted-selective-tests.yml` loaded from protected
+    default branch `main` after `workflow_run`; release/hotfix PRs force full,
+    and static runner labels are not technically restricted to that workflow.
+  - Before candidate checkout or self-hosted scheduling, use a GitHub-hosted authorization job to validate the triggering run against the live PR API: exact current head SHA, same upstream/base, owner actor/triggering actor/sender, workflow path/ref/SHA, and event/ref. Prove fork, identity, provenance, malformed-input, head-mismatch, and stale-run negatives.
+  - Give candidate and self-hosted jobs only `contents: read`. Give
+    `statuses: write` only to the trusted hosted freshness invalidator,
+    authorization/status initializer, and always-run finalizer. Serialize all
+    three in one repository-global `queue: max` writer group so pending writers
+    are queued rather than replaced. Freshness replaces reusable
+    exact-head success with pending before preflight completes; the initializer
+    requires exactly one eligible open, ready, owner-authored same-upstream PR for
+    the head and posts its own pending; the finalizer repeats that unique binding
+    and writes success/failure only while the latest pending target is still
+    owned by its run. Fork/unidentifiable denials publish no status. Separately,
+    keep stable per-pull-request `cancel-in-progress: true` on the freshness
+    workflow so superseded metadata work is coalesced before the writer job
+    enters the global queue; retain stable per-PR/head cancellation for
+    superseded trusted validation work.
+  - `Done (2026-07-29 setting read-back)`: GitHub approval is required for all external fork contributors, the default workflow token is read-only, and workflows cannot approve pull requests. Treat host started/completed hooks as resource locks and defense-in-depth only, and never approve or run fork/untrusted workflow changes on the persistent self-hosted runners.
+  - Record the personal-public-repository limitation: static runner labels are
+    targetable by any GitHub-approved workflow and cannot use organization
+    runner-group workflow allowlists. Keep `edufelip` as sole collaborator,
+    never approve fork or untrusted workflow changes, and pause the runners
+    before adding a collaborator or granting such approval. That scope expansion
+    requires a private broker, JIT, or ephemeral-runner architecture.
+  - `Done (2026-07-29 policy read-back and contract audit)`: selected-actions mode allows GitHub-owned actions plus `oven-sh/setup-bun@*` and `r0adkll/upload-google-play@*`, does not generally allow verified-creator actions, and requires SHA pins; every checked-in `uses:` reference has a reviewed full commit SHA.
+  - Bootstrap `trusted-selective-freshness.yml` and
+    `trusted-selective-tests.yml` onto default branch `main`, prove their live
+    registration and one matching freshness/preflight fingerprint handshake,
+    and only then enable the PR preflight as a required check.
+  - Resolve the coordinated backend once to a 40-character SHA, checkout that detached object, and record it in exact-run evidence.
+  - In each native creation/use step, arm idempotent `EXIT`, `INT`, and `TERM`
+    handlers before materializing secrets. Treat `ENV_FILE_CONTENT` only as the
+    initial step-environment transport consumed by the atomic writer, then unset
+    it immediately before Yarn, Gradle, `xcrun`, or recovery subprocesses. The
+    secret bytes then live only in a validated per-job regular file below
+    `$RUNNER_TEMP` with mode `0600`; make workspace `.env` an absolute symlink to
+    that exact target. Normal/signal cleanup removes the link without following
+    it, removes the target, and verifies both absent. Treat runner-temp teardown
+    as hard-kill defense-in-depth, and make the next trusted
+    checkout/preflight remove and verify absence of any unexpected workspace
+    `.env` entry or fail closed. Run long build/test commands as supervised
+    isolated process groups behind an interruptible shell wait. The outer
+    supervisor grace must include coordinator detached invocation/Metro group
+    `TERM`/`KILL`, the outer fallback, and the executable fixture for that
+    nested path. Finish bounded exact-device cleanup within GitHub's documented
+    7.5-second `SIGINT` plus 2.5-second `SIGTERM` grace window.
+  - Store non-secret ownership recovery records in a permission-hardened
+    runner-local persistent directory supplied by the runner service environment
+    `MYCHAMPIONS_NATIVE_STATE_ROOT`. Require an absolute canonical, runner-owned,
+    non-symlink, mode-`0700` directory outside the workspace and `$RUNNER_TEMP`.
+    Access it only while the host lock is held and validate each ledger file's
+    owner, mode, type/no-symlink status, completeness, and strict
+    numeric/UUID/name fields. Never place `.env`, its runner-temp target, or
+    secrets there.
+  - `Done (Mac service configuration/read-back 2026-07-29)`: the Mac runner
+    service provides
+    `MYCHAMPIONS_NATIVE_STATE_ROOT=/Users/eduwaldo/.local/state/github-actions/mychampions-native-recovery`.
+    `Pending WSL endpoint recovery`: configure and read back
+    `MYCHAMPIONS_NATIVE_STATE_ROOT=/home/eduardo/.local/state/github-actions/mychampions-native-recovery`
+    in the WSL runner service before accepting native recovery evidence there.
+  - Close the creation-to-metadata cancellation window. Before iOS creation,
+    persist the unique workflow-owned simulator name/namespace so an interrupted
+    `simctl create` can be recovered before UUID handoff. Make Android
+    launch-to-PID capture and durable PID/UID/start-time/AVD/port/serial/command
+    handoff cancellation-safe, or recover only a process proving that complete
+    exact identity.
+  - Before new device creation, the next locked trusted run consumes any stale
+    workflow-owned record, revalidates exact identity, and deletes/verifies only
+    that resource. Remove records only after exact absence is proved. Cleanup or
+    recovery failure retains evidence and fails closed; never use global
+    `simctl shutdown all`, `pkill`, arbitrary QEMU signaling, or unrelated
+    ADB/device mutation. Treat later `if: always()` verifiers as defense-in-depth
+    and keep host hooks resource-lock-only.
+  - `Pending executable recovery contract`: Exercise both `SIGINT` and `SIGTERM`,
+    interruption before UUID/PID metadata handoff, cleanup failure with retained
+    records, exact next-run recovery, malformed/incomplete record rejection,
+    bounded `130`/`143` exit, workspace-link plus runner-temp secret-target
+    removal, outer-supervisor grace through coordinator detached-group
+    `TERM`/`KILL`, supervised-child termination, and unrelated-resource
+    preservation.
+  - `Pending live cancellation evidence`: cancel both native lanes during a supervised build and during selected test execution. Prove workspace `.env` link and exact runner-temp secret target absence, no supervised child/process-group survivor, exact owned-device absence with owner-record removal on success or retained validated recovery evidence on cleanup failure, unrelated-device preservation, and host-lock release within the documented runner cancellation boundary; then prove the next locked run recovers the exact stale resource before creating a replacement.
+  - Record that GitHub merge queues are unavailable to this personal public
+    repository; checked-in `merge_group` support is future-compatible. Require
+    `main` protection with pull requests, strict up-to-date branches, exact
+    `Hosted candidate preflight`, exact `Selective CI gate`, conversation
+    resolution, administrator enforcement, zero approvals, and no direct-push or
+    merge bypass. CODEOWNERS provides routing only because the sole author cannot
+    approve their own pull request.
+- `Promotion evidence gate`: The promotion pull request must pass TC-519's trusted-workflow provenance, authorization-negative, stale-run, token-isolation, sole-collaborator/external-approval, repository-setting, cleanup, and exact-status probes plus the complete web/iOS/Android matrix on the same exact candidate head. Read-only workflow/run, host resource-lock, repository-setting, collaborator-roster, and GitHub status evidence—not checked-in workflow text, prior runner registration, or local tests—are required. No D-195 live deployment/settings evidence is claimed here yet.
 
 ## Professional Screen Wiring (Phase 5)
 - `Done`: SC-202 Specialty screen (`app/professional/specialty.tsx`) implemented — specialty list/add, blocker counts, removal, and credential upsert now use MyChampions server `GET /professional/specialties`, `POST /professional/specialties`, `GET /professional/specialties/:specialty/blockers`, `DELETE /professional/specialties/:specialtyId`, and `PUT /professional/specialties/:specialtyId/credential` with local bearer auth and fail closed without local/E2E auth.
@@ -277,6 +377,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `features/plans/use-plan-builder.ts` — `useNutritionPlanBuilder` and `useTrainingPlanBuilder` hooks with `idle/loading/ready/saving/error` state machines.
 - `Done`: `app/professional/nutrition.tsx` — plan library list screen (SC-207 lib).
 - `Done`: `app/professional/nutrition/plans/[planId].tsx` — nutrition plan builder screen (SC-207).
+- `Done`: SC-207 meal add-food editing participates in measured screen flow; compact native coverage scrolls and targets search, result, quantity, Add, and semantic removal confirmation without coordinates.
 - `Done`: `app/professional/training.tsx` — plan library list screen (SC-208 lib).
 - `Done`: `app/professional/training/plans/[planId].tsx` — training plan builder screen (SC-208).
 - `Done`: All `pro.plan.*`, `pro.library.*`, `pro.predefined_plan.*`, `pro.template_library.*`, `pro.template.*` localization keys present in `en-US`, `pt-BR`, and `es-ES`.
@@ -305,7 +406,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: SC-215 empty state upgraded to illustrated hero pattern — warm amber/orange `menu-book` + `restaurant` icon tiles replacing the minimal text stub; `DsPillButton` CTA with add icon; offline write-lock notice; matches production quality of student nutrition and training empty states.
 - `Done`: SC-216 Shared Recipe Save Confirmation (`app/shared/recipes/[shareToken].tsx`) implemented — token preview, ownership note, and import; share preview/import now use the MyChampions server share endpoints.
 - `Done`: Stack.Screen route registrations added in `app/_layout.tsx` for all 4 new Phase 6 screens.
-- `Done`: Wire account deletion into SC-213 account deletion flow. `deleteAccountAndDataFromSource()` calls the MyChampions server account deletion endpoint when a local bearer token is available; post-deletion cleanup calls `signOutFromSource()` before `clearSession()` so local server sessions do not fall through to Firebase sign-out. The server now removes direct account-owned local rows and rewrites retained relationship/history rows to a non-reversible `deleted_account_*` pseudonym, so local Postgres no longer keeps the deleted auth UID in server-owned account tables. The account deletion UI no longer exposes Firebase reauthentication or current-user deletion semantics. Stub `await Promise.resolve()` removed.
+- `Done`: Wire account deletion into SC-213 account deletion flow. `deleteAccountAndDataFromSource()` calls the MyChampions server account deletion endpoint when a local bearer token is available; post-deletion cleanup awaits the single `clearSession()` boundary. The explicit development E2E auth fixture completes the deletion source operation without a server/provider mutation and verifies the same local-session cleanup and sign-in redirect. The server now removes direct account-owned local rows and rewrites retained relationship/history rows to a non-reversible `deleted_account_*` pseudonym, so local Postgres no longer keeps the deleted auth UID in server-owned account tables. The account deletion UI no longer exposes Firebase reauthentication or current-user deletion semantics. Stub `await Promise.resolve()` removed.
 - `Done`: Wire MyChampions server custom-meal CRUD operations into SC-214 and SC-215 (D-126 batch — `custom-meal-source.ts` now uses local server endpoints; `useCustomMeals` updated to `isAuthenticated: boolean`).
 - `Done`: Wire MyChampions server share-link generation (`createMealShareLink`) and import (`importSharedMeal`, `previewSharedMeal`) endpoints into SC-214, SC-215, SC-216 (D-126 batch — `shareLinkId` return pattern; callers updated).
 - `Done`: Wire SC-214 image upload pipeline. `features/nutrition/image-upload-source.ts` source layer has injectable deps and server-upload tests (TC-287); `features/nutrition/use-image-upload.ts` hook wires expo-image-picker (Alert action sheet), expo-image-manipulator compression, and local MyChampions server upload with progress tracking; SC-214 stub replaced with real `useImageUpload(currentUser)` call; `ImageUploadSection` `onPickAndUpload`/`onRetry` callbacks wired (D-131).

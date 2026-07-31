@@ -34,6 +34,8 @@
     "test:impact": "tsx scripts/ci/validate-test-impact.ts",
     "test:impact:resolver": "tsx --test tests/ci/test-impact-resolver.test.ts",
     "test:impact:resolve": "tsx scripts/ci/resolve-test-impact.ts",
+    "test:impact:execute": "tsx scripts/ci/execute-selected-tests.ts",
+    "test:impact:execute:plan": "tsx scripts/ci/execute-selected-tests.ts --plan",
     "test:e2e:build:ios": "detox build -c ios.sim.release",
     "test:e2e:ios": "detox test -c ios.sim.release",
     "test:e2e:build:ios:debug": "detox build -c ios.sim.debug",

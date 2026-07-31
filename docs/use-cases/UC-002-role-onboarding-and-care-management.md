@@ -6,9 +6,9 @@
 - Preconditions: App launched.
 - Main flow:
   1. User chooses sign in or create account.
-  2. User authenticates with email/password, Google, or Apple.
+  2. User authenticates with email/password, Google, or Apple; email/password submission uses the latest entered credentials whether triggered from the password Done/Return key or the primary CTA.
   3. If create-account via email/password, user provides name, email, password, and password confirmation.
-  4. System validates password policy and confirmation match.
+  4. System validates password policy and the latest entered confirmation value when the user submits from either the confirmation Done/Return key or the primary CTA.
   5. If social email matches existing account, system links provider to existing account.
 - Expected result: Authenticated session is created without duplicate-account creation for same email.
 
@@ -264,7 +264,7 @@
 - Trigger: Professional wants to reuse plan patterns across multiple students.
 - Preconditions: Professional authenticated with relevant specialty; target students available.
 - Main flow:
-  1. Professional creates named predefined plan in private library (for example, `Caloric Deficit A`).
+  1. Professional creates named predefined plan in private library (for example, `Caloric Deficit A`). In nutrition meal editing, the add-food editor expands in measured page flow so search, quantity, add, and removal confirmation remain reachable on compact native viewports.
   2. Professional selects one predefined plan and chooses multiple students for assignment.
   3. System clones plan into per-student draft copies.
   4. Professional fine-tunes each student draft as needed.

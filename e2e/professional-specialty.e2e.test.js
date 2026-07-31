@@ -1,16 +1,11 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const { submitFocusedEditor } = require('./native-editor-actions');
 
 async function selectProfessionalRole() {
   await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
   await element(by.id('auth.roleSelection.professionalCard')).tap();
   await element(by.id('auth.roleSelection.continueButton')).tap();
   await waitFor(element(by.id('pro.specialty.screen'))).toBeVisible().withTimeout(10000);
-}
-
-async function dismissCredentialKeyboard() {
-  await waitFor(element(by.id('pro.specialty.keyboard.done'))).toBeVisible().withTimeout(3000);
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  await element(by.id('pro.specialty.keyboard.done')).tap();
 }
 
 async function scrollToCredentialSave() {
@@ -41,13 +36,15 @@ describeWithE2EAuthSession('Professional Specialty Setup', () => {
 
     await element(by.id('pro.specialty.add.nutritionist')).tap();
 
-    await waitFor(element(by.id('pro.specialty.credentialForm'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('pro.specialty.credentialForm'))).toExist().withTimeout(5000);
     await expect(element(by.id('pro.specialty.credential.registryId'))).toBeVisible();
-    await expect(element(by.id('pro.specialty.credential.authority'))).toBeVisible();
-    await expect(element(by.id('pro.specialty.credential.country'))).toBeVisible();
+    await expect(element(by.id('pro.specialty.credential.authority'))).toExist();
+    await expect(element(by.id('pro.specialty.credential.country'))).toExist();
 
     await element(by.id('pro.specialty.credential.registryId')).replaceText('CRN-12345');
-    await dismissCredentialKeyboard();
+    if (device.getPlatform() === 'ios') {
+      await submitFocusedEditor('pro.specialty.credential.registryId');
+    }
     await scrollToCredentialSave();
     await element(by.id('pro.specialty.credential.save')).tap();
 

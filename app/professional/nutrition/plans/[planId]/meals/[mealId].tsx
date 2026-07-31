@@ -314,7 +314,7 @@ export default function NutritionMealBuilderScreen() {
           ) : null}
         </View>
 
-        {/* ── Add item form (Floating Overlay inside header bounds) ───────── */}
+        {/* ── Add item form ────────────────────────────────────────────────── */}
         {!isSortMode && meal && addItemForm.kind === 'open' && (
           <AddItemForm
             palette={palette}
@@ -452,7 +452,7 @@ export default function NutritionMealBuilderScreen() {
             }
             onAdd={handleAddItem}
             onClose={handleCloseAddItem}
-            style={{ top: '100%', left: 0, right: 0, marginTop: 16 }}
+            style={{ position: 'relative', top: 0, left: 0, right: 0, marginTop: 16 }}
             testIDPrefix="pro.nutrition_item"
           />
         )}
