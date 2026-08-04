@@ -9,8 +9,6 @@ on:
   push:
     branches:
       - main
-  schedule:
-    - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       pull_request_number:
@@ -742,10 +740,9 @@ jobs:
                   fail("repository default branch is not main")
 
               event_name = env("EVENT_NAME")
-              if event_name != "schedule":
-                  if env("EVENT_SENDER") != OWNER:
-                      fail("event sender is not the repository owner")
-                  actor_identity(event.get("sender"), "event.sender")
+              if env("EVENT_SENDER") != OWNER:
+                  fail("event sender is not the repository owner")
+              actor_identity(event.get("sender"), "event.sender")
 
               force_full = False
               base_sha = ""
@@ -1039,12 +1036,6 @@ jobs:
                       force_full = True
                   elif base_sha == head_sha:
                       fail("push base and head SHAs are identical")
-
-              elif event_name == "schedule":
-                  if event.get("schedule") != "0 5 * * *":
-                      fail("schedule event does not match the allowlisted cron")
-                  head_sha = sha(env("GITHUB_SHA_VALUE"), "GITHUB_SHA")
-                  force_full = True
 
               else:
                   fail("trusted workflow event is not allowlisted")
