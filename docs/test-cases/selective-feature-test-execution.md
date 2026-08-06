@@ -22,7 +22,7 @@ exact event.
 `.github/workflows/trusted-selective-tests.yml` is the
 authoritative workflow: pull-request execution enters through `workflow_run`,
 whose definition GitHub loads from protected default branch `main`, while
-direct `main` push and daily-schedule executions run from `main` without
+direct `main` push executions run from `main` without
 publishing the SHA-global pull-request context. Manual execution
 must dispatch at ref `main`, accept a PR number, resolve its live head/base, and
 force full selection. The trusted workflow has no direct `merge_group` trigger;
@@ -86,7 +86,7 @@ Every selected Detox suite runs on both declared mobile platforms. Shared
 navigation, localization, global design tokens, native/tooling configuration,
 workflow or resolver changes, invalid metadata, unmapped runtime paths, Git
 resolution errors, or more than 500 changed files select the complete registered
-CI matrix. `merge_group`, scheduled runs, release/hotfix PRs, and `ci:full`
+CI matrix. `merge_group`, release/hotfix PRs, and `ci:full`
 also force the complete matrix. The `CI_FORCE_FULL` environment input remains
 available only to local/direct resolver invocation; the trusted gate does not
 read a repository variable by that name. These controls may only
@@ -285,8 +285,8 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   triggering actor, sender, workflow path/ref/SHA, and allowed event/ref.
   Missing, malformed, fork, identity-mismatch, workflow-mismatch, live-head
   mismatch, and stale runs fail closed. Trusted direct event paths resolve the
-  workflow from `main` and receive equivalent authorization. Push and schedule
-  validations never publish the SHA-global pull-request gate.
+  workflow from `main` and receive equivalent authorization. Push validation
+  never publishes the SHA-global pull-request gate.
 - Merge-group authorization validates every associated live pull request for
   same-upstream owner provenance. The trusted workflow has no direct
   `merge_group` trigger. This is future-compatible coverage: GitHub merge queues
