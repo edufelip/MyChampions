@@ -49,7 +49,7 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 | A1 | Daily unattended trigger | Trusted selective CI has no schedule trigger; push and manual execution remain. | PR #8 exact-head gate and merged workflow inspection. | Passed | PR #8 merged at `9f004d0`; exact-head run `31132934917` passed web/iOS/Android and published a successful gate; merged `main` has `push` and `workflow_dispatch` with no `schedule`. |
 | A2 | First runner bootstrap | Companion registers as `mychampions-web-ci-ubuntu` with `mychampions-web-only`. | Runner API snapshot and green bootstrap workflow. | Passed | PR #9 merged at `cc075e4`; push run `31139926304` passed in 42 seconds; runner API reported `mychampions-web-ci-ubuntu` online with exactly `mychampions-ci,mychampions-web-only`; the temporary registration secret was deleted. |
 | A3 | Repeated bootstrap | Existing registered runner starts/reconciles without a new token or duplicate service. | Second bootstrap workflow and script tests. | Passed | No-secret manual run `31139984275` passed in 12 seconds against the existing service. |
-| A4 | Mixed web and Android selection | Web and Android jobs start concurrently on separate services and use distinct concurrency groups. | Exact-head job timestamps. | Pending | |
+| A4 | Mixed web and Android selection | Web and Android jobs start concurrently on separate services and use distinct concurrency groups. | Exact-head job timestamps. | Passed scheduling; functional rerun pending | Post-merge run `31142378665` started web on `mychampions-web-ci-ubuntu` and Android on `mychampions-ci-ubuntu` at the identical `02:51:09Z` timestamp, removing the 2m21s-2m24s pre-routing delay. The first fresh web service attempt then exposed missing global Yarn before tests; the follow-up enables repository-pinned Yarn through Corepack. |
 | A5 | Hung selected invocation | Owned process group is terminated after 600000 ms and the invocation ID is reported. | Focused executor tests. | Passed locally | TERM-ignoring leader and descendant fixture was terminated as one exact owned process group; error included `detox:timeout-fixture`. Hosted exact-head proof remains part of this routing PR. |
 | A6 | Local invocation | With no timeout environment variable, local execution remains unbounded. | Focused parser/executor test. | Passed locally | Parser and executor tests confirm absent configuration returns `undefined` and completes an unbounded local invocation. |
 | A7 | Native job containment | iOS and Android jobs stop after 75 minutes while cleanup traps remain active. | Workflow contract test. | Passed locally | Workflow contract asserts 75-minute native jobs, 600000 ms invocation timeout, and retained cleanup steps. |
@@ -101,6 +101,7 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 | `yarn lint` | Passed | Expo ESLint scope. |
 | `yarn tsc --noEmit` | Passed | TypeScript validation. |
 | `git diff --check` | Passed | No whitespace errors. |
+| Post-merge run `31142378665` | Failed before web tests | Live runner routing overlapped web and Android exactly; fresh web runner lacked global `yarn`, so the workflow now enables the `packageManager`-pinned Yarn through Corepack before install. The failed remainder was cancelled to save native resources. |
 
 ## Open Questions
 

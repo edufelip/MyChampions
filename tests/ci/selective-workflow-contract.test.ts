@@ -1061,6 +1061,10 @@ test('web and Android route to separate services with bounded invocations', () =
     /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-web-only\]$/m
   );
   assert.match(webLane, /^      group: mychampions-web-ui$/m);
+  assert.match(
+    webLane,
+    /uses: actions\/setup-node@[a-f0-9]+[\s\S]*?- name: Enable repository Yarn\n        run: corepack enable\n      - run: yarn install --frozen-lockfile --no-progress/
+  );
   assert.match(androidLane, /^      group: mychampions-android-detox$/m);
   assert.doesNotMatch(source, /group: mychampions-wsl-ui/);
 
