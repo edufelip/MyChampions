@@ -98,7 +98,7 @@
 - `D-091`: Superseded. Native backend config selection now exposes the MyChampions server URL and no longer ships mobile-owned provider config files.
 - `D-092`: CI/CD workflow baseline is inherited from `meer` and adapted to `my-champions`:
   - Workflows cover Android/iOS PR checks, native CI artifacts, and release-branch validation pipelines.
-  - This project standardizes JS dependency installation in CI with `npm ci` (not `yarn`).
+  - This project standardizes JS dependency installation in CI with Yarn 1.22.22, `yarn.lock`, and `yarn install --frozen-lockfile`; npm lockfiles and `npm ci` are not used.
 - `D-093`: CI/CD secret names and requirements are governed by `docs/discovery/ci-secrets-matrix-v1.md`; workflow secret changes must update that document in the same change.
 - `D-094`: CI/CD bootstrap/validation execution should be tracked through issue template `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` for operational consistency.
 - `D-095`: Primary app-domain database model is MyChampions server-owned Postgres through Drizzle. New persistence planning must extend server migrations, route/repository tests, and current product docs.
@@ -427,12 +427,41 @@
 
 - `D-190`: AI upgrade paywall initiation is locked-role aware while entitlement evaluation remains backward compatible.
   - Locked students present the guarded student offering: `default_student` normally, or temporary `test_student` only when an explicit development Test Store build opts in.
-  - Locked professionals entering either AI gate present `default_professional`, because `professional_pro` already includes AI access. They cannot initiate a new student-plan purchase through the app.
+  - Locked professionals entering either AI gate present `default_professional` normally, or `test_professional` only when an explicit development Test Store build opts in. Both offerings grant the existing `professional_pro` entitlement, which already includes AI access. They cannot initiate a new student-plan purchase through the app.
   - Missing or malformed role state fails closed without presenting a paywall.
   - A valid existing `student_pro` entitlement continues to grant AI access regardless of role; no entitlement is revoked or remapped by this routing change.
-  - `test_student` and `Student Paywall v1 Test` are temporary provider artifacts for the approved Test Store evidence batch. Promotion to `default_student` is a separate provider approval.
+  - `test_student` and `Student Paywall v1 Test` remain temporary provider artifacts for the approved Test Store evidence batch. `Student Paywall v1 Production` is now published on `default_student`; the 2026-07-26 promotion approval is recorded in D-192.
 
 - `D-191`: Browser account switching is serialized behind a single in-flight cookie sign-out barrier. `clearSession()` is the only account-screen cleanup boundary and remains awaitable; it clears local identity immediately while the credentialed sign-out attempt continues. Every server-backed email/password, social, and local-development session-establishment path waits for that barrier. Native bearer sessions retain immediate local clearing and persisted-token removal.
+- `D-192` (superseded for the professional surface by `D-193`): The 2026-07-26 RevenueCat paywall promotion keeps one explicit student Test Store variant and one production student variant.
+  - `Student Paywall v1 Test` remains published on `test_student` for the explicit development/Test Store route.
+  - `Student Paywall v1 Production` is published on `default_student` with the same approved package bindings, localized copy, monthly default, legal destinations, and light/dark/accessibility contract. The normal student app route already resolves `default_student`, so no mobile code change is required for this provider promotion.
+  - The earlier decision to keep professionals on one offering was intentionally conservative, but is superseded by `D-193` after the requirement for explicit professional Test Store and production surfaces was clarified.
+
+- `D-193`: Professionals have explicit production and Test Store RevenueCat surfaces.
+  - Production uses `default_professional` with `Professional Paywall v1`; an explicit development/Test Store build uses `test_professional` with `Professional Paywall v1 Test`.
+  - Both offerings use the `professional_pro` entitlement and separate plan-specific products. `test_professional` is selected only when `APP_VARIANT=dev`, `EXPO_PUBLIC_REVENUECAT_TEST_STORE_ENABLED=true`, and `EXPO_PUBLIC_REVENUECAT_PROFESSIONAL_OFFERING_ID=test_professional` are all present.
+  - Production and normal development continue to resolve `default_professional`; malformed or unsafe professional offering overrides fail closed before paywall presentation.
+  - RevenueCat's Published view now contains four paywalls: the production and Test Store variants for both Student and Professional. Inactive remains empty. Dashboard publication is not a substitute for updated device rendering, App Store/Google Play purchase, or true platform restore evidence.
+
+- `D-194`: Student RevenueCat paywalls use the professional surface's vertical rhythm for visual parity.
+  - `Student Paywall v1 Test` and `Student Paywall v1 Production` retain the student-specific headline, benefits, packages, legal destinations, monthly default, and accessibility/localization contract.
+  - The 2026-07-26 editor refinement sets 16 px root child spacing, a 72 px top margin on the student value-proposition header, and an 8 px purchase-footer cadence with 12/16/16/16 px top/right/bottom/left padding. This removes the dominant disconnected middle gap while preserving the existing products, offerings, entitlements, and paywall logic.
+  - Both published variants were verified in the RevenueCat iPhone 17 Pro dashboard preview. Device/Test Store rendering and platform-store purchase/restore remain separate release evidence gates.
+
+- `D-195`: Feature-aware UI-test selection uses one checked-in manifest and a fail-closed resolver for Detox and Playwright.
+  - Feature ownership, declared dependencies, suite membership, fixture profiles, shared rules, and platform scope live in `config/test-impact.json`; `.github/CODEOWNERS` starts with `@edufelip` as the fallback owner.
+  - Pull requests targeting `develop`, `release/**`, or `hotfix/**` compare the merge base with the exact head. Renames/copies include old and new paths, deletions retain old ownership, and base/head reverse-import graphs widen indirect impact.
+  - Navigation, localization, global design tokens, native/tooling inputs, resolver changes, invalid metadata, unknown runtime paths, resolution errors, or more than 500 changed files fail closed to the complete registered CI matrix. `ci:full` and `CI_FORCE_FULL` may only broaden selection.
+  - The initial workflow is intentionally shadow-only: it reports proposed Playwright/Detox matrices while existing Android, iOS, and web PR workflows remain authoritative. Fast unit/lint/type checks run universally. Selective device/browser execution becomes enforceable only after at least two weeks and 20 representative PRs with zero known selection misses.
+  - Full expensive coverage remains the target for nightly and release/hotfix gates after fixture-profile execution and runner capacity are proven. Existing `nutrition`/`plans` and `professional`/`subscription` bidirectional implementation dependencies are explicit legacy boundary exceptions; new undeclared cycles fail validation.
+
+- `D-196`: On-demand manual QA uses a **global** Agent Skill (`~/.cursor/skills/qa-manual-run`) plus Linear, not a Cursor Automation trigger. Product specifics live in family adapters (`families/mychampions.md`, `families/guiabrecho.md`); repo-local `qa-*.md` files remain pack sources of truth.
+  - Kickoff is chat-only. Scope defaults to the **surface** smoke pack (cwd or `surface=`), or explicit `UC-*` / `TC-*` / named packs. MyChampions surfaces: `mobile`/`web` (`mychampions`), `api` (`server`), `food` (`mychampionsapi-food`), `exercises` (`mychampionsapi-exercises`).
+  - Execution is hybrid: automated signal for the surface, then a human-like pass (UI or backend contract/security/data-shape/concurrency checklist). Cross-surface only when scoped.
+  - Linear system of record is a parent **QA Run** issue (`qa-run` label) with auto-filed child issues using the workspace **Bug** label in the MyChampions project (team Edexample). Doc Gaps and Known Deferred stay on the QA Run (`doc-gap` / `known-deferred`) and are never filed as Bugs. Bug titles require id prefixes with strict open-issue dedupe.
+  - Environment registry is `docs/test-cases/qa-env-registry.md` for the app: default `local`; `dev` refused until a dedicated VM development API/DB exists; `prod` confirm-gated (`confirm prod qa`). App `APP_VARIANT` is not the QA env id.
+  - Before finalize, each run writes Skill self-improvement insights to `~/Documents/Default/Projects/MyChampions/QA-Skill-Insights/` for human triage. These are not Linear Bugs.
 
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.

@@ -81,6 +81,12 @@ Convert current brainstorming into an execution-ready product backlog with clear
 | BL-014 In-App Support Dialog | Implemented — custom MyChampions server-backed modal (D-171), logic layer tests, server route/repository tests, character counters, offline awareness, and localization (3 bundles). | FR-133 | UC-002.5 | AC-006 | BR-004 | TC-304 |
 | BL-015 Account & Privacy Settings | Implemented — SC-213 screen covering identity, password reset, language switcher (SC-222), legal links, and account deletion. | FR-133, FR-157 | UC-002.5 | AC-305–310 | BR-225, BR-231 | TC-304–310 |
 
+## Delivery NFR Coverage
+| Backlog Item | Status | FR | UC | AC | BR | TC |
+|---|---|---|---|---|---|---|
+| BL-016 Feature-aware selective test execution | In progress — feature/suite manifest, conservative resolver, ownership, contract tests, and shadow GitHub Actions reporting are implemented; selective Detox/Playwright enforcement remains gated on the documented observation window. | FR-192, FR-193 | N/A | AC-516 | D-195 | TC-518 |
+| BL-017 On-demand manual QA Skill + Linear runs | Implemented — global Skill + MyChampions family adapter covering `mobile`/`web`, `api`, `food`, `exercises`; smoke packs + Linear QA Runs (D-196). Native mobile Skill pass and VM `dev` API/DB remain Pending. | N/A | UC-001 (smoke) | N/A | D-196 | qa-smoke-pack, qa-manual-run-playbook, server/food/exercises qa-smoke-pack |
+
 All current `P0 Must` items are now documented as `Spec-ready` with FR/UC/AC/BR/TC traceability.
 
 ## P1 Selected Spec Coverage
