@@ -226,10 +226,14 @@ export async function lockRoleInSource(
 }
 
 export async function deleteAccountAndDataFromSource(
-  deps: ProfileSourceDeps = getProfileSourceDeps()
+  deps?: ProfileSourceDeps
 ): Promise<void> {
+  if (deps === undefined && resolveProfileSourceE2EOverride()) {
+    return;
+  }
+
   try {
-    await requestProfile('/me', deps, { method: 'DELETE' });
+    await requestProfile('/me', deps ?? getProfileSourceDeps(), { method: 'DELETE' });
   } catch (error) {
     throw normalizeProfileSourceError(error);
   }

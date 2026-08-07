@@ -16,6 +16,14 @@
 - Saved-meal actions form a compact, wrapping action row under the meal summary instead of a sparse trailing column.
 - Quick log is a bottom sheet on phones and a centered, width-capped dialog on tablet/desktop, with a dimmed backdrop and unchanged keyboard/accessibility behavior.
 
+## Native Automation Contract
+
+- The cross-platform quick-log story focuses the grams input, atomically replaces
+  and verifies the intended value, dismisses Android's active keyboard with the
+  native back action or iOS's localized accessory action after its keyboard
+  animation settles, and submits through the stable confirm identifier. It does
+  not fall back to screen coordinates hidden beneath an IME.
+
 ## UX Copy Intent
 - Emphasize fast logging from already-saved meals.
 - Keep the grams-to-nutrients outcome clear before confirmation.
@@ -79,7 +87,7 @@
 - Use case: UC-003.2, UC-003.3, UC-003.4, UC-003.6, UC-003.9
 - Acceptance criteria: AC-403, AC-404, AC-405, AC-406, AC-407, AC-408, AC-411, AC-413
 - Business rules: BR-304, BR-305, BR-306, BR-307, BR-308, BR-309, BR-310, BR-313, BR-316
-- Test cases: TC-404, TC-405, TC-406, TC-407, TC-408, TC-409, TC-412, TC-414, TC-415
+- Test cases: TC-404, TC-405, TC-406, TC-407, TC-408, TC-409, TC-412, TC-414, TC-415, TC-436
 - Decisions: D-132 (AI paywall gate — `useSubscription` wired; `hasAiAccess`, `isSubscriptionLoading`, `onOpenPaywall` threaded through `QuickLogPanel` → `QuickLogAnalysisRow`)
 - Related screen: SC-219 (AI Meal Photo Analysis)
 - Diagram: docs/diagrams/domain-relationships.md

@@ -1,0 +1,4142 @@
+name: Trusted selective feature CI
+
+on:
+  workflow_run:
+    workflows:
+      - Selective feature CI preflight
+    types:
+      - completed
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: Open same-repository pull request to validate in full
+        required: true
+        type: number
+
+permissions: {}
+
+concurrency:
+  group: trusted-selective-feature-ci-${{ github.event.workflow_run.pull_requests[0].number || inputs.pull_request_number || github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_run' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
+
+jobs:
+  authorize-candidate:
+    name: Authorize trusted candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: mychampions-selective-status-writer
+      queue: max
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      statuses: write
+    outputs:
+      base_sha: ${{ steps.candidate.outputs.base_sha }}
+      candidate_kind: ${{ steps.candidate.outputs.candidate_kind }}
+      head_sha: ${{ steps.candidate.outputs.head_sha }}
+      head_ref: ${{ steps.candidate.outputs.head_ref }}
+      force_full: ${{ steps.candidate.outputs.force_full }}
+      pull_request_number: ${{ steps.candidate.outputs.pull_request_number }}
+    steps:
+      - id: candidate
+        name: Verify trusted workflow and resolve the exact candidate
+        env:
+          ACTIONS_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+          ACTOR_ID: ${{ github.actor_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SENDER: ${{ github.event.sender.login }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+          PR_NUMBER_INPUT: ${{ inputs.pull_request_number }}
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          REPOSITORY_OWNER_ID: ${{ github.repository_owner_id }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          import re
+          import sys
+          import urllib.error
+          import urllib.request
+          from typing import Any
+
+
+          REPOSITORY = "edufelip/MyChampions"
+          OWNER = "edufelip"
+          PREFLIGHT_NAME = "Selective feature CI preflight"
+          PREFLIGHT_PATH = ".github/workflows/pr-selective-tests.yml"
+          TRUSTED_PATH = ".github/workflows/trusted-selective-tests.yml"
+          TRUSTED_REF = f"{REPOSITORY}/{TRUSTED_PATH}@refs/heads/main"
+          SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+          BRANCH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$")
+          MERGE_QUEUE_QUERY = """
+          query($owner: String!, $name: String!, $number: Int!) {
+            repository(owner: $owner, name: $name) {
+              nameWithOwner
+              owner {
+                login
+              }
+              pullRequest(number: $number) {
+                number
+                state
+                merged
+                isDraft
+                headRefName
+                headRefOid
+                baseRefName
+                baseRefOid
+                author {
+                  login
+                }
+                headRepository {
+                  nameWithOwner
+                  owner {
+                    login
+                  }
+                }
+                baseRepository {
+                  nameWithOwner
+                  owner {
+                    login
+                  }
+                }
+                mergeQueueEntry {
+                  position
+                  state
+                  solo
+                  baseCommit {
+                    oid
+                  }
+                  headCommit {
+                    oid
+                    parents(first: 2) {
+                      nodes {
+                        oid
+                      }
+                    }
+                  }
+                  enqueuer {
+                    login
+                  }
+                  pullRequest {
+                    number
+                    state
+                    merged
+                    isDraft
+                    headRefName
+                    headRefOid
+                    baseRefName
+                    baseRefOid
+                    author {
+                      login
+                    }
+                    headRepository {
+                      nameWithOwner
+                      owner {
+                        login
+                      }
+                    }
+                    baseRepository {
+                      nameWithOwner
+                      owner {
+                        login
+                      }
+                    }
+                  }
+                  mergeQueue {
+                    entries(first: 100) {
+                      pageInfo {
+                        hasNextPage
+                        endCursor
+                      }
+                      nodes {
+                        position
+                        state
+                        solo
+                        baseCommit {
+                          oid
+                        }
+                        headCommit {
+                          oid
+                          parents(first: 2) {
+                            nodes {
+                              oid
+                            }
+                          }
+                        }
+                        enqueuer {
+                          login
+                        }
+                        pullRequest {
+                          number
+                          state
+                          merged
+                          isDraft
+                          headRefName
+                          headRefOid
+                          baseRefName
+                          baseRefOid
+                          author {
+                            login
+                          }
+                          headRepository {
+                            nameWithOwner
+                            owner {
+                              login
+                            }
+                          }
+                          baseRepository {
+                            nameWithOwner
+                            owner {
+                              login
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          """
+
+
+          def fail(message: str) -> None:
+              raise RuntimeError(message)
+
+
+          def env(name: str) -> str:
+              value = os.environ.get(name, "")
+              if not value or value != value.strip() or any(ord(char) < 32 for char in value):
+                  fail(f"{name} is missing or malformed")
+              return value
+
+
+          def mapping(value: Any, field: str) -> dict[str, Any]:
+              if not isinstance(value, dict):
+                  fail(f"{field} is not an object")
+              return value
+
+
+          def sequence(value: Any, field: str) -> list[Any]:
+              if not isinstance(value, list):
+                  fail(f"{field} is not an array")
+              return value
+
+
+          def text(value: Any, field: str) -> str:
+              if (
+                  not isinstance(value, str)
+                  or not value
+                  or value != value.strip()
+                  or any(ord(char) < 32 for char in value)
+              ):
+                  fail(f"{field} is missing or malformed")
+              return value
+
+
+          def positive_integer(value: Any, field: str) -> int:
+              if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+                  fail(f"{field} is not a positive integer")
+              return value
+
+
+          def nonnegative_integer(value: Any, field: str) -> int:
+              if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                  fail(f"{field} is not a nonnegative integer")
+              return value
+
+
+          def sha(value: Any, field: str) -> str:
+              candidate = text(value, field)
+              if SHA_RE.fullmatch(candidate) is None:
+                  fail(f"{field} is not an exact commit SHA")
+              return candidate
+
+
+          def branch(value: Any, field: str) -> str:
+              candidate = text(value, field)
+              if (
+                  BRANCH_RE.fullmatch(candidate) is None
+                  or candidate.endswith(("/", ".", ".lock"))
+                  or "//" in candidate
+                  or ".." in candidate
+              ):
+                  fail(f"{field} is not an allowed branch")
+              return candidate
+
+
+          def base_branch(value: Any, field: str) -> str:
+              candidate = branch(value, field)
+              if (
+                  candidate != "main"
+                  and not candidate.startswith("release/")
+                  and not candidate.startswith("hotfix/")
+              ):
+                  fail(f"{field} is outside the allowed base branches")
+              return candidate
+
+
+          def api_payload(path: str) -> Any:
+              request = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {env('ACTIONS_TOKEN')}",
+                      "User-Agent": "mychampions-trusted-candidate-gate",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          fail(f"GitHub API returned {response.status}")
+                      return json.load(response)
+              except (OSError, urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError):
+                  fail(f"GitHub API request failed for {path}")
+              raise AssertionError("unreachable")
+
+
+          def api(path: str) -> dict[str, Any]:
+              return mapping(api_payload(path), f"GitHub API response for {path}")
+
+
+          def graphql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
+              request = urllib.request.Request(
+                  "https://api.github.com/graphql",
+                  data=json.dumps(
+                      {"query": query, "variables": variables}
+                  ).encode("utf-8"),
+                  method="POST",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {env('ACTIONS_TOKEN')}",
+                      "Content-Type": "application/json",
+                      "User-Agent": "mychampions-trusted-candidate-gate",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          fail(f"GitHub GraphQL API returned {response.status}")
+                      payload = mapping(
+                          json.load(response), "GitHub GraphQL response"
+                      )
+              except (
+                  OSError,
+                  urllib.error.HTTPError,
+                  urllib.error.URLError,
+                  json.JSONDecodeError,
+              ):
+                  fail("GitHub GraphQL request failed")
+              if payload.get("errors"):
+                  fail("GitHub GraphQL response contains errors")
+              return mapping(payload.get("data"), "GitHub GraphQL data")
+
+
+          def graphql_repository_identity(value: Any, field: str) -> None:
+              repository = mapping(value, field)
+              if (
+                  text(repository.get("nameWithOwner"), f"{field}.nameWithOwner")
+                  != REPOSITORY
+              ):
+                  fail(f"{field} is not the upstream repository")
+              actor_identity(repository.get("owner"), f"{field}.owner")
+
+
+          def graphql_pull_request(value: Any, field: str) -> dict[str, Any]:
+              pull = mapping(value, field)
+              number = positive_integer(pull.get("number"), f"{field}.number")
+              if (
+                  pull.get("state") != "OPEN"
+                  or pull.get("merged") is not False
+                  or pull.get("isDraft") is not False
+              ):
+                  fail(f"{field} is not an open, ready, unmerged pull request")
+              actor_identity(pull.get("author"), f"{field}.author")
+              graphql_repository_identity(
+                  pull.get("baseRepository"), f"{field}.baseRepository"
+              )
+              graphql_repository_identity(
+                  pull.get("headRepository"), f"{field}.headRepository"
+              )
+              return {
+                  "number": number,
+                  "base_ref": base_branch(
+                      pull.get("baseRefName"), f"{field}.baseRefName"
+                  ),
+                  "base_sha": sha(pull.get("baseRefOid"), f"{field}.baseRefOid"),
+                  "head_ref": branch(
+                      pull.get("headRefName"), f"{field}.headRefName"
+                  ),
+                  "head_sha": sha(pull.get("headRefOid"), f"{field}.headRefOid"),
+              }
+
+
+          def queue_entry(value: Any, field: str) -> dict[str, Any]:
+              entry = mapping(value, field)
+              position = nonnegative_integer(
+                  entry.get("position"), f"{field}.position"
+              )
+              state = text(entry.get("state"), f"{field}.state")
+              if state not in {
+                  "AWAITING_CHECKS",
+                  "LOCKED",
+                  "MERGEABLE",
+                  "QUEUED",
+                  "UNMERGEABLE",
+              }:
+                  fail(f"{field}.state is not a known merge-queue state")
+              if not isinstance(entry.get("solo"), bool):
+                  fail(f"{field}.solo is not a boolean")
+              base_commit = mapping(entry.get("baseCommit"), f"{field}.baseCommit")
+              head_commit = mapping(entry.get("headCommit"), f"{field}.headCommit")
+              base_commit_sha = sha(
+                  base_commit.get("oid"), f"{field}.baseCommit.oid"
+              )
+              head_commit_sha = sha(
+                  head_commit.get("oid"), f"{field}.headCommit.oid"
+              )
+              if base_commit_sha == head_commit_sha:
+                  fail(f"{field} has identical base and head commits")
+              parents_connection = mapping(
+                  head_commit.get("parents"), f"{field}.headCommit.parents"
+              )
+              parents = [
+                  sha(
+                      mapping(parent, f"{field}.headCommit.parent").get("oid"),
+                      f"{field}.headCommit.parent.oid",
+                  )
+                  for parent in sequence(
+                      parents_connection.get("nodes"),
+                      f"{field}.headCommit.parents.nodes",
+                  )
+              ]
+              if not parents or parents[0] != base_commit_sha:
+                  fail(f"{field} head commit does not descend from its queue base")
+              # GitHub merge queues support merge, squash, and rebase methods, so the
+              # generated commit is not assumed to have a stable second-parent shape.
+              # The GraphQL entry-to-pull-request relation is validated against the
+              # live upstream pull-request head below.
+              enqueuer = mapping(entry.get("enqueuer"), f"{field}.enqueuer")
+              pull_request = mapping(
+                  entry.get("pullRequest"), f"{field}.pullRequest"
+              )
+              return {
+                  "position": position,
+                  "state": state,
+                  "solo": entry.get("solo"),
+                  "base_sha": base_commit_sha,
+                  "head_sha": head_commit_sha,
+                  "enqueuer": text(
+                      enqueuer.get("login"), f"{field}.enqueuer.login"
+                  ),
+                  "pull_request_number": positive_integer(
+                      pull_request.get("number"), f"{field}.pullRequest.number"
+                  ),
+                  "pull_request": pull_request,
+              }
+
+
+          def resolve_queue_chain(
+              entries: list[dict[str, Any]],
+              target_entry: dict[str, Any],
+              expected_head_sha: str,
+              expected_queue_base_sha: str,
+              expected_protected_base_sha: str,
+              expected_pull_request_number: int,
+              has_next_page: bool,
+          ) -> tuple[dict[str, Any], list[dict[str, Any]], str]:
+              if has_next_page is not False:
+                  fail("merge-queue entry list may be truncated")
+              if not entries or len(entries) > 100:
+                  fail("merge queue does not have a bounded entry list")
+
+              positions = [entry["position"] for entry in entries]
+              entry_heads = [entry["head_sha"] for entry in entries]
+              if len(set(positions)) != len(positions):
+                  fail("merge queue contains duplicate entry positions")
+              if len(set(entry_heads)) != len(entry_heads):
+                  fail("merge queue contains ambiguous candidate heads")
+              if target_entry["pull_request_number"] != expected_pull_request_number:
+                  fail("queue ref names a different target pull request")
+
+              matching_targets = [
+                  entry
+                  for entry in entries
+                  if entry["position"] == target_entry["position"]
+                  and entry["base_sha"] == target_entry["base_sha"]
+                  and entry["head_sha"] == target_entry["head_sha"]
+                  and entry["pull_request_number"] == expected_pull_request_number
+              ]
+              if len(matching_targets) != 1:
+                  fail("target pull request does not identify one exact queue entry")
+              target = matching_targets[0]
+              for field in (
+                  "position",
+                  "state",
+                  "solo",
+                  "base_sha",
+                  "head_sha",
+                  "enqueuer",
+              ):
+                  if target[field] != target_entry[field]:
+                      fail("target queue entry disagrees with its queue listing")
+              if (
+                  target["head_sha"] != expected_head_sha
+                  or target["base_sha"] != expected_queue_base_sha
+              ):
+                  fail("merge-group run does not match the exact queued candidate")
+
+              minimum_position = min(positions)
+              entries_by_head = {
+                  entry["head_sha"]: entry for entry in entries
+              }
+              chain: list[dict[str, Any]] = []
+              seen_chain_heads: set[str] = set()
+              current = target
+              while True:
+                  if current["head_sha"] in seen_chain_heads:
+                      fail("merge queue contains a candidate cycle")
+                  seen_chain_heads.add(current["head_sha"])
+                  chain.append(current)
+                  predecessor = entries_by_head.get(current["base_sha"])
+                  if predecessor is None:
+                      if current["position"] != minimum_position:
+                          fail("merge queue candidate chain is incomplete")
+                      root_base_sha = current["base_sha"]
+                      break
+                  if predecessor["position"] != current["position"] - 1:
+                      fail("merge queue candidate chain is not consecutive")
+                  current = predecessor
+              if len(chain) != target["position"] - minimum_position + 1:
+                  fail("merge queue candidate chain is incomplete")
+              chain.reverse()
+              if root_base_sha != expected_protected_base_sha:
+                  fail(
+                      "merge queue candidate chain does not start at the live protected base"
+                  )
+              return target, chain, root_base_sha
+
+
+          def post_status(candidate: str, state: str, description: str) -> None:
+              exact_candidate = sha(candidate, "status candidate")
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{REPOSITORY}/statuses/{exact_candidate}",
+                  data=json.dumps(
+                      {
+                          "state": state,
+                          "context": "Selective CI gate",
+                          "description": description,
+                          "target_url": (
+                              f"https://github.com/{REPOSITORY}/actions/runs/"
+                              f"{env('GITHUB_RUN_ID')}"
+                          ),
+                      }
+                  ).encode("utf-8"),
+                  method="POST",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {env('ACTIONS_TOKEN')}",
+                      "Content-Type": "application/json",
+                      "User-Agent": "mychampions-trusted-candidate-gate",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 201:
+                          fail(f"GitHub status API returned {response.status}")
+              except (OSError, urllib.error.HTTPError, urllib.error.URLError):
+                  fail("GitHub status publication failed")
+
+
+          def repository_identity(value: Any, field: str) -> dict[str, Any]:
+              repository = mapping(value, field)
+              if text(repository.get("full_name"), f"{field}.full_name") != REPOSITORY:
+                  fail(f"{field} is not the upstream repository")
+              if positive_integer(repository.get("id"), f"{field}.id") != int(env("REPOSITORY_ID")):
+                  fail(f"{field} ID does not match the trusted repository")
+              owner = mapping(repository.get("owner"), f"{field}.owner")
+              if text(owner.get("login"), f"{field}.owner.login") != OWNER:
+                  fail(f"{field} owner is not trusted")
+              return repository
+
+
+          def actor_identity(value: Any, field: str) -> None:
+              actor = mapping(value, field)
+              if text(actor.get("login"), f"{field}.login") != OWNER:
+                  fail(f"{field} is not the trusted repository owner")
+
+
+          def association_repository_identity(value: Any, field: str) -> None:
+              repository = mapping(value, field)
+              if positive_integer(repository.get("id"), f"{field}.id") != int(
+                  env("REPOSITORY_ID")
+              ):
+                  fail(f"{field} ID does not match the upstream repository")
+              full_name = repository.get("full_name")
+              if full_name is not None and text(full_name, f"{field}.full_name") != REPOSITORY:
+                  fail(f"{field} is not the upstream repository")
+
+
+          def validate_live_pr(
+              number: int, association: dict[str, Any] | None = None
+          ) -> tuple[str, str, str, str, bool]:
+              pull = api(f"/repos/{REPOSITORY}/pulls/{number}")
+              if positive_integer(pull.get("number"), "pull_request.number") != number:
+                  fail("live pull-request number changed")
+              if (
+                  pull.get("state") != "open"
+                  or pull.get("merged") is not False
+                  or pull.get("draft") is not False
+              ):
+                  fail("pull request is not open, ready, and unmerged")
+              actor_identity(pull.get("user"), "pull_request.user")
+
+              base = mapping(pull.get("base"), "pull_request.base")
+              head = mapping(pull.get("head"), "pull_request.head")
+              repository_identity(base.get("repo"), "pull_request.base.repo")
+              repository_identity(head.get("repo"), "pull_request.head.repo")
+              base_ref = base_branch(base.get("ref"), "pull_request.base.ref")
+              head_ref = branch(head.get("ref"), "pull_request.head.ref")
+              base_sha = sha(base.get("sha"), "pull_request.base.sha")
+              head_sha = sha(head.get("sha"), "pull_request.head.sha")
+              if base_sha == head_sha:
+                  fail("pull-request base and head SHAs are identical")
+
+              if association is not None:
+                  if positive_integer(association.get("number"), "association.number") != number:
+                      fail("workflow run association has the wrong pull-request number")
+                  associated_base = mapping(association.get("base"), "association.base")
+                  associated_head = mapping(association.get("head"), "association.head")
+                  if sha(associated_base.get("sha"), "association.base.sha") != base_sha:
+                      fail("live pull-request base no longer matches the triggering run")
+                  if sha(associated_head.get("sha"), "association.head.sha") != head_sha:
+                      fail("live pull-request head no longer matches the triggering run")
+                  if base_branch(associated_base.get("ref"), "association.base.ref") != base_ref:
+                      fail("live pull-request base ref no longer matches the triggering run")
+                  if branch(associated_head.get("ref"), "association.head.ref") != head_ref:
+                      fail("live pull-request head ref no longer matches the triggering run")
+                  association_repository_identity(
+                      associated_base.get("repo"), "association.base.repo"
+                  )
+                  association_repository_identity(
+                      associated_head.get("repo"), "association.head.repo"
+                  )
+
+              labels = sequence(pull.get("labels"), "pull_request.labels")
+              force_full = any(
+                  text(mapping(label, "pull_request.label").get("name"), "pull_request.label.name")
+                  == "ci:full"
+                  for label in labels
+              )
+              return base_sha, head_sha, base_ref, head_ref, force_full
+
+
+          def require_unique_open_pull_request(
+              candidate_sha: str, expected_number: int
+          ) -> None:
+              exact_candidate = sha(candidate_sha, "candidate head SHA")
+              pulls = sequence(
+                  api_payload(
+                      f"/repos/{REPOSITORY}/pulls?state=open&per_page=100&page=1"
+                  ),
+                  "open pull requests",
+              )
+              if len(pulls) >= 100:
+                  fail("open pull-request list may be truncated")
+
+              matching_numbers: list[int] = []
+              for index, value in enumerate(pulls):
+                  pull = mapping(value, f"open_pull_requests[{index}]")
+                  if pull.get("state") != "open" or pull.get("merged_at") is not None:
+                      fail("open pull-request listing contains a closed pull request")
+                  draft = pull.get("draft")
+                  if not isinstance(draft, bool):
+                      fail("open pull-request listing has malformed draft state")
+                  if draft:
+                      continue
+                  head = mapping(pull.get("head"), f"open_pull_requests[{index}].head")
+                  if sha(
+                      head.get("sha"), f"open_pull_requests[{index}].head.sha"
+                  ) != exact_candidate:
+                      continue
+                  user = mapping(
+                      pull.get("user"), f"open_pull_requests[{index}].user"
+                  )
+                  head_repository = mapping(
+                      head.get("repo"), f"open_pull_requests[{index}].head.repo"
+                  )
+                  if (
+                      user.get("login") != OWNER
+                      or head_repository.get("full_name") != REPOSITORY
+                  ):
+                      continue
+                  base = mapping(pull.get("base"), f"open_pull_requests[{index}].base")
+                  repository_identity(
+                      base.get("repo"), f"open_pull_requests[{index}].base.repo"
+                  )
+                  candidate_base = branch(
+                      base.get("ref"), f"open_pull_requests[{index}].base.ref"
+                  )
+                  if (
+                      candidate_base != "main"
+                      and not candidate_base.startswith("release/")
+                      and not candidate_base.startswith("hotfix/")
+                  ):
+                      continue
+                  matching_numbers.append(
+                      positive_integer(
+                          pull.get("number"),
+                          f"open_pull_requests[{index}].number",
+                      )
+                  )
+
+              if matching_numbers != [expected_number]:
+                  post_status(
+                      exact_candidate,
+                      "failure",
+                      "Candidate head is shared by multiple eligible pull requests.",
+                  )
+                  fail(
+                      "candidate head is not bound to exactly one eligible open pull request"
+                  )
+
+
+          try:
+              if env("REPOSITORY") != REPOSITORY or env("REPOSITORY_OWNER") != OWNER:
+                  fail("workflow repository is not trusted")
+              if env("ACTOR") != OWNER or env("TRIGGERING_ACTOR") != OWNER:
+                  fail("workflow actor and triggering actor must both be the repository owner")
+              if env("GITHUB_REF_VALUE") != "refs/heads/main":
+                  fail("trusted workflow is not executing from main")
+              if env("WORKFLOW_REF") != TRUSTED_REF:
+                  fail("trusted workflow_ref is not the default-branch workflow")
+              if sha(env("WORKFLOW_SHA"), "WORKFLOW_SHA") != sha(
+                  env("GITHUB_SHA_VALUE"), "GITHUB_SHA"
+              ):
+                  fail("trusted workflow SHA does not match the main execution SHA")
+
+              with open(env("GITHUB_EVENT_PATH"), "r", encoding="utf-8") as event_file:
+                  event = mapping(json.load(event_file), "event")
+              event_repository = repository_identity(event.get("repository"), "event.repository")
+              if text(event_repository.get("default_branch"), "event.repository.default_branch") != "main":
+                  fail("repository default branch is not main")
+
+              event_name = env("EVENT_NAME")
+              if env("EVENT_SENDER") != OWNER:
+                  fail("event sender is not the repository owner")
+              actor_identity(event.get("sender"), "event.sender")
+
+              force_full = False
+              base_sha = ""
+              candidate_kind = event_name
+              head_sha = ""
+              head_ref = "main"
+              preflight_conclusion = ""
+              pull_request_number = ""
+
+              if event_name == "workflow_run":
+                  workflow_run_event = mapping(event.get("workflow_run"), "workflow_run")
+                  run_id = positive_integer(workflow_run_event.get("id"), "workflow_run.id")
+                  run = api(f"/repos/{REPOSITORY}/actions/runs/{run_id}")
+                  if positive_integer(run.get("id"), "run.id") != run_id:
+                      fail("triggering workflow run ID changed")
+                  if run.get("status") != "completed":
+                      fail("triggering hosted preflight is not complete")
+                  preflight_conclusion = text(run.get("conclusion"), "run.conclusion")
+                  if text(run.get("name"), "run.name") != PREFLIGHT_NAME:
+                      fail("triggering workflow has the wrong name")
+                  run_path = text(run.get("path"), "run.path")
+                  run_path_parts = run_path.split("@", 1)
+                  if (
+                      run_path_parts[0] != PREFLIGHT_PATH
+                      or len(run_path_parts) not in {1, 2}
+                      or (
+                          len(run_path_parts) == 2
+                          and (not run_path_parts[1] or "@" in run_path_parts[1])
+                      )
+                  ):
+                      fail("triggering workflow has the wrong path")
+                  repository_identity(run.get("repository"), "run.repository")
+                  repository_identity(run.get("head_repository"), "run.head_repository")
+                  actor_identity(run.get("actor"), "run.actor")
+                  actor_identity(run.get("triggering_actor"), "run.triggering_actor")
+
+                  workflow_id = positive_integer(run.get("workflow_id"), "run.workflow_id")
+                  registered = api(
+                      f"/repos/{REPOSITORY}/actions/workflows/{workflow_id}"
+                  )
+                  if positive_integer(registered.get("id"), "workflow.id") != workflow_id:
+                      fail("triggering run is not from the registered preflight workflow")
+                  if (
+                      text(registered.get("name"), "workflow.name") != PREFLIGHT_NAME
+                      or text(registered.get("path"), "workflow.path") != PREFLIGHT_PATH
+                      or registered.get("state") != "active"
+                  ):
+                      fail("registered preflight workflow metadata is not trusted")
+
+                  for field in ("head_sha", "head_branch", "event", "conclusion", "run_attempt"):
+                      if workflow_run_event.get(field) != run.get(field):
+                          fail(f"workflow_run.{field} does not match the live run")
+                  if workflow_run_event.get("workflow_id") != workflow_id:
+                      fail("workflow_run.workflow_id does not match the live run")
+
+                  run_event = text(run.get("event"), "run.event")
+                  associations = [
+                      mapping(value, "run.pull_request")
+                      for value in sequence(run.get("pull_requests"), "run.pull_requests")
+                  ]
+                  if run_event == "pull_request":
+                      if len(associations) != 1:
+                          fail("pull-request preflight must identify exactly one pull request")
+                      number = positive_integer(
+                          associations[0].get("number"), "run.pull_requests[0].number"
+                      )
+                      (
+                          base_sha,
+                          head_sha,
+                          base_ref,
+                          head_ref,
+                          label_force_full,
+                      ) = validate_live_pr(number, associations[0])
+                      if (
+                          sha(run.get("head_sha"), "run.head_sha") != head_sha
+                          or branch(run.get("head_branch"), "run.head_branch") != head_ref
+                      ):
+                          fail("triggering run does not identify the live pull-request head")
+                      require_unique_open_pull_request(head_sha, number)
+                      force_full = force_full or label_force_full or base_ref != "main"
+                      candidate_kind = "pull_request"
+                      pull_request_number = str(number)
+                  elif run_event == "merge_group":
+                      merge_head_ref = branch(run.get("head_branch"), "run.head_branch")
+                      head_sha = sha(run.get("head_sha"), "run.head_sha")
+                      queue_ref_match = re.fullmatch(
+                          (
+                              r"gh-readonly-queue/(?P<base>.+)/"
+                              r"pr-(?P<number>[1-9][0-9]*)-"
+                              r"(?P<base_sha>[0-9a-f]{40})"
+                          ),
+                          merge_head_ref,
+                      )
+                      if queue_ref_match is None:
+                          fail("merge-group head is not an exact protected queue ref")
+                      merge_base_ref = base_branch(
+                          queue_ref_match.group("base"), "merge_group.base_ref"
+                      )
+                      queue_pull_number = positive_integer(
+                          int(queue_ref_match.group("number")),
+                          "merge_group.pull_request_number",
+                      )
+                      queue_base_sha = sha(
+                          queue_ref_match.group("base_sha"),
+                          "merge_group.queue_base_sha",
+                      )
+
+                      graph_data = graphql(
+                          MERGE_QUEUE_QUERY,
+                          {
+                              "owner": OWNER,
+                              "name": REPOSITORY.split("/", 1)[1],
+                              "number": queue_pull_number,
+                          },
+                      )
+                      graph_repository = mapping(
+                          graph_data.get("repository"), "merge_queue.repository"
+                      )
+                      graphql_repository_identity(
+                          graph_repository, "merge_queue.repository"
+                      )
+                      graph_target_pull = graphql_pull_request(
+                          graph_repository.get("pullRequest"),
+                          "merge_queue.pull_request",
+                      )
+                      if graph_target_pull["number"] != queue_pull_number:
+                          fail("merge-queue query returned another pull request")
+                      target_entry_value = mapping(
+                          graph_repository.get("pullRequest"),
+                          "merge_queue.pull_request",
+                      ).get("mergeQueueEntry")
+                      target_entry_mapping = mapping(
+                          target_entry_value, "merge_queue.target_entry"
+                      )
+                      target_entry = queue_entry(
+                          target_entry_mapping, "merge_queue.target_entry"
+                      )
+                      merge_queue = mapping(
+                          target_entry_mapping.get("mergeQueue"),
+                          "merge_queue.target_entry.mergeQueue",
+                      )
+                      entries_connection = mapping(
+                          merge_queue.get("entries"), "merge_queue.entries"
+                      )
+                      page_info = mapping(
+                          entries_connection.get("pageInfo"),
+                          "merge_queue.entries.pageInfo",
+                      )
+                      entry_values = sequence(
+                          entries_connection.get("nodes"),
+                          "merge_queue.entries.nodes",
+                      )
+                      entries = [
+                          queue_entry(value, f"merge_queue.entries[{index}]")
+                          for index, value in enumerate(entry_values)
+                      ]
+                      target, chain, base_sha = resolve_queue_chain(
+                          entries,
+                          target_entry,
+                          head_sha,
+                          queue_base_sha,
+                          graph_target_pull["base_sha"],
+                          queue_pull_number,
+                          page_info.get("hasNextPage"),
+                      )
+                      target_entry_pull = graphql_pull_request(
+                          target_entry["pull_request"],
+                          "merge_queue.target_entry.pull_request",
+                      )
+                      target_list_pull = graphql_pull_request(
+                          target["pull_request"],
+                          "merge_queue.listed_target.pull_request",
+                      )
+                      if (
+                          target_entry_pull != graph_target_pull
+                          or target_list_pull != graph_target_pull
+                      ):
+                          fail(
+                              "target queue entry pull request disagrees with the query target"
+                          )
+
+                      merge_commit = api(f"/repos/{REPOSITORY}/commits/{head_sha}")
+                      if sha(merge_commit.get("sha"), "merge_commit.sha") != head_sha:
+                          fail("merge-group commit API returned another candidate")
+                      parents = sequence(merge_commit.get("parents"), "merge_commit.parents")
+                      if not parents:
+                          fail("merge-group candidate has no base parent")
+                      merge_parent_sha = sha(
+                          mapping(parents[0], "merge_commit.parents[0]").get("sha"),
+                          "merge_commit.parents[0].sha",
+                      )
+                      if merge_parent_sha != target["base_sha"]:
+                          fail(
+                              "merge-group commit parent does not match its queue entry"
+                          )
+
+                      seen_numbers: set[int] = set()
+                      for index, entry in enumerate(chain):
+                          if entry["state"] == "UNMERGEABLE":
+                              fail("merge queue candidate chain is unmergeable")
+                          if entry["enqueuer"] != OWNER:
+                              fail(
+                                  "merge queue candidate was not enqueued by the owner"
+                              )
+                          queued_pull = graphql_pull_request(
+                              entry["pull_request"],
+                              f"merge_queue.chain[{index}].pull_request",
+                          )
+                          number = queued_pull["number"]
+                          if number in seen_numbers:
+                              fail(
+                                  "merge queue candidate chain repeats a pull request"
+                              )
+                          seen_numbers.add(number)
+                          (
+                              live_base_sha,
+                              live_head_sha,
+                              live_base_ref,
+                              live_head_ref,
+                              _,
+                          ) = validate_live_pr(number)
+                          if (
+                              queued_pull["base_sha"] != live_base_sha
+                              or queued_pull["head_sha"] != live_head_sha
+                              or queued_pull["base_ref"] != live_base_ref
+                              or queued_pull["head_ref"] != live_head_ref
+                          ):
+                              fail(
+                                  "live pull request disagrees with its merge-queue entry"
+                              )
+                          if live_base_ref != merge_base_ref:
+                              fail(
+                                  "merge queue candidate chain crosses base branches"
+                              )
+                      if any(entry["solo"] for entry in chain) and len(chain) != 1:
+                          fail("a solo merge-queue entry has other candidate predecessors")
+
+                      if associations:
+                          run_number_values = [
+                              positive_integer(
+                                  association.get("number"),
+                                  "run.pull_request.number",
+                              )
+                              for association in associations
+                          ]
+                          if len(set(run_number_values)) != len(run_number_values):
+                              fail(
+                                  "workflow run repeats a merge-queue pull request"
+                              )
+                          run_numbers = set(run_number_values)
+                          if not run_numbers.issubset(seen_numbers):
+                              fail(
+                                  "workflow run names a pull request outside the merge queue chain"
+                              )
+                      force_full = True
+                      head_ref = merge_base_ref
+                      candidate_kind = "merge_group"
+                  else:
+                      fail("triggering preflight event is not allowlisted")
+
+              elif event_name == "workflow_dispatch":
+                  if event.get("ref") not in {"main", "refs/heads/main"}:
+                      fail("workflow_dispatch did not target main")
+                  input_value = env("PR_NUMBER_INPUT")
+                  if not input_value.isdigit() or int(input_value) < 1:
+                      fail("workflow_dispatch pull_request_number is invalid")
+                  event_inputs = mapping(event.get("inputs"), "workflow_dispatch.inputs")
+                  if str(event_inputs.get("pull_request_number")) != input_value:
+                      fail("workflow_dispatch input does not match the event payload")
+                  (
+                      base_sha,
+                      head_sha,
+                      _,
+                      head_ref,
+                      _,
+                  ) = validate_live_pr(int(input_value))
+                  require_unique_open_pull_request(head_sha, int(input_value))
+                  force_full = True
+                  candidate_kind = "workflow_dispatch"
+                  pull_request_number = input_value
+
+              elif event_name == "push":
+                  if event.get("ref") != "refs/heads/main" or event.get("deleted") is not False:
+                      fail("push event is not an active main update")
+                  base_sha = sha(event.get("before"), "push.before")
+                  head_sha = sha(event.get("after"), "push.after")
+                  if head_sha != env("GITHUB_SHA_VALUE"):
+                      fail("push event head does not match the trusted workflow SHA")
+                  if base_sha == "0" * 40:
+                      base_sha = ""
+                      force_full = True
+                  elif base_sha == head_sha:
+                      fail("push base and head SHAs are identical")
+
+              else:
+                  fail("trusted workflow event is not allowlisted")
+
+              if not head_sha:
+                  fail("exact candidate head SHA was not resolved")
+              if base_sha and base_sha == head_sha:
+                  fail("candidate base and head SHAs are identical")
+              publish_required_status = candidate_kind in {
+                  "pull_request",
+                  "workflow_dispatch",
+                  "merge_group",
+              }
+
+              if event_name == "workflow_run":
+                  workflow_runs = api(
+                      f"/repos/{REPOSITORY}/actions/workflows/{workflow_id}/runs"
+                      f"?event={run_event}&head_sha={head_sha}&per_page=100"
+                  )
+                  matching_run_ids = [
+                      positive_integer(candidate.get("id"), "workflow_runs.run.id")
+                      for candidate in sequence(
+                          workflow_runs.get("workflow_runs"),
+                          "workflow_runs.workflow_runs",
+                      )
+                      if mapping(candidate, "workflow_runs.run").get("head_sha")
+                      == head_sha
+                  ]
+                  if not matching_run_ids or max(matching_run_ids) != run_id:
+                      fail("triggering preflight is stale for this exact candidate")
+                  if preflight_conclusion != "success":
+                      if publish_required_status:
+                          post_status(
+                              head_sha,
+                              "failure",
+                              "Hosted candidate preflight did not pass.",
+                          )
+                      fail("triggering hosted preflight did not complete successfully")
+
+              if publish_required_status:
+                  post_status(
+                      head_sha,
+                      "pending",
+                      "Trusted selective validation is in progress.",
+                  )
+              with open(env("GITHUB_OUTPUT"), "a", encoding="utf-8") as output:
+                  output.write(f"base_sha={base_sha}\n")
+                  output.write(f"candidate_kind={candidate_kind}\n")
+                  output.write(f"head_sha={head_sha}\n")
+                  output.write(f"head_ref={head_ref}\n")
+                  output.write(f"force_full={'true' if force_full else 'false'}\n")
+                  output.write(f"pull_request_number={pull_request_number}\n")
+              print(f"Authorized exact candidate {head_sha}.")
+          except Exception as error:
+              print(f"Candidate authorization denied: {error}", file=sys.stderr)
+              raise SystemExit(1)
+          PY
+
+  impact:
+    name: Resolve affected features
+    needs: authorize-candidate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      base_sha: ${{ needs.authorize-candidate.outputs.base_sha }}
+      head_sha: ${{ needs.authorize-candidate.outputs.head_sha }}
+      mode: ${{ steps.resolve.outputs.mode }}
+      has_web: ${{ steps.resolve.outputs.has_web }}
+      has_web_server: ${{ steps.resolve.outputs.has_web_server }}
+      has_detox_ios: ${{ steps.resolve.outputs.has_detox_ios }}
+      has_detox_android: ${{ steps.resolve.outputs.has_detox_android }}
+      web_suites: ${{ steps.resolve.outputs.web_suites }}
+      detox_ios_suites: ${{ steps.resolve.outputs.detox_ios_suites }}
+      detox_android_suites: ${{ steps.resolve.outputs.detox_android_suites }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.authorize-candidate.outputs.head_sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - run: yarn install --frozen-lockfile --no-progress
+      - name: Validate ownership and suite metadata
+        run: yarn test:impact
+      - id: resolve
+        name: Resolve selective test suites
+        env:
+          BASE_SHA: ${{ needs.authorize-candidate.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.authorize-candidate.outputs.head_sha }}
+          FORCE_FULL: ${{ needs.authorize-candidate.outputs.force_full }}
+        run: |
+          set -euo pipefail
+          args=(--head "$HEAD_SHA")
+          if [[ -n "$BASE_SHA" ]]; then
+            args+=(--base "$BASE_SHA")
+          fi
+          if [[ "$FORCE_FULL" == "true" ]]; then
+            args+=(--all)
+          fi
+          yarn test:impact:resolve "${args[@]}"
+
+  fast-quality:
+    name: Fast quality checks
+    needs: impact
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.impact.outputs.head_sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - run: yarn install --frozen-lockfile --no-progress
+      - run: yarn test:impact
+      - run: yarn test:unit
+      - run: yarn lint
+      - run: yarn tsc --noEmit
+      - name: Validate the pull-request diff
+        if: needs.impact.outputs.base_sha != ''
+        env:
+          BASE_SHA: ${{ needs.impact.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.impact.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          git diff --check "$merge_base" "$HEAD_SHA"
+
+  web-selected:
+    name: Selected web UI suites
+    needs:
+      - authorize-candidate
+      - impact
+      - fast-quality
+    if: >-
+      needs.authorize-candidate.result == 'success' &&
+      needs.fast-quality.result == 'success' &&
+      needs.impact.outputs.has_web == 'true'
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-web-only]
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    concurrency:
+      group: mychampions-wsl-ui
+      cancel-in-progress: false
+    env:
+      CI: 'true'
+      PLAYWRIGHT_BROWSERS_PATH: /home/eduardo/.cache/ms-playwright-mychampions
+      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'
+      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
+      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.web_suites }}
+      MYCHAMPIONS_SERVER_ROOT: ${{ github.workspace }}/.ci/mychampions-api
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          ref: ${{ needs.impact.outputs.head_sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Enable repository Yarn
+        run: corepack enable
+      - run: yarn install --frozen-lockfile --no-progress
+      - id: backend-contract-ref
+        if: needs.impact.outputs.has_web_server == 'true'
+        name: Resolve coordinated backend contract ref
+        env:
+          MOBILE_HEAD_REF: ${{ needs.authorize-candidate.outputs.head_ref }}
+        run: |
+          set -euo pipefail
+          backend_ref="${MOBILE_HEAD_REF:-main}"
+          remote_line="$(
+            git ls-remote \
+              --heads \
+              https://github.com/edufelip/mychampions-api.git \
+              "refs/heads/${backend_ref}"
+          )"
+          if [[ -z "$remote_line" ]]; then
+            backend_ref=main
+            remote_line="$(
+              git ls-remote \
+                --heads \
+                https://github.com/edufelip/mychampions-api.git \
+                refs/heads/main
+            )"
+          fi
+
+          if [[ -z "$remote_line" || "$remote_line" == *$'\n'* ]]; then
+            echo "Unable to resolve one exact coordinated backend ref." >&2
+            exit 1
+          fi
+
+          read -r backend_sha resolved_ref unexpected <<<"$remote_line"
+          if [[
+            ! "$backend_sha" =~ ^[0-9a-f]{40}$ ||
+            "$resolved_ref" != "refs/heads/${backend_ref}" ||
+            -n "${unexpected:-}"
+          ]]; then
+            echo "Unable to resolve one exact coordinated backend commit." >&2
+            exit 1
+          fi
+
+          echo "branch=$backend_ref" >> "$GITHUB_OUTPUT"
+          echo "sha=$backend_sha" >> "$GITHUB_OUTPUT"
+          echo "Resolved coordinated backend branch $backend_ref at $backend_sha."
+          printf '%s\n' "### Coordinated backend commit" "" \
+            "- SHA: \`$backend_sha\`" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        if: needs.impact.outputs.has_web_server == 'true'
+        with:
+          persist-credentials: false
+          repository: edufelip/mychampions-api
+          ref: ${{ steps.backend-contract-ref.outputs.sha }}
+          path: .ci/mychampions-api
+      - name: Verify the coordinated backend checkout
+        if: needs.impact.outputs.has_web_server == 'true'
+        env:
+          EXPECTED_BACKEND_SHA: ${{ steps.backend-contract-ref.outputs.sha }}
+        run: |
+          set -euo pipefail
+          checked_out_sha="$(git -C "$MYCHAMPIONS_SERVER_ROOT" rev-parse HEAD)"
+          if [[ "$checked_out_sha" != "$EXPECTED_BACKEND_SHA" ]]; then
+            echo "Coordinated backend checkout does not match the resolved commit." >&2
+            exit 1
+          fi
+          printf '%s\n' "- Checked out SHA: \`$checked_out_sha\`" \
+            >> "$GITHUB_STEP_SUMMARY"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        if: needs.impact.outputs.has_web_server == 'true'
+        with:
+          bun-version: 1.3.10
+      - if: needs.impact.outputs.has_web_server == 'true'
+        working-directory: .ci/mychampions-api
+        run: bun install --frozen-lockfile
+      - name: Ensure selected browsers are installed locally
+        run: yarn playwright install chromium firefox webkit
+      - name: Preserve user-local browser libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' browser_wrapper_directories < <(
+            find "$PLAYWRIGHT_BROWSERS_PATH" \
+              -type d \
+              \( -name minibrowser-wpe -o -name minibrowser-gtk \) \
+              -print0
+          )
+          if (( ${#browser_wrapper_directories[@]} == 0 )); then
+            echo "No WebKit MiniBrowser wrappers were installed." >&2
+            exit 1
+          fi
+          for directory in "${browser_wrapper_directories[@]}"; do
+            wrapper="$directory/MiniBrowser"
+            if [[ ! -f "$wrapper" || ! -x "$wrapper" ]]; then
+              echo "Invalid WebKit MiniBrowser wrapper: $wrapper" >&2
+              exit 1
+            fi
+            sed -i \
+              's|^export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib"$|export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"|' \
+              "$wrapper"
+            grep -Fqx \
+              'export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"' \
+              "$wrapper"
+          done
+      - name: Validate the web bundle
+        run: yarn web:export
+      - name: Run selected Playwright suites
+        run: yarn test:impact:execute --platform web
+      - name: Upload bounded web failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mychampions-web-failure-${{ github.run_id }}
+          path: .artifacts/ci-diagnostics/web
+          if-no-files-found: warn
+          retention-days: 1
+
+  detox-ios-selected:
+    name: Selected iOS Detox suites
+    needs:
+      - authorize-candidate
+      - impact
+      - fast-quality
+    if: >-
+      needs.authorize-candidate.result == 'success' &&
+      needs.fast-quality.result == 'success' &&
+      needs.impact.outputs.has_detox_ios == 'true'
+    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    concurrency:
+      group: mychampions-ios-detox
+      cancel-in-progress: false
+    env:
+      APP_VARIANT: dev
+      CI: 'true'
+      CI_REQUIRE_E2E_EXECUTION: 'true'
+      DETOX_IOS_SIMULATOR: iPhone 17
+      DETOX_METRO_PORT: '18081'
+      DETOX_REQUIRE_FRESH_METRO: 'true'
+      EXPO_PUBLIC_ENV: dev
+      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
+      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_ios_suites }}
+      XCODE_REQUIRED_MAJOR: '26'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          ref: ${{ needs.impact.outputs.head_sha }}
+      - name: Select Xcode 26 and verify the SDK
+        run: |
+          set -euo pipefail
+          xcode_app="$(
+            for candidate in /Applications/Xcode_"${XCODE_REQUIRED_MAJOR}"*.app; do
+              if [[ -d "$candidate" ]]; then
+                printf '%s\n' "$candidate"
+              fi
+            done | sort | tail -n 1
+          )"
+          if [[ -z "$xcode_app" && -d /Applications/Xcode.app ]]; then
+            xcode_app=/Applications/Xcode.app
+          fi
+          if [[ -z "$xcode_app" ]]; then
+            echo "Xcode ${XCODE_REQUIRED_MAJOR}.x is not installed." >&2
+            exit 1
+          fi
+          developer_path="$xcode_app/Contents/Developer"
+          echo "DEVELOPER_DIR=$developer_path" >> "$GITHUB_ENV"
+          export DEVELOPER_DIR="$developer_path"
+          sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
+          if [[ "${sdk_version%%.*}" -lt "$XCODE_REQUIRED_MAJOR" ]]; then
+            echo "Expected iPhoneOS SDK ${XCODE_REQUIRED_MAJOR}.0+; found $sdk_version." >&2
+            exit 1
+          fi
+      - name: Verify the isolated iOS Metro port
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$DETOX_METRO_PORT" =~ ^[0-9]+$ ]] ||
+             (( DETOX_METRO_PORT < 1024 || DETOX_METRO_PORT > 49151 )); then
+            echo "Invalid isolated iOS Metro port: ${DETOX_METRO_PORT}" >&2
+            exit 1
+          fi
+          if lsof -nP -iTCP:"$DETOX_METRO_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+            echo "Isolated iOS Metro port ${DETOX_METRO_PORT} is already occupied." >&2
+            exit 1
+          fi
+          echo "Verified isolated iOS Metro port ${DETOX_METRO_PORT}."
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Add Homebrew to PATH
+        run: echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+      - run: yarn install --frozen-lockfile --no-progress
+      - name: Install pods
+        env:
+          COCOAPODS_CACHE_DIR: ${{ runner.temp }}/.cocoapods-cache
+        run: |
+          set -euo pipefail
+          cd ios
+          pod install --silent
+      - name: Build and run selected iOS suites with trapped resources
+        shell: bash
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          env_file="$GITHUB_WORKSPACE/.env"
+          secret_file="$RUNNER_TEMP/mychampions-env-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-ios.env"
+          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          ios_state_file="$recovery_root/ios-simulator.state"
+          device_types_output="$RUNNER_TEMP/mychampions-simctl-device-types-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          runtimes_output="$RUNNER_TEMP/mychampions-simctl-runtimes-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          create_output="$RUNNER_TEMP/mychampions-simctl-create-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.out"
+          simulator_name="mychampions-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          simulator_udid=
+          supervised_pid=
+          supervised_pgid=
+          supervisor_launching=false
+          supervisor_previous_background_pid=
+          captured_background_pid=
+
+          validate_recovery_root() {
+            local actual_mode actual_uid canonical_parent canonical_root
+            local canonical_runner_temp canonical_workspace expected_uid parent
+            expected_uid="$(id -u)"
+            if [[
+              -z "$recovery_root" ||
+              "$recovery_root" != /* ||
+              ! -d "$recovery_root" ||
+              -L "$recovery_root"
+            ]]; then
+              echo "MYCHAMPIONS_NATIVE_STATE_ROOT must name an absolute real directory." >&2
+              return 1
+            fi
+            parent="$(dirname "$recovery_root")"
+            canonical_parent="$(cd "$parent" && pwd -P)" || return 1
+            canonical_root="$(cd "$recovery_root" && pwd -P)" || return 1
+            if [[
+              "$canonical_root" != "$recovery_root" ||
+              "$canonical_parent" != "$parent"
+            ]]; then
+              echo "The native recovery root and its parent must not traverse symlinks." >&2
+              return 1
+            fi
+            if [[
+              -z "${GITHUB_WORKSPACE:-}" ||
+              "$GITHUB_WORKSPACE" != /* ||
+              ! -d "$GITHUB_WORKSPACE" ||
+              -z "${RUNNER_TEMP:-}" ||
+              "$RUNNER_TEMP" != /* ||
+              ! -d "$RUNNER_TEMP"
+            ]]; then
+              echo "The runner workspace and temporary directory must be absolute real directories." >&2
+              return 1
+            fi
+            canonical_workspace="$(cd "$GITHUB_WORKSPACE" && pwd -P)" || return 1
+            canonical_runner_temp="$(cd "$RUNNER_TEMP" && pwd -P)" || return 1
+            if [[
+              "$canonical_workspace" == "/" ||
+              "$canonical_runner_temp" == "/"
+            ]]; then
+              echo "The runner workspace and temporary directory must not resolve to the filesystem root." >&2
+              return 1
+            fi
+            case "$canonical_root" in
+              "$canonical_workspace"|"$canonical_workspace"/*|\
+              "$canonical_runner_temp"|"$canonical_runner_temp"/*)
+                echo "MYCHAMPIONS_NATIVE_STATE_ROOT must remain outside GITHUB_WORKSPACE and RUNNER_TEMP." >&2
+                return 1
+                ;;
+            esac
+            actual_uid="$(stat -f '%u' "$parent")" || return 1
+            if [[ "$actual_uid" != "$expected_uid" ]]; then
+              echo "The native recovery root parent must be owned by this runner user." >&2
+              return 1
+            fi
+            actual_uid="$(stat -f '%u' "$recovery_root")" || return 1
+            actual_mode="$(stat -f '%Lp' "$recovery_root")" || return 1
+            if [[ "$actual_uid" != "$expected_uid" || "$actual_mode" != "700" ]]; then
+              echo "The native recovery root must be owned by this runner user with mode 0700." >&2
+              return 1
+            fi
+          }
+          remove_secret_material() {
+            local cleanup_status=0
+            local link_target=
+            unset ENV_FILE_CONTENT
+            rm -f "$secret_file" || cleanup_status=1
+            rm -f \
+              "$device_types_output" \
+              "$runtimes_output" \
+              "$create_output" || cleanup_status=1
+            if [[ -e "$secret_file" || -L "$secret_file" ]]; then
+              echo "The exact per-step iOS secret target survived cleanup." >&2
+              cleanup_status=1
+            fi
+            if [[ -L "$env_file" ]]; then
+              link_target="$(readlink "$env_file")" || {
+                link_target=
+                cleanup_status=1
+              }
+              if [[ "$link_target" != "$secret_file" ]]; then
+                echo "The workspace environment symlink no longer targets this step secret." >&2
+                cleanup_status=1
+              fi
+              rm -f "$env_file" || cleanup_status=1
+            elif [[ -e "$env_file" ]]; then
+              echo "The workspace environment path is not the expected symlink." >&2
+              cleanup_status=1
+            fi
+            if [[
+              -e "$secret_file" ||
+              (
+                -L "$env_file" &&
+                "$(readlink "$env_file" 2>/dev/null || true)" == "$secret_file"
+              )
+            ]]; then
+              cleanup_status=1
+            fi
+            return "$cleanup_status"
+          }
+          recover_stale_secret_link() {
+            local stale_target=
+            if [[ -L "$env_file" ]]; then
+              stale_target="$(readlink "$env_file")" || return 1
+              case "$stale_target" in
+                "$RUNNER_TEMP"/mychampions-env-*-ios.env)
+                  rm -f "$env_file"
+                  if [[ -f "$stale_target" && ! -L "$stale_target" ]]; then
+                    rm -f "$stale_target"
+                  fi
+                  ;;
+                *)
+                  echo "Refusing to replace an unrecognized workspace environment symlink." >&2
+                  return 1
+                  ;;
+              esac
+            elif [[ -e "$env_file" ]]; then
+              echo "Refusing to replace a non-symlink workspace environment file." >&2
+              return 1
+            fi
+          }
+          create_secret_link() {
+            local actual_mode link_target
+            recover_stale_secret_link
+            if [[ -e "$secret_file" || -L "$secret_file" ]]; then
+              echo "The per-step secret target already exists." >&2
+              return 1
+            fi
+            SECRET_FILE="$secret_file" /usr/bin/python3 - <<'PY'
+          import os
+
+          path = os.environ["SECRET_FILE"]
+          flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+          if hasattr(os, "O_NOFOLLOW"):
+              flags |= os.O_NOFOLLOW
+          descriptor = os.open(path, flags, 0o600)
+          try:
+              payload = (os.environ["ENV_FILE_CONTENT"] + "\n").encode()
+              while payload:
+                  payload = payload[os.write(descriptor, payload):]
+              os.fsync(descriptor)
+          finally:
+              os.close(descriptor)
+          PY
+            unset ENV_FILE_CONTENT
+            actual_mode="$(stat -f '%Lp' "$secret_file")" || return 1
+            if [[ ! -f "$secret_file" || -L "$secret_file" || "$actual_mode" != "600" ]]; then
+              echo "The per-step secret target is not a mode-0600 regular file." >&2
+              return 1
+            fi
+            ln -s "$secret_file" "$env_file"
+            link_target="$(readlink "$env_file")" || return 1
+            [[ -L "$env_file" && "$link_target" == "$secret_file" ]]
+          }
+          supervised_process_group_exists() {
+            [[ "$supervised_pgid" =~ ^[0-9]+$ ]] || return 1
+            kill -0 -- "-$supervised_pgid" 2>/dev/null
+          }
+          capture_last_background_pid() {
+            set +u
+            captured_background_pid=$!
+            set -u
+          }
+          supervised_child_is_owned() {
+            local process_group
+            [[
+              "$supervised_pid" =~ ^[0-9]+$ &&
+              "$supervised_pgid" =~ ^[0-9]+$
+            ]] || return 1
+            kill -0 "$supervised_pid" 2>/dev/null || return 1
+            process_group="$(
+              ps -o pgid= -p "$supervised_pid" 2>/dev/null | tr -d '[:space:]'
+            )" || return 1
+            [[
+              "$process_group" == "$supervised_pgid" &&
+              "$supervised_pgid" == "$supervised_pid"
+            ]]
+          }
+          terminate_supervised_child() {
+            local reap_mode="${1:-wait}"
+            local terminate_status=0
+            local launch_candidate=
+            if [[
+              -z "$supervised_pid" &&
+              "$supervisor_launching" == "true"
+            ]]; then
+              capture_last_background_pid
+              launch_candidate="$captured_background_pid"
+              if [[
+                "$launch_candidate" =~ ^[0-9]+$ &&
+                "$launch_candidate" != "$supervisor_previous_background_pid"
+              ]]; then
+                supervised_pid="$launch_candidate"
+                supervised_pgid="$launch_candidate"
+                for _ in $(seq 1 5); do
+                  supervised_process_group_exists && break
+                  kill -0 "$supervised_pid" 2>/dev/null || break
+                  sleep 0.02
+                done
+              fi
+            fi
+            if supervised_process_group_exists; then
+              kill -TERM -- "-$supervised_pgid" 2>/dev/null || true
+              for _ in $(seq 1 15); do
+                supervised_process_group_exists || break
+                sleep 0.1
+              done
+              if supervised_process_group_exists; then
+                kill -KILL -- "-$supervised_pgid" 2>/dev/null || terminate_status=1
+              fi
+            elif [[ "$supervised_pid" =~ ^[0-9]+$ ]] &&
+                 kill -0 "$supervised_pid" 2>/dev/null; then
+              echo "Supervised iOS child lost its isolated process group; terminating only its exact PID." >&2
+              kill -KILL "$supervised_pid" 2>/dev/null || terminate_status=1
+            fi
+            if [[ "$supervised_pid" =~ ^[0-9]+$ ]]; then
+              if [[ "$reap_mode" == "wait" ]] || ! kill -0 "$supervised_pid" 2>/dev/null; then
+                wait "$supervised_pid" 2>/dev/null || true
+              fi
+            fi
+            supervised_pid=
+            supervised_pgid=
+            return "$terminate_status"
+          }
+          run_supervised() {
+            local child_status current_pgid group_ready=false
+            capture_last_background_pid
+            supervisor_previous_background_pid="$captured_background_pid"
+            supervisor_launching=true
+            /usr/bin/python3 -c '
+          import os
+          import sys
+          os.setsid()
+          os.execvp(sys.argv[1], sys.argv[1:])
+          ' "$@" <&0 &
+            supervised_pid=$!
+            supervised_pgid="$supervised_pid"
+            supervisor_launching=false
+            for _ in $(seq 1 50); do
+              current_pgid="$(
+                ps -o pgid= -p "$supervised_pid" 2>/dev/null | tr -d '[:space:]'
+              )" || current_pgid=
+              if [[ "$current_pgid" == "$supervised_pid" ]]; then
+                supervised_pgid="$current_pgid"
+                group_ready=true
+                break
+              fi
+              kill -0 "$supervised_pid" 2>/dev/null || break
+              sleep 0.02
+            done
+            if [[ "$group_ready" != "true" ]]; then
+              if kill -0 "$supervised_pid" 2>/dev/null; then
+                kill -KILL "$supervised_pid" 2>/dev/null || true
+              fi
+              if wait "$supervised_pid"; then
+                child_status=0
+              else
+                child_status=$?
+              fi
+              supervised_pid=
+              supervised_pgid=
+              echo "Unable to establish an isolated process group for the iOS child." >&2
+              return "${child_status:-1}"
+            fi
+            if wait "$supervised_pid"; then
+              child_status=0
+            else
+              child_status=$?
+            fi
+            if supervised_process_group_exists; then
+              terminate_supervised_child || {
+                [[ "$child_status" -eq 0 ]] && child_status=1
+              }
+            else
+              supervised_pid=
+              supervised_pgid=
+            fi
+            return "$child_status"
+          }
+          persist_ios_intent() {
+            /usr/bin/python3 - \
+              "$ios_state_file" \
+              "$simulator_name" \
+              "$device_type_id" \
+              "$runtime_id" <<'PY'
+          import os
+          import pathlib
+          import sys
+
+          state_path = pathlib.Path(sys.argv[1])
+          directory_fd = os.open(
+              state_path.parent,
+              os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+          )
+          values = {
+              "version": "1",
+              "phase": "intent",
+              "name": sys.argv[2],
+              "device_type": sys.argv[3],
+              "runtime": sys.argv[4],
+              "udid": "",
+          }
+          temporary_name = f".{state_path.name}.{os.getpid()}.tmp"
+          try:
+              os.stat(
+                  state_path.name,
+                  dir_fd=directory_fd,
+                  follow_symlinks=False,
+              )
+          except FileNotFoundError:
+              pass
+          else:
+              raise SystemExit("iOS recovery state already exists")
+          descriptor = os.open(
+              temporary_name,
+              os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+              0o600,
+              dir_fd=directory_fd,
+          )
+          try:
+              with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                  for key, value in values.items():
+                      handle.write(f"{key}={value}\n")
+                  handle.flush()
+                  os.fsync(handle.fileno())
+              os.replace(
+                  temporary_name,
+                  state_path.name,
+                  src_dir_fd=directory_fd,
+                  dst_dir_fd=directory_fd,
+              )
+              os.fsync(directory_fd)
+          finally:
+              try:
+                  os.unlink(temporary_name, dir_fd=directory_fd)
+              except FileNotFoundError:
+                  pass
+              os.close(directory_fd)
+          PY
+          }
+          persist_ios_udid() {
+            /usr/bin/python3 - "$ios_state_file" "$simulator_udid" <<'PY'
+          import os
+          import pathlib
+          import re
+          import stat
+          import sys
+
+          state_path = pathlib.Path(sys.argv[1])
+          udid = sys.argv[2]
+          if re.fullmatch(
+              r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}",
+              udid,
+          ) is None:
+              raise SystemExit("Invalid simulator UUID")
+          directory_fd = os.open(
+              state_path.parent,
+              os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+          )
+          state_fd = os.open(
+              state_path.name,
+              os.O_RDONLY | os.O_NOFOLLOW,
+              dir_fd=directory_fd,
+          )
+          metadata = os.fstat(state_fd)
+          if (
+              not stat.S_ISREG(metadata.st_mode)
+              or stat.S_IMODE(metadata.st_mode) != 0o600
+              or metadata.st_uid != os.getuid()
+          ):
+              raise SystemExit("Unsafe iOS recovery state")
+          with os.fdopen(state_fd, encoding="utf-8") as state_handle:
+              state_lines = state_handle.read().splitlines()
+          values = {}
+          for line in state_lines:
+              key, separator, value = line.partition("=")
+              if not separator or key in values:
+                  raise SystemExit("Invalid iOS recovery state")
+              values[key] = value
+          if (
+              set(values)
+              != {
+                  "version",
+                  "phase",
+                  "name",
+                  "device_type",
+                  "runtime",
+                  "udid",
+              }
+              or values.get("version") != "1"
+              or values.get("phase") != "intent"
+              or values.get("udid") != ""
+          ):
+              raise SystemExit("Unexpected iOS recovery phase")
+          values["phase"] = "created"
+          values["udid"] = udid
+          temporary_name = f".{state_path.name}.{os.getpid()}.tmp"
+          descriptor = os.open(
+              temporary_name,
+              os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+              0o600,
+              dir_fd=directory_fd,
+          )
+          try:
+              with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                  for key in (
+                      "version",
+                      "phase",
+                      "name",
+                      "device_type",
+                      "runtime",
+                      "udid",
+                  ):
+                      handle.write(f"{key}={values[key]}\n")
+                  handle.flush()
+                  os.fsync(handle.fileno())
+              os.replace(
+                  temporary_name,
+                  state_path.name,
+                  src_dir_fd=directory_fd,
+                  dst_dir_fd=directory_fd,
+              )
+              os.fsync(directory_fd)
+          finally:
+              try:
+                  os.unlink(temporary_name, dir_fd=directory_fd)
+              except FileNotFoundError:
+                  pass
+              os.close(directory_fd)
+          PY
+          }
+          recover_ios_ledger() {
+            local recovery_mode="$1"
+            local -a recovery_runner
+            if [[ "$recovery_mode" == "normal" ]]; then
+              recovery_runner=(run_supervised /usr/bin/python3)
+            else
+              recovery_runner=(/usr/bin/python3)
+            fi
+            "${recovery_runner[@]}" - \
+              "$ios_state_file" \
+              "$recovery_mode" <<'PY'
+          import json
+          import os
+          import pathlib
+          import re
+          import stat
+          import subprocess
+          import sys
+
+          state_path = pathlib.Path(sys.argv[1])
+          mode = sys.argv[2]
+          if mode not in {"normal", "fast"}:
+              raise SystemExit("Invalid iOS recovery mode")
+          directory_fd = os.open(
+              state_path.parent,
+              os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+          )
+          try:
+              state_fd = os.open(
+                  state_path.name,
+                  os.O_RDONLY | os.O_NOFOLLOW,
+                  dir_fd=directory_fd,
+              )
+          except FileNotFoundError:
+              os.close(directory_fd)
+              raise SystemExit(0)
+          metadata = os.fstat(state_fd)
+          if (
+              not stat.S_ISREG(metadata.st_mode)
+              or stat.S_IMODE(metadata.st_mode) != 0o600
+              or metadata.st_uid != os.getuid()
+          ):
+              raise SystemExit("Unsafe iOS recovery state")
+          with os.fdopen(state_fd, encoding="utf-8") as state_handle:
+              state_lines = state_handle.read().splitlines()
+          values = {}
+          for line in state_lines:
+              key, separator, value = line.partition("=")
+              if not separator or key in values:
+                  raise SystemExit("Invalid iOS recovery state")
+              values[key] = value
+          expected_keys = {
+              "version",
+              "phase",
+              "name",
+              "device_type",
+              "runtime",
+              "udid",
+          }
+          uuid_re = re.compile(
+              r"^[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$"
+          )
+          if (
+              set(values) != expected_keys
+              or values["version"] != "1"
+              or values["phase"] not in {"intent", "created"}
+              or re.fullmatch(r"mychampions-ci-[0-9]+-[0-9]+", values["name"])
+              is None
+              or values["device_type"]
+              != "com.apple.CoreSimulator.SimDeviceType.iPhone-17"
+              or re.fullmatch(
+                  r"com\.apple\.CoreSimulator\.SimRuntime\.iOS-26-[0-9-]+",
+                  values["runtime"],
+              )
+              is None
+              or (
+                  values["udid"] != ""
+                  and uuid_re.fullmatch(values["udid"]) is None
+              )
+              or (values["phase"] == "intent") != (values["udid"] == "")
+          ):
+              raise SystemExit("Invalid iOS recovery state values")
+          list_timeout = 0.1 if mode == "fast" else 5
+          shutdown_timeout = 0.1 if mode == "fast" else 5
+          delete_timeout = 0.2 if mode == "fast" else 10
+
+          def devices():
+              result = subprocess.run(
+                  ["xcrun", "simctl", "list", "devices", "--json"],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+                  timeout=list_timeout,
+              )
+              payload = json.loads(result.stdout)
+              all_devices = [
+                  device
+                  for records in payload.get("devices", {}).values()
+                  for device in records
+              ]
+              return [
+                  device
+                  for runtime, records in payload.get("devices", {}).items()
+                  for device in records
+                  if runtime == values["runtime"]
+                  and device.get("name") == values["name"]
+                  and device.get("deviceTypeIdentifier")
+                  == values["device_type"]
+              ], [
+                  device
+                  for device in all_devices
+                  if values["udid"]
+                  and device.get("udid") == values["udid"]
+              ], [
+                  device
+                  for device in all_devices
+                  if device.get("name") == values["name"]
+              ]
+
+          matching, same_uuid, same_name = devices()
+          if (
+              len(matching) > 1
+              or len(same_uuid) > 1
+              or len(same_name) > 1
+          ):
+              raise SystemExit("Ambiguous iOS recovery identity")
+          if values["udid"]:
+              matching_uuid = [
+                  device
+                  for device in matching
+                  if device.get("udid") == values["udid"]
+              ]
+              if (same_name and not matching_uuid) or (
+                  same_uuid and not matching_uuid
+              ):
+                  raise SystemExit("Recovered iOS UUID changed identity")
+              matching = matching_uuid
+          elif same_name and not matching:
+              raise SystemExit("Recovered iOS intent changed runtime or device type")
+          if not matching:
+              if same_uuid or same_name:
+                  raise SystemExit("Recovered iOS UUID changed identity")
+              if mode == "fast" and values["phase"] == "intent":
+                  raise SystemExit(
+                      "Retaining interrupted iOS create intent for next-run recovery"
+                  )
+              os.unlink(state_path.name, dir_fd=directory_fd)
+              os.fsync(directory_fd)
+              os.close(directory_fd)
+              raise SystemExit(0)
+          recovered_udid = str(matching[0].get("udid", ""))
+          if uuid_re.fullmatch(recovered_udid) is None:
+              raise SystemExit("Recovered iOS simulator has an invalid UUID")
+          if not values["udid"]:
+              values["phase"] = "created"
+              values["udid"] = recovered_udid
+              temporary_name = f".{state_path.name}.{os.getpid()}.tmp"
+              temporary_fd = os.open(
+                  temporary_name,
+                  os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                  0o600,
+                  dir_fd=directory_fd,
+              )
+              with os.fdopen(
+                  temporary_fd,
+                  "w",
+                  encoding="utf-8",
+              ) as handle:
+                  for key in (
+                      "version",
+                      "phase",
+                      "name",
+                      "device_type",
+                      "runtime",
+                      "udid",
+                  ):
+                      handle.write(f"{key}={values[key]}\n")
+                  handle.flush()
+                  os.fsync(handle.fileno())
+              os.replace(
+                  temporary_name,
+                  state_path.name,
+                  src_dir_fd=directory_fd,
+                  dst_dir_fd=directory_fd,
+              )
+              os.fsync(directory_fd)
+          for action, timeout in (
+              ("shutdown", shutdown_timeout),
+              ("delete", delete_timeout),
+          ):
+              try:
+                  subprocess.run(
+                      ["xcrun", "simctl", action, recovered_udid],
+                      check=False,
+                      stdout=subprocess.DEVNULL,
+                      stderr=subprocess.DEVNULL,
+                      timeout=timeout,
+                  )
+              except subprocess.TimeoutExpired:
+                  pass
+          matching, same_uuid, same_name = devices()
+          if same_uuid or matching or same_name:
+              raise SystemExit("Job-owned iOS simulator survived recovery")
+          os.unlink(state_path.name, dir_fd=directory_fd)
+          os.fsync(directory_fd)
+          os.close(directory_fd)
+          PY
+          }
+          cleanup_ios_resources() {
+            local command_status=$?
+            local cleanup_failed=false
+            trap - EXIT
+            trap '' INT TERM
+            set +e
+
+            remove_secret_material || cleanup_failed=true
+            terminate_supervised_child || cleanup_failed=true
+            recover_ios_ledger normal || cleanup_failed=true
+            if [[ "$cleanup_failed" == "true" && "$command_status" -eq 0 ]]; then
+              command_status=1
+            fi
+            exit "$command_status"
+          }
+          cleanup_ios_signal() {
+            local signal_status="$1"
+            trap - EXIT
+            trap '' INT TERM
+            set +e
+
+            remove_secret_material || true
+            terminate_supervised_child fast || true
+            recover_ios_ledger fast || true
+            exit "$signal_status"
+          }
+          validate_recovery_root
+          trap cleanup_ios_resources EXIT
+          trap 'cleanup_ios_signal 130' INT
+          trap 'cleanup_ios_signal 143' TERM
+
+          recover_ios_ledger normal
+
+          rm -f "$device_types_output" "$runtimes_output"
+          run_supervised xcrun simctl list devicetypes --json > "$device_types_output"
+          device_type_id="$(
+            /usr/bin/python3 -c '
+          import json
+          import sys
+
+          expected_identifier = "com.apple.CoreSimulator.SimDeviceType.iPhone-17"
+          matches = [
+              device
+              for device in json.load(sys.stdin).get("devicetypes", [])
+              if device.get("name") == "iPhone 17"
+              and device.get("identifier") == expected_identifier
+          ]
+          if len(matches) != 1:
+              raise SystemExit("Expected exactly one iPhone 17 simulator device type")
+          print(matches[0]["identifier"])
+          ' < "$device_types_output"
+          )"
+          run_supervised xcrun simctl list runtimes --json > "$runtimes_output"
+          runtime_record="$(
+            /usr/bin/python3 -c '
+          import json
+          import sys
+
+          def version_key(runtime):
+              return tuple(int(part) for part in runtime["version"].split("."))
+
+          matches = [
+              runtime
+              for runtime in json.load(sys.stdin).get("runtimes", [])
+              if runtime.get("isAvailable") is True
+              and runtime.get("identifier", "").startswith(
+                  "com.apple.CoreSimulator.SimRuntime.iOS-"
+              )
+              and runtime.get("version", "").split(".", 1)[0] == "26"
+          ]
+          if not matches:
+              raise SystemExit("No available iOS 26 simulator runtime was found")
+          selected = max(matches, key=version_key)
+          print(selected["identifier"], selected["version"], sep="\t")
+          ' < "$runtimes_output"
+          )"
+          IFS=$'\t' read -r runtime_id runtime_version <<<"$runtime_record"
+          if [[
+            "$device_type_id" != "com.apple.CoreSimulator.SimDeviceType.iPhone-17" ||
+            "$runtime_id" != com.apple.CoreSimulator.SimRuntime.iOS-26-* ||
+            "${runtime_version%%.*}" != "26"
+          ]]; then
+            echo "Resolved simulator metadata is outside the exact iPhone 17 / iOS 26 contract." >&2
+            exit 1
+          fi
+
+          persist_ios_intent
+          rm -f "$create_output"
+          run_supervised xcrun simctl create \
+            "$simulator_name" "$device_type_id" "$runtime_id" > "$create_output"
+          IFS= read -r simulator_udid < "$create_output"
+          rm -f "$create_output"
+          if [[ ! "$simulator_udid" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$ ]]; then
+            echo "simctl returned an invalid simulator UDID." >&2
+            exit 1
+          fi
+          persist_ios_udid
+          export DETOX_IOS_SIMULATOR_UDID="$simulator_udid"
+          printf '%s\n' "### Job-owned iOS simulator" "" \
+            "- Device: \`iPhone 17\`" \
+            "- Runtime: \`$runtime_version\`" \
+            "- UDID: \`$simulator_udid\`" >> "$GITHUB_STEP_SUMMARY"
+
+          create_secret_link
+          run_supervised yarn test:e2e:build:ios:debug
+          DETOX_SKIP_BUILD=true run_supervised \
+            yarn test:impact:execute --platform ios
+      - name: Upload bounded iOS failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mychampions-ios-failure-${{ github.run_id }}
+          path: .artifacts/ci-diagnostics/ios
+          if-no-files-found: warn
+          retention-days: 1
+
+  detox-android-selected:
+    name: Selected Android Detox suites
+    needs:
+      - authorize-candidate
+      - impact
+      - fast-quality
+    if: >-
+      needs.authorize-candidate.result == 'success' &&
+      needs.fast-quality.result == 'success' &&
+      needs.impact.outputs.has_detox_android == 'true'
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    concurrency:
+      group: mychampions-wsl-ui
+      cancel-in-progress: false
+    env:
+      APP_VARIANT: dev
+      CI: 'true'
+      CI_REQUIRE_E2E_EXECUTION: 'true'
+      DETOX_ANDROID_AVD: Pixel_10
+      DETOX_CONFIGURATION: android.emu.debug
+      DETOX_REQUIRE_FRESH_METRO: 'true'
+      EXPO_PUBLIC_ENV: dev
+      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
+      SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_android_suites }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          ref: ${{ needs.impact.outputs.head_sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: yarn install --frozen-lockfile --no-progress
+      - name: Run native checks and build the debug APKs once
+        working-directory: android
+        shell: bash
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          env_file="$GITHUB_WORKSPACE/.env"
+          secret_file="$RUNNER_TEMP/mychampions-env-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-android-build.env"
+          supervised_pid=
+          supervised_pgid=
+          supervisor_launching=false
+          supervisor_previous_background_pid=
+          captured_background_pid=
+          remove_secret_material() {
+            local cleanup_status=0
+            local link_target=
+            unset ENV_FILE_CONTENT
+            rm -f "$secret_file" || cleanup_status=1
+            if [[ -e "$secret_file" || -L "$secret_file" ]]; then
+              echo "The exact per-step Android build secret survived cleanup." >&2
+              cleanup_status=1
+            fi
+            if [[ -L "$env_file" ]]; then
+              link_target="$(readlink "$env_file")" || {
+                link_target=
+                cleanup_status=1
+              }
+              if [[ "$link_target" != "$secret_file" ]]; then
+                echo "The workspace environment symlink no longer targets this build secret." >&2
+                cleanup_status=1
+              fi
+              rm -f "$env_file" || cleanup_status=1
+            elif [[ -e "$env_file" ]]; then
+              echo "The workspace environment path is not the expected symlink." >&2
+              cleanup_status=1
+            fi
+            if [[ -e "$secret_file" || -L "$env_file" ]]; then
+              cleanup_status=1
+            fi
+            return "$cleanup_status"
+          }
+          recover_stale_secret_link() {
+            local stale_target=
+            if [[ -L "$env_file" ]]; then
+              stale_target="$(readlink "$env_file")" || return 1
+              case "$stale_target" in
+                "$RUNNER_TEMP"/mychampions-env-*-android-build.env)
+                  rm -f "$env_file"
+                  if [[ -f "$stale_target" && ! -L "$stale_target" ]]; then
+                    rm -f "$stale_target"
+                  fi
+                  ;;
+                *)
+                  echo "Refusing to replace an unrecognized workspace environment symlink." >&2
+                  return 1
+                  ;;
+              esac
+            elif [[ -e "$env_file" ]]; then
+              echo "Refusing to replace a non-symlink workspace environment file." >&2
+              return 1
+            fi
+          }
+          create_secret_link() {
+            local actual_mode link_target
+            recover_stale_secret_link
+            if [[ -e "$secret_file" || -L "$secret_file" ]]; then
+              echo "The per-step build secret target already exists." >&2
+              return 1
+            fi
+            SECRET_FILE="$secret_file" /usr/bin/python3 - <<'PY'
+          import os
+
+          path = os.environ["SECRET_FILE"]
+          flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+          descriptor = os.open(path, flags, 0o600)
+          try:
+              payload = (os.environ["ENV_FILE_CONTENT"] + "\n").encode()
+              while payload:
+                  payload = payload[os.write(descriptor, payload):]
+              os.fsync(descriptor)
+          finally:
+              os.close(descriptor)
+          PY
+            unset ENV_FILE_CONTENT
+            actual_mode="$(stat -c '%a' "$secret_file")" || return 1
+            if [[ ! -f "$secret_file" || -L "$secret_file" || "$actual_mode" != "600" ]]; then
+              echo "The per-step build secret target is not a mode-0600 regular file." >&2
+              return 1
+            fi
+            ln -s "$secret_file" "$env_file"
+            link_target="$(readlink "$env_file")" || return 1
+            [[ -L "$env_file" && "$link_target" == "$secret_file" ]]
+          }
+          supervised_process_group_exists() {
+            [[ "$supervised_pgid" =~ ^[0-9]+$ ]] || return 1
+            kill -0 -- "-$supervised_pgid" 2>/dev/null
+          }
+          capture_last_background_pid() {
+            set +u
+            captured_background_pid=$!
+            set -u
+          }
+          supervised_child_is_owned() {
+            local process_group
+            [[
+              "$supervised_pid" =~ ^[0-9]+$ &&
+              "$supervised_pgid" =~ ^[0-9]+$
+            ]] || return 1
+            kill -0 "$supervised_pid" 2>/dev/null || return 1
+            process_group="$(
+              ps -o pgid= -p "$supervised_pid" 2>/dev/null | tr -d '[:space:]'
+            )" || return 1
+            [[
+              "$process_group" == "$supervised_pgid" &&
+              "$supervised_pgid" == "$supervised_pid"
+            ]]
+          }
+          terminate_supervised_child() {
+            local reap_mode="${1:-wait}"
+            local terminate_status=0
+            local launch_candidate=
+            if [[
+              -z "$supervised_pid" &&
+              "$supervisor_launching" == "true"
+            ]]; then
+              capture_last_background_pid
+              launch_candidate="$captured_background_pid"
+              if [[
+                "$launch_candidate" =~ ^[0-9]+$ &&
+                "$launch_candidate" != "$supervisor_previous_background_pid"
+              ]]; then
+                supervised_pid="$launch_candidate"
+                supervised_pgid="$launch_candidate"
+                for _ in $(seq 1 5); do
+                  supervised_process_group_exists && break
+                  kill -0 "$supervised_pid" 2>/dev/null || break
+                  sleep 0.02
+                done
+              fi
+            fi
+            if supervised_process_group_exists; then
+              kill -TERM -- "-$supervised_pgid" 2>/dev/null || true
+              for _ in $(seq 1 15); do
+                supervised_process_group_exists || break
+                sleep 0.1
+              done
+              if supervised_process_group_exists; then
+                kill -KILL -- "-$supervised_pgid" 2>/dev/null || terminate_status=1
+              fi
+            elif [[ "$supervised_pid" =~ ^[0-9]+$ ]] &&
+                 kill -0 "$supervised_pid" 2>/dev/null; then
+              echo "Supervised Android build child lost its isolated process group; terminating only its exact PID." >&2
+              kill -KILL "$supervised_pid" 2>/dev/null || terminate_status=1
+            fi
+            if [[ "$supervised_pid" =~ ^[0-9]+$ ]]; then
+              if [[ "$reap_mode" == "wait" ]] || ! kill -0 "$supervised_pid" 2>/dev/null; then
+                wait "$supervised_pid" 2>/dev/null || true
+              fi
+            fi
+            supervised_pid=
+            supervised_pgid=
+            return "$terminate_status"
+          }
+          run_supervised() {
+            local child_status current_pgid group_ready=false
+            capture_last_background_pid
+            supervisor_previous_background_pid="$captured_background_pid"
+            supervisor_launching=true
+            /usr/bin/python3 -c '
+          import os
+          import sys
+          os.setsid()
+          os.execvp(sys.argv[1], sys.argv[1:])
+          ' "$@" <&0 &
+            supervised_pid=$!
+            supervised_pgid="$supervised_pid"
+            supervisor_launching=false
+            for _ in $(seq 1 50); do
+              current_pgid="$(
+                ps -o pgid= -p "$supervised_pid" 2>/dev/null | tr -d '[:space:]'
+              )" || current_pgid=
+              if [[ "$current_pgid" == "$supervised_pid" ]]; then
+                supervised_pgid="$current_pgid"
+                group_ready=true
+                break
+              fi
+              kill -0 "$supervised_pid" 2>/dev/null || break
+              sleep 0.02
+            done
+            if [[ "$group_ready" != "true" ]]; then
+              if kill -0 "$supervised_pid" 2>/dev/null; then
+                kill -KILL "$supervised_pid" 2>/dev/null || true
+              fi
+              if wait "$supervised_pid"; then
+                child_status=0
+              else
+                child_status=$?
+              fi
+              supervised_pid=
+              supervised_pgid=
+              echo "Unable to establish an isolated process group for the Android build child." >&2
+              return "${child_status:-1}"
+            fi
+            if wait "$supervised_pid"; then
+              child_status=0
+            else
+              child_status=$?
+            fi
+            if supervised_process_group_exists; then
+              terminate_supervised_child || {
+                [[ "$child_status" -eq 0 ]] && child_status=1
+              }
+            else
+              supervised_pid=
+              supervised_pgid=
+            fi
+            return "$child_status"
+          }
+          cleanup_build_environment() {
+            local command_status=$?
+            trap - EXIT
+            trap '' INT TERM
+            set +e
+            if ! remove_secret_material; then
+              echo "Unable to remove the Android build environment file." >&2
+              [[ "$command_status" -eq 0 ]] && command_status=1
+            fi
+            if ! terminate_supervised_child && [[ "$command_status" -eq 0 ]]; then
+              command_status=1
+            fi
+            exit "$command_status"
+          }
+          cleanup_build_signal() {
+            local signal_status="$1"
+            trap - EXIT
+            trap '' INT TERM
+            set +e
+            remove_secret_material || true
+            terminate_supervised_child fast || true
+            exit "$signal_status"
+          }
+          trap cleanup_build_environment EXIT
+          trap 'cleanup_build_signal 130' INT
+          trap 'cleanup_build_signal 143' TERM
+
+          create_secret_link
+          run_supervised ./gradlew \
+            --no-daemon \
+            lintDevDebug \
+            testDevDebugUnitTest \
+            app:assembleDevDebug \
+            app:assembleDevDebugAndroidTest \
+            -DtestBuildType=debug
+      - name: Run selected Android suites on a supported emulator port
+        env:
+          DETOX_SKIP_BUILD: 'true'
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          env_file="$GITHUB_WORKSPACE/.env"
+          secret_file="$RUNNER_TEMP/mychampions-env-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-android-test.env"
+          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          android_state_file="$recovery_root/android-emulator-5554.state"
+          emulator_serial=emulator-5554
+          diagnostics_dir=.artifacts/ci-diagnostics/android
+          emulator_log="$diagnostics_dir/emulator-5554.log"
+          emulator_pid=
+          emulator_uid="$(id -u)"
+          emulator_start_time=
+          emulator_avd="$DETOX_ANDROID_AVD"
+          emulator_port=5554
+          emulator_executable=
+          emulator_qemu_executable=
+          emulator_flags="-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect"
+          supervised_pid=
+          supervised_pgid=
+          supervisor_launching=false
+          supervisor_previous_background_pid=
+          captured_background_pid=
+          mkdir -p "$diagnostics_dir"
+
+          validate_recovery_root() {
+            local actual_mode actual_uid canonical_parent canonical_root
+            local canonical_runner_temp canonical_workspace expected_uid parent
+            expected_uid="$(id -u)"
+            if [[
+              -z "$recovery_root" ||
+              "$recovery_root" != /* ||
+              ! -d "$recovery_root" ||
+              -L "$recovery_root"
+            ]]; then
+              echo "MYCHAMPIONS_NATIVE_STATE_ROOT must name an absolute real directory." >&2
+              return 1
+            fi
+            parent="$(dirname "$recovery_root")"
+            canonical_parent="$(cd "$parent" && pwd -P)" || return 1
+            canonical_root="$(cd "$recovery_root" && pwd -P)" || return 1
+            if [[
+              "$canonical_root" != "$recovery_root" ||
+              "$canonical_parent" != "$parent"
+            ]]; then
+              echo "The native recovery root and its parent must not traverse symlinks." >&2
+              return 1
+            fi
+            if [[
+              -z "${GITHUB_WORKSPACE:-}" ||
+              "$GITHUB_WORKSPACE" != /* ||
+              ! -d "$GITHUB_WORKSPACE" ||
+              -z "${RUNNER_TEMP:-}" ||
+              "$RUNNER_TEMP" != /* ||
+              ! -d "$RUNNER_TEMP"
+            ]]; then
+              echo "The runner workspace and temporary directory must be absolute real directories." >&2
+              return 1
+            fi
+            canonical_workspace="$(cd "$GITHUB_WORKSPACE" && pwd -P)" || return 1
+            canonical_runner_temp="$(cd "$RUNNER_TEMP" && pwd -P)" || return 1
+            if [[
+              "$canonical_workspace" == "/" ||
+              "$canonical_runner_temp" == "/"
+            ]]; then
+              echo "The runner workspace and temporary directory must not resolve to the filesystem root." >&2
+              return 1
+            fi
+            case "$canonical_root" in
+              "$canonical_workspace"|"$canonical_workspace"/*|\
+              "$canonical_runner_temp"|"$canonical_runner_temp"/*)
+                echo "MYCHAMPIONS_NATIVE_STATE_ROOT must remain outside GITHUB_WORKSPACE and RUNNER_TEMP." >&2
+                return 1
+                ;;
+            esac
+            actual_uid="$(stat -c '%u' "$parent")" || return 1
+            if [[ "$actual_uid" != "$expected_uid" ]]; then
+              echo "The native recovery root parent must be owned by this runner user." >&2
+              return 1
+            fi
+            actual_uid="$(stat -c '%u' "$recovery_root")" || return 1
+            actual_mode="$(stat -c '%a' "$recovery_root")" || return 1
+            if [[ "$actual_uid" != "$expected_uid" || "$actual_mode" != "700" ]]; then
+              echo "The native recovery root must be owned by this runner user with mode 0700." >&2
+              return 1
+            fi
+          }
+          remove_secret_material() {
+            local cleanup_status=0
+            local link_target=
+            unset ENV_FILE_CONTENT
+            rm -f "$secret_file" || cleanup_status=1
+            if [[ -e "$secret_file" || -L "$secret_file" ]]; then
+              echo "The exact per-step Android secret target survived cleanup." >&2
+              cleanup_status=1
+            fi
+            if [[ -L "$env_file" ]]; then
+              link_target="$(readlink "$env_file")" || {
+                link_target=
+                cleanup_status=1
+              }
+              if [[ "$link_target" != "$secret_file" ]]; then
+                echo "The workspace environment symlink no longer targets this test secret." >&2
+                cleanup_status=1
+              fi
+              rm -f "$env_file" || cleanup_status=1
+            elif [[ -e "$env_file" ]]; then
+              echo "The workspace environment path is not the expected symlink." >&2
+              cleanup_status=1
+            fi
+            return "$cleanup_status"
+          }
+          recover_stale_secret_link() {
+            local stale_target=
+            if [[ -L "$env_file" ]]; then
+              stale_target="$(readlink "$env_file")" || return 1
+              case "$stale_target" in
+                "$RUNNER_TEMP"/mychampions-env-*-android-test.env)
+                  rm -f "$env_file"
+                  if [[ -f "$stale_target" && ! -L "$stale_target" ]]; then
+                    rm -f "$stale_target"
+                  fi
+                  ;;
+                *)
+                  echo "Refusing to replace an unrecognized workspace environment symlink." >&2
+                  return 1
+                  ;;
+              esac
+            elif [[ -e "$env_file" ]]; then
+              echo "Refusing to replace a non-symlink workspace environment file." >&2
+              return 1
+            fi
+          }
+          create_secret_link() {
+            local actual_mode link_target
+            recover_stale_secret_link
+            if [[ -e "$secret_file" || -L "$secret_file" ]]; then
+              echo "The per-step Android secret target already exists." >&2
+              return 1
+            fi
+            SECRET_FILE="$secret_file" /usr/bin/python3 - <<'PY'
+          import os
+
+          path = os.environ["SECRET_FILE"]
+          flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+          descriptor = os.open(path, flags, 0o600)
+          try:
+              payload = (os.environ["ENV_FILE_CONTENT"] + "\n").encode()
+              while payload:
+                  payload = payload[os.write(descriptor, payload):]
+              os.fsync(descriptor)
+          finally:
+              os.close(descriptor)
+          PY
+            unset ENV_FILE_CONTENT
+            actual_mode="$(stat -c '%a' "$secret_file")" || return 1
+            if [[ ! -f "$secret_file" || -L "$secret_file" || "$actual_mode" != "600" ]]; then
+              echo "The per-step Android secret target is not a mode-0600 regular file." >&2
+              return 1
+            fi
+            ln -s "$secret_file" "$env_file"
+            link_target="$(readlink "$env_file")" || return 1
+            [[ -L "$env_file" && "$link_target" == "$secret_file" ]]
+          }
+          supervised_process_group_exists() {
+            [[ "$supervised_pgid" =~ ^[0-9]+$ ]] || return 1
+            kill -0 -- "-$supervised_pgid" 2>/dev/null
+          }
+          capture_last_background_pid() {
+            set +u
+            captured_background_pid=$!
+            set -u
+          }
+          supervised_child_is_owned() {
+            local process_group
+            [[
+              "$supervised_pid" =~ ^[0-9]+$ &&
+              "$supervised_pgid" =~ ^[0-9]+$
+            ]] || return 1
+            kill -0 "$supervised_pid" 2>/dev/null || return 1
+            process_group="$(
+              ps -o pgid= -p "$supervised_pid" 2>/dev/null | tr -d '[:space:]'
+            )" || return 1
+            [[
+              "$process_group" == "$supervised_pgid" &&
+              "$supervised_pgid" == "$supervised_pid"
+            ]]
+          }
+          terminate_supervised_child() {
+            local reap_mode="${1:-wait}"
+            local terminate_status=0
+            local launch_candidate=
+            if [[
+              -z "$supervised_pid" &&
+              "$supervisor_launching" == "true"
+            ]]; then
+              capture_last_background_pid
+              launch_candidate="$captured_background_pid"
+              if [[
+                "$launch_candidate" =~ ^[0-9]+$ &&
+                "$launch_candidate" != "$supervisor_previous_background_pid"
+              ]]; then
+                supervised_pid="$launch_candidate"
+                supervised_pgid="$launch_candidate"
+                for _ in $(seq 1 5); do
+                  supervised_process_group_exists && break
+                  kill -0 "$supervised_pid" 2>/dev/null || break
+                  sleep 0.02
+                done
+              fi
+            fi
+            if supervised_process_group_exists; then
+              kill -TERM -- "-$supervised_pgid" 2>/dev/null || true
+              for _ in $(seq 1 15); do
+                supervised_process_group_exists || break
+                sleep 0.1
+              done
+              if supervised_process_group_exists; then
+                kill -KILL -- "-$supervised_pgid" 2>/dev/null || terminate_status=1
+              fi
+            elif [[ "$supervised_pid" =~ ^[0-9]+$ ]] &&
+                 kill -0 "$supervised_pid" 2>/dev/null; then
+              echo "Supervised Android test child lost its isolated process group; terminating only its exact PID." >&2
+              kill -KILL "$supervised_pid" 2>/dev/null || terminate_status=1
+            fi
+            if [[ "$supervised_pid" =~ ^[0-9]+$ ]]; then
+              if [[ "$reap_mode" == "wait" ]] || ! kill -0 "$supervised_pid" 2>/dev/null; then
+                wait "$supervised_pid" 2>/dev/null || true
+              fi
+            fi
+            supervised_pid=
+            supervised_pgid=
+            return "$terminate_status"
+          }
+          run_supervised() {
+            local child_status current_pgid group_ready=false
+            capture_last_background_pid
+            supervisor_previous_background_pid="$captured_background_pid"
+            supervisor_launching=true
+            /usr/bin/python3 -c '
+          import os
+          import sys
+          os.setsid()
+          os.execvp(sys.argv[1], sys.argv[1:])
+          ' "$@" <&0 &
+            supervised_pid=$!
+            supervised_pgid="$supervised_pid"
+            supervisor_launching=false
+            for _ in $(seq 1 50); do
+              current_pgid="$(
+                ps -o pgid= -p "$supervised_pid" 2>/dev/null | tr -d '[:space:]'
+              )" || current_pgid=
+              if [[ "$current_pgid" == "$supervised_pid" ]]; then
+                supervised_pgid="$current_pgid"
+                group_ready=true
+                break
+              fi
+              kill -0 "$supervised_pid" 2>/dev/null || break
+              sleep 0.02
+            done
+            if [[ "$group_ready" != "true" ]]; then
+              if kill -0 "$supervised_pid" 2>/dev/null; then
+                kill -KILL "$supervised_pid" 2>/dev/null || true
+              fi
+              if wait "$supervised_pid"; then
+                child_status=0
+              else
+                child_status=$?
+              fi
+              supervised_pid=
+              supervised_pgid=
+              echo "Unable to establish an isolated process group for the Android test child." >&2
+              return "${child_status:-1}"
+            fi
+            if wait "$supervised_pid"; then
+              child_status=0
+            else
+              child_status=$?
+            fi
+            if supervised_process_group_exists; then
+              terminate_supervised_child || {
+                [[ "$child_status" -eq 0 ]] && child_status=1
+              }
+            else
+              supervised_pid=
+              supervised_pgid=
+            fi
+            return "$child_status"
+          }
+          load_android_state() {
+            local state_record state_status
+            emulator_pid=
+            emulator_uid=
+            emulator_start_time=
+            emulator_avd="$DETOX_ANDROID_AVD"
+            emulator_port=5554
+            if state_record="$(
+              /usr/bin/python3 - "$android_state_file" <<'PY'
+          import os
+          import pathlib
+          import re
+          import stat
+          import sys
+
+          state_path = pathlib.Path(sys.argv[1])
+          directory_fd = os.open(
+              state_path.parent,
+              os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+          )
+          try:
+              state_fd = os.open(
+                  state_path.name,
+                  os.O_RDONLY | os.O_NOFOLLOW,
+                  dir_fd=directory_fd,
+              )
+          except FileNotFoundError:
+              raise SystemExit(3)
+          finally:
+              os.close(directory_fd)
+          metadata = os.fstat(state_fd)
+          if (
+              not stat.S_ISREG(metadata.st_mode)
+              or stat.S_IMODE(metadata.st_mode) != 0o600
+              or metadata.st_uid != os.getuid()
+          ):
+              raise SystemExit("Unsafe Android recovery state")
+          with os.fdopen(state_fd, encoding="utf-8") as handle:
+              lines = handle.read().splitlines()
+          values = {}
+          for line in lines:
+              key, separator, value = line.partition("=")
+              if not separator or key in values:
+                  raise SystemExit("Invalid Android recovery state")
+              values[key] = value
+          if (
+              set(values)
+              != {
+                  "version",
+                  "phase",
+                  "pid",
+                  "uid",
+                  "start",
+                  "avd",
+                  "port",
+                  "serial",
+                  "executable",
+                  "qemu_executable",
+                  "flags",
+              }
+              or values["version"] != "1"
+              or values["phase"] != "running"
+              or re.fullmatch(r"[1-9][0-9]*", values["pid"]) is None
+              or re.fullmatch(r"[0-9]+", values["uid"]) is None
+              or re.fullmatch(r"[1-9][0-9]*", values["start"]) is None
+              or values["avd"] != "Pixel_10"
+              or values["port"] != "5554"
+              or values["serial"] != "emulator-5554"
+              or not values["executable"].startswith("/")
+              or not values["qemu_executable"].startswith("/")
+              or values["flags"]
+              != "-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect"
+          ):
+              raise SystemExit("Invalid Android recovery state values")
+          print(
+              values["pid"],
+              values["uid"],
+              values["start"],
+              values["avd"],
+              values["port"],
+              values["serial"],
+              values["executable"],
+              values["qemu_executable"],
+              values["flags"],
+              sep="\t",
+          )
+          PY
+            )"; then
+              IFS=$'\t' read -r \
+                emulator_pid \
+                emulator_uid \
+                emulator_start_time \
+                emulator_avd \
+                emulator_port \
+                emulator_serial \
+                emulator_executable \
+                emulator_qemu_executable \
+                emulator_flags <<<"$state_record"
+              return 0
+            else
+              state_status=$?
+              [[ "$state_status" -eq 3 ]] && return 1
+              return 2
+            fi
+          }
+          proc_identity() {
+            /usr/bin/python3 - "$1" <<'PY'
+          import os
+          import pathlib
+          import sys
+
+          pid = sys.argv[1]
+          path = pathlib.Path("/proc") / pid / "stat"
+          text = path.read_text(encoding="utf-8")
+          closing = text.rfind(")")
+          if closing < 0:
+              raise SystemExit("Malformed proc stat")
+          fields = text[closing + 2:].split()
+          if len(fields) < 20:
+              raise SystemExit("Truncated proc stat")
+          print(fields[0], fields[19], sep="\t")
+          PY
+          }
+          emulator_pid_is_owned() {
+            local actual_start actual_uid process_state
+            [[
+              "$emulator_pid" =~ ^[0-9]+$ &&
+              "$emulator_uid" =~ ^[0-9]+$ &&
+              "$emulator_start_time" =~ ^[0-9]+$ &&
+              -r "/proc/$emulator_pid/stat"
+            ]] || return 1
+            actual_uid="$(stat -c '%u' "/proc/$emulator_pid")" || return 1
+            IFS=$'\t' read -r process_state actual_start < <(
+              proc_identity "$emulator_pid"
+            ) || return 1
+            [[
+              "$actual_uid" == "$emulator_uid" &&
+              "$actual_start" == "$emulator_start_time"
+            ]]
+          }
+          emulator_pid_matches() {
+            emulator_pid_is_owned || return 1
+            /usr/bin/python3 - \
+              "$emulator_pid" \
+              "$emulator_avd" \
+              "$emulator_port" \
+              "$emulator_executable" \
+              "$emulator_qemu_executable" \
+              "$emulator_flags" <<'PY'
+          import os
+          import pathlib
+          import sys
+
+          arguments = (
+              pathlib.Path("/proc", sys.argv[1], "cmdline")
+              .read_bytes()
+              .split(b"\0")
+          )
+          expected_avd = f"@{sys.argv[2]}".encode()
+          expected_port = sys.argv[3].encode()
+          executable = os.path.realpath(f"/proc/{sys.argv[1]}/exe")
+          # -no-window launches make the emulator shim exec the -headless QEMU
+          # sibling of the recorded binary (same directory, "-headless" suffix).
+          if executable not in {sys.argv[4], sys.argv[5], f"{sys.argv[5]}-headless"}:
+              raise SystemExit(1)
+          if expected_avd not in arguments:
+              raise SystemExit(1)
+          if not any(
+              argument == b"-port"
+              and index + 1 < len(arguments)
+              and arguments[index + 1] == expected_port
+              for index, argument in enumerate(arguments)
+          ):
+              raise SystemExit(1)
+          expected_flags = sys.argv[6].split(",")
+          for flag in expected_flags:
+              if "=" in flag:
+                  name, value = flag.split("=", 1)
+                  if not any(
+                      argument == name.encode()
+                      and index + 1 < len(arguments)
+                      and arguments[index + 1] == value.encode()
+                      for index, argument in enumerate(arguments)
+                  ):
+                      raise SystemExit(1)
+              elif flag.encode() not in arguments:
+                  raise SystemExit(1)
+          PY
+          }
+          emulator_identity_process_present_or_unknown() {
+            local inspection_status
+            if /usr/bin/python3 - "$emulator_avd" "$emulator_port" <<'PY'
+          import pathlib
+          import sys
+
+          expected_avd = f"@{sys.argv[1]}".encode()
+          expected_port = sys.argv[2].encode()
+          try:
+              process_directories = list(pathlib.Path("/proc").glob("[0-9]*"))
+              for process_directory in process_directories:
+                  try:
+                      arguments = (
+                          (process_directory / "cmdline").read_bytes().split(b"\0")
+                      )
+                  except (FileNotFoundError, ProcessLookupError):
+                      continue
+                  except PermissionError:
+                      raise SystemExit(2)
+                  if expected_avd not in arguments:
+                      continue
+                  if any(
+                      argument == b"-port"
+                      and index + 1 < len(arguments)
+                      and arguments[index + 1] == expected_port
+                      for index, argument in enumerate(arguments)
+                  ):
+                      raise SystemExit(0)
+          except OSError:
+              raise SystemExit(2)
+          raise SystemExit(1)
+          PY
+            then
+              return 0
+            else
+              inspection_status=$?
+              [[ "$inspection_status" -eq 1 ]] && return 1
+              return 0
+            fi
+          }
+          emulator_device_present_or_unknown() {
+            local devices
+            devices="$(timeout 5s adb devices 2>/dev/null)" || return 0
+            grep -Eq "^${emulator_serial}[[:space:]]" <<<"$devices"
+          }
+          emulator_ports_present_or_unknown() {
+            local listeners
+            listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )' 2>/dev/null)" ||
+              return 0
+            [[ -n "$listeners" ]]
+          }
+          reap_emulator_if_zombie() {
+            local ignored_start process_state
+            emulator_pid_is_owned || return 0
+            IFS=$'\t' read -r process_state ignored_start < <(
+              proc_identity "$emulator_pid"
+            ) || return 0
+            if [[ "$process_state" == "Z" ]]; then
+              wait "$emulator_pid" 2>/dev/null || true
+            fi
+          }
+          emulator_cleanup_complete() {
+            reap_emulator_if_zombie
+            ! emulator_pid_is_owned &&
+              ! emulator_identity_process_present_or_unknown &&
+              ! emulator_device_present_or_unknown &&
+              ! emulator_ports_present_or_unknown
+          }
+          remove_android_state_if_absent() {
+            emulator_cleanup_complete || return 1
+            /usr/bin/python3 - "$android_state_file" <<'PY'
+          import os
+          import pathlib
+          import sys
+
+          state_path = pathlib.Path(sys.argv[1])
+          directory_fd = os.open(
+              state_path.parent,
+              os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+          )
+          try:
+              os.unlink(state_path.name, dir_fd=directory_fd)
+          except FileNotFoundError:
+              pass
+          os.fsync(directory_fd)
+          os.close(directory_fd)
+          PY
+          }
+          cleanup_emulator() {
+            local cleanup_status=0
+            local load_status=0
+            load_android_state || load_status=$?
+            if [[ "$load_status" -eq 1 ]]; then
+              if emulator_cleanup_complete; then
+                return 0
+              fi
+              echo "Exact Android resources exist without a recovery ledger; refusing broad cleanup." >&2
+              return 1
+            elif [[ "$load_status" -ne 0 ]]; then
+              echo "Android recovery state is unsafe or invalid; refusing to signal anything." >&2
+              return 1
+            fi
+            if emulator_pid_matches; then
+              timeout 10s adb -s "$emulator_serial" emu kill >/dev/null 2>&1 || true
+            elif emulator_pid_is_owned; then
+              echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal its serial" >&2
+              cleanup_status=1
+            elif emulator_device_present_or_unknown; then
+              echo "Android emulator serial is present or unknown without its saved process identity; refusing to signal it" >&2
+              cleanup_status=1
+            fi
+            for _ in $(seq 1 30); do
+              if emulator_cleanup_complete; then
+                break
+              fi
+              sleep 1
+            done
+            if emulator_pid_matches; then
+              kill -TERM "$emulator_pid" 2>/dev/null || true
+            fi
+            for _ in $(seq 1 10); do
+              if emulator_cleanup_complete; then
+                break
+              fi
+              sleep 1
+            done
+            if emulator_pid_matches; then
+              kill -KILL "$emulator_pid" 2>/dev/null || true
+            fi
+            for _ in $(seq 1 5); do
+              if emulator_cleanup_complete; then
+                break
+              fi
+              sleep 1
+            done
+            if emulator_pid_is_owned; then
+              if emulator_pid_matches; then
+                echo "Android emulator PID $emulator_pid survived cleanup" >&2
+              else
+                echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal it" >&2
+              fi
+              cleanup_status=1
+            fi
+            if emulator_identity_process_present_or_unknown; then
+              echo "The exact Android AVD/port process survived cleanup or could not be inspected" >&2
+              cleanup_status=1
+            fi
+            if emulator_device_present_or_unknown; then
+              echo "An Android emulator device survived cleanup or ADB could not prove absence" >&2
+              cleanup_status=1
+            fi
+            if emulator_ports_present_or_unknown; then
+              echo "Android emulator ports 5554/5555 survived cleanup or could not be inspected" >&2
+              cleanup_status=1
+            fi
+            if [[ "$cleanup_status" -eq 0 ]]; then
+              remove_android_state_if_absent || cleanup_status=1
+            fi
+            return "$cleanup_status"
+          }
+          cleanup_emulator_fast() {
+            local cleanup_status=0
+            local load_status=0
+            for _ in $(seq 1 20); do
+              if load_android_state; then
+                load_status=0
+                break
+              else
+                load_status=$?
+              fi
+              [[ "$load_status" -ne 1 ]] && break
+              sleep 0.02
+            done
+            if [[ "$load_status" -eq 1 ]]; then
+              return 1
+            elif [[ "$load_status" -ne 0 ]]; then
+              return 1
+            fi
+            if emulator_pid_matches; then
+              timeout 0.3s adb -s "$emulator_serial" emu kill >/dev/null 2>&1 || true
+              kill -TERM "$emulator_pid" 2>/dev/null || true
+              sleep 0.1
+              reap_emulator_if_zombie
+              if emulator_pid_matches; then
+                kill -KILL "$emulator_pid" 2>/dev/null || cleanup_status=1
+              fi
+            elif emulator_pid_is_owned; then
+              echo "Owned Android emulator PID changed command identity during signal cleanup." >&2
+              cleanup_status=1
+            elif emulator_device_present_or_unknown; then
+              echo "Android emulator serial is present without recoverable exact process ownership." >&2
+              cleanup_status=1
+            fi
+            if emulator_pid_is_owned; then
+              cleanup_status=1
+            fi
+            # Signal cleanup intentionally retains the durable ledger. The next
+            # run performs bounded exact absence probes before unlinking it.
+            return "$cleanup_status"
+          }
+          on_exit() {
+            local command_status=$?
+            local cleanup_status=0
+            local env_cleanup_status=0
+            local emulator_cleanup_status=0
+            trap - EXIT
+            trap '' INT TERM
+            set +e
+            remove_secret_material || env_cleanup_status=1
+            terminate_supervised_child || cleanup_status=1
+            cleanup_emulator
+            emulator_cleanup_status=$?
+            if [[ "$emulator_cleanup_status" -ne 0 ]]; then
+              cleanup_status="$emulator_cleanup_status"
+            fi
+            if [[ "$command_status" -ne 0 ]]; then
+              exit "$command_status"
+            fi
+            if [[ "$env_cleanup_status" -ne 0 ]]; then
+              exit "$env_cleanup_status"
+            fi
+            exit "$cleanup_status"
+          }
+          on_signal() {
+            local signal_status="$1"
+            trap - EXIT
+            trap '' INT TERM
+            set +e
+            remove_secret_material || true
+            terminate_supervised_child fast || true
+            cleanup_emulator_fast || true
+            exit "$signal_status"
+          }
+          validate_recovery_root
+          trap on_exit EXIT
+          trap 'on_signal 130' INT
+          trap 'on_signal 143' TERM
+
+          cleanup_emulator
+
+          preflight_devices="$(timeout 5s adb devices)" || {
+            echo "Android emulator preflight could not inspect ADB devices" >&2
+            exit 1
+          }
+          if grep -Eq "^${emulator_serial}[[:space:]]" <<<"$preflight_devices"; then
+            echo "Android emulator preflight found the exact stale ADB serial" >&2
+            printf '%s\n' "$preflight_devices" >&2
+            exit 1
+          fi
+          if emulator_identity_process_present_or_unknown; then
+            echo "Android emulator preflight found the exact stale AVD/port process or could not inspect it." >&2
+            exit 1
+          fi
+          preflight_listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )')" || {
+            echo "Android emulator preflight could not inspect ports 5554/5555" >&2
+            exit 1
+          }
+          if [[ -n "$preflight_listeners" ]]; then
+            echo "Android emulator preflight found occupied ports 5554/5555" >&2
+            timeout 5s ss -H -ltnp '( sport = :5554 or sport = :5555 )' >&2 || true
+            exit 1
+          fi
+
+          create_secret_link
+
+          android_sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          emulator_path="$android_sdk_root/emulator/emulator"
+          if [[ -z "$android_sdk_root" || ! -x "$emulator_path" ]]; then
+            echo "Android emulator executable is unavailable under ANDROID_SDK_ROOT/ANDROID_HOME" >&2
+            exit 1
+          fi
+          emulator_path="$(realpath "$emulator_path")"
+          qemu_path="$(realpath "$android_sdk_root/emulator/qemu/linux-x86_64/qemu-system-x86_64")"
+          if [[ ! -x "$emulator_path" || ! -x "$qemu_path" ]]; then
+            echo "The exact Android emulator and QEMU executables must both be available." >&2
+            exit 1
+          fi
+          expected_launcher_parent="$BASHPID"
+          /usr/bin/python3 - \
+            "$android_state_file" \
+            "$emulator_path" \
+            "$qemu_path" \
+            "$emulator_avd" \
+            "$emulator_port" \
+            "$emulator_serial" \
+            "$emulator_flags" \
+            "$emulator_log" \
+            "$expected_launcher_parent" <<'PY' &
+          import ctypes
+          import os
+          import pathlib
+          import signal
+          import sys
+
+          state_path = pathlib.Path(sys.argv[1])
+          emulator_path = sys.argv[2]
+          qemu_path = sys.argv[3]
+          avd = sys.argv[4]
+          port = sys.argv[5]
+          serial = sys.argv[6]
+          flags = sys.argv[7]
+          log_path = sys.argv[8]
+          expected_parent = int(sys.argv[9])
+          if os.getppid() != expected_parent:
+              raise SystemExit("Runner shell exited before Android handoff")
+          libc = ctypes.CDLL(None, use_errno=True)
+          if libc.prctl(1, signal.SIGKILL) != 0:
+              raise OSError(ctypes.get_errno(), "prctl(PR_SET_PDEATHSIG) failed")
+          if os.getppid() != expected_parent:
+              raise SystemExit("Runner shell exited during Android handoff")
+          os.setsid()
+          pid = os.getpid()
+          stat_text = pathlib.Path(f"/proc/{pid}/stat").read_text(
+              encoding="utf-8"
+          )
+          closing = stat_text.rfind(")")
+          stat_fields = stat_text[closing + 2:].split()
+          if closing < 0 or len(stat_fields) < 20:
+              raise SystemExit("Unable to read launcher process identity")
+          values = {
+              "version": "1",
+              "phase": "running",
+              "pid": str(pid),
+              "uid": str(os.getuid()),
+              "start": stat_fields[19],
+              "avd": avd,
+              "port": port,
+              "serial": serial,
+              "executable": emulator_path,
+              "qemu_executable": qemu_path,
+              "flags": flags,
+          }
+          directory_fd = os.open(
+              state_path.parent,
+              os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+          )
+          temporary_name = f".{state_path.name}.{pid}.tmp"
+          try:
+              os.stat(
+                  state_path.name,
+                  dir_fd=directory_fd,
+                  follow_symlinks=False,
+              )
+          except FileNotFoundError:
+              pass
+          else:
+              raise SystemExit("Android recovery state already exists")
+          descriptor = os.open(
+              temporary_name,
+              os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+              0o600,
+              dir_fd=directory_fd,
+          )
+          try:
+              with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                  for key in (
+                      "version",
+                      "phase",
+                      "pid",
+                      "uid",
+                      "start",
+                      "avd",
+                      "port",
+                      "serial",
+                      "executable",
+                      "qemu_executable",
+                      "flags",
+                  ):
+                      handle.write(f"{key}={values[key]}\n")
+                  handle.flush()
+                  os.fsync(handle.fileno())
+              os.replace(
+                  temporary_name,
+                  state_path.name,
+                  src_dir_fd=directory_fd,
+                  dst_dir_fd=directory_fd,
+              )
+              os.fsync(directory_fd)
+          finally:
+              try:
+                  os.unlink(temporary_name, dir_fd=directory_fd)
+              except FileNotFoundError:
+                  pass
+              os.close(directory_fd)
+          log_descriptor = os.open(
+              log_path,
+              os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW,
+              0o600,
+          )
+          arguments = [
+              emulator_path,
+              f"@{avd}",
+              "-port",
+              port,
+              "-no-audio",
+              "-no-boot-anim",
+              "-no-window",
+              "-no-snapshot",
+              "-read-only",
+              "-gpu",
+              "swiftshader_indirect",
+          ]
+          os.dup2(log_descriptor, 1)
+          os.dup2(log_descriptor, 2)
+          os.close(log_descriptor)
+          os.execv(emulator_path, arguments)
+          PY
+          # Keep the launcher PID separate from the ledger-derived emulator
+          # identity: load_android_state() clears emulator_pid on entry, so
+          # polling it here would test `kill -0 ""` and break on the first
+          # iteration whenever the ledger is not already present.
+          launcher_pid=$!
+          ledger_ready=false
+          for _ in $(seq 1 100); do
+            if load_android_state; then
+              ledger_ready=true
+              break
+            fi
+            kill -0 "$launcher_pid" 2>/dev/null || break
+            sleep 0.02
+          done
+          if [[ "$ledger_ready" != "true" ]]; then
+            echo "Android emulator ownership ledger was not atomically persisted before launch." >&2
+            exit 1
+          fi
+          exec_ready=false
+          for _ in $(seq 1 100); do
+            if emulator_pid_matches; then
+              exec_ready=true
+              break
+            fi
+            emulator_pid_is_owned || break
+            sleep 0.02
+          done
+          if [[ "$exec_ready" != "true" ]]; then
+            echo "Android emulator PID did not match the expected owner and command identity" >&2
+            exit 1
+          fi
+          printf '%s\n' "$emulator_pid" > "$diagnostics_dir/emulator-5554.pid"
+
+          booted=false
+          boot_deadline=$((SECONDS + 120))
+          while (( SECONDS < boot_deadline )); do
+            if ! emulator_pid_matches; then
+              echo "Android emulator exited or changed identity before boot completed" >&2
+              tail -n 160 "$emulator_log" >&2
+              exit 1
+            fi
+            state="$(timeout 2s adb -s "$emulator_serial" get-state 2>/dev/null || true)"
+            complete="$(timeout 2s adb -s "$emulator_serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            avd_name="$(timeout 2s adb -s "$emulator_serial" shell getprop ro.boot.qemu.avd_name 2>/dev/null | tr -d '\r' || true)"
+            attached_emulator="$(
+              timeout 2s adb devices 2>/dev/null |
+                awk -v expected="$emulator_serial" \
+                  '$1 == expected && $2 == "device" { print $1 }' || true
+            )"
+            if [[
+              "$state" == "device" &&
+              "$complete" == "1" &&
+              "$avd_name" == "$DETOX_ANDROID_AVD" &&
+              "$attached_emulator" == "$emulator_serial"
+            ]]; then
+              booted=true
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$booted" != "true" ]]; then
+            echo "Android emulator did not become healthy on port 5554" >&2
+            tail -n 160 "$emulator_log" >&2
+            exit 1
+          fi
+
+          run_supervised timeout 5s adb -s "$emulator_serial" \
+            shell settings put global window_animation_scale 0
+          run_supervised timeout 5s adb -s "$emulator_serial" \
+            shell settings put global transition_animation_scale 0
+          run_supervised timeout 5s adb -s "$emulator_serial" \
+            shell settings put global animator_duration_scale 0
+          run_supervised yarn test:impact:execute --platform android
+      - name: Verify Android emulator cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          validate_recovery_root() {
+            local actual_mode actual_uid canonical_parent canonical_root
+            local canonical_runner_temp canonical_workspace expected_uid parent
+            expected_uid="$(id -u)"
+            if [[
+              -z "$recovery_root" ||
+              "$recovery_root" != /* ||
+              ! -d "$recovery_root" ||
+              -L "$recovery_root"
+            ]]; then
+              echo "MYCHAMPIONS_NATIVE_STATE_ROOT must name an absolute real directory." >&2
+              return 1
+            fi
+            parent="$(dirname "$recovery_root")"
+            canonical_parent="$(cd "$parent" && pwd -P)" || return 1
+            canonical_root="$(cd "$recovery_root" && pwd -P)" || return 1
+            if [[
+              "$canonical_root" != "$recovery_root" ||
+              "$canonical_parent" != "$parent"
+            ]]; then
+              echo "The native recovery root and its parent must not traverse symlinks." >&2
+              return 1
+            fi
+            if [[
+              -z "${GITHUB_WORKSPACE:-}" ||
+              "$GITHUB_WORKSPACE" != /* ||
+              ! -d "$GITHUB_WORKSPACE" ||
+              -z "${RUNNER_TEMP:-}" ||
+              "$RUNNER_TEMP" != /* ||
+              ! -d "$RUNNER_TEMP"
+            ]]; then
+              echo "The runner workspace and temporary directory must be absolute real directories." >&2
+              return 1
+            fi
+            canonical_workspace="$(cd "$GITHUB_WORKSPACE" && pwd -P)" || return 1
+            canonical_runner_temp="$(cd "$RUNNER_TEMP" && pwd -P)" || return 1
+            if [[
+              "$canonical_workspace" == "/" ||
+              "$canonical_runner_temp" == "/"
+            ]]; then
+              echo "The runner workspace and temporary directory must not resolve to the filesystem root." >&2
+              return 1
+            fi
+            case "$canonical_root" in
+              "$canonical_workspace"|"$canonical_workspace"/*|\
+              "$canonical_runner_temp"|"$canonical_runner_temp"/*)
+                echo "MYCHAMPIONS_NATIVE_STATE_ROOT must remain outside GITHUB_WORKSPACE and RUNNER_TEMP." >&2
+                return 1
+                ;;
+            esac
+            actual_uid="$(stat -c '%u' "$parent")" || return 1
+            if [[ "$actual_uid" != "$expected_uid" ]]; then
+              echo "The native recovery root parent must be owned by this runner user." >&2
+              return 1
+            fi
+            actual_uid="$(stat -c '%u' "$recovery_root")" || return 1
+            actual_mode="$(stat -c '%a' "$recovery_root")" || return 1
+            if [[ "$actual_uid" != "$expected_uid" || "$actual_mode" != "700" ]]; then
+              echo "The native recovery root must be owned by this runner user with mode 0700." >&2
+              return 1
+            fi
+          }
+          validate_recovery_root
+          /usr/bin/python3 - "$recovery_root/android-emulator-5554.state" <<'PY'
+          import os
+          import pathlib
+          import re
+          import signal
+          import stat
+          import subprocess
+          import sys
+          import time
+
+          state_path = pathlib.Path(sys.argv[1])
+          directory_fd = os.open(
+              state_path.parent,
+              os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+          )
+          values = None
+          try:
+              state_fd = os.open(
+                  state_path.name,
+                  os.O_RDONLY | os.O_NOFOLLOW,
+                  dir_fd=directory_fd,
+              )
+          except FileNotFoundError:
+              state_fd = None
+          if state_fd is not None:
+              metadata = os.fstat(state_fd)
+              if (
+                  not stat.S_ISREG(metadata.st_mode)
+                  or stat.S_IMODE(metadata.st_mode) != 0o600
+                  or metadata.st_uid != os.getuid()
+              ):
+                  raise SystemExit("Unsafe Android recovery state")
+              with os.fdopen(state_fd, encoding="utf-8") as handle:
+                  lines = handle.read().splitlines()
+              values = {}
+              for line in lines:
+                  key, separator, value = line.partition("=")
+                  if not separator or key in values:
+                      raise SystemExit("Invalid Android recovery state")
+                  values[key] = value
+              if (
+                  set(values)
+                  != {
+                      "version",
+                      "phase",
+                      "pid",
+                      "uid",
+                      "start",
+                      "avd",
+                      "port",
+                      "serial",
+                      "executable",
+                      "qemu_executable",
+                      "flags",
+                  }
+                  or values["version"] != "1"
+                  or values["phase"] != "running"
+                  or re.fullmatch(r"[1-9][0-9]*", values["pid"]) is None
+                  or re.fullmatch(r"[0-9]+", values["uid"]) is None
+                  or re.fullmatch(r"[1-9][0-9]*", values["start"]) is None
+                  or values["avd"] != "Pixel_10"
+                  or values["port"] != "5554"
+                  or values["serial"] != "emulator-5554"
+                  or not values["executable"].startswith("/")
+                  or not values["qemu_executable"].startswith("/")
+                  or values["flags"]
+                  != "-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect"
+              ):
+                  raise SystemExit("Invalid Android recovery state values")
+
+          avd = "Pixel_10"
+          port = "5554"
+          serial = "emulator-5554"
+
+          def proc_identity(pid):
+              try:
+                  path = pathlib.Path("/proc", pid)
+                  text = (path / "stat").read_text(encoding="utf-8")
+                  closing = text.rfind(")")
+                  fields = text[closing + 2:].split()
+                  if closing < 0 or len(fields) < 20:
+                      return None
+                  return (
+                      str((path / "stat").stat().st_uid),
+                      fields[19],
+                      (path / "cmdline").read_bytes().split(b"\0"),
+                  )
+              except (FileNotFoundError, ProcessLookupError):
+                  return None
+              except PermissionError as error:
+                  raise RuntimeError(
+                      f"Unable to inspect saved Android PID {pid}"
+                  ) from error
+
+          def matches_saved_process():
+              if values is None:
+                  return False
+              identity = proc_identity(values["pid"])
+              if identity is None:
+                  return False
+              uid, start, arguments = identity
+              return (
+                  uid == values["uid"]
+                  and start == values["start"]
+                  and os.path.realpath(f"/proc/{values['pid']}/exe")
+                  in {
+                      values["executable"],
+                      values["qemu_executable"],
+                      # -headless sibling: what -no-window launches exec into
+                      values["qemu_executable"] + "-headless",
+                  }
+                  and f"@{avd}".encode() in arguments
+                  and any(
+                      argument == b"-port"
+                      and index + 1 < len(arguments)
+                      and arguments[index + 1] == port.encode()
+                      for index, argument in enumerate(arguments)
+                  )
+                  and all(
+                      (
+                          any(
+                              argument == flag.split("=", 1)[0].encode()
+                              and index + 1 < len(arguments)
+                              and arguments[index + 1]
+                              == flag.split("=", 1)[1].encode()
+                              for index, argument in enumerate(arguments)
+                          )
+                          if "=" in flag
+                          else flag.encode() in arguments
+                      )
+                      for flag in values["flags"].split(",")
+                  )
+              )
+
+          def exact_process_present():
+              for directory in pathlib.Path("/proc").glob("[0-9]*"):
+                  try:
+                      arguments = (directory / "cmdline").read_bytes().split(b"\0")
+                  except (FileNotFoundError, ProcessLookupError):
+                      continue
+                  except PermissionError as error:
+                      raise RuntimeError(
+                          f"Unable to inspect Android process {directory.name}"
+                      ) from error
+                  if f"@{avd}".encode() not in arguments:
+                      continue
+                  if any(
+                      argument == b"-port"
+                      and index + 1 < len(arguments)
+                      and arguments[index + 1] == port.encode()
+                      for index, argument in enumerate(arguments)
+                  ):
+                      return True
+              return False
+
+          def exact_device_present():
+              try:
+                  result = subprocess.run(
+                      ["adb", "devices"],
+                      check=True,
+                      capture_output=True,
+                      text=True,
+                      timeout=3,
+                  )
+              except (OSError, subprocess.SubprocessError):
+                  return True
+              return any(
+                  line.split()[:1] == [serial]
+                  for line in result.stdout.splitlines()
+              )
+
+          def exact_ports_present():
+              try:
+                  result = subprocess.run(
+                      [
+                          "ss",
+                          "-H",
+                          "-ltn",
+                          "( sport = :5554 or sport = :5555 )",
+                      ],
+                      check=True,
+                      capture_output=True,
+                      text=True,
+                      timeout=3,
+                  )
+              except (OSError, subprocess.SubprocessError):
+                  return True
+              return bool(result.stdout.strip())
+
+          if values is not None and matches_saved_process():
+              try:
+                  subprocess.run(
+                      ["adb", "-s", serial, "emu", "kill"],
+                      check=False,
+                      stdout=subprocess.DEVNULL,
+                      stderr=subprocess.DEVNULL,
+                      timeout=3,
+                  )
+              except (OSError, subprocess.SubprocessError):
+                  pass
+              for _ in range(30):
+                  if not matches_saved_process():
+                      break
+                  time.sleep(0.2)
+              if matches_saved_process():
+                  os.kill(int(values["pid"]), signal.SIGTERM)
+                  time.sleep(0.5)
+              if matches_saved_process():
+                  os.kill(int(values["pid"]), signal.SIGKILL)
+          elif values is not None and proc_identity(values["pid"]) is not None:
+              print(
+                  "Saved Android PID changed identity; preserving that unrelated process.",
+                  file=sys.stderr,
+              )
+
+          for _ in range(20):
+              if (
+                  not exact_process_present()
+                  and not exact_device_present()
+                  and not exact_ports_present()
+              ):
+                  break
+              time.sleep(0.25)
+          if (
+              exact_process_present()
+              or exact_device_present()
+              or exact_ports_present()
+          ):
+              raise SystemExit(
+                  "Exact Android emulator resources survived final verification"
+              )
+          if values is not None:
+              os.unlink(state_path.name, dir_fd=directory_fd)
+              os.fsync(directory_fd)
+          os.close(directory_fd)
+          PY
+      - name: Upload bounded Android failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mychampions-android-failure-${{ github.run_id }}
+          path: .artifacts/ci-diagnostics/android
+          if-no-files-found: warn
+          retention-days: 1
+
+  publish-selective-status:
+    name: Publish selective CI status
+    if: ${{ always() && !cancelled() }}
+    needs:
+      - authorize-candidate
+      - impact
+      - fast-quality
+      - web-selected
+      - detox-ios-selected
+      - detox-android-selected
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: mychampions-selective-status-writer
+      queue: max
+    permissions:
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Publish the exact-head pending and final status
+        if: >-
+          needs.authorize-candidate.result == 'success' &&
+          needs.authorize-candidate.outputs.head_sha != ''
+        env:
+          ACTIONS_TOKEN: ${{ github.token }}
+          CANDIDATE_BASE_SHA: ${{ needs.authorize-candidate.outputs.base_sha }}
+          CANDIDATE_KIND: ${{ needs.authorize-candidate.outputs.candidate_kind }}
+          CANDIDATE_SHA: ${{ needs.authorize-candidate.outputs.head_sha }}
+          INITIAL_FORCE_FULL: ${{ needs.authorize-candidate.outputs.force_full }}
+          IMPACT_RESULT: ${{ needs.impact.result }}
+          FAST_RESULT: ${{ needs.fast-quality.result }}
+          HAS_WEB: ${{ needs.impact.outputs.has_web }}
+          HAS_IOS: ${{ needs.impact.outputs.has_detox_ios }}
+          HAS_ANDROID: ${{ needs.impact.outputs.has_detox_android }}
+          WEB_RESULT: ${{ needs.web-selected.result }}
+          IOS_RESULT: ${{ needs.detox-ios-selected.result }}
+          ANDROID_RESULT: ${{ needs.detox-android-selected.result }}
+          PULL_REQUEST_NUMBER: ${{ needs.authorize-candidate.outputs.pull_request_number }}
+          STATUS_TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          import re
+          import sys
+          import urllib.error
+          import urllib.request
+
+
+          REPOSITORY = "edufelip/MyChampions"
+          CONTEXT = "Selective CI gate"
+          SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+          def get_pull_request(number: int) -> dict[str, object]:
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{REPOSITORY}/pulls/{number}",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {os.environ['ACTIONS_TOKEN']}",
+                      "User-Agent": "mychampions-selective-status-publisher",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          raise RuntimeError(
+                              f"GitHub pull-request API returned {response.status}"
+                          )
+                      payload = json.load(response)
+              except (
+                  OSError,
+                  urllib.error.HTTPError,
+                  urllib.error.URLError,
+                  json.JSONDecodeError,
+              ) as error:
+                  raise RuntimeError("GitHub pull-request refresh failed") from error
+              if not isinstance(payload, dict):
+                  raise RuntimeError("GitHub pull-request refresh was malformed")
+              return payload
+
+
+          def get_open_pull_requests() -> list[dict[str, object]]:
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{REPOSITORY}/pulls"
+                  "?state=open&per_page=100&page=1",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {os.environ['ACTIONS_TOKEN']}",
+                      "User-Agent": "mychampions-selective-status-publisher",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          raise RuntimeError(
+                              f"GitHub pull-request API returned {response.status}"
+                          )
+                      payload = json.load(response)
+              except (
+                  OSError,
+                  urllib.error.HTTPError,
+                  urllib.error.URLError,
+                  json.JSONDecodeError,
+              ) as error:
+                  raise RuntimeError("GitHub pull-request listing failed") from error
+              if not isinstance(payload, list) or len(payload) >= 100:
+                  raise RuntimeError(
+                      "GitHub open pull-request listing is malformed or truncated"
+                  )
+              if not all(isinstance(value, dict) for value in payload):
+                  raise RuntimeError("GitHub open pull-request listing is malformed")
+              return payload
+
+
+          def post_status(state: str, description: str) -> None:
+              candidate = os.environ["CANDIDATE_SHA"]
+              if SHA_RE.fullmatch(candidate) is None:
+                  raise RuntimeError("candidate SHA is invalid")
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{REPOSITORY}/statuses/{candidate}",
+                  data=json.dumps(
+                      {
+                          "state": state,
+                          "context": CONTEXT,
+                          "description": description,
+                          "target_url": os.environ["STATUS_TARGET_URL"],
+                      }
+                  ).encode("utf-8"),
+                  method="POST",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {os.environ['ACTIONS_TOKEN']}",
+                      "Content-Type": "application/json",
+                      "User-Agent": "mychampions-selective-status-publisher",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 201:
+                          raise RuntimeError(
+                              f"GitHub status API returned {response.status}"
+                          )
+              except (OSError, urllib.error.HTTPError, urllib.error.URLError) as error:
+                  raise RuntimeError("GitHub status publication failed") from error
+
+
+          def require_owned_pending_status() -> None:
+              candidate = os.environ["CANDIDATE_SHA"]
+              if SHA_RE.fullmatch(candidate) is None:
+                  raise RuntimeError("candidate SHA is invalid")
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{REPOSITORY}/commits/"
+                  f"{candidate}/statuses?per_page=100",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {os.environ['ACTIONS_TOKEN']}",
+                      "User-Agent": "mychampions-selective-status-publisher",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          raise RuntimeError(
+                              f"GitHub status API returned {response.status}"
+                          )
+                      payload = json.load(response)
+              except (
+                  OSError,
+                  urllib.error.HTTPError,
+                  urllib.error.URLError,
+                  json.JSONDecodeError,
+              ) as error:
+                  raise RuntimeError("GitHub status ownership refresh failed") from error
+              if not isinstance(payload, list):
+                  raise RuntimeError("GitHub status ownership response is malformed")
+              latest = next(
+                  (
+                      value
+                      for value in payload
+                      if isinstance(value, dict) and value.get("context") == CONTEXT
+                  ),
+                  None,
+              )
+              if not isinstance(latest, dict):
+                  raise RuntimeError("current Selective CI status is missing")
+              creator = latest.get("creator")
+              if (
+                  latest.get("state") != "pending"
+                  or latest.get("target_url") != os.environ["STATUS_TARGET_URL"]
+                  or latest.get("description")
+                  != "Trusted selective validation is in progress."
+                  or not isinstance(creator, dict)
+                  or creator.get("login") != "github-actions[bot]"
+                  or creator.get("type") != "Bot"
+              ):
+                  raise RuntimeError(
+                      "current Selective CI status belongs to another validation run"
+                  )
+
+
+          def selected_lane(name: str, selected: str, result: str) -> None:
+              if selected not in {"true", "false"}:
+                  raise RuntimeError(f"{name} selection output is invalid")
+              expected = "success" if selected == "true" else "skipped"
+              if result != expected:
+                  raise RuntimeError(
+                      f"{name} lane finished as {result}; expected {expected}"
+                  )
+
+
+          def revalidate_pull_request() -> None:
+              kind = os.environ["CANDIDATE_KIND"]
+              if kind not in {"pull_request", "workflow_dispatch"}:
+                  return
+              raw_number = os.environ["PULL_REQUEST_NUMBER"]
+              if not raw_number.isdigit() or int(raw_number) < 1:
+                  raise RuntimeError("pull-request status target is missing")
+              pull = get_pull_request(int(raw_number))
+              head = pull.get("head")
+              base = pull.get("base")
+              user = pull.get("user")
+              if not isinstance(head, dict) or not isinstance(base, dict):
+                  raise RuntimeError("live pull-request refs are malformed")
+              if not isinstance(user, dict) or user.get("login") != "edufelip":
+                  raise RuntimeError("live pull-request author is not trusted")
+              if (
+                  pull.get("state") != "open"
+                  or pull.get("merged") is not False
+                  or pull.get("draft") is not False
+              ):
+                  raise RuntimeError(
+                      "live pull request is not open, ready, and unmerged"
+                  )
+              if head.get("sha") != os.environ["CANDIDATE_SHA"]:
+                  raise RuntimeError("live pull-request head changed during validation")
+              if base.get("sha") != os.environ["CANDIDATE_BASE_SHA"]:
+                  raise RuntimeError("live pull-request base changed during validation")
+              for ref, field in ((head, "head"), (base, "base")):
+                  repository = ref.get("repo")
+                  if (
+                      not isinstance(repository, dict)
+                      or repository.get("full_name") != REPOSITORY
+                  ):
+                      raise RuntimeError(f"live pull-request {field} is not upstream")
+              base_ref = base.get("ref")
+              if (
+                  base_ref != "main"
+                  and not (
+                      isinstance(base_ref, str)
+                      and (
+                          base_ref.startswith("release/")
+                          or base_ref.startswith("hotfix/")
+                      )
+                  )
+              ):
+                  raise RuntimeError("live pull-request base branch is not allowed")
+
+              labels = pull.get("labels")
+              if not isinstance(labels, list):
+                  raise RuntimeError("live pull-request labels are malformed")
+              ci_full = any(
+                  isinstance(label, dict) and label.get("name") == "ci:full"
+                  for label in labels
+              )
+              broadened = ci_full or base_ref != "main"
+              if broadened and os.environ["INITIAL_FORCE_FULL"] != "true":
+                  raise RuntimeError("coverage was broadened after impact resolution")
+
+              matching_numbers: list[int] = []
+              for candidate in get_open_pull_requests():
+                  if (
+                      candidate.get("state") != "open"
+                      or candidate.get("merged_at") is not None
+                  ):
+                      raise RuntimeError(
+                          "open pull-request listing contains a closed pull request"
+                      )
+                  draft = candidate.get("draft")
+                  if not isinstance(draft, bool):
+                      raise RuntimeError(
+                          "open pull-request listing has malformed draft state"
+                      )
+                  if draft:
+                      continue
+                  candidate_head = candidate.get("head")
+                  candidate_base = candidate.get("base")
+                  if not isinstance(candidate_head, dict) or not isinstance(
+                      candidate_base, dict
+                  ):
+                      raise RuntimeError(
+                          "open pull-request listing has malformed refs"
+                      )
+                  if candidate_head.get("sha") != os.environ["CANDIDATE_SHA"]:
+                      continue
+                  candidate_user = candidate.get("user")
+                  candidate_head_repository = candidate_head.get("repo")
+                  if (
+                      not isinstance(candidate_user, dict)
+                      or candidate_user.get("login") != "edufelip"
+                      or not isinstance(candidate_head_repository, dict)
+                      or candidate_head_repository.get("full_name") != REPOSITORY
+                  ):
+                      continue
+                  candidate_base_repository = candidate_base.get("repo")
+                  if (
+                      not isinstance(candidate_base_repository, dict)
+                      or candidate_base_repository.get("full_name") != REPOSITORY
+                  ):
+                      raise RuntimeError(
+                          "matching open pull request does not target upstream"
+                      )
+                  candidate_base_ref = candidate_base.get("ref")
+                  if (
+                      candidate_base_ref != "main"
+                      and not (
+                          isinstance(candidate_base_ref, str)
+                          and (
+                              candidate_base_ref.startswith("release/")
+                              or candidate_base_ref.startswith("hotfix/")
+                          )
+                      )
+                  ):
+                      continue
+                  candidate_number = candidate.get("number")
+                  if (
+                      not isinstance(candidate_number, int)
+                      or isinstance(candidate_number, bool)
+                      or candidate_number < 1
+                  ):
+                      raise RuntimeError(
+                          "matching open pull request has an invalid number"
+                      )
+                  matching_numbers.append(candidate_number)
+              if matching_numbers != [int(raw_number)]:
+                  raise RuntimeError(
+                      "candidate head is not bound to exactly one eligible open pull request"
+                  )
+
+
+          failure = ""
+          try:
+              if os.environ["IMPACT_RESULT"] != "success":
+                  raise RuntimeError("impact resolution did not succeed")
+              if os.environ["FAST_RESULT"] != "success":
+                  raise RuntimeError("fast quality checks did not succeed")
+              selected_lane("web", os.environ["HAS_WEB"], os.environ["WEB_RESULT"])
+              selected_lane("ios", os.environ["HAS_IOS"], os.environ["IOS_RESULT"])
+              selected_lane(
+                  "android", os.environ["HAS_ANDROID"], os.environ["ANDROID_RESULT"]
+              )
+              revalidate_pull_request()
+          except Exception as error:
+              failure = str(error)
+
+          publish_required_status = os.environ["CANDIDATE_KIND"] in {
+              "pull_request",
+              "workflow_dispatch",
+              "merge_group",
+          }
+          if publish_required_status:
+              try:
+                  require_owned_pending_status()
+              except Exception as error:
+                  print(str(error), file=sys.stderr)
+                  raise SystemExit(1)
+          if failure:
+              if publish_required_status:
+                  post_status("failure", "Trusted selective validation failed.")
+              print(failure, file=sys.stderr)
+              raise SystemExit(1)
+
+          if publish_required_status:
+              post_status("success", "Every selected trusted validation lane passed.")
+              print("Published successful exact-head Selective CI status.")
+          else:
+              print("Trusted main validation passed without publishing the PR status.")
+          PY
+      - name: Reject an unauthorized or unresolved candidate
+        if: >-
+          needs.authorize-candidate.result != 'success' ||
+          needs.authorize-candidate.outputs.head_sha == ''
+        run: |
+          echo "No authorized exact candidate exists for status publication." >&2
+          exit 1

@@ -99,6 +99,7 @@
 - Cached data older than 24 hours must show stale indicator and last-sync timestamp.
 - If nutritionist goal override is removed, dashboard hydration card reverts to student personal goal baseline.
 - If a tab wrapper is rendered while role hydration is temporarily unavailable, shell fallback redirects to `/auth/role-selection` and avoids blank tab content.
+- Deterministic native validation launches a fresh unsynchronized app instance for each dashboard case so fixture state and Detox idling resources cannot leak across reloads.
 
 ## Links
 - Functional requirement: FR-113, FR-114, FR-115, FR-116, FR-123, FR-130, FR-135, FR-141, FR-183, FR-186, FR-187, FR-189, FR-191, FR-214, FR-217, FR-218, FR-219, FR-220, FR-221, FR-222

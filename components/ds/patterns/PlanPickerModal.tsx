@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
@@ -25,6 +26,14 @@ export function PlanPickerModal({
   theme: DsTheme;
   t: TFn;
 }) {
+  const [isPresented, setIsPresented] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible) {
+      setIsPresented(false);
+    }
+  }, [isVisible]);
+
   useWebDialogAccessibility({ isVisible, onClose, testID: 'planPicker.modal' });
   const filteredPlans =
     plansState.kind === 'ready'
@@ -32,9 +41,17 @@ export function PlanPickerModal({
       : [];
 
   return (
-    <Modal visible={isVisible} animationType="slide" onRequestClose={onClose} transparent>
+    <Modal
+      visible={isVisible}
+      animationType="slide"
+      onRequestClose={onClose}
+      onShow={() => setIsPresented(true)}
+      onDismiss={() => setIsPresented(false)}
+      transparent>
       <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]} testID="planPicker.modal">
-        <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
+        <View
+          style={[styles.modalContent, { backgroundColor: theme.color.surface }]}
+          testID={isVisible && isPresented ? 'planPicker.ready' : undefined}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
               {t('pro.plan.picker.title')}

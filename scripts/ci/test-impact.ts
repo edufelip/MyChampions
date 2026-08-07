@@ -210,11 +210,15 @@ export function mergeBaseFromGit(root: string, base: string, head: string): stri
 
 export function changedFilesFromGit(root: string, base: string, head: string): ChangedFile[] {
   const mergeBase = mergeBaseFromGit(root, base, head);
-  const output = execFileSync('git', ['diff', '--name-status', '-M', '-C', mergeBase, head], {
-    cwd: root,
-    encoding: 'utf8',
-    maxBuffer: 20 * 1024 * 1024,
-  });
+  const output = execFileSync(
+    'git',
+    ['diff', '--name-status', '-M', '-C', '--find-copies-harder', mergeBase, head],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+    }
+  );
   return parseNameStatus(output);
 }
 
@@ -234,17 +238,28 @@ function listWorkingTreeSourceFiles(root: string): string[] {
   return files.sort();
 }
 
-function resolveImportPath(fromPath: string, specifier: string, knownFiles: Set<string>): string | null {
-  if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return null;
+function resolveImportPaths(fromPath: string, specifier: string, knownFiles: Set<string>): string[] {
+  if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return [];
   const base = specifier.startsWith('@/')
     ? specifier.slice(2)
     : posix.normalize(posix.join(posix.dirname(fromPath), specifier));
+  const platformSuffixes = ['.ios', '.android', '.web', '.native'];
   const candidates = [
     base,
+    ...platformSuffixes.flatMap((suffix) =>
+      sourceExtensions.map((extension) => `${base}${suffix}${extension}`)
+    ),
     ...sourceExtensions.map((extension) => `${base}${extension}`),
+    ...platformSuffixes.flatMap((suffix) =>
+      sourceExtensions.map((extension) => `${base}/index${suffix}${extension}`)
+    ),
     ...sourceExtensions.map((extension) => `${base}/index${extension}`),
   ].map(normalizePath);
-  return candidates.find((candidate) => knownFiles.has(candidate)) ?? null;
+  return [...new Set(candidates.filter((candidate) => knownFiles.has(candidate)))];
+}
+
+function resolveImportPath(fromPath: string, specifier: string, knownFiles: Set<string>): string | null {
+  return resolveImportPaths(fromPath, specifier, knownFiles)[0] ?? null;
 }
 
 function createReverseGraph(files: Map<string, string>): ImportGraph {
@@ -254,11 +269,11 @@ function createReverseGraph(files: Map<string, string>): ImportGraph {
   for (const [path, content] of files) {
     const imports = ts.preProcessFile(content, true, true).importedFiles;
     for (const imported of imports) {
-      const resolvedImport = resolveImportPath(path, imported.fileName, knownFiles);
-      if (!resolvedImport) continue;
-      const consumers = reverseGraph.get(resolvedImport) ?? new Set<string>();
-      consumers.add(path);
-      reverseGraph.set(resolvedImport, consumers);
+      for (const resolvedImport of resolveImportPaths(path, imported.fileName, knownFiles)) {
+        const consumers = reverseGraph.get(resolvedImport) ?? new Set<string>();
+        consumers.add(path);
+        reverseGraph.set(resolvedImport, consumers);
+      }
     }
   }
   return reverseGraph;
@@ -402,6 +417,8 @@ export function resolveImpact(
   const platforms = new Set<string>();
   const directFeatures = new Set<string>();
   const affectedFeatures = new Set<string>();
+  const directlyMatchedSuites = new Set<string>();
+  let matchedCompleteMatrixRule = false;
 
   if (options.forceFull) fallbackReasons.push('full execution was explicitly requested');
   if (validationErrors.length > 0) {
@@ -426,6 +443,7 @@ export function resolveImpact(
     }
     for (const [suiteId, suite] of Object.entries(manifest.suites)) {
       if (!suite.specs.includes(path)) continue;
+      if (suite.ci) directlyMatchedSuites.add(suiteId);
       for (const [featureId, feature] of Object.entries(manifest.features)) {
         if ([...feature.webSuites, ...feature.detoxSuites].includes(suiteId)) {
           directFeatures.add(featureId);
@@ -438,6 +456,7 @@ export function resolveImpact(
       sharedRuleIds.add(rule.id);
       for (const platform of rule.platforms ?? []) platforms.add(platform);
       if (rule.impact === 'all') {
+        matchedCompleteMatrixRule = true;
         for (const featureId of Object.keys(manifest.features)) affectedFeatures.add(featureId);
         reasons.push(`${path} matched global shared rule ${rule.id}`);
       }
@@ -464,7 +483,13 @@ export function resolveImpact(
     fallbackReasons.push(`unmapped runtime paths: ${unmappedRuntimePaths.join(', ')}`);
   }
 
-  if (documentationOnly && fallbackReasons.length === 0) {
+  if (
+    documentationOnly &&
+    fallbackReasons.length === 0 &&
+    directFeatures.size === 0 &&
+    directlyMatchedSuites.size === 0 &&
+    sharedRuleIds.size === 0
+  ) {
     return {
       schemaVersion: 1,
       mode: 'documentation-only',
@@ -491,6 +516,13 @@ export function resolveImpact(
 
   const selectedSuites = new Set<string>();
   const unitTestPatterns = new Set<string>();
+  const completeMatrixRequired = fallbackReasons.length > 0 || matchedCompleteMatrixRule;
+  if (completeMatrixRequired) {
+    for (const [suiteId, suite] of Object.entries(manifest.suites)) {
+      if (suite.ci) selectedSuites.add(suiteId);
+    }
+  }
+  for (const suiteId of directlyMatchedSuites) selectedSuites.add(suiteId);
   for (const featureId of affectedFeatures) {
     const feature = manifest.features[featureId];
     if (!feature) continue;
@@ -524,8 +556,7 @@ export function resolveImpact(
   const detoxAndroidSuites = [...selectedSuites].filter(
     (suiteId) =>
       manifest.suites[suiteId]?.runner === 'detox' &&
-      manifest.suites[suiteId]?.platforms?.includes('android') &&
-      (fallbackReasons.length > 0 || platforms.has('android'))
+      manifest.suites[suiteId]?.platforms?.includes('android')
   );
 
   return {
@@ -549,18 +580,25 @@ export function resolveImpact(
 }
 
 export function discoverRegisteredTestFiles(root: string): string[] {
-  const directories = ['e2e', 'e2e/web', 'e2e/web-server', 'e2e/web-flows', 'e2e/web-flows-auth'];
+  const directory = 'e2e';
   const files = new Set<string>();
-  for (const directory of directories) {
-    const absolute = resolve(root, directory);
-    if (!existsSync(absolute)) continue;
-    for (const entry of readdirSync(absolute)) {
-      const path = normalizePath(join(directory, entry));
-      if (statSync(join(root, path)).isFile() && /\.(e2e\.test\.js|spec\.ts)$/.test(path)) {
+  const absolute = resolve(root, directory);
+  if (!existsSync(absolute)) return [];
+
+  const walk = (current: string): void => {
+    for (const entry of readdirSync(current)) {
+      const entryPath = join(current, entry);
+      if (statSync(entryPath).isDirectory()) {
+        walk(entryPath);
+        continue;
+      }
+      const path = normalizePath(relative(root, entryPath));
+      if (/\.(e2e\.test\.js|spec\.ts)$/.test(path)) {
         files.add(path);
       }
     }
-  }
+  };
+  walk(absolute);
   return [...files].sort();
 }
 

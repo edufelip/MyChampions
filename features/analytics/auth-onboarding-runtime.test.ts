@@ -30,12 +30,14 @@ test('email/password auth screens do not fall back to local dev-session after se
   const signInSource = readProjectFile('app/auth/sign-in.tsx');
   const createAccountSource = readProjectFile('app/auth/create-account.tsx');
 
-  const signInSourceCall = signInSource.indexOf('await signInWithEmailPasswordFromSource({ email, password })');
+  const signInSourceCall = signInSource.indexOf(
+    'await signInWithEmailPasswordFromSource(submissionInput)'
+  );
   assert.notEqual(signInSourceCall, -1);
   assert.equal(signInSource.includes('signInWithServerEmailPassword'), false);
 
   const createAccountSourceCall = createAccountSource.indexOf(
-    'await createAccountWithEmailPasswordFromSource({ name, email, password, passwordConfirmation })'
+    'await createAccountWithEmailPasswordFromSource(submissionInput)'
   );
   assert.notEqual(createAccountSourceCall, -1);
   assert.equal(createAccountSource.includes('createAccountWithServerEmailPassword'), false);

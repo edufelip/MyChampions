@@ -1,4 +1,20 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const mealAnalysisScenario = process.env.E2E_MEAL_ANALYSIS_SCENARIO;
+
+if (
+  process.env.E2E_AUTH_SESSION === 'true' &&
+  mealAnalysisScenario !== 'paywall' &&
+  mealAnalysisScenario !== 'success'
+) {
+  throw new Error(
+    'Custom Meal AI Analysis requires E2E_MEAL_ANALYSIS_SCENARIO=paywall|success for authenticated runs'
+  );
+}
+
+const itWithPaywallScenario =
+  mealAnalysisScenario === 'paywall' ? it : it.skip;
+const itWithSuccessScenario =
+  mealAnalysisScenario === 'success' ? it : it.skip;
 
 async function selectStudentRole() {
   await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
@@ -23,7 +39,7 @@ describeWithE2EAuthSession('Custom Meal AI Analysis', () => {
     await device.disableSynchronization();
   });
 
-  it('shows the premium AI analysis gate before capture is available', async () => {
+  itWithPaywallScenario('shows the premium AI analysis gate before capture is available', async () => {
     await selectStudentRole();
     await openCreateMealScreen();
 
@@ -35,7 +51,7 @@ describeWithE2EAuthSession('Custom Meal AI Analysis', () => {
     await expect(element(by.id('meal.photoAnalysis.cta'))).not.toBeVisible();
   });
 
-  it('analyzes a selected meal photo through the dev fixture and pre-fills macros', async () => {
+  itWithSuccessScenario('analyzes a selected meal photo through the dev fixture and pre-fills macros', async () => {
     await selectStudentRole();
     await openCreateMealScreen();
 

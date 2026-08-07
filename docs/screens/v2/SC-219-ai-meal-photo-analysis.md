@@ -14,7 +14,7 @@ AI estimates are always advisory — all fields remain editable after pre-fill (
 
 As of the 2026-07-26 provider verification, `default_student` presents the published `Student Paywall v1 Production`, while an explicit development/Test Store build presents `Student Paywall v1 Test` from `test_student`. Professionals use the published `Professional Paywall v1` from `default_professional` in production/normal development and `Professional Paywall v1 Test` from `test_professional` in the explicit development/Test Store path. RevenueCat dashboard publication does not replace the separate device/store purchase and restore validation gate.
 
-**Paywall visual contract (D-194):** The published student Test and Production
+**Paywall visual contract (D-198):** The published student Test and Production
 paywalls use the professional paywall's intentional vertical rhythm while
 retaining student-specific copy and benefits. The RevenueCat editor layout uses
 16 px root child spacing, a 72 px top margin on the student value-proposition
@@ -147,6 +147,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 - Missing role isolation: no RevenueCat paywall is presented until a locked account role is available.
 - Subscription loading (`isSubscriptionLoading === true` and `hasAiAccess === false`): `ActivityIndicator` shown instead of locked banner — avoids false paywall flash before entitlement is known.
 - `aiEntitlementStatus === 'unknown'` (SDK not yet initialised or error): treated as locked — paywall banner shown (strict policy, D-132).
+- Deterministic native validation runs locked and unlocked expectations in separate fresh-Metro phases. The locked phase sets both AI and professional entitlements to `lapsed`; the unlocked phase sets both to `active`, and each invocation executes only its matching scenario.
 
 ## Links
 | Artifact | IDs |
@@ -156,5 +157,5 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Acceptance criteria | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 |
 | Business rules | BR-286, BR-287, BR-288, BR-289, BR-290 |
 | Test cases | TC-271, TC-272, TC-273, TC-273A, TC-274, TC-437 |
-| Decisions | D-106, D-107, D-108, D-109, D-110, D-128, D-132, D-190, D-193, D-194 |
+| Decisions | D-106, D-107, D-108, D-109, D-110, D-128, D-132, D-190, D-197, D-198 |
 | Backlog | BL-108 |

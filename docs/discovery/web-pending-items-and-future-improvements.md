@@ -4,7 +4,27 @@
 
 This is the complete follow-up register for the web-support work introduced on 2026-07-15. It covers browser readiness only. The broader app wiring backlog remains in `docs/discovery/pending-wiring-checklist-v1.md`.
 
-Code structure, fixture-based Playwright coverage, responsive navigation, platform adapters, cookie-session contracts, and build-only CI are implemented. Nothing in this document authorizes deployment, provider-console changes, production origins, browser billing, secrets, or infrastructure mutation.
+Code structure, fixture-based Playwright coverage, responsive navigation,
+platform adapters, cookie-session contracts, and the feature-selective workflow
+contract are implemented. The legacy `web-pr.yml` workflow is manual-only.
+The browser lane uses the dedicated `mychampions-web-only` companion, while the
+Android lane retains the native shared-host lock. Live overlap made Playwright
+take 13m56s against its 2m18s baseline, so both lanes use the
+shared `mychampions-wsl-ui` concurrency group. The companion and invocation
+timeout protections remain in place.
+The promotion pull request must still satisfy D-195's GitHub-hosted-only PR
+preflight, protected-`main` trusted-workflow provenance, triggering-run/live-PR
+authorization, token isolation, exact-status publishing, all-external fork
+approval, stale-safe same-head rerun handling, pinned-action policy, exact
+backend SHA, cleanup, and
+required-main-gate evidence, then supply a green remote exact-head matrix. No
+live D-195 workflow/repository setting is claimed here.
+Static personal-repository runner labels remain targetable by any approved
+workflow, so promotion also requires sole-owner collaborator evidence and a
+never-approve-fork/untrusted-workflow operating rule; those runners must pause
+before that scope changes.
+Nothing in this document authorizes deployment, provider-console changes,
+production origins, browser billing, secrets, or infrastructure mutation.
 
 ## Status legend
 
@@ -44,7 +64,7 @@ Code structure, fixture-based Playwright coverage, responsive navigation, platfo
 | Localization | Run every core flow in `en-US`, `pt-BR`, and `es-ES`, including narrow widths and long strings. | Locale matrix with overflow assertions and screenshots. |
 | Native regression | Run the existing iOS/Android Detox smoke suites after shared web changes when devices are available. | Device, build variant, Detox report, screenshots/video. |
 | Expo compatibility | Review the Expo package patch-version recommendations reported during export and upgrade in a separate dependency task. | Clean install, unit/lint/typecheck, web/native exports, and device smoke. |
-| CI duration | Split browser batches or shard the full matrix if the build-only PR workflow becomes too slow. | Timing report that preserves the same assertions and artifacts. |
+| CI duration | Split selected browser batches or shard the scheduled/full safety matrix if the authoritative web lane becomes too slow. | Timing report that preserves the same assertions and the zero-success-artifact/failure-only diagnostics policy. |
 | Report retention | Define how long local evidence is retained and where accepted manual review decisions are recorded. | Team-owned retention policy; generated local artifacts remain ignored and are not uploaded by CI. |
 
 ## Explicitly deferred

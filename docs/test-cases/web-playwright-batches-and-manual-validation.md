@@ -42,13 +42,16 @@ Each command creates a timestamped directory under `.artifacts/web-e2e/<run-id>/
 - `screenshots` uses readable checkpoint names for manual comparison; these are evidence captures, not approved golden baselines.
 - `manual-validation.md` is generated after every batch and includes a review decision plus one row per explicit screenshot.
 
-The build-only PR workflow runs both the deterministic browser gate and the
-server-auth gate but does not upload or retain `.artifacts/web-e2e`. CI installs
-the branch-paired backend's locked Bun dependencies, then Playwright starts and
-stops the in-memory backend on port `3401` and Expo web on port `8082`. No
-database, provider credential, or production secret is required. Screenshot
-packages and manual-review checklists are local-only; CI test output is
-ephemeral.
+The authoritative feature-selective workflow validates the web export and runs
+the affected registered deterministic and server-auth suites on the exact head.
+It installs the branch-paired backend's locked Bun dependencies only when a
+selected suite needs that configuration; Playwright then starts and stops the
+in-memory backend on port `3401` and Expo web on port `8082`. No database,
+provider credential, or production secret is required. Successful selective
+runs upload no `.artifacts/web-e2e`, web export, test report, or GitHub Actions
+cache. Only bounded `.artifacts/ci-diagnostics/web` failure evidence may be
+uploaded, with one-day retention. The legacy `web-pr.yml` workflow is
+manual-only.
 
 ## Complete flow atlas status
 

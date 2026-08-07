@@ -1,3 +1,8 @@
+const iosMetroPort = process.env.DETOX_METRO_PORT || '8081';
+const iosSimulatorDevice = process.env.DETOX_IOS_SIMULATOR_UDID
+  ? { id: process.env.DETOX_IOS_SIMULATOR_UDID }
+  : { type: process.env.DETOX_IOS_SIMULATOR || 'iPhone 17' };
+
 /** @type {Detox.DetoxConfig} */
 module.exports = {
   testRunner: {
@@ -13,8 +18,11 @@ module.exports = {
     'ios.debug': {
       type: 'ios.app',
       binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/mychampions.app',
+      launchArgs: {
+        RCT_jsLocation: `localhost:${iosMetroPort}`,
+      },
       build:
-        'xcodebuild -workspace ios/mychampions.xcworkspace -scheme mychampions -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build',
+        'xcodebuild -workspace ios/mychampions.xcworkspace -scheme mychampions -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build RCT_METRO_PORT="${DETOX_METRO_PORT:-8081}"',
     },
     'ios.release': {
       type: 'ios.app',
@@ -52,9 +60,7 @@ module.exports = {
   devices: {
     simulator: {
       type: 'ios.simulator',
-      device: {
-        type: process.env.DETOX_IOS_SIMULATOR || 'iPhone 17',
-      },
+      device: iosSimulatorDevice,
     },
     attached: {
       type: 'android.attached',

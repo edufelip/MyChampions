@@ -74,10 +74,11 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-162`: Recipe record identifiers shall use UUIDv7 format.
 - `FR-163`: Authentication methods supported in MVP shall include email/password, Google Sign-In, and Apple Sign-In.
 - `FR-164`: Auth entry flows shall provide both sign-in and create-account paths, and both screens shall expose Google and Apple social actions.
+- `FR-164A`: Email/password sign-in submission from the password Done/Return key or primary CTA shall validate and submit the latest entered credential values rather than stale rendered snapshots.
 - `FR-165`: Account creation via email/password shall require `name`, `email`, `password`, and `password_confirmation`.
 - `FR-166`: Password policy shall enforce minimum 8 characters, at least 1 uppercase letter, at least 1 number, and at least 1 special character.
 - `FR-167`: Password input shall reject emoji characters.
-- `FR-168`: Password confirmation must exactly match the password value before account creation can continue.
+- `FR-168`: Password confirmation must exactly match the password value before account creation can continue, and an immediate Done/Return-key or primary-CTA submission must validate the latest entered confirmation value rather than a stale rendered snapshot.
 - `FR-169`: Password fields on auth forms shall support reveal/hide toggle control.
 - `FR-170`: Email verification is deferred and is not required to enter product flows in MVP.
 - `FR-171`: Email address uniqueness shall be global per account; the same email shall not create multiple accounts.
@@ -105,7 +106,11 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-193`: CI/CD and release pipelines shall not depend on EAS services for build/distribution.
 - `FR-194`: Tailwind-style UI implementation in React Native shall use NativeWind for MVP.
 - `FR-195`: iOS QA distribution on release branches shall publish builds through TestFlight.
-- `FR-196`: Pull requests targeting `develop` shall run native CI checks and publish QA build artifacts from the workflow.
+- `FR-196`: Pull requests targeting `main` shall run the required feature-aware
+  native and web CI checks on the exact head after the persistent-runner security
+  and repository-enforcement prerequisites in FR-272 are verified. Successful
+  build outputs shall stay ephemeral on self-hosted runners; only bounded
+  one-day failure diagnostics may be uploaded.
 - `FR-197`: Image/media uploads shall apply mandatory client-side compression before sending media through the MyChampions server upload boundary.
 - `FR-198`: Runtime crash/ANR monitoring provider shall be selected and configured before production release.
 - `FR-199`: Non-crash monitoring tooling (for example Sentry) is out of MVP scope.
@@ -151,7 +156,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-239`: The UI must display an AI estimate disclaimer whenever analysis results are shown, making clear these are estimates the user should verify before saving.
 - `FR-240`: The professional nutrition plan builder (SC-207) shall allow professionals to create and edit named predefined nutrition plans with a user-defined plan name.
 - `FR-241`: The nutrition plan builder shall allow setting calorie and macro targets (carbs, proteins, fats) as numeric inputs.
-- `FR-242`: The nutrition plan builder shall allow adding and removing nutrition items (food entries) on a plan.
+- `FR-242`: The nutrition plan builder shall allow adding and removing nutrition items (food entries) on a plan. The complete add-food editor and each actionable field/control shall remain reachable through the screen's measured scroll content on compact native viewports.
 - `FR-243`: The nutrition plan builder shall provide a food search entry point through the MyChampions server food integration endpoint using local bearer authorization, with request payload `{ query, maxResults, region, language }` and response parsing of per-100g macros (`carbohydrate`, `protein`, `fat`).
 - `FR-244`: The professional training plan builder (SC-208) shall allow professionals to create and edit named predefined training plans with a user-defined plan name.
 - `FR-245`: The training plan builder shall allow adding and removing sessions, where each session has a name and optional notes, and supports a list of custom session items (FR-132, BR-224).
@@ -181,6 +186,89 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-268`: The subscription snapshot contract shall carry optional professional-entitlement expiry and authoritative renewal-risk state through native customer info, server persistence, browser hydration, and professional warning UI.
 - `FR-269`: Native purchase, restore, and paywall outcomes shall distinguish success, user cancellation, network failure, and storefront/provider failure; cancellation shall preserve the current gate without being presented as a system error, while failures shall remain actionable after refresh.
 - `FR-270`: Browser sign-out shall clear local identity immediately while retaining the credentialed server request as a barrier that every subsequent email/password, Google, Apple, or local-development authentication request must await before establishing a replacement cookie session. Native bearer-session clearing remains local and does not wait on the browser barrier.
+- `FR-271`: Pull-request UI testing shall resolve changed paths against the target branch merge base, select affected Detox and Playwright suites from explicit feature ownership plus reverse dependency data, widen cross-cutting changes to every applicable platform suite, and fail closed to the complete relevant matrix when impact cannot be determined safely. Each selected Detox phase shall own a fresh Metro process, fully prewarm the current platform's Expo development bundle under that phase's exact runtime environment before launching Detox, suppress only the in-app development LogBox overlay while preserving terminal diagnostics, terminate and verify every runner-owned member of that process group, and fail if bundle prewarming is incomplete or cleanup leaves a runner-owned member or occupied Metro port. The selected iOS job shall reserve dedicated non-ephemeral port `18081`, reject an existing listener before the expensive native build, compile that port as React Native's debug fallback, route every debug-app launch to it through `RCT_jsLocation`, and pass it to every selective Metro phase; an unrelated process on the developer-default port `8081` must remain untouched. The selected Android lane shall retain its coordinated fixed port `8081`, reject stale emulator state, preboot the declared AVD on console port `5554`, prove its exact serial, AVD name, completed boot, and captured PID/UID/Linux start-time plus AVD/port command identity before Detox reuses it, and fail if any QEMU process, emulator device, validated PID, or owned port survives cleanup. Android instrumentation shall route the React Native debug-server host through the configured ADB reverse port before launching the app, and shall fail before execution if that route cannot be persisted.
+- `FR-272`: The supported pull-request path for target bases `main`,
+  `release/**`, and `hotfix/**` shall begin with a protected-`main`,
+  GitHub-hosted-only `pull_request_target` freshness workflow that checks out no
+  candidate code and replaces reusable exact-head success with an
+  event-fingerprinted pending status only for a live owner-authored same-upstream
+  pull request. A GitHub-hosted-only `pull_request` preflight with
+  `statuses: read` shall wait for the pending description matching the canonical
+  fingerprint of its exact event,
+  then dispatch persistent self-hosted execution from
+  `.github/workflows/trusted-selective-tests.yml`, sourced from protected default
+  branch `main` and triggered after the preflight by `workflow_run`.
+  Before candidate checkout or self-hosted scheduling, a GitHub-hosted
+  authorization job shall compare triggering-run provenance with the live
+  pull-request API and validate the exact head SHA, same upstream/base, owner
+  actor/triggering actor/sender, workflow path/ref/SHA, and event/ref/base.
+  Release/hotfix PRs shall force the complete matrix through this
+  protected-`main` trusted workflow and shall not load a direct trusted workflow
+  definition from the target branch. Fork,
+  malformed, identity-mismatch, workflow-mismatch, or stale-head runs shall fail
+  closed. Merge-group authorization shall validate every associated live pull
+  request for the same upstream and owner provenance. Candidate and self-hosted
+  jobs shall have only `contents: read`. Only the trusted GitHub-hosted freshness
+  invalidator, authorization/status initializer, and always-run finalizer shall
+  have `statuses: write`. All three shall share one repository-global
+  `queue: max` writer group. The initializer and finalizer shall each require the
+  candidate head to identify exactly one eligible open, ready, owner-authored
+  same-upstream pull request. The finalizer shall publish success or failure for
+  exact context `Selective CI gate` only while the latest status remains the
+  in-progress pending target owned by its run. Fork or unidentifiable
+  authorization denial shall publish no candidate status. The freshness
+  workflow shall use stable per-pull-request `cancel-in-progress: true` to
+  coalesce superseded metadata work before its job enters the global writer
+  queue. That layered concurrency, stable per-PR/head validation cancellation,
+  and serialized freshness/initializer/finalizer writes shall prevent a
+  `ci:full` label change from leaving or overwriting stale success. Direct
+  `main` push and schedule events shall use the trusted
+  default-branch workflow but shall not publish the SHA-global pull-request
+  context.
+  Manual execution shall dispatch at ref `main`, accept a pull-request number,
+  resolve its live head/base via API, and force the complete matrix. The trusted
+  workflow shall have no direct `merge_group` trigger. Checked-in merge-group
+  handling shall remain future-compatible because GitHub does not offer merge
+  queues to this personal public repository; current merge enforcement shall
+  require strict up-to-date branches. Promotion shall
+  additionally require approval for all external fork workflows,
+  repository-enforced full-SHA action pinning, a detached exact
+  `mychampions-api` SHA, and ephemeral native secret handling. Secret bytes shall
+  exist only in a validated per-job mode-`0600` regular file below
+  `$RUNNER_TEMP`; the workspace `.env` shall be an absolute symlink to that exact
+  target. Same-step `EXIT`/`INT`/`TERM` handlers shall remove and verify absence
+  of both entries, while runner-temp cleanup and a trusted next-checkout
+  `.env` sanitation check remain hard-kill defense-in-depth. Interruptible
+  isolated-process-group supervision and live cancellation proof shall complete
+  inside GitHub's ten-second signal grace window. Native device creation shall
+  have no cancellation gap before
+  durable exact ownership. Non-secret recovery records shall use a
+  permission-hardened runner-local persistent directory outside the workspace
+  and `$RUNNER_TEMP`, be accessed only while the host lock is held, and pass
+  absolute-path, owner/mode, regular-file/no-symlink, and strict field validation
+  before use; `.env`, its target, and secrets shall never enter that ledger. iOS shall persist
+  a workflow-owned creation namespace that can recover an interrupted create
+  before its UUID is returned, while Android shall make
+  launch-to-PID/UID/start-time/AVD/port/serial/command identity handoff
+  cancellation-safe or recover only a provably exact expected process.
+  Exact-UDID iOS and exact-identity Android cleanup shall remove owner records
+  only after absence is proved; a failed normal or signal cleanup shall retain
+  validated metadata, fail closed, and be retried by the next locked trusted
+  native run before any new device is created. Broad or unrelated-device cleanup
+  is prohibited. `main`
+  protection shall require pull requests, strict up-to-date branches, exact check
+  `Hosted candidate preflight`, exact status `Selective CI gate`, conversation
+  resolution, administrator enforcement, zero approvals, and no bypass. Host
+  hooks are resource locks and defense-in-depth only; CODEOWNERS provides
+  routing only.
+  The repository shall explicitly record that static repository-scoped labels
+  are technically targetable by any GitHub-approved workflow because personal
+  repositories lack organization runner-group workflow allowlists. While these
+  persistent runners remain enabled, all external workflows shall require
+  manual approval, the repository owner shall remain the sole collaborator, and
+  fork or untrusted workflow changes shall never be approved. Adding a
+  collaborator or approving an external workflow change shall first pause the
+  runners and require a private broker, JIT, or ephemeral-runner design.
 
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.

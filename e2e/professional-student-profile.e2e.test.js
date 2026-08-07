@@ -1,4 +1,5 @@
 const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const { tapCredentialSkip } = require('./professional-specialty-actions');
 
 async function selectProfessionalRole() {
   await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
@@ -17,8 +18,8 @@ async function openStudentsTab() {
 async function addNutritionSpecialtyAndOpenStudentsTab() {
   await waitFor(element(by.id('pro.specialty.add.nutritionist'))).toBeVisible().withTimeout(5000);
   await element(by.id('pro.specialty.add.nutritionist')).tap();
-  await waitFor(element(by.id('pro.specialty.credentialForm'))).toBeVisible().withTimeout(5000);
-  await element(by.id('pro.specialty.credential.skip')).tap();
+  await waitFor(element(by.id('pro.specialty.credentialForm'))).toExist().withTimeout(5000);
+  await tapCredentialSkip();
   await waitFor(element(by.id('pro.specialty.row.nutritionist'))).toBeVisible().withTimeout(5000);
   await element(by.id('pro.specialty.cta_continue')).tap();
   await waitFor(element(by.id('pro.home.screen'))).toBeVisible().withTimeout(10000);
@@ -46,11 +47,15 @@ describeWithE2EAuthSession('Professional Student Profile', () => {
 
     await waitFor(element(by.id('pro.student_profile.screen'))).toBeVisible().withTimeout(10000);
     await expect(element(by.id('pro.student_profile.nutrition.assignmentCard'))).toBeVisible();
-    await expect(element(by.id('pro.student_profile.training.assignmentCard'))).toBeVisible();
     await expect(element(by.id('pro.student_profile.nutrition.title'))).toBeVisible();
+    await expect(element(by.id('pro.student_profile.nutrition.status'))).toHaveText('Active, awaiting plan');
+    await waitFor(element(by.id('pro.student_profile.training.assignmentCard')))
+      .toBeVisible()
+      .whileElement(by.id('pro.student_profile.screen'))
+      .scroll(260, 'down', 0.5, 0.8);
+    await expect(element(by.id('pro.student_profile.training.assignmentCard'))).toBeVisible();
     await expect(element(by.id('pro.student_profile.training.title'))).toBeVisible();
-    await expect(element(by.text('Active, awaiting plan')).atIndex(0)).toBeVisible();
-    await expect(element(by.text('Active, awaiting plan')).atIndex(1)).toBeVisible();
+    await expect(element(by.id('pro.student_profile.training.status'))).toHaveText('Active, awaiting plan');
     await waitFor(element(by.id('pro.student_profile.unbindCta')))
       .toBeVisible()
       .whileElement(by.id('pro.student_profile.screen'))
@@ -70,28 +75,43 @@ describeWithE2EAuthSession('Professional Student Profile', () => {
     await element(by.id('pro.student_profile.nutrition.cta_assign')).tap();
 
     await waitFor(element(by.id('planPicker.modal'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('planPicker.ready'))).toBeVisible().withTimeout(5000);
     await expect(element(by.id('planPicker.row.e2e-nutrition-predefined-plan'))).toBeVisible();
     await expect(element(by.id('planPicker.row.e2e-training-predefined-plan'))).not.toBeVisible();
-    await device.tap({ x: 336, y: 520 });
+    await element(by.id('planPicker.assign.e2e-nutrition-predefined-plan')).tap();
 
     await waitFor(element(by.text('Plan assigned successfully.'))).toBeVisible().withTimeout(5000);
     await element(by.text('OK')).tap();
     await waitFor(element(by.id('pro.nutrition_plan.screen'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.text('Draft Assignment: Customize this nutrition plan for the student before sending.')))
+      .toBeVisible()
+      .withTimeout(10000);
+    await expect(element(by.id('pro.plan.metadata.name'))).toHaveText('Balanced Nutrition Template');
+    await expect(element(by.text('Could not load plan. Try again.'))).not.toExist();
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    await device.tap({ x: 34, y: 82 });
+    await waitFor(element(by.id('pro.nutrition_plan.backButton'))).toBeVisible().withTimeout(5000);
+    await element(by.id('pro.nutrition_plan.backButton')).tap();
     await waitFor(element(by.id('pro.student_profile.screen'))).toBeVisible().withTimeout(10000);
-    await waitFor(element(by.text('Draft pending send'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.nutrition.status')))
+      .toHaveText('Draft pending send')
+      .withTimeout(10000);
     await expect(element(by.id('pro.student_profile.nutrition.cta_resume_draft'))).toBeVisible();
     await expect(element(by.id('pro.student_profile.nutrition.cta_discard'))).toBeVisible();
 
     await element(by.id('pro.student_profile.nutrition.cta_discard')).tap();
     await waitFor(element(by.text('Discard'))).toBeVisible().withTimeout(5000);
-    await element(by.text('Discard')).atIndex(1).tap();
+    const discardConfirmation = element(by.text('Discard'));
+    if (device.getPlatform() === 'ios') {
+      await discardConfirmation.atIndex(1).tap();
+    } else {
+      await discardConfirmation.tap();
+    }
     await waitFor(element(by.text('Draft discarded successfully.'))).toBeVisible().withTimeout(5000);
     await element(by.text('OK')).tap();
 
-    await waitFor(element(by.text('Active, awaiting plan')).atIndex(0)).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.nutrition.status')))
+      .toHaveText('Active, awaiting plan')
+      .withTimeout(10000);
     await expect(element(by.id('pro.student_profile.nutrition.cta_assign'))).toBeVisible();
     await expect(element(by.id('pro.student_profile.nutrition.cta_resume_draft'))).not.toBeVisible();
   });

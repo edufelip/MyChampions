@@ -72,6 +72,9 @@
 - Source recipe deletion after sharing does not remove recipient-owned copies already saved.
 - If upload fails on transient network error, user can retry without losing current draft edits.
 
+## Native Validation Notes
+- Deterministic Detox coverage runs the source-sheet state and synthetic successful-upload state in separate fresh-Metro phases. The source-sheet phase explicitly clears the success fixture; the success phase bypasses the native picker and validates the preview. An authenticated run without a valid `sheet|success` runner scenario fails closed.
+
 ## Copy Draft (Initial)
 - Title: `Create custom meal`
 - Helper: `Add total meal weight and nutrients. We use this to calculate any portion you log.`
@@ -83,7 +86,7 @@
 - Use case: UC-003.1, UC-003.3, UC-003.4, UC-003.8, UC-003.9
 - Acceptance criteria: AC-401, AC-402, AC-406, AC-407, AC-408, AC-412, AC-413, AC-418, AC-420, AC-423, AC-424, AC-425
 - Business rules: BR-257, BR-261, BR-271, BR-301, BR-302, BR-303, BR-308, BR-309, BR-310, BR-313, BR-316, BR-322, BR-324, BR-327
-- Test cases: TC-401, TC-402, TC-403, TC-407, TC-408, TC-409, TC-412, TC-413, TC-415, TC-420, TC-422, TC-425, TC-426, TC-427
+- Test cases: TC-401, TC-402, TC-403, TC-407, TC-408, TC-409, TC-412, TC-413, TC-415, TC-420, TC-422, TC-425, TC-426, TC-427, TC-428
 - Decisions: D-132 (AI paywall gate — `useSubscription` wired; `hasAiAccess`, `isSubscriptionLoading`, `onOpenPaywall` passed to `MealPhotoAnalysisSection`)
 - Related screen: SC-219 (AI Meal Photo Analysis)
 - Diagram: docs/diagrams/domain-relationships.md

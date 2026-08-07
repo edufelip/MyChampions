@@ -4,7 +4,7 @@
 
 | ID | Area | Preconditions | Steps | Expected Result |
 |---|---|---|---|---|
-| TC-201 | Role Onboarding | New account | Select Student role | Student journey/dashboard is shown |
+| TC-201 | Role Onboarding | Authenticated new account with no selected role | Verify the preselection state, then select Student and tap Continue | Continue exposes and enforces a disabled accessibility state before selection; the deterministic runtime source contract verifies the shared button wiring while native E2E verifies that the app remains on role selection before a choice; after Student is selected, the student journey/dashboard is shown |
 | TC-202 | Role Onboarding | New account | Select Professional and choose nutritionist only | Nutritionist professional journey is shown |
 | TC-203 | Role Onboarding | New account | Select Professional and choose both specialties | Dual-specialty dashboard is shown |
 | TC-204 | Assignment Rule | Student has one active nutritionist | Attempt to activate second nutritionist | System blocks action and explains rule |
@@ -32,9 +32,11 @@
 | TC-226 | Student Empty-State Clarity | Student has no connected professionals | Open dashboard, relationship, and tracking screens | Empty states provide clear self-guided next action and non-blocking messaging |
 | TC-227 | Credential Visibility Controls | Professionals with and without credential submission exist | Open student-facing connection screens | No verification badge/filter is shown to student |
 | TC-228 | Auth Methods | Auth entry open | Inspect available auth methods | Email/password, Google, and Apple are shown |
+| TC-228A | Immediate Email/Password Sign-In | Sign-in form open with valid credentials | Replace the email and password values, then immediately submit through the primary CTA; verify the password Done/Return wiring against the same immutable snapshot contract | Both paths validate and submit the latest displayed credentials without a stale required-field error and continue to the post-auth gate; native E2E covers the immediate CTA path and the runtime source contract guards the Done/Return path |
 | TC-229 | Signup Required Fields | Create-account form open | Omit one required field and submit | Submission blocked with validation message |
 | TC-230 | Password Policy | Create-account form open | Provide passwords violating complexity/no-emoji policy | Submission blocked with specific password-policy feedback |
 | TC-231 | Password Confirmation | Create-account form open | Provide non-matching password and confirmation | Submission blocked until exact match |
+| TC-231A | Immediate Password-Confirmation Submission | Create-account form open with a valid name, email, and password | Replace the confirmation value with the matching password, focus the field, and immediately submit from its Done/Return editor action (Detox Return on iOS; guarded UiAutomator Enter on Android because pinned Detox 20.47.0 otherwise types a newline); verify the primary CTA wiring against the same immutable snapshot contract | Both paths validate the latest displayed confirmation value, show no stale required-field error, and continue to the post-auth gate; native E2E covers the editor-action path and the runtime source contract guards the CTA path |
 | TC-232 | Password Reveal Toggle | Password field visible | Toggle reveal/hide on both password fields | Value visibility toggles without value mutation |
 | TC-233 | Email Uniqueness | Existing account email present | Attempt second account creation with same email | Duplicate account creation is blocked |
 | TC-234 | Social Account Linking | Existing email/password account exists | Sign in with Google/Apple using same email | Provider is linked to existing account, not new account |
@@ -69,7 +71,7 @@
 | TC-258 | Pending Queue Bulk Deny | Professional has multiple pending requests | Select multiple pending items and run bulk deny | Selected requests transition to denied/closed and pending counters update |
 | TC-259 | Student Plan Change Request | Student has assigned nutrition or training plan | Open assigned plan and submit change request | Request is stored and visible to assigned professional while plan remains read-only |
 | TC-260 | Starter Template Clone Flow | Professional opens nutrition/training plan builder | Select starter template and begin editing | Editable cloned draft is created and original starter template remains unchanged |
-| TC-261 | Offline Banner + Write-Lock Reason | Device offline with cached content | Open core screen and attempt a write action | Persistent offline/read-only banner is shown and blocked action shows explicit reason |
+| TC-261 | Offline Banner + Write-Lock Reason | Device offline with cached content | Open the account screen, assert the persistent banner, anchor the account `ScrollView` on the trailing app-version footer, assert that the delete-account CTA fully clears the lower viewport, and invoke that semantic control | The disabled deletion handler performs no write and mounts no confirmation without a coordinate interaction; the persistent offline/read-only banner plus write-lock reason remain visible |
 | TC-262 | Specialty Removal Assist Guidance | Specialty removal is blocked by active/pending records | Attempt specialty removal in settings | UI shows direct actions to resolve blockers (view active/pending and queue actions) |
 | TC-263 | Specialty Removal After Assisted Resolution | Specialty previously blocked for removal | Resolve blockers using assist actions and retry removal | Specialty removal succeeds when constraints are satisfied |
 | TC-264 | Water Tracking Scope Boundaries | Habit tracking surfaces enabled | Inspect available habit modules | Water tracker is available and sleep/steps are absent from BL-104 scope |
@@ -77,7 +79,8 @@
 | TC-266 | Nutritionist Water Goal Assignment | Active nutritionist-student assignment exists | Nutritionist sets/updates student water goal in assigned nutrition plan flow | Student effective hydration target updates to assigned-plan goal |
 | TC-267 | Water Goal Precedence Fallback | Student has personal goal and receives nutritionist goal, then assignment ends | Track intake with active assignment, then after unbind | Active assignment uses nutritionist goal; post-unbind uses stored personal goal |
 | TC-268 | Named Predefined Plan Creation | Professional has specialty access | Create predefined plan with custom name (for example `Caloric Deficit A`) | Predefined plan appears in professional private library with saved name |
-| TC-269 | Predefined Plan Bulk Assignment With Fine-Tuning | Professional has predefined plan and multiple target students | Bulk assign plan to selected students and adjust each student draft | Assignment succeeds and per-student customizations are preserved |
+| TC-269 | Predefined Plan Bulk Assignment With Fine-Tuning | Professional has predefined plan and multiple target students | Select the eligible students, open the domain-filtered plan picker, activate the chosen row through its semantic assignment control without a viewport-coordinate fallback, and adjust each student draft | The picker exposes only eligible plans, assignment succeeds through the selected plan control on compact native viewports, and per-student customizations are preserved |
+| TC-269A | Predefined Plan Assignment Draft Resolution Smoke | Professional has predefined plan and one or more eligible target students; explicit provider-free E2E plan fixtures are enabled | Select the eligible student or students, open the domain-filtered plan picker, wait for its native presentation-complete signal, activate the chosen row through its semantic assignment control without a viewport-coordinate or fixed-delay fallback, verify that a newly created single-student draft loads the expected template detail in the builder without the error state, return through the semantic back control, and use the platform-aware semantic native-alert action when discarding the draft | The provider-free fixture resolves the runtime draft ID with its assigned-plan metadata, an ID absent from both fixture stores still fails closed, and the single-student profile exposes then clears the specialty-scoped pending draft state; this smoke does not claim plan-content customization coverage |
 | TC-270 | Assigned Copy Independence | Predefined plan already assigned to students | Edit source predefined plan after assignment | Existing assigned student plans remain unchanged |
 | TC-297 | SC-205 Empty-State CTA Behavior | Professional has no linked students | Open `/professional/students`; tap primary empty-state CTA; return and tap secondary CTA with and without active invite code | Primary CTA navigates to `/professional/home`; secondary CTA opens native share when invite code is available and falls back to `/professional/home` when invite code is unavailable |
 | TC-271 | AI Meal Photo — Success | User in SC-214 or SC-215 with camera permission | Capture meal photo; analysis returns estimates | Form fields are pre-filled with AI estimates; AI disclaimer is visible; all fields are editable |
@@ -85,9 +88,9 @@
 | TC-273 | AI Meal Photo — Analysis Failure | User captures photo; MyChampions server analyzer returns error (network/quota/unrecognizable) | Analysis completes with error | Reason-specific recoverable error is shown; form fields remain available for manual entry |
 | TC-273A | AI Meal Photo — Permission Denied | User opens the AI camera or photo-library action and denies the requested native permission | Permission request completes without launching the picker | Localized device-settings guidance is shown; no analysis is started; manual entry remains available |
 | TC-274 | AI Meal Photo — Optional Attachment | User completes analysis in SC-214 | User declines to attach the captured photo | Meal saves without image; no error is shown |
-| TC-275 | SC-207 Create Named Nutrition Plan | Professional on plan builder | Enter plan name, calorie/macro targets, save | Plan appears in predefined nutrition library |
+| TC-275 | SC-207 Create Named Nutrition Plan | Professional on plan builder; native automation has the platform editor available | Enter and assert the exact plan name; advance to hydration by dismissing Gboard with native Back and tapping the semantic field on Android, or by invoking Return and waiting for the form's declared focus handoff on iOS; enter and assert hydration; dismiss that editor through the same platform path; wait for save to become enabled; and save | The test does not depend on Android synthetic Enter, an unverified cross-field handoff, an iOS tap through the keyboard-type transition, or screen-coordinate taps; the exact named plan appears in the predefined nutrition library |
 | TC-276 | SC-207 Validation — Name Required | Professional on plan builder | Attempt save with empty name | Validation error shown; save blocked |
-| TC-277 | SC-207 Add/Remove Food Item | Professional editing nutrition plan | Add food item then remove it | Item list reflects add and remove operations |
+| TC-277 | SC-207 Add/Remove Food Item | Professional editing nutrition plan on a compact native viewport | Enter and assert the exact meal name; dismiss its editor with Android Back or iOS Return; scroll to and confirm the meal; open the in-flow add-food editor; scroll to search; assert the exact query and dismiss Gboard before waiting for the debounced Android result or submit through iOS Return; scroll to and select the result; review quantity; scroll to Add; wait for the editor to leave the native hierarchy and the new row remove action to become visible; then remove the item through the semantic confirmation action | Every actionable control is reachable in measured scroll content without synthetic Android Enter or coordinate taps; stale editor elements cannot intercept the row action; item list and totals reflect add and remove operations |
 | TC-278 | SC-208 Create Named Training Plan With Session | Professional on training plan builder | Enter plan name, add session with one custom item, save | Plan appears in predefined training library |
 | TC-279 | SC-208 Validation — Name Required | Professional on training plan builder | Attempt save with empty name | Validation error shown; save blocked |
 | TC-280 | SC-207/SC-208 Starter Template Clone | Professional opens starter template | Begin editing | Editable cloned draft created; original starter unchanged |
@@ -130,5 +133,28 @@
 | TC-331 | Browser Sign-Out And Account-Switch Serialization | Browser account A has an active cookie session; delay the sign-out response and immediately attempt email or social authentication as account B | Observe the sign-out barrier, request order, active access token, and the failure path | Account A clears locally immediately; account B's authentication request does not start until sign-out settles; only account B becomes active afterward; a failed sign-out releases the barrier and does not deadlock later authentication |
 
 ## Notes
+- TC-261 native coverage drives compact scrolling through
+  `settings.account.screen` by anchoring on the trailing
+  `settings.account.version` footer, then asserts and invokes the fully visible
+  semantic deletion CTA and verifies absence of the confirmation hierarchy; the
+  source contract also pins `disabled={isDeleteLocked}`. Coverage never depends
+  on a visibility match from a clipped child or a screen-coordinate tap.
+- TC-275 native coverage asserts the exact controlled name and hydration values,
+  advances through Android Back plus a semantic hydration tap or through the
+  iOS form's declared Return-to-hydration focus handoff, and verifies hydration
+  focus before replacing its value. It does not re-tap through the iOS
+  keyboard-type transition; after dismissing hydration through the platform
+  path it waits for the nutrition tab transition and save control before
+  tapping, and never uses Android's synthetic Enter or a screen-coordinate tap
+  to dismiss either keyboard.
+- TC-277 native coverage asserts the exact meal name, dismisses the editor
+  through Android Back or iOS Return, scrolls the mounted add-meal confirmation
+  fully into the compact viewport, and only then taps it.
+  The tall add-food form participates in measured page flow; coverage scrolls
+  search, result, quantity, and Add into view, asserts the exact search query
+  and waits for the debounced result after dismissing Gboard on Android or uses
+  iOS Return, waits for the editor to leave the native hierarchy before
+  targeting the visible new-row remove action, and selects the semantic removal
+  confirmation without coordinate fallbacks.
 - API contract tests are required once food/calorie provider is selected.
 - Add negative-path tests for invalid macro totals and incomplete plan assignments.

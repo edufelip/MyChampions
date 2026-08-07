@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { getNutritionPlanDetail, getTrainingPlanDetail } from './plan-builder-source';
 import {
   bulkAssignPredefinedPlan,
   createDraftAssignedPlan,
@@ -155,6 +156,7 @@ test('E2E auth source can create a draft assigned plan through provider-free pat
 
     const plans = await getMyPlans();
     const draft = plans.find((plan) => plan.id === result.id);
+    const detail = await getNutritionPlanDetail(result.id);
 
     assert.deepEqual(
       draft && {
@@ -176,7 +178,55 @@ test('E2E auth source can create a draft assigned plan through provider-free pat
         isDraft: true,
       }
     );
+    assert.deepEqual(
+      {
+        id: detail.id,
+        name: detail.name,
+        sourceKind: detail.sourceKind,
+        studentAuthUid: detail.studentAuthUid,
+        isDraft: detail.isDraft,
+        meals: detail.meals,
+      },
+      {
+        id: result.id,
+        name: 'Balanced Nutrition Template',
+        sourceKind: 'assigned',
+        studentAuthUid: 'e2e-dual-student',
+        isDraft: true,
+        meals: [],
+      }
+    );
 
+    const trainingResult = await createDraftAssignedPlan(
+      'e2e-training-predefined-plan',
+      'e2e-dual-student'
+    );
+    assert.match(trainingResult.id, /^e2e-training-predefined-plan-draft-\d+$/);
+
+    const trainingDetail = await getTrainingPlanDetail(trainingResult.id);
+    assert.deepEqual(
+      {
+        id: trainingDetail.id,
+        name: trainingDetail.name,
+        sourceKind: trainingDetail.sourceKind,
+        studentAuthUid: trainingDetail.studentAuthUid,
+        isDraft: trainingDetail.isDraft,
+        sessions: trainingDetail.sessions,
+      },
+      {
+        id: trainingResult.id,
+        name: 'Strength Training Template',
+        sourceKind: 'assigned',
+        studentAuthUid: 'e2e-dual-student',
+        isDraft: true,
+        sessions: [],
+      }
+    );
+
+    await assert.rejects(
+      () => getNutritionPlanDetail('e2e-unknown-assigned-plan'),
+      /Nutrition plan not found/
+    );
   } finally {
     if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
     else process.env.APP_VARIANT = previousAppVariant;

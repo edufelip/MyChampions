@@ -19,7 +19,7 @@
 ## User Actions
 - Primary:
   - View current entitlement status.
-  - Purchase subscription — tapping "Purchase" opens the native RevenueCat paywall via `openProPaywall()`, which presents `default_professional` in production/normal development or `test_professional` in an explicit development Test Store build. Plan selection (monthly vs annual) is handled within the native paywall UI (D-152, D-193).
+  - Purchase subscription — tapping "Purchase" opens the native RevenueCat paywall via `openProPaywall()`, which presents `default_professional` in production/normal development or `test_professional` in an explicit development Test Store build. Plan selection (monthly vs annual) is handled within the native paywall UI (D-152, D-197).
   - Restore subscription.
 - Secondary:
   - Refresh entitlement status.

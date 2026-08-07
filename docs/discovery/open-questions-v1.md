@@ -61,6 +61,8 @@
 - `Q-018`: Tailwind library for MVP fixed to NativeWind.
 - `Q-019`: OTA strategy fixed to `store-only` for MVP.
 - `Q-020`: CI signing strategy fixed to `platform-native secret management`.
-- `Q-021`: QA distribution fixed to TestFlight on release branches and native CI build artifacts on pull requests to `develop`.
+- `Q-021`: QA distribution is fixed to TestFlight on release branches. Pull
+  requests to `main` use ephemeral native build/test proof; successful binaries
+  are not uploaded and one-day failure diagnostics are the only PR artifacts.
 - `Q-022`: Post-compression media upload limits fixed at `<= 1.5 MB` and `<= 1600 px` longest side.
 - `Q-023`: Non-crash monitoring deferred; crash/ANR monitoring provider selection remains required before production release.

@@ -23,11 +23,13 @@
     "e2e/**",
     "scripts/**",
     ".github/workflows/**",
-    "*.ts",
-    "*.tsx",
-    "*.js",
-    "*.mjs",
-    "*.json",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.mjs",
+    "**/*.cjs",
+    "**/*.json",
     "yarn.lock"
   ],
   "fullFallbackPaths": [

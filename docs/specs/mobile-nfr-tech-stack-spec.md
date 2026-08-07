@@ -34,7 +34,9 @@ Define non-functional architecture constraints and technology options for the mo
 - Core MVP screens must meet accessibility baseline (contrast, dynamic text scaling, focus order, screen-reader labels).
 - QA distribution policy:
   - Release branch iOS builds are distributed through TestFlight.
-  - Pull requests targeting `develop` publish CI build artifacts from native toolchain jobs.
+  - Pull requests targeting `main` run feature-aware native toolchain jobs on the
+    exact head. Successful binaries remain ephemeral; only bounded one-day
+    failure diagnostics may be uploaded.
 - Post-compression media constraints:
   - max upload size: `1.5 MB`.
   - max image dimension: `1600 px` on longest side.
@@ -44,6 +46,29 @@ Define non-functional architecture constraints and technology options for the mo
   profile; signed `productionRelease` Detox evidence is an explicit command
   that requires `CI_VERSION_CODE`, forwards it to Gradle, and retains the
   private-keystore requirements.
+- Selective native CI builds each debug app once. Every isolated fixture phase
+  starts a freshly owned Metro process whose explicit runtime E2E values take
+  precedence over the app config embedded by the build, including empty values
+  that clear the preceding phase. After the listener becomes ready, the executor
+  requests and fully consumes the current platform's rewritten Expo development
+  bundle before Detox launches; cold transformation, response, or stream failure
+  therefore belongs to phase setup rather than a screen assertion.
+- The selected iOS job reserves dedicated non-ephemeral Metro port `18081`,
+  verifies it is free before building, compiles it as React Native's Debug
+  fallback, and routes every app launch to it through the app-level
+  `RCT_jsLocation` argument. The executor uses the same validated
+  `DETOX_METRO_PORT` for prewarming and phase ownership, so an unrelated
+  developer process on default port `8081` is neither reused nor signalled.
+- The selected Android lane runs `lintDevDebug` before Detox. The manually
+  maintained native baseline keeps camera hardware optional because manual
+  invite entry remains available, declares Android 13 notification capability
+  required by the Expo video playback service, and places
+  `windowSplashScreenBehavior` in `values-v33` so the API-33 attribute does not
+  violate the API-24 minimum. The lane rejects stale emulator/QEMU/console
+  state, preboots `Pixel_10` on `emulator-5554`, bounds exact AVD readiness to
+  120 seconds while revalidating PID/UID/Linux start time plus AVD/port command
+  identity, lets Detox reuse that instance, and verifies that no QEMU process,
+  emulator device, or owned port survives teardown.
 
 ## Constraints From Platform Docs
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.
@@ -118,11 +143,39 @@ Feature-aware test selection uses `config/test-impact.json` plus
 `scripts/ci/resolve-test-impact.ts`. The resolver combines path ownership,
 declared reverse feature dependencies, and TypeScript reverse import consumers.
 It fails closed to the full registered UI matrix for shared-global, tooling,
-native, invalid, unknown, or unresolved changes. The first rollout stage is
-shadow-only: current PR workflows remain authoritative while the selective
-workflow records proposed Detox and Playwright matrices and universal fast
-checks remain required.
-
+native, invalid, unknown, or unresolved changes. D-193 defines the candidate
+exact-head gate: universal fast checks always run, affected Playwright and
+both-platform Detox suites execute on dedicated self-hosted lanes, and
+workflow/tooling, scheduled, merge-queue, release/hotfix, or explicit-full
+inputs select the complete registered matrix. D-195 makes persistent-runner
+promotion conditional on a GitHub-hosted-only PR preflight, a
+`workflow_run`-triggered trusted workflow sourced from protected default branch
+`main`, a GitHub-hosted triggering-run/live-PR authorization job before
+candidate checkout, read-only candidate/self-hosted tokens, trusted hosted
+pending/terminal exact-status publishers with stale-run protection, all-external fork approval, pinned-action
+policy, an exact recorded backend SHA, ephemeral mode-`0600` environment
+cleanup, owned disposable iOS simulator cleanup, required `main` PR/status
+enforcement, and one complete exact-head matrix. Host hooks remain resource
+locks only. Those promotion controls remain pending verified workflow,
+repository, and exact-head evidence.
+The hosted preflight covers PR bases `main`, `release/**`, and `hotfix/**` plus
+merge groups. Release/hotfix PRs use the protected-`main` workflow-run path and
+force the complete matrix; the trusted workflow is not sourced or triggered
+directly from those branches.
+Static repository labels remain technically targetable by any GitHub-approved
+workflow because this personal repository has no organization runner-group
+workflow allowlist. The operational boundary therefore keeps the owner as sole
+collaborator, requires approval for all external workflows, never approves fork
+or untrusted workflow changes, and pauses runners before either constraint is
+relaxed pending private-broker/JIT/ephemeral isolation.
+Contradictory native fixture states execute in scenario-gated fresh-Metro phases,
+each of which fully prewarms its exact platform bundle before Detox launches, and
+the iOS lane keeps its app launch route and compiled fallback on dedicated port
+`18081`. Android instrumentation routes Metro through the configured localhost ADB
+reverse tunnel before React Native starts. The Android runner supplies one
+health-checked `emulator-5554` for the job instead of delegating console-port
+allocation to Detox. Successful runs create no GitHub
+Actions artifact or cache.
 ## High-Level Architecture (Target)
 1. Expo/React Native client handles UI, routing, and offline read models.
 2. MyChampions server and Postgres manage identity and sessions.
@@ -144,11 +197,10 @@ Current local server contract: root-level `server/` plus this migration task car
 - Observability: structured logs with no sensitive token/link leakage.
 
 ## Traceability Links
-- Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`.
-- Business rules: `BR-253`, `BR-254`, `BR-255`, `BR-256`, `BR-257`, `BR-258`, `BR-259`, `BR-260`, `BR-261`, `BR-275`, `BR-284`, `BR-285`.
-- Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-516`.
-- Test cases: `TC-501`, `TC-502`, `TC-503`, `TC-504`, `TC-505`, `TC-506`, `TC-507`, `TC-508`, `TC-509`, `TC-510`, `TC-511`, `TC-512`, `TC-513`, `TC-514`, `TC-515`, `TC-516`, `TC-517`, `TC-518`.
-- Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
+- Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`, `FR-271`, `FR-272`.
+- Business rules: `BR-253`, `BR-254`, `BR-255`, `BR-256`, `BR-257`, `BR-258`, `BR-259`, `BR-260`, `BR-261`, `BR-275`, `BR-284`, `BR-285`, `BR-344`.
+- Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-540`, `AC-542`.
+- Test cases: `TC-501`, `TC-502`, `TC-503`, `TC-504`, `TC-505`, `TC-506`, `TC-507`, `TC-508`, `TC-509`, `TC-510`, `TC-511`, `TC-512`, `TC-513`, `TC-514`, `TC-515`, `TC-516`, `TC-517`, `TC-518`, `TC-519`.- Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
 
 ## Open Questions
 - None currently.

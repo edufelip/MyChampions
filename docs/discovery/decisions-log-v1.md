@@ -60,7 +60,11 @@
 - `D-055`: Native projects (`ios/`, `android/`) are committed from day 1 after a single `expo prebuild`, and are then maintained directly without recurring prebuild regeneration.
 - `D-056`: QA distribution strategy:
   - Release branches distribute iOS builds via TestFlight.
-  - Pull requests use native CI artifacts and repository-owned distribution checks; the retired Firebase distribution workflows are no longer part of the mobile package.
+  - Pull requests use repository-owned native build and test checks. Successful PR
+    builds remain ephemeral on the self-hosted runners instead of being uploaded to
+    GitHub Actions; only bounded failure diagnostics may be retained for one day.
+    The retired Firebase distribution workflows are no longer part of the mobile
+    package.
 - `D-057`: Client-side media compression is mandatory before server-backed upload.
 - `D-058`: Non-crash monitoring tooling (for example Sentry) is out of MVP; crash/ANR provider selection is deferred while the mobile-owned Firebase runtime is retired.
 - `D-059`: MVP update delivery strategy is store-only (no OTA channel).
@@ -97,7 +101,7 @@
 - `D-090`: Auth entry providers use MyChampions server-owned auth boundaries. Email/password establishes sessions through Postgres `local_email_auth_credentials`; Google and Apple ID tokens are verified directly by the server against configured issuer/audience claims. Deterministic local sessions are reserved for explicit local/dev provider-token configuration gaps outside E2E fixtures.
 - `D-091`: Superseded. Native backend config selection now exposes the MyChampions server URL and no longer ships mobile-owned provider config files.
 - `D-092`: CI/CD workflow baseline is inherited from `meer` and adapted to `my-champions`:
-  - Workflows cover Android/iOS PR checks, native CI artifacts, and release-branch validation pipelines.
+  - Workflows cover Android/iOS PR checks, ephemeral native build proof, and release-branch validation pipelines.
   - This project standardizes JS dependency installation in CI with Yarn 1.22.22, `yarn.lock`, and `yarn install --frozen-lockfile`; npm lockfiles and `npm ci` are not used.
 - `D-093`: CI/CD secret names and requirements are governed by `docs/discovery/ci-secrets-matrix-v1.md`; workflow secret changes must update that document in the same change.
 - `D-094`: CI/CD bootstrap/validation execution should be tracked through issue template `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md` for operational consistency.
@@ -402,7 +406,11 @@
   - The former browser-based `expo-auth-session` adapter is removed because custom-scheme Android redirects are not a supported production Google OAuth path.
   - Sign in with Apple remains native. The source entitlement and release-profile guard require `com.apple.developer.applesignin = Default`; local device Release signing now proves that entitlement after the Apple account holder accepted the current Program License Agreement. CI/App Store signing still requires a conforming Apple Distribution profile with production push entitlement.
 
-- `D-184`: Expo web is a responsive SPA target with platform-specific adapter modules. Under 768px it keeps bottom navigation; 768-1023px uses an icon rail; 1024px and above uses a labeled sidebar. `DsScreen` owns form/content/wide constraints. The PR workflow exports an artifact only; website deployment remains a separate approval boundary.
+- `D-184`: Expo web is a responsive SPA target with platform-specific adapter
+  modules. Under 768px it keeps bottom navigation; 768-1023px uses an icon rail;
+  1024px and above uses a labeled sidebar. `DsScreen` owns form/content/wide
+  constraints. The PR workflow validates the export ephemerally and does not
+  publish it; website deployment remains a separate approval boundary.
 - `D-185`: Browser auth uses an in-memory access token plus rotating HttpOnly refresh cookie selected by `sessionMode: cookie`. Exact credentialed CORS origins come from `WEB_ALLOWED_ORIGINS`; production defaults fail closed. Native bearer response contracts remain backward compatible.
 - `D-186`: Browser subscriptions read server entitlement snapshots and expose `mobile_handoff` or `unavailable`; RevenueCat stays native-only. Unknown paid entitlement fails closed. In-browser purchase/restore is deferred.
 - `D-187`: Subscription UI keeps entitlement verification, student capacity, and purchase capability as separate states. Unknown entitlement and count are shown as unavailable rather than as an endless check or fabricated zero. Plan-write locks never disable purchase/restore/handoff recovery. Pre-lapse warnings require an explicit billing-expiry risk signal and are not inferred from active-student count; adding that authoritative signal remains required before enabling the warning.
@@ -430,33 +438,317 @@
   - Locked professionals entering either AI gate present `default_professional` normally, or `test_professional` only when an explicit development Test Store build opts in. Both offerings grant the existing `professional_pro` entitlement, which already includes AI access. They cannot initiate a new student-plan purchase through the app.
   - Missing or malformed role state fails closed without presenting a paywall.
   - A valid existing `student_pro` entitlement continues to grant AI access regardless of role; no entitlement is revoked or remapped by this routing change.
-  - `test_student` and `Student Paywall v1 Test` remain temporary provider artifacts for the approved Test Store evidence batch. `Student Paywall v1 Production` is now published on `default_student`; the 2026-07-26 promotion approval is recorded in D-192.
+  - `test_student` and `Student Paywall v1 Test` remain temporary provider artifacts for the approved Test Store evidence batch. `Student Paywall v1 Production` is now published on `default_student`; the 2026-07-26 promotion approval is recorded in D-196.
 
 - `D-191`: Browser account switching is serialized behind a single in-flight cookie sign-out barrier. `clearSession()` is the only account-screen cleanup boundary and remains awaitable; it clears local identity immediately while the credentialed sign-out attempt continues. Every server-backed email/password, social, and local-development session-establishment path waits for that barrier. Native bearer sessions retain immediate local clearing and persisted-token removal.
-- `D-192` (superseded for the professional surface by `D-193`): The 2026-07-26 RevenueCat paywall promotion keeps one explicit student Test Store variant and one production student variant.
+- `D-192`: Feature-aware UI-test selection uses one checked-in manifest and a fail-closed resolver for Detox and Playwright.
+  - Feature ownership, declared dependencies, suite membership, fixture profiles, shared rules, and platform scope live in `config/test-impact.json`; `.github/CODEOWNERS` starts with `@edufelip` as the fallback owner.
+  - Pull requests compare the merge base with the exact head. Renames/copies include old and new paths, deletions retain old ownership, and base/head reverse-import graphs widen indirect impact.
+  - Navigation, localization, global design tokens, native/tooling inputs, resolver changes, invalid metadata, unknown runtime paths, resolution errors, or more than 500 changed files fail closed to the complete registered CI matrix. `ci:full` may only broaden selection. D-195 retires the proposed repository-level `CI_FORCE_FULL` switch from the authoritative gate; that environment input remains local/direct-resolver-only.
+  - The initial workflow is intentionally shadow-only: it reports proposed Playwright/Detox matrices while existing Android, iOS, and web PR workflows remain authoritative. Fast unit/lint/type checks run universally. Selective device/browser execution becomes enforceable only after at least two weeks and 20 representative PRs with zero known selection misses.
+  - Full expensive coverage remains the target for nightly and release/hotfix gates after fixture-profile execution and runner capacity are proven. Existing `nutrition`/`plans` and `professional`/`subscription` bidirectional implementation dependencies are explicit legacy boundary exceptions; new undeclared cycles fail validation.
+
+- `D-193`: The feature-aware workflow is promoted from shadow reporting to the
+  candidate selection/execution contract under an explicit delivery decision; this
+  supersedes the elapsed-time and PR-count precondition in D-192 without claiming
+  that the former observation window completed. D-195 adds the separate
+  persistent-runner security and repository-enforcement promotion gate.
+  - The promotion pull request changes workflow/test infrastructure, so the
+    resolver must fail closed and execute the complete registered CI matrix on its
+    exact head before the gate is made required.
+  - Pull requests to `main`, `release/**`, and `hotfix/**` always run universal
+    manifest, unit, lint, type, and diff checks. A normal feature change runs the
+    affected Playwright and Detox suites on every platform declared by those
+    suites. Shared navigation, localization, native, global design-system, unknown
+    runtime, invalid metadata, merge-queue, release/hotfix, and
+    `ci:full` inputs broaden to the complete applicable matrix.
+  - Detox fixture profiles are executable, validated contracts. Every selected
+    phase owns a fresh Metro process and explicit app/test environment. Runtime
+    phase values, including explicit empty clears, take precedence over fixture
+    values embedded when the native debug binary is built once per platform job.
+    Metro's status endpoint proves only that the server is listening: before
+    Detox launches, the executor must fetch and fully consume the current
+    platform's Expo development bundle under that phase's exact environment,
+    with a four-minute bounded request window that tolerates a healthy cold
+    transform on the shared host. A timeout, non-success response, missing,
+    empty, or interrupted body, or Metro exit during prewarming fails the phase;
+    the bundle is never shared across fresh fixture phases.
+    Contradictory story states execute in separate scenario-gated phases; AI meal
+    analysis proves the locked state only when both AI and professional
+    entitlements are lapsed, then proves success in a separate active-entitlement
+    phase. Missing or invalid scenarios fail authenticated direct runs instead of
+    skipping both expectations. Image-upload source-sheet and synthetic-success
+    assertions likewise execute in separate scenario-gated phases; the success
+    fixture is cleared for the source-sheet phase, and a missing or invalid
+    scenario fails an authenticated direct run. The student dashboard and
+    relationship native stories launch a fresh app per case, and Android CI specs
+    never reload React Native across Detox's idling registry.
+    The SC-215 custom-meal quick-log story atomically replaces and asserts its
+    controlled grams value, dismisses the active keyboard through the
+    platform-owned path, and uses stable element identifiers rather than
+    coordinate fallbacks.
+    The iOS job reserves dedicated non-ephemeral Metro port `18081`, verifies it
+    is free before the one-time native build, passes it through
+    `DETOX_METRO_PORT`, compiles it as `RCT_METRO_PORT`, and routes every
+    debug-app launch through the matching `RCT_jsLocation`. Every subsequent
+    phase rechecks ownership before binding. An unrelated
+    listener, including a developer server on the default `8081`, is never
+    reused or terminated. Android retains fixed port `8081` because its app,
+    instrumentation preference, and ADB reverse tunnel form one coordinated
+    contract.
+    The WSL lane rejects stale Android emulator state, restarts ADB, and
+    preboots `Pixel_10` at console port `5554` before selected Detox execution.
+    Its 120-second gate revalidates the saved PID, runner UID, Linux process
+    start time, expected AVD/port command identity, exact `emulator-5554`
+    readiness, `sys.boot_completed=1`, and reported AVD name. Detox then reuses
+    that running AVD, while both in-step and always-run cleanup target only its
+    exact serial and revalidated process and fail if any QEMU process, emulator
+    device, or `5554/5555` listener survives.
+    The executor explicitly suppresses only the in-app development LogBox
+    notification layer during native E2E phases while warnings remain in runner
+    logs, and compact-viewport tests scroll stable targets into view before
+    interaction.
+    Cleanup enumerates and signals runner-UID members when a mixed-UID process
+    group makes group signaling return `EPERM`, then verifies that no runner-owned
+    member or Metro listener survives. A run that executes no test or cannot
+    prove cleanup fails closed. Provider-live suites remain ineligible for PR CI.
+    Android Detox instrumentation synchronously persists React Native's
+    `debug_http_host` as `localhost:8081` before each instrumented launch. This
+    makes the existing `reversePorts: [8081]` tunnel authoritative instead of the
+    stock emulator's `10.0.2.2` gateway, and a failed preference write aborts the
+    invocation before React Native starts.
+  - The three legacy PR workflows are manual-only. The stable selective gate fails
+    when any selected lane is skipped or fails. D-195 separates the
+    GitHub-hosted-only pull-request preflight from the protected-default-branch
+    trusted workflow that may reach persistent runners.
+  - Green runs upload no impact report, web export, app, APK, or test artifact.
+    Only bounded failure diagnostics may be uploaded, with one-day retention.
+    GitHub Actions-backed caches are disabled; persistent caches are local to the
+    self-hosted hosts.
+  - Owner-dispatched full validation and the release/hotfix full matrix provide
+    omission detection without an unattended daily native run. Merge-group
+    full-matrix handling remains checked-in for
+    future organization-owned repository use; GitHub does not offer merge queues
+    to this personal public repository. Any reproducible selection miss pauses
+    promotion and uses the `ci:full` label or an owner-dispatched full run until
+    ownership or dependency metadata is corrected and exact-head full evidence
+    passes.
+
+- `D-194`: SC-207 meal-item authoring renders the tall add-food editor in normal
+  measured page flow rather than as an absolute child outside the parent scroll
+  extent. Compact native clients can therefore scroll search, result selection,
+  quantity review, and Add into view. Deterministic coverage asserts the exact
+  meal name and dismisses its editor without synthetic Android Enter, then
+  asserts the exact search query and waits for the debounced result after
+  dismissing Gboard on Android or uses iOS Return, and uses the semantic
+  localized removal confirmation instead of screen coordinates.
+
+- `D-195`: D-193 remains authoritative for feature-impact resolution, selected
+  suite execution, full-matrix fallback, and zero-success-artifact behavior, but
+  promotion onto persistent self-hosted runners is conditional on a separate
+  runner-security and repository-enforcement gate.
+  - `.github/workflows/trusted-selective-freshness.yml` is a
+    protected-default-branch, GitHub-hosted-only `pull_request_target` metadata
+    workflow. It never checks out candidate code. For an open owner-authored,
+    same-upstream pull request it replaces any reusable `Selective CI gate`
+    success with a freshness-owned pending status carrying a canonical event
+    fingerprint before the matching candidate preflight may complete.
+  - `.github/workflows/pr-selective-tests.yml` is a GitHub-hosted-only
+    `pull_request`/`merge_group` preflight and must never target a self-hosted
+    runner. Pull-request base filters include `main`, `release/**`, and
+    `hotfix/**`. Its pull-request job has only `statuses: read` and waits until
+    the trusted pending status for its exact event fingerprint is observable.
+    `.github/workflows/trusted-selective-tests.yml` is the authoritative
+    execution workflow. The supported pull-request path reaches it after the
+    preflight completes and GitHub dispatches `workflow_run`; GitHub loads this
+    workflow definition from protected default branch `main`, not from the
+    candidate branch.
+  - Live same-upstream owner PRs into `release/**` or `hotfix/**` are authorized
+    through that same protected-`main` workflow-run path and force the complete
+    matrix. Neither target branch is a direct source or trigger for the trusted
+    workflow.
+  - Before candidate checkout or self-hosted scheduling, a GitHub-hosted
+    authorization job compares the triggering workflow run and event with the
+    live pull-request API. It fails closed unless the live head equals the
+    candidate SHA and provenance proves the expected upstream/base repository,
+    owner actor, triggering actor, sender, preflight workflow path/ref/SHA,
+    trusted workflow path/ref/SHA, and allowed event/ref/base. Missing, malformed,
+    fork, stale, or inconsistent provenance is rejected.
+  - Candidate and self-hosted jobs have only `contents: read`. Exactly three
+    trusted GitHub-hosted jobs may have `statuses: write`: the freshness
+    invalidator, the authorization/status initializer, and the always-run
+    finalizer. After freshness invalidates an old exact-head success, the
+    initializer safely resolves one eligible open, ready, owner-authored
+    same-upstream pull request for that head and publishes
+    `Selective CI gate` as in-progress pending. The finalizer repeats that unique
+    pull-request binding, reduces authorization, impact, fast-quality, web, iOS,
+    and Android results, and publishes success or failure only if the latest
+    status is still the pending target owned by its workflow run. Fork or
+    unidentifiable authorization denials publish no candidate status; freshness
+    pending or an absent required context remains merge-blocking.
+  - The freshness invalidator, authorization/status initializer, and finalizer
+    share one repository-global `queue: max` status-writer concurrency group.
+    GitHub serializes these writers and retains their queued order instead of
+    replacing a pending writer. Separately, the freshness workflow's stable
+    per-pull-request group uses `cancel-in-progress: true` to coalesce superseded
+    metadata work before its job enters the global writer queue, and the trusted
+    per-PR/head workflow concurrency may cancel superseded validation work. The
+    finalizer validates ownership of the latest pending target rather than
+    querying the latest Actions run, so an older run cannot overwrite a newer
+    freshness or validation cycle.
+  - Merge-group authorization resolves and validates every associated live pull
+    request for the same upstream and owner provenance. The trusted workflow has
+    no direct `merge_group` trigger because queue-ref YAML is not a trusted
+    default-branch source. This support is future-compatible only: GitHub merge
+    queues are available to organization-owned public repositories, not this
+    personal public repository. Current merge safety therefore uses strict
+    up-to-date branch protection.
+  - Direct push-to-`main` executes the trusted workflow
+    from `main` but never publishes the SHA-global pull-request status context.
+    Manual execution is allowed only through `workflow_dispatch` at ref `main`;
+    it accepts a pull-request number, resolves the live head/base via API, and
+    forces the complete matrix. These paths receive equivalent hosted
+    authorization before candidate checkout or self-hosted scheduling.
+  - GitHub runner started/completed hooks remain host-wide resource locks and
+    defense-in-depth only. They are not an authorization boundary and are not
+    used to establish candidate provenance.
+  - Repository-scoped runner labels are static and technically targetable by
+    any GitHub-approved workflow. A personal repository cannot apply an
+    organization runner-group workflow allowlist, and stock runner hooks cannot
+    close that authorization gap. The enforceable operational boundary is
+    GitHub approval for all external workflows, `edufelip` as the sole
+    collaborator, and a standing rule to never approve fork or untrusted
+    workflow changes. Adding a collaborator or approving any external workflow
+    change requires first pausing the persistent runners and replacing this
+    boundary with a private broker, JIT, or ephemeral runners.
+  - GitHub fork-workflow approval must require approval for all external
+    contributors. Every `uses:` entry must be pinned to a reviewed full commit
+    SHA, and repository Actions policy must enforce the approved action
+    allowlist and SHA pinning. The 2026-07-29 settings read-back verifies
+    all-external approval, a read-only default workflow token, disabled workflow
+    pull-request approval, selected-actions mode with GitHub-owned actions plus
+    `oven-sh/setup-bun@*` and `r0adkll/upload-google-play@*`, no general
+    verified-creator allowance, and required SHA pinning; the checked-in action
+    audit verifies every current `uses:` reference is full-SHA pinned.
+  - The freshness and authoritative workflows must first be present and
+    registered on default branch `main`; only then may the PR preflight and
+    required checks be enabled. Default-branch registration and one live
+    exact-event-fingerprint freshness/preflight handshake are promotion
+    evidence, not an assumption from checked-in files.
+  - A coordinated `mychampions-api` branch is resolved once to a full commit SHA.
+    The web lane checks out that detached SHA and records it with the mobile head
+    evidence; a mutable branch name is not accepted as exact-run provenance.
+  - Each native creation/use step installs idempotent `EXIT`, `INT`, and `TERM`
+    handlers before materializing secrets. `ENV_FILE_CONTENT` is the initial
+    step-environment transport consumed only by the atomic secret writer and is
+    immediately unset before Yarn, Gradle, `xcrun`, or recovery subprocesses.
+    Secret bytes are then present only in a validated per-job regular file below
+    `$RUNNER_TEMP` with mode `0600`; the workspace root `.env` is an absolute
+    symlink to that exact target and its contents are never echoed. Normal and
+    signal handlers remove the symlink without following it, remove the exact
+    target, and verify both absent before returning. Runner-temp teardown is
+    hard-kill defense-in-depth, while the next trusted checkout/preflight removes
+    and verifies absence of any unexpected workspace `.env` entry or fails
+    closed. Long build/test commands run as supervised isolated process groups
+    behind an interruptible shell wait. The outer supervisor grace covers
+    coordinator-owned detached invocation/Metro group `TERM`/`KILL`, the outer
+    fallback, and the executable fixture for that nested path. The signal path
+    must complete bounded native-resource cleanup within GitHub's documented
+    7.5-second `SIGINT` plus 2.5-second `SIGTERM` grace window. A retained link or
+    target fails the secret cleanup contract.
+  - Device ownership needed after job teardown is a non-secret recovery ledger,
+    not `$RUNNER_TEMP` or workspace state. While holding the host lock, each
+    native lane uses the runner service environment
+    `MYCHAMPIONS_NATIVE_STATE_ROOT`. It must be a validated absolute canonical,
+    runner-owned, non-symlink, mode-`0700` persistent directory outside the
+    workspace and `$RUNNER_TEMP`; the lane verifies every ledger file's owner,
+    mode, type/no-symlink status, record completeness, and strict
+    numeric/UUID/name fields before trusting a record. Malformed or incomplete
+    state fails closed. `.env`, its runner-temp target, tokens, and secret values
+    never enter this ledger. The Mac service value
+    `/Users/eduwaldo/.local/state/github-actions/mychampions-native-recovery` was
+    configured and read back on 2026-07-29. The intended WSL value
+    `/home/eduardo/.local/state/github-actions/mychampions-native-recovery`
+    remains pending recovery of the current endpoint and service read-back.
+  - Native creation has no interruptible gap before exact recovery becomes
+    possible. The iOS lane writes a workflow-owned name/namespace intent before
+    `simctl create`, then durably records and validates the returned exact UUID;
+    interruption before UUID handoff is recovered only by that unique namespace.
+    Android launch-to-PID capture and durable PID/UID/Linux-start-time plus
+    expected AVD/port/serial/command record is cancellation-safe, or a later run
+    may recover only a process that proves that complete exact identity.
+  - At the start of the next trusted native run, while holding the host lock and
+    before creating any device, the lane consumes stale workflow-owned records,
+    revalidates exact identity, and cleans/verifies only that resource. Normal and
+    signal cleanup remove an owner record only after exact device/process,
+    serial, and port absence is proved. Cleanup or recovery failure retains the
+    record/evidence and fails closed. Global `simctl shutdown all`, `pkill`,
+    arbitrary QEMU signaling, and unrelated ADB/device mutation are prohibited.
+    Later `if: always()` verifiers are defense-in-depth, not the cancellation
+    guarantee; host hooks remain resource-lock-only.
+  - The web-only companion is the controlled exception to the WSL native host
+    lease. It has only `mychampions-ci,mychampions-web-only`, receives neither
+    native hook environment nor `MYCHAMPIONS_NATIVE_STATE_ROOT`, and can execute
+    only the Playwright lane. Live overlap exceeded the 15-percent regression
+    threshold when Playwright took 13m56s against its 2m18s baseline. Web and
+    Android therefore use the shared
+    `mychampions-wsl-ui` concurrency group; the companion, native Android hook
+    lease, recovery contract, and timeout protections remain.
+  - Hosted selected invocations are bounded at 600000 ms and report the exact
+    invocation ID after terminating their owned process group. An absent timeout
+    variable leaves local execution unbounded. Native jobs have an outer
+    75-minute limit and preserve their existing Metro, emulator, simulator, and
+    secret cleanup paths.
+  - Executable contracts must send both `SIGINT` and `SIGTERM` through the
+    checked-in supervisor and exact cleanup path, cover interruption before
+    metadata handoff, inject cleanup failure, prove retained-record next-run
+    recovery, and preserve unrelated resources. These local fixtures validate
+    shell control flow but do not prove live runner cancellation cleanup.
+    Promotion requires live mid-build and mid-test cancellations on both native
+    hosts showing workspace-link and runner-temp secret-target absence,
+    terminated supervised children, exact owned-device cleanup or retained
+    recovery evidence, preserved unrelated devices, and released host locks.
+  - `main` must require a pull request, strict up-to-date branches, the exact
+    `Hosted candidate preflight` check, the exact stable `Selective CI gate`
+    status, conversation resolution, administrator enforcement, and no
+    direct-push or merge bypass. Required approvals remain zero because the sole
+    repository author cannot approve their own pull request. CODEOWNERS provides
+    review routing and visibility only; it is not an owner-approval gate.
+  - Trusted-workflow provenance, negative authorization probes, live-head
+    mismatch/stale-run rejection, job-token isolation, stale-safe
+    freshness/run-owned pending/final status publishing, exact backend SHA,
+    environment cleanup, simulator ownership, and the `main` rules remain
+    promotion gates pending workflow-run/API, cancellation, repository-setting,
+    and exact-head full-matrix evidence. Fork approval, the current
+    sole-collaborator roster, repository workflow-token defaults, the action
+    allowlist, and SHA-pinning policy have dated 2026-07-29 read-back evidence
+    and must remain unchanged. Existing runner
+    registration, host-lock stress tests, checked-in workflow text, or a green
+    run do not by themselves satisfy D-195.
+  - D-195 supersedes D-193 only where D-193 describes the workflow as already
+    promoted or safely handling forks. D-193's test-selection and execution
+    semantics remain unchanged.
+  - D-195 evidence establishes CI trust and merge enforcement only. It does not
+    prove deployment, production configuration, provider-console state,
+    store-live distribution, or provider-backed purchase/restore behavior.
+
+- `D-196` (superseded for the professional surface by `D-197`): The 2026-07-26 RevenueCat paywall promotion keeps one explicit student Test Store variant and one production student variant.
   - `Student Paywall v1 Test` remains published on `test_student` for the explicit development/Test Store route.
   - `Student Paywall v1 Production` is published on `default_student` with the same approved package bindings, localized copy, monthly default, legal destinations, and light/dark/accessibility contract. The normal student app route already resolves `default_student`, so no mobile code change is required for this provider promotion.
-  - The earlier decision to keep professionals on one offering was intentionally conservative, but is superseded by `D-193` after the requirement for explicit professional Test Store and production surfaces was clarified.
+  - The earlier decision to keep professionals on one offering was intentionally conservative, but is superseded by `D-197` after the requirement for explicit professional Test Store and production surfaces was clarified.
 
-- `D-193`: Professionals have explicit production and Test Store RevenueCat surfaces.
+- `D-197`: Professionals have explicit production and Test Store RevenueCat surfaces.
   - Production uses `default_professional` with `Professional Paywall v1`; an explicit development/Test Store build uses `test_professional` with `Professional Paywall v1 Test`.
   - Both offerings use the `professional_pro` entitlement and separate plan-specific products. `test_professional` is selected only when `APP_VARIANT=dev`, `EXPO_PUBLIC_REVENUECAT_TEST_STORE_ENABLED=true`, and `EXPO_PUBLIC_REVENUECAT_PROFESSIONAL_OFFERING_ID=test_professional` are all present.
   - Production and normal development continue to resolve `default_professional`; malformed or unsafe professional offering overrides fail closed before paywall presentation.
   - RevenueCat's Published view now contains four paywalls: the production and Test Store variants for both Student and Professional. Inactive remains empty. Dashboard publication is not a substitute for updated device rendering, App Store/Google Play purchase, or true platform restore evidence.
 
-- `D-194`: Student RevenueCat paywalls use the professional surface's vertical rhythm for visual parity.
+- `D-198`: Student RevenueCat paywalls use the professional surface's vertical rhythm for visual parity.
   - `Student Paywall v1 Test` and `Student Paywall v1 Production` retain the student-specific headline, benefits, packages, legal destinations, monthly default, and accessibility/localization contract.
   - The 2026-07-26 editor refinement sets 16 px root child spacing, a 72 px top margin on the student value-proposition header, and an 8 px purchase-footer cadence with 12/16/16/16 px top/right/bottom/left padding. This removes the dominant disconnected middle gap while preserving the existing products, offerings, entitlements, and paywall logic.
   - Both published variants were verified in the RevenueCat iPhone 17 Pro dashboard preview. Device/Test Store rendering and platform-store purchase/restore remain separate release evidence gates.
 
-- `D-195`: Feature-aware UI-test selection uses one checked-in manifest and a fail-closed resolver for Detox and Playwright.
-  - Feature ownership, declared dependencies, suite membership, fixture profiles, shared rules, and platform scope live in `config/test-impact.json`; `.github/CODEOWNERS` starts with `@edufelip` as the fallback owner.
-  - Pull requests targeting `develop`, `release/**`, or `hotfix/**` compare the merge base with the exact head. Renames/copies include old and new paths, deletions retain old ownership, and base/head reverse-import graphs widen indirect impact.
-  - Navigation, localization, global design tokens, native/tooling inputs, resolver changes, invalid metadata, unknown runtime paths, resolution errors, or more than 500 changed files fail closed to the complete registered CI matrix. `ci:full` and `CI_FORCE_FULL` may only broaden selection.
-  - The initial workflow is intentionally shadow-only: it reports proposed Playwright/Detox matrices while existing Android, iOS, and web PR workflows remain authoritative. Fast unit/lint/type checks run universally. Selective device/browser execution becomes enforceable only after at least two weeks and 20 representative PRs with zero known selection misses.
-  - Full expensive coverage remains the target for nightly and release/hotfix gates after fixture-profile execution and runner capacity are proven. Existing `nutrition`/`plans` and `professional`/`subscription` bidirectional implementation dependencies are explicit legacy boundary exceptions; new undeclared cycles fail validation.
-
-- `D-196`: On-demand manual QA uses a **global** Agent Skill (`~/.cursor/skills/qa-manual-run`) plus Linear, not a Cursor Automation trigger. Product specifics live in family adapters (`families/mychampions.md`, `families/guiabrecho.md`); repo-local `qa-*.md` files remain pack sources of truth.
+- `D-199`: On-demand manual QA uses a **global** Agent Skill (`~/.cursor/skills/qa-manual-run`) plus Linear, not a Cursor Automation trigger. Product specifics live in family adapters (`families/mychampions.md`, `families/guiabrecho.md`); repo-local `qa-*.md` files remain pack sources of truth.
   - Kickoff is chat-only. Scope defaults to the **surface** smoke pack (cwd or `surface=`), or explicit `UC-*` / `TC-*` / named packs. MyChampions surfaces: `mobile`/`web` (`mychampions`), `api` (`server`), `food` (`mychampionsapi-food`), `exercises` (`mychampionsapi-exercises`).
   - Execution is hybrid: automated signal for the surface, then a human-like pass (UI or backend contract/security/data-shape/concurrency checklist). Cross-surface only when scoped.
   - Linear system of record is a parent **QA Run** issue (`qa-run` label) with auto-filed child issues using the workspace **Bug** label in the MyChampions project (team Edexample). Doc Gaps and Known Deferred stay on the QA Run (`doc-gap` / `known-deferred`) and are never filed as Bugs. Bug titles require id prefixes with strict open-issue dedupe.
