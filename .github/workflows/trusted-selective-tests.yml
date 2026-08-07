@@ -1185,7 +1185,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-web-ui
+      group: mychampions-wsl-ui
       cancel-in-progress: false
     env:
       CI: 'true'
@@ -1202,6 +1202,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
+      - name: Enable repository Yarn
+        run: corepack enable
       - run: yarn install --frozen-lockfile --no-progress
       - id: backend-contract-ref
         if: needs.impact.outputs.has_web_server == 'true'
@@ -2192,7 +2194,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-android-detox
+      group: mychampions-wsl-ui
       cancel-in-progress: false
     env:
       APP_VARIANT: dev

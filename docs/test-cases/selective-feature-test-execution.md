@@ -352,9 +352,9 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   existing cleanup traps and are additionally contained by a 75-minute job
   limit.
 - The Playwright lane targets only `mychampions-web-only` and uses a web-specific
-  concurrency group. Android retains `mychampions-android` and a distinct native
-  concurrency group, so both may start together. iOS remains isolated on
-  `mychampions-ios`.
+  runner service. Android retains `mychampions-android`; both WSL lanes use the
+  shared `mychampions-wsl-ui` concurrency group after live overlap exceeded the
+  15-percent regression threshold. iOS remains isolated on `mychampions-ios`.
 - Normal exit performs the full iOS exact-UDID or Android exact-emulator absence
   proof. Later `if: always()` verification is defense-in-depth, not the
   cancellation guarantee; host hooks are resource-lock-only. Device recovery
