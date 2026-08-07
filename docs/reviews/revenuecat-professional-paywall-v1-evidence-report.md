@@ -1,14 +1,27 @@
 # RevenueCat Professional Paywall v1 Evidence Report
 
-Date: 2026-07-24
+Date: 2026-07-24 (original live Test Store evidence)
 Environment: RevenueCat project `49195782`, MyChampions development app, iPhone 17 / iOS 26.5, RevenueCat Test Store
+
+Dashboard re-verification: 2026-07-26. `Professional Paywall v1` remains the
+published production paywall on `default_professional`. A separate
+`test_professional` offering and `Professional Paywall v1 Test` were created,
+bound to the professional Test Store annual/monthly products, and published
+for the explicit development/Test Store route.
 
 ## Outcome
 
 `Professional Paywall v1` is published in RevenueCat, attached to offering
-`default_professional`, and delivered by the app's existing
+`default_professional`, and delivered by the production
 `Purchases.getOfferings().all['default_professional']` ->
-`RevenueCatUI.presentPaywall({ offering })` path.
+`RevenueCatUI.presentPaywall({ offering })` path. The explicit development
+Test Store route now resolves `test_professional` and presents the separately
+published `Professional Paywall v1 Test`.
+
+This dashboard change did not repeat the device/Test Store purchase matrix;
+the existing live evidence below proves the production offering's paywall and
+professional entitlement behavior, while the new Test Store surface still
+needs its own fresh device smoke run.
 
 The live Test Store run proved:
 
@@ -41,6 +54,20 @@ The dashboard's Published view shows the paywall bound to
 `default_professional`:
 
 ![RevenueCat Published paywall](../../artifacts/revenuecat-paywall-v1-20260724/dashboard/07-published-professional-paywall.png)
+
+The 2026-07-26 dashboard verification also shows the separate Test Store
+surface:
+
+| Field | Confirmed value |
+|---|---|
+| Paywall ID | `pw01d94819b83e4dfe` |
+| Name | `Professional Paywall v1 Test` |
+| State | Published |
+| Offering | `test_professional` (`ofrng2d1347eab0`) |
+| Packages | Monthly -> `professional_test_monthly`; Annual -> `professional_test_annual` |
+| Entitlement contract | Both Test Store products attach to `professional_pro` |
+| Design source | Duplicated from the published `Professional Paywall v1` design |
+| Device evidence | Not repeated in this dashboard-only promotion step |
 
 ## Design Review
 
@@ -148,13 +175,15 @@ variables, not hard-coded app or paywall copy.
 
 ## Scope Boundaries and Residual Risk
 
-- The paywall is published on `default_professional`; no RevenueCat Targeting
-  rule was created. Any compatible app build that explicitly presents that
-  offering can receive the published paywall.
+- `Professional Paywall v1` is published on `default_professional` and
+  `Professional Paywall v1 Test` is published on `test_professional`; no
+  RevenueCat Targeting rule was created. Production/normal development stays
+  on the default offering, while only the explicit dev/Test Store build can
+  select the test offering.
 - The live proof uses RevenueCat Test Store. It is not App Store receipt restore
   evidence and not Google Play purchase-token restore evidence.
-- `default_student` still uses its existing surface; a distinct student custom
-  paywall remains pending.
+- `default_student` now has the published `Student Paywall v1 Production`; the
+  student Test Store variant remains published on `test_student`.
 - Android custom-paywall rendering and interaction were not exercised because
   the development Android RevenueCat app/catalog and licensed Play test path are
   still pending.
@@ -168,8 +197,11 @@ variables, not hard-coded app or paywall copy.
 
 ## Recommendation
 
-Accept `Professional Paywall v1` as the first published RevenueCat paywall and
-retain the updated live Detox contract. Do not mark the broader subscription
-release gate complete until the student paywall, Android provider/catalog work,
-App Store metadata, and true App Store/Google Play sandbox restore evidence are
+Accept `Professional Paywall v1` and `Professional Paywall v1 Test` as the
+published production/Test Store professional pair and retain the existing live
+Detox contract for the production offering. Run a fresh device/Test Store smoke
+against `test_professional` before treating the new surface as provider-backed
+rendering evidence. Do not mark the broader subscription release gate complete
+until the Android provider/catalog work, App Store metadata, updated student
+copy smoke run, and true App Store/Google Play sandbox restore evidence are
 reviewed.

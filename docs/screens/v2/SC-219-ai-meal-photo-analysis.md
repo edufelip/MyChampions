@@ -10,13 +10,25 @@ Allow users to capture or select a photo of their meal and receive AI-estimated 
 
 AI estimates are always advisory — all fields remain editable after pre-fill (BR-286, D-108).
 
-**Paywall gate (D-132, BR-341):** The AI analysis CTA is only accessible to users with an active `professional_pro` OR `student_pro` RevenueCat entitlement. When neither entitlement is `'active'`, the CTA is replaced by a locked paywall banner with an "Upgrade to unlock" CTA. A locked student account presents the guarded student offering (`default_student`, or temporary `test_student` only in an explicit development Test Store build). A locked professional account presents `default_professional`, whose `professional_pro` entitlement already includes AI. Missing or malformed role state fails closed without presenting a paywall. Status `'unknown'` (loading/error) is treated as locked.
+**Paywall gate (D-132, BR-341):** The AI analysis CTA is only accessible to users with an active `professional_pro` OR `student_pro` RevenueCat entitlement. When neither entitlement is `'active'`, the CTA is replaced by a locked paywall banner with an "Upgrade to unlock" CTA. A locked student account presents the guarded student offering (`default_student`, or temporary `test_student` only in an explicit development Test Store build). A locked professional account presents `default_professional` normally or `test_professional` in an explicit development Test Store build; both use the `professional_pro` entitlement, which already includes AI. Missing or malformed role state fails closed without presenting a paywall. Status `'unknown'` (loading/error) is treated as locked.
+
+As of the 2026-07-26 provider verification, `default_student` presents the published `Student Paywall v1 Production`, while an explicit development/Test Store build presents `Student Paywall v1 Test` from `test_student`. Professionals use the published `Professional Paywall v1` from `default_professional` in production/normal development and `Professional Paywall v1 Test` from `test_professional` in the explicit development/Test Store path. RevenueCat dashboard publication does not replace the separate device/store purchase and restore validation gate.
+
+**Paywall visual contract (D-194):** The published student Test and Production
+paywalls use the professional paywall's intentional vertical rhythm while
+retaining student-specific copy and benefits. The RevenueCat editor layout uses
+16 px root child spacing, a 72 px top margin on the student value-proposition
+header, and an 8 px purchase-footer cadence with 12/16/16/16 px top/right/bottom/
+left padding. The iPhone 17 Pro dashboard previews keep the title, benefits,
+disclosure, packages, CTA, restore action, and legal links visible without the
+large disconnected middle gap previously present. This is dashboard-preview
+evidence; device/Test Store rendering remains a separate validation gate.
 
 After native RevenueCat customer info is read, the subscription hook best-effort syncs the latest professional and AI entitlement snapshot to the MyChampions server at `POST /subscription/entitlements/snapshot`. The server stores this in local Postgres `subscription_entitlement_snapshots` for future server-side AI-access enforcement; native paywall presentation remains mobile-owned for now.
 
 ## User Actions
 - When entitlement is active: tap "Analyze with AI" CTA to initiate capture.
-- When entitlement is not active: tap "Upgrade to unlock" to invoke `openAiUpgradePaywall(lockedRole)`; students receive the guarded student offering and professionals receive `default_professional`. After purchase/dismissal, both entitlement statuses are refreshed.
+- When entitlement is not active: tap "Upgrade to unlock" to invoke `openAiUpgradePaywall(lockedRole)`; students receive the guarded student offering and professionals receive the guarded production/Test Store professional offering. After purchase/dismissal, both entitlement statuses are refreshed.
 - Action sheet presents "Take Photo" / "Choose from Library" / "Cancel".
 - On capture: image is compressed client-side via `expo-image-manipulator`, then sent to the MyChampions server with the local bearer token. Missing server config/token fails closed.
 - Review AI-estimated macros pre-filled into form fields.
@@ -143,6 +155,6 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | Use case | UC-003.9 |
 | Acceptance criteria | AC-513, AC-514, AC-515, AC-516, AC-517, AC-518, AC-519 |
 | Business rules | BR-286, BR-287, BR-288, BR-289, BR-290 |
-| Test cases | TC-271, TC-272, TC-273, TC-273A, TC-274 |
-| Decisions | D-106, D-107, D-108, D-109, D-110, D-128, D-132 |
+| Test cases | TC-271, TC-272, TC-273, TC-273A, TC-274, TC-437 |
+| Decisions | D-106, D-107, D-108, D-109, D-110, D-128, D-132, D-190, D-193, D-194 |
 | Backlog | BL-108 |

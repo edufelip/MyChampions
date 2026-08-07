@@ -1,30 +1,49 @@
-# RevenueCat Student Paywall v1 Test Evidence Report
+# RevenueCat Student Paywall v1 Evidence Report
 
-Date: 2026-07-24
-Environment: RevenueCat project `49195782`, MyChampions development app,
-iPhone 17 / iOS 26.5, RevenueCat Test Store
+Dashboard verification date: 2026-07-26
+Environment: RevenueCat project `49195782`, MyChampions app. The Test Store
+variant is attached to the development `test_student` offering; the production
+variant is attached to `default_student`.
 
 ## Controlled-batch outcome
 
 The approved Test Store slice created and published `Student Paywall v1 Test`
-on the temporary development offering `test_student`. The production
-`default_student` offering was not modified.
+on the temporary development offering `test_student`. On 2026-07-26 the
+student design was refined in the RevenueCat editor, localized in all three
+supported locales, republished to `test_student`, duplicated as `Student
+Paywall v1 Production`, bound to `default_student`, and published.
+
+After visual review against the professional paywall, both published student
+variants were rebalanced in the RevenueCat editor and republished. The live
+iPhone 17 Pro previews now use a 16 px root cadence, a 72 px top margin on the
+student value-proposition header, and an 8 px purchase-footer cadence with
+12/16/16/16 px top/right/bottom/left padding. The title/benefit block and the
+fixed purchase footer now read as one centered composition without the former
+dominant disconnected middle gap. Product bindings, offerings, entitlements,
+copy, locale coverage, and monthly default were not changed. This is dashboard
+preview evidence; a fresh device/Test Store smoke run remains required before
+the visual refinement is treated as new device-rendering evidence.
 
 The app now routes AI upgrades by the account's locked role:
 
 - student accounts resolve `default_student`, except an explicit development
   Test Store build resolves `test_student`;
-- professional accounts resolve `default_professional`;
+- professional accounts resolve `default_professional`, except an explicit development Test Store build resolves `test_professional`;
 - missing or malformed roles fail closed without presenting a paywall.
 
 Existing valid `student_pro` entitlements remain backward-compatible and unlock
 AI regardless of role. A professional cannot initiate a new student purchase
 from the app.
 
-No App Store Connect, Google Play, Android RevenueCat app/catalog, deployment,
-merge, or production release action was performed in this batch.
+No mobile release, App Store Connect or Google Play purchase, Android
+provider-rendering run, deployment, or merge was performed in this batch. The
+dashboard publication is provider configuration evidence; the updated copy and
+layout still need a fresh device/Test Store smoke run before they are treated
+as new live-rendering evidence.
 
 ## Provider configuration
+
+### Test Store student paywall
 
 | Field | Confirmed value |
 |---|---|
@@ -44,11 +63,25 @@ The temporary offering contains only the two approved student packages:
 
 ![Temporary student offering packages](../../artifacts/revenuecat-student-paywall-v1-20260724/dashboard/01-test-student-offering-packages.png)
 
-The published-paywalls list contains the professional production paywall and
-the temporary student Test Store paywall. No `default_student` production
-paywall was created:
+### Production student paywall
 
-![Published paywalls](../../artifacts/revenuecat-student-paywall-v1-20260724/dashboard/10-published-paywalls-list.png)
+| Field | Confirmed value |
+|---|---|
+| Paywall ID | `pw7efb288b4e9540f5` |
+| Name | `Student Paywall v1 Production` |
+| State | Published |
+| Offering | `default_student` (`ofrng44a9709361`) |
+| Packages | `$rc_monthly` -> `student_monthly`; `$rc_annual` -> `student_annual` |
+| Entitlement contract | Both student products grant only `student_pro` |
+| Default selection | Monthly |
+| Price source | RevenueCat product variables, including `{{ product.price_per_period }}` and annual `{{ product.price_per_month }}` |
+| Locales | `en-US`, `pt-BR`, `es-ES` |
+| Appearance | Light and dark |
+
+The 2026-07-26 Published view contains four paywalls: `Student Paywall v1
+Production` on `default_student`, `Student Paywall v1 Test` on `test_student`,
+`Professional Paywall v1` on `default_professional`, and `Professional Paywall
+v1 Test` on `test_professional`. The Inactive view is empty.
 
 The student close action was remediated during the live matrix after the first
 native accessibility assertion exposed an unlabeled control. The published
@@ -65,7 +98,9 @@ IDs:
 ## Design and localization review
 
 The student design uses the MyChampions visual tokens and the same interaction
-order as the professional paywall, while keeping its own value proposition:
+order as the professional paywall, while keeping its own value proposition.
+The 2026-07-26 revision tightened the hierarchy without changing product
+bindings or interaction order:
 
 - camera/sparkles header with no decorative media;
 - AI meal-photo analysis only, with no professional-capacity messaging;
@@ -73,6 +108,21 @@ order as the professional paywall, while keeping its own value proposition:
 - provider-driven Monthly and Annual prices;
 - close, selected-plan indication, CTA, renewal disclosure, restore, Terms,
   Privacy, and native accessibility labels.
+- centered vertical composition aligned to the professional preview, with a
+  16 px root cadence and an 8 px purchase-footer cadence;
+
+Final dashboard copy was verified in all three locales:
+
+| Surface | English | Portuguese (Brazil) | Spanish |
+|---|---|---|---|
+| Headline | Unlock AI meal analysis | Desbloqueie a análise de refeições com IA | Desbloquea el análisis de comidas con IA |
+| Supporting copy | Turn a meal photo into a reviewable estimate. Standard meal tracking stays free. | Transforme uma foto de refeição em uma estimativa revisável. O rastreamento padrão de refeições continua gratuito. | Convierte una foto de tu comida en una estimación revisable. El seguimiento de comidas estándar sigue siendo gratuito. |
+| Primary CTA | Unlock AI meal analysis | Desbloqueie a análise de refeições por IA | Desbloquea el análisis de comidas con IA |
+| Renewal disclosure | Subscription renews automatically. Cancel anytime. | A assinatura é renovada automaticamente. Cancele a qualquer momento. | La suscripción se renueva automáticamente. Cancela en cualquier momento. |
+
+The existing editor screenshots below are historical 2026-07-24 baseline
+captures; the final text above is the authoritative 2026-07-26 dashboard
+verification.
 
 English light appearance:
 
@@ -197,12 +247,15 @@ activation, annual purchase, and their provider sheets are retained under
 
 - This is RevenueCat Test Store evidence, not App Store receipt restore or
   Google Play purchase-token restore evidence.
-- The temporary student paywall remains published on `test_student` so the
-  reviewed state is reproducible. Promoting the approved design to
-  `default_student` and then deactivating the temporary paywall requires the
-  separate approval described in the rollout plan.
+- Both student variants remain published: `test_student` keeps the explicit
+  development/Test Store route, and `default_student` now serves the published
+  production student paywall. The temporary Test Store paywall was not
+  deactivated so the development matrix remains reproducible.
 - Development Android RevenueCat app permissions, Android products/base plans,
   App Store missing product metadata, Android live rendering, and true
   two-platform sandbox restore remain separate release-readiness action items.
+- The updated student layout has dashboard-preview evidence only; the next
+  device/Test Store run must verify the refreshed visual composition on the
+  native surface.
 - No RevenueCat Targeting rule was created; the app explicitly presents the
   role-resolved offering.

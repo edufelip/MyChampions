@@ -22,6 +22,7 @@ type RevenueCatConfig = {
   revenueCatApiKeyAndroid: string;
   revenueCatTestStoreEnabled: boolean;
   revenueCatStudentOfferingId: 'default_student' | 'test_student';
+  revenueCatProfessionalOfferingId: 'default_professional' | 'test_professional';
 };
 
 type ServerConfig = {
@@ -66,6 +67,8 @@ export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
     process.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_ENABLED?.trim().toLowerCase() === 'true';
   const studentOfferingOverride =
     process.env.EXPO_PUBLIC_REVENUECAT_STUDENT_OFFERING_ID?.trim() ?? '';
+  const professionalOfferingOverride =
+    process.env.EXPO_PUBLIC_REVENUECAT_PROFESSIONAL_OFFERING_ID?.trim() ?? '';
 
   if (
     studentOfferingOverride &&
@@ -85,8 +88,30 @@ export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
     );
   }
 
+  if (
+    professionalOfferingOverride &&
+    professionalOfferingOverride !== 'default_professional' &&
+    professionalOfferingOverride !== 'test_professional'
+  ) {
+    throw new Error(
+      'EXPO_PUBLIC_REVENUECAT_PROFESSIONAL_OFFERING_ID must be default_professional or test_professional.'
+    );
+  }
+  if (
+    professionalOfferingOverride === 'test_professional' &&
+    (variant !== 'dev' || !revenueCatTestStoreEnabled)
+  ) {
+    throw new Error(
+      'RevenueCat test_professional offering is allowed only in an explicit development Test Store build.'
+    );
+  }
+
   const revenueCatStudentOfferingId =
     studentOfferingOverride === 'test_student' ? 'test_student' : 'default_student';
+  const revenueCatProfessionalOfferingId =
+    professionalOfferingOverride === 'test_professional'
+      ? 'test_professional'
+      : 'default_professional';
   const testStoreKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE?.trim() ?? '';
   if (revenueCatTestStoreEnabled) {
     return {
@@ -94,6 +119,7 @@ export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
       revenueCatApiKeyAndroid: testStoreKey,
       revenueCatTestStoreEnabled: true,
       revenueCatStudentOfferingId,
+      revenueCatProfessionalOfferingId,
     };
   }
 
@@ -115,6 +141,7 @@ export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
     revenueCatApiKeyAndroid: androidVariantKey ?? legacyAndroidKey ?? '',
     revenueCatTestStoreEnabled: false,
     revenueCatStudentOfferingId,
+    revenueCatProfessionalOfferingId,
   };
 }
 
@@ -250,6 +277,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       revenueCatTestStoreEnabled: revenueCat.revenueCatTestStoreEnabled,
       // Defaults to default_student. test_student is accepted only for explicit dev Test Store builds.
       revenueCatStudentOfferingId: revenueCat.revenueCatStudentOfferingId,
+      // Defaults to default_professional. test_professional is accepted only for explicit dev Test Store builds.
+      revenueCatProfessionalOfferingId: revenueCat.revenueCatProfessionalOfferingId,
       googleAuth,
       appleWebAuth,
       subscriptionHandoffUrl:

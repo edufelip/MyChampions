@@ -13,7 +13,7 @@
  *   - configureRevenueCat: binds the SDK to a self-managed auth UID and rejects blank IDs
  *   - RevenueCat identity coordinator: serializes account switches before the next SDK operation
  *   - presentAiPaywall: calls presentPaywall with AI_OFFERING_ID ('default_student'), propagates errors, passes through SubscriptionSourceError
- *   - presentProPaywall: calls presentPaywall with PRO_OFFERING_ID ('default_professional'), propagates errors, passes through SubscriptionSourceError
+ *   - presentProPaywall: calls presentPaywall with the configured professional offering, propagates errors, passes through SubscriptionSourceError
  */
 
 import { describe, it } from 'node:test';
@@ -34,10 +34,12 @@ import {
   resolveAiUpgradeOfferingId,
   resolveRequiredRevenueCatOffering,
   SubscriptionSourceError,
+  resolveProfessionalOfferingId,
   resolveStudentOfferingId,
   PRO_ENTITLEMENT_ID,
   AI_FEATURES_ENTITLEMENT_ID,
   PRO_OFFERING_ID,
+  PRO_TEST_OFFERING_ID,
   AI_OFFERING_ID,
   AI_TEST_OFFERING_ID,
   type SubscriptionSourceDeps,
@@ -882,6 +884,58 @@ describe('resolveStudentOfferingId', () => {
   });
 });
 
+describe('resolveProfessionalOfferingId', () => {
+  it('defaults to default_professional when configuration is absent', () => {
+    assert.equal(resolveProfessionalOfferingId({}), PRO_OFFERING_ID);
+  });
+
+  it('accepts default_professional in production', () => {
+    assert.equal(
+      resolveProfessionalOfferingId({
+        appVariant: 'prod',
+        revenueCatProfessionalOfferingId: 'default_professional',
+        revenueCatTestStoreEnabled: false,
+      }),
+      PRO_OFFERING_ID
+    );
+  });
+
+  it('accepts test_professional only for an explicit dev Test Store config', () => {
+    assert.equal(
+      resolveProfessionalOfferingId({
+        appVariant: 'dev',
+        revenueCatProfessionalOfferingId: 'test_professional',
+        revenueCatTestStoreEnabled: true,
+      }),
+      PRO_TEST_OFFERING_ID
+    );
+  });
+
+  it('rejects test_professional in production', () => {
+    assert.throws(
+      () =>
+        resolveProfessionalOfferingId({
+          appVariant: 'prod',
+          revenueCatProfessionalOfferingId: 'test_professional',
+          revenueCatTestStoreEnabled: true,
+        }),
+      (err: unknown) =>
+        err instanceof SubscriptionSourceError && err.code === 'configuration'
+    );
+  });
+
+  it('rejects malformed professional offering configuration', () => {
+    assert.throws(
+      () =>
+        resolveProfessionalOfferingId({
+          revenueCatProfessionalOfferingId: 'professional_preview',
+        }),
+      (err: unknown) =>
+        err instanceof SubscriptionSourceError && err.code === 'configuration'
+    );
+  });
+});
+
 describe('resolveAiUpgradeOfferingId', () => {
   it('routes students to the resolved student offering', () => {
     assert.equal(
@@ -949,6 +1003,7 @@ describe('resolveRequiredRevenueCatOffering', () => {
 describe('presentProPaywall', () => {
   it('PRO_OFFERING_ID constant is default_professional', () => {
     assert.equal(PRO_OFFERING_ID, 'default_professional');
+    assert.equal(PRO_TEST_OFFERING_ID, 'test_professional');
   });
 
   it('calls deps.presentPaywall with PRO_OFFERING_ID (default_professional) offering identifier', async () => {
@@ -959,6 +1014,16 @@ describe('presentProPaywall', () => {
     const result = await presentProPaywall(deps);
     assert.equal(calledWith, PRO_OFFERING_ID);
     assert.equal(result, 'ERROR');
+  });
+
+  it('calls deps.presentPaywall with the explicit Test Store offering when supplied', async () => {
+    let calledWith: string | undefined | 'NOT_CALLED' = 'NOT_CALLED';
+    const deps = makeDeps({
+      presentPaywall: async (id) => { calledWith = id; return 'CANCELLED'; },
+    });
+    const result = await presentProPaywall(deps, PRO_TEST_OFFERING_ID);
+    assert.equal(calledWith, PRO_TEST_OFFERING_ID);
+    assert.equal(result, 'CANCELLED');
   });
 
   it('propagates network-like errors as SubscriptionSourceError', async () => {

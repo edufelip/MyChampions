@@ -123,10 +123,21 @@ export const AI_FEATURES_ENTITLEMENT_ID = 'student_pro';
  * RevenueCat offering identifier for the professional subscription paywall (D-152).
  * Must be configured in the RevenueCat dashboard under Offerings.
  * Shown when openProPaywall() is triggered from SC-212.
- * Contains professional products: professional_annual, professional_monthly, professional_test,
- * plus Test Store package mappings when explicitly configured for development.
+ * Contains the production professional products: professional_annual and
+ * professional_monthly. The separate development Test Store surface is
+ * exposed through PRO_TEST_OFFERING_ID.
  */
 export const PRO_OFFERING_ID = 'default_professional';
+
+/**
+ * Development-only professional offering used to validate the separate
+ * Professional Paywall v1 Test Store surface.
+ */
+export const PRO_TEST_OFFERING_ID = 'test_professional';
+
+export type ProfessionalOfferingId =
+  | typeof PRO_OFFERING_ID
+  | typeof PRO_TEST_OFFERING_ID;
 
 /**
  * RevenueCat offering identifier for the student AI features paywall (D-132, D-152).
@@ -176,6 +187,41 @@ export function resolveStudentOfferingId(
     throw new SubscriptionSourceError(
       'configuration',
       'RevenueCat test_student offering is allowed only in an explicit development Test Store build.'
+    );
+  }
+
+  return offeringId;
+}
+
+/**
+ * Resolves the professional offering exposed through Expo config. The test
+ * offering is accepted only when both the development variant and Test Store
+ * guard are explicit. Missing config safely falls back to default_professional.
+ */
+export function resolveProfessionalOfferingId(
+  extra?: Record<string, unknown>
+): ProfessionalOfferingId {
+  const source = extra ?? {};
+  const configured = source['revenueCatProfessionalOfferingId'];
+  const offeringId =
+    typeof configured === 'string' && configured.trim()
+      ? configured.trim()
+      : PRO_OFFERING_ID;
+
+  if (offeringId !== PRO_OFFERING_ID && offeringId !== PRO_TEST_OFFERING_ID) {
+    throw new SubscriptionSourceError(
+      'configuration',
+      'RevenueCat professional offering must be default_professional or test_professional.'
+    );
+  }
+
+  if (
+    offeringId === PRO_TEST_OFFERING_ID &&
+    (source['appVariant'] !== 'dev' || source['revenueCatTestStoreEnabled'] !== true)
+  ) {
+    throw new SubscriptionSourceError(
+      'configuration',
+      'RevenueCat test_professional offering is allowed only in an explicit development Test Store build.'
     );
   }
 
@@ -626,17 +672,19 @@ export async function presentAiPaywall(
 
 /**
  * Presents the native RevenueCat paywall for the professional subscription (D-152).
- * Uses the PRO_OFFERING_ID ('default_professional') offering configured in the RevenueCat dashboard.
+ * Uses the supplied production or explicit development Test Store offering,
+ * defaulting to PRO_OFFERING_ID ('default_professional').
  * The production dep resolves the offering via getOfferings() and passes the full
  * PurchasesOffering object to RevenueCatUI.presentPaywall({ offering }).
  *
  * Throws SubscriptionSourceError on presentation failure.
  */
 export async function presentProPaywall(
-  deps: SubscriptionSourceDeps
+  deps: SubscriptionSourceDeps,
+  offeringId: ProfessionalOfferingId = PRO_OFFERING_ID
 ): Promise<RawPaywallResult | void> {
   try {
-    return await deps.presentPaywall(PRO_OFFERING_ID);
+    return await deps.presentPaywall(offeringId);
   } catch (err: unknown) {
     if (err instanceof SubscriptionSourceError) throw err;
     const reason = normalizeSubscriptionError(err);
