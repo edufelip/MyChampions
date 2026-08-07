@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Canonical **mobile/web** packs and Linear conventions for the MyChampions app repo.  
+Canonical **mobile/web** packs and Linear conventions for the MyChampions app repo.
 The executable Skill is the **global** `qa-manual-run` Skill (`~/.cursor/skills/qa-manual-run`) with family adapter `families/mychampions.md`.
 
 ## Family / surfaces
