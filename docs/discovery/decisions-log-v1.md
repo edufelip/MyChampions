@@ -441,6 +441,7 @@
   - `test_student` and `Student Paywall v1 Test` remain temporary provider artifacts for the approved Test Store evidence batch. `Student Paywall v1 Production` is now published on `default_student`; the 2026-07-26 promotion approval is recorded in D-196.
 
 - `D-191`: Browser account switching is serialized behind a single in-flight cookie sign-out barrier. `clearSession()` is the only account-screen cleanup boundary and remains awaitable; it clears local identity immediately while the credentialed sign-out attempt continues. Every server-backed email/password, social, and local-development session-establishment path waits for that barrier. Native bearer sessions retain immediate local clearing and persisted-token removal.
+
 - `D-192`: Feature-aware UI-test selection uses one checked-in manifest and a fail-closed resolver for Detox and Playwright.
   - Feature ownership, declared dependencies, suite membership, fixture profiles, shared rules, and platform scope live in `config/test-impact.json`; `.github/CODEOWNERS` starts with `@edufelip` as the fallback owner.
   - Pull requests compare the merge base with the exact head. Renames/copies include old and new paths, deletions retain old ownership, and base/head reverse-import graphs widen indirect impact.

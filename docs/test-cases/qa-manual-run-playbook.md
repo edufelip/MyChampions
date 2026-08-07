@@ -9,7 +9,7 @@ The executable Skill is the **global** `qa-manual-run` Skill (`~/.cursor/skills/
 
 | Surface | Default when cwd is… | Smoke pack |
 |---|---|---|
-| `mobile` / `web` | `mychampions/` | `docs/test-cases/qa-smoke-pack.md` |
+| `web` (native `mobile` pending — see `docs/discovery/pending-wiring-checklist-v1.md`) | `mychampions/` | `docs/test-cases/qa-smoke-pack.md` |
 | `api` | `../server/` | `../server/docs/qa-smoke-pack.md` |
 | `food` | `../mychampionsapi-food/` | `../mychampionsapi-food/docs/qa-smoke-pack.md` |
 | `exercises` | `../mychampionsapi-exercises/` | `../mychampionsapi-exercises/docs/qa-smoke-pack.md` |

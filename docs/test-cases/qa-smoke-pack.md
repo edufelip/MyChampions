@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the default on-demand manual QA pack for MyChampions surfaces `mobile` / `web` when a chat QA run says `smoke` (or omits scope). Invoked by the global Skill `~/.cursor/skills/qa-manual-run` (adapter `families/mychampions.md`).
+Define the default on-demand manual QA pack for the MyChampions `web` surface (native `mobile` pending — see `docs/discovery/pending-wiring-checklist-v1.md`) when a chat QA run says `smoke` (or omits scope). Invoked by the global Skill `~/.cursor/skills/qa-manual-run` (adapter `families/mychampions.md`).
 
 ## Pack contents
 
@@ -10,7 +10,7 @@ Define the default on-demand manual QA pack for MyChampions surfaces `mobile` / 
 |---|---|---|
 | Playwright signal | `yarn test:e2e:web:smoke` | Chromium batch from `docs/test-cases/web-playwright-batches-and-manual-validation.md`. Artifacts under `.artifacts/web-e2e/<run-id>/`. |
 | Browser UC walk | `UC-001` (navigation baseline) | Human-like browser pass over UC-001.1–UC-001.3 against the resolved env. |
-| Browser TC slice | Thin `TC-001` | Launch + tab navigation + theme sanity from `docs/test-cases/TC-001-navigation-and-theme.md` (`TC-001`–`TC-006` as applicable on web). |
+| Browser TC slice | Thin `TC-001`–`TC-006` slice (as applicable on web) | Launch + tab navigation + theme sanity from `docs/test-cases/TC-001-navigation-and-theme.md`. |
 
 ## Preconditions
 
