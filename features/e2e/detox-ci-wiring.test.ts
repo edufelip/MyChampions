@@ -148,7 +148,7 @@ test('selective native execution fully prewarms Metro before Detox launches', ()
     'await prewarmMetroBundle(invocation.metro!)'
   );
   const detoxIndex = executor.indexOf(
-    'await runChild(invocation.command, invocation.args, cwd, env);'
+    'await runChild(\n      invocation.id,\n      invocation.command,'
   );
 
   assert.notEqual(readinessIndex, -1, 'executor must wait for Metro readiness');
@@ -178,6 +178,10 @@ test('selective native execution fully prewarms Metro before Detox launches', ()
   assert.match(
     executor,
     /exitTimeoutMs: 500, pollIntervalMs: 50/
+  );
+  assert.match(
+    executor,
+    /Invocation \$\{invocationId\} timed out after \$\{timeoutMs\} ms/
   );
 });
 

@@ -6,6 +6,7 @@ import { loadManifest } from '../../scripts/ci/test-impact';
 import {
   createSelectiveExecutionPlan,
   parseNativeMetroPort,
+  parseSelectiveInvocationTimeoutMs,
   parseSelectedSuitesJson,
   validateSelectiveExecutionManifest,
 } from '../../scripts/ci/selective-execution';
@@ -360,6 +361,17 @@ test('suite JSON parsing is strict', () => {
   assert.throws(() => parseSelectedSuitesJson(undefined), /is required/);
   assert.throws(() => parseSelectedSuitesJson('{'), /must be valid JSON/);
   assert.throws(() => parseSelectedSuitesJson('["web:auth", 1]'), /JSON array of suite IDs/);
+});
+
+test('selective invocation timeout is optional locally and strict when configured', () => {
+  assert.equal(parseSelectiveInvocationTimeoutMs(undefined), undefined);
+  assert.equal(parseSelectiveInvocationTimeoutMs('600000'), 600_000);
+  for (const invalid of ['', '0', '-1', '1.5', ' 600000', '2147483648']) {
+    assert.throws(
+      () => parseSelectiveInvocationTimeoutMs(invalid),
+      /SELECTIVE_INVOCATION_TIMEOUT_MS/
+    );
+  }
 });
 
 test('CI reporter fails an all-skipped Detox invocation', () => {

@@ -48,6 +48,25 @@ const supportedWebRunners = new Set(['playwright', 'playwright-server']);
 const defaultNativeMetroPort = 8081;
 const minimumUnprivilegedPort = 1024;
 const maximumNonEphemeralPort = 49151;
+const maximumTimerDelayMs = 2_147_483_647;
+
+export function parseSelectiveInvocationTimeoutMs(
+  value: string | undefined
+): number | undefined {
+  if (value === undefined) return undefined;
+  if (!/^[1-9][0-9]*$/.test(value)) {
+    throw new Error(
+      'SELECTIVE_INVOCATION_TIMEOUT_MS must be a positive decimal integer'
+    );
+  }
+  const timeoutMs = Number(value);
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs > maximumTimerDelayMs) {
+    throw new Error(
+      `SELECTIVE_INVOCATION_TIMEOUT_MS must not exceed ${maximumTimerDelayMs}`
+    );
+  }
+  return timeoutMs;
+}
 
 export function validateNativeMetroPort(
   platform: 'ios' | 'android',

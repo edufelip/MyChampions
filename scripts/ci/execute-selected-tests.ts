@@ -1,10 +1,12 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createConnection } from 'node:net';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { loadManifest } from './test-impact';
 import {
   createSelectiveExecutionPlan,
   parseNativeMetroPort,
+  parseSelectiveInvocationTimeoutMs,
   parseSelectedSuitesJson,
   type CommandInvocation,
   type SelectivePlatform,
@@ -66,8 +68,10 @@ function requestCancellation(signal: NodeJS.Signals): void {
   }
 }
 
-process.on('SIGINT', () => requestCancellation('SIGINT'));
-process.on('SIGTERM', () => requestCancellation('SIGTERM'));
+function installCancellationHandlers(): void {
+  process.on('SIGINT', () => requestCancellation('SIGINT'));
+  process.on('SIGTERM', () => requestCancellation('SIGTERM'));
+}
 
 function valueAfter(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -99,11 +103,13 @@ function assertRequiredEnvironment(invocation: CommandInvocation): void {
   }
 }
 
-async function runChild(
+export async function runChild(
+  invocationId: string,
   command: string,
   args: string[],
   cwd: string,
-  env: NodeJS.ProcessEnv
+  env: NodeJS.ProcessEnv,
+  timeoutMs: number | undefined
 ): Promise<void> {
   throwIfCancellationRequested();
   console.log(`$ ${JSON.stringify([command, ...args])}`);
@@ -115,6 +121,14 @@ async function runChild(
     stdio: 'inherit',
   });
   trackProcessGroup(child, 'invocation');
+  let timedOut = false;
+  const timeout =
+    timeoutMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          timedOut = true;
+          void stopForCancellation(child, 'invocation');
+        }, timeoutMs);
   let result: { code: number | null; signal: NodeJS.Signals | null };
   try {
     result = await new Promise<{
@@ -125,9 +139,26 @@ async function runChild(
       child.once('exit', (code, signal) => resolveResult({ code, signal }));
     });
     const cancellationStop = cancellationStops.get(child);
-    if (cancellationStop) await cancellationStop;
+    if (cancellationStop) {
+      try {
+        await cancellationStop;
+      } catch (error) {
+        if (timedOut) {
+          throw new Error(
+            `Invocation ${invocationId} timed out after ${timeoutMs} ms; process-group cleanup failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+        throw error;
+      }
+    }
   } finally {
+    if (timeout) clearTimeout(timeout);
     activeProcessGroups.delete(child);
+  }
+  if (timedOut) {
+    throw new Error(`Invocation ${invocationId} timed out after ${timeoutMs} ms`);
   }
   throwIfCancellationRequested();
   if (result.code !== 0) {
@@ -194,7 +225,8 @@ async function waitForPortToClose(port: number, timeoutMs: number): Promise<bool
 
 async function runWithFreshMetro(
   invocation: CommandInvocation,
-  cwd: string
+  cwd: string,
+  timeoutMs: number | undefined
 ): Promise<void> {
   throwIfCancellationRequested();
   const port = invocation.metro!.port;
@@ -233,7 +265,14 @@ async function runWithFreshMetro(
     console.log(
       `Prewarmed ${invocation.metro!.platform} Metro bundle (${bundleByteLength} bytes)`
     );
-    await runChild(invocation.command, invocation.args, cwd, env);
+    await runChild(
+      invocation.id,
+      invocation.command,
+      invocation.args,
+      cwd,
+      env,
+      timeoutMs
+    );
   } finally {
     let cleanupFailed = false;
     let cleanupError: unknown;
@@ -265,18 +304,24 @@ async function runWithFreshMetro(
   }
 }
 
-async function runInvocation(invocation: CommandInvocation, cwd: string): Promise<void> {
+async function runInvocation(
+  invocation: CommandInvocation,
+  cwd: string,
+  timeoutMs: number | undefined
+): Promise<void> {
   throwIfCancellationRequested();
   assertRequiredEnvironment(invocation);
   if (invocation.metro) {
-    await runWithFreshMetro(invocation, cwd);
+    await runWithFreshMetro(invocation, cwd, timeoutMs);
     return;
   }
   await runChild(
+    invocation.id,
     invocation.command,
     invocation.args,
     cwd,
-    childEnvironment(invocation)
+    childEnvironment(invocation),
+    timeoutMs
   );
 }
 
@@ -286,6 +331,9 @@ async function main(): Promise<void> {
   const platform = parsePlatform(valueAfter('--platform'));
   const suitesJson = valueAfter('--suites-json') ?? process.env.SELECTED_SUITES_JSON;
   const selectedSuites = parseSelectedSuitesJson(suitesJson);
+  const invocationTimeoutMs = parseSelectiveInvocationTimeoutMs(
+    process.env.SELECTIVE_INVOCATION_TIMEOUT_MS
+  );
   const metroPort =
     platform === 'ios' || platform === 'android'
       ? parseNativeMetroPort(platform, process.env.DETOX_METRO_PORT)
@@ -308,7 +356,7 @@ async function main(): Promise<void> {
   }
 
   if (plan.nativeBuild?.owner === 'executor') {
-    await runInvocation(plan.nativeBuild.command, root);
+    await runInvocation(plan.nativeBuild.command, root, invocationTimeoutMs);
   } else if (plan.nativeBuild) {
     console.log(
       `Using workflow-owned ${plan.nativeBuild.configuration} build; executor will not rebuild per suite.`
@@ -316,12 +364,12 @@ async function main(): Promise<void> {
   }
 
   for (const invocation of plan.invocations) {
-    await runInvocation(invocation, root);
+    await runInvocation(invocation, root, invocationTimeoutMs);
   }
   throwIfCancellationRequested();
 }
 
-main().catch(async (error) => {
+async function reportFailure(error: unknown): Promise<void> {
   const cleanupResults = await Promise.allSettled(cancellationStops.values());
   for (const result of cleanupResults) {
     if (result.status === 'rejected') {
@@ -336,4 +384,12 @@ main().catch(async (error) => {
   process.exitCode = cancellationSignal
     ? cancellationExitCode(cancellationSignal)
     : 1;
-});
+}
+
+const entrypoint = process.argv[1]
+  ? pathToFileURL(resolve(process.argv[1])).href
+  : undefined;
+if (entrypoint === import.meta.url) {
+  installCancellationHandlers();
+  void main().catch(reportFailure);
+}

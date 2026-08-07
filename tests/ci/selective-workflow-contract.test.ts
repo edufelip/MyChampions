@@ -1050,6 +1050,30 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   assert.match(gate, /expected = "success" if selected == "true" else "skipped"/);
 });
 
+test('web and Android route to separate services with bounded invocations', () => {
+  const source = workflow('trusted-selective-tests.yml');
+  const webLane = jobBlock(source, 'web-selected');
+  const iosLane = jobBlock(source, 'detox-ios-selected');
+  const androidLane = jobBlock(source, 'detox-android-selected');
+
+  assert.match(
+    webLane,
+    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-web-only\]$/m
+  );
+  assert.match(webLane, /^      group: mychampions-web-ui$/m);
+  assert.match(androidLane, /^      group: mychampions-android-detox$/m);
+  assert.doesNotMatch(source, /group: mychampions-wsl-ui/);
+
+  for (const lane of [webLane, iosLane, androidLane]) {
+    assert.match(
+      lane,
+      /^      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'$/m
+    );
+  }
+  assert.match(iosLane, /^    timeout-minutes: 75$/m);
+  assert.match(androidLane, /^    timeout-minutes: 75$/m);
+});
+
 test('only hosted freshness, authorization, and final publication can write the stable exact-head status', () => {
   const source = workflow('trusted-selective-tests.yml');
   const freshness = jobBlock(
