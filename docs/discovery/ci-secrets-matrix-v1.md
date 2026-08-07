@@ -301,11 +301,12 @@ The staged `mychampions-web-only` companion is the deliberate exception to the
 WSL resource-serialization boundary. Its service startup unsets
 `ACTIONS_RUNNER_HOOK_JOB_STARTED`, `ACTIONS_RUNNER_HOOK_JOB_COMPLETED`, and
 `MYCHAMPIONS_NATIVE_STATE_ROOT` in system-service, user-systemd, and detached
-modes. It has no Android label and may run only the Playwright lane. The native
-Android runner retains the existing host lease and recovery root. This exception
-is promoted only with the separate routing PR and is rolled back by restoring
-the shared web/Android concurrency group if either lane regresses by more than
-15 percent.
+modes. It has no Android label; `mychampions-web-only` is the workflow's routing
+policy for the Playwright lane, not an execution-containment boundary. The
+native Android runner retains the existing host lease and recovery root. This
+exception is promoted only with the separate routing PR and is rolled back by
+restoring the shared web/Android concurrency group if either lane regresses by
+more than 15 percent.
 
 The host-owned hook files are installed at:
 

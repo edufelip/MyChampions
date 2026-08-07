@@ -68,7 +68,19 @@ NODE
   fi
 
   curl -fsSL "$asset_url" > "$archive_path"
-  echo "${asset_digest#sha256:}  $archive_path" | sha256sum --check --status
+  actual_digest="$(node - "$archive_path" <<'NODE'
+const crypto = require("crypto");
+const fs = require("fs");
+const digest = crypto.createHash("sha256");
+fs.createReadStream(process.argv[2])
+  .on("data", (chunk) => digest.update(chunk))
+  .on("end", () => process.stdout.write(digest.digest("hex")));
+NODE
+)"
+  if [ "$actual_digest" != "${asset_digest#sha256:}" ]; then
+    echo "Actions runner archive SHA-256 digest mismatch." >&2
+    exit 1
+  fi
   tar -xzf "$archive_path" -C "$staging_root"
 
   (
@@ -88,7 +100,7 @@ NODE
   staging_root=""
 fi
 
-if sudo -n true 2>/dev/null; then
+if sudo -n systemctl show-environment >/dev/null 2>&1; then
   (
     system_service_path="/etc/systemd/system/$runner_service"
     system_service_file="$(mktemp)"

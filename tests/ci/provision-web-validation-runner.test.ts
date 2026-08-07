@@ -22,7 +22,8 @@ test("web runner bootstrap is isolated, verified, and retryable", () => {
   assert.match(script, /mychampions-web-ci-ubuntu/);
   assert.match(script, /mychampions-ci,mychampions-web-only/);
   assert.match(script, /_work-web/);
-  assert.match(script, /sha256sum --check --status/);
+  assert.match(script, /createHash\("sha256"\)/);
+  assert.match(script, /SHA-256 digest mismatch/);
   assert.match(script, /mktemp -d "\$\{runner_root\}\.bootstrap\.XXXXXX"/);
   assert.ok(script.indexOf('cd "$staging_root"') < script.indexOf('mv -t "$runner_root"'));
   assert.match(
@@ -48,12 +49,17 @@ test("bootstrap workflow uses the Android host and a temporary secret", () => {
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /push:\n    branches:\n      - main/);
   assert.doesNotMatch(workflow, /pull_request:/);
+  assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
+  assert.match(workflow, /ref: main/);
   assert.match(workflow, /runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]/);
   assert.match(workflow, /MYCHAMPIONS_WEB_RUNNER_REGISTRATION_TOKEN/);
   assert.doesNotMatch(workflow, /cache:/);
 });
 
-test("failed first registration leaves an empty retryable runner root", () => {
+function exerciseFirstRegistration(options: {
+  publishedDigest?: string;
+  configExitStatus?: number;
+}) {
   const temp = mkdtempSync(join(tmpdir(), "mychampions-web-runner-"));
   try {
     const fixture = join(temp, "fixture");
@@ -62,7 +68,10 @@ test("failed first registration leaves an empty retryable runner root", () => {
     const runnerRoot = join(temp, "runner");
     mkdirSync(fixture);
     mkdirSync(bin);
-    writeFileSync(join(fixture, "config.sh"), "#!/usr/bin/env bash\nexit 23\n");
+    writeFileSync(
+      join(fixture, "config.sh"),
+      `#!/usr/bin/env bash\nexit ${options.configExitStatus ?? 0}\n`
+    );
     chmodSync(join(fixture, "config.sh"), 0o755);
     assert.equal(
       spawnSync("tar", ["-czf", archive, "-C", fixture, "config.sh"]).status,
@@ -76,7 +85,7 @@ test("failed first registration leaves an empty retryable runner root", () => {
         {
           name: "actions-runner-linux-x64-9.9.9.tar.gz",
           browser_download_url: "https://example.test/runner.tar.gz",
-          digest: `sha256:${digest}`,
+          digest: `sha256:${options.publishedDigest ?? digest}`,
         },
       ],
     });
@@ -88,9 +97,6 @@ test("failed first registration leaves an empty retryable runner root", () => {
         'else /bin/cat "$MOCK_RUNNER_ARCHIVE"; fi\n'
     );
     chmodSync(curl, 0o755);
-    writeFileSync(join(bin, "sha256sum"), "#!/usr/bin/env bash\nexit 0\n");
-    chmodSync(join(bin, "sha256sum"), 0o755);
-
     const result = spawnSync("bash", ["scripts/ci/provision-web-validation-runner.sh"], {
       encoding: "utf8",
       env: {
@@ -106,13 +112,28 @@ test("failed first registration leaves an empty retryable runner root", () => {
       },
     });
 
-    assert.equal(result.status, 23, result.stderr);
-    assert.deepEqual(readdirSync(runnerRoot), []);
-    assert.deepEqual(
-      readdirSync(temp).filter((entry) => entry.startsWith("runner.bootstrap.")),
-      []
-    );
+    return {
+      result,
+      runnerEntries: readdirSync(runnerRoot),
+      stagingEntries: readdirSync(temp).filter((entry) =>
+        entry.startsWith("runner.bootstrap.")
+      ),
+    };
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
+}
+
+test("failed first registration leaves an empty retryable runner root", () => {
+  const outcome = exerciseFirstRegistration({ configExitStatus: 23 });
+  assert.equal(outcome.result.status, 23, outcome.result.stderr);
+  assert.deepEqual(outcome.runnerEntries, []);
+  assert.deepEqual(outcome.stagingEntries, []);
+});
+
+test("runner archive digest mismatch fails before registration", () => {
+  const outcome = exerciseFirstRegistration({ publishedDigest: "0".repeat(64) });
+  assert.notEqual(outcome.result.status, 0);
+  assert.deepEqual(outcome.runnerEntries, []);
+  assert.deepEqual(outcome.stagingEntries, []);
 });
