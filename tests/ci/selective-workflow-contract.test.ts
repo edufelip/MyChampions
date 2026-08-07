@@ -29,6 +29,9 @@ const workflows = new Map(
   ])
 );
 const detoxConfigSource = readFileSync(join(root, '.detoxrc.js'), 'utf8');
+const packageManifest = JSON.parse(
+  readFileSync(join(root, 'package.json'), 'utf8')
+) as { packageManager?: unknown };
 
 function workflow(name: string): string {
   const source = workflows.get(name);
@@ -1065,6 +1068,7 @@ test('web and Android route to separate services with bounded invocations', () =
     webLane,
     /uses: actions\/setup-node@[a-f0-9]+[\s\S]*?- name: Enable repository Yarn\n        run: corepack enable\n      - run: yarn install --frozen-lockfile --no-progress/
   );
+  assert.equal(packageManifest.packageManager, 'yarn@1.22.22');
   assert.match(androidLane, /^      group: mychampions-android-detox$/m);
   assert.doesNotMatch(source, /group: mychampions-wsl-ui/);
 

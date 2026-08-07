@@ -111,11 +111,11 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 
 | Area | Evidence |
 |---|---|
-| Unit tests | 1508 total; 1472 passed, 36 skipped, 0 failed. |
+| Unit tests | Authoritative final routing/hotfix worktree: 1513 total; 1477 passed, 36 skipped, 0 failed. The earlier bootstrap-only branch had 1508 total before five bootstrap/timeout contract cases were added. |
 | Integration tests | Bootstrap idempotency runs `31139926304` and `31139984275` passed. |
-| E2E tests | Bootstrap exact-head full trusted run `31137603448` passed web, iOS, Android, and final publication. Routing exact-head run pending. |
+| E2E tests | Bootstrap exact-head full trusted run `31137603448` and routing exact-head full trusted run `31140123003` passed web, iOS, Android, and final publication. Hotfix exact-head run pending. |
 | Lint/typecheck | `yarn lint` and `yarn tsc --noEmit` passed. |
-| Build | Bootstrap exact-head native trusted CI passed; routing exact-head build pending. |
+| Build | Bootstrap and routing exact-head native trusted CI passed; hotfix exact-head build pending. |
 | Deploy/config checks | Runner API online with exact labels; initial provision and no-secret idempotency runs passed; temporary registration secret absent. |
 | Docs consulted/updated | Kickoff docs listed above; runner boundary recorded in `docs/discovery/ci-secrets-matrix-v1.md`. |
 | Report/log paths | `https://github.com/edufelip/MyChampions/actions/runs/31137603448`, `https://github.com/edufelip/MyChampions/actions/runs/31139926304`, `https://github.com/edufelip/MyChampions/actions/runs/31139984275` |
