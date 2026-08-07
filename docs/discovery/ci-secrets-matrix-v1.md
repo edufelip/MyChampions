@@ -21,7 +21,7 @@ reproducible and auditable.
   protected default branch `main`. Its hosted authorization job validates the
   triggering run against the live pull-request API before candidate checkout or
   self-hosted scheduling. Merge-group authorization validates every associated
-  live pull request. Direct `main` push and schedule use the trusted workflow
+  live pull request. Direct `main` push uses the trusted workflow
   from `main` without publishing the SHA-global pull-request status; manual
   execution requires `workflow_dispatch` at ref `main`, a PR number resolved live
   through the API, and full selection. The trusted workflow has no direct
@@ -213,7 +213,7 @@ reproducible and auditable.
 |---|---|---|
 | `trusted-selective-freshness.yml` | Protected-`main`, GitHub-hosted-only owner/upstream `pull_request_target` metadata invalidator; no candidate checkout | None |
 | `pr-selective-tests.yml` | GitHub-hosted-only `pull_request` preflight for `main`, `release/**`, and `hotfix/**`, plus future-compatible `merge_group`; never checks out candidate code or targets self-hosted labels; uses `statuses: read` to await trusted freshness pending for its canonical exact-event fingerprint | None |
-| `trusted-selective-tests.yml` | Protected-`main` authoritative workflow; accepts authorized `workflow_run`, direct `main` push, schedule, and `workflow_dispatch` at ref `main` with a live-resolved PR number and forced full selection; push/schedule publish no PR gate; has no direct `merge_group`, release-branch, or hotfix-branch trigger; authorized release/hotfix PR workflow runs force full | `ENV_FILE` only in selected iOS/Android jobs; authorization, impact, fast-quality, web, and hosted status jobs use no repository secret |
+| `trusted-selective-tests.yml` | Protected-`main` authoritative workflow; accepts authorized `workflow_run`, direct `main` push, and `workflow_dispatch` at ref `main` with a live-resolved PR number and forced full selection; push publishes no PR gate; has no direct `merge_group`, release-branch, or hotfix-branch trigger; authorized release/hotfix PR workflow runs force full | `ENV_FILE` only in selected iOS/Android jobs; authorization, impact, fast-quality, web, and hosted status jobs use no repository secret |
 | `android-pr.yml` | Manual-only legacy Android validation | `ENV_FILE` |
 | `ios-pr.yml` | Manual-only legacy iOS validation | `ENV_FILE` |
 | `web-pr.yml` | Manual-only legacy web validation | None |
@@ -247,9 +247,9 @@ user-library closure was proved by launching headless WebKit from the same
 systemd service environment, creating a page, and reading
 `WEBKIT_SERVICE_PROBE=webkit-ready`, only the selected web job sets
 `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1`. The runner service does not set
-that variable globally. Actual selected Playwright suites remain the runtime
-proof, and the scheduled complete matrix regularly launches every configured
-browser. Re-run the service-context probe and rebuild the user-library closure
+that variable globally. Actual selected Playwright suites and owner-dispatched
+full validation remain the runtime proof for every configured browser. Re-run
+the service-context probe and rebuild the user-library closure
 whenever Playwright, WebKit, or Ubuntu changes. The pre-change files remain
 recoverable as:
 
@@ -354,7 +354,7 @@ operation.
 
 | Gate | Required evidence | Status |
 |---|---|---|
-| Trusted workflow provenance | Read-only workflow/run evidence proves `trusted-selective-freshness.yml` is registered on protected default `main`, runs hosted-only through `pull_request_target`, and checks out no candidate code; PR preflight bases are limited to `main`, `release/**`, and `hotfix/**`, merge-group preflight is hosted-only, and `trusted-selective-tests.yml` is loaded from protected default branch `main`. It has no direct merge-group/release/hotfix trigger, release/hotfix PRs force full, push/schedule resolve from `main` without publishing the PR gate, and manual dispatch is accepted only at ref `main` with a live-resolved PR number and forced full selection | Pending verification |
+| Trusted workflow provenance | Read-only workflow/run evidence proves `trusted-selective-freshness.yml` is registered on protected default `main`, runs hosted-only through `pull_request_target`, and checks out no candidate code; PR preflight bases are limited to `main`, `release/**`, and `hotfix/**`, merge-group preflight is hosted-only, and `trusted-selective-tests.yml` is loaded from protected default branch `main`. It has no direct merge-group/release/hotfix/schedule trigger, release/hotfix PRs force full, push resolves from `main` without publishing the PR gate, and manual dispatch is accepted only at ref `main` with a live-resolved PR number and forced full selection | Pending verification |
 | Authorization and stale-run rejection | Negative probes cover fork upstream, actor/triggering-actor/sender mismatch, wrong workflow path/ref/SHA, wrong event/ref, malformed triggering data, live API head mismatch, and a PR whose head moves after preflight; merge-group evidence validates every associated live PR; every rejection occurs before candidate checkout/self-hosted scheduling, while one exact owner-authored upstream case proceeds | Pending verification |
 | Token permission isolation and status publication | Workflow/job permissions prove candidate/self-hosted jobs have only `contents: read`; only the hosted freshness invalidator, authorization/status initializer, and finalizer have `statuses: write`; the preflight has `statuses: read`. Freshness posts the pending description for the canonical exact-event fingerprint before preflight completion, then authorized validation publishes run-owned pending and success/failure for exact context `Selective CI gate`; fork/unidentifiable denial publishes no status | Pending verification |
 | Status concurrency and SHA uniqueness | The freshness workflow uses stable per-pull-request `cancel-in-progress: true` to coalesce superseded metadata work before its writer job enters the repository-global queue; all three writer jobs share `queue: max` serialization; same-PR/head validation reruns share stable cancellation; initializer/finalizer require one unique eligible open, ready, owner-authored upstream PR for the head; final publication proves the latest pending target is still owned by that run, so a `ci:full` label change cannot leave or overwrite stale success | Pending verification |

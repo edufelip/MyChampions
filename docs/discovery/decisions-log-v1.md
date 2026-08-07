@@ -461,7 +461,7 @@
     manifest, unit, lint, type, and diff checks. A normal feature change runs the
     affected Playwright and Detox suites on every platform declared by those
     suites. Shared navigation, localization, native, global design-system, unknown
-    runtime, invalid metadata, merge-queue, scheduled, release/hotfix, and
+    runtime, invalid metadata, merge-queue, release/hotfix, and
     `ci:full` inputs broaden to the complete applicable matrix.
   - Detox fixture profiles are executable, validated contracts. Every selected
     phase owns a fresh Metro process and explicit app/test environment. Runtime
@@ -526,8 +526,9 @@
     Only bounded failure diagnostics may be uploaded, with one-day retention.
     GitHub Actions-backed caches are disabled; persistent caches are local to the
     self-hosted hosts.
-  - A daily scheduled full matrix and release/hotfix full matrix provide ongoing
-    omission detection. Merge-group full-matrix handling remains checked-in for
+  - Owner-dispatched full validation and the release/hotfix full matrix provide
+    omission detection without an unattended daily native run. Merge-group
+    full-matrix handling remains checked-in for
     future organization-owned repository use; GitHub does not offer merge queues
     to this personal public repository. Any reproducible selection miss pauses
     promotion and uses the `ci:full` label or an owner-dispatched full run until
@@ -603,8 +604,8 @@
     queues are available to organization-owned public repositories, not this
     personal public repository. Current merge safety therefore uses strict
     up-to-date branch protection.
-  - Direct push-to-`main` and schedule entrypoints execute the trusted workflow
-    from `main` but never publish the SHA-global pull-request status context.
+  - Direct push-to-`main` executes the trusted workflow
+    from `main` but never publishes the SHA-global pull-request status context.
     Manual execution is allowed only through `workflow_dispatch` at ref `main`;
     it accepts a pull-request number, resolves the live head/base via API, and
     forces the complete matrix. These paths receive equivalent hosted

@@ -432,7 +432,6 @@ test('trusted workflow is default-branch sourced and authorizes exact candidates
     triggers,
     /push:[\s\S]*?branches:[\s\S]*?- main/
   );
-  assert.match(triggers, /^  schedule:$/m);
   assert.match(triggers, /^  workflow_dispatch:$/m);
   assert.match(
     triggers,
@@ -440,7 +439,7 @@ test('trusted workflow is default-branch sourced and authorizes exact candidates
   );
   assert.doesNotMatch(
     triggers,
-    /^  (?:pull_request|pull_request_target|merge_group):/m
+    /^  (?:pull_request|pull_request_target|merge_group|schedule):/m
   );
   assert.match(triggers, /^permissions: \{\}$/m);
 
@@ -459,7 +458,7 @@ test('trusted workflow is default-branch sourced and authorizes exact candidates
   );
   assert.match(
     authorization,
-    /if event_name != "schedule":[\s\S]*?env\("EVENT_SENDER"\) != OWNER/
+    /env\("EVENT_SENDER"\) != OWNER/
   );
   assert.match(
     authorization,
@@ -936,7 +935,6 @@ test('selective workflow keeps universal checks and conservative full fallbacks'
   assert.match(fastQuality, /git diff --check "\$merge_base" "\$HEAD_SHA"/);
 
   assert.match(authorization, /run_event == "merge_group"/);
-  assert.match(authorization, /event_name == "schedule"/);
   assert.match(authorization, /event_name == "workflow_dispatch"/);
   assert.match(authorization, /force_full = True/);
   assert.match(authorization, /== "ci:full"/);
