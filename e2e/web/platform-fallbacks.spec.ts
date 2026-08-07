@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('@functional platform fallbacks', () => {
+test.describe(
+  '@functional @feature:connections @feature:subscription @feature:platform platform fallbacks',
+  () => {
   test('manual invite entry remains available when browser camera permission is denied', async ({
     browser,
   }) => {
@@ -42,4 +44,5 @@ test.describe('@functional platform fallbacks', () => {
     await page.getByTestId('settings.languageSelect.saveButton').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
   });
-});
+  }
+);

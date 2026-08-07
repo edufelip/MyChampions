@@ -39,7 +39,9 @@ const viewports = [
   { name: 'desktop', width: 1440, height: 1000 },
 ];
 
-test.describe('@smoke responsive shell', () => {
+test.describe(
+  '@smoke @critical @feature:shell @feature:auth @feature:student @feature:professional @feature:connections @feature:nutrition @feature:training responsive shell',
+  () => {
   for (const viewport of viewports) {
     test(`${viewport.name} shell has no horizontal overflow and supports role onboarding`, async ({ page }) => {
       await page.setViewportSize(viewport);
@@ -231,9 +233,10 @@ test.describe('@smoke responsive shell', () => {
       page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
     ).toBeLessThanOrEqual(1);
   });
-});
+  }
+);
 
-test.describe('@accessibility keyboard and dialog behavior', () => {
+test.describe('@accessibility @critical @feature:shell keyboard and dialog behavior', () => {
   test('primary actions expose explicit readable enabled and disabled states', async ({ page }) => {
     await page.goto('/auth/role-selection');
     const continueButton = page.getByTestId('auth.roleSelection.continueButton');

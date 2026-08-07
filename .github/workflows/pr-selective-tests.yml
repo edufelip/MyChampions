@@ -1,0 +1,184 @@
+name: Selective test impact (shadow)
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - release/**
+      - hotfix/**
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - labeled
+      - unlabeled
+  push:
+    branches:
+      - develop
+  merge_group:
+  workflow_dispatch:
+    inputs:
+      force_full:
+        description: Select every registered CI suite
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: selective-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  impact:
+    name: Resolve affected features
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.resolve.outputs.mode }}
+      has_web: ${{ steps.resolve.outputs.has_web }}
+      has_detox_ios: ${{ steps.resolve.outputs.has_detox_ios }}
+      has_detox_android: ${{ steps.resolve.outputs.has_detox_android }}
+      full_fallback: ${{ steps.resolve.outputs.full_fallback }}
+      web_matrix: ${{ steps.resolve.outputs.web_matrix }}
+      detox_ios_matrix: ${{ steps.resolve.outputs.detox_ios_matrix }}
+      detox_android_matrix: ${{ steps.resolve.outputs.detox_android_matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: yarn.lock
+      - run: yarn install --frozen-lockfile --no-progress
+      - name: Validate ownership and suite metadata
+        run: yarn test:impact
+      - id: resolve
+        name: Resolve selective test matrix
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+          FORCE_FULL_INPUT: ${{ inputs.force_full }}
+          FORCE_FULL_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+          FORCE_FULL_REPOSITORY: ${{ vars.CI_FORCE_FULL }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          base_sha="${PR_BASE_SHA:-${PUSH_BASE_SHA:-}}"
+          head_sha="${PR_HEAD_SHA:-${PUSH_HEAD_SHA:-HEAD}}"
+          force_full=false
+
+          if [[ "$EVENT_NAME" == "merge_group" || "$FORCE_FULL_INPUT" == "true" || "$FORCE_FULL_LABEL" == "true" || "$FORCE_FULL_REPOSITORY" == "true" ]]; then
+            force_full=true
+          fi
+
+          if [[ "$base_sha" =~ ^0+$ ]]; then
+            force_full=true
+            base_sha=""
+          fi
+
+          if [[ "$force_full" == "true" && -z "$base_sha" ]]; then
+            yarn test:impact:resolve --all
+          elif [[ "$force_full" == "true" ]]; then
+            yarn test:impact:resolve --base "$base_sha" --head "$head_sha" --all
+          else
+            yarn test:impact:resolve --base "$base_sha" --head "$head_sha"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: selective-test-impact
+          path: .artifacts/test-impact
+          if-no-files-found: error
+          retention-days: 14
+
+  fast-quality:
+    name: Fast quality checks
+    needs: impact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: yarn.lock
+      - run: yarn install --frozen-lockfile --no-progress
+      - run: yarn test:impact
+      - run: yarn test:unit
+      - run: yarn lint
+      - run: yarn tsc --noEmit
+
+  web-ui-shadow:
+    name: Web UI selection (shadow)
+    needs: impact
+    if: needs.impact.outputs.has_web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: selective-test-impact
+          path: .artifacts/test-impact
+      - name: Report selected Playwright suites
+        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.webSuites.join('\n'))"
+
+  detox-ios-shadow:
+    name: Detox iOS selection (shadow)
+    needs: impact
+    if: needs.impact.outputs.has_detox_ios == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: selective-test-impact
+          path: .artifacts/test-impact
+      - name: Report selected iOS suites and fixture profiles
+        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.detoxIosSuites.join('\n'))"
+
+  detox-android-shadow:
+    name: Detox Android selection (shadow)
+    needs: impact
+    if: needs.impact.outputs.has_detox_android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: selective-test-impact
+          path: .artifacts/test-impact
+      - name: Report selected Android suites and fixture profiles
+        run: node -e "const r=require('./.artifacts/test-impact/impact.json'); console.log(r.detoxAndroidSuites.join('\n'))"
+
+  selective-ci-gate:
+    name: Selective CI gate (shadow)
+    if: always()
+    needs:
+      - impact
+      - fast-quality
+      - web-ui-shadow
+      - detox-ios-shadow
+      - detox-android-shadow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required shadow jobs
+        env:
+          IMPACT_RESULT: ${{ needs.impact.result }}
+          FAST_RESULT: ${{ needs.fast-quality.result }}
+          WEB_RESULT: ${{ needs.web-ui-shadow.result }}
+          IOS_RESULT: ${{ needs.detox-ios-shadow.result }}
+          ANDROID_RESULT: ${{ needs.detox-android-shadow.result }}
+        run: |
+          for result in "$IMPACT_RESULT" "$FAST_RESULT" "$WEB_RESULT" "$IOS_RESULT" "$ANDROID_RESULT"; do
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "Selective CI shadow dependency failed with result: $result" >&2
+              exit 1
+            fi
+          done
+          echo "Shadow-mode impact resolution and fast checks passed."

@@ -11,7 +11,7 @@ async function expectReadyStudentHome(page: Page) {
   await expect(home.getByTestId('student.home.accountButton')).toBeVisible();
 }
 
-test.describe('@server-auth browser cookie session', () => {
+test.describe('@server-auth @critical @feature:auth browser cookie session', () => {
   test('creates an account, restores rotated cookie auth, signs in again, and logs out', async ({
     context,
     page,

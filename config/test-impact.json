@@ -1,0 +1,755 @@
+{
+  "schemaVersion": 1,
+  "maxChangedFiles": 500,
+  "criticalSuites": [
+    "detox:student",
+    "web:shell"
+  ],
+  "documentationPaths": [
+    "docs/**",
+    "*.md",
+    ".github/ISSUE_TEMPLATE/**"
+  ],
+  "runtimePaths": [
+    "app/**",
+    "assets/**",
+    "components/**",
+    "constants/**",
+    "features/**",
+    "hooks/**",
+    "localization/**",
+    "ios/**",
+    "android/**",
+    "e2e/**",
+    "scripts/**",
+    ".github/workflows/**",
+    "*.ts",
+    "*.tsx",
+    "*.js",
+    "*.mjs",
+    "*.json",
+    "yarn.lock"
+  ],
+  "fullFallbackPaths": [
+    "config/test-impact.json",
+    "scripts/ci/**",
+    "tests/ci/**",
+    ".github/workflows/**",
+    "package.json",
+    "yarn.lock",
+    "app.config.ts",
+    "app.json",
+    "tsconfig.json",
+    "eslint.config.js",
+    ".detoxrc.js",
+    "playwright*.config.ts"
+  ],
+  "sharedRules": [
+    {
+      "id": "navigation-shell",
+      "paths": [
+        "app/_layout.tsx",
+        "app/index.tsx",
+        "app/(tabs)/**",
+        "features/auth/auth-route-guard.logic.ts",
+        "features/auth/auth-session.tsx"
+      ],
+      "impact": "all"
+    },
+    {
+      "id": "design-system-global",
+      "paths": [
+        "constants/design-system.ts",
+        "constants/theme.ts"
+      ],
+      "impact": "all"
+    },
+    {
+      "id": "design-system-components",
+      "paths": [
+        "components/ds/**",
+        "components/ui/**"
+      ],
+      "impact": "reverse-importers"
+    },
+    {
+      "id": "diagnostics-and-test-infrastructure",
+      "paths": [
+        "features/debug/**",
+        "features/e2e/**",
+        "features/id-source.ts",
+        "features/id-source.test.ts"
+      ],
+      "impact": "reverse-importers"
+    },
+    {
+      "id": "localization",
+      "paths": [
+        "localization/**",
+        "docs/screens/v2/localized-copy-table-v2.md"
+      ],
+      "impact": "all"
+    },
+    {
+      "id": "native-ios",
+      "paths": [
+        "ios/**"
+      ],
+      "impact": "all",
+      "platforms": [
+        "ios",
+        "android"
+      ]
+    },
+    {
+      "id": "native-android",
+      "paths": [
+        "android/**"
+      ],
+      "impact": "all",
+      "platforms": [
+        "android"
+      ]
+    }
+  ],
+  "features": {
+    "auth": {
+      "sourcePaths": [
+        "features/auth/**",
+        "app/auth/**"
+      ],
+      "dependsOn": [
+        "platform"
+      ],
+      "unitTests": [
+        "features/auth/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:auth",
+        "web:server-auth",
+        "web:shell"
+      ],
+      "detoxSuites": [
+        "detox:auth"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "connections": {
+      "sourcePaths": [
+        "features/connections/**",
+        "app/student/professionals.tsx",
+        "app/professional/pending.tsx"
+      ],
+      "dependsOn": [
+        "auth",
+        "platform"
+      ],
+      "unitTests": [
+        "features/connections/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:connections",
+        "web:shell"
+      ],
+      "detoxSuites": [
+        "detox:connections"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "nutrition": {
+      "sourcePaths": [
+        "features/nutrition/**",
+        "app/student/nutrition/**",
+        "app/student/nutrition.tsx",
+        "app/professional/nutrition/**",
+        "app/professional/nutrition.tsx",
+        "app/(tabs)/nutrition/**",
+        "app/(tabs)/nutrition.tsx",
+        "app/(tabs)/recipes.tsx",
+        "app/shared/recipes/**"
+      ],
+      "dependsOn": [
+        "auth",
+        "connections",
+        "offline",
+        "platform"
+      ],
+      "unitTests": [
+        "features/nutrition/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:nutrition",
+        "web:shell"
+      ],
+      "detoxSuites": [
+        "detox:nutrition"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "training": {
+      "sourcePaths": [
+        "features/training/**",
+        "app/student/training/**",
+        "app/student/training.tsx",
+        "app/professional/training/**",
+        "app/professional/training.tsx",
+        "app/(tabs)/training.tsx"
+      ],
+      "dependsOn": [
+        "auth",
+        "connections",
+        "offline",
+        "plans",
+        "platform"
+      ],
+      "unitTests": [
+        "features/training/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:training",
+        "web:shell"
+      ],
+      "detoxSuites": [
+        "detox:training"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "plans": {
+      "sourcePaths": [
+        "features/plans/**"
+      ],
+      "dependsOn": [
+        "auth",
+        "connections",
+        "platform"
+      ],
+      "unitTests": [
+        "features/plans/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:nutrition",
+        "web:training"
+      ],
+      "detoxSuites": [
+        "detox:plans"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "professional": {
+      "sourcePaths": [
+        "features/professional/**",
+        "app/professional/**",
+        "app/(tabs)/students.tsx"
+      ],
+      "dependsOn": [
+        "auth",
+        "connections",
+        "nutrition",
+        "offline",
+        "plans",
+        "platform"
+      ],
+      "unitTests": [
+        "features/professional/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:professional",
+        "web:shell"
+      ],
+      "detoxSuites": [
+        "detox:professional"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "subscription": {
+      "sourcePaths": [
+        "features/subscription/**",
+        "app/professional/subscription.tsx"
+      ],
+      "dependsOn": [
+        "auth",
+        "platform",
+        "professional"
+      ],
+      "unitTests": [
+        "features/subscription/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:subscription"
+      ],
+      "detoxSuites": [
+        "detox:subscription",
+        "detox:revenuecat-live"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "support": {
+      "sourcePaths": [
+        "features/support/**",
+        "components/ds/patterns/SupportModal.tsx"
+      ],
+      "dependsOn": [
+        "auth",
+        "offline",
+        "platform"
+      ],
+      "unitTests": [
+        "features/support/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:shell"
+      ],
+      "detoxSuites": [
+        "detox:support"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "student": {
+      "sourcePaths": [
+        "features/student/**",
+        "app/student/home.tsx",
+        "app/(tabs)/index.tsx"
+      ],
+      "dependsOn": [
+        "auth",
+        "connections",
+        "nutrition",
+        "offline",
+        "plans",
+        "subscription",
+        "training"
+      ],
+      "unitTests": [
+        "features/student/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:student",
+        "web:shell"
+      ],
+      "detoxSuites": [
+        "detox:student"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "analytics": {
+      "sourcePaths": [
+        "features/analytics/**"
+      ],
+      "dependsOn": [
+        "auth",
+        "platform"
+      ],
+      "unitTests": [
+        "features/analytics/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:shell"
+      ],
+      "detoxSuites": [],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "offline": {
+      "sourcePaths": [
+        "features/offline/**"
+      ],
+      "dependsOn": [
+        "platform"
+      ],
+      "unitTests": [
+        "features/offline/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:shell"
+      ],
+      "detoxSuites": [
+        "detox:offline"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    },
+    "platform": {
+      "sourcePaths": [
+        "features/platform/**",
+        "app/shared/webview.tsx",
+        "app/shared/webview.web.tsx",
+        "app/+html.tsx"
+      ],
+      "dependsOn": [],
+      "unitTests": [
+        "features/platform/**/*.test.ts"
+      ],
+      "webSuites": [
+        "web:platform"
+      ],
+      "detoxSuites": [
+        "detox:platform"
+      ],
+      "owners": [
+        "@edufelip"
+      ]
+    }
+  },
+  "allowedDependencyCycles": [
+    [
+      "nutrition",
+      "plans"
+    ],
+    [
+      "professional",
+      "subscription"
+    ]
+  ],
+  "suites": {
+    "detox:auth": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/auth-sign-in.e2e.test.js",
+        "e2e/auth-role-selection.e2e.test.js",
+        "e2e/auth-terms.e2e.test.js",
+        "e2e/account-password-reset.e2e.test.js",
+        "e2e/account-deletion.e2e.test.js",
+        "e2e/account-settings.e2e.test.js",
+        "e2e/language-select.e2e.test.js"
+      ],
+      "fixtureProfile": "auth-entry-and-authenticated",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:connections": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/student-professionals.e2e.test.js",
+        "e2e/professional-home-invite-code.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-connections",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:nutrition": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/student-nutrition.e2e.test.js",
+        "e2e/custom-meal-ai-analysis.e2e.test.js",
+        "e2e/custom-meal-builder.e2e.test.js",
+        "e2e/custom-meal-image-upload.e2e.test.js",
+        "e2e/custom-meal-library.e2e.test.js",
+        "e2e/professional-nutrition-builder.e2e.test.js",
+        "e2e/shared-recipe.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-nutrition",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:training": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/student-training.e2e.test.js",
+        "e2e/professional-training-builder.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-training",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:plans": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/professional-bulk-assign.e2e.test.js",
+        "e2e/student-self-managed-builder.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-plans",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:professional": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/professional-specialty-removal.e2e.test.js",
+        "e2e/professional-specialty.e2e.test.js",
+        "e2e/professional-student-profile.e2e.test.js",
+        "e2e/professional-student-roster.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:subscription": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/professional-subscription-actions.e2e.test.js",
+        "e2e/professional-subscription-cap.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-subscription",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:revenuecat-live": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/revenuecat-test-store.e2e.test.js"
+      ],
+      "fixtureProfile": "provider-live",
+      "tier": "release",
+      "ci": false
+    },
+    "detox:support": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/support-request.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-support",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:student": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/student-home.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-student",
+      "tier": "critical",
+      "ci": true
+    },
+    "detox:offline": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/offline-account-write-lock.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-offline",
+      "tier": "feature",
+      "ci": true
+    },
+    "detox:platform": {
+      "runner": "detox",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "specs": [
+        "e2e/shared-webview.e2e.test.js"
+      ],
+      "fixtureProfile": "authenticated-platform",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:auth": {
+      "runner": "playwright",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web/platform-fallbacks.spec.ts",
+        "e2e/web/responsive-shell.spec.ts"
+      ],
+      "grep": "@feature:auth|@critical",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:server-auth": {
+      "runner": "playwright-server",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "specs": [
+        "e2e/web-server/auth-session.spec.ts"
+      ],
+      "grep": "@feature:auth|@critical",
+      "tier": "critical",
+      "ci": true
+    },
+    "web:connections": {
+      "runner": "playwright",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web/platform-fallbacks.spec.ts",
+        "e2e/web/responsive-shell.spec.ts"
+      ],
+      "grep": "@feature:connections",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:nutrition": {
+      "runner": "playwright",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts"
+      ],
+      "grep": "@feature:nutrition",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:training": {
+      "runner": "playwright",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts"
+      ],
+      "grep": "@feature:training",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:professional": {
+      "runner": "playwright",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/visual-evidence.spec.ts"
+      ],
+      "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:subscription": {
+      "runner": "playwright",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "specs": [
+        "e2e/web/platform-fallbacks.spec.ts",
+        "e2e/web/visual-evidence.spec.ts"
+      ],
+      "grep": "@feature:subscription",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:student": {
+      "runner": "playwright",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/visual-evidence.spec.ts"
+      ],
+      "grep": "@feature:student",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:platform": {
+      "runner": "playwright",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "specs": [
+        "e2e/web/platform-fallbacks.spec.ts"
+      ],
+      "grep": "@feature:platform",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:shell": {
+      "runner": "playwright",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts"
+      ],
+      "grep": "@feature:shell|@critical",
+      "tier": "critical",
+      "ci": true
+    },
+    "web:flow-atlas-auth": {
+      "runner": "playwright-evidence",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web-flows-auth/authentication-flow-atlas.spec.ts"
+      ],
+      "grep": "@feature:auth",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:flow-atlas-complete": {
+      "runner": "playwright-evidence",
+      "projects": [
+        "chromium"
+      ],
+      "specs": [
+        "e2e/web-flows/complete-flow-atlas.spec.ts"
+      ],
+      "grep": "@feature:shell",
+      "tier": "evidence",
+      "ci": false
+    }
+  }
+}

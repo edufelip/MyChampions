@@ -1,0 +1,30 @@
+# Default ownership remains with the repository maintainer until feature teams exist.
+* @edufelip
+
+# Feature-aware CI architecture and ownership metadata.
+/config/test-impact.json @edufelip
+/scripts/ci/ @edufelip
+/tests/ci/ @edufelip
+/.github/workflows/ @edufelip
+
+# Product feature boundaries.
+/features/auth/ @edufelip
+/features/connections/ @edufelip
+/features/nutrition/ @edufelip
+/features/training/ @edufelip
+/features/plans/ @edufelip
+/features/professional/ @edufelip
+/features/subscription/ @edufelip
+/features/support/ @edufelip
+/features/student/ @edufelip
+/features/analytics/ @edufelip
+/features/offline/ @edufelip
+/features/platform/ @edufelip
+
+# Cross-cutting runtime surfaces.
+/app/ @edufelip
+/components/ds/ @edufelip
+/localization/ @edufelip
+/ios/ @edufelip
+/android/ @edufelip
+/e2e/ @edufelip
