@@ -10,7 +10,7 @@ Human approval required: Yes — approved by the user on 2026-08-06 with “PLEA
 
 ## Goal
 
-Remove the unattended daily full-native run, isolate Playwright on a companion WSL runner, allow web and Android validation to overlap, and bound individual selected test invocations without weakening exact-head selective CI.
+Remove the unattended daily full-native run, isolate Playwright on a companion WSL runner, evaluate controlled web/Android overlap with a 15-percent rollback threshold, and bound individual selected test invocations without weakening exact-head selective CI.
 
 ## Non-Goals
 
@@ -49,7 +49,7 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 | A1 | Daily unattended trigger | Trusted selective CI has no schedule trigger; push and manual execution remain. | PR #8 exact-head gate and merged workflow inspection. | Passed | PR #8 merged at `9f004d0`; exact-head run `31132934917` passed web/iOS/Android and published a successful gate; merged `main` has `push` and `workflow_dispatch` with no `schedule`. |
 | A2 | First runner bootstrap | Companion registers as `mychampions-web-ci-ubuntu` with `mychampions-web-only`. | Runner API snapshot and green bootstrap workflow. | Passed | PR #9 merged at `cc075e4`; push run `31139926304` passed in 42 seconds; runner API reported `mychampions-web-ci-ubuntu` online with exactly `mychampions-ci,mychampions-web-only`; the temporary registration secret was deleted. |
 | A3 | Repeated bootstrap | Existing registered runner starts/reconciles without a new token or duplicate service. | Second bootstrap workflow and script tests. | Passed | No-secret manual run `31139984275` passed in 12 seconds against the existing service. |
-| A4 | Mixed web and Android selection | Web and Android jobs start concurrently on separate services and use distinct concurrency groups. | Exact-head job timestamps. | Passed scheduling; functional rerun pending | Post-merge run `31142378665` started web on `mychampions-web-ci-ubuntu` and Android on `mychampions-ci-ubuntu` at the identical `02:51:09Z` timestamp, removing the 2m21s-2m24s pre-routing delay. The first fresh web service attempt then exposed missing global Yarn before tests; the follow-up enables repository-pinned Yarn through Corepack. |
+| A4 | Mixed web and Android selection | Evaluate separate-service overlap and restore shared containment if either lane regresses by more than 15 percent. | Exact-head job timestamps and duration comparison. | Rolled back as designed | Run `31142378665` proved exact simultaneous starts. Exact-head run `31143109004` then took 13m56s in Playwright against its 2m18s baseline while Android built concurrently. Both lanes now share `mychampions-wsl-ui`; the companion runner and timeout protections remain. |
 | A5 | Hung selected invocation | Owned process group is terminated after 600000 ms and the invocation ID is reported. | Focused executor tests. | Passed locally | TERM-ignoring leader and descendant fixture was terminated as one exact owned process group; error included `detox:timeout-fixture`. Hosted exact-head proof remains part of this routing PR. |
 | A6 | Local invocation | With no timeout environment variable, local execution remains unbounded. | Focused parser/executor test. | Passed locally | Parser and executor tests confirm absent configuration returns `undefined` and completes an unbounded local invocation. |
 | A7 | Native job containment | iOS and Android jobs stop after 75 minutes while cleanup traps remain active. | Workflow contract test. | Passed locally | Workflow contract asserts 75-minute native jobs, 600000 ms invocation timeout, and retained cleanup steps. |
@@ -66,7 +66,7 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 - network/provider failure: Bootstrap fails without replacing a valid existing registration.
 - old app/client version: Not applicable.
 - unauthenticated/authenticated mismatch: Trusted workflow authorization remains unchanged.
-- concurrency/race condition: Web and Android use separate runner roots and concurrency groups.
+- concurrency/race condition: Web and Android use separate runner roots but share `mychampions-wsl-ui` scheduling after live overlap crossed the rollback threshold.
 - deploy ordering: Bootstrap merges and reports online before routing changes merge.
 - rollback behavior: Restore the shared UI concurrency group if either lane regresses by more than 15%.
 
@@ -74,7 +74,7 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 
 | Risk | Impact | Mitigation | Status |
 |---|---|---|---|
-| Same-host CPU/memory contention | Slower or flaky web/Android jobs | The web-only service deliberately excludes native shared-host hooks; compare against 2m27s web and 37m Android baselines and rollback overlap above 15%. | Open |
+| Same-host CPU/memory contention | Slower or flaky web/Android jobs | The web-only service deliberately excludes native shared-host hooks; compare against 2m27s web and 37m Android baselines and rollback overlap above 15%. | Mitigated — shared concurrency restored after web exceeded the threshold |
 | Runner secret persists | Unnecessary credential exposure | Use a short-lived registration token and delete the repository secret after online verification. | Closed — secret deleted after runner API verification |
 | Timeout kills unrelated process | Host contamination | Terminate only the child’s owned process group using existing ownership helpers. | Open |
 | Routing lands before runner | Permanently queued required check | Separate bootstrap and routing PRs. | Mitigated |
@@ -102,6 +102,7 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 | `yarn tsc --noEmit` | Passed | TypeScript validation. |
 | `git diff --check` | Passed | No whitespace errors. |
 | Post-merge run `31142378665` | Failed before web tests | Live runner routing overlapped web and Android exactly; fresh web runner lacked global `yarn`, so the workflow now enables the `packageManager`-pinned Yarn through Corepack before install. The failed remainder was cancelled to save native resources. |
+| Exact-head run `31143109004` | Rollback threshold fired | Web and Android started together at `03:05:24Z`; Playwright took 13m56s against its 2m18s baseline while Android built, so shared WSL concurrency was restored. |
 
 ## Open Questions
 

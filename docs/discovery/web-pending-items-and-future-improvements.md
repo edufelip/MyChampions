@@ -8,9 +8,10 @@ Code structure, fixture-based Playwright coverage, responsive navigation,
 platform adapters, cookie-session contracts, and the feature-selective workflow
 contract are implemented. The legacy `web-pr.yml` workflow is manual-only.
 The browser lane uses the dedicated `mychampions-web-only` companion, while the
-Android lane retains the native shared-host lock. Their separate concurrency
-groups permit controlled overlap; restore the shared group if either lane
-regresses by more than 15 percent against its pre-split baseline.
+Android lane retains the native shared-host lock. Live overlap made Playwright
+take 13m56s against its 2m18s baseline, so both lanes use the
+shared `mychampions-wsl-ui` concurrency group. The companion and invocation
+timeout protections remain in place.
 The promotion pull request must still satisfy D-195's GitHub-hosted-only PR
 preflight, protected-`main` trusted-workflow provenance, triggering-run/live-PR
 authorization, token isolation, exact-status publishing, all-external fork

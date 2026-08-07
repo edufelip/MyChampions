@@ -1185,7 +1185,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-web-ui
+      group: mychampions-wsl-ui
       cancel-in-progress: false
     env:
       CI: 'true'
@@ -2194,7 +2194,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-android-detox
+      group: mychampions-wsl-ui
       cancel-in-progress: false
     env:
       APP_VARIANT: dev
