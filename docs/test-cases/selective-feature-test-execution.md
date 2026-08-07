@@ -344,6 +344,17 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   the outer exact-group fallback, and cleans the exact owned device within the
   runner's ten-second grace window; the executable cancellation fixture covers
   that nested cleanup.
+- Hosted selective execution sets `SELECTIVE_INVOCATION_TIMEOUT_MS=600000` for
+  web, iOS, and Android. Each planned executor invocation owns a detached process
+  group; crossing the deadline terminates that exact group and reports the
+  invocation ID. The parser fails closed for invalid configured values, while an
+  absent variable keeps local execution unbounded. Native jobs retain their
+  existing cleanup traps and are additionally contained by a 75-minute job
+  limit.
+- The Playwright lane targets only `mychampions-web-only` and uses a web-specific
+  concurrency group. Android retains `mychampions-android` and a distinct native
+  concurrency group, so both may start together. iOS remains isolated on
+  `mychampions-ios`.
 - Normal exit performs the full iOS exact-UDID or Android exact-emulator absence
   proof. Later `if: always()` verification is defense-in-depth, not the
   cancellation guarantee; host hooks are resource-lock-only. Device recovery

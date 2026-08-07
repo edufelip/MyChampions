@@ -7,7 +7,10 @@ This is the complete follow-up register for the web-support work introduced on 2
 Code structure, fixture-based Playwright coverage, responsive navigation,
 platform adapters, cookie-session contracts, and the feature-selective workflow
 contract are implemented. The legacy `web-pr.yml` workflow is manual-only.
-The combined WSL web/Android runner is registered with its shared-host lock.
+The browser lane uses the dedicated `mychampions-web-only` companion, while the
+Android lane retains the native shared-host lock. Their separate concurrency
+groups permit controlled overlap; restore the shared group if either lane
+regresses by more than 15 percent against its pre-split baseline.
 The promotion pull request must still satisfy D-195's GitHub-hosted-only PR
 preflight, protected-`main` trusted-workflow provenance, triggering-run/live-PR
 authorization, token isolation, exact-status publishing, all-external fork

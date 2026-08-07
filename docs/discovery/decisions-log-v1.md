@@ -687,6 +687,18 @@
     arbitrary QEMU signaling, and unrelated ADB/device mutation are prohibited.
     Later `if: always()` verifiers are defense-in-depth, not the cancellation
     guarantee; host hooks remain resource-lock-only.
+  - The web-only companion is the controlled exception to the WSL native host
+    lease. It has only `mychampions-ci,mychampions-web-only`, receives neither
+    native hook environment nor `MYCHAMPIONS_NATIVE_STATE_ROOT`, and can execute
+    only the Playwright lane. Web and Android use distinct concurrency groups;
+    native Android retains its existing hook lease and recovery contract. A
+    greater-than-15-percent regression in either lane restores the prior shared
+    concurrency group without removing the companion or timeout protections.
+  - Hosted selected invocations are bounded at 600000 ms and report the exact
+    invocation ID after terminating their owned process group. An absent timeout
+    variable leaves local execution unbounded. Native jobs have an outer
+    75-minute limit and preserve their existing Metro, emulator, simulator, and
+    secret cleanup paths.
   - Executable contracts must send both `SIGINT` and `SIGTERM` through the
     checked-in supervisor and exact cleanup path, cover interruption before
     metadata handoff, inject cleanup failure, prove retained-record next-run

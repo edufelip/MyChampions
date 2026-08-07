@@ -1180,17 +1180,18 @@ jobs:
       needs.authorize-candidate.result == 'success' &&
       needs.fast-quality.result == 'success' &&
       needs.impact.outputs.has_web == 'true'
-    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-web]
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-web-only]
     timeout-minutes: 45
     permissions:
       contents: read
     concurrency:
-      group: mychampions-wsl-ui
+      group: mychampions-web-ui
       cancel-in-progress: false
     env:
       CI: 'true'
       PLAYWRIGHT_BROWSERS_PATH: /home/eduardo/.cache/ms-playwright-mychampions
       PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'
+      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
       SELECTED_SUITES_JSON: ${{ needs.impact.outputs.web_suites }}
       MYCHAMPIONS_SERVER_ROOT: ${{ github.workspace }}/.ci/mychampions-api
     steps:
@@ -1326,7 +1327,7 @@ jobs:
       needs.fast-quality.result == 'success' &&
       needs.impact.outputs.has_detox_ios == 'true'
     runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
-    timeout-minutes: 120
+    timeout-minutes: 75
     permissions:
       contents: read
     concurrency:
@@ -1340,6 +1341,7 @@ jobs:
       DETOX_METRO_PORT: '18081'
       DETOX_REQUIRE_FRESH_METRO: 'true'
       EXPO_PUBLIC_ENV: dev
+      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
       SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_ios_suites }}
       XCODE_REQUIRED_MAJOR: '26'
     steps:
@@ -2186,11 +2188,11 @@ jobs:
       needs.fast-quality.result == 'success' &&
       needs.impact.outputs.has_detox_android == 'true'
     runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
-    timeout-minutes: 120
+    timeout-minutes: 75
     permissions:
       contents: read
     concurrency:
-      group: mychampions-wsl-ui
+      group: mychampions-android-detox
       cancel-in-progress: false
     env:
       APP_VARIANT: dev
@@ -2200,6 +2202,7 @@ jobs:
       DETOX_CONFIGURATION: android.emu.debug
       DETOX_REQUIRE_FRESH_METRO: 'true'
       EXPO_PUBLIC_ENV: dev
+      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
       SELECTED_SUITES_JSON: ${{ needs.impact.outputs.detox_android_suites }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

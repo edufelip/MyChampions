@@ -5,7 +5,7 @@
 Current bucket: Implementation
 Risk level: High (CI workflow, runner registration, and secret lifecycle)
 Owner: Codex
-Blocked by: Bootstrap runner availability before routing promotion
+Blocked by: None
 Human approval required: Yes — approved by the user on 2026-08-06 with “PLEASE IMPLEMENT THIS PLAN”
 
 ## Goal
@@ -47,12 +47,12 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 | ID | Scenario | Expected Behavior | Evidence Required | Status | Evidence |
 |---|---|---|---|---|---|
 | A1 | Daily unattended trigger | Trusted selective CI has no schedule trigger; push and manual execution remain. | PR #8 exact-head gate and merged workflow inspection. | Passed | PR #8 merged at `9f004d0`; exact-head run `31132934917` passed web/iOS/Android and published a successful gate; merged `main` has `push` and `workflow_dispatch` with no `schedule`. |
-| A2 | First runner bootstrap | Companion registers as `mychampions-web-ci-ubuntu` with `mychampions-web-only`. | Runner API snapshot and green bootstrap workflow. | Pending | |
-| A3 | Repeated bootstrap | Existing registered runner starts/reconciles without a new token or duplicate service. | Second bootstrap workflow and script tests. | Pending | |
+| A2 | First runner bootstrap | Companion registers as `mychampions-web-ci-ubuntu` with `mychampions-web-only`. | Runner API snapshot and green bootstrap workflow. | Passed | PR #9 merged at `cc075e4`; push run `31139926304` passed in 42 seconds; runner API reported `mychampions-web-ci-ubuntu` online with exactly `mychampions-ci,mychampions-web-only`; the temporary registration secret was deleted. |
+| A3 | Repeated bootstrap | Existing registered runner starts/reconciles without a new token or duplicate service. | Second bootstrap workflow and script tests. | Passed | No-secret manual run `31139984275` passed in 12 seconds against the existing service. |
 | A4 | Mixed web and Android selection | Web and Android jobs start concurrently on separate services and use distinct concurrency groups. | Exact-head job timestamps. | Pending | |
-| A5 | Hung selected invocation | Owned process group is terminated after 600000 ms and the invocation ID is reported. | Focused executor tests. | Pending | |
-| A6 | Local invocation | With no timeout environment variable, local execution remains unbounded. | Focused parser/executor test. | Pending | |
-| A7 | Native job containment | iOS and Android jobs stop after 75 minutes while cleanup traps remain active. | Workflow contract test. | Pending | |
+| A5 | Hung selected invocation | Owned process group is terminated after 600000 ms and the invocation ID is reported. | Focused executor tests. | Passed locally | TERM-ignoring leader and descendant fixture was terminated as one exact owned process group; error included `detox:timeout-fixture`. Hosted exact-head proof remains part of this routing PR. |
+| A6 | Local invocation | With no timeout environment variable, local execution remains unbounded. | Focused parser/executor test. | Passed locally | Parser and executor tests confirm absent configuration returns `undefined` and completes an unbounded local invocation. |
+| A7 | Native job containment | iOS and Android jobs stop after 75 minutes while cleanup traps remain active. | Workflow contract test. | Passed locally | Workflow contract asserts 75-minute native jobs, 600000 ms invocation timeout, and retained cleanup steps. |
 | A8 | Success evidence policy | Green runs upload no artifacts and create no Actions caches; failures retain one-day diagnostics. | Workflow contract test and exact-head run artifacts inspection. | Pending | |
 
 ## Edge Cases
@@ -75,7 +75,7 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 | Risk | Impact | Mitigation | Status |
 |---|---|---|---|
 | Same-host CPU/memory contention | Slower or flaky web/Android jobs | The web-only service deliberately excludes native shared-host hooks; compare against 2m27s web and 37m Android baselines and rollback overlap above 15%. | Open |
-| Runner secret persists | Unnecessary credential exposure | Use a short-lived registration token and delete the repository secret after online verification. | Open |
+| Runner secret persists | Unnecessary credential exposure | Use a short-lived registration token and delete the repository secret after online verification. | Closed — secret deleted after runner API verification |
 | Timeout kills unrelated process | Host contamination | Terminate only the child’s owned process group using existing ownership helpers. | Open |
 | Routing lands before runner | Permanently queued required check | Separate bootstrap and routing PRs. | Mitigated |
 
@@ -95,8 +95,9 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 | Command | Result | Notes |
 |---|---|---|
 | `bash -n scripts/ci/provision-web-validation-runner.sh` | Passed | Bootstrap shell syntax. |
-| `yarn tsx --test tests/ci/provision-web-validation-runner.test.ts` | Passed (4/4) | Isolation, retryability, workflow contract, and hook exclusion. |
+| `yarn node --test --import tsx tests/ci/provision-web-validation-runner.test.ts` | Passed (5/5) | Isolation, real archive digest verification, retryability, workflow contract, and hook exclusion. |
 | `yarn test:unit` | Passed (1508 tests; 1472 passed, 36 skipped) | Full unit/contract suite on bootstrap branch. |
+| `yarn test:unit` | Passed (1513 tests; 1477 passed, 36 skipped) | Full unit/contract suite on rebased routing branch. |
 | `yarn lint` | Passed | Expo ESLint scope. |
 | `yarn tsc --noEmit` | Passed | TypeScript validation. |
 | `git diff --check` | Passed | No whitespace errors. |
@@ -110,13 +111,13 @@ Decision: Preserve fail-closed selection and zero-success-artifact/cache policy 
 | Area | Evidence |
 |---|---|
 | Unit tests | 1508 total; 1472 passed, 36 skipped, 0 failed. |
-| Integration tests | Pending |
-| E2E tests | Pending exact-head trusted CI |
+| Integration tests | Bootstrap idempotency runs `31139926304` and `31139984275` passed. |
+| E2E tests | Bootstrap exact-head full trusted run `31137603448` passed web, iOS, Android, and final publication. Routing exact-head run pending. |
 | Lint/typecheck | `yarn lint` and `yarn tsc --noEmit` passed. |
-| Build | Pending native trusted CI |
-| Deploy/config checks | Pending workflow and runner verification |
+| Build | Bootstrap exact-head native trusted CI passed; routing exact-head build pending. |
+| Deploy/config checks | Runner API online with exact labels; initial provision and no-secret idempotency runs passed; temporary registration secret absent. |
 | Docs consulted/updated | Kickoff docs listed above; runner boundary recorded in `docs/discovery/ci-secrets-matrix-v1.md`. |
-| Report/log paths | GitHub run URLs pending |
+| Report/log paths | `https://github.com/edufelip/MyChampions/actions/runs/31137603448`, `https://github.com/edufelip/MyChampions/actions/runs/31139926304`, `https://github.com/edufelip/MyChampions/actions/runs/31139984275` |
 | Screenshot/golden/snapshot paths | Not applicable |
 | Manual/dev smoke | Runner registry and job timestamp inspection |
 | Residual risk | Pending measurement |
