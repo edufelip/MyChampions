@@ -224,6 +224,7 @@ reproducible and auditable.
 | Selected lane | Exact labels | Required host capabilities | Current evidence status |
 |---|---|---|---|
 | Web | `self-hosted, Linux, X64, mychampions-ci, mychampions-web` | Repository-scoped Linux/WSL runner; Git and outbound access; Playwright browser/system dependencies; `unzip` for Bun bootstrap; capacity for Expo and the optional in-memory backend | Existing registration and browser launch probes are capacity evidence only; D-195 owner/trust/action/backend-SHA gates and exact-head browser proof remain pending |
+| Web companion (staged) | `self-hosted, Linux, X64, mychampions-ci, mychampions-web-only` | Repository-scoped Linux/WSL runner at `$HOME/actions-runner-mychampions-web-ci`; Playwright-only capacity; no Android label, native recovery root, or native/shared-host job hooks | Bootstrap capacity only. The trusted workflow must not target this label until its separate routing change passes exact-head validation. Remove `MYCHAMPIONS_WEB_RUNNER_REGISTRATION_TOKEN` immediately after first registration. |
 | Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; `Pixel_10` AVD; Gradle wrapper support | Existing registration, KVM, preboot, and cleanup evidence is capacity evidence only; D-195 owner/trust/action/environment gates and exact-head emulator proof remain pending |
 | iOS | `self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios` | Repository-scoped Apple Silicon runner; Xcode 26 with iOS SDK 26+; disposable owned `iPhone 17` simulator UDID; CocoaPods; Homebrew path | Existing registration and toolchain evidence is capacity evidence only; D-195 owner/trust/action/environment/disposable-UDID gates and exact-head simulator proof remain pending |
 
@@ -295,6 +296,17 @@ This lock is a resource-serialization boundary and defense-in-depth measure, not
 an authorization or sandbox boundary. D-195 authorization belongs to the
 protected-default-branch trusted workflow and its GitHub-hosted triggering-run
 and live-PR validation before candidate checkout or self-hosted scheduling.
+
+The staged `mychampions-web-only` companion is the deliberate exception to the
+WSL resource-serialization boundary. Its service startup unsets
+`ACTIONS_RUNNER_HOOK_JOB_STARTED`, `ACTIONS_RUNNER_HOOK_JOB_COMPLETED`, and
+`MYCHAMPIONS_NATIVE_STATE_ROOT` in system-service, user-systemd, and detached
+modes. It has no Android label; `mychampions-web-only` is the workflow's routing
+policy for the Playwright lane, not an execution-containment boundary. The
+native Android runner retains the existing host lease and recovery root. This
+exception is promoted only with the separate routing PR and is rolled back by
+restoring the shared web/Android concurrency group if either lane regresses by
+more than 15 percent.
 
 The host-owned hook files are installed at:
 
