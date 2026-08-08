@@ -28,6 +28,7 @@ import {
   presentProPaywall,
   PRO_OFFERING_ID,
   resolveAiUpgradeOfferingId,
+  resolveProfessionalOfferingId,
   resolveRevenueCatApiKey,
   resolveRequiredRevenueCatOffering,
   resolveStudentOfferingId,
@@ -145,13 +146,15 @@ export type UseSubscriptionResult = {
   refresh: () => Promise<void>;
   /**
    * Presents the only AI-upgrade offering allowed for the locked account role.
-   * Students use the guarded student offering; professionals use default_professional.
+   * Students use the guarded student offering; professionals use the guarded
+   * production/Test Store professional offering.
    * Missing roles fail closed without presenting a paywall.
    */
   openAiUpgradePaywall: (role: RoleIntent | null) => Promise<void>;
   /**
    * Presents the native RevenueCat paywall for the professional subscription (D-152).
-   * Uses the dashboard default offering (professional_pro entitlement products).
+   * Uses default_professional in production and the explicitly configured
+   * test_professional offering only for development Test Store builds.
    * After the paywall is dismissed, both entitlement statuses are refreshed.
    */
   openProPaywall: () => Promise<void>;
@@ -499,14 +502,23 @@ export function useSubscription(
     });
   }, [activeAuthUid, applyE2EAiSubscriptionSuccess, deps, fetchStatus, runRevenueCatOperation]);
 
-  // Open pro paywall action (D-152): present native RevenueCat paywall for the professional
-  // subscription (default offering), then refresh both entitlement statuses.
+  // Open pro paywall action (D-152): present the configured production or
+  // development Test Store professional offering, then refresh both entitlement statuses.
   const openProPaywall = useCallback(async () => {
     if (applyE2EProSubscriptionAction()) return;
     if (!activeAuthUid) return;
 
+    let professionalOfferingId: ReturnType<typeof resolveProfessionalOfferingId>;
+    try {
+      professionalOfferingId = resolveProfessionalOfferingId(getRevenueCatExtra());
+    } catch (err: unknown) {
+      const reason = err instanceof SubscriptionSourceError ? err.code : 'configuration';
+      setError(reason);
+      return;
+    }
+
     await runPaywallPresentation({
-      present: () => runRevenueCatOperation(() => presentProPaywall(deps)),
+      present: () => runRevenueCatOperation(() => presentProPaywall(deps, professionalOfferingId)),
       refresh: fetchStatus,
       reportError: setError,
       isCurrent: () => currentAuthUidRef.current === activeAuthUid,

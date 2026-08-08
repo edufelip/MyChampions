@@ -82,3 +82,19 @@ Free tier covers all core tracking. `student_pro` unlocks AI meal photo analysis
 - Professional confirms or dismisses a PendingRequest → Student is notified, scoped to that Specialty.
 - Student submits a PlanChangeRequest after a Connection ends → Professional is still notified. The professional still owes a review regardless of connection state.
 - Each Connection confirmation is an independent notification event — a Professional confirming two pending requests from the same Student (one per Specialty) produces two separate notifications to the Student, one per Specialty.
+
+---
+
+## Quality Assurance
+
+**QA Run**
+A single on-demand manual quality session scoped to named use cases, test cases, or a named pack, against one named environment. It is the durable record of what was exercised, what passed, and what did not.
+_Avoid_: test job, CI run, automation run (when meaning this chat-driven session)
+
+**Doc Gap**
+A finding where product behavior and documented expectation disagree, and the correct next action is to clarify or update documentation rather than treat the product as defective.
+_Avoid_: bug, defect (when the docs are the thing that must change)
+
+**Known Deferred**
+A finding that matches work already intentionally deferred (for example on the pending-wiring checklist) and therefore is not a newly discovered product defect.
+_Avoid_: bug, backlog item (when merely re-observing deferred wiring)
