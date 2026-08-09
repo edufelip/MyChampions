@@ -18,10 +18,11 @@ entitlement overrides before Detox starts.
   purchase, cancel, failure, duplicate, monthly/annual, restore, switch, and
   professional-route cases.
 - `.github/workflows/provider-validation.yml` is the manual protected iOS
-  workflow. It can run only from `main` or `release/*`, checks out and verifies
-  the exact protected SHA before secrets are materialized, shares the native
-  iOS host lock with protected Detox, and retains diagnostics only on failure
-  for one day.
+  workflow. It can run only from the protected `main` ref, checks out and
+  verifies the exact protected SHA before secrets are materialized, shares the
+  native iOS host lock with protected Detox, and retains diagnostics only on
+  failure for one day. Release-branch validation remains blocked until branch
+  protection and environment restrictions are independently established.
 
 The current provider workflow is iOS-only because the available Test Store
 catalog and device-runner evidence do not establish an Android app/product
