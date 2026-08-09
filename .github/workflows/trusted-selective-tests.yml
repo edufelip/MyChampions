@@ -54,7 +54,7 @@ jobs:
           EVENT_SENDER: ${{ github.event.sender.login }}
           GITHUB_REF_VALUE: ${{ github.ref }}
           GITHUB_SHA_VALUE: ${{ github.sha }}
-          IOS_TESTS_ENABLED: ${{ vars.MYCHAMPIONS_ENABLE_IOS_TESTS != 'false' }}
+          IOS_TESTS_VALUE: ${{ vars.MYCHAMPIONS_ENABLE_IOS_TESTS }}
           PR_NUMBER_INPUT: ${{ inputs.pull_request_number }}
           REPOSITORY: ${{ github.repository }}
           REPOSITORY_ID: ${{ github.repository_id }}
@@ -1046,6 +1046,9 @@ jobs:
                   fail("exact candidate head SHA was not resolved")
               if base_sha and base_sha == head_sha:
                   fail("candidate base and head SHAs are identical")
+              ios_tests_enabled = (
+                  os.environ.get("IOS_TESTS_VALUE", "") != "false"
+              )
               publish_required_status = candidate_kind in {
                   "pull_request",
                   "workflow_dispatch",
@@ -1089,7 +1092,9 @@ jobs:
                   output.write(f"head_sha={head_sha}\n")
                   output.write(f"head_ref={head_ref}\n")
                   output.write(f"force_full={'true' if force_full else 'false'}\n")
-                  output.write(f"ios_tests_enabled={env('IOS_TESTS_ENABLED')}\n")
+                  output.write(
+                      f"ios_tests_enabled={'true' if ios_tests_enabled else 'false'}\n"
+                  )
                   output.write(f"pull_request_number={pull_request_number}\n")
               print(f"Authorized exact candidate {head_sha}.")
           except Exception as error:

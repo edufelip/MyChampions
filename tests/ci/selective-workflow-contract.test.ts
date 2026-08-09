@@ -960,22 +960,37 @@ test('selective workflow keeps universal checks and conservative full fallbacks'
 test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => {
   const legacyIos = workflow('ios-pr.yml');
   const trusted = workflow('trusted-selective-tests.yml');
+  const legacyToggle = jobBlock(legacyIos, 'resolve-ios-tests');
+  const legacyBuild = jobBlock(legacyIos, 'build');
   const authorization = jobBlock(trusted, 'authorize-candidate');
   const iosLane = jobBlock(trusted, 'detox-ios-selected');
   const gate = jobBlock(trusted, 'publish-selective-status');
   const release = workflow('ios-release.yml');
 
   assert.match(
-    legacyIos,
-    /^    if: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS != 'false' \}\}$/m
+    legacyToggle,
+    /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/
+  );
+  assert.match(
+    legacyToggle,
+    /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/
+  );
+  assert.match(legacyBuild, /^    needs: resolve-ios-tests$/m);
+  assert.match(
+    legacyBuild,
+    /^    if: \$\{\{ needs\.resolve-ios-tests\.outputs\.enabled == 'true' \}\}$/m
   );
   assert.match(
     authorization,
-    /IOS_TESTS_ENABLED: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS != 'false' \}\}/
+    /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/
   );
   assert.match(
     authorization,
-    /output\.write\(f"ios_tests_enabled=\{env\('IOS_TESTS_ENABLED'\)\}\\n"\)/
+    /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/
+  );
+  assert.match(
+    authorization,
+    /ios_tests_enabled=\{'true' if ios_tests_enabled else 'false'\}/
   );
   assert.match(
     iosLane,
@@ -1001,6 +1016,8 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   assert.equal(iOSTestsEnabled(undefined), true);
   assert.equal(iOSTestsEnabled('true'), true);
   assert.equal(iOSTestsEnabled('TRUE'), true);
+  assert.equal(iOSTestsEnabled('False'), true);
+  assert.equal(iOSTestsEnabled('FALSE'), true);
   assert.equal(iOSTestsEnabled(''), true);
   assert.equal(iOSTestsEnabled('false'), false);
 

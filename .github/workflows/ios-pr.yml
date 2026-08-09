@@ -4,8 +4,29 @@ on:
   workflow_dispatch:
 
 jobs:
+  resolve-ios-tests:
+    name: Resolve iOS test toggle
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.resolve.outputs.enabled }}
+    steps:
+      - id: resolve
+        name: Evaluate exact iOS test toggle value
+        env:
+          IOS_TESTS_VALUE: ${{ vars.MYCHAMPIONS_ENABLE_IOS_TESTS }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          import os
+
+          enabled = os.environ.get("IOS_TESTS_VALUE", "") != "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"enabled={'true' if enabled else 'false'}\n")
+          PY
+
   build:
-    if: ${{ vars.MYCHAMPIONS_ENABLE_IOS_TESTS != 'false' }}
+    needs: resolve-ios-tests
+    if: ${{ needs.resolve-ios-tests.outputs.enabled == 'true' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
