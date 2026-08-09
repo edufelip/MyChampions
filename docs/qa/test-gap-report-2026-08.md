@@ -2,14 +2,18 @@
 
 ## Scope and exact heads
 
-| Repository       | Worktree/branch                                                               | Exact head | Local status                                    |
-| ---------------- | ----------------------------------------------------------------------------- | ---------- | ----------------------------------------------- |
-| App              | `mychampions-testing-strategy` / `codex/testing-strategy-app`                 | `df48a33`  | Green local implementation gates                |
-| Root server      | `mychampions-testing-strategy-server` / `codex/testing-strategy-server`       | `92b2d1d`  | Green local quality and contract gates          |
-| Food service     | `mychampions-testing-strategy-food` / `codex/testing-strategy-food`           | `11f8d93`  | Green local quality and consumer contract gates |
-| Exercise service | `mychampions-testing-strategy-exercises` / `codex/testing-strategy-exercises` | `718d2b9`  | Green local quality and consumer contract gates |
+| Repository       | Worktree/branch                                                               | Evidence snapshot head | Local status                                    |
+| ---------------- | ----------------------------------------------------------------------------- | ---------------------- | ----------------------------------------------- |
+| App              | `mychampions-testing-strategy` / `codex/testing-strategy-app`                 | `38ed71e`              | Green local implementation gates                |
+| Root server      | `mychampions-testing-strategy-server` / `codex/testing-strategy-server`       | `50b392f`              | Green local quality and contract gates          |
+| Food service     | `mychampions-testing-strategy-food` / `codex/testing-strategy-food`           | `b394905`              | Green local quality and consumer contract gates |
+| Exercise service | `mychampions-testing-strategy-exercises` / `codex/testing-strategy-exercises` | `1a83383`              | Green local quality and consumer contract gates |
 
 Date: 2026-08-08, America/Sao_Paulo. This is the first sweep for the ten-workstream testing strategy. It records implementation and local evidence; hosted, native, provider, deployment, and store-live evidence remain separate.
+
+This report is a historical evidence snapshot. Review-loop commits after the
+recorded heads require their own exact-head local and hosted evidence; this
+table must not be read as coverage for later revisions.
 
 ## Evidence matrix
 

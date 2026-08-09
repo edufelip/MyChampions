@@ -23,6 +23,7 @@
     "test:e2e:web:smoke": "node scripts/run-web-e2e-batch.mjs smoke",
     "test:e2e:web:functional": "node scripts/run-web-e2e-batch.mjs functional",
     "test:e2e:web:accessibility": "node scripts/run-web-e2e-batch.mjs accessibility",
+    "test:e2e:web:critical-paths": "node scripts/run-web-e2e-batch.mjs critical-paths",
     "test:e2e:web:evidence": "node scripts/run-web-e2e-batch.mjs evidence",
     "test:e2e:web:flow-atlas": "node scripts/run-flow-atlas.mjs",
     "test:e2e:web:server": "node scripts/run-web-e2e-batch.mjs server",

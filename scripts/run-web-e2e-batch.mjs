@@ -7,6 +7,7 @@ const batches = {
   smoke: ['--grep', '@smoke', '--project=chromium'],
   functional: ['--grep', '@functional'],
   accessibility: ['--grep', '@accessibility'],
+  'critical-paths': ['--grep', '@critical'],
   evidence: ['--grep', '@evidence', '--project=chromium'],
   server: ['--config=playwright.server.config.ts'],
   full: [],

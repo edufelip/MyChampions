@@ -17,12 +17,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: mychampions-provider-validation
+  group: mychampions-protected-ios-detox
   cancel-in-progress: false
 
 jobs:
   ios-test-store:
     name: iOS RevenueCat Test Store validation
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
     environment: provider-validation
     runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
     timeout-minutes: 240
@@ -32,6 +33,27 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.sha }}
+
+      - name: Verify protected provider revision
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          TARGET_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          case "$TARGET_REF" in
+            refs/heads/main|refs/heads/release/*) ;;
+            *)
+              echo "Provider validation must target protected main or release refs: $TARGET_REF" >&2
+              exit 1
+              ;;
+          esac
+          actual_sha="$(git rev-parse HEAD)"
+          [[ "$actual_sha" == "$EXPECTED_SHA" ]] || {
+            echo "Provider checkout mismatch: expected $EXPECTED_SHA, found $actual_sha" >&2
+            exit 1
+          }
+          echo "Protected provider revision: $actual_sha ($TARGET_REF)"
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -49,8 +71,10 @@ jobs:
           EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE: ${{ secrets.REVENUECAT_TEST_STORE_SDK_KEY }}
           REVENUECAT_LIVE_E2E: 'true'
           REVENUECAT_MATRIX: ${{ inputs.matrix }}
+          DETOX_METRO_PORT: '18081'
         shell: bash
         run: |
+          bash scripts/ci/run-with-native-host-lock.sh bash -s <<'RUN_PROVIDER'
           set -euo pipefail
           env_file="$GITHUB_WORKSPACE/.env"
           secret_file="$RUNNER_TEMP/mychampions-provider-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.env"
@@ -91,6 +115,7 @@ jobs:
               exit 2
               ;;
           esac
+          RUN_PROVIDER
 
       - name: Upload provider failure diagnostics
         if: failure()

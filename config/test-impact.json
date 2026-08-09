@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "maxChangedFiles": 500,
-  "criticalSuites": ["detox:student", "web:shell"],
+  "criticalSuites": ["detox:student", "web:shell", "web:critical-paths"],
   "documentationPaths": ["docs/**", "*.md", ".github/ISSUE_TEMPLATE/**"],
   "runtimePaths": [
     "app/**",
@@ -94,7 +94,7 @@
       "sourcePaths": ["features/auth/**", "app/auth/**"],
       "dependsOn": ["platform"],
       "unitTests": ["features/auth/**/*.test.ts"],
-      "webSuites": ["web:auth", "web:server-auth", "web:shell"],
+      "webSuites": ["web:auth", "web:server-auth", "web:shell", "web:critical-paths"],
       "detoxSuites": ["detox:auth"],
       "owners": ["@edufelip"]
     },
@@ -106,7 +106,7 @@
       ],
       "dependsOn": ["auth", "platform"],
       "unitTests": ["features/connections/**/*.test.ts"],
-      "webSuites": ["web:connections", "web:shell"],
+      "webSuites": ["web:connections", "web:shell", "web:critical-paths"],
       "detoxSuites": ["detox:connections"],
       "owners": ["@edufelip"]
     },
@@ -163,7 +163,7 @@
       "sourcePaths": ["features/subscription/**", "app/professional/subscription.tsx"],
       "dependsOn": ["auth", "platform", "professional"],
       "unitTests": ["features/subscription/**/*.test.ts"],
-      "webSuites": ["web:subscription"],
+      "webSuites": ["web:subscription", "web:critical-paths"],
       "detoxSuites": ["detox:subscription", "detox:revenuecat-live"],
       "owners": ["@edufelip"]
     },

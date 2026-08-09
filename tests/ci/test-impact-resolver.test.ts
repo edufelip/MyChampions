@@ -20,6 +20,14 @@ import {
 
 const root = process.cwd();
 
+test('documented critical browser paths remain selected for auth-impact changes', () => {
+  const result = resolveImpact(loadManifest(root), [
+    { status: 'M', path: 'features/auth/auth-route-guard.logic.ts' },
+  ]);
+
+  assert.ok(result.webSuites.includes('web:critical-paths'));
+});
+
 function syntheticManifest(): TestImpactManifest {
   return {
     schemaVersion: 1,
