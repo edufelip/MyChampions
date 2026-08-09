@@ -367,9 +367,11 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   web, iOS, and Android. Each planned executor invocation owns a detached process
   group; crossing the deadline terminates that exact group and reports the
   invocation ID. The parser fails closed for invalid configured values, while an
-  absent variable keeps local execution unbounded. Native jobs retain their
-  existing cleanup traps and are additionally contained by a 75-minute job
-  limit.
+  absent variable keeps local execution unbounded. The executable timeout-cleanup
+  contract gives its nested child-process fixture a bounded startup window before
+  asserting the descendant PID, so full-suite scheduling cannot turn readiness
+  delay into a false cleanup failure. Native jobs retain their existing cleanup
+  traps and are additionally contained by a 75-minute job limit.
 - The Playwright lane targets only `mychampions-web-only` and uses a web-specific
   runner service. Android retains `mychampions-android`; both WSL lanes use the
   shared `mychampions-wsl-ui` concurrency group after live overlap exceeded the

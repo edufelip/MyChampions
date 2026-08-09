@@ -23,6 +23,7 @@ test(
   'timed-out invocation reports its ID and terminates its exact owned process group',
   { skip: process.platform === 'win32' },
   async () => {
+    const timeoutMs = 2_000;
     const temp = mkdtempSync(join(tmpdir(), 'selective-invocation-timeout-'));
     const descendantPidPath = join(temp, 'descendant.pid');
     const descendantProgram = "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);";
@@ -46,9 +47,9 @@ test(
           ['-e', leaderProgram],
           process.cwd(),
           process.env,
-          150,
+          timeoutMs,
         ),
-        /Invocation detox:timeout-fixture timed out after 150 ms/,
+        new RegExp(`Invocation detox:timeout-fixture timed out after ${timeoutMs} ms`),
       );
       const descendantPid = Number(readFileSync(descendantPidPath, 'utf8'));
       assert.ok(Number.isInteger(descendantPid) && descendantPid > 0);
