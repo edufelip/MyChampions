@@ -16,7 +16,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class DetoxTest {
   private static final String REACT_NATIVE_DEBUG_SERVER_HOST = "debug_http_host";
-  private static final String DETOX_METRO_HOST = "localhost:8081";
+  private static final String DETOX_METRO_HOST = BuildConfig.DETOX_METRO_HOST;
 
   @Rule
   public ActivityTestRule<MainActivity> activityRule =

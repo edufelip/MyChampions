@@ -171,10 +171,12 @@ relaxed pending private-broker/JIT/ephemeral isolation.
 Contradictory native fixture states execute in scenario-gated fresh-Metro phases,
 each of which fully prewarms its exact platform bundle before Detox launches, and
 the iOS lane keeps its app launch route and compiled fallback on dedicated port
-`18081`. Android instrumentation routes Metro through the configured localhost ADB
-reverse tunnel before React Native starts. The Android runner supplies one
-health-checked `emulator-5554` for the job instead of delegating console-port
-allocation to Detox. Successful runs create no GitHub
+`18081`. Android instrumentation routes Metro through the configured localhost
+ADB reverse tunnel before React Native starts. Meer and MyChampions use separate
+health-checked Android slots (`emulator-5554`/ADB `5037`/Metro `18081` and
+`emulator-5556`/ADB `5038`/Metro `18082`) with distinct AVD, user, recovery,
+temporary, and lock roots rather than delegating console-port allocation to
+Detox. Successful runs create no GitHub
 Actions artifact or cache.
 
 ## High-Level Architecture (Target)

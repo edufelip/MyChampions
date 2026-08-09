@@ -1,4 +1,5 @@
 const iosMetroPort = process.env.DETOX_METRO_PORT || '8081';
+const androidMetroPort = Number(process.env.DETOX_METRO_PORT || '8081');
 const iosSimulatorDevice = process.env.DETOX_IOS_SIMULATOR_UDID
   ? { id: process.env.DETOX_IOS_SIMULATOR_UDID }
   : { type: process.env.DETOX_IOS_SIMULATOR || 'iPhone 17' };
@@ -36,8 +37,8 @@ module.exports = {
       testBinaryPath:
         'android/app/build/outputs/apk/androidTest/dev/debug/app-dev-debug-androidTest.apk',
       build:
-        'cd android && APP_VARIANT=dev EXPO_PUBLIC_ENV=dev ./gradlew -DtestBuildType=debug app:assembleDevDebug app:assembleDevDebugAndroidTest',
-      reversePorts: [8081],
+        'cd android && APP_VARIANT=dev EXPO_PUBLIC_ENV=dev ./gradlew -DtestBuildType=debug -PdetoxMetroPort="${DETOX_METRO_PORT:-8081}" app:assembleDevDebug app:assembleDevDebugAndroidTest',
+      reversePorts: [androidMetroPort],
     },
     'android.release': {
       type: 'android.apk',
@@ -45,7 +46,7 @@ module.exports = {
       testBinaryPath:
         'android/app/build/outputs/apk/androidTest/production/release/app-production-release-androidTest.apk',
       build:
-        'cd android && APP_VARIANT=prod EXPO_PUBLIC_ENV=prod EXPO_NO_DEV_CLIENT=1 ./gradlew -DtestBuildType=release -PCI_VERSION_CODE="${CI_VERSION_CODE:?CI_VERSION_CODE_required}" app:assembleProductionRelease app:assembleProductionReleaseAndroidTest',
+        'cd android && APP_VARIANT=prod EXPO_PUBLIC_ENV=prod EXPO_NO_DEV_CLIENT=1 ./gradlew -DtestBuildType=release -PdetoxMetroPort="${DETOX_METRO_PORT:-8081}" -PCI_VERSION_CODE="${CI_VERSION_CODE:?CI_VERSION_CODE_required}" app:assembleProductionRelease app:assembleProductionReleaseAndroidTest',
     },
     'android.prodDebug': {
       type: 'android.apk',
@@ -53,8 +54,8 @@ module.exports = {
       testBinaryPath:
         'android/app/build/outputs/apk/androidTest/production/debug/app-production-debug-androidTest.apk',
       build:
-        'cd android && APP_VARIANT=prod EXPO_PUBLIC_ENV=prod ./gradlew -DtestBuildType=debug app:assembleProductionDebug app:assembleProductionDebugAndroidTest',
-      reversePorts: [8081],
+        'cd android && APP_VARIANT=prod EXPO_PUBLIC_ENV=prod ./gradlew -DtestBuildType=debug -PdetoxMetroPort="${DETOX_METRO_PORT:-8081}" app:assembleProductionDebug app:assembleProductionDebugAndroidTest',
+      reversePorts: [androidMetroPort],
     },
   },
   devices: {

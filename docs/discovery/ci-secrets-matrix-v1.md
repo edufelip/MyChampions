@@ -46,6 +46,15 @@ reproducible and auditable.
   other value, including `true`, keeps iOS testing enabled. Changing the
   variable does not cancel jobs that are already running. It does not gate
   `ios-release.yml`, which remains a distribution workflow.
+- Android execution uses two persistent, isolated host slots: Meer owns the
+  `meer-android-ci` runner with AVD console `5554`, ADB server `5037`, Metro
+  `18081`, and its own AVD/user/recovery/temp/lock roots; MyChampions owns the
+  `mychampions-ci` Android runner with console `5556`, ADB server `5038`, Metro
+  `18082`, and a separate set of those roots. Each lane validates Linux,
+  writable KVM, the configured AVD, exact emulator serial, and its slot ports
+  before launch. Cleanup addresses only the slot's serial, process identity,
+  recovery record, and paths; it must never enumerate or mutate unrelated
+  Android devices.
 - The repository-scoped self-hosted runners and the host-wide locks shared with
   Meer are configured. Their labels, service posture, hook installation, and
   recovery checks are recorded below as capacity and resource-serialization
@@ -234,7 +243,7 @@ reproducible and auditable.
 |---|---|---|---|
 | Web | `self-hosted, Linux, X64, mychampions-ci, mychampions-web` | Repository-scoped Linux/WSL runner; Git and outbound access; Playwright browser/system dependencies; `unzip` for Bun bootstrap; capacity for Expo and the optional in-memory backend | Existing registration and browser launch probes are capacity evidence only; D-195 owner/trust/action/backend-SHA gates and exact-head browser proof remain pending |
 | Web companion | `self-hosted, Linux, X64, mychampions-ci, mychampions-web-only` | Repository-scoped Linux/WSL runner at `$HOME/actions-runner-mychampions-web-ci`; Playwright capacity; no Android label, native recovery root, or native/shared-host job hooks | Runner `mychampions-web-ci-ubuntu` is online. The trusted workflow routes the Playwright lane to this label after exact-head validation. `MYCHAMPIONS_WEB_RUNNER_REGISTRATION_TOKEN` was removed after first registration; no token is required for service reconciliation. |
-| Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; `Pixel_10` AVD; Gradle wrapper support | Existing registration, KVM, preboot, and cleanup evidence is capacity evidence only; D-195 owner/trust/action/environment gates and exact-head emulator proof remain pending |
+| Android | `self-hosted, Linux, X64, mychampions-ci, mychampions-android` | Repository-scoped Linux/WSL runner; Android SDK/platform tools; hardware acceleration; isolated `Pixel_10` AVD slot; Gradle wrapper support | MyChampions slot uses console `5556`, ADB `5038`, Metro `18082`, and slot-scoped AVD/user/recovery/log/lock roots; existing registration and exact-head emulator proof remain separately required |
 | iOS | `self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios` | Repository-scoped Apple Silicon runner; Xcode 26 with iOS SDK 26+; disposable owned `iPhone 17` simulator UDID; CocoaPods; Homebrew path | Existing registration and toolchain evidence is capacity evidence only; D-195 owner/trust/action/environment/disposable-UDID gates and exact-head simulator proof remain pending |
 
 ## WSL Browser And Emulator Prerequisite Record

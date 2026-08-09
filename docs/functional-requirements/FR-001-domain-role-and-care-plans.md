@@ -270,6 +270,14 @@ Define the target functional scope for a subscription-based student wellness app
   collaborator or approving an external workflow change shall first pause the
   runners and require a private broker, JIT, or ephemeral-runner design.
 
+- `FR-273`: Persistent Android CI runners shall use isolated repository slots:
+  Meer owns console port `5554`, ADB server `5037`, Metro `18081`, and
+  slot-specific AVD/user/recovery/temp/lock roots; MyChampions owns console port
+  `5556`, ADB server `5038`, Metro `18082`, and separate roots. Each slot shall
+  fail closed unless Linux, writable KVM, the declared AVD, exact serial, and
+  slot ports validate before launch, and cleanup shall prove absence of only
+  that slot's process, device, recovery record, and ports.
+
 ## Non-Functional Direction (Draft)
 - Multi-platform support: Android, iOS, web.
 - Data privacy controls for health-related user data.

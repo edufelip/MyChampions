@@ -172,8 +172,9 @@ test('iOS accepts a validated run-isolated Metro port and propagates it to every
   );
 });
 
-test('native Metro port overrides fail closed outside the supported platform contract', () => {
+test('native Metro port overrides fail closed outside the supported port contract', () => {
   assert.equal(parseNativeMetroPort('ios', undefined), 8081);
+  assert.equal(parseNativeMetroPort('android', '27828'), 27828);
   assert.throws(
     () => parseNativeMetroPort('ios', '8081x'),
     /must contain only decimal digits/
@@ -183,10 +184,24 @@ test('native Metro port overrides fail closed outside the supported platform con
     /must be an integer from 1024 to 49151/
   );
   assert.throws(
-    () => createSelectiveExecutionPlan(manifest, 'android', ['detox:support'], {
-      metroPort: 27828,
-    }),
-    /Android Metro port must remain 8081/
+    () => parseNativeMetroPort('android', '65535'),
+    /native Metro port must be an integer/
+  );
+});
+
+test('Android accepts a run-isolated Metro port and propagates it to every command', () => {
+  const metroPort = parseNativeMetroPort('android', '27828');
+  const plan = createSelectiveExecutionPlan(manifest, 'android', ['detox:support'], {
+    metroPort,
+  });
+
+  assert.equal(plan.nativeBuild?.command.env.DETOX_METRO_PORT, '27828');
+  assert.ok(
+    plan.invocations.every(
+      (invocation) =>
+        invocation.metro?.port === 27828 &&
+        invocation.env.DETOX_METRO_PORT === '27828'
+    )
   );
 });
 

@@ -29,6 +29,25 @@ const workflows = new Map(
   ])
 );
 const detoxConfigSource = readFileSync(join(root, '.detoxrc.js'), 'utf8');
+const androidGradleSource = readFileSync(
+  join(root, 'android', 'app', 'build.gradle'),
+  'utf8'
+);
+const androidDetoxTestSource = readFileSync(
+  join(
+    root,
+    'android',
+    'app',
+    'src',
+    'androidTest',
+    'java',
+    'com',
+    'eduardo880',
+    'mychampions',
+    'DetoxTest.java'
+  ),
+  'utf8'
+);
 const packageManifest = JSON.parse(
   readFileSync(join(root, 'package.json'), 'utf8')
 ) as { packageManager?: unknown };
@@ -1070,14 +1089,17 @@ test('self-hosted selected lanes require authorization and selected skips fail p
     /for candidate in \/Applications\/Xcode_"\$\{XCODE_REQUIRED_MAJOR\}"\*\.app/
   );
   assert.doesNotMatch(iosLane, /find \/Applications -maxdepth/);
-  assert.match(androidLane, /emulator_serial=emulator-5554/);
   assert.match(
     androidLane,
-    /android_state_file="\$recovery_root\/android-emulator-5554\.state"/
+    /emulator_serial="\$\{MYCHAMPIONS_ANDROID_EMULATOR_SERIAL:\?/
   );
   assert.match(
     androidLane,
-    /MYCHAMPIONS_NATIVE_STATE_ROOT must name an absolute real directory/
+    /android_state_file="\$recovery_root\/android-emulator-\$\{emulator_port\}\.state"/
+  );
+  assert.match(
+    androidLane,
+    /MYCHAMPIONS_ANDROID_RECOVERY_ROOT must name an absolute real directory/
   );
   assert.match(
     androidLane,
@@ -1118,8 +1140,26 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   );
   assert.match(
     androidLane,
-    /run_supervised timeout 5s adb -s "\$emulator_serial"[\s\S]*?settings put global window_animation_scale/
+    /run_supervised timeout 5s adb -P "\$adb_server_port" -s "\$emulator_serial"[\s\S]*?settings put global window_animation_scale/
   );
+  assert.match(
+    androidLane,
+    /timeout 10s adb -P "\$adb_server_port" -s "\$emulator_serial" emu kill/
+  );
+  assert.match(
+    androidLane,
+    /timeout 0\.3s adb -P "\$adb_server_port" -s "\$emulator_serial" emu kill/
+  );
+  assert.match(
+    androidLane,
+    /stop_adb_server\(\) \{[\s\S]*?timeout 5s adb -P "\$adb_server_port" kill-server/
+  );
+  assert.match(androidLane, /adb_command\(\*args\)[\s\S]*?\["adb", "-P", adb_server_port/);
+  assert.match(androidLane, /ADB_SERVER_PORT/);
+  assert.match(androidLane, /MYCHAMPIONS_ANDROID_EMULATOR_PORT/);
+  assert.match(androidLane, /MYCHAMPIONS_ANDROID_LOG_ROOT/);
+  assert.match(androidLane, /MYCHAMPIONS_ANDROID_RECOVERY_ROOT/);
+  assert.doesNotMatch(androidLane, /5554|5555|emulator-5554/);
   assert.match(
     androidLane,
     /Signal cleanup intentionally retains the durable ledger/
@@ -1135,8 +1175,20 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   assert.ok(
     androidLane.indexOf('os.execv(emulator_path, arguments)') <
       androidLane.indexOf('yarn test:impact:execute --platform android'),
-    'Android lane must preboot the supported-port emulator before Detox'
+      'Android lane must preboot the supported-port emulator before Detox'
   );
+  assert.match(
+    androidLane,
+    /Validate isolated Android runner slot[\s\S]*?yarn tsx scripts\/ci\/android-runner-slot\.ts/
+  );
+  assert.doesNotMatch(androidLane, /^      DETOX_ANDROID_AVD: Pixel_10$/m);
+  assert.match(
+    detoxConfigSource,
+    /const androidMetroPort = Number\(process\.env\.DETOX_METRO_PORT \|\| '8081'\)/
+  );
+  assert.match(detoxConfigSource, /reversePorts: \[androidMetroPort\]/);
+  assert.match(androidGradleSource, /DETOX_METRO_HOST/);
+  assert.match(androidDetoxTestSource, /BuildConfig\.DETOX_METRO_HOST/);
 
   assert.match(gate, /^    if: \$\{\{ always\(\) && !cancelled\(\) \}\}$/m);
   assert.match(gate, /^      statuses: write$/m);
@@ -1546,7 +1598,10 @@ test('native secrets use per-step mode-0600 targets and workspace symlinks', () 
     steps[1],
     /run_supervised \.\/gradlew \\\n\s+--no-daemon \\\n[\s\S]*?app:assembleDevDebugAndroidTest/
   );
-  assert.doesNotMatch(androidVerifier, /ENV_FILE_CONTENT|secrets\.ENV_FILE|\.env/);
+  assert.doesNotMatch(
+    androidVerifier,
+    /ENV_FILE_CONTENT|secrets\.ENV_FILE|GITHUB_WORKSPACE\/.env/
+  );
 });
 
 test('native secret bytes are absent from all post-write subprocess environments', () => {
@@ -2243,6 +2298,8 @@ ${fastCleanup}
 ${normalCleanup}
 android_state_file="$STATE_FILE"
 emulator_serial=emulator-5554
+emulator_port=5554
+adb_server_port=5038
 emulator_pid=
 load_count=0
 load_android_state() {
@@ -2330,7 +2387,7 @@ test(
       'Verify Android emulator cleanup'
     );
     const verifierMarker =
-      '          /usr/bin/python3 - "$recovery_root/android-emulator-5554.state" <<\'PY\'\n';
+      '          /usr/bin/python3 - "$recovery_root/android-emulator-${emulator_port}.state" <<\'PY\'\n';
     const verifierStart = verifierStep.indexOf(verifierMarker);
     const verifierBodyStart = verifierStart + verifierMarker.length;
     const verifierEnd = verifierStep.indexOf(
@@ -2460,7 +2517,13 @@ printf '%s\n' "$emulator_pid:$emulator_avd:$emulator_port:$emulator_serial"
         ],
         {
           encoding: 'utf8',
-          env: { ...process.env, STATE_FILE: stateFile },
+          env: {
+            ...process.env,
+            DETOX_ANDROID_AVD: 'Pixel_10',
+            MYCHAMPIONS_ANDROID_EMULATOR_PORT: '5554',
+            MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: 'emulator-5554',
+            STATE_FILE: stateFile,
+          },
         }
       );
     const runVerifier = () =>
@@ -2468,6 +2531,10 @@ printf '%s\n' "$emulator_pid:$emulator_avd:$emulator_port:$emulator_serial"
         encoding: 'utf8',
         env: {
           ...process.env,
+          ADB_SERVER_PORT: '5038',
+          DETOX_ANDROID_AVD: 'Pixel_10',
+          MYCHAMPIONS_ANDROID_EMULATOR_PORT: '5554',
+          MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: 'emulator-5554',
           PATH: `${fakeBin}:${process.env.PATH ?? ''}`,
           PROC_ROOT: procRoot,
           SIGNAL_LOG: signalLog,

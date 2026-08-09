@@ -163,11 +163,11 @@ port while merging with per-story launch arguments. The executor independently
 validates and forwards `DETOX_METRO_PORT` to prewarming and every phase, so an
 unrelated listener on the local default `8081` remains untouched; a listener on
 the dedicated port still fails closed. Before each Android instrumented launch,
-`DetoxTest` synchronously
-sets React Native's `debug_http_host` to `localhost:8081` and aborts if the
-preference cannot be persisted. Together with the `reversePorts: [8081]`
-setting in `.detoxrc.js`, this keeps Metro traffic on ADB's proven reverse tunnel
-instead of the emulator's `10.0.2.2` gateway. Native selective phases explicitly
+`DetoxTest` synchronously sets React Native's `debug_http_host` to the slot's
+configured Metro host and aborts if the preference cannot be persisted.
+Together with the dynamic `reversePorts` value in `.detoxrc.js`, this keeps each
+slot's Metro traffic on its own ADB reverse tunnel instead of the emulator's
+`10.0.2.2` gateway. Native selective phases explicitly
 suppress the in-app development
 LogBox notification overlay while retaining warning text in runner logs and
 failure diagnostics, so diagnostics cannot intercept stable Detox action
@@ -216,11 +216,16 @@ configured and read back on 2026-07-29. The intended WSL service value is
 configuration/read-back remains pending recovery of the current WSL endpoint.
 
 The iOS lane persists a unique workflow-owned name/namespace before creation,
-then records the exact returned UDID; Android makes launch-to-PID capture and
+then records the exact returned UDID. Android execution is slot-scoped: the
+Meer and MyChampions persistent runners use separate AVD homes, user homes,
+recovery/log/temp/lock roots, ADB namespaces, emulator console ports, and Metro
+ports (`5554`/`5037`/`18081` and `5556`/`5038`/`18082`, respectively). Each lane
+validates Linux, writable KVM, the selected AVD, exact serial, and its slot
+ports before launch. MyChampions additionally makes launch-to-PID capture and
 durable PID/UID/Linux-start-time plus expected AVD/port/serial/command handoff
-cancellation-safe. The next locked run consumes and revalidates any stale record
-before creating a device. Cleanup removes a record only after exact resource
-absence is proved; failure retains evidence and fails closed. Global
+cancellation-safe. The next locked run consumes and revalidates any stale
+record before creating a device. Cleanup removes a record only after exact
+resource absence is proved; failure retains evidence and fails closed. Global
 `simctl shutdown all`, `pkill`, arbitrary QEMU signaling, and unrelated
 ADB/device mutation are prohibited. Later `if: always()` verification is
 defense-in-depth and host hooks remain resource-lock-only.
@@ -255,12 +260,14 @@ Expensive jobs run only when selected:
   additionally requires one recorded disposable simulator UDID and targeted
   shutdown/deletion that leaves unrelated simulators untouched.
 - WSL Android: Gradle lint/unit checks, one `devDebug` app/test build, and
-  selected Android Detox phases. After rejecting stale device/QEMU/console
-  state, the job preboots `Pixel_10` at `emulator-5554`, requires its saved
-  PID/UID/Linux start time and AVD/port command identity, exact serial, AVD name,
-  and completed boot within 120 seconds, and lets Detox reuse it. In-step and
-  always-run teardown target only that serial and revalidated process and fail
-  if any QEMU process, emulator device, or `5554/5555` listener remains.
+  selected Android Detox phases. The MyChampions slot rejects stale
+  device/QEMU/console state, preboots `Pixel_10` at `emulator-5556`, uses ADB
+  server `5038` and Metro `18082`, requires its saved PID/UID/Linux start time
+  and AVD/port command identity, exact serial, AVD name, and completed boot
+  within 120 seconds, and lets Detox reuse it. In-step and always-run teardown
+  target only that slot's serial, ADB namespace, revalidated process, recovery
+  record, and `5556/5557` listeners; the Meer slot uses separate roots and
+  `5554`/`5037`/`18081` values.
 
 The Android lint boundary is part of the gate. API-33 splash-only attributes
 live in `values-v33`, camera hardware is optional because manual invite entry

@@ -81,11 +81,6 @@ export function validateNativeMetroPort(
       `native Metro port must be an integer from ${minimumUnprivilegedPort} to ${maximumNonEphemeralPort}`
     );
   }
-  if (platform === 'android' && port !== defaultNativeMetroPort) {
-    throw new Error(
-      `Android Metro port must remain ${defaultNativeMetroPort} until the instrumentation and ADB reverse contract are changed together`
-    );
-  }
   return port;
 }
 
