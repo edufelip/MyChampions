@@ -886,50 +886,29 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   const gate = jobBlock(trusted, 'publish-selective-status');
   const release = workflow('ios-release.yml');
 
-  assert.match(
-    legacyToggle,
-    /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/
-  );
-  assert.match(
-    legacyToggle,
-    /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/
-  );
+  assert.match(legacyToggle, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
+  assert.match(legacyToggle, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
   assert.match(legacyBuild, /^    needs: resolve-ios-tests$/m);
   assert.match(
     legacyBuild,
-    /^    if: \$\{\{ needs\.resolve-ios-tests\.outputs\.enabled == 'true' \}\}$/m
+    /^    if: \$\{\{ needs\.resolve-ios-tests\.outputs\.enabled == 'true' \}\}$/m,
   );
+  assert.match(authorization, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
+  assert.match(authorization, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
+  assert.match(authorization, /ios_tests_enabled=\{'true' if ios_tests_enabled else 'false'\}/);
+  assert.match(iosLane, /needs\.authorize-candidate\.outputs\.ios_tests_enabled == 'true'/);
   assert.match(
-    authorization,
-    /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/
-  );
-  assert.match(
-    authorization,
-    /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/
-  );
-  assert.match(
-    authorization,
-    /ios_tests_enabled=\{'true' if ios_tests_enabled else 'false'\}/
-  );
-  assert.match(
-    iosLane,
-    /needs\.authorize-candidate\.outputs\.ios_tests_enabled == 'true'/
+    gate,
+    /IOS_TESTS_ENABLED: \$\{\{ needs\.authorize-candidate\.outputs\.ios_tests_enabled \}\}/,
   );
   assert.match(
     gate,
-    /IOS_TESTS_ENABLED: \$\{\{ needs\.authorize-candidate\.outputs\.ios_tests_enabled \}\}/
+    /def selected_lane\(\n\s+name: str,\n\s+selected: str,\n\s+result: str,\n\s+enabled: str = "true",\n\s+\) -> None:/,
   );
+  assert.match(gate, /if name == "ios" and enabled == "false":\s+expected = "skipped"/);
   assert.match(
     gate,
-    /def selected_lane\(\n\s+name: str,\n\s+selected: str,\n\s+result: str,\n\s+enabled: str = "true",\n\s+\) -> None:/
-  );
-  assert.match(
-    gate,
-    /if name == "ios" and enabled == "false":\s+expected = "skipped"/
-  );
-  assert.match(
-    gate,
-    /selected_lane\(\n\s+"ios",[\s\S]*?os\.environ\["IOS_TESTS_ENABLED"\],\n\s+\)/
+    /selected_lane\(\n\s+"ios",[\s\S]*?os\.environ\["IOS_TESTS_ENABLED"\],\n\s+\)/,
   );
 
   assert.equal(iOSTestsEnabled(undefined), true);
@@ -943,7 +922,7 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   const expectedIosResult = (
     selected: boolean,
     result: 'success' | 'skipped',
-    repositoryVariable: string | undefined
+    repositoryVariable: string | undefined,
   ): boolean => {
     const expected = iOSTestsEnabled(repositoryVariable)
       ? selected
