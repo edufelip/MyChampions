@@ -37,6 +37,12 @@ async function openCreateMealScreen() {
     .withTimeout(10000);
 }
 
+async function dismissAndroidCameraPermissionPrompt() {
+  if (device.getPlatform() === 'android') {
+    await device.getUiDevice().pressBack();
+  }
+}
+
 async function dismissUploadSheet() {
   try {
     await element(by.text('Cancel')).tap();
@@ -102,6 +108,7 @@ describeWithE2EAuthSession('Custom Meal Image Upload', () => {
         .toBeVisible()
         .withTimeout(5000);
       await element(by.text('Take photo')).tap();
+      await dismissAndroidCameraPermissionPrompt();
 
       await waitFor(element(by.id('meal.builder.imageUpload.error')))
         .toBeVisible()

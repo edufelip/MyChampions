@@ -21,7 +21,9 @@ contract and device fixture.
   skipped in the malformed-payload phase and continues to assert the
   pending-connection result only in its own phase.
 - Image upload sheet and fixture-success behavior remain separate phases; the
-  permission-denied phase intentionally does not set an image fixture.
+  permission-denied phase intentionally does not set an image fixture. The
+  Android phase dismisses the native camera-permission prompt before asserting
+  the app's localized denial guidance.
 - Deterministic subscription tests cover entitlement and failure UI only.
   Test Store/App Store/Google Play purchase, restore, webhook convergence, and
   account-switch evidence remain in the provider lane and are not counted as

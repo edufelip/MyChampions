@@ -116,6 +116,10 @@ test('custom meal image upload executes only the fixture phase matching its scen
   assert.match(source, /itWithSheetScenario\([\s\S]*'opens the upload source sheet/);
   assert.match(source, /itWithSuccessScenario\([\s\S]*'uploads a selected image/);
   assert.match(source, /itWithPermissionDeniedScenario\([\s\S]*'shows a permission error/);
+  assert.match(
+    source,
+    /if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.getUiDevice\(\)\.pressBack\(\);\s+\}/,
+  );
   assert.equal(enUS['photo_picker.title'], 'Upload image');
   assert.match(source, /by\.text\('Upload image'\)/);
 });
