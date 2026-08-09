@@ -1,0 +1,102 @@
+name: Provider subscription validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      matrix:
+        description: Provider-backed validation matrix
+        required: true
+        default: student
+        type: choice
+        options:
+          - student
+          - professional
+          - all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mychampions-provider-validation
+  cancel-in-progress: false
+
+jobs:
+  ios-test-store:
+    name: iOS RevenueCat Test Store validation
+    environment: provider-validation
+    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
+    timeout-minutes: 240
+    steps:
+      - name: Checkout exact validation revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          yarn install --frozen-lockfile --no-progress
+
+      - name: Run provider-backed Test Store matrix
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE: ${{ secrets.REVENUECAT_TEST_STORE_SDK_KEY }}
+          REVENUECAT_LIVE_E2E: 'true'
+          REVENUECAT_MATRIX: ${{ inputs.matrix }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          env_file="$GITHUB_WORKSPACE/.env"
+          secret_file="$RUNNER_TEMP/mychampions-provider-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.env"
+          cleanup() {
+            local status=$?
+            trap - EXIT
+            rm -f "$env_file" "$secret_file"
+            exit "$status"
+          }
+          trap cleanup EXIT
+          [[ -n "${ENV_FILE_CONTENT:-}" ]] || {
+            echo 'ENV_FILE secret is required for the protected provider lane.' >&2
+            exit 2
+          }
+          umask 077
+          SECRET_FILE="$secret_file" /usr/bin/python3 - <<'PY'
+          import os
+          path = os.environ['SECRET_FILE']
+          with open(path, 'x', encoding='utf-8') as handle:
+              handle.write(os.environ['ENV_FILE_CONTENT'] + '\n')
+          os.chmod(path, 0o600)
+          PY
+          ln -s "$secret_file" "$env_file"
+          unset ENV_FILE_CONTENT
+          case "$REVENUECAT_MATRIX" in
+            student)
+              bash scripts/run-detox-revenuecat-student-matrix.sh
+              ;;
+            professional)
+              bash scripts/run-detox-revenuecat-test-store.sh
+              ;;
+            all)
+              bash scripts/run-detox-revenuecat-test-store.sh
+              bash scripts/run-detox-revenuecat-student-matrix.sh
+              ;;
+            *)
+              echo "Unsupported provider matrix: $REVENUECAT_MATRIX" >&2
+              exit 2
+              ;;
+          esac
+
+      - name: Upload provider failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: provider-validation-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/ci-diagnostics
+          if-no-files-found: warn
+          retention-days: 1

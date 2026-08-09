@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import type { RoleIntent } from './role-selection.logic';
 import type { AuthProviderId } from './auth-user';
 
@@ -87,13 +89,28 @@ export function resolveE2EPhaseConfigValue(
   return runtimeValue ?? embeddedValue;
 }
 
-export function readPersistedE2ELockedRole(): RoleIntent | null {
-  if (typeof sessionStorage === 'undefined') return null;
-  const value = sessionStorage.getItem(E2E_LOCKED_ROLE_STORAGE_KEY);
+function usesNativeE2ERoleStorage(): boolean {
+  return process.env.EXPO_PUBLIC_E2E_ROLE_PERSISTENCE === 'true';
+}
+
+function parsePersistedE2ELockedRole(value: string | null): RoleIntent | null {
   return value === 'student' || value === 'professional' ? value : null;
 }
 
-export function persistE2ELockedRole(role: RoleIntent | null): void {
+export async function readPersistedE2ELockedRole(): Promise<RoleIntent | null> {
+  if (usesNativeE2ERoleStorage()) {
+    return parsePersistedE2ELockedRole(await AsyncStorage.getItem(E2E_LOCKED_ROLE_STORAGE_KEY));
+  }
+  if (typeof sessionStorage === 'undefined') return null;
+  return parsePersistedE2ELockedRole(sessionStorage.getItem(E2E_LOCKED_ROLE_STORAGE_KEY));
+}
+
+export async function persistE2ELockedRole(role: RoleIntent | null): Promise<void> {
+  if (usesNativeE2ERoleStorage()) {
+    if (role) await AsyncStorage.setItem(E2E_LOCKED_ROLE_STORAGE_KEY, role);
+    else await AsyncStorage.removeItem(E2E_LOCKED_ROLE_STORAGE_KEY);
+    return;
+  }
   if (typeof sessionStorage === 'undefined') return;
   if (role) sessionStorage.setItem(E2E_LOCKED_ROLE_STORAGE_KEY, role);
   else sessionStorage.removeItem(E2E_LOCKED_ROLE_STORAGE_KEY);

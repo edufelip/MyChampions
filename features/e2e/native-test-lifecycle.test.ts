@@ -65,8 +65,8 @@ test('AI meal analysis executes only the fixture phase matching its scenario', (
 
   assert.match(source, /mealAnalysisScenario === 'paywall' \? it : it\.skip/);
   assert.match(source, /mealAnalysisScenario === 'success' \? it : it\.skip/);
-  assert.match(source, /itWithPaywallScenario\('shows the premium AI analysis gate/);
-  assert.match(source, /itWithSuccessScenario\('analyzes a selected meal photo/);
+  assert.match(source, /itWithPaywallScenario\([\s\S]*'shows the premium AI analysis gate/);
+  assert.match(source, /itWithSuccessScenario\([\s\S]*'analyzes a selected meal photo/);
 });
 
 test('authenticated AI meal analysis fails closed without a valid scenario', () => {
@@ -112,8 +112,10 @@ test('custom meal image upload executes only the fixture phase matching its scen
 
   assert.match(source, /imageUploadScenario === 'sheet' \? it : it\.skip/);
   assert.match(source, /imageUploadScenario === 'success' \? it : it\.skip/);
-  assert.match(source, /itWithSheetScenario\('opens the upload source sheet/);
-  assert.match(source, /itWithSuccessScenario\('uploads a selected image/);
+  assert.match(source, /imageUploadScenario === 'permission-denied' \? it : it\.skip/);
+  assert.match(source, /itWithSheetScenario\([\s\S]*'opens the upload source sheet/);
+  assert.match(source, /itWithSuccessScenario\([\s\S]*'uploads a selected image/);
+  assert.match(source, /itWithPermissionDeniedScenario\([\s\S]*'shows a permission error/);
   assert.equal(enUS['photo_picker.title'], 'Upload image');
   assert.match(source, /by\.text\('Upload image'\)/);
 });
@@ -131,7 +133,7 @@ test('authenticated custom meal image upload fails closed without a valid scenar
 
   assert.throws(
     () => evaluate({ E2E_AUTH_SESSION: 'true' }),
-    /requires E2E_IMAGE_UPLOAD_SCENARIO=sheet\|success/,
+    /requires E2E_IMAGE_UPLOAD_SCENARIO=sheet\|success\|permission-denied/,
   );
   assert.throws(
     () =>
@@ -139,7 +141,7 @@ test('authenticated custom meal image upload fails closed without a valid scenar
         E2E_AUTH_SESSION: 'true',
         E2E_IMAGE_UPLOAD_SCENARIO: 'typo',
       }),
-    /requires E2E_IMAGE_UPLOAD_SCENARIO=sheet\|success/,
+    /requires E2E_IMAGE_UPLOAD_SCENARIO=sheet\|success\|permission-denied/,
   );
   assert.doesNotThrow(() =>
     evaluate({
@@ -153,7 +155,33 @@ test('authenticated custom meal image upload fails closed without a valid scenar
       E2E_IMAGE_UPLOAD_SCENARIO: 'success',
     }),
   );
+  assert.doesNotThrow(() =>
+    evaluate({
+      E2E_AUTH_SESSION: 'true',
+      E2E_IMAGE_UPLOAD_SCENARIO: 'permission-denied',
+    }),
+  );
   assert.doesNotThrow(() => evaluate({}));
+});
+
+test('native gap phases remain scenario-isolated', () => {
+  const roleSource = readFileSync(join(root, 'e2e/auth-role-selection.e2e.test.js'), 'utf8');
+  const connectionSource = readFileSync(
+    join(root, 'e2e/student-professionals.e2e.test.js'),
+    'utf8',
+  );
+  const fixtureSource = readFileSync(join(root, 'scripts/ci/detox-fixture-profiles.ts'), 'utf8');
+
+  assert.match(roleSource, /rolePersistenceScenario === 'relaunch' \? it : it\.skip/);
+  assert.match(
+    readFileSync(join(root, 'features/auth/e2e-auth-session.ts'), 'utf8'),
+    /EXPO_PUBLIC_E2E_ROLE_PERSISTENCE/,
+  );
+  assert.match(connectionSource, /qrInviteScenario === 'invalid_payload' \? it : it\.skip/);
+  assert.match(connectionSource, /student\.professionals\.qrScanError/);
+  assert.match(fixtureSource, /auth-role-persistence/);
+  assert.match(fixtureSource, /image-upload-permission-denied/);
+  assert.match(fixtureSource, /qr-invalid-payload/);
 });
 
 test('custom meal quick logging preserves grams and dismisses each native keyboard explicitly', () => {
@@ -177,7 +205,7 @@ test('custom meal quick logging preserves grams and dismisses each native keyboa
   );
   assert.match(
     source,
-    /waitFor\(element\(by\.id\('meal\.library\.quickLog\.panel'\)\)\)\.not\.toExist\(\)\.withTimeout\(10000\);/,
+    /waitFor\(element\(by\.id\('meal\.library\.quickLog\.panel'\)\)[\s\S]*?not\.toExist\(\)[\s\S]*?withTimeout\(10000\);/,
   );
   assert.doesNotMatch(source, /typeText\(customMealLogGrams\)/);
   assert.doesNotMatch(source, /device\.tap\(\{/);

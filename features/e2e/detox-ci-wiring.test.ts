@@ -158,7 +158,7 @@ test('selective native execution fully prewarms Metro before Detox launches', ()
   const readinessIndex = executor.indexOf('await waitForMetro(port, metro);');
   const prewarmIndex = executor.indexOf('await prewarmMetroBundle(invocation.metro!)');
   const detoxIndex = executor.indexOf(
-    'await runChild(\n      invocation.id,\n      invocation.command,',
+    'await runChild(invocation.id, invocation.command, invocation.args',
   );
 
   assert.notEqual(readinessIndex, -1, 'executor must wait for Metro readiness');

@@ -145,19 +145,22 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     if (e2eSession) {
-      const persistedRole = readPersistedE2ELockedRole();
-      setCurrentUser(createE2EUser(e2eSession));
-      setIsAuthenticated(true);
-      setLockedRole(persistedRole ?? e2eSession.lockedRole);
-      setAcceptedTermsVersion(e2eSession.acceptedTermsVersion);
-      setLastProfileSyncedAtIso(new Date().toISOString());
-      setRequiresTermsAcceptance(
-        needsTermsAcceptance({
-          requiredVersion: termsRequiredVersion,
-          acceptedVersion: e2eSession.acceptedTermsVersion,
-        }),
-      );
-      setIsHydrated(true);
+      void (async () => {
+        const persistedRole = await readPersistedE2ELockedRole();
+        if (cancelled) return;
+        setCurrentUser(createE2EUser(e2eSession));
+        setIsAuthenticated(true);
+        setLockedRole(persistedRole ?? e2eSession.lockedRole);
+        setAcceptedTermsVersion(e2eSession.acceptedTermsVersion);
+        setLastProfileSyncedAtIso(new Date().toISOString());
+        setRequiresTermsAcceptance(
+          needsTermsAcceptance({
+            requiredVersion: termsRequiredVersion,
+            acceptedVersion: e2eSession.acceptedTermsVersion,
+          }),
+        );
+        setIsHydrated(true);
+      })();
       return () => {
         cancelled = true;
       };
@@ -415,7 +418,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         }
 
         if (e2eSession) {
-          persistE2ELockedRole(role);
+          await persistE2ELockedRole(role);
           setLockedRole(role);
           setLastProfileSyncedAtIso(new Date().toISOString());
           return;
@@ -443,7 +446,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setRequiresTermsAcceptance(false);
       },
       clearSession: async () => {
-        if (e2eSession) persistE2ELockedRole(null);
+        if (e2eSession) await persistE2ELockedRole(null);
         await clearPersistedServerAuthSession();
         setIsAuthenticated(false);
         setCurrentUser(null);

@@ -6,15 +6,22 @@ Define repeatable browser test batches and a reviewable evidence package for MyC
 
 ## Executable batches
 
-| Batch | Command | Engines | Intended use | Current coverage |
-|---|---|---|---|---|
-| Smoke | `yarn test:e2e:web:smoke` | Chromium | Fast local/PR signal | Mobile, tablet, and desktop role onboarding; navigation geometry; horizontal overflow. |
-| Functional | `yarn test:e2e:web:functional` | Chromium, Firefox, WebKit | Platform-specific behavior | Camera-denied manual invite fallback and subscription mobile-handoff surface. |
-| Accessibility | `yarn test:e2e:web:accessibility` | Chromium, Firefox, WebKit | Keyboard, contrast, and dialog regression | Explicit readable enabled/disabled controls, visible focus, logical role-option order, focus containment, Escape close, and focus restoration. |
-| Evidence | `yarn test:e2e:web:evidence` | Chromium | Screenshot package for human review | Role selection, student home, and student account shell at three widths, professional home/unknown-entitlement handoff, and manual invite fallback. |
-| Complete flow atlas | `yarn test:e2e:web:flow-atlas` | Chromium at mobile/tablet/web widths | Exhaustive implemented-flow evidence and manual review | 13 flow folders, 65 exact checkpoints per platform, 195 expected screenshots, exact-name verifier, auth/app HTML reports. Local only; not wired to CI. |
-| Server auth | `yarn test:e2e:web:server` | Chromium, Firefox, WebKit | Real client/server browser contract and PR gate | Email create/sign-in, terms, role onboarding, HttpOnly cookie attributes, refresh rotation, ready-home restoration with error-state rejection, and logout. Local runs default to sibling `server`; CI passes the coordinated backend checkout through `MYCHAMPIONS_SERVER_ROOT`. The backend uses in-memory auth state and never runs against production. |
-| Full | `yarn test:e2e:web` | Chromium, Firefox, WebKit | Build-only CI/regression gate | All current tests, failure diagnostics, and cross-engine screenshot attachments. |
+| Batch               | Command                           | Engines                              | Intended use                                           | Current coverage                                                                                                                                                                                                                                                                                                                                          |
+| ------------------- | --------------------------------- | ------------------------------------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Smoke               | `yarn test:e2e:web:smoke`         | Chromium                             | Fast local/PR signal                                   | Mobile, tablet, and desktop role onboarding; navigation geometry; horizontal overflow.                                                                                                                                                                                                                                                                    |
+| Functional          | `yarn test:e2e:web:functional`    | Chromium, Firefox, WebKit            | Platform-specific behavior                             | Camera-denied manual invite fallback and subscription mobile-handoff surface.                                                                                                                                                                                                                                                                             |
+| Accessibility       | `yarn test:e2e:web:accessibility` | Chromium, Firefox, WebKit            | Keyboard, contrast, and dialog regression              | Explicit readable enabled/disabled controls, visible focus, logical role-option order, focus containment, Escape close, and focus restoration.                                                                                                                                                                                                            |
+| Evidence            | `yarn test:e2e:web:evidence`      | Chromium                             | Screenshot package for human review                    | Role selection, student home, and student account shell at three widths, professional home/unknown-entitlement handoff, and manual invite fallback.                                                                                                                                                                                                       |
+| Complete flow atlas | `yarn test:e2e:web:flow-atlas`    | Chromium at mobile/tablet/web widths | Exhaustive implemented-flow evidence and manual review | 13 flow folders, 65 exact checkpoints per platform, 195 expected screenshots, exact-name verifier, auth/app HTML reports. Local only; not wired to CI.                                                                                                                                                                                                    |
+| Server auth         | `yarn test:e2e:web:server`        | Chromium, Firefox, WebKit            | Real client/server browser contract and PR gate        | Email create/sign-in, terms, role onboarding, HttpOnly cookie attributes, refresh rotation, ready-home restoration with error-state rejection, and logout. Local runs default to sibling `server`; CI passes the coordinated backend checkout through `MYCHAMPIONS_SERVER_ROOT`. The backend uses in-memory auth state and never runs against production. |
+| Full                | `yarn test:e2e:web`               | Chromium, Firefox, WebKit            | Build-only CI/regression gate                          | All current tests, failure diagnostics, and cross-engine screenshot attachments.                                                                                                                                                                                                                                                                          |
+
+The critical-path batch is registered as `web:critical-paths` and runs the
+critical product-path spec on Chromium, Firefox, and WebKit. Its Chromium lane
+also exercises mobile (390x844) and tablet (820x1000) viewports for student
+onboarding, camera-denied/manual invite fallback, and overflow safety. It does
+not replace the existing smoke, functional, accessibility, server-auth, or
+flow-atlas batches.
 
 Run both local lanes with `yarn test:e2e:web:all-local`. They intentionally use separate Expo ports and clear Metro state so fixture configuration cannot leak into the real-server bundle or vice versa.
 
@@ -32,6 +39,7 @@ Each command creates a timestamped directory under `.artifacts/web-e2e/<run-id>/
 ├── results.xml
 ├── run-metadata.json
 ├── screenshots/<browser>/*.png
+├── screenshots/<browser>/*.json
 └── test-results/**
 ```
 
@@ -40,6 +48,11 @@ Each command creates a timestamped directory under `.artifacts/web-e2e/<run-id>/
 - `results.json` supports later evidence-report generation and coverage summaries.
 - `results.xml` supports CI test reporting.
 - `screenshots` uses readable checkpoint names for manual comparison; these are evidence captures, not approved golden baselines.
+- Each screenshot has a JSON triage record with the checkpoint, actual path,
+  optional baseline, optional side-by-side and diff paths, verdict, diff
+  percentage, changed-pixel bounding box, and explicit ignore rectangles.
+  Without `WEB_E2E_VISUAL_BASELINE_ROOT` the verdict is `unbaselined`, not
+  `pass`.
 - `manual-validation.md` is generated after every batch and includes a review decision plus one row per explicit screenshot.
 
 The authoritative feature-selective workflow validates the web export and runs
@@ -68,6 +81,16 @@ The atlas is deliberately separate from the three-engine regression batches. It 
 5. Never include passwords, access/refresh tokens, personal health data, or production identifiers.
 6. Treat screenshots as local artifacts. They do not become tracked baselines without explicit approval and a recorded reviewer.
 7. A baseline refresh, if adopted later, must state who approved the visual change and why.
+
+## Optional visual comparison
+
+Set `WEB_E2E_VISUAL_BASELINE_ROOT` to a directory with the same project/flow
+path layout as the generated screenshots to enable comparison. The comparator
+uses exact RGBA pixels: a deliberate two-pixel shift fails, while a difference
+fully contained by `WEB_E2E_VISUAL_IGNORE_RECTS` is masked and passes. The
+ignore-rectangle value is JSON: either an array of `{x,y,width,height}` objects
+for every checkpoint or an object keyed by checkpoint. Baselines are never
+created or refreshed by a test run.
 
 ## Manual validation procedure
 

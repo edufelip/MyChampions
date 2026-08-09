@@ -1,5 +1,18 @@
 const describeWithE2EAuthSession =
   process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const qrInviteScenario = process.env.E2E_QR_INVITE_SCENARIO;
+
+if (
+  process.env.E2E_AUTH_SESSION === 'true' &&
+  qrInviteScenario !== undefined &&
+  qrInviteScenario !== 'invalid_payload'
+) {
+  throw new Error(
+    'Student professionals requires E2E_QR_INVITE_SCENARIO=invalid_payload when a scenario is provided',
+  );
+}
+
+const itWithInvalidQrScenario = qrInviteScenario === 'invalid_payload' ? it : it.skip;
 
 async function selectStudentRole() {
   await waitFor(element(by.id('auth.roleSelection.title')))
@@ -103,6 +116,30 @@ describeWithE2EAuthSession('Student Professionals Invite Code', () => {
       .withTimeout(10000);
     await expect(element(by.id('student.professionals.submitError'))).not.toBeVisible();
   });
+
+  itWithInvalidQrScenario(
+    'shows an actionable error for an invalid QR invite payload',
+    async () => {
+      await selectStudentRole();
+      await openProfessionalsScreen();
+
+      await element(by.id('student.professionals.scanQrButton')).tap();
+
+      await waitFor(element(by.id('student.professionals.qrScanError')))
+        .toBeVisible()
+        .withTimeout(10000);
+      await expect(
+        element(
+          by.id('student.professionals.connectionPending.e2e-pending-nutritionist-connection'),
+        ),
+      ).not.toBeVisible();
+
+      await element(by.id('student.professionals.qrCloseButton')).tap();
+      await waitFor(element(by.id('student.professionals.screen')))
+        .toBeVisible()
+        .withTimeout(5000);
+    },
+  );
 
   it('confirms and ends an active professional connection', async () => {
     await selectStudentRole();

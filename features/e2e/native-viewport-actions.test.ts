@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-const readSource = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
+const readSource = (path: string) =>
+  readFileSync(join(process.cwd(), path), 'utf8').replace(/\s+\./g, ' .');
 
 const specialtyHelperSource = readSource('e2e/professional-specialty-actions.js');
 const professionalHomeHelperSource = readSource('e2e/professional-home-actions.js');
@@ -68,11 +69,11 @@ test('professional specialty stories scroll the credential action into view', ()
     const source = readSource(path);
     assert.match(
       source,
-      /waitFor\(element\(by\.id\('pro\.specialty\.credentialForm'\)\)\)\.toExist\(\)\.withTimeout\(5000\);/,
+      /waitFor\(element\(by\.id\('pro\.specialty\.credentialForm'\)\)\)\s*\.toExist\(\)\s*\.withTimeout\(5000\);/,
     );
     assert.doesNotMatch(
       source,
-      /waitFor\(element\(by\.id\('pro\.specialty\.credentialForm'\)\)\)\.toBeVisible\(\)/,
+      /waitFor\(element\(by\.id\('pro\.specialty\.credentialForm'\)\)\)\s*\.toBeVisible\(\)/,
     );
   }
 });
@@ -84,11 +85,11 @@ test('professional invite-code story scrolls compact dashboard controls into vie
   );
   assert.match(
     professionalHomeHelperSource,
-    /waitFor\(element\(by\.id\('pro\.home\.inviteCodeValue'\)\)\)\.toBeVisible\(\)\.withTimeout\(10000\);/,
+    /waitFor\(element\(by\.id\('pro\.home\.inviteCodeValue'\)\)\)\s*\.toBeVisible\(\)\s*\.withTimeout\(10000\);/,
   );
   assert.match(
     professionalHomeHelperSource,
-    /expect\(element\(by\.id\('pro\.home\.shareCodeCta'\)\)\)\.toBeVisible\(\);/,
+    /expect\(element\(by\.id\('pro\.home\.shareCodeCta'\)\)\)\s*\.toBeVisible\(\);/,
   );
   assert.match(
     professionalHomeInviteCodeSource,
@@ -111,7 +112,7 @@ test('training builders scroll the save action above compact native chrome', () 
   );
   assert.match(
     trainingPlanHelperSource,
-    /async function scrollToTrainingPlanSaveAboveNavigation\(\) \{[\s\S]*await scrollToTrainingPlanSave\(\);[\s\S]*element\(by\.id\('pro\.training_plan\.screen'\)\)\.scroll\(120, 'down', 0\.5, 0\.5\);[\s\S]*waitFor\(element\(by\.id\('pro\.training_plan\.saveButton'\)\)\)\.toBeVisible\(\)\.withTimeout\(5000\);[\s\S]*\}/,
+    /async function scrollToTrainingPlanSaveAboveNavigation\(\) \{[\s\S]*await scrollToTrainingPlanSave\(\);[\s\S]*element\(by\.id\('pro\.training_plan\.screen'\)\)\s*\.scroll\(120, 'down', 0\.5, 0\.5\);[\s\S]*waitFor\(element\(by\.id\('pro\.training_plan\.saveButton'\)\)\)\s*\.toBeVisible\(\)\s*\.withTimeout\(5000\);[\s\S]*\}/,
   );
   for (const source of [professionalTrainingBuilderSource, studentSelfManagedBuilderSource]) {
     assert.match(source, /require\('\.\/training-plan-actions'\);/);
@@ -122,15 +123,31 @@ test('training builders scroll the save action above compact native chrome', () 
   }
   assert.match(
     professionalTrainingBuilderSource,
-    /replaceText\('E2E Builder Training Plan'\);[\s\S]*device\.tap\(\{ x: 350, y: 420 \}\);\s+await scrollToTrainingPlanSave\(\);\s+await element\(by\.id\('pro\.training_plan\.saveButton'\)\)\.tap\(\);/,
+    /replaceText\('E2E Builder Training Plan'\);[\s\S]*device\.tap\(\{ x: 350, y: 420 \}\);\s+await scrollToTrainingPlanSave\(\);\s+await element\(by\.id\('pro\.training_plan\.saveButton'\)\)\s*\.tap\(\);/,
   );
   assert.match(
     professionalTrainingBuilderSource,
-    /await scrollTrainingPlanControlIntoView\('pro\.training_plan\.addSession'\);\s+await element\(by\.id\('pro\.training_plan\.addSession'\)\)\.tap\(\);/,
+    /await scrollTrainingPlanControlIntoView\('pro\.training_plan\.addSession'\);\s+await element\(by\.id\('pro\.training_plan\.addSession'\)\)\s*\.tap\(\);/,
   );
   assert.match(
     professionalTrainingBuilderSource,
-    /element\(by\.id\('exerciseSearch\.confirm'\)\)\.tap\(\);\s+await waitFor\(element\(by\.id\('exerciseSearch\.modal'\)\)\)\.not\.toExist\(\)\.withTimeout\(5000\);\s+await waitFor\(element\(by\.id\('pro\.training_plan\.itemRow\.E2E_Push-Up'\)\)\)\.toBeVisible\(\)\.withTimeout\(10000\);[\s\S]*expect\(element\(by\.id\('pro\.training_plan\.itemRow\.E2E_Push-Up\.quantity'\)\)\)\.toHaveText\('3 x 10'\);\s+await scrollToTrainingPlanSaveAboveNavigation\(\);\s+await element\(by\.id\('pro\.training_plan\.saveButton'\)\)\.tap\(\);/,
+    /element\(by\.id\('exerciseSearch\.confirm'\)\)\s*\.tap\(\);/,
+  );
+  assert.match(
+    professionalTrainingBuilderSource,
+    /await waitFor\(element\(by\.id\('exerciseSearch\.modal'\)\)\)\s+\.not\.toExist\(\)\s+\.withTimeout\(5000\);/,
+  );
+  assert.match(
+    professionalTrainingBuilderSource,
+    /await waitFor\(element\(by\.id\('pro\.training_plan\.itemRow\.E2E_Push-Up'\)\)\)\s+\.toBeVisible\(\)\s+\.withTimeout\(10000\);/,
+  );
+  assert.match(
+    professionalTrainingBuilderSource,
+    /expect\(element\(by\.id\('pro\.training_plan\.itemRow\.E2E_Push-Up\.quantity'\)\)\)\s*\.toHaveText\(\s*'3 x 10'/,
+  );
+  assert.match(
+    professionalTrainingBuilderSource,
+    /await scrollToTrainingPlanSaveAboveNavigation\(\);\s+await element\(by\.id\('pro\.training_plan\.saveButton'\)\)\s*\.tap\(\);/,
   );
   assert.equal(
     professionalTrainingBuilderSource.match(/await scrollToTrainingPlanSave\(\);/g)?.length,
@@ -159,7 +176,7 @@ test('professional plan pickers use semantic assignment controls across native v
   for (const source of [professionalBulkAssignSource, professionalStudentProfileSource]) {
     assert.match(
       source,
-      /waitFor\(element\(by\.id\('planPicker\.ready'\)\)\)\.toBeVisible\(\)\.withTimeout\(5000\);[\s\S]*element\(by\.id\('planPicker\.assign\.e2e-nutrition-predefined-plan'\)\)\.tap\(\)/,
+      /waitFor\(element\(by\.id\('planPicker\.ready'\)\)\)\s*\.toBeVisible\(\)\s*\.withTimeout\(5000\);[\s\S]*element\(by\.id\('planPicker\.assign\.e2e-nutrition-predefined-plan'\)\)\s*\.tap\(\)/,
     );
     assert.doesNotMatch(source, /device\.tap\(\{ x: 336, y: 520 \}\)/);
   }
@@ -168,12 +185,32 @@ test('professional plan pickers use semantic assignment controls across native v
 test('professional student profile scrolls stacked states and returns through semantic controls', () => {
   assert.match(
     professionalStudentProfileSource,
-    /expect\(element\(by\.id\('pro\.student_profile\.nutrition\.status'\)\)\)\.toHaveText\('Active, awaiting plan'\);[\s\S]*waitFor\(element\(by\.id\('pro\.student_profile\.training\.assignmentCard'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.student_profile\.screen'\)\)\s+\.scroll\(260, 'down', 0\.5, 0\.8\);[\s\S]*expect\(element\(by\.id\('pro\.student_profile\.training\.status'\)\)\)\.toHaveText\('Active, awaiting plan'\);/,
+    /expect\(element\(by\.id\('pro\.student_profile\.nutrition\.status'\)\)\)\s*\.toHaveText\(\s*'Active, awaiting plan'/,
+  );
+  assert.match(
+    professionalStudentProfileSource,
+    /waitFor\(element\(by\.id\('pro\.student_profile\.training\.assignmentCard'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.student_profile\.screen'\)\)\s+\.scroll\(260, 'down', 0\.5, 0\.8\);/,
+  );
+  assert.match(
+    professionalStudentProfileSource,
+    /expect\(element\(by\.id\('pro\.student_profile\.training\.status'\)\)\)\s*\.toHaveText\(\s*'Active, awaiting plan'/,
   );
   assert.match(professionalNutritionPlanScreenSource, /testID="pro\.nutrition_plan\.backButton"/);
   assert.match(
     professionalStudentProfileSource,
-    /waitFor\(element\(by\.text\('Draft Assignment: Customize this nutrition plan for the student before sending\.'\)\)\)\s+\.toBeVisible\(\)\s+\.withTimeout\(10000\);\s+await expect\(element\(by\.id\('pro\.plan\.metadata\.name'\)\)\)\.toHaveText\('Balanced Nutrition Template'\);\s+await expect\(element\(by\.text\('Could not load plan\. Try again\.'\)\)\)\.not\.toExist\(\);[\s\S]*waitFor\(element\(by\.id\('pro\.nutrition_plan\.backButton'\)\)\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await element\(by\.id\('pro\.nutrition_plan\.backButton'\)\)\.tap\(\);\s+await waitFor\(element\(by\.id\('pro\.student_profile\.screen'\)\)\)\.toBeVisible\(\)\.withTimeout\(10000\);/,
+    /by\.text\('Draft Assignment: Customize this nutrition plan for the student before sending\.'\)[\s\S]*\.toBeVisible\(\)\s+\.withTimeout\(10000\);/,
+  );
+  assert.match(
+    professionalStudentProfileSource,
+    /await expect\(element\(by\.id\('pro\.plan\.metadata\.name'\)\)\)\s*\.toHaveText\(\s*'Balanced Nutrition Template'/,
+  );
+  assert.match(
+    professionalStudentProfileSource,
+    /await expect\(element\(by\.text\('Could not load plan\. Try again\.'\)\)\)\s*\.not\.toExist\(\);/,
+  );
+  assert.match(
+    professionalStudentProfileSource,
+    /waitFor\(element\(by\.id\('pro\.nutrition_plan\.backButton'\)\)\)\s*\.toBeVisible\(\)\s*\.withTimeout\(5000\);\s+await element\(by\.id\('pro\.nutrition_plan\.backButton'\)\)\s*\.tap\(\);\s+await waitFor\(element\(by\.id\('pro\.student_profile\.screen'\)\)\)\s*\.toBeVisible\(\)\s*\.withTimeout\(10000\);/,
   );
   assert.match(
     professionalStudentProfileSource,
@@ -230,7 +267,7 @@ test('account settings scrolls compact legal and support controls before interac
   );
   assert.match(
     accountSettingsSource,
-    /await element\(by\.id\('settings\.account\.supportQuickCta'\)\)\.tap\(\);\s+await waitFor\(element\(by\.id\('settings\.account\.support\.subjectInput'\)\)\)\s+\.toBeVisible\(\)\s+\.withTimeout\(5000\);/,
+    /await element\(by\.id\('settings\.account\.supportQuickCta'\)\)\s*\.tap\(\);\s+await waitFor\(element\(by\.id\('settings\.account\.support\.subjectInput'\)\)\)\s*\.toBeVisible\(\)\s*\.withTimeout\(5000\);/,
   );
   assert.doesNotMatch(
     accountSettingsSource,
@@ -238,7 +275,7 @@ test('account settings scrolls compact legal and support controls before interac
   );
   assert.match(
     accountSettingsSource,
-    /waitFor\(element\(by\.id\('settings\.account\.signOutCta'\)\)\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await element\(by\.id\('settings\.account\.signOutCta'\)\)\.tap\(\);\s+await scrollToSignOutConfirmation\(\);\s+await expect\(element\(by\.text\('Sign out\?'\)\)\)\.toBeVisible\(\);\s+await element\(by\.id\('settings\.account\.signOutConfirmCta'\)\)\.tap\(\);/,
+    /waitFor\(element\(by\.id\('settings\.account\.signOutCta'\)\)\)\s*\.toBeVisible\(\)\s*\.withTimeout\(5000\);\s+await element\(by\.id\('settings\.account\.signOutCta'\)\)\s*\.tap\(\);\s+await scrollToSignOutConfirmation\(\);\s+await expect\(element\(by\.text\('Sign out\?'\)\)\)\s*\.toBeVisible\(\);\s+await element\(by\.id\('settings\.account\.signOutConfirmCta'\)\)\s*\.tap\(\);/,
   );
   for (const source of [accountDeletionSource, offlineAccountWriteLockSource]) {
     assert.match(
@@ -271,7 +308,7 @@ test('standalone specialty story distinguishes mounted fields from visible contr
   );
   assert.match(
     standaloneSpecialtySource,
-    /expect\(element\(by\.id\('pro\.specialty\.credential\.registryId'\)\)\)\.toBeVisible\(\);/,
+    /expect\(element\(by\.id\('pro\.specialty\.credential\.registryId'\)\)\)\s*\.toBeVisible\(\);/,
   );
   for (const testId of ['pro.specialty.credential.authority', 'pro.specialty.credential.country']) {
     const escapedTestId = testId.replaceAll('.', '\\.');
@@ -290,7 +327,7 @@ test('standalone specialty story distinguishes mounted fields from visible contr
 test('nutrition builders submit native editors before saving', () => {
   assert.match(
     nativeEditorHelperSource,
-    /async function submitFocusedEditor\(testId\) \{\s+await waitFor\(element\(by\.id\(testId\)\)\)\.toBeFocused\(\)\.withTimeout\(2000\);\s+if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.getUiDevice\(\)\.pressEnter\(\);\s+\} else \{\s+await element\(by\.id\(testId\)\)\.tapReturnKey\(\);\s+await waitFor\(element\(by\.id\(testId\)\)\)\.not\.toBeFocused\(\)\.withTimeout\(2000\);\s+\}\s+\}/,
+    /async function submitFocusedEditor\(testId\) \{[\s\S]*?await waitFor\(element\(by\.id\(testId\)\)\)\s*\.toBeFocused\(\)\s*\.withTimeout\(2000\);[\s\S]*?device\.getUiDevice\(\)\s*\.pressEnter\(\);[\s\S]*?element\(by\.id\(testId\)\)\s*\.tapReturnKey\(\);[\s\S]*?waitFor\(element\(by\.id\(testId\)\)\)\s*\.not\.toBeFocused\(\)\s*\.withTimeout\(2000\);[\s\S]*?\}/,
   );
   assert.doesNotMatch(
     nativeEditorHelperSource,
@@ -298,7 +335,7 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     nativeEditorHelperSource,
-    /async function dismissFocusedEditor\(testId\) \{\s+await waitFor\(element\(by\.id\(testId\)\)\)\.toBeFocused\(\)\.withTimeout\(2000\);\s+if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.pressBack\(\);\s+\} else \{\s+await element\(by\.id\(testId\)\)\.tapReturnKey\(\);\s+await waitFor\(element\(by\.id\(testId\)\)\)\.not\.toBeFocused\(\)\.withTimeout\(2000\);\s+\}\s+\}/,
+    /async function dismissFocusedEditor\(testId\) \{[\s\S]*?await waitFor\(element\(by\.id\(testId\)\)\)\s*\.toBeFocused\(\)\s*\.withTimeout\(2000\);[\s\S]*?device\.pressBack\(\);[\s\S]*?element\(by\.id\(testId\)\)\s*\.tapReturnKey\(\);[\s\S]*?waitFor\(element\(by\.id\(testId\)\)\)\s*\.not\s*\.toBeFocused\(\)\s*\.withTimeout\(2000\);[\s\S]*?\}/,
   );
   assert.match(
     nativeEditorHelperSource,
@@ -310,7 +347,7 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     nativeEditorHelperSource,
-    /async function waitForElementEnabled\(testId, timeoutMs = 5000\) \{\s+await waitForElementAttributes\(\s+testId,\s+\(attributes\) => attributes\?\.enabled === true,\s+timeoutMs,\s+'to become enabled'\s+\);\s+\}/,
+    /async function waitForElementEnabled\(testId, timeoutMs = 5000\) \{\s+await waitForElementAttributes\(\s+testId,\s+\(attributes\) => attributes\?\.enabled === true,\s+timeoutMs,\s+'to become enabled',\s+\);\s+\}/,
   );
 
   for (const { source, planName, hydrationGoalMl } of [
@@ -329,30 +366,37 @@ test('nutrition builders submit native editors before saving', () => {
       source,
       /const \{[\s\S]*?advanceFocusedEditor,[\s\S]*?dismissFocusedEditor,[\s\S]*?waitForElementEnabled,[\s\S]*?\} = require\('\.\/native-editor-actions'\);/,
     );
+    assert.match(source, new RegExp(`replaceText\\('${planName}'\\);`));
     assert.match(
       source,
       new RegExp(
-        `replaceText\\('${planName}'\\);\\s+` +
-          `await expect\\(element\\(by\\.id\\('pro\\.plan\\.metadata\\.name'\\)\\)\\)\\.toHaveText\\('${planName}'\\);?\\s+` +
-          `await advanceFocusedEditor\\(\\s+` +
-          `'pro\\.plan\\.metadata\\.name',\\s+` +
-          `'pro\\.plan\\.metadata\\.hydrationGoalMl'\\s+` +
-          `\\);\\s+` +
-          `const hydrationInput = element\\(by\\.id\\('pro\\.plan\\.metadata\\.hydrationGoalMl'\\)\\);\\s+` +
-          `await hydrationInput\\.replaceText\\('${hydrationGoalMl}'\\);\\s+` +
-          `await expect\\(hydrationInput\\)\\.toHaveText\\('${hydrationGoalMl}'\\);\\s+` +
-          `await dismissFocusedEditor\\('pro\\.plan\\.metadata\\.hydrationGoalMl'\\);\\s+` +
-          `await waitForElementEnabled\\('pro\\.nutrition_plan\\.saveButton'\\);\\s+` +
-          `await element\\(by\\.id\\('pro\\.nutrition_plan\\.saveButton'\\)\\)\\.tap\\(\\);`,
+        `await expect\\(element\\(by\\.id\\('pro\\.plan\\.metadata\\.name'\\)\\)\\)\\.toHaveText\\('${planName}'\\);`,
       ),
     );
+    assert.match(
+      source,
+      /await advanceFocusedEditor\('pro\.plan\.metadata\.name',\s*'pro\.plan\.metadata\.hydrationGoalMl'\);/,
+    );
+    assert.match(
+      source,
+      new RegExp(`await hydrationInput\\.replaceText\\('${hydrationGoalMl}'\\);`),
+    );
+    assert.match(
+      source,
+      new RegExp(`await expect\\(hydrationInput\\)\\.toHaveText\\('${hydrationGoalMl}'\\);`),
+    );
+    assert.match(
+      source,
+      /await dismissFocusedEditor\('pro\.plan\.metadata\.hydrationGoalMl'\);\s+await waitForElementEnabled\('pro\.nutrition_plan\.saveButton'\);/,
+    );
+    assert.match(source, /await element\(by\.id\('pro\.nutrition_plan\.saveButton'\)\)\.tap\(\);/);
     assert.doesNotMatch(source, /hydrationInput\.tap\(\)/);
   }
 
   assert.doesNotMatch(professionalNutritionBuilderSource, /device\.tap\(\{ x: 350, y: 420 \}\);/);
   assert.match(
     professionalNutritionBuilderSource,
-    /waitFor\(element\(by\.id\('tabs\.nutrition'\)\)\)\.toBeVisible\(\)\.withTimeout\(10000\);\s+await element\(by\.id\('tabs\.nutrition'\)\)\.tap\(\);/,
+    /waitFor\(element\(by\.id\('tabs\.nutrition'\)\)\)\s*\.toBeVisible\(\)\s*\.withTimeout\(10000\);\s+await element\(by\.id\('tabs\.nutrition'\)\)\.tap\(\);/,
   );
   assert.match(
     professionalNutritionBuilderSource,
@@ -360,7 +404,7 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     professionalNutritionBuilderSource,
-    /waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\.toExist\(\)\.withTimeout\(5000\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.searchInput'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.nutrition_meal\.screen'\)\)\s+\.scroll\(240, 'down', 0\.5, 0\.75\);/,
+    /waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\s*\.toExist\(\)\s*\.withTimeout\(5000\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.searchInput'\)\)\)\s+\.toBeVisible\(\)\s+\.whileElement\(by\.id\('pro\.nutrition_meal\.screen'\)\)\s+\.scroll\(240, 'down', 0\.5, 0\.75\);/,
   );
   assert.match(
     professionalNutritionMealScreenSource,
@@ -384,7 +428,15 @@ test('nutrition builders submit native editors before saving', () => {
   );
   assert.match(
     professionalNutritionBuilderSource,
-    /element\(by\.id\('pro\.nutrition_item\.add'\)\)\.tap\(\);\s+await waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\.not\.toBeVisible\(\)\.withTimeout\(10000\);[\s\S]*?const removeButton = element\(by\.id\('pro\.nutrition_meal\.foodRow\.E2E_Brown_Rice\.remove'\)\);\s+await waitFor\(removeButton\)\.toBeVisible\(\)\.withTimeout\(5000\);\s+await removeButton\.tap\(\);/,
+    /element\(by\.id\('pro\.nutrition_item\.add'\)\)\s*\.tap\(\);/,
+  );
+  assert.match(
+    professionalNutritionBuilderSource,
+    /await waitFor\(element\(by\.id\('pro\.nutrition_item\.form'\)\)\)\s*\.not\.toBeVisible\(\)\s*\.withTimeout\(10000\);/,
+  );
+  assert.match(
+    professionalNutritionBuilderSource,
+    /const removeButton = element\(by\.id\('pro\.nutrition_meal\.foodRow\.E2E_Brown_Rice\.remove'\)\);[\s\S]*?await waitFor\(removeButton\)\s*\.toBeVisible\(\)\s*\.withTimeout\(5000\);[\s\S]*?await removeButton\.tap\(\);/,
   );
   assert.match(
     professionalNutritionBuilderSource,

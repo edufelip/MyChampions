@@ -1,10 +1,12 @@
 # Open Questions V1 (Remaining)
 
-- None currently.
+- Operational promotion questions remain below; product behavior questions
+  already resolved in this file remain closed.
 
 ## Decision Notes
 
 ### Q-011 Specialty Removal Guard Scope (Resolved)
+
 - Decision made:
   - Block specialty removal when there are `active + pending` requests.
 - Option A (`active` only):
@@ -20,6 +22,7 @@
   - Prevents invalid state transitions and reduces hidden side effects.
 
 ### Q-012 Student-Visible Credential Field Scope (Resolved)
+
 - Decision made:
   - Show `registry_id + authority + country`.
 - Option A (`registry_id` only):
@@ -36,6 +39,7 @@
   - Better user comprehension with limited additional exposure.
 
 ### Q-013 Pending Requests On Invite-Code Regeneration (Resolved)
+
 - Decision made:
   - Auto-cancel pending requests created from old code when code is regenerated.
 - Option A (keep pending):
@@ -51,6 +55,7 @@
   - Regeneration becomes a complete containment action instead of partial mitigation.
 
 ## Resolved
+
 - `Q-010`: Food API final selection approved behind the MyChampions server food integration route. Mobile calls `POST /integrations/food/search`; the server owns the food-service provider boundary and local catalog Postgres mirror.
 - `Q-011`: Specialty-removal guard fixed to `active + pending` constraint.
 - `Q-012`: Student-visible credential field scope fixed to `registry_id + authority + country` (assigned professionals only).
@@ -66,3 +71,19 @@
   are not uploaded and one-day failure diagnostics are the only PR artifacts.
 - `Q-022`: Post-compression media upload limits fixed at `<= 1.5 MB` and `<= 1600 px` longest side.
 - `Q-023`: Non-crash monitoring deferred; crash/ANR monitoring provider selection remains required before production release.
+- `Q-024`: When will the corrected selective-CI publisher and protected native
+  workflows receive exact-head hosted reruns on the approved self-hosted
+  runners? Local workflow and contract checks pass, but hosted status,
+  cancellation-cleanup, and duration/SLO evidence are not available yet.
+- `Q-025`: When will the provider owner grant the permissions and Android
+  catalog/app configuration required for Test Store and platform-store
+  validation? Until then, provider and store-live evidence is blocked rather
+  than represented by deterministic subscription fixtures.
+- `Q-026`: Which approved visual baselines and ignore rectangles should be
+  committed for the browser checkpoints? The comparator is implemented and
+  unbaselined captures are emitted, but no baseline refresh is authorized by
+  this change.
+- `Q-027`: Which approved recurring schedule should run the persona rotation
+  and monthly gap sweep? The first browser-first QA Run and dated report are
+  complete; unattended automation remains intentionally unwired pending an
+  explicit schedule and environment owner.

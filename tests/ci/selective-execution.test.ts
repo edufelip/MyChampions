@@ -247,15 +247,16 @@ test('nutrition profile isolates scenario-specific native fixtures', () => {
     (invocation) => !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js'),
   );
 
-  assert.equal(plan.invocations.length, 9);
+  assert.equal(plan.invocations.length, 10);
   assert.equal(aiAnalysisInvocations.length, 2);
-  assert.equal(imageUploadInvocations.length, 2);
+  assert.equal(imageUploadInvocations.length, 3);
   assert.deepEqual(
     imageUploadInvocations.map((invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO),
-    ['sheet', 'success'],
+    ['sheet', 'success', 'permission-denied'],
   );
   assert.equal(imageUploadInvocations[0]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
   assert.equal(imageUploadInvocations[1]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, 'success');
+  assert.equal(imageUploadInvocations[2]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
   assert.ok(
     unrelatedNutritionInvocations.every(
       (invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO === '',

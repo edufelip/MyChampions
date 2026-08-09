@@ -608,7 +608,7 @@ test('web useSubscription resolves professional counts as explicit, dev E2E, the
     "useEffect(() => {\n    if (typeof resolvedActiveStudentCountOverride === 'number')",
   );
   const countEffectEnd = hookSource.indexOf(
-    '\n  }, [\n    activeAuthUid,\n    loadProfessionalActiveStudentCount,\n    resolvedActiveStudentCountOverride,\n  ]);',
+    '\n  }, [activeAuthUid, loadProfessionalActiveStudentCount, resolvedActiveStudentCountOverride]);',
     countEffectStart,
   );
   assert.notEqual(countEffectStart, -1);

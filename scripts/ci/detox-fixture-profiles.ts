@@ -42,8 +42,10 @@ export const SELECTIVE_FIXTURE_ENV_KEYS = [
   'E2E_AUTH_SOCIAL',
   'E2E_IMAGE_UPLOAD_SCENARIO',
   'E2E_MEAL_ANALYSIS_SCENARIO',
+  'E2E_QR_INVITE_SCENARIO',
   'E2E_SUBSCRIPTION_ACTION_OUTCOME',
   'E2E_SUBSCRIPTION_SCENARIO',
+  'E2E_ROLE_PERSISTENCE_SCENARIO',
   'EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION',
   'EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS',
   'EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID',
@@ -66,6 +68,7 @@ export const SELECTIVE_FIXTURE_ENV_KEYS = [
   'EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE',
   'EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE',
   'EXPO_PUBLIC_E2E_QR_INVITE_PAYLOAD',
+  'EXPO_PUBLIC_E2E_ROLE_PERSISTENCE',
   'EXPO_PUBLIC_E2E_SOCIAL_AUTH',
   'EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX',
   'EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE',
@@ -156,12 +159,40 @@ export const DETOX_FIXTURE_PROFILES = {
       },
     ],
   },
-  'authenticated-connections': {
+  'auth-role-persistence': {
     selectiveCi: true,
     phases: [
       {
+        id: 'role-persistence',
+        specs: ['e2e/auth-role-selection.e2e.test.js'],
+        appEnv: {
+          ...authenticatedAppEnv,
+          EXPO_PUBLIC_E2E_ROLE_PERSISTENCE: 'true',
+        },
+        runnerEnv: {
+          ...authenticatedRunnerEnv,
+          E2E_ROLE_PERSISTENCE_SCENARIO: 'relaunch',
+        },
+      },
+    ],
+  },
+  'authenticated-connections': {
+    selectiveCi: true,
+    allowRepeatedSpecs: true,
+    phases: [
+      {
         id: 'connections',
-        specs: '*',
+        specs: ['e2e/professional-home-invite-code.e2e.test.js'],
+        appEnv: {
+          ...activeProfessionalAppEnv,
+          EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE: 'success',
+          EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
+        },
+        runnerEnv: authenticatedRunnerEnv,
+      },
+      {
+        id: 'qr-valid',
+        specs: ['e2e/student-professionals.e2e.test.js'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE: 'success',
@@ -169,6 +200,20 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
         runnerEnv: authenticatedRunnerEnv,
+      },
+      {
+        id: 'qr-invalid-payload',
+        specs: ['e2e/student-professionals.e2e.test.js'],
+        appEnv: {
+          ...activeProfessionalAppEnv,
+          EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE: 'success',
+          EXPO_PUBLIC_E2E_QR_INVITE_PAYLOAD: 'not-a-valid-invite-payload',
+          EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
+        },
+        runnerEnv: {
+          ...authenticatedRunnerEnv,
+          E2E_QR_INVITE_SCENARIO: 'invalid_payload',
+        },
       },
     ],
   },
@@ -229,6 +274,23 @@ export const DETOX_FIXTURE_PROFILES = {
         runnerEnv: {
           ...authenticatedRunnerEnv,
           E2E_IMAGE_UPLOAD_SCENARIO: 'success',
+        },
+      },
+      {
+        id: 'image-upload-permission-denied',
+        specs: ['e2e/custom-meal-image-upload.e2e.test.js'],
+        appEnv: {
+          ...activeProfessionalAppEnv,
+          EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_MEAL_ANALYSIS_FIXTURE: 'success',
+          EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
+        },
+        runnerEnv: {
+          ...authenticatedRunnerEnv,
+          E2E_IMAGE_UPLOAD_SCENARIO: 'permission-denied',
         },
       },
       {

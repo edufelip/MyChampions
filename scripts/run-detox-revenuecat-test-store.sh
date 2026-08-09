@@ -3,7 +3,8 @@ set -euo pipefail
 
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "${script_directory}/.." && pwd)"
-server_evidence_runner="${project_root}/../server/infra/scripts/verify-revenuecat-live-evidence.sh"
+server_root="${MYCHAMPIONS_SERVER_ROOT:-${project_root}/../server}"
+server_evidence_runner="${server_root}/infra/scripts/verify-revenuecat-live-evidence.sh"
 
 if [[ "${REVENUECAT_LIVE_E2E:-false}" != "true" ]]; then
   echo "Refusing to run live RevenueCat tests without REVENUECAT_LIVE_E2E=true." >&2
@@ -54,6 +55,10 @@ export EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID="$alternate_uid"
 export EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE=basic
 export DETOX_METRO_CLEAR_CACHE=true
 export DETOX_REQUIRE_FRESH_METRO=true
+
+REVENUECAT_TEST_APP_USER_ID="$run_uid" \
+  REVENUECAT_TEST_ALT_APP_USER_ID="$alternate_uid" \
+  bash scripts/verify-revenuecat-test-store-preflight.sh
 
 # A live run must resolve privileges from RevenueCat, never the deterministic
 # subscription scenarios used by the regular Detox matrix.

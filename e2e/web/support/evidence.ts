@@ -2,6 +2,8 @@ import type { Page, TestInfo } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
+import { captureVisualEvidenceMetadata } from './visual-evidence';
+
 function safeSegment(value: string): string {
   return value
     .toLowerCase()
@@ -36,7 +38,15 @@ export async function captureEvidence(
     animations: 'disabled',
     caret: 'hide',
   });
+  const metadataPath = await captureVisualEvidenceMetadata(screenshotPath, checkpoint, [
+    projectName,
+    screenshotName,
+  ]);
   await testInfo.attach(checkpoint, { path: screenshotPath, contentType: 'image/png' });
+  await testInfo.attach(`${checkpoint}:metadata`, {
+    path: metadataPath,
+    contentType: 'application/json',
+  });
 
   return screenshotPath;
 }
@@ -67,9 +77,18 @@ export async function captureFlowEvidence(
     animations: 'disabled',
     caret: 'hide',
   });
+  const metadataPath = await captureVisualEvidenceMetadata(screenshotPath, checkpoint, [
+    safeSegment(flow),
+    platform,
+    screenshotName,
+  ]);
   await testInfo.attach(`${flow}: ${checkpoint}`, {
     path: screenshotPath,
     contentType: 'image/png',
+  });
+  await testInfo.attach(`${flow}: ${checkpoint}:metadata`, {
+    path: metadataPath,
+    contentType: 'application/json',
   });
 
   return screenshotPath;

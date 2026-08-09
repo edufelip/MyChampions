@@ -46,8 +46,9 @@ test('the shared pill button exposes and enforces its disabled accessibility sta
 test('role-selection E2E disables synchronization before app startup work', () => {
   assert.match(
     roleSelectionE2ESource,
-    /beforeEach\(async \(\) => \{\s+await device\.launchApp\(\{\s+newInstance: true,\s+launchArgs: \{ detoxEnableSynchronization: 0 \},\s+\}\);\s+\}\);/,
+    /beforeEach\(async \(\) => \{[\s\S]*?await device\.launchApp\(\{[\s\S]*?newInstance: true,[\s\S]*?launchArgs: \{ detoxEnableSynchronization: 0 \},[\s\S]*?\}\);[\s\S]*?\}\);/,
   );
   assert.doesNotMatch(roleSelectionE2ESource, /disableSynchronization/);
-  assert.equal(roleSelectionE2ESource.match(/device\.launchApp/g)?.length, 1);
+  assert.match(roleSelectionE2ESource, /itWithRolePersistenceScenario/);
+  assert.equal(roleSelectionE2ESource.match(/device\.launchApp/g)?.length, 2);
 });

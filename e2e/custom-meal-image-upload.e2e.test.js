@@ -5,15 +5,19 @@ const imageUploadScenario = process.env.E2E_IMAGE_UPLOAD_SCENARIO;
 if (
   process.env.E2E_AUTH_SESSION === 'true' &&
   imageUploadScenario !== 'sheet' &&
-  imageUploadScenario !== 'success'
+  imageUploadScenario !== 'success' &&
+  imageUploadScenario !== 'permission-denied'
 ) {
   throw new Error(
-    'Custom Meal Image Upload requires E2E_IMAGE_UPLOAD_SCENARIO=sheet|success for authenticated runs',
+    'Custom Meal Image Upload requires E2E_IMAGE_UPLOAD_SCENARIO=sheet|success|permission-denied for authenticated runs',
   );
 }
 
 const itWithSheetScenario = imageUploadScenario === 'sheet' ? it : it.skip;
 const itWithSuccessScenario = imageUploadScenario === 'success' ? it : it.skip;
+const itWithPermissionDeniedScenario = imageUploadScenario === 'permission-denied' ? it : it.skip;
+const imageUploadPermissions =
+  imageUploadScenario === 'permission-denied' ? { camera: 'NO' } : { camera: 'YES' };
 
 async function selectStudentRole() {
   await waitFor(element(by.id('auth.roleSelection.title')))
@@ -48,7 +52,7 @@ describeWithE2EAuthSession('Custom Meal Image Upload', () => {
   });
 
   beforeEach(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, permissions: imageUploadPermissions });
     await device.disableSynchronization();
   });
 
@@ -84,6 +88,25 @@ describeWithE2EAuthSession('Custom Meal Image Upload', () => {
         .withTimeout(10000);
       await expect(element(by.id('meal.builder.imageUpload.progress'))).not.toBeVisible();
       await expect(element(by.id('meal.builder.imageUpload.error'))).not.toBeVisible();
+    },
+  );
+
+  itWithPermissionDeniedScenario(
+    'shows a permission error when camera access is denied',
+    async () => {
+      await selectStudentRole();
+      await openCreateMealScreen();
+
+      await element(by.id('meal.builder.imageUpload')).tap();
+      await waitFor(element(by.text('Take photo')))
+        .toBeVisible()
+        .withTimeout(5000);
+      await element(by.text('Take photo')).tap();
+
+      await waitFor(element(by.id('meal.builder.imageUpload.error')))
+        .toBeVisible()
+        .withTimeout(10000);
+      await expect(element(by.id('meal.builder.imageUpload.preview'))).not.toBeVisible();
     },
   );
 });

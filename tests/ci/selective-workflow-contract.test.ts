@@ -2416,3 +2416,26 @@ test('every other artifact is either bounded failure evidence or a one-day relea
     assert.match(uploads[0], /^\s+retention-days: 1$/m, name);
   }
 });
+
+test('protected native full validation is manual/release-only and builds once per platform', () => {
+  const workflow = readFileSync(
+    join(root, '.github', 'workflows', 'detox-protected-full.yml'),
+    'utf8',
+  );
+
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /release:\s*\n\s+types: \[published\]/);
+  assert.doesNotMatch(workflow, /schedule:/);
+  assert.match(workflow, /mychampions-ios/);
+  assert.match(workflow, /mychampions-android/);
+  assert.match(workflow, /yarn test:e2e:build:ios:debug/);
+  assert.match(workflow, /app:assembleDevDebugAndroidTest/);
+  assert.equal((workflow.match(/DETOX_SKIP_BUILD=true yarn test:impact:execute/g) ?? []).length, 2);
+  assert.equal((workflow.match(/MYCHAMPIONS_NATIVE_STATE_ROOT/g) ?? []).length >= 4, true);
+  assert.equal((workflow.match(/mychampions-native-host\.lock/g) ?? []).length >= 4, true);
+  assert.equal((workflow.match(/fcntl\.flock/g) ?? []).length, 2);
+  assert.match(workflow, /SELECTED_SUITES_JSON:/);
+  assert.match(workflow, /if: failure\(\)/);
+  assert.match(workflow, /retention-days: 1/);
+  assert.doesNotMatch(workflow, /detox:revenuecat-live/);
+});
