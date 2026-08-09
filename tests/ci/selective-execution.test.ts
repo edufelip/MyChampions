@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import test from 'node:test';
+import { buildChildEnvironment } from '../../scripts/ci/execute-selected-tests';
 import { loadManifest } from '../../scripts/ci/test-impact';
 import {
   createSelectiveExecutionPlan,
@@ -195,6 +196,27 @@ test('auth profile isolates entry, authenticated, and outdated-terms phases', ()
   assert.equal(role.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT, '');
   assert.equal(role.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN, '');
   assert.equal(role.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, '');
+});
+
+test('cleared fixture variables are absent from each child process', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'android', ['detox:auth'], {
+    skipNativeBuild: true,
+  });
+  const authenticatedRole = plan.invocations.find((invocation) =>
+    invocation.args.includes('e2e/auth-role-selection.e2e.test.js'),
+  )!;
+  const previous = process.env.E2E_ROLE_PERSISTENCE_SCENARIO;
+
+  try {
+    process.env.E2E_ROLE_PERSISTENCE_SCENARIO = 'relaunch';
+    const environment = buildChildEnvironment(authenticatedRole);
+
+    assert.equal(environment.E2E_ROLE_PERSISTENCE_SCENARIO, undefined);
+    assert.equal(environment.E2E_AUTH_SESSION, 'true');
+  } finally {
+    if (previous === undefined) delete process.env.E2E_ROLE_PERSISTENCE_SCENARIO;
+    else process.env.E2E_ROLE_PERSISTENCE_SCENARIO = previous;
+  }
 });
 
 test('student empty-state profile actively clears incompatible assigned fixtures', () => {

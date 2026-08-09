@@ -135,7 +135,9 @@ dev-only deterministic fixture harness remains enabled. Each native job builds
 once, then runs isolated fixture phases with a freshly owned Metro process and
 explicit environment. Runtime phase values take precedence over the app config
 embedded by the one-time native build; an explicit empty runtime value clears a
-fixture from the preceding phase. The Metro status endpoint proves only that the
+fixture from the preceding phase and is omitted from the child process
+environment, so an inherited self-hosted-runner value cannot masquerade as an
+active scenario. The Metro status endpoint proves only that the
 listener exists. The executor next requests the platform-specific Expo magic
 development-bundle URL and fully consumes its rewritten response before spawning
 Detox, so the first screen wait never owns a cold transform. The cold transform

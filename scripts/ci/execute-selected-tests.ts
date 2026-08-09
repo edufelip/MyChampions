@@ -78,11 +78,17 @@ function isTrue(value: string | undefined): boolean {
   return value === 'true' || value === '1';
 }
 
-function childEnvironment(invocation: CommandInvocation): NodeJS.ProcessEnv {
-  return {
+export function buildChildEnvironment(invocation: CommandInvocation): NodeJS.ProcessEnv {
+  const environment: NodeJS.ProcessEnv = {
     ...process.env,
     ...invocation.env,
   };
+
+  for (const [key, value] of Object.entries(invocation.env)) {
+    if (value === '') delete environment[key];
+  }
+
+  return environment;
 }
 
 function assertRequiredEnvironment(invocation: CommandInvocation): void {
@@ -227,7 +233,7 @@ async function runWithFreshMetro(
     );
   }
 
-  const env = childEnvironment(invocation);
+  const env = buildChildEnvironment(invocation);
   const metro = spawn(
     'yarn',
     ['expo', 'start', '--dev-client', '--localhost', '--port', String(port), '--clear'],
@@ -302,7 +308,7 @@ async function runInvocation(
     invocation.command,
     invocation.args,
     cwd,
-    childEnvironment(invocation),
+    buildChildEnvironment(invocation),
     timeoutMs,
   );
 }
