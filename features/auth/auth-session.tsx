@@ -36,6 +36,7 @@ type AuthSessionContextValue = {
   isHydrated: boolean;
   isAuthenticated: boolean;
   lockedRole: RoleIntent | null;
+  pendingRoleSelectionRole: RoleIntent | null;
   currentUser: AuthSessionUser | null;
   termsRequiredVersion: string;
   acceptedTermsVersion: string | null;
@@ -53,6 +54,8 @@ type AuthSessionContextValue = {
   signInWithE2ESocialAuth: (provider: E2ESocialAuthProvider) => Promise<boolean>;
   signInWithServerSocialAuth: (provider: E2ESocialAuthProvider) => Promise<boolean>;
   adoptCurrentServerSession: () => boolean;
+  beginRoleSelectionNavigation: (role: RoleIntent) => void;
+  completeRoleSelectionNavigation: () => void;
   lockRole: (role: RoleIntent) => Promise<void>;
   acceptTerms: () => Promise<void>;
   clearSession: () => Promise<void>;
@@ -136,6 +139,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lockedRole, setLockedRole] = useState<RoleIntent | null>(null);
+  const [pendingRoleSelectionRole, setPendingRoleSelectionRole] = useState<RoleIntent | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthSessionUser | null>(null);
   const [acceptedTermsVersion, setAcceptedTermsVersion] = useState<string | null>(null);
   const [requiresTermsAcceptance, setRequiresTermsAcceptance] = useState(false);
@@ -173,6 +177,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(false);
         setCurrentUser(null);
         setLockedRole(null);
+        setPendingRoleSelectionRole(null);
         setAcceptedTermsVersion(null);
         setRequiresTermsAcceptance(false);
         setLastProfileSyncedAtIso(null);
@@ -247,6 +252,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(false);
         setCurrentUser(null);
         setLockedRole(null);
+        setPendingRoleSelectionRole(null);
         setAcceptedTermsVersion(null);
         setLastProfileSyncedAtIso(null);
         setRequiresTermsAcceptance(false);
@@ -272,6 +278,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       isHydrated,
       isAuthenticated,
       lockedRole,
+      pendingRoleSelectionRole,
       currentUser,
       termsRequiredVersion: termsConfig.requiredVersion,
       acceptedTermsVersion,
@@ -412,6 +419,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setIsHydrated(true);
         return true;
       },
+      beginRoleSelectionNavigation: (role: RoleIntent) => {
+        setPendingRoleSelectionRole(role);
+      },
+      completeRoleSelectionNavigation: () => {
+        setPendingRoleSelectionRole(null);
+      },
       lockRole: async (role: RoleIntent) => {
         if (!currentUser) {
           throw new Error('No authenticated user found.');
@@ -451,6 +464,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(false);
         setCurrentUser(null);
         setLockedRole(null);
+        setPendingRoleSelectionRole(null);
         setAcceptedTermsVersion(null);
         setLastProfileSyncedAtIso(null);
         setRequiresTermsAcceptance(false);
@@ -469,6 +483,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       isHydrated,
       lockedRole,
       lastProfileSyncedAtIso,
+      pendingRoleSelectionRole,
       requiresTermsAcceptance,
       termsConfig.requiredVersion,
       termsConfig.termsUrl,

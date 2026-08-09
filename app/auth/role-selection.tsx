@@ -48,7 +48,13 @@ export default function RoleSelectionScreen() {
   const usesContainedTabletLayout = viewportWidth >= 768 && viewportWidth < 1024;
   const exposesNativeE2ETapTargets =
     Platform.OS !== 'web' && __DEV__ && process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true';
-  const { isHydrated, currentUser, lockRole } = useAuthSession();
+  const {
+    isHydrated,
+    currentUser,
+    beginRoleSelectionNavigation,
+    completeRoleSelectionNavigation,
+    lockRole,
+  } = useAuthSession();
   const { emitEvent } = useAnalytics();
   const [selectedRole, setSelectedRole] = useState<RoleIntent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,10 +87,13 @@ export default function RoleSelectionScreen() {
     }
     setIsSubmitting(true);
     let didPersistRole = false;
+    let didRequestNavigation = false;
+    beginRoleSelectionNavigation(role);
     try {
       await lockRole(role);
       didPersistRole = true;
       router.replace((returnTo ?? resolvePostRoleRoute(role)) as never);
+      didRequestNavigation = true;
     } catch (error) {
       if (__DEV__) {
         console.warn('[auth][role-selection] continue failed', {
@@ -96,6 +105,7 @@ export default function RoleSelectionScreen() {
         didPersistRole ? 'auth.role.error.navigation_failed' : 'auth.role.error.save_failed',
       );
     } finally {
+      if (!didRequestNavigation) completeRoleSelectionNavigation();
       setIsSubmitting(false);
     }
   };

@@ -47,9 +47,22 @@ function RootLayoutContent() {
   const normalizedPathname = normalizeGuardPathname(pathname);
   const authReturnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const lastRedirectAttemptRef = useRef<string | null>(null);
-  const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance, currentUser } =
-    useAuthSession();
+  const {
+    isHydrated,
+    isAuthenticated,
+    lockedRole,
+    needsTermsAcceptance,
+    currentUser,
+    pendingRoleSelectionRole,
+    completeRoleSelectionNavigation,
+  } = useAuthSession();
   const currentUserUid = currentUser?.uid ?? null;
+
+  useEffect(() => {
+    if (pendingRoleSelectionRole && normalizedPathname !== '/auth/role-selection') {
+      completeRoleSelectionNavigation();
+    }
+  }, [completeRoleSelectionNavigation, normalizedPathname, pendingRoleSelectionRole]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -66,6 +79,7 @@ function RootLayoutContent() {
       isAuthenticated,
       lockedRole,
       needsTermsAcceptance,
+      pendingRoleSelectionRole,
       pathname: normalizedPathname,
       returnTo: authReturnTo,
     });
@@ -77,6 +91,7 @@ function RootLayoutContent() {
         isAuthenticated,
         lockedRole,
         needsTermsAcceptance,
+        pendingRoleSelectionRole,
         pathname: normalizedPathname,
         returnTo: authReturnTo,
         redirect,
@@ -105,6 +120,7 @@ function RootLayoutContent() {
     lockedRole,
     needsTermsAcceptance,
     normalizedPathname,
+    pendingRoleSelectionRole,
     router,
   ]);
 

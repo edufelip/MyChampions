@@ -154,6 +154,18 @@ test('guard bypasses role-selection when role is locked', () => {
   assert.equal(redirect, '/');
 });
 
+test('guard keeps the role-selection handoff open for the committed role', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: 'professional',
+    needsTermsAcceptance: false,
+    pathname: '/auth/role-selection',
+    pendingRoleSelectionRole: 'professional',
+  });
+
+  assert.equal(redirect, null);
+});
+
 test('guard blocks wrong-role tab access', () => {
   const studentRedirect = resolveAuthGuardRedirect({
     isAuthenticated: true,

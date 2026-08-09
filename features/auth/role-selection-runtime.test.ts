@@ -52,3 +52,12 @@ test('role-selection E2E disables synchronization before app startup work', () =
   assert.match(roleSelectionE2ESource, /itWithRolePersistenceScenario/);
   assert.equal(roleSelectionE2ESource.match(/device\.launchApp/g)?.length, 2);
 });
+
+test('role-selection preserves its explicit destination while the role guard updates', () => {
+  assert.match(roleSelectionSource, /beginRoleSelectionNavigation\(role\);/);
+  assert.match(
+    roleSelectionSource,
+    /router\.replace\(\(returnTo \?\? resolvePostRoleRoute\(role\)\) as never\);/,
+  );
+  assert.match(roleSelectionSource, /completeRoleSelectionNavigation\(\);/);
+});

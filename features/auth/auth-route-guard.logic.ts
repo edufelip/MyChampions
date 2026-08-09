@@ -6,6 +6,7 @@ export type AuthGuardInput = {
   needsTermsAcceptance: boolean;
   pathname: string;
   returnTo?: string | string[] | null;
+  pendingRoleSelectionRole?: RoleIntent | null;
 };
 
 export function normalizeGuardPathname(pathname: string | null | undefined): string {
@@ -139,6 +140,14 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   }
 
   const home = roleHomePath(input.lockedRole);
+
+  // Role selection persists the role before navigating to the first
+  // role-specific screen. Keep that handoff alive for one render so the
+  // global guard does not race the screen's explicit destination. A direct
+  // visit has no pending role and still follows FR-173 below.
+  if (path === '/auth/role-selection' && input.pendingRoleSelectionRole === input.lockedRole) {
+    return null;
+  }
 
   if (
     path === '/auth/sign-in' ||
