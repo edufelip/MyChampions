@@ -5,6 +5,12 @@ CI. It uses the RevenueCat Test Store only from the development app variant,
 isolates every run with unique App User IDs, and removes deterministic
 entitlement overrides before Detox starts.
 
+Configure `MYCHAMPIONS_ENABLE_IOS_TESTS` under **Settings → Secrets and
+variables → Actions → Variables**. Its exact value `false` skips new
+provider-backed iOS Test Store runs; unset or `true` keeps them enabled, and
+changing the variable does not cancel an already-running job. This test toggle
+does not gate the credentialed `ios-release.yml` distribution workflow.
+
 ## Commands
 
 - `bash scripts/verify-revenuecat-test-store-preflight.sh` validates the

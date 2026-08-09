@@ -11,7 +11,12 @@ const lockRunnerPath = 'scripts/ci/run-with-native-host-lock.sh';
 const lockRunner = readFileSync(lockRunnerPath, 'utf8');
 
 test('provider validation is protected, exact-head, and isolated from native Detox', () => {
-  assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
+  assert.match(workflow, /resolve-ios-tests:/);
+  assert.match(workflow, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
+  assert.match(workflow, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
+  assert.match(workflow, /needs: resolve-ios-tests/);
+  assert.match(workflow, /needs\.resolve-ios-tests\.outputs\.enabled == 'true'/);
+  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
   assert.doesNotMatch(workflow, /startsWith\(github\.ref, 'refs\/heads\/release\/'\)/);
   assert.match(workflow, /ref: \$\{\{ github\.sha \}\}/);
   assert.match(workflow, /EXPECTED_SHA: \$\{\{ github\.sha \}\}/);

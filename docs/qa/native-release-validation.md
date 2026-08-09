@@ -4,6 +4,13 @@
 lane. It runs only from `main` on manual dispatch or from a published GitHub
 release; it does not run on pull requests and it has no nightly schedule.
 
+Configure `MYCHAMPIONS_ENABLE_IOS_TESTS` under **Settings → Secrets and
+variables → Actions → Variables**. Its exact value `false` skips new iOS
+validation in this test-only workflow, including a published-release trigger,
+while Android remains enabled. Unset or `true` keeps iOS enabled, and changing
+the variable does not cancel a run already in progress. The credentialed
+`ios-release.yml` distribution workflow is not controlled by this toggle.
+
 The lane uses the existing self-hosted labels and runner-side host-lock/cleanup
 hooks, separate iOS and Android Metro ports, the checked-in fixture profiles,
 and exact `github.sha` checkout. Each platform requires an existing,

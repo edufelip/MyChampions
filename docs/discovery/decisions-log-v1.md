@@ -760,8 +760,12 @@
 - `D-200`: iOS test execution is controlled by the default-on repository variable
   `MYCHAMPIONS_ENABLE_IOS_TESTS`.
   - The exact string `false` skips new iOS test-only jobs, including the manual
-    iOS smoke path and selected iOS Detox suites. An unset variable or any
-    other value, including `true`, keeps iOS testing enabled.
+    iOS smoke path, selected iOS Detox suites, protected full iOS Detox
+    validation, and provider-backed iOS Test Store validation. An unset
+    variable or any other value, including `true`, keeps iOS testing enabled.
+    The protected full workflow remains test-only even when triggered by a
+    published release event, and this checkout has no scheduled or nightly iOS
+    test workflow.
   - The variable does not cancel jobs that are already running and does not
     gate credentialed release/distribution workflows.
   - The final selective status publisher treats an intentional iOS skip as

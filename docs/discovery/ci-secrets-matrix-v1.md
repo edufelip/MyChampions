@@ -42,10 +42,13 @@ reproducible and auditable.
   switch for iOS test-only jobs. Configure it in the repository's GitHub
   Actions settings under **Settings → Secrets and variables → Actions →
   Variables**. The exact string `false` skips new iOS test runs, including the
-  manual iOS smoke lane and selected iOS Detox suites; an unset variable or any
-  other value, including `true`, keeps iOS testing enabled. Changing the
-  variable does not cancel jobs that are already running. It does not gate
-  `ios-release.yml`, which remains a distribution workflow.
+  manual iOS smoke lane, selected iOS Detox suites, the protected full iOS
+  Detox lane, and provider-backed iOS Test Store validation; an unset variable
+  or any other value, including `true`, keeps iOS testing enabled. Changing
+  the variable does not cancel jobs that are already running. It does not gate
+  `ios-release.yml`, which remains a distribution workflow. The protected full
+  workflow is test-only even when triggered by a published release and this
+  checkout has no scheduled or nightly iOS test workflow.
 - The repository-scoped self-hosted runners and the host-wide locks shared with
   Meer are configured. Their labels, service posture, hook installation, and
   recovery checks are recorded below as capacity and resource-serialization
@@ -225,6 +228,8 @@ reproducible and auditable.
 | `trusted-selective-tests.yml` | Protected-`main` authoritative workflow; accepts authorized `workflow_run`, direct `main` push, and `workflow_dispatch` at ref `main` with a live-resolved PR number and forced full selection; push publishes no PR gate; has no direct `merge_group`, release-branch, or hotfix-branch trigger; authorized release/hotfix PR workflow runs force full | `ENV_FILE` only in selected iOS/Android jobs; authorization, impact, fast-quality, web, and hosted status jobs use no repository secret |
 | `android-pr.yml` | Manual-only legacy Android validation | `ENV_FILE` |
 | `ios-pr.yml` | Manual-only legacy iOS validation; skipped for new runs when `MYCHAMPIONS_ENABLE_IOS_TESTS=false` | `ENV_FILE` |
+| `detox-protected-full.yml` | Manual/release-published test-only full Detox validation; its iOS job is skipped for new runs when `MYCHAMPIONS_ENABLE_IOS_TESTS=false`, while Android remains enabled | `ENV_FILE` |
+| `provider-validation.yml` | Manual protected iOS RevenueCat Test Store validation; skipped for new runs when `MYCHAMPIONS_ENABLE_IOS_TESTS=false` | `ENV_FILE`, `REVENUECAT_TEST_STORE_SDK_KEY` |
 | `web-pr.yml` | Manual-only legacy web validation | None |
 | `android-release.yml` | Android signing and Play upload | `ENV_FILE`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_ALIAS_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON` |
 | `ios-release.yml` | iOS signing and TestFlight upload | `ENV_FILE`, `IOS_KEYCHAIN_PASSWORD`, `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROFILE_BASE64`, `IOS_PROFILE_NAME`, `IOS_TEAM_ID`, `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_CONTENT` |

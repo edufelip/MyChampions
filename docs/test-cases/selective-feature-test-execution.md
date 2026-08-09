@@ -41,15 +41,17 @@ status, repository-setting, and complete exact-head matrix evidence.
 Configure the repository variable `MYCHAMPIONS_ENABLE_IOS_TESTS` under
 **Settings → Secrets and variables → Actions → Variables**. The exact value
 `false` skips new iOS test-only jobs, including the manual `ios-pr.yml` smoke
-lane, selected iOS Detox suites, and the system/account-verification tests that
-run through those lanes. An unset variable or any value other than the exact
-string `false` keeps iOS testing enabled. The variable does not cancel jobs
-that are already running, and it does not gate the credentialed
-`ios-release.yml` distribution workflow. When disabled, the final selective
-gate treats the iOS job's intentional `skipped` result as allowed while all
-other enabled quality and platform lanes remain enforced. This checkout has no
-scheduled or nightly iOS test workflow; any future iOS test-only lane must use
-the same guard.
+lane, selected iOS Detox suites, the system/account-verification tests that run
+through those lanes, the full iOS Detox job in `detox-protected-full.yml`, and
+the provider-backed iOS Test Store job in `provider-validation.yml`. The full
+Detox workflow remains test-only even when started by a published release
+event. An unset variable or any value other than the exact string `false` keeps
+iOS testing enabled. The variable does not cancel jobs that are already
+running, and it does not gate the credentialed `ios-release.yml` distribution
+workflow. When disabled, the final selective gate treats the iOS job's
+intentional `skipped` result as allowed while all other enabled quality and
+platform lanes remain enforced. This checkout has no scheduled or nightly iOS
+test workflow; any future iOS test-only lane must use the same guard.
 
 ## Sources of truth
 

@@ -885,6 +885,12 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   const iosLane = jobBlock(trusted, 'detox-ios-selected');
   const gate = jobBlock(trusted, 'publish-selective-status');
   const release = workflow('ios-release.yml');
+  const protectedFull = workflow('detox-protected-full.yml');
+  const protectedResolver = jobBlock(protectedFull, 'resolve-ios-tests');
+  const protectedIosLane = jobBlock(protectedFull, 'detox-ios-full');
+  const provider = workflow('provider-validation.yml');
+  const providerResolver = jobBlock(provider, 'resolve-ios-tests');
+  const providerIosLane = jobBlock(provider, 'ios-test-store');
 
   assert.match(legacyToggle, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
   assert.match(legacyToggle, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
@@ -897,6 +903,17 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   assert.match(authorization, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
   assert.match(authorization, /ios_tests_enabled=\{'true' if ios_tests_enabled else 'false'\}/);
   assert.match(iosLane, /needs\.authorize-candidate\.outputs\.ios_tests_enabled == 'true'/);
+  for (const resolver of [protectedResolver, providerResolver]) {
+    assert.match(resolver, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
+    assert.match(resolver, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
+    assert.match(resolver, /enabled=\{'true' if enabled else 'false'\}/);
+  }
+  assert.match(protectedIosLane, /^    needs: resolve-ios-tests$/m);
+  assert.match(protectedIosLane, /needs\.resolve-ios-tests\.outputs\.enabled == 'true'/);
+  assert.match(protectedIosLane, /github\.event_name == 'release'/);
+  assert.match(providerIosLane, /^    needs: resolve-ios-tests$/m);
+  assert.match(providerIosLane, /needs\.resolve-ios-tests\.outputs\.enabled == 'true'/);
+  assert.match(providerIosLane, /github\.ref == 'refs\/heads\/main'/);
   assert.match(
     gate,
     /IOS_TESTS_ENABLED: \$\{\{ needs\.authorize-candidate\.outputs\.ios_tests_enabled \}\}/,
@@ -942,6 +959,7 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   assert.match(gate, /selected_lane\("web"/);
   assert.match(gate, /selected_lane\(\n\s+"android"/);
   assert.doesNotMatch(release, /MYCHAMPIONS_ENABLE_IOS_TESTS/);
+  assert.doesNotMatch(protectedFull, /ios-release\.yml/);
 });
 
 test('self-hosted selected lanes require authorization and selected skips fail publication', () => {
