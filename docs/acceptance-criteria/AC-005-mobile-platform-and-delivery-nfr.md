@@ -61,7 +61,10 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   verifies runner-owned members even when a mixed-UID process group makes group
   signaling return `EPERM`; surviving runner-owned members or an occupied Metro
   port fail the lane. The Android lane must pass native lint/unit/build checks,
-  and a selected skipped/empty lane fails the stable gate.
+  and a selected skipped/empty lane fails the stable gate, except that a
+  selected iOS lane may be intentionally skipped when repository variable
+  `MYCHAMPIONS_ENABLE_IOS_TESTS` is exactly `false`; that opt-out does not
+  relax any other selected or enabled lane.
 - `AC-542`: Persistent-runner promotion passes only when the supported
   pull-request path for bases `main`, `release/**`, and `hotfix/**` begins with a
   protected-`main`, GitHub-hosted-only `pull_request_target` freshness workflow

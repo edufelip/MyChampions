@@ -41,6 +41,7 @@ jobs:
       head_sha: ${{ steps.candidate.outputs.head_sha }}
       head_ref: ${{ steps.candidate.outputs.head_ref }}
       force_full: ${{ steps.candidate.outputs.force_full }}
+      ios_tests_enabled: ${{ steps.candidate.outputs.ios_tests_enabled }}
       pull_request_number: ${{ steps.candidate.outputs.pull_request_number }}
     steps:
       - id: candidate
@@ -53,6 +54,7 @@ jobs:
           EVENT_SENDER: ${{ github.event.sender.login }}
           GITHUB_REF_VALUE: ${{ github.ref }}
           GITHUB_SHA_VALUE: ${{ github.sha }}
+          IOS_TESTS_VALUE: ${{ vars.MYCHAMPIONS_ENABLE_IOS_TESTS }}
           PR_NUMBER_INPUT: ${{ inputs.pull_request_number }}
           REPOSITORY: ${{ github.repository }}
           REPOSITORY_ID: ${{ github.repository_id }}
@@ -1044,6 +1046,9 @@ jobs:
                   fail("exact candidate head SHA was not resolved")
               if base_sha and base_sha == head_sha:
                   fail("candidate base and head SHAs are identical")
+              ios_tests_enabled = (
+                  os.environ.get("IOS_TESTS_VALUE", "") != "false"
+              )
               publish_required_status = candidate_kind in {
                   "pull_request",
                   "workflow_dispatch",
@@ -1087,6 +1092,9 @@ jobs:
                   output.write(f"head_sha={head_sha}\n")
                   output.write(f"head_ref={head_ref}\n")
                   output.write(f"force_full={'true' if force_full else 'false'}\n")
+                  output.write(
+                      f"ios_tests_enabled={'true' if ios_tests_enabled else 'false'}\n"
+                  )
                   output.write(f"pull_request_number={pull_request_number}\n")
               print(f"Authorized exact candidate {head_sha}.")
           except Exception as error:
@@ -1326,6 +1334,7 @@ jobs:
       - fast-quality
     if: >-
       needs.authorize-candidate.result == 'success' &&
+      needs.authorize-candidate.outputs.ios_tests_enabled == 'true' &&
       needs.fast-quality.result == 'success' &&
       needs.impact.outputs.has_detox_ios == 'true'
     runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
@@ -3781,6 +3790,7 @@ jobs:
           FAST_RESULT: ${{ needs.fast-quality.result }}
           HAS_WEB: ${{ needs.impact.outputs.has_web }}
           HAS_IOS: ${{ needs.impact.outputs.has_detox_ios }}
+          IOS_TESTS_ENABLED: ${{ needs.authorize-candidate.outputs.ios_tests_enabled }}
           HAS_ANDROID: ${{ needs.impact.outputs.has_detox_android }}
           WEB_RESULT: ${{ needs.web-selected.result }}
           IOS_RESULT: ${{ needs.detox-ios-selected.result }}
@@ -3956,10 +3966,20 @@ jobs:
                   )
 
 
-          def selected_lane(name: str, selected: str, result: str) -> None:
+          def selected_lane(
+              name: str,
+              selected: str,
+              result: str,
+              enabled: str = "true",
+          ) -> None:
               if selected not in {"true", "false"}:
                   raise RuntimeError(f"{name} selection output is invalid")
-              expected = "success" if selected == "true" else "skipped"
+              if enabled not in {"true", "false"}:
+                  raise RuntimeError(f"{name} enablement input is invalid")
+              if name == "ios" and enabled == "false":
+                  expected = "skipped"
+              else:
+                  expected = "success" if selected == "true" else "skipped"
               if result != expected:
                   raise RuntimeError(
                       f"{name} lane finished as {result}; expected {expected}"
@@ -4102,7 +4122,12 @@ jobs:
               if os.environ["FAST_RESULT"] != "success":
                   raise RuntimeError("fast quality checks did not succeed")
               selected_lane("web", os.environ["HAS_WEB"], os.environ["WEB_RESULT"])
-              selected_lane("ios", os.environ["HAS_IOS"], os.environ["IOS_RESULT"])
+              selected_lane(
+                  "ios",
+                  os.environ["HAS_IOS"],
+                  os.environ["IOS_RESULT"],
+                  os.environ["IOS_TESTS_ENABLED"],
+              )
               selected_lane(
                   "android", os.environ["HAS_ANDROID"], os.environ["ANDROID_RESULT"]
               )

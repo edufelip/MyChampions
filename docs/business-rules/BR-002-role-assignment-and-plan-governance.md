@@ -77,6 +77,13 @@
     before building, compiles it as the debug fallback, routes every debug-app
     launch to that port, and fails closed rather than reusing or terminating an
     unrelated listener.
+  - New iOS test-only jobs are default-on. The exact lowercase repository
+    variable value `MYCHAMPIONS_ENABLE_IOS_TESTS=false` intentionally skips
+    those jobs and permits the corresponding selected iOS lane to finish as
+    `skipped`; unset, `true`, and every other value keep iOS testing enabled.
+    Already-running jobs are not cancelled, release/distribution workflows are
+    not gated, and JavaScript, TypeScript, lint, unit, web, Android, backend,
+    and other enabled checks remain enforced.
   - The selected Android job rejects stale devices, QEMU processes, or console
     listeners; boots `Pixel_10` on `emulator-5554`; proves the exact healthy AVD
     and PID/UID/start-time command identity within a bounded wait; and fails if
@@ -157,6 +164,9 @@
   fingerprint of its exact event and dispatches persistent CI work from
   `.github/workflows/trusted-selective-tests.yml`, sourced from protected
   default branch `main` and triggered after that preflight by `workflow_run`.
+  The finalizer may accept an iOS `skipped` result only when the authorized
+  candidate snapshot records the exact lowercase opt-out value; selected
+  skips in every other lane remain failures.
   Its GitHub-hosted authorization job must run before candidate checkout or
   self-hosted scheduling and validate the triggering run, live API head SHA,
   same-upstream/base provenance, owner actor/triggering actor/sender, workflow
