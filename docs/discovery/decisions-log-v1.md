@@ -756,6 +756,18 @@
   - Environment registry is `docs/test-cases/qa-env-registry.md` for the app: default `local`; `dev` refused until a dedicated VM development API/DB exists; `prod` confirm-gated (`confirm prod qa`). App `APP_VARIANT` is not the QA env id.
   - Before finalize, each run writes Skill self-improvement insights to `~/Documents/Default/Projects/MyChampions/QA-Skill-Insights/` for human triage. These are not Linear Bugs.
 
+- `D-200`: iOS test execution is controlled by the default-on repository variable
+  `MYCHAMPIONS_ENABLE_IOS_TESTS`.
+  - The exact string `false` skips new iOS test-only jobs, including the manual
+    iOS smoke path and selected iOS Detox suites. An unset variable or any
+    other value, including `true`, keeps iOS testing enabled.
+  - The variable does not cancel jobs that are already running and does not
+    gate credentialed release/distribution workflows.
+  - The final selective status publisher treats an intentional iOS skip as
+    allowed only while the variable is exactly `false`; JavaScript,
+    TypeScript, lint, unit, web, Android, backend, and all other enabled lanes
+    remain enforced.
+
 ## Pending Decisions
 - See `docs/discovery/open-questions-v1.md`.
 

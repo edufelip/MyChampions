@@ -36,6 +36,21 @@ authorization or sandboxing. Promotion still requires TC-519's trusted-workflow
 provenance, authorization-negative, stale-run, permission-isolation, exact
 status, repository-setting, and complete exact-head matrix evidence.
 
+### Default-on iOS test toggle
+
+Configure the repository variable `MYCHAMPIONS_ENABLE_IOS_TESTS` under
+**Settings → Secrets and variables → Actions → Variables**. The exact value
+`false` skips new iOS test-only jobs, including the manual `ios-pr.yml` smoke
+lane, selected iOS Detox suites, and the system/account-verification tests that
+run through those lanes. An unset variable or any value other than the exact
+string `false` keeps iOS testing enabled. The variable does not cancel jobs
+that are already running, and it does not gate the credentialed
+`ios-release.yml` distribution workflow. When disabled, the final selective
+gate treats the iOS job's intentional `skipped` result as allowed while all
+other enabled quality and platform lanes remain enforced. This checkout has no
+scheduled or nightly iOS test workflow; any future iOS test-only lane must use
+the same guard.
+
 ## Sources of truth
 
 - `config/test-impact.json`: feature paths, dependencies, owners, shared rules,

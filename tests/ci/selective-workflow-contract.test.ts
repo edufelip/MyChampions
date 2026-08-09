@@ -39,6 +39,10 @@ function workflow(name: string): string {
   return source;
 }
 
+function iOSTestsEnabled(repositoryVariable: string | undefined): boolean {
+  return repositoryVariable !== 'false';
+}
+
 function authorizationPythonSource(): string {
   const source = workflow('trusted-selective-tests.yml');
   const startMarker = "          /usr/bin/python3 - <<'PY'\n";
@@ -953,6 +957,78 @@ test('selective workflow keeps universal checks and conservative full fallbacks'
   );
 });
 
+test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => {
+  const legacyIos = workflow('ios-pr.yml');
+  const trusted = workflow('trusted-selective-tests.yml');
+  const authorization = jobBlock(trusted, 'authorize-candidate');
+  const iosLane = jobBlock(trusted, 'detox-ios-selected');
+  const gate = jobBlock(trusted, 'publish-selective-status');
+  const release = workflow('ios-release.yml');
+
+  assert.match(
+    legacyIos,
+    /^    if: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS != 'false' \}\}$/m
+  );
+  assert.match(
+    authorization,
+    /IOS_TESTS_ENABLED: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS != 'false' \}\}/
+  );
+  assert.match(
+    authorization,
+    /output\.write\(f"ios_tests_enabled=\{env\('IOS_TESTS_ENABLED'\)\}\\n"\)/
+  );
+  assert.match(
+    iosLane,
+    /needs\.authorize-candidate\.outputs\.ios_tests_enabled == 'true'/
+  );
+  assert.match(
+    gate,
+    /IOS_TESTS_ENABLED: \$\{\{ needs\.authorize-candidate\.outputs\.ios_tests_enabled \}\}/
+  );
+  assert.match(
+    gate,
+    /def selected_lane\(\n\s+name: str,\n\s+selected: str,\n\s+result: str,\n\s+enabled: str = "true",\n\s+\) -> None:/
+  );
+  assert.match(
+    gate,
+    /if name == "ios" and enabled == "false":\s+expected = "skipped"/
+  );
+  assert.match(
+    gate,
+    /selected_lane\(\n\s+"ios",[\s\S]*?os\.environ\["IOS_TESTS_ENABLED"\],\n\s+\)/
+  );
+
+  assert.equal(iOSTestsEnabled(undefined), true);
+  assert.equal(iOSTestsEnabled('true'), true);
+  assert.equal(iOSTestsEnabled('TRUE'), true);
+  assert.equal(iOSTestsEnabled(''), true);
+  assert.equal(iOSTestsEnabled('false'), false);
+
+  const expectedIosResult = (
+    selected: boolean,
+    result: 'success' | 'skipped',
+    repositoryVariable: string | undefined
+  ): boolean => {
+    const expected = iOSTestsEnabled(repositoryVariable)
+      ? selected
+        ? 'success'
+        : 'skipped'
+      : 'skipped';
+    return result === expected;
+  };
+
+  assert.equal(expectedIosResult(true, 'success', undefined), true);
+  assert.equal(expectedIosResult(false, 'skipped', 'true'), true);
+  assert.equal(expectedIosResult(true, 'skipped', 'false'), true);
+  assert.equal(expectedIosResult(false, 'skipped', 'false'), true);
+  assert.equal(expectedIosResult(true, 'success', 'false'), false);
+  assert.equal(expectedIosResult(true, 'skipped', 'true'), false);
+
+  assert.match(gate, /selected_lane\("web"/);
+  assert.match(gate, /selected_lane\(\n\s+"android"/);
+  assert.doesNotMatch(release, /MYCHAMPIONS_ENABLE_IOS_TESTS/);
+});
+
 test('self-hosted selected lanes require authorization and selected skips fail publication', () => {
   const source = workflow('trusted-selective-tests.yml');
 
@@ -1048,7 +1124,7 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   assert.match(gate, /^    if: \$\{\{ always\(\) && !cancelled\(\) \}\}$/m);
   assert.match(gate, /^      statuses: write$/m);
   assert.match(gate, /selected_lane\("web"/);
-  assert.match(gate, /selected_lane\("ios"/);
+  assert.match(gate, /selected_lane\(\s+"ios"/);
   assert.match(gate, /selected_lane\(\s+"android"/);
   assert.match(gate, /expected = "success" if selected == "true" else "skipped"/);
 });

@@ -38,6 +38,14 @@ reproducible and auditable.
 - `.github/workflows/android-release.yml` and `ios-release.yml` remain the
   credentialed distribution workflows for release/hotfix branches or an
   explicitly approved manual dispatch.
+- The repository variable `MYCHAMPIONS_ENABLE_IOS_TESTS` is the default-on
+  switch for iOS test-only jobs. Configure it in the repository's GitHub
+  Actions settings under **Settings → Secrets and variables → Actions →
+  Variables**. The exact string `false` skips new iOS test runs, including the
+  manual iOS smoke lane and selected iOS Detox suites; an unset variable or any
+  other value, including `true`, keeps iOS testing enabled. Changing the
+  variable does not cancel jobs that are already running. It does not gate
+  `ios-release.yml`, which remains a distribution workflow.
 - The repository-scoped self-hosted runners and the host-wide locks shared with
   Meer are configured. Their labels, service posture, hook installation, and
   recovery checks are recorded below as capacity and resource-serialization
@@ -197,6 +205,7 @@ reproducible and auditable.
 |---|---|---|
 | `CI_FORCE_FULL` environment input | Local/direct impact-resolver invocation only | Optional broaden-only local resolver input. The trusted workflow does not read a repository variable by this name. |
 | `ci:full` pull-request label | `trusted-selective-tests` | Optional broaden-only request for the complete registered matrix. |
+| `MYCHAMPIONS_ENABLE_IOS_TESTS` repository variable | iOS test-only workflows | Default-on toggle: the exact value `false` skips new iOS test jobs; unset or any other value, including `true`, enables them. Already-running jobs are not cancelled. The final selective gate accepts the intentional iOS skip while continuing to enforce JavaScript, TypeScript, lint, unit, web, Android, backend, and other enabled lanes. |
 | PR number manual input | `trusted-selective-tests` | Required for `workflow_dispatch`, which must run at ref `main`, resolve the PR's live head/base through the API, and force the complete registered matrix. |
 | Trusted workflow authorization | `trusted-selective-freshness`, `pr-selective-tests`, and `trusted-selective-tests` | Protected-`main` freshness invalidates reusable success for owner-authored same-upstream PRs without candidate checkout; the hosted PR preflight uses `statuses: read` to await the pending description for its canonical exact-event fingerprint; the protected-default-branch `workflow_run` validates triggering-run and live-PR provenance before candidate checkout/self-hosted scheduling. Release/hotfix PRs force full, merge groups validate every associated live PR, and candidate/self-hosted jobs have only `contents: read`. Evidence pending. |
 | Native secret target and workspace link | Each trusted selective native job | `ENV_FILE_CONTENT` is the initial step-environment transport consumed only by the atomic writer and immediately unset before Yarn, Gradle, `xcrun`, or recovery subprocesses. The bytes then exist only in a validated per-job mode-`0600` regular file below `$RUNNER_TEMP`; workspace `.env` is an absolute symlink to that exact target. Same-step normal/signal cleanup removes and verifies both; runner-temp cleanup and trusted next-checkout workspace sanitation are hard-kill defense-in-depth. |
@@ -215,7 +224,7 @@ reproducible and auditable.
 | `pr-selective-tests.yml` | GitHub-hosted-only `pull_request` preflight for `main`, `release/**`, and `hotfix/**`, plus future-compatible `merge_group`; never checks out candidate code or targets self-hosted labels; uses `statuses: read` to await trusted freshness pending for its canonical exact-event fingerprint | None |
 | `trusted-selective-tests.yml` | Protected-`main` authoritative workflow; accepts authorized `workflow_run`, direct `main` push, and `workflow_dispatch` at ref `main` with a live-resolved PR number and forced full selection; push publishes no PR gate; has no direct `merge_group`, release-branch, or hotfix-branch trigger; authorized release/hotfix PR workflow runs force full | `ENV_FILE` only in selected iOS/Android jobs; authorization, impact, fast-quality, web, and hosted status jobs use no repository secret |
 | `android-pr.yml` | Manual-only legacy Android validation | `ENV_FILE` |
-| `ios-pr.yml` | Manual-only legacy iOS validation | `ENV_FILE` |
+| `ios-pr.yml` | Manual-only legacy iOS validation; skipped for new runs when `MYCHAMPIONS_ENABLE_IOS_TESTS=false` | `ENV_FILE` |
 | `web-pr.yml` | Manual-only legacy web validation | None |
 | `android-release.yml` | Android signing and Play upload | `ENV_FILE`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_ALIAS_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON` |
 | `ios-release.yml` | iOS signing and TestFlight upload | `ENV_FILE`, `IOS_KEYCHAIN_PASSWORD`, `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROFILE_BASE64`, `IOS_PROFILE_NAME`, `IOS_TEAM_ID`, `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_CONTENT` |
