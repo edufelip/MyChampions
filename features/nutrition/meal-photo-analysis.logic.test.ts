@@ -96,7 +96,7 @@ test('parseMacroEstimateFromResponse rounds to 1 decimal place', () => {
 test('parseMacroEstimateFromResponse returns null when error field is present', () => {
   assert.equal(
     parseMacroEstimateFromResponse({ ...validRaw, error: 'unrecognizable_image' }),
-    null
+    null,
   );
 });
 
@@ -114,7 +114,10 @@ test('parseMacroEstimateFromResponse returns null when totalGrams is zero', () =
 });
 
 test('parseMacroEstimateFromResponse returns null when a field is a string', () => {
-  assert.equal(parseMacroEstimateFromResponse({ ...validRaw, carbs: '10' as unknown as number }), null);
+  assert.equal(
+    parseMacroEstimateFromResponse({ ...validRaw, carbs: '10' as unknown as number }),
+    null,
+  );
 });
 
 test('parseMacroEstimateFromResponse defaults confidence to low for unknown value', () => {
@@ -173,7 +176,7 @@ test('normalizePhotoAnalysisError keeps native permission denial distinct from c
       code: 'photo_permission_denied',
       message: 'Photo permission denied for camera',
     }),
-    'permission_denied'
+    'permission_denied',
   );
 });
 
@@ -183,105 +186,92 @@ test('normalizePhotoAnalysisError maps compressed photos above the byte limit', 
       code: 'file_too_large',
       message: 'Compressed photo exceeds 1.5 MB',
     }),
-    'file_too_large'
+    'file_too_large',
   );
 });
 
 test('normalizePhotoAnalysisError maps code unrecognizable_image', () => {
   assert.equal(
     normalizePhotoAnalysisError({ code: 'unrecognizable_image', message: '' }),
-    'unrecognizable_image'
+    'unrecognizable_image',
   );
 });
 
 test('normalizePhotoAnalysisError maps message containing "unrecognizable"', () => {
   assert.equal(
     normalizePhotoAnalysisError({ message: 'Image is unrecognizable' }),
-    'unrecognizable_image'
+    'unrecognizable_image',
   );
 });
 
 test('normalizePhotoAnalysisError maps code quota_exceeded', () => {
   assert.equal(
     normalizePhotoAnalysisError({ code: 'quota_exceeded', message: '' }),
-    'quota_exceeded'
+    'quota_exceeded',
   );
 });
 
 test('normalizePhotoAnalysisError maps message containing "rate limit"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ message: 'Rate limit exceeded' }),
-    'quota_exceeded'
-  );
+  assert.equal(normalizePhotoAnalysisError({ message: 'Rate limit exceeded' }), 'quota_exceeded');
 });
 
 test('normalizePhotoAnalysisError maps code invalid_response', () => {
   assert.equal(
     normalizePhotoAnalysisError({ code: 'invalid_response', message: '' }),
-    'invalid_response'
+    'invalid_response',
   );
 });
 
 test('normalizePhotoAnalysisError maps message containing "parse"', () => {
   assert.equal(
     normalizePhotoAnalysisError({ message: 'Failed to parse response' }),
-    'invalid_response'
+    'invalid_response',
   );
 });
 
 test('normalizePhotoAnalysisError maps code configuration', () => {
   assert.equal(
     normalizePhotoAnalysisError({ code: 'configuration', message: '' }),
-    'configuration'
+    'configuration',
   );
 });
 
 test('normalizePhotoAnalysisError maps message containing "endpoint"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ message: 'No endpoint configured' }),
-    'configuration'
-  );
+  assert.equal(normalizePhotoAnalysisError({ message: 'No endpoint configured' }), 'configuration');
 });
 
 test('normalizePhotoAnalysisError maps message containing "network"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ message: 'Network request failed' }),
-    'network'
-  );
+  assert.equal(normalizePhotoAnalysisError({ message: 'Network request failed' }), 'network');
 });
 
 test('normalizePhotoAnalysisError maps message containing "timeout"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ message: 'Request timeout' }),
-    'network'
-  );
+  assert.equal(normalizePhotoAnalysisError({ message: 'Request timeout' }), 'network');
 });
 
 test('normalizePhotoAnalysisError maps message containing "fetch"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ message: 'fetch failed' }),
-    'network'
-  );
+  assert.equal(normalizePhotoAnalysisError({ message: 'fetch failed' }), 'network');
 });
 
 test('normalizePhotoAnalysisError maps code unauthenticated', () => {
   assert.equal(
     normalizePhotoAnalysisError({ code: 'unauthenticated', message: '' }),
-    'unauthenticated'
+    'unauthenticated',
   );
 });
 
 test('normalizePhotoAnalysisError maps message containing "unauthenticated"', () => {
   assert.equal(
-    normalizePhotoAnalysisError({ message: 'MyChampions server rejected access token: unauthenticated' }),
-    'unauthenticated'
+    normalizePhotoAnalysisError({
+      message: 'MyChampions server rejected access token: unauthenticated',
+    }),
+    'unauthenticated',
   );
 });
 
 test('normalizePhotoAnalysisError maps message containing "access token"', () => {
   assert.equal(
     normalizePhotoAnalysisError({ message: 'Failed to verify access token' }),
-    'unauthenticated'
+    'unauthenticated',
   );
 });
 
@@ -298,7 +288,10 @@ test('normalizePhotoAnalysisError returns unknown for primitive', () => {
 });
 
 test('mobile meal-photo logic does not own analyzer prompt text', () => {
-  const source = readFileSync(join(process.cwd(), 'features/nutrition/meal-photo-analysis.logic.ts'), 'utf8');
+  const source = readFileSync(
+    join(process.cwd(), 'features/nutrition/meal-photo-analysis.logic.ts'),
+    'utf8',
+  );
 
   for (const token of [
     'buildAnalysisSystemPrompt',
@@ -306,6 +299,10 @@ test('mobile meal-photo logic does not own analyzer prompt text', () => {
     'professional nutritionist',
     'Analyze this meal photo and estimate its macronutrients',
   ]) {
-    assert.equal(source.includes(token), false, `mobile logic still owns analyzer prompt token: ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `mobile logic still owns analyzer prompt token: ${token}`,
+    );
   }
 });

@@ -28,13 +28,13 @@ test('resolveSignInValidationAnalyticsReason returns the first validation failur
       email: 'auth.validation.email_required',
       password: 'auth.validation.password_required',
     }),
-    'validation_email_required'
+    'validation_email_required',
   );
   assert.equal(
     resolveSignInValidationAnalyticsReason({
       password: 'auth.validation.password_required',
     }),
-    'validation_password_required'
+    'validation_password_required',
   );
 });
 
@@ -75,12 +75,12 @@ test('normalizeSignInReason falls back to unknown', () => {
 test('mapSignInReasonToMessageKey returns contextual key', () => {
   assert.equal(
     mapSignInReasonToMessageKey('invalid_credentials'),
-    'auth.signin.error.invalid_credentials'
+    'auth.signin.error.invalid_credentials',
   );
   assert.equal(mapSignInReasonToMessageKey('network'), 'auth.signin.error.network');
   assert.equal(
     mapSignInReasonToMessageKey('provider_conflict'),
-    'auth.signin.error.provider_conflict'
+    'auth.signin.error.provider_conflict',
   );
   assert.equal(mapSignInReasonToMessageKey('configuration'), 'auth.signin.error.configuration');
   assert.equal(mapSignInReasonToMessageKey('unknown'), 'common.error.generic');

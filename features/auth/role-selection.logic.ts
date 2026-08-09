@@ -9,7 +9,7 @@ export type RoleSelectionValidationErrors = {
 };
 
 export function validateRoleSelectionInput(
-  input: RoleSelectionRequest
+  input: RoleSelectionRequest,
 ): RoleSelectionValidationErrors {
   if (!input.role) {
     return { role: 'auth.role.validation.required' };

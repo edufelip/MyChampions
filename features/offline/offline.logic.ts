@@ -24,16 +24,14 @@ export type CacheFreshnessState = 'fresh' | 'stale' | 'empty';
 
 /** Why a write action is blocked in the current offline context. */
 export type WriteLockReason =
-  | 'offline_no_network'   // Device is offline; writes require connectivity.
+  | 'offline_no_network' // Device is offline; writes require connectivity.
   | 'offline_stale_cache'; // Device is offline and cache is stale; reads may be unreliable.
 
 /**
  * Result of checking whether a write action is allowed.
  * When `allowed` is false, `reason` explains why.
  */
-export type WriteCheckResult =
-  | { allowed: true }
-  | { allowed: false; reason: WriteLockReason };
+export type WriteCheckResult = { allowed: true } | { allowed: false; reason: WriteLockReason };
 
 /**
  * Offline display state consumed by UI components.
@@ -76,7 +74,7 @@ export const CACHE_STALE_TTL_MS = 24 * 60 * 60 * 1000;
  */
 export function resolveCacheFreshness(
   lastSyncedAtIso: string | null | undefined,
-  nowIso: string = new Date().toISOString()
+  nowIso: string = new Date().toISOString(),
 ): CacheFreshnessState {
   if (!lastSyncedAtIso) return 'empty';
 
@@ -98,7 +96,7 @@ export function resolveCacheFreshness(
  */
 export function checkWriteLock(
   networkStatus: NetworkStatus,
-  cacheFreshness: CacheFreshnessState
+  cacheFreshness: CacheFreshnessState,
 ): WriteCheckResult {
   if (networkStatus === 'online') {
     return { allowed: true };
@@ -150,10 +148,7 @@ export function resolveOfflineDisplayState(input: {
  * Computes a structured stale elapsed unit for locale-aware rendering.
  * UI maps `unit` to a localization key (e.g. `offline.stale_minutes`).
  */
-export function buildStaleElapsed(
-  lastSyncedAtIso: string,
-  nowIso: string
-): StaleElapsed | null {
+export function buildStaleElapsed(lastSyncedAtIso: string, nowIso: string): StaleElapsed | null {
   const elapsedMs = Date.parse(nowIso) - Date.parse(lastSyncedAtIso);
   if (isNaN(elapsedMs) || elapsedMs < 0) return null;
 

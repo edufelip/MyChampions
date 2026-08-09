@@ -4,26 +4,24 @@ const tsParser = require('@typescript-eslint/parser');
 const tsPlugin = require('@typescript-eslint/eslint-plugin');
 const expoConfig = require('eslint-config-expo/flat');
 
-const typedTypeScriptConfig = tsPlugin.configs['flat/recommended-type-checked'].map(
-  (config) => ({
-    ...config,
-    files: ['**/*.{ts,tsx}'],
-    ...(config.rules
-      ? {
-          rules: Object.fromEntries(
-            Object.entries(config.rules).map(([rule, setting]) => [
-              rule,
-              Array.isArray(setting)
-                ? ['warn', ...setting.slice(1)]
-                : setting === 'error'
-                  ? 'warn'
-                  : setting,
-            ])
-          ),
-        }
-      : {}),
-  })
-);
+const typedTypeScriptConfig = tsPlugin.configs['flat/recommended-type-checked'].map((config) => ({
+  ...config,
+  files: ['**/*.{ts,tsx}'],
+  ...(config.rules
+    ? {
+        rules: Object.fromEntries(
+          Object.entries(config.rules).map(([rule, setting]) => [
+            rule,
+            Array.isArray(setting)
+              ? ['warn', ...setting.slice(1)]
+              : setting === 'error'
+                ? 'warn'
+                : setting,
+          ]),
+        ),
+      }
+    : {}),
+}));
 
 module.exports = defineConfig([
   expoConfig,

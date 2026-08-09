@@ -36,12 +36,7 @@ export type ConnectionActionErrorReason =
   | 'unknown';
 
 export function normalizeConnectionStatus(raw: unknown): ConnectionStatus | null {
-  if (
-    raw === 'invited' ||
-    raw === 'pending_confirmation' ||
-    raw === 'active' ||
-    raw === 'ended'
-  ) {
+  if (raw === 'invited' || raw === 'pending_confirmation' || raw === 'active' || raw === 'ended') {
     return raw;
   }
   return null;
@@ -56,9 +51,7 @@ export function normalizeConnectionSpecialty(raw: unknown): ConnectionSpecialty 
   return null;
 }
 
-export function resolveConnectionDisplayState(
-  record: ConnectionRecord
-): ConnectionDisplayState {
+export function resolveConnectionDisplayState(record: ConnectionRecord): ConnectionDisplayState {
   if (record.status === 'pending_confirmation' || record.status === 'invited') {
     return { kind: 'pending', connectionId: record.id, specialty: record.specialty };
   }
@@ -80,10 +73,8 @@ export function resolveConnectionDisplayState(
 
 export function normalizeInviteSubmitError(error: unknown): InviteSubmitErrorReason {
   if (error && typeof error === 'object') {
-    const code =
-      'code' in error ? String((error as { code: unknown }).code) : null;
-    const message =
-      'message' in error ? String((error as { message: unknown }).message) : null;
+    const code = 'code' in error ? String((error as { code: unknown }).code) : null;
+    const message = 'message' in error ? String((error as { message: unknown }).message) : null;
 
     if (code === 'CODE_NOT_FOUND' || message?.toLowerCase().includes('invite code not found')) {
       return 'code_not_found';
@@ -115,14 +106,10 @@ export function normalizeInviteSubmitError(error: unknown): InviteSubmitErrorRea
   return 'unknown';
 }
 
-export function normalizeConnectionActionError(
-  error: unknown
-): ConnectionActionErrorReason {
+export function normalizeConnectionActionError(error: unknown): ConnectionActionErrorReason {
   if (error && typeof error === 'object') {
-    const code =
-      'code' in error ? String((error as { code: unknown }).code) : null;
-    const message =
-      'message' in error ? String((error as { message: unknown }).message) : null;
+    const code = 'code' in error ? String((error as { code: unknown }).code) : null;
+    const message = 'message' in error ? String((error as { message: unknown }).message) : null;
 
     if (
       code === 'CONNECTION_NOT_FOUND' ||
@@ -162,9 +149,7 @@ export function normalizeConnectionActionError(
  * because from the user's perspective both result in an "invalid code" experience.
  * `configuration` falls back to `unknown` as it is an internal error not exposed to users.
  */
-export function mapInviteSubmitReasonToMessageKey(
-  reason: InviteSubmitErrorReason
-): string {
+export function mapInviteSubmitReasonToMessageKey(reason: InviteSubmitErrorReason): string {
   switch (reason) {
     case 'code_not_found':
     case 'code_expired':

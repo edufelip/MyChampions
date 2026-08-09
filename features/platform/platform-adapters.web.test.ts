@@ -10,10 +10,7 @@ import {
   resolveBrowserPhoto,
   resolveCompressedPhotoSize,
 } from './photo-picker-adapter.web';
-import {
-  isBrowserCameraAvailable,
-  requestBrowserCameraPermission,
-} from './qr-scanner-adapter.web';
+import { isBrowserCameraAvailable, requestBrowserCameraPermission } from './qr-scanner-adapter.web';
 import { createWebShareAdapter } from './share-adapter.web';
 
 describe('web photo picker adapter', () => {
@@ -40,7 +37,7 @@ describe('web photo picker adapter', () => {
         readDimensions: async () => ({ width: 1200, height: 800 }),
         revokeObjectUrl: () => assert.fail('successful photos remain available for compression'),
       }),
-      { uri: 'blob:photo', width: 1200, height: 800 }
+      { uri: 'blob:photo', width: 1200, height: 800 },
     );
 
     let revoked: string | null = null;
@@ -54,7 +51,7 @@ describe('web photo picker adapter', () => {
           revoked = uri;
         },
       }),
-      null
+      null,
     );
     assert.equal(revoked, 'blob:broken');
   });
@@ -79,7 +76,7 @@ describe('web photo picker adapter', () => {
         return new Blob([
           new Uint8Array(attempts.length === 1 ? MAX_COMPRESSED_PHOTO_BYTES + 1 : 128),
         ]);
-      }
+      },
     );
 
     assert.equal(result.size, 128);
@@ -93,18 +90,21 @@ describe('web photo picker adapter', () => {
       () =>
         compressBrowserPhotoWithinLimit(
           { width: 1600, height: 1200 },
-          async () => new Blob([new Uint8Array(MAX_COMPRESSED_PHOTO_BYTES + 1)])
+          async () => new Blob([new Uint8Array(MAX_COMPRESSED_PHOTO_BYTES + 1)]),
         ),
       (error: unknown) => {
         assert.ok(error instanceof BrowserPhotoTooLargeError);
         assert.equal(error.code, 'file_too_large');
         return true;
-      }
+      },
     );
   });
 
   it('keeps browser cancellation and object URL cleanup in the picker boundary', () => {
-    const source = readFileSync(new URL('./photo-picker-adapter.web.ts', import.meta.url).pathname, 'utf8');
+    const source = readFileSync(
+      new URL('./photo-picker-adapter.web.ts', import.meta.url).pathname,
+      'utf8',
+    );
     assert.doesNotMatch(source, /setAttribute\(['"]capture['"]/);
     assert.match(source, /addEventListener\(['"]cancel['"]/);
     assert.match(source, /removeEventListener\(['"]focus['"]/);
@@ -112,16 +112,25 @@ describe('web photo picker adapter', () => {
   });
 
   it('keeps native photo picker action-sheet copy injected by localized callers', () => {
-    const source = readFileSync(new URL('./photo-picker-adapter.ts', import.meta.url).pathname, 'utf8');
+    const source = readFileSync(
+      new URL('./photo-picker-adapter.ts', import.meta.url).pathname,
+      'utf8',
+    );
     assert.match(source, /copy\.title/);
     assert.match(source, /copy\.chooseFromLibrary/);
     assert.doesNotMatch(source, /['"]Choose a photo source['"]/);
   });
 
   it('keeps native permission denial distinct from picker cancellation', () => {
-    const source = readFileSync(new URL('./photo-picker-adapter.ts', import.meta.url).pathname, 'utf8');
+    const source = readFileSync(
+      new URL('./photo-picker-adapter.ts', import.meta.url).pathname,
+      'utf8',
+    );
     assert.match(source, /class PhotoPickerPermissionDeniedError/);
-    assert.match(source, /if \(!permission\.granted\) throw new PhotoPickerPermissionDeniedError\(source\)/);
+    assert.match(
+      source,
+      /if \(!permission\.granted\) throw new PhotoPickerPermissionDeniedError\(source\)/,
+    );
     assert.match(source, /\.then\(resolve, reject\)/);
     assert.match(source, /MAX_COMPRESSED_PHOTO_BYTES = 1_500_000/);
     assert.match(source, /decodedBase64ByteLength/);
@@ -143,7 +152,7 @@ describe('web QR scanner adapter', () => {
           throw new Error('NotAllowedError');
         },
       } as Pick<MediaDevices, 'getUserMedia'>),
-      false
+      false,
     );
 
     let stopped = false;
@@ -220,12 +229,17 @@ describe('web haptics and platform selection', () => {
   });
 
   it('keeps native and web implementations behind platform module pairs', () => {
-    for (const adapter of ['photo-picker-adapter', 'qr-scanner-adapter', 'share-adapter', 'haptics-adapter']) {
+    for (const adapter of [
+      'photo-picker-adapter',
+      'qr-scanner-adapter',
+      'share-adapter',
+      'haptics-adapter',
+    ]) {
       assert.doesNotThrow(() =>
-        readFileSync(new URL(`./${adapter}.ts`, import.meta.url).pathname, 'utf8')
+        readFileSync(new URL(`./${adapter}.ts`, import.meta.url).pathname, 'utf8'),
       );
       assert.doesNotThrow(() =>
-        readFileSync(new URL(`./${adapter}.web.ts`, import.meta.url).pathname, 'utf8')
+        readFileSync(new URL(`./${adapter}.web.ts`, import.meta.url).pathname, 'utf8'),
       );
     }
   });

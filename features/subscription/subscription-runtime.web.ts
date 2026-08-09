@@ -1,5 +1,8 @@
 import type { SubscriptionRuntime } from './subscription-runtime';
-import { allowInsecureLocalhostForDevelopment, resolveSafeExternalUrl } from '../platform/external-url';
+import {
+  allowInsecureLocalhostForDevelopment,
+  resolveSafeExternalUrl,
+} from '../platform/external-url';
 
 function resolveHandoffUrl(): string | null {
   try {
@@ -20,7 +23,7 @@ export function createWebSubscriptionRuntime(
   handoffUrl: string | null,
   deps: {
     openWindow: (url: string) => void;
-  }
+  },
 ): SubscriptionRuntime {
   const safeHandoffUrl = resolveSafeExternalUrl(handoffUrl, {
     allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),

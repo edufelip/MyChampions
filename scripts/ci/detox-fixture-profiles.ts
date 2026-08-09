@@ -73,7 +73,7 @@ export const SELECTIVE_FIXTURE_ENV_KEYS = [
 ] as const;
 
 const actionScenario = (
-  id: 'success' | 'cancelled' | 'network' | 'store_problem'
+  id: 'success' | 'cancelled' | 'network' | 'store_problem',
 ): DetoxFixturePhase => ({
   id: `actions-${id}`,
   specs: ['e2e/professional-subscription-actions.e2e.test.js'],
@@ -96,7 +96,7 @@ const capScenario = (
   id: 'warning' | 'locked' | 'unknown',
   entitlementStatus: 'active' | 'lapsed' | 'unknown',
   activeStudentCount: string,
-  renewalRisk: 'true' | 'false'
+  renewalRisk: 'true' | 'false',
 ): DetoxFixturePhase => ({
   id: `cap-${id}`,
   specs: ['e2e/professional-subscription-cap.e2e.test.js'],
@@ -404,10 +404,7 @@ export function clearedSelectiveFixtureEnvironment(): Record<string, string> {
   return Object.fromEntries(SELECTIVE_FIXTURE_ENV_KEYS.map((key) => [key, '']));
 }
 
-export function validateDetoxFixtureProfile(
-  suiteId: string,
-  suite: SuiteConfig
-): string[] {
+export function validateDetoxFixtureProfile(suiteId: string, suite: SuiteConfig): string[] {
   const errors: string[] = [];
   const profileId = suite.fixtureProfile;
   if (!profileId) return [`Detox suite ${suiteId} has no fixtureProfile`];

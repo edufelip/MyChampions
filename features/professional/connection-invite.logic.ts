@@ -19,15 +19,9 @@ export type InviteCode = {
 };
 
 export type InviteCodeActionErrorReason =
-  | 'not_found'
-  | 'already_rotated'
-  | 'network'
-  | 'configuration'
-  | 'unknown';
+  'not_found' | 'already_rotated' | 'network' | 'configuration' | 'unknown';
 
-export type DisplayInviteCode =
-  | { kind: 'active'; code: InviteCode }
-  | { kind: 'none' };
+export type DisplayInviteCode = { kind: 'active'; code: InviteCode } | { kind: 'none' };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -57,27 +51,36 @@ export function shouldCancelPendingConnectionForRotatedInvite(
     sourceInviteCodeId?: string | null;
     sourceInviteCodeValue?: string | null;
   },
-  rotatedInvite: { id: string; codeValue: string; specialty: 'nutritionist' | 'fitness_coach' }
+  rotatedInvite: { id: string; codeValue: string; specialty: 'nutritionist' | 'fitness_coach' },
 ): boolean {
-  return connection.status === 'pending_confirmation' &&
+  return (
+    connection.status === 'pending_confirmation' &&
     connection.specialty === rotatedInvite.specialty &&
     connection.sourceInviteCodeId === rotatedInvite.id &&
-    connection.sourceInviteCodeValue === rotatedInvite.codeValue;
+    connection.sourceInviteCodeValue === rotatedInvite.codeValue
+  );
 }
 
 export function resolvePrimaryInviteCodeSpecialty(
-  specialties: Array<{ specialty: 'nutritionist' | 'fitness_coach'; isActive: boolean; [key: string]: unknown }>
+  specialties: Array<{
+    specialty: 'nutritionist' | 'fitness_coach';
+    isActive: boolean;
+    [key: string]: unknown;
+  }>,
 ): 'nutritionist' | 'fitness_coach' | null {
   const activeSpecialties = specialties.filter((specialty) => specialty.isActive);
-  if (activeSpecialties.some((specialty) => specialty.specialty === 'nutritionist')) return 'nutritionist';
-  if (activeSpecialties.some((specialty) => specialty.specialty === 'fitness_coach')) return 'fitness_coach';
+  if (activeSpecialties.some((specialty) => specialty.specialty === 'nutritionist'))
+    return 'nutritionist';
+  if (activeSpecialties.some((specialty) => specialty.specialty === 'fitness_coach'))
+    return 'fitness_coach';
   return null;
 }
 
 export function normalizeInviteCodeActionError(error: unknown): InviteCodeActionErrorReason {
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code: unknown }).code) : null;
-    const msg = 'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
+    const msg =
+      'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
 
     if (code === 'NOT_FOUND' || msg?.includes('not found')) return 'not_found';
     if (code === 'ALREADY_ROTATED' || msg?.includes('already rotated')) return 'already_rotated';

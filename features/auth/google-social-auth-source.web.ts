@@ -51,22 +51,26 @@ function readClientId(): string | undefined {
 }
 
 function requestGoogleCredential(clientId: string): Promise<string> {
-  const google = (globalThis as typeof globalThis & {
-    google?: {
-      accounts?: {
-        id?: {
-          initialize: (input: {
-            client_id: string;
-            callback: (response: GoogleCredentialResponse) => void;
-            cancel_on_tap_outside: boolean;
-          }) => void;
-          prompt: (callback: (notification: GooglePromptMomentNotification) => void) => void;
+  const google = (
+    globalThis as typeof globalThis & {
+      google?: {
+        accounts?: {
+          id?: {
+            initialize: (input: {
+              client_id: string;
+              callback: (response: GoogleCredentialResponse) => void;
+              cancel_on_tap_outside: boolean;
+            }) => void;
+            prompt: (callback: (notification: GooglePromptMomentNotification) => void) => void;
+          };
         };
       };
-    };
-  }).google;
+    }
+  ).google;
   if (!google?.accounts?.id) {
-    return Promise.reject(new SocialAuthSourceError('configuration', 'Google Identity Services is unavailable.'));
+    return Promise.reject(
+      new SocialAuthSourceError('configuration', 'Google Identity Services is unavailable.'),
+    );
   }
 
   return new Promise((resolve, reject) => {
@@ -79,7 +83,10 @@ function requestGoogleCredential(clientId: string): Promise<string> {
         settled = true;
         const credential = response.credential?.trim();
         if (credential) resolve(credential);
-        else reject(new SocialAuthSourceError('invalid_credentials', 'Google did not return an id token.'));
+        else
+          reject(
+            new SocialAuthSourceError('invalid_credentials', 'Google did not return an id token.'),
+          );
       },
     });
     google.accounts!.id!.prompt((notification) => {
@@ -94,7 +101,7 @@ function requestGoogleCredential(clientId: string): Promise<string> {
 }
 
 export function resolveGooglePromptError(
-  notification: GooglePromptMomentNotification
+  notification: GooglePromptMomentNotification,
 ): Error | null {
   if (notification.isDismissedMoment()) {
     return new GoogleWebAuthCanceledError();
@@ -102,7 +109,7 @@ export function resolveGooglePromptError(
   if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
     return new SocialAuthSourceError(
       'configuration',
-      'Google sign-in could not provide a credential in this browser.'
+      'Google sign-in could not provide a credential in this browser.',
     );
   }
   return null;
@@ -112,18 +119,24 @@ function makeDeps(): GoogleWebSocialAuthSourceDeps {
   return {
     getClientId: readClientId,
     loadIdentityServices: () =>
-      loadWebProviderScript('https://accounts.google.com/gsi/client', 'mychampions-google-identity-services'),
+      loadWebProviderScript(
+        'https://accounts.google.com/gsi/client',
+        'mychampions-google-identity-services',
+      ),
     requestCredential: requestGoogleCredential,
     signInWithSocialProviderToken: signInWithSocialProviderTokenFromSource,
   };
 }
 
 export async function signInWithGoogleProviderTokenFromSource(
-  deps: GoogleWebSocialAuthSourceDeps = makeDeps()
+  deps: GoogleWebSocialAuthSourceDeps = makeDeps(),
 ): Promise<void> {
   const clientId = deps.getClientId()?.trim();
   if (!clientId) {
-    throw new SocialAuthSourceError('configuration', 'Google web OAuth client id is not configured.');
+    throw new SocialAuthSourceError(
+      'configuration',
+      'Google web OAuth client id is not configured.',
+    );
   }
   try {
     await deps.loadIdentityServices();

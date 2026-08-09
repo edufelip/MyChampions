@@ -51,12 +51,12 @@ export type UseCustomMealsResult = {
   getShareSnapshot: (meal: CustomMeal) => SharedMealSnapshot;
   create: (
     input: CustomMealInput,
-    options?: { imageUrl?: string | null }
+    options?: { imageUrl?: string | null },
   ) => Promise<MealActionErrorReason | null>;
   update: (
     id: string,
     input: CustomMealInput,
-    options?: { imageUrl?: string | null }
+    options?: { imageUrl?: string | null },
   ) => Promise<MealActionErrorReason | null>;
   remove: (id: string) => Promise<MealActionErrorReason | null>;
   shareLink: (mealId: string) => Promise<{ shareLinkId: string } | MealActionErrorReason>;
@@ -77,7 +77,9 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
     setState({ kind: 'loading' });
 
     void getMyCustomMeals()
-      .then((meals) => setState({ kind: 'ready', meals, lastSyncedAtIso: new Date().toISOString() }))
+      .then((meals) =>
+        setState({ kind: 'ready', meals, lastSyncedAtIso: new Date().toISOString() }),
+      )
       .catch((err: Error) => setState({ kind: 'error', message: err.message }));
   }, [isAuthenticated]);
 
@@ -85,31 +87,28 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
     load();
   }, [load]);
 
-  const validate = useCallback(
-    (input: CustomMealInput) => validateCustomMealInput(input),
-    []
-  );
+  const validate = useCallback((input: CustomMealInput) => validateCustomMealInput(input), []);
 
   const validatePortion = useCallback(
     (input: PortionLogInput) => validatePortionLogInput(input),
-    []
+    [],
   );
 
   const computePortion = useCallback(
     (meal: CustomMeal, consumedGrams: number): NutritionSnapshot =>
       calculatePortionNutrition(meal, consumedGrams),
-    []
+    [],
   );
 
   const getShareSnapshot = useCallback(
     (meal: CustomMeal): SharedMealSnapshot => buildSharedMealSnapshot(meal),
-    []
+    [],
   );
 
   const create = useCallback(
     async (
       input: CustomMealInput,
-      options?: { imageUrl?: string | null }
+      options?: { imageUrl?: string | null },
     ): Promise<MealActionErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
@@ -133,14 +132,14 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   const update = useCallback(
     async (
       id: string,
       input: CustomMealInput,
-      options?: { imageUrl?: string | null }
+      options?: { imageUrl?: string | null },
     ): Promise<MealActionErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
@@ -175,7 +174,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [isAuthenticated, load, state]
+    [isAuthenticated, load, state],
   );
 
   const remove = useCallback(
@@ -190,7 +189,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   const shareLink = useCallback(
@@ -203,7 +202,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [isAuthenticated]
+    [isAuthenticated],
   );
 
   const previewImport = useCallback(
@@ -216,7 +215,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [isAuthenticated]
+    [isAuthenticated],
   );
 
   const importMeal = useCallback(
@@ -231,7 +230,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   const logPortion = useCallback(
@@ -245,7 +244,7 @@ export function useCustomMeals(isAuthenticated: boolean): UseCustomMealsResult {
         return normalizeMealActionError(err);
       }
     },
-    [isAuthenticated]
+    [isAuthenticated],
   );
 
   return {

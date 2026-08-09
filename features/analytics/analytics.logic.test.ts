@@ -82,7 +82,10 @@ test('buildSelfGuidedStartClicked event includes role_context as student', () =>
 
 test('buildSelfGuidedStartClicked event result is always success', () => {
   const event = buildSelfGuidedStartClicked();
-  assert.ok(event.properties.result === 'success', 'self-guided start result should always be success');
+  assert.ok(
+    event.properties.result === 'success',
+    'self-guided start result should always be success',
+  );
 });
 
 test('buildSelfGuidedStartClicked has expected property keys', () => {

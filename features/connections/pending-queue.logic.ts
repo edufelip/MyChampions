@@ -24,7 +24,7 @@ export type PendingQueueError = 'no_selections' | 'unknown';
  */
 export function filterPendingQueue(
   connections: ConnectionRecord[],
-  criteria: QueueFilterCriteria
+  criteria: QueueFilterCriteria,
 ): ConnectionRecord[] {
   let filtered = connections.filter((c) => c.status === 'pending_confirmation');
 
@@ -53,7 +53,7 @@ export function filterPendingQueue(
  */
 export function filterPendingQueueOptimized(
   connections: ConnectionRecord[],
-  criteria: QueueFilterCriteria
+  criteria: QueueFilterCriteria,
 ): ConnectionRecord[] {
   // Pre-normalize all pending connections
   const pending = connections.filter((c) => c.status === 'pending_confirmation');
@@ -88,9 +88,7 @@ export function canBulkDeny(selectedIds: Set<string>): boolean {
 /**
  * Validate bulk deny operation.
  */
-export function validateBulkDeny(
-  selectedIds: Set<string>
-): PendingQueueError | null {
+export function validateBulkDeny(selectedIds: Set<string>): PendingQueueError | null {
   if (selectedIds.size === 0) {
     return 'no_selections';
   }
@@ -104,18 +102,16 @@ export function validateBulkDeny(
 export function buildBulkDenyConfirmationMessage(
   selectedCount: number,
   allPending: ConnectionRecord[],
-  selectedIds: Set<string>
+  selectedIds: Set<string>,
 ): {
   title: string;
   body: string;
 } {
   const selectedConnections = allPending.filter((c) => selectedIds.has(c.id));
   const nutritionistCount = selectedConnections.filter(
-    (c) => c.specialty === 'nutritionist'
+    (c) => c.specialty === 'nutritionist',
   ).length;
-  const coachCount = selectedConnections.filter(
-    (c) => c.specialty === 'fitness_coach'
-  ).length;
+  const coachCount = selectedConnections.filter((c) => c.specialty === 'fitness_coach').length;
 
   const title = 'Confirm bulk deny';
   let body = `You are about to deny ${selectedCount} pending request${selectedCount !== 1 ? 's' : ''}.`;
@@ -139,7 +135,7 @@ export function buildBulkDenyConfirmationMessage(
 export function formatSearchResultsSummary(
   allPending: ConnectionRecord[],
   filtered: ConnectionRecord[],
-  criteria: QueueFilterCriteria
+  criteria: QueueFilterCriteria,
 ): string {
   if (!criteria.searchQuery.trim() && !criteria.specialty) {
     return `${allPending.length} pending request${allPending.length !== 1 ? 's' : ''}`;

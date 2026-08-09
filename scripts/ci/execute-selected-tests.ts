@@ -12,10 +12,7 @@ import {
   type SelectivePlatform,
 } from './selective-execution';
 import { prewarmMetroBundle } from './metro-bundle-prewarm';
-import {
-  stopMetroProcessGroup,
-  stopRunnerOwnedProcessGroup,
-} from './metro-process-group';
+import { stopMetroProcessGroup, stopRunnerOwnedProcessGroup } from './metro-process-group';
 
 type TrackedProcessKind = 'invocation' | 'metro';
 
@@ -33,10 +30,7 @@ function throwIfCancellationRequested(): void {
   }
 }
 
-function stopForCancellation(
-  child: ChildProcess,
-  kind: TrackedProcessKind
-): Promise<void> {
+function stopForCancellation(child: ChildProcess, kind: TrackedProcessKind): Promise<void> {
   const existing = cancellationStops.get(child);
   if (existing) return existing;
 
@@ -52,10 +46,7 @@ function stopForCancellation(
   return stop;
 }
 
-function trackProcessGroup(
-  child: ChildProcess,
-  kind: TrackedProcessKind
-): void {
+function trackProcessGroup(child: ChildProcess, kind: TrackedProcessKind): void {
   activeProcessGroups.set(child, kind);
   if (cancellationSignal) void stopForCancellation(child, kind);
 }
@@ -109,7 +100,7 @@ export async function runChild(
   args: string[],
   cwd: string,
   env: NodeJS.ProcessEnv,
-  timeoutMs: number | undefined
+  timeoutMs: number | undefined,
 ): Promise<void> {
   throwIfCancellationRequested();
   console.log(`$ ${JSON.stringify([command, ...args])}`);
@@ -147,7 +138,7 @@ export async function runChild(
           throw new Error(
             `Invocation ${invocationId} timed out after ${timeoutMs} ms; process-group cleanup failed: ${
               error instanceof Error ? error.message : String(error)
-            }`
+            }`,
           );
         }
         throw error;
@@ -163,7 +154,7 @@ export async function runChild(
   throwIfCancellationRequested();
   if (result.code !== 0) {
     throw new Error(
-      `${command} failed with ${result.code === null ? `signal ${result.signal}` : `exit code ${result.code}`}`
+      `${command} failed with ${result.code === null ? `signal ${result.signal}` : `exit code ${result.code}`}`,
     );
   }
 }
@@ -197,7 +188,7 @@ async function waitForMetro(port: number, metro: ChildProcess): Promise<void> {
         throw new Error(
           `Metro exited with ${
             metro.exitCode === null ? `signal ${metro.signalCode}` : `code ${metro.exitCode}`
-          } before becoming ready`
+          } before becoming ready`,
         );
       }
       try {
@@ -226,13 +217,13 @@ async function waitForPortToClose(port: number, timeoutMs: number): Promise<bool
 async function runWithFreshMetro(
   invocation: CommandInvocation,
   cwd: string,
-  timeoutMs: number | undefined
+  timeoutMs: number | undefined,
 ): Promise<void> {
   throwIfCancellationRequested();
   const port = invocation.metro!.port;
   if (await portIsOpen(port)) {
     throw new Error(
-      `${invocation.id} refuses to reuse occupied Metro port ${port}; selective fixture state must be isolated`
+      `${invocation.id} refuses to reuse occupied Metro port ${port}; selective fixture state must be isolated`,
     );
   }
 
@@ -246,7 +237,7 @@ async function runWithFreshMetro(
       env,
       shell: false,
       stdio: 'inherit',
-    }
+    },
   );
   trackProcessGroup(metro, 'metro');
 
@@ -259,20 +250,11 @@ async function runWithFreshMetro(
       throw new Error(
         `Metro exited with ${
           metro.exitCode === null ? `signal ${metro.signalCode}` : `code ${metro.exitCode}`
-        } after prewarming the ${invocation.metro!.platform} bundle`
+        } after prewarming the ${invocation.metro!.platform} bundle`,
       );
     }
-    console.log(
-      `Prewarmed ${invocation.metro!.platform} Metro bundle (${bundleByteLength} bytes)`
-    );
-    await runChild(
-      invocation.id,
-      invocation.command,
-      invocation.args,
-      cwd,
-      env,
-      timeoutMs
-    );
+    console.log(`Prewarmed ${invocation.metro!.platform} Metro bundle (${bundleByteLength} bytes)`);
+    await runChild(invocation.id, invocation.command, invocation.args, cwd, env, timeoutMs);
   } finally {
     let cleanupFailed = false;
     let cleanupError: unknown;
@@ -297,7 +279,7 @@ async function runWithFreshMetro(
           }`
         : '';
       throw new Error(
-        `Metro port ${port} remained occupied after process-group cleanup${cleanupContext}`
+        `Metro port ${port} remained occupied after process-group cleanup${cleanupContext}`,
       );
     }
     if (cleanupFailed) throw cleanupError;
@@ -307,7 +289,7 @@ async function runWithFreshMetro(
 async function runInvocation(
   invocation: CommandInvocation,
   cwd: string,
-  timeoutMs: number | undefined
+  timeoutMs: number | undefined,
 ): Promise<void> {
   throwIfCancellationRequested();
   assertRequiredEnvironment(invocation);
@@ -321,7 +303,7 @@ async function runInvocation(
     invocation.args,
     cwd,
     childEnvironment(invocation),
-    timeoutMs
+    timeoutMs,
   );
 }
 
@@ -332,23 +314,17 @@ async function main(): Promise<void> {
   const suitesJson = valueAfter('--suites-json') ?? process.env.SELECTED_SUITES_JSON;
   const selectedSuites = parseSelectedSuitesJson(suitesJson);
   const invocationTimeoutMs = parseSelectiveInvocationTimeoutMs(
-    process.env.SELECTIVE_INVOCATION_TIMEOUT_MS
+    process.env.SELECTIVE_INVOCATION_TIMEOUT_MS,
   );
   const metroPort =
     platform === 'ios' || platform === 'android'
       ? parseNativeMetroPort(platform, process.env.DETOX_METRO_PORT)
       : undefined;
-  const plan = createSelectiveExecutionPlan(
-    loadManifest(root),
-    platform,
-    selectedSuites,
-    {
-      skipNativeBuild: isTrue(process.env.DETOX_SKIP_BUILD),
-      diagnosticsRoot:
-        process.env.SELECTIVE_TEST_DIAGNOSTICS_ROOT ?? '.artifacts/ci-diagnostics',
-      metroPort,
-    }
-  );
+  const plan = createSelectiveExecutionPlan(loadManifest(root), platform, selectedSuites, {
+    skipNativeBuild: isTrue(process.env.DETOX_SKIP_BUILD),
+    diagnosticsRoot: process.env.SELECTIVE_TEST_DIAGNOSTICS_ROOT ?? '.artifacts/ci-diagnostics',
+    metroPort,
+  });
 
   if (process.argv.includes('--plan') || process.argv.includes('--dry-run')) {
     console.log(JSON.stringify(plan, null, 2));
@@ -359,7 +335,7 @@ async function main(): Promise<void> {
     await runInvocation(plan.nativeBuild.command, root, invocationTimeoutMs);
   } else if (plan.nativeBuild) {
     console.log(
-      `Using workflow-owned ${plan.nativeBuild.configuration} build; executor will not rebuild per suite.`
+      `Using workflow-owned ${plan.nativeBuild.configuration} build; executor will not rebuild per suite.`,
     );
   }
 
@@ -373,22 +349,14 @@ async function reportFailure(error: unknown): Promise<void> {
   const cleanupResults = await Promise.allSettled(cancellationStops.values());
   for (const result of cleanupResults) {
     if (result.status === 'rejected') {
-      console.error(
-        result.reason instanceof Error
-          ? result.reason.message
-          : String(result.reason)
-      );
+      console.error(result.reason instanceof Error ? result.reason.message : String(result.reason));
     }
   }
   console.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = cancellationSignal
-    ? cancellationExitCode(cancellationSignal)
-    : 1;
+  process.exitCode = cancellationSignal ? cancellationExitCode(cancellationSignal) : 1;
 }
 
-const entrypoint = process.argv[1]
-  ? pathToFileURL(resolve(process.argv[1])).href
-  : undefined;
+const entrypoint = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : undefined;
 if (entrypoint === import.meta.url) {
   installCancellationHandlers();
   void main().catch(reportFailure);

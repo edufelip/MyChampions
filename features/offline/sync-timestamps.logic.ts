@@ -1,5 +1,5 @@
 export function resolveLatestSyncTimestamp(
-  timestamps: Array<string | null | undefined>
+  timestamps: Array<string | null | undefined>,
 ): string | null {
   let latest: { iso: string; time: number } | null = null;
 

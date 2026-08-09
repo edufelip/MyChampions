@@ -87,7 +87,7 @@ export function useConnections(isAuthenticated: boolean): UseConnectionsResult {
         return normalizeInviteSubmitError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   const confirmConnection = useCallback(
@@ -102,7 +102,7 @@ export function useConnections(isAuthenticated: boolean): UseConnectionsResult {
         return normalizeConnectionActionError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   const unbindConnection = useCallback(
@@ -117,7 +117,7 @@ export function useConnections(isAuthenticated: boolean): UseConnectionsResult {
         return normalizeConnectionActionError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   return { state, reload: load, submitCode, confirmConnection, unbindConnection };

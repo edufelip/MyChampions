@@ -25,8 +25,7 @@ test(
   async () => {
     const temp = mkdtempSync(join(tmpdir(), 'selective-invocation-timeout-'));
     const descendantPidPath = join(temp, 'descendant.pid');
-    const descendantProgram =
-      "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);";
+    const descendantProgram = "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);";
     const leaderProgram = `
       const { spawn } = require('node:child_process');
       const { writeFileSync } = require('node:fs');
@@ -47,9 +46,9 @@ test(
           ['-e', leaderProgram],
           process.cwd(),
           process.env,
-          150
+          150,
         ),
-        /Invocation detox:timeout-fixture timed out after 150 ms/
+        /Invocation detox:timeout-fixture timed out after 150 ms/,
       );
       const descendantPid = Number(readFileSync(descendantPidPath, 'utf8'));
       assert.ok(Number.isInteger(descendantPid) && descendantPid > 0);
@@ -57,7 +56,7 @@ test(
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
-  }
+  },
 );
 
 test('invocation remains unbounded when no timeout is configured', async () => {
@@ -67,6 +66,6 @@ test('invocation remains unbounded when no timeout is configured', async () => {
     ['-e', 'process.exit(0)'],
     process.cwd(),
     process.env,
-    undefined
+    undefined,
   );
 });

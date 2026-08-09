@@ -43,9 +43,9 @@ function registeredRootRoutes(): Set<string> {
   const source = readFileSync(rootServerAppPath, 'utf8');
 
   return new Set(
-    [...source.matchAll(/\.(?:get|post|put|patch|delete)\(\s*['"](\/[^'"]+)['"]/g)].map(([, route]) =>
-      normalizeRoute(route)
-    )
+    [...source.matchAll(/\.(?:get|post|put|patch|delete)\(\s*['"](\/[^'"]+)['"]/g)].map(
+      ([, route]) => normalizeRoute(route),
+    ),
   );
 }
 
@@ -65,20 +65,26 @@ function directMobileRootRoutes(): Array<{ file: string; route: string }> {
   });
 }
 
-serverRouteContractTest('every direct mobile root-server request resolves to a registered Elysia route', () => {
-  const registeredRoutes = registeredRootRoutes();
-  const directRoutes = directMobileRootRoutes();
+serverRouteContractTest(
+  'every direct mobile root-server request resolves to a registered Elysia route',
+  () => {
+    const registeredRoutes = registeredRootRoutes();
+    const directRoutes = directMobileRootRoutes();
 
-  assert.ok(directRoutes.length >= 60, 'route scan should cover the active mobile source modules');
-
-  for (const { file, route } of directRoutes) {
-    assert.equal(
-      registeredRoutes.has(route),
-      true,
-      `${file} calls ${route}, but server/src/app.ts does not register that route`
+    assert.ok(
+      directRoutes.length >= 60,
+      'route scan should cover the active mobile source modules',
     );
-  }
-});
+
+    for (const { file, route } of directRoutes) {
+      assert.equal(
+        registeredRoutes.has(route),
+        true,
+        `${file} calls ${route}, but server/src/app.ts does not register that route`,
+      );
+    }
+  },
+);
 
 serverRouteContractTest('helper-built mobile requests resolve to registered Elysia routes', () => {
   const registeredRoutes = registeredRootRoutes();
@@ -115,7 +121,10 @@ serverRouteContractTest('helper-built mobile requests resolve to registered Elys
     },
     {
       file: 'features/plans/exercise-service-source.ts',
-      fragments: ['/integrations/exercise${path.replace', '/catalog/exercises/${encodeURIComponent(id.trim())}'],
+      fragments: [
+        '/integrations/exercise${path.replace',
+        '/catalog/exercises/${encodeURIComponent(id.trim())}',
+      ],
       route: '/integrations/exercise/exercises/:param',
     },
     {
@@ -145,7 +154,7 @@ serverRouteContractTest('helper-built mobile requests resolve to registered Elys
     assert.equal(
       registeredRoutes.has(normalizeRoute(route)),
       true,
-      `${file} calls ${route}, but server/src/app.ts does not register that route`
+      `${file} calls ${route}, but server/src/app.ts does not register that route`,
     );
   }
 });

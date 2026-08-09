@@ -21,7 +21,10 @@ test('normalizeGuardPathname normalizes empty, duplicate, and trailing slash pat
 
 test('normalizeAuthReturnTo accepts only shared recipe app paths', () => {
   assert.equal(normalizeAuthReturnTo('/shared/recipes/share-123'), '/shared/recipes/share-123');
-  assert.equal(normalizeAuthReturnTo('%2Fshared%2Frecipes%2Fshare-123'), '/shared/recipes/share-123');
+  assert.equal(
+    normalizeAuthReturnTo('%2Fshared%2Frecipes%2Fshare-123'),
+    '/shared/recipes/share-123',
+  );
   assert.equal(normalizeAuthReturnTo([' /shared/recipes/share-456 ']), '/shared/recipes/share-456');
   assert.equal(normalizeAuthReturnTo('/professional/home'), null);
   assert.equal(normalizeAuthReturnTo('/student/nutrition'), null);

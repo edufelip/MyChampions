@@ -103,14 +103,19 @@ function defaultGetServerBaseUrl(): string | undefined {
   return extra.server?.baseUrl?.trim() || process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL?.trim();
 }
 
-export type ExerciseServiceErrorCode = 'configuration' | 'network' | 'invalid_response' | 'service' | 'unauthenticated';
+export type ExerciseServiceErrorCode =
+  'configuration' | 'network' | 'invalid_response' | 'service' | 'unauthenticated';
 
 export class ExerciseServiceSourceError extends Error {
   code: ExerciseServiceErrorCode;
   status?: number;
   requestId?: string;
 
-  constructor(code: ExerciseServiceErrorCode, message: string, extras?: { status?: number; requestId?: string }) {
+  constructor(
+    code: ExerciseServiceErrorCode,
+    message: string,
+    extras?: { status?: number; requestId?: string },
+  ) {
     super(message);
     this.code = code;
     this.status = extras?.status;
@@ -145,7 +150,8 @@ function getE2EExerciseSearchFixture(query: string): ExerciseSearchResult | null
   if (!override || process.env.EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE !== 'basic') return null;
 
   const normalized = query.trim().toLowerCase();
-  if (!normalized) return { page: 1, pageSize: 20, total: 0, exercises: [], requestId: 'e2e-exercise-fixture' };
+  if (!normalized)
+    return { page: 1, pageSize: 20, total: 0, exercises: [], requestId: 'e2e-exercise-fixture' };
   if (!'push'.includes(normalized) && !normalized.includes('push')) {
     return { page: 1, pageSize: 20, total: 0, exercises: [], requestId: 'e2e-exercise-fixture' };
   }
@@ -161,7 +167,11 @@ function getE2EExerciseSearchFixture(query: string): ExerciseSearchResult | null
         slug: 'e2e-push-up',
         title: 'E2E Push-Up',
         description: 'Fixture bodyweight exercise for deterministic E2E builder coverage.',
-        instructions: ['Set a straight plank position.', 'Lower under control.', 'Press back to the start.'],
+        instructions: [
+          'Set a straight plank position.',
+          'Lower under control.',
+          'Press back to the start.',
+        ],
         importantPoints: ['Keep the torso braced.'],
         muscleGroup: 'chest',
         secondaryMuscles: ['triceps', 'shoulders'],
@@ -186,7 +196,11 @@ function parseExerciseFromUnknown(payload: unknown): ExerciseItem | null {
   if (!payload || typeof payload !== 'object') return null;
 
   const record = payload as Record<string, unknown>;
-  if (Array.isArray(record.exercises) && record.exercises.length > 0 && isExerciseItem(record.exercises[0])) {
+  if (
+    Array.isArray(record.exercises) &&
+    record.exercises.length > 0 &&
+    isExerciseItem(record.exercises[0])
+  ) {
     return record.exercises[0];
   }
 
@@ -201,12 +215,14 @@ function parseExerciseFromUnknown(payload: unknown): ExerciseItem | null {
   return null;
 }
 
-async function resolveServerConnection(deps: ExerciseServiceDeps): Promise<{ baseUrl: string; accessToken: string }> {
+async function resolveServerConnection(
+  deps: ExerciseServiceDeps,
+): Promise<{ baseUrl: string; accessToken: string }> {
   const serverBaseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
   if (!serverBaseUrl) {
     throw new ExerciseServiceSourceError(
       'configuration',
-      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.'
+      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.',
     );
   }
 
@@ -221,7 +237,7 @@ async function resolveServerConnection(deps: ExerciseServiceDeps): Promise<{ bas
 async function catalogPost<T>(
   path: string,
   body: CatalogSearchRequestBody,
-  deps: ExerciseServiceDeps
+  deps: ExerciseServiceDeps,
 ): Promise<{ payload: T; requestId?: string; status: number }> {
   const serverConnection = await resolveServerConnection(deps);
 
@@ -237,11 +253,11 @@ async function catalogPost<T>(
     Authorization: `Bearer ${serverConnection.accessToken}`,
   };
 
-  logNetworkDebug(
-    'exerciseService.catalogPost',
-    'Dispatching catalog request.',
-    { path, lang, requestId }
-  );
+  logNetworkDebug('exerciseService.catalogPost', 'Dispatching catalog request.', {
+    path,
+    lang,
+    requestId,
+  });
   logNetworkDebug('exerciseService.catalogPost', 'Request endpoint:', endpoint);
   logNetworkDebug('exerciseService.catalogPost', 'Request body:', requestBody);
 
@@ -261,12 +277,17 @@ async function catalogPost<T>(
     });
     throw new ExerciseServiceSourceError(
       'network',
-      `Exercise service request failed: ${(error as Error)?.message ?? 'network error'}`
+      `Exercise service request failed: ${(error as Error)?.message ?? 'network error'}`,
     );
   }
 
   const responseRequestId = response.headers.get('x-request-id') ?? requestId;
-  logNetworkDebug('exerciseService.catalogPost', 'Response status/request-id:', response.status, responseRequestId);
+  logNetworkDebug(
+    'exerciseService.catalogPost',
+    'Response status/request-id:',
+    response.status,
+    responseRequestId,
+  );
 
   if (!response.ok) {
     let responseBody = '';
@@ -285,7 +306,7 @@ async function catalogPost<T>(
     throw new ExerciseServiceSourceError(
       'service',
       `Exercise service returned ${response.status}${responseBody ? `: ${responseBody}` : ''}`,
-      { status: response.status, requestId: responseRequestId }
+      { status: response.status, requestId: responseRequestId },
     );
   }
 
@@ -301,7 +322,7 @@ async function catalogPost<T>(
     throw new ExerciseServiceSourceError(
       'invalid_response',
       'Exercise service returned a non-JSON response.',
-      { status: response.status, requestId: responseRequestId }
+      { status: response.status, requestId: responseRequestId },
     );
   }
 
@@ -315,7 +336,7 @@ async function catalogPost<T>(
 
 async function catalogGet<T>(
   path: string,
-  deps: ExerciseServiceDeps
+  deps: ExerciseServiceDeps,
 ): Promise<{ payload: T; requestId?: string; status: number }> {
   const serverConnection = await resolveServerConnection(deps);
 
@@ -342,7 +363,7 @@ async function catalogGet<T>(
     });
     throw new ExerciseServiceSourceError(
       'network',
-      `Exercise service request failed: ${(error as Error)?.message ?? 'network error'}`
+      `Exercise service request failed: ${(error as Error)?.message ?? 'network error'}`,
     );
   }
 
@@ -358,7 +379,7 @@ async function catalogGet<T>(
     throw new ExerciseServiceSourceError(
       'service',
       `Exercise service returned ${response.status}${responseBody ? `: ${responseBody}` : ''}`,
-      { status: response.status, requestId: responseRequestId }
+      { status: response.status, requestId: responseRequestId },
     );
   }
 
@@ -372,7 +393,7 @@ async function catalogGet<T>(
     throw new ExerciseServiceSourceError(
       'invalid_response',
       'Exercise service returned a non-JSON response.',
-      { status: response.status, requestId: responseRequestId }
+      { status: response.status, requestId: responseRequestId },
     );
   }
 }
@@ -380,7 +401,7 @@ async function catalogGet<T>(
 export async function searchExerciseLibrary(
   query: string,
   pageSize = 20,
-  deps: ExerciseServiceDeps = defaultDeps
+  deps: ExerciseServiceDeps = defaultDeps,
 ): Promise<ExerciseSearchResult> {
   const fixture = getE2EExerciseSearchFixture(query);
   if (fixture) {
@@ -407,30 +428,33 @@ export async function searchExerciseLibrary(
   const rawExercises = Array.isArray(payload.results)
     ? payload.results
     : Array.isArray(payload.exercises)
-    ? payload.exercises
-    : Array.isArray(payload.data)
-      ? payload.data
-      : [];
+      ? payload.exercises
+      : Array.isArray(payload.data)
+        ? payload.data
+        : [];
 
   const exercises = Array.isArray(rawExercises)
     ? rawExercises.filter((item): item is ExerciseItem => isExerciseItem(item))
     : [];
 
-  const page = typeof payload.page === 'number'
-    ? payload.page
-    : typeof payload.pagination?.page === 'number'
-      ? payload.pagination.page
-      : 1;
-  const resolvedPageSize = typeof payload.pageSize === 'number'
-    ? payload.pageSize
-    : typeof payload.pagination?.pageSize === 'number'
-      ? payload.pagination.pageSize
-      : pageSize;
-  const total = typeof payload.total === 'number'
-    ? payload.total
-    : typeof payload.pagination?.total === 'number'
-      ? payload.pagination.total
-      : exercises.length;
+  const page =
+    typeof payload.page === 'number'
+      ? payload.page
+      : typeof payload.pagination?.page === 'number'
+        ? payload.pagination.page
+        : 1;
+  const resolvedPageSize =
+    typeof payload.pageSize === 'number'
+      ? payload.pageSize
+      : typeof payload.pagination?.pageSize === 'number'
+        ? payload.pagination.pageSize
+        : pageSize;
+  const total =
+    typeof payload.total === 'number'
+      ? payload.total
+      : typeof payload.pagination?.total === 'number'
+        ? payload.pagination.total
+        : exercises.length;
 
   logNetworkDebug('exerciseService.searchExerciseLibrary', 'Search response parsed.', {
     requestId,
@@ -455,7 +479,7 @@ export async function searchExerciseLibrary(
  */
 export async function getExerciseById(
   id: string,
-  deps: ExerciseServiceDeps = defaultDeps
+  deps: ExerciseServiceDeps = defaultDeps,
 ): Promise<ExerciseItem | null> {
   if (!id?.trim()) return null;
 

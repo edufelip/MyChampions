@@ -84,7 +84,7 @@ async function readJson(response: Response): Promise<unknown> {
 
 export async function signInWithEmailPasswordFromSource(
   input: SignInRequest,
-  deps: EmailAuthSourceDeps = makeDeps()
+  deps: EmailAuthSourceDeps = makeDeps(),
 ): Promise<void> {
   await waitForPendingServerAuthSignOut();
   let baseUrl: string | undefined;
@@ -126,7 +126,7 @@ export async function signInWithEmailPasswordFromSource(
 
 export async function createAccountWithEmailPasswordFromSource(
   input: CreateAccountRequest,
-  deps: EmailAuthSourceDeps = makeDeps()
+  deps: EmailAuthSourceDeps = makeDeps(),
 ): Promise<void> {
   await waitForPendingServerAuthSignOut();
   let baseUrl: string | undefined;

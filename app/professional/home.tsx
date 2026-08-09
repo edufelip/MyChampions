@@ -74,13 +74,17 @@ export default function ProfessionalHomeScreen() {
 
   const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
   const inviteSpecialty =
-    specialtiesState.kind === 'ready' ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties) : null;
+    specialtiesState.kind === 'ready'
+      ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties)
+      : null;
   const canUseNutrition = canAccessNutritionSurface({
     role: 'professional',
     specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
   });
   const { state: codeState, rotate } = useInviteCode(Boolean(currentUser), inviteSpecialty);
-  const { state: connectionsState, reload: reloadConnections } = useConnections(Boolean(currentUser));
+  const { state: connectionsState, reload: reloadConnections } = useConnections(
+    Boolean(currentUser),
+  );
   const {
     entitlementStatus,
     professionalEntitlementRenewalRisk,
@@ -169,7 +173,7 @@ export default function ProfessionalHomeScreen() {
             }
           },
         },
-      ]
+      ],
     );
   }
 
@@ -185,10 +189,10 @@ export default function ProfessionalHomeScreen() {
     () =>
       connectionsState.kind === 'ready'
         ? connectionsState.connections.filter(
-            (connection) => connection.status === 'pending_confirmation'
+            (connection) => connection.status === 'pending_confirmation',
           )
         : [],
-    [connectionsState]
+    [connectionsState],
   );
   const connectionSourceState =
     connectionsState.kind === 'ready'
@@ -207,9 +211,7 @@ export default function ProfessionalHomeScreen() {
     ? String(activeStudentCount)
     : unavailableValue;
   const pendingConnectionLabel =
-    connectionsState.kind === 'ready'
-      ? String(pendingConnections.length)
-      : unavailableValue;
+    connectionsState.kind === 'ready' ? String(pendingConnections.length) : unavailableValue;
 
   function reloadAttention() {
     reloadConnections();
@@ -222,11 +224,14 @@ export default function ProfessionalHomeScreen() {
       contentWidth="wide"
       withBlobs={false}
       testID="pro.home.screen"
-      contentContainerStyle={styles.content}>
+      contentContainerStyle={styles.content}
+    >
       <Stack.Screen options={{ title: t('pro.home.title'), headerShown: false }} />
 
       <View style={styles.heroWrap}>
-        <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>{t('pro.home.title')}</Text>
+        <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
+          {t('pro.home.title')}
+        </Text>
         <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
           {t('pro.home.subtitle')}
         </Text>
@@ -242,11 +247,14 @@ export default function ProfessionalHomeScreen() {
                   ? theme.color.warning
                   : theme.color.accentPrimary,
               },
-            ]}>
+            ]}
+          >
             <MaterialIcons
               name={subState.isPreLapseWarningVisible ? 'warning-amber' : 'verified-user'}
               size={16}
-              color={subState.isPreLapseWarningVisible ? theme.color.warning : theme.color.accentPrimary}
+              color={
+                subState.isPreLapseWarningVisible ? theme.color.warning : theme.color.accentPrimary
+              }
             />
             <Text
               style={[
@@ -256,7 +264,8 @@ export default function ProfessionalHomeScreen() {
                     ? theme.color.warning
                     : theme.color.accentPrimary,
                 },
-              ]}>
+              ]}
+            >
               {subState.isPreLapseWarningVisible
                 ? t('pro.subscription.pre_lapse.title')
                 : t('pro.subscription.cap_usage')
@@ -268,7 +277,11 @@ export default function ProfessionalHomeScreen() {
       </View>
 
       {offlineDisplay.showOfflineBanner ? (
-        <DsOfflineBanner scheme={scheme} text={buildOfflineText(offlineDisplay.staleElapsed, t)} testID="pro.home.offlineBanner" />
+        <DsOfflineBanner
+          scheme={scheme}
+          text={buildOfflineText(offlineDisplay.staleElapsed, t)}
+          testID="pro.home.offlineBanner"
+        />
       ) : null}
 
       {subState.isPreLapseWarningVisible ? (
@@ -276,7 +289,8 @@ export default function ProfessionalHomeScreen() {
           scheme={scheme}
           variant="warning"
           testID="pro.home.subscriptionWarning"
-          style={styles.warningBanner}>
+          style={styles.warningBanner}
+        >
           <Text style={[styles.warningText, { color: theme.color.textPrimary }]}>
             {t('pro.home.subscription.warning')}
           </Text>
@@ -295,14 +309,19 @@ export default function ProfessionalHomeScreen() {
 
       {isWriteLocked && !offlineDisplay.showOfflineBanner ? (
         <DsCard scheme={scheme} testID="pro.home.entitlementLock">
-          <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('pro.home.entitlement_lock')}</Text>
+          <Text style={[styles.errorText, { color: theme.color.danger }]}>
+            {t('pro.home.entitlement_lock')}
+          </Text>
         </DsCard>
       ) : null}
 
-      <View style={[styles.dashboardColumns, usesDesktopLayout ? styles.dashboardColumnsDesktop : null]}>
+      <View
+        style={[styles.dashboardColumns, usesDesktopLayout ? styles.dashboardColumnsDesktop : null]}
+      >
         <View
           style={[styles.primaryColumn, usesDesktopLayout ? styles.primaryColumnDesktop : null]}
-          testID="pro.home.primaryColumn">
+          testID="pro.home.primaryColumn"
+        >
           <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
             {t('pro.home.overview')}
           </Text>
@@ -334,7 +353,8 @@ export default function ProfessionalHomeScreen() {
                 accessibilityRole="button"
                 onPress={reloadAttention}
                 style={({ pressed }) => [styles.retryLink, pressed ? styles.pressed : null]}
-                testID="pro.home.attentionRetry">
+                testID="pro.home.attentionRetry"
+              >
                 <MaterialIcons name="refresh" size={16} color={theme.color.accentPrimary} />
                 <Text style={[styles.retryLinkText, { color: theme.color.accentPrimary }]}>
                   {t('common.error.retry')}
@@ -350,7 +370,7 @@ export default function ProfessionalHomeScreen() {
               title={t('pro.home.connection_requests') as string}
               body={(t('pro.home.connection_requests_body') as string).replace(
                 '{count}',
-                String(pendingConnections.length)
+                String(pendingConnections.length),
               )}
               cta={t('pro.home.cta_pending') as string}
               onPress={() => router.push('/professional/pending')}
@@ -370,8 +390,8 @@ export default function ProfessionalHomeScreen() {
               onPress={() => {
                 router.push(
                   `/professional/student-profile?studentId=${encodeURIComponent(
-                    planChangeNotification.latestRequest?.studentUid ?? ''
-                  )}`
+                    planChangeNotification.latestRequest?.studentUid ?? '',
+                  )}`,
                 );
               }}
               testID="pro.home.planChangeNotification"
@@ -379,7 +399,12 @@ export default function ProfessionalHomeScreen() {
           ) : null}
 
           {attentionState.showAllCaughtUp ? (
-            <DsCard scheme={scheme} variant="muted" style={styles.clearCard} testID="pro.home.allCaughtUp">
+            <DsCard
+              scheme={scheme}
+              variant="muted"
+              style={styles.clearCard}
+              testID="pro.home.allCaughtUp"
+            >
               <View style={[styles.clearIcon, { backgroundColor: theme.color.successSoft }]}>
                 <MaterialIcons name="done-all" size={20} color={theme.color.success} />
               </View>
@@ -395,7 +420,12 @@ export default function ProfessionalHomeScreen() {
           ) : null}
 
           {attentionState.isLoading && !attentionState.hasAnyAttention ? (
-            <DsCard scheme={scheme} variant="muted" style={styles.loadingCard} testID="pro.home.attentionLoading">
+            <DsCard
+              scheme={scheme}
+              variant="muted"
+              style={styles.loadingCard}
+              testID="pro.home.attentionLoading"
+            >
               <ActivityIndicator color={theme.color.accentPrimary} />
               <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
                 {t('pro.home.attention_loading')}
@@ -404,22 +434,36 @@ export default function ProfessionalHomeScreen() {
           ) : null}
 
           {attentionState.hasLoadError ? (
-            <DsCard scheme={scheme} variant="warning" style={styles.inlineIssue} testID="pro.home.attentionError">
+            <DsCard
+              scheme={scheme}
+              variant="warning"
+              style={styles.inlineIssue}
+              testID="pro.home.attentionError"
+            >
               <MaterialIcons name="info-outline" size={18} color={theme.color.warning} />
-              <Text style={[styles.cardSubtitle, styles.inlineIssueText, { color: theme.color.textPrimary }]}>
+              <Text
+                style={[
+                  styles.cardSubtitle,
+                  styles.inlineIssueText,
+                  { color: theme.color.textPrimary },
+                ]}
+              >
                 {t('pro.home.attention_error')}
               </Text>
             </DsCard>
           ) : null}
 
-          <Text style={[styles.sectionTitle, styles.manageTitle, { color: theme.color.textPrimary }]}>
+          <Text
+            style={[styles.sectionTitle, styles.manageTitle, { color: theme.color.textPrimary }]}
+          >
             {t('pro.home.manage')}
           </Text>
           <View
             style={[
               styles.quickActionsGrid,
               usesDesktopLayout ? styles.quickActionsGridDesktop : null,
-            ]}>
+            ]}
+          >
             <QuickActionCard
               scheme={scheme}
               iconName="groups"
@@ -451,98 +495,115 @@ export default function ProfessionalHomeScreen() {
 
         <View
           style={[styles.secondaryColumn, usesDesktopLayout ? styles.secondaryColumnDesktop : null]}
-          testID="pro.home.secondaryColumn">
-      <DsCard scheme={scheme} testID="pro.home.inviteCodeCard" style={styles.inviteCard} variant="muted">
-        <View style={styles.cardHeader}>
-          <View
-            style={[
-              styles.cardHeaderIconWrap,
-              { backgroundColor: theme.color.accentPrimarySoft, borderColor: theme.color.accentPrimary },
-            ]}>
-            <MaterialIcons name="group-add" size={18} color={theme.color.accentPrimary} />
-          </View>
-          <View style={styles.cardHeaderCopy}>
-            <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
-              {t('pro.home.invite_code.title')}
-            </Text>
-            <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
-              {t('pro.home.invite_code.careful_sharing')}
-            </Text>
-          </View>
-        </View>
+          testID="pro.home.secondaryColumn"
+        >
+          <DsCard
+            scheme={scheme}
+            testID="pro.home.inviteCodeCard"
+            style={styles.inviteCard}
+            variant="muted"
+          >
+            <View style={styles.cardHeader}>
+              <View
+                style={[
+                  styles.cardHeaderIconWrap,
+                  {
+                    backgroundColor: theme.color.accentPrimarySoft,
+                    borderColor: theme.color.accentPrimary,
+                  },
+                ]}
+              >
+                <MaterialIcons name="group-add" size={18} color={theme.color.accentPrimary} />
+              </View>
+              <View style={styles.cardHeaderCopy}>
+                <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
+                  {t('pro.home.invite_code.title')}
+                </Text>
+                <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
+                  {t('pro.home.invite_code.careful_sharing')}
+                </Text>
+              </View>
+            </View>
 
-        {codeState.kind === 'loading' ? (
-          <ActivityIndicator
-            testID="pro.home.inviteCodeLoading"
-            accessibilityLabel={t('a11y.loading.invite_code') as string}
-            color={theme.color.accentPrimary}
-          />
-        ) : codeState.kind === 'ready' ? (
-          <>
-            {codeValue ? (
-              <Text
-                style={[styles.inviteCode, { color: theme.color.accentPrimary }]}
-                testID="pro.home.inviteCodeValue"
-                accessibilityLabel={`${t('pro.home.invite_code.title')}: ${codeValue}`}>
-                {codeValue}
+            {codeState.kind === 'loading' ? (
+              <ActivityIndicator
+                testID="pro.home.inviteCodeLoading"
+                accessibilityLabel={t('a11y.loading.invite_code') as string}
+                color={theme.color.accentPrimary}
+              />
+            ) : codeState.kind === 'ready' ? (
+              <>
+                {codeValue ? (
+                  <Text
+                    style={[styles.inviteCode, { color: theme.color.accentPrimary }]}
+                    testID="pro.home.inviteCodeValue"
+                    accessibilityLabel={`${t('pro.home.invite_code.title')}: ${codeValue}`}
+                  >
+                    {codeValue}
+                  </Text>
+                ) : (
+                  <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
+                    {t('pro.home.invite_code.empty')}
+                  </Text>
+                )}
+
+                {rotateError ? (
+                  <Text style={[styles.errorText, { color: theme.color.danger }]}>
+                    {rotateError}
+                  </Text>
+                ) : null}
+
+                <View style={styles.codeActionsRow}>
+                  {codeValue ? (
+                    <DsPillButton
+                      scheme={scheme}
+                      variant="primary"
+                      size="xs"
+                      label={t('pro.home.invite_code.share') as string}
+                      onPress={() => {
+                        void handleShareCode(codeValue);
+                      }}
+                      fullWidth={false}
+                      style={styles.outlineButtonCompact}
+                      testID="pro.home.shareCodeCta"
+                    />
+                  ) : null}
+
+                  <DsPillButton
+                    scheme={scheme}
+                    variant="primary"
+                    size="xs"
+                    label={t('pro.home.invite_code.rotate') as string}
+                    onPress={confirmRotate}
+                    fullWidth={false}
+                    style={styles.outlineButtonCompact}
+                    testID="pro.home.rotateCodeCta"
+                  />
+                </View>
+              </>
+            ) : codeState.kind === 'error' ? (
+              <Text style={[styles.errorText, { color: theme.color.danger }]}>
+                {t('pro.home.error')}
               </Text>
+            ) : specialtiesState.kind === 'loading' ? (
+              <ActivityIndicator color={theme.color.accentPrimary} />
             ) : (
-              <Text style={[styles.meta, { color: theme.color.textSecondary }]}>{t('pro.home.invite_code.empty')}</Text>
-            )}
-
-            {rotateError ? (
-              <Text style={[styles.errorText, { color: theme.color.danger }]}>{rotateError}</Text>
-            ) : null}
-
-            <View style={styles.codeActionsRow}>
-              {codeValue ? (
+              <View style={styles.inviteSetup} testID="pro.home.inviteSpecialtyRequired">
+                <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
+                  {t('pro.home.invite_code.specialty_required')}
+                </Text>
                 <DsPillButton
                   scheme={scheme}
-                  variant="primary"
+                  variant="outline"
                   size="xs"
-                  label={t('pro.home.invite_code.share') as string}
-                  onPress={() => {
-                    void handleShareCode(codeValue);
-                  }}
+                  label={t('pro.home.invite_code.add_specialty') as string}
+                  onPress={() => router.push('/professional/specialty')}
                   fullWidth={false}
-                  style={styles.outlineButtonCompact}
-                  testID="pro.home.shareCodeCta"
+                  testID="pro.home.inviteSpecialtyCta"
                 />
-              ) : null}
-
-              <DsPillButton
-                scheme={scheme}
-                variant="primary"
-                size="xs"
-                label={t('pro.home.invite_code.rotate') as string}
-                onPress={confirmRotate}
-                fullWidth={false}
-                style={styles.outlineButtonCompact}
-                testID="pro.home.rotateCodeCta"
-              />
-            </View>
-          </>
-        ) : codeState.kind === 'error' ? (
-          <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('pro.home.error')}</Text>
-        ) : specialtiesState.kind === 'loading' ? (
-          <ActivityIndicator color={theme.color.accentPrimary} />
-        ) : (
-          <View style={styles.inviteSetup} testID="pro.home.inviteSpecialtyRequired">
-            <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
-              {t('pro.home.invite_code.specialty_required')}
-            </Text>
-            <DsPillButton
-              scheme={scheme}
-              variant="outline"
-              size="xs"
-              label={t('pro.home.invite_code.add_specialty') as string}
-              onPress={() => router.push('/professional/specialty')}
-              fullWidth={false}
-              testID="pro.home.inviteSpecialtyCta"
-            />
-          </View>
-        )}
-      </DsCard>
+              </View>
+            )}
+          </DsCard>
 
           <Pressable
             accessibilityRole="button"
@@ -552,8 +613,11 @@ export default function ProfessionalHomeScreen() {
               { backgroundColor: theme.color.surface, borderColor: theme.color.border },
               pressed ? styles.pressed : null,
             ]}
-            testID="pro.home.subscriptionCta">
-            <View style={[styles.subscriptionIcon, { backgroundColor: theme.color.accentPrimarySoft }]}>
+            testID="pro.home.subscriptionCta"
+          >
+            <View
+              style={[styles.subscriptionIcon, { backgroundColor: theme.color.accentPrimarySoft }]}
+            >
               <MaterialIcons name="workspace-premium" size={22} color={theme.color.accentPrimary} />
             </View>
             <View style={styles.subscriptionContent}>
@@ -578,7 +642,7 @@ export default function ProfessionalHomeScreen() {
 
 function buildOfflineText(
   staleElapsed: StaleElapsed | null,
-  t: ReturnType<typeof useTranslation>['t']
+  t: ReturnType<typeof useTranslation>['t'],
 ): string {
   if (!staleElapsed) {
     return t('offline.banner') as string;
@@ -588,8 +652,8 @@ function buildOfflineText(
     staleElapsed.unit === 'minutes'
       ? (t('offline.stale_minutes') as string).replace('{value}', String(staleElapsed.value))
       : staleElapsed.unit === 'hours'
-      ? (t('offline.stale_hours') as string).replace('{value}', String(staleElapsed.value))
-      : (t('offline.stale_days') as string).replace('{value}', String(staleElapsed.value));
+        ? (t('offline.stale_hours') as string).replace('{value}', String(staleElapsed.value))
+        : (t('offline.stale_days') as string).replace('{value}', String(staleElapsed.value));
 
   return `${t('offline.banner')} • ${stalePart}`;
 }
@@ -621,7 +685,8 @@ function SummaryLinkCard({
         { backgroundColor: theme.color.surface, borderColor: theme.color.border },
         pressed ? styles.pressed : null,
       ]}
-      testID={testID}>
+      testID={testID}
+    >
       <View style={styles.statTopRow}>
         <View style={[styles.statIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
           <MaterialIcons color={theme.color.accentPrimary} name={iconName} size={18} />
@@ -665,7 +730,8 @@ function TaskCard({
         },
         pressed ? styles.pressed : null,
       ]}
-      testID={testID}>
+      testID={testID}
+    >
       <View style={[styles.taskIcon, { backgroundColor: theme.color.accentPrimary }]}>
         <MaterialIcons name={iconName} size={20} color={theme.color.onAccent} />
       </View>
@@ -708,7 +774,8 @@ function QuickActionCard({
         { backgroundColor: theme.color.surface, borderColor: theme.color.border },
         pressed ? styles.pressed : null,
       ]}
-      testID={testID}>
+      testID={testID}
+    >
       <View style={[styles.quickActionIcon, { backgroundColor: theme.color.accentPrimarySoft }]}>
         <MaterialIcons name={iconName} size={20} color={theme.color.accentPrimary} />
       </View>

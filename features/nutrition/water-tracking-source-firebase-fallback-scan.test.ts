@@ -4,7 +4,10 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 test('water tracking source does not keep a Firebase Firestore fallback', () => {
-  const source = readFileSync(join(process.cwd(), 'features/nutrition/water-tracking-source.ts'), 'utf8');
+  const source = readFileSync(
+    join(process.cwd(), 'features/nutrition/water-tracking-source.ts'),
+    'utf8',
+  );
 
   assert.equal(source.includes('firebase/firestore'), false);
   assert.equal(source.includes("require('../firestore')"), false);

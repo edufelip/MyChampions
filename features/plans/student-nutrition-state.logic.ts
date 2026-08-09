@@ -19,7 +19,8 @@ export function resolveStudentNutritionState({
   plans: Plan[];
 }): StudentNutritionState {
   const nutritionPlans = plans.filter((plan) => plan.planType === 'nutrition' && !plan.isArchived);
-  const assignedPlan = nutritionPlans.find((plan) => plan.sourceKind === 'assigned' && !plan.isDraft) ?? null;
+  const assignedPlan =
+    nutritionPlans.find((plan) => plan.sourceKind === 'assigned' && !plan.isDraft) ?? null;
 
   if (assignedPlan) {
     return { kind: 'assigned', assignedPlan };
@@ -29,7 +30,8 @@ export function resolveStudentNutritionState({
     return { kind: 'waiting' };
   }
 
-  const selfManagedPlan = nutritionPlans.find((plan) => isSelfGuidedPlan(plan, currentUserUid)) ?? null;
+  const selfManagedPlan =
+    nutritionPlans.find((plan) => isSelfGuidedPlan(plan, currentUserUid)) ?? null;
   if (selfManagedPlan) {
     return { kind: 'self_managed', selfManagedPlan };
   }
@@ -53,7 +55,8 @@ export function resolveStudentNutritionDisplayState({
 
   if (nutritionKind === 'assigned') return 'content';
 
-  if (hasCurrentUser && (connectionsKind === 'idle' || connectionsKind === 'loading')) return 'loading';
+  if (hasCurrentUser && (connectionsKind === 'idle' || connectionsKind === 'loading'))
+    return 'loading';
   if (nutritionKind === 'self_managed') return 'content';
   if (hasCurrentUser && connectionsKind === 'error') return 'load_error';
 

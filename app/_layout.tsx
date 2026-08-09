@@ -47,7 +47,8 @@ function RootLayoutContent() {
   const normalizedPathname = normalizeGuardPathname(pathname);
   const authReturnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const lastRedirectAttemptRef = useRef<string | null>(null);
-  const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance, currentUser } = useAuthSession();
+  const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance, currentUser } =
+    useAuthSession();
   const currentUserUid = currentUser?.uid ?? null;
 
   useEffect(() => {
@@ -96,11 +97,27 @@ function RootLayoutContent() {
     if (redirect !== normalizedPathname) {
       router.replace(redirect as never);
     }
-  }, [authReturnTo, currentUserUid, isAuthenticated, isHydrated, lockedRole, needsTermsAcceptance, normalizedPathname, router]);
+  }, [
+    authReturnTo,
+    currentUserUid,
+    isAuthenticated,
+    isHydrated,
+    lockedRole,
+    needsTermsAcceptance,
+    normalizedPathname,
+    router,
+  ]);
 
   if (!isHydrated) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ds.color.canvas }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: ds.color.canvas,
+        }}
+      >
         <ActivityIndicator color={ds.color.accentPrimary} />
       </View>
     );
@@ -139,8 +156,14 @@ function RootLayoutContent() {
         <Stack.Screen name="professional/students" options={{ headerShown: false }} />
         <Stack.Screen name="professional/student-profile" options={{ headerShown: false }} />
         <Stack.Screen name="professional/subscription" options={{ headerShown: false }} />
-        <Stack.Screen name="professional/nutrition/plans/[planId]" options={{ headerShown: false }} />
-        <Stack.Screen name="professional/training/plans/[planId]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="professional/nutrition/plans/[planId]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="professional/training/plans/[planId]"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="settings/account" options={{ headerShown: false }} />
         <Stack.Screen name="settings/language-select" options={{ headerShown: false }} />
         <Stack.Screen name="shared/recipes/[shareToken]" options={{ headerShown: false }} />

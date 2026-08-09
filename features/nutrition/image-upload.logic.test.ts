@@ -86,7 +86,7 @@ describe('normalizeImageUploadError', () => {
         code: 'photo_permission_denied',
         message: 'Photo permission denied for library',
       }),
-      'permission_denied'
+      'permission_denied',
     );
   });
 
@@ -97,7 +97,10 @@ describe('normalizeImageUploadError', () => {
   // --- Configuration errors ---
 
   it('returns "configuration" for missing server URL message', () => {
-    assert.equal(normalizeImageUploadError({ message: 'server URL is not configured' }), 'configuration');
+    assert.equal(
+      normalizeImageUploadError({ message: 'server URL is not configured' }),
+      'configuration',
+    );
   });
 
   it('returns "configuration" for configuration code', () => {
@@ -131,7 +134,10 @@ describe('normalizeImageUploadError', () => {
   });
 
   it('returns "unknown" for unrecognised message', () => {
-    assert.equal(normalizeImageUploadError({ message: 'something went completely wrong' }), 'unknown');
+    assert.equal(
+      normalizeImageUploadError({ message: 'something went completely wrong' }),
+      'unknown',
+    );
   });
 
   // --- Case insensitivity ---
@@ -214,7 +220,10 @@ describe('resolveImageUploadDisplay', () => {
   // --- done state ---
 
   it('done: showProgress=false, isDone=true, no error, canRetry=false', () => {
-    const display = resolveImageUploadDisplay({ kind: 'done', url: 'https://cdn.example.com/img.jpg' });
+    const display = resolveImageUploadDisplay({
+      kind: 'done',
+      url: 'https://cdn.example.com/img.jpg',
+    });
     assert.equal(display.showProgress, false);
     assert.equal(display.isDone, true);
     assert.equal(display.errorMessageKey, null);
@@ -378,7 +387,10 @@ describe('ImageUploadErrorReason exhaustiveness', () => {
   for (const reason of reasons) {
     it(`resolveImageUploadDisplay failed state handles reason="${reason}"`, () => {
       const display = resolveImageUploadDisplay({ kind: 'failed', reason });
-      assert.ok(display.errorMessageKey !== null, `errorMessageKey should be set for reason="${reason}"`);
+      assert.ok(
+        display.errorMessageKey !== null,
+        `errorMessageKey should be set for reason="${reason}"`,
+      );
     });
   }
 });

@@ -1,4 +1,5 @@
-const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const describeWithE2EAuthSession =
+  process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
 const {
   scrollToAccountFooter,
   scrollToDeleteCta,
@@ -8,20 +9,28 @@ const {
 } = require('./account-settings-actions');
 
 async function selectStudentRole() {
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(15000);
   await element(by.id('auth.roleSelection.studentCard')).tap();
   await element(by.id('auth.roleSelection.continueButton')).tap();
-  await waitFor(element(by.id('student.home.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('student.home.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function openAccountTab() {
   await element(by.id('tabs.account')).tap();
-  await waitFor(element(by.id('settings.account.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('settings.account.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function reopenAccountRoute() {
   await device.openURL({ url: 'mychampions://settings/account' });
-  await waitFor(element(by.id('settings.account.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('settings.account.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 describeWithE2EAuthSession('Account Settings', () => {
@@ -49,12 +58,16 @@ describeWithE2EAuthSession('Account Settings', () => {
     await expect(element(by.id('settings.account.termsRow'))).toBeVisible();
 
     await element(by.id('settings.account.privacyPolicyRow')).tap();
-    await waitFor(element(by.id('shared.webview.webview'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('shared.webview.webview')))
+      .toBeVisible()
+      .withTimeout(10000);
 
     await reopenAccountRoute();
     await scrollToLegalRows();
     await element(by.id('settings.account.termsRow')).tap();
-    await waitFor(element(by.id('shared.webview.webview'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('shared.webview.webview')))
+      .toBeVisible()
+      .withTimeout(10000);
 
     await reopenAccountRoute();
     await scrollToSupportQuickAction();
@@ -79,12 +92,16 @@ describeWithE2EAuthSession('Account Settings', () => {
     await device.disableSynchronization();
     await selectStudentRole();
     await openAccountTab();
-    await waitFor(element(by.id('settings.account.signOutCta'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('settings.account.signOutCta')))
+      .toBeVisible()
+      .withTimeout(5000);
 
     await element(by.id('settings.account.signOutCta')).tap();
     await scrollToSignOutConfirmation();
     await expect(element(by.text('Sign out?'))).toBeVisible();
     await element(by.id('settings.account.signOutConfirmCta')).tap();
-    await waitFor(element(by.id('auth.signIn.title'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('auth.signIn.title')))
+      .toBeVisible()
+      .withTimeout(10000);
   });
 });

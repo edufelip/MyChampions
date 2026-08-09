@@ -83,7 +83,7 @@ describe('browser auth sign-out serialization', () => {
           return response(sessionPayload('account-b', 'token-b'));
         },
         getServerBaseUrl: () => 'http://server.test',
-      }
+      },
     );
 
     await Promise.resolve();
@@ -119,7 +119,7 @@ describe('browser auth sign-out serialization', () => {
           return response(sessionPayload('account-b', 'token-b'));
         },
         getServerBaseUrl: () => 'http://server.test',
-      }
+      },
     );
 
     assert.equal(loginRequestStarted, true);
@@ -162,7 +162,7 @@ describe('browser auth sign-out serialization', () => {
           return response(sessionPayload('created', 'created-token'));
         },
         getServerBaseUrl: () => 'http://server.test',
-      }
+      },
     );
     const socialPromise = signInWithSocialProviderTokenFromSource(
       { provider: 'google', idToken: 'provider-token' },
@@ -172,7 +172,7 @@ describe('browser auth sign-out serialization', () => {
           return response(sessionPayload('social', 'social-token'));
         },
         getServerBaseUrl: () => 'http://server.test',
-      }
+      },
     );
     const localPromise = startLocalServerSession(
       { email: 'local@example.test', displayName: 'Local User' },
@@ -182,7 +182,7 @@ describe('browser auth sign-out serialization', () => {
           return response(sessionPayload('local', 'local-token'));
         },
         getServerBaseUrl: () => 'http://server.test',
-      }
+      },
     );
 
     await Promise.resolve();

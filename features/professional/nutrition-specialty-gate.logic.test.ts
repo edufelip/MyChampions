@@ -13,7 +13,7 @@ test('allows students to access nutrition regardless of professional specialties
       role: 'student',
       specialties: [],
     }),
-    true
+    true,
   );
 });
 
@@ -21,9 +21,11 @@ test('allows professionals with active nutritionist specialty to access nutritio
   assert.equal(
     canAccessNutritionSurface({
       role: 'professional',
-      specialties: [{ id: 'nutritionist', specialty: 'nutritionist', isActive: true, credential: null }],
+      specialties: [
+        { id: 'nutritionist', specialty: 'nutritionist', isActive: true, credential: null },
+      ],
     }),
-    true
+    true,
   );
 });
 
@@ -33,10 +35,15 @@ test('blocks professionals without active nutritionist specialty from nutrition'
       role: 'professional',
       specialties: [
         { id: 'coach', specialty: 'fitness_coach', isActive: true, credential: null },
-        { id: 'inactive-nutritionist', specialty: 'nutritionist', isActive: false, credential: null },
+        {
+          id: 'inactive-nutritionist',
+          specialty: 'nutritionist',
+          isActive: false,
+          credential: null,
+        },
       ],
     }),
-    false
+    false,
   );
 });
 
@@ -47,7 +54,7 @@ test('waits for professional specialties before resolving nutrition route access
       specialties: [],
       specialtiesStatus: 'loading',
     }),
-    'loading'
+    'loading',
   );
 });
 
@@ -58,7 +65,7 @@ test('redirects professional nutrition routes without active nutritionist specia
       specialties: [{ id: 'coach', specialty: 'fitness_coach', isActive: true, credential: null }],
       specialtiesStatus: 'ready',
     }),
-    'redirect'
+    'redirect',
   );
 });
 
@@ -69,7 +76,7 @@ test('allows student nutrition routes without professional specialties', () => {
       specialties: [],
       specialtiesStatus: 'idle',
     }),
-    'allow'
+    'allow',
   );
 });
 
@@ -80,7 +87,7 @@ test('redirects students away from professional nutrition routes', () => {
       specialties: [],
       specialtiesStatus: 'idle',
     }),
-    'redirect'
+    'redirect',
   );
 });
 
@@ -88,9 +95,11 @@ test('allows active nutritionist professionals to use professional nutrition rou
   assert.equal(
     resolveProfessionalNutritionRouteGate({
       role: 'professional',
-      specialties: [{ id: 'nutritionist', specialty: 'nutritionist', isActive: true, credential: null }],
+      specialties: [
+        { id: 'nutritionist', specialty: 'nutritionist', isActive: true, credential: null },
+      ],
       specialtiesStatus: 'ready',
     }),
-    'allow'
+    'allow',
   );
 });

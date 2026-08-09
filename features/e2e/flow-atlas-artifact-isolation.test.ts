@@ -1,12 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -89,23 +83,17 @@ test('package flow-atlas command uses the fail-closed isolated runner', () => {
   const runner = readFileSync(join(root, 'scripts', 'run-flow-atlas.mjs'), 'utf8');
   const verifier = readFileSync(join(root, 'scripts', 'verify-flow-atlas.mjs'), 'utf8');
 
-  assert.equal(
-    packageJson.scripts?.['test:e2e:web:flow-atlas'],
-    'node scripts/run-flow-atlas.mjs'
-  );
+  assert.equal(packageJson.scripts?.['test:e2e:web:flow-atlas'], 'node scripts/run-flow-atlas.mjs');
   assert.match(runner, /await prepareFlowAtlasArtifactRoot\(artifactRoot\);/);
   assert.ok(
     runner.indexOf('await prepareFlowAtlasArtifactRoot(artifactRoot);') <
-      runner.indexOf('playwright.flows-auth.config.ts')
+      runner.indexOf('playwright.flows-auth.config.ts'),
   );
   assert.ok(
     runner.indexOf('playwright.flows-auth.config.ts') <
-      runner.indexOf('playwright.flows.config.ts')
+      runner.indexOf('playwright.flows.config.ts'),
   );
-  assert.ok(
-    runner.indexOf('playwright.flows.config.ts') <
-      runner.indexOf('verify-flow-atlas.mjs')
-  );
+  assert.ok(runner.indexOf('playwright.flows.config.ts') < runner.indexOf('verify-flow-atlas.mjs'));
   assert.doesNotMatch(runner, /shell:\s*true/);
   assert.match(verifier, /if \(!process\.env\.WEB_E2E_ARTIFACT_ROOT\)/);
   assert.match(verifier, /const artifactRoot = resolveFlowAtlasArtifactRoot\(\);/);

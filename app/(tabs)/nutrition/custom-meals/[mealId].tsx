@@ -112,7 +112,12 @@ export default function CustomMealBuilderScreen() {
   const { mealId } = useLocalSearchParams<{ mealId: string }>();
 
   const isCreateMode = !mealId || mealId === 'new';
-  const { state: customMealsState, create, update, shareLink } = useCustomMeals(Boolean(currentUser));
+  const {
+    state: customMealsState,
+    create,
+    update,
+    shareLink,
+  } = useCustomMeals(Boolean(currentUser));
 
   // ── Subscription / AI paywall (D-132) ─────────────────────────────────────
   const {
@@ -157,7 +162,7 @@ export default function CustomMealBuilderScreen() {
 
   // Existing meals can generate share links through the server-backed source.
   const [savedMealId, setSavedMealId] = useState<string | null>(
-    isCreateMode ? null : (mealId ?? null)
+    isCreateMode ? null : (mealId ?? null),
   );
 
   // ── Image upload (BL-007, D-073, D-130, D-131) ────────────────────────────
@@ -254,9 +259,7 @@ export default function CustomMealBuilderScreen() {
   }
 
   // ── Title ──────────────────────────────────────────────────────────────────
-  const screenTitle = isCreateMode
-    ? t('meal.builder.title.create')
-    : t('meal.builder.title.edit');
+  const screenTitle = isCreateMode ? t('meal.builder.title.create') : t('meal.builder.title.edit');
 
   return (
     <DsScreen
@@ -266,19 +269,20 @@ export default function CustomMealBuilderScreen() {
       contentContainerStyle={styles.content}
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
-      testID="meal.builder.screen">
+      testID="meal.builder.screen"
+    >
       <Stack.Screen options={{ title: screenTitle, headerShown: false }} />
 
       <DsBackButton
         scheme={scheme}
         onPress={() => {
           if (router.canGoBack()) {
-          router.back();
-          return;
-        }
+            router.back();
+            return;
+          }
 
           router.replace('/(tabs)/nutrition/custom-meals');
-      }}
+        }}
         accessibilityLabel={t('auth.role.cta_back') as string}
         style={styles.backButton}
         testID="meal.builder.backButton"
@@ -293,9 +297,7 @@ export default function CustomMealBuilderScreen() {
       ) : null}
 
       {/* Helper text */}
-      <Text style={[styles.helper, { color: palette.icon }]}>
-        {t('meal.builder.helper')}
-      </Text>
+      <Text style={[styles.helper, { color: palette.icon }]}>{t('meal.builder.helper')}</Text>
 
       {/* AI photo analysis CTA & status (BL-108, FR-229, AC-513, D-132) */}
       <MealPhotoAnalysisSection
@@ -396,7 +398,10 @@ export default function CustomMealBuilderScreen() {
       {/* Save error */}
       {saveError ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.errorText, { color: palette.danger }]} testID="meal.builder.saveError">
+          <Text
+            style={[styles.errorText, { color: palette.danger }]}
+            testID="meal.builder.saveError"
+          >
             {saveError}
           </Text>
         </View>
@@ -413,9 +418,15 @@ export default function CustomMealBuilderScreen() {
           accessibilityRole="button"
           disabled={isWriteLocked}
           onPress={handleSave}
-          style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
-          testID="meal.builder.cta.save">
-          <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('meal.builder.cta_save')}</Text>
+          style={[
+            styles.primaryButton,
+            { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+          ]}
+          testID="meal.builder.cta.save"
+        >
+          <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>
+            {t('meal.builder.cta_save')}
+          </Text>
         </Pressable>
       )}
 
@@ -425,8 +436,12 @@ export default function CustomMealBuilderScreen() {
           accessibilityRole="button"
           disabled={isWriteLocked}
           onPress={handleShare}
-          style={[styles.outlineButton, { borderColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
-          testID="meal.builder.cta.share">
+          style={[
+            styles.outlineButton,
+            { borderColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+          ]}
+          testID="meal.builder.cta.share"
+        >
           <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
             {t('meal.builder.cta_share')}
           </Text>
@@ -440,7 +455,8 @@ export default function CustomMealBuilderScreen() {
               accessibilityRole="button"
               onPress={Keyboard.dismiss}
               style={styles.keyboardDoneButton}
-              testID="meal.builder.keyboard.done">
+              testID="meal.builder.keyboard.done"
+            >
               <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
                 {t('common.cta.done')}
               </Text>
@@ -486,15 +502,17 @@ function MealPhotoAnalysisSection({
     analysisState.kind === 'compressing' ||
     analysisState.kind === 'analyzing';
 
-  const errorMessage = analysisState.kind === 'error'
-    ? resolveAnalysisError(analysisState.reason, t)
-    : null;
+  const errorMessage =
+    analysisState.kind === 'error' ? resolveAnalysisError(analysisState.reason, t) : null;
 
   const isLowConfidence =
     analysisState.kind === 'done' && analysisState.estimate.confidence === 'low';
 
   return (
-    <View style={[styles.analysisSection, { borderColor: palette.tint + '44' }]} testID="meal.photoAnalysis.section">
+    <View
+      style={[styles.analysisSection, { borderColor: palette.tint + '44' }]}
+      testID="meal.photoAnalysis.section"
+    >
       {/* Paywall gate (D-132): show locked banner when user has no active AI entitlement */}
       {!hasAiAccess && analysisState.kind === 'idle' ? (
         isSubscriptionLoading ? (
@@ -513,7 +531,8 @@ function MealPhotoAnalysisSection({
               accessibilityRole="button"
               onPress={onOpenPaywall}
               style={[styles.outlineButton, { borderColor: palette.tint, marginTop: 8 }]}
-              testID="meal.photoAnalysis.paywall.cta">
+              testID="meal.photoAnalysis.paywall.cta"
+            >
               <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
                 {t('meal.photo_analysis.paywall.cta_upgrade')}
               </Text>
@@ -528,7 +547,8 @@ function MealPhotoAnalysisSection({
           accessibilityRole="button"
           onPress={onAnalyzeCta}
           style={[styles.outlineButton, { borderColor: palette.tint }]}
-          testID="meal.photoAnalysis.cta">
+          testID="meal.photoAnalysis.cta"
+        >
           <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
             {t('meal.photo_analysis.cta')}
           </Text>
@@ -557,8 +577,12 @@ function MealPhotoAnalysisSection({
         <View style={styles.analysisDoneBlock}>
           {/* AI disclaimer (BR-290, AC-515) */}
           <View
-            style={[styles.disclaimerBanner, { backgroundColor: palette.tint + '18', borderColor: palette.tint + '44' }]}
-            testID="meal.photoAnalysis.disclaimer">
+            style={[
+              styles.disclaimerBanner,
+              { backgroundColor: palette.tint + '18', borderColor: palette.tint + '44' },
+            ]}
+            testID="meal.photoAnalysis.disclaimer"
+          >
             <Text style={[styles.analysisMeta, { color: palette.text }]}>
               {t('meal.photo_analysis.disclaimer')}
             </Text>
@@ -568,7 +592,8 @@ function MealPhotoAnalysisSection({
           {isLowConfidence ? (
             <Text
               style={[styles.analysisMeta, { color: palette.danger }]}
-              testID="meal.photoAnalysis.lowConfidence">
+              testID="meal.photoAnalysis.lowConfidence"
+            >
               {t('meal.photo_analysis.confidence.low')}
             </Text>
           ) : null}
@@ -579,7 +604,8 @@ function MealPhotoAnalysisSection({
             accessibilityState={{ checked: attachPhoto }}
             onPress={onToggleAttach}
             style={styles.attachToggleRow}
-            testID="meal.photoAnalysis.attachToggle">
+            testID="meal.photoAnalysis.attachToggle"
+          >
             <View
               style={[
                 styles.checkbox,
@@ -595,10 +621,7 @@ function MealPhotoAnalysisSection({
           </Pressable>
 
           {/* Try again link */}
-          <Pressable
-            accessibilityRole="button"
-            onPress={onReset}
-            testID="meal.photoAnalysis.reset">
+          <Pressable accessibilityRole="button" onPress={onReset} testID="meal.photoAnalysis.reset">
             <Text style={[styles.analysisMeta, { color: palette.tint }]}>
               {t('meal.photo_analysis.cta')}
             </Text>
@@ -651,12 +674,13 @@ function ImageUploadSection({
     : (t('meal.builder.image.cta_upload') as string);
 
   // Progress message when uploading
-  const progressMessage: string | null = display.showProgress && display.progressPercent !== null
-    ? buildUploadProgressMessage(
-        t('custom_meal.image.upload_progress') as string,
-        display.progressPercent
-      )
-    : null;
+  const progressMessage: string | null =
+    display.showProgress && display.progressPercent !== null
+      ? buildUploadProgressMessage(
+          t('custom_meal.image.upload_progress') as string,
+          display.progressPercent,
+        )
+      : null;
 
   // Error message key → localized string
   const errorMessage: string | null = display.errorMessageKey
@@ -682,10 +706,9 @@ function ImageUploadSection({
         accessibilityHint={t('meal.builder.image.cta_upload') as string}
         onPress={onPickAndUpload}
         style={[styles.imageUploadArea, { borderColor: palette.icon + '55' }]}
-        testID="meal.builder.imageUpload">
-        <Text style={[styles.imageUploadLabel, { color: palette.icon }]}>
-          {areaLabel}
-        </Text>
+        testID="meal.builder.imageUpload"
+      >
+        <Text style={[styles.imageUploadLabel, { color: palette.icon }]}>{areaLabel}</Text>
         {display.showProgress ? (
           <ActivityIndicator size="small" style={styles.imageUploadIndicator} />
         ) : null}
@@ -696,7 +719,8 @@ function ImageUploadSection({
         <Text
           style={[styles.imageUploadMeta, { color: palette.icon }]}
           accessibilityLiveRegion="polite"
-          testID="meal.builder.imageUpload.progress">
+          testID="meal.builder.imageUpload.progress"
+        >
           {progressMessage}
         </Text>
       ) : null}
@@ -706,7 +730,8 @@ function ImageUploadSection({
         <View accessibilityLiveRegion="polite">
           <Text
             style={[styles.imageUploadMeta, { color: palette.danger }]}
-            testID="meal.builder.imageUpload.error">
+            testID="meal.builder.imageUpload.error"
+          >
             {errorMessage}
           </Text>
         </View>
@@ -717,7 +742,8 @@ function ImageUploadSection({
         <Pressable
           accessibilityRole="button"
           onPress={onRetry}
-          testID="meal.builder.imageUpload.retry">
+          testID="meal.builder.imageUpload.retry"
+        >
           <Text style={[styles.imageUploadMeta, { color: palette.tint }]}>
             {t('custom_meal.image.retry')}
           </Text>
@@ -784,7 +810,7 @@ function FormField({
 function resolveFieldError(
   field: keyof CustomMealValidationErrors,
   errors: CustomMealValidationErrors,
-  t: TFn
+  t: TFn,
 ): string | null {
   const code = errors[field];
   if (!code) return null;

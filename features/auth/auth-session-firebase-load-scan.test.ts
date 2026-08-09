@@ -19,7 +19,11 @@ test('auth session does not import or require Firebase auth modules', () => {
   ];
 
   for (const token of forbidden) {
-    assert.equal(source.includes(token), false, `unexpected Firebase auth-session fallback token: ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `unexpected Firebase auth-session fallback token: ${token}`,
+    );
   }
 });
 
@@ -39,6 +43,10 @@ test('auth session no longer exposes email/password local dev-session helpers', 
   ];
 
   for (const token of staleEmailDevSessionSurface) {
-    assert.equal(source.includes(token), false, `auth session still exposes stale email dev-session helper: ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `auth session still exposes stale email dev-session helper: ${token}`,
+    );
   }
 });

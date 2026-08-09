@@ -77,7 +77,7 @@ export default function SignInScreen() {
 
   useEffect(() => {
     emitEvent(buildAuthEntryViewed('auth_sign_in'));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -159,7 +159,8 @@ export default function SignInScreen() {
 
       throw new SignInFailure('configuration');
     } catch (error: unknown) {
-      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       if (code.includes('ERR_REQUEST_CANCELED')) {
         return;
       }
@@ -193,7 +194,8 @@ export default function SignInScreen() {
 
       throw new SignInFailure('configuration');
     } catch (error: unknown) {
-      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       if (code.includes('ERR_REQUEST_CANCELED')) {
         return;
       }
@@ -209,24 +211,17 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.color.canvas }]}
-      behavior={Platform.select({ ios: 'padding', default: undefined })}>
+      behavior={Platform.select({ ios: 'padding', default: undefined })}
+    >
       <Stack.Screen options={{ title: t('auth.signin.cta_primary'), headerShown: false }} />
 
       <View
         pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobTopLeft,
-          { backgroundColor: theme.blob.topLeft },
-        ]}
+        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
       />
       <View
         pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobBottomRight,
-          { backgroundColor: theme.blob.bottomRight },
-        ]}
+        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
       />
 
       <ScrollView
@@ -234,8 +229,11 @@ export default function SignInScreen() {
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        testID="auth.signIn.scrollView">
-        <View style={[styles.titleArea, isKeyboardVisible ? styles.titleAreaKeyboardVisible : null]}>
+        testID="auth.signIn.scrollView"
+      >
+        <View
+          style={[styles.titleArea, isKeyboardVisible ? styles.titleAreaKeyboardVisible : null]}
+        >
           <Image
             accessibilityLabel={t('a11y.brand_logo')}
             contentFit="contain"
@@ -245,7 +243,9 @@ export default function SignInScreen() {
           <Text testID="auth.signIn.title" style={[styles.title, { color: palette.text }]}>
             {t('auth.signin.title')}
           </Text>
-          <Text style={[styles.subtitle, { color: palette.icon }]}>{t('auth.signin.subtitle')}</Text>
+          <Text style={[styles.subtitle, { color: palette.icon }]}>
+            {t('auth.signin.subtitle')}
+          </Text>
         </View>
 
         <View style={styles.formWrapper}>
@@ -263,14 +263,21 @@ export default function SignInScreen() {
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
-                { backgroundColor: theme.color.surface, borderColor: 'transparent', color: palette.text },
+                {
+                  backgroundColor: theme.color.surface,
+                  borderColor: 'transparent',
+                  color: palette.text,
+                },
               ]}
               testID="auth.signIn.emailInput"
               value={email}
             />
             <View accessibilityLiveRegion="polite">
               {errors.email ? (
-                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.signIn.error.emailRequired">
+                <Text
+                  style={[styles.inlineError, { color: theme.color.danger }]}
+                  testID="auth.signIn.error.emailRequired"
+                >
                   {t(errors.email)}
                 </Text>
               ) : null}
@@ -278,7 +285,9 @@ export default function SignInScreen() {
           </View>
 
           <View style={styles.formSection}>
-            <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.password')}</Text>
+            <Text style={[styles.fieldLabel, { color: palette.text }]}>
+              {t('auth.field.password')}
+            </Text>
             <View style={styles.passwordField}>
               <TextInput
                 accessibilityLabel={t('auth.field.password')}
@@ -311,7 +320,8 @@ export default function SignInScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPassword((current) => !current)}
                 testID="auth.signIn.passwordToggle"
-                style={[styles.passwordIconButton, { backgroundColor: theme.color.surfaceMuted }]}>
+                style={[styles.passwordIconButton, { backgroundColor: theme.color.surfaceMuted }]}
+              >
                 <MaterialIcons
                   color={palette.text}
                   name={showPassword ? 'visibility-off' : 'visibility'}
@@ -333,7 +343,8 @@ export default function SignInScreen() {
                   transform: [{ scale: pressed ? 0.96 : 1 }],
                 },
               ]}
-              testID="auth.signIn.submitButton">
+              testID="auth.signIn.submitButton"
+            >
               {submitting ? (
                 <ActivityIndicator
                   accessibilityLabel={t('a11y.loading.submitting')}
@@ -341,7 +352,9 @@ export default function SignInScreen() {
                 />
               ) : (
                 <>
-                  <Text style={[styles.primaryButtonText, { color: primaryButtonForeground }]}>{t('auth.signin.cta_primary')}</Text>
+                  <Text style={[styles.primaryButtonText, { color: primaryButtonForeground }]}>
+                    {t('auth.signin.cta_primary')}
+                  </Text>
                   <MaterialIcons color={primaryButtonForeground} name="arrow-forward" size={20} />
                 </>
               )}
@@ -349,7 +362,10 @@ export default function SignInScreen() {
 
             <View accessibilityLiveRegion="polite">
               {errors.password ? (
-                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.signIn.error.passwordRequired">
+                <Text
+                  style={[styles.inlineError, { color: theme.color.danger }]}
+                  testID="auth.signIn.error.passwordRequired"
+                >
                   {t(errors.password)}
                 </Text>
               ) : null}
@@ -357,14 +373,19 @@ export default function SignInScreen() {
 
             <View accessibilityRole="alert">
               {submitError ? (
-                <Text style={[styles.submitError, { color: theme.color.danger }]} testID="auth.signIn.error.submit">
+                <Text
+                  style={[styles.submitError, { color: theme.color.danger }]}
+                  testID="auth.signIn.error.submit"
+                >
                   {t(submitError)}
                 </Text>
               ) : null}
             </View>
           </View>
 
-          <Text style={[styles.dividerText, { color: palette.icon }]}>{t('auth.signin.or_continue')}</Text>
+          <Text style={[styles.dividerText, { color: palette.icon }]}>
+            {t('auth.signin.or_continue')}
+          </Text>
 
           <View style={styles.socialRow}>
             <Pressable
@@ -378,7 +399,8 @@ export default function SignInScreen() {
                   opacity: submitting ? 0.5 : 1,
                 },
               ]}
-              testID="auth.signIn.googleButton">
+              testID="auth.signIn.googleButton"
+            >
               <AntDesign name="google" size={20} color={theme.color.accentPrimary} />
               <Text style={[styles.socialButtonText, { color: palette.text }]}>
                 {t('auth.social.google')}
@@ -395,9 +417,12 @@ export default function SignInScreen() {
                   opacity: submitting ? 0.5 : 1,
                 },
               ]}
-              testID="auth.signIn.appleButton">
+              testID="auth.signIn.appleButton"
+            >
               <Ionicons name="logo-apple" size={20} color={palette.text} />
-              <Text style={[styles.socialButtonText, { color: palette.text }]}>{t('auth.social.apple')}</Text>
+              <Text style={[styles.socialButtonText, { color: palette.text }]}>
+                {t('auth.social.apple')}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -407,9 +432,14 @@ export default function SignInScreen() {
           onPress={() => router.push(buildAuthRoute('/auth/create-account') as never)}
           testID="auth.signIn.createAccountButton"
           style={styles.secondaryButton}
-          disabled={submitting}>
-          <Text style={[styles.secondaryButtonHint, { color: palette.icon }]}>{t('auth.signin.new_here')}</Text>
-          <Text style={[styles.secondaryButtonText, { color: palette.tint }]}>{t('auth.signin.cta_create')}</Text>
+          disabled={submitting}
+        >
+          <Text style={[styles.secondaryButtonHint, { color: palette.icon }]}>
+            {t('auth.signin.new_here')}
+          </Text>
+          <Text style={[styles.secondaryButtonText, { color: palette.tint }]}>
+            {t('auth.signin.cta_create')}
+          </Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

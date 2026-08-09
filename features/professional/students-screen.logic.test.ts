@@ -71,13 +71,17 @@ test('SC-205 filters roster rows by assignment status and case-insensitive searc
   ];
 
   assert.deepEqual(
-    filterStudentRosterRows(rows, { filter: 'active', search: ' an ' }).map((row) => row.studentAuthUid),
-    ['ana']
+    filterStudentRosterRows(rows, { filter: 'active', search: ' an ' }).map(
+      (row) => row.studentAuthUid,
+    ),
+    ['ana'],
   );
 
   assert.deepEqual(
-    filterStudentRosterRows(rows, { filter: 'pending', search: 'PIA' }).map((row) => row.studentAuthUid),
-    ['pia']
+    filterStudentRosterRows(rows, { filter: 'pending', search: 'PIA' }).map(
+      (row) => row.studentAuthUid,
+    ),
+    ['pia'],
   );
 });
 
@@ -111,7 +115,7 @@ test('SC-205 bulk nutrition picker only targets active nutritionist students', (
 
   assert.deepEqual(
     filterBulkAssignmentStudentsByPlanType(rows, 'nutrition').map((row) => row.studentAuthUid),
-    ['nutrition-active']
+    ['nutrition-active'],
   );
 });
 
@@ -145,6 +149,6 @@ test('SC-205 bulk training picker remains active fitness-coach scoped', () => {
 
   assert.deepEqual(
     filterBulkAssignmentStudentsByPlanType(rows, 'training').map((row) => row.studentAuthUid),
-    ['training-active', 'dual-active']
+    ['training-active', 'dual-active'],
   );
 });

@@ -35,10 +35,7 @@ describe('plan-builder source Firebase fallback guard', () => {
 
     assert.match(source, /fetchFn: globalThis\.fetch\.bind\(globalThis\)/);
     assert.match(source, /const sourceFetch = deps\.fetchFn \?\? globalThis\.fetch/);
-    assert.match(
-      source,
-      /Reflect\.apply\(sourceFetch, globalThis, \[input, init\]\)/
-    );
+    assert.match(source, /Reflect\.apply\(sourceFetch, globalThis, \[input, init\]\)/);
     assert.doesNotMatch(source, /fetchFn: fetch[,;]/);
     assert.doesNotMatch(source, /deps\.fetchFn \?\? fetch/);
   });

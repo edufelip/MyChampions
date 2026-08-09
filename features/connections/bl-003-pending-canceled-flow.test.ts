@@ -31,7 +31,7 @@ test('BL-003 Scenario 1: Student submits valid invite code → pending request c
   assert.equal(displayState.connectionId, 'pending-123');
   assert.ok(
     displayState.specialty === 'nutritionist',
-    'UI should show "Waiting for professional confirmation" for nutritionist'
+    'UI should show "Waiting for professional confirmation" for nutritionist',
   );
 });
 
@@ -72,7 +72,7 @@ test('BL-003 Scenario 3: Student refreshes SC-211 after code rotation → sees c
 
   // App maps to display states
   const displayStates: ConnectionDisplayState[] = currentConnections.map(
-    resolveConnectionDisplayState
+    resolveConnectionDisplayState,
   );
 
   const canceledState = displayStates[0];
@@ -85,10 +85,7 @@ test('BL-003 Scenario 3: Student refreshes SC-211 after code rotation → sees c
   // "This request was canceled because the professional regenerated their invite code. Ask for the new code to reconnect."
 
   // 3. Reconnect guidance is present (via locale copy)
-  assert.ok(
-    displayStates.length > 0,
-    'canceled request should be visible in connection list'
-  );
+  assert.ok(displayStates.length > 0, 'canceled request should be visible in connection list');
 });
 
 // ─── Scenario 4: Multiple pending requests, one gets canceled ───────────────
@@ -189,7 +186,7 @@ test('BL-003 Scenario 6: After seeing canceled request, student can request new 
   // UI flow verified via locale copy guidance
   assert.ok(
     displayState.connectionId === 'pending-123',
-    'UI should track which request to reconnect'
+    'UI should track which request to reconnect',
   );
 });
 
@@ -224,7 +221,7 @@ test('BL-003 Scenario 7: Canceled request is distinct from student unbinding', (
 
 // ─── Scenario 8: Error handling when code rotation fails ────────────────────
 
-test('BL-003 Scenario 8: Network error during code rotation doesn\'t auto-cancel pending requests', () => {
+test("BL-003 Scenario 8: Network error during code rotation doesn't auto-cancel pending requests", () => {
   // If professional tries to regenerate code but network fails,
   // pending requests should NOT be auto-canceled
   const stillPendingAfterNetworkError: ConnectionRecord = {

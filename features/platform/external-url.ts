@@ -6,7 +6,7 @@ const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 export function resolveSafeExternalUrl(
   value: string | null | undefined,
-  options: SafeExternalUrlOptions = {}
+  options: SafeExternalUrlOptions = {},
 ): string | null {
   const candidate = value?.trim();
   if (!candidate) return null;

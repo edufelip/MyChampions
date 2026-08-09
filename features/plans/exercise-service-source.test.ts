@@ -69,10 +69,12 @@ describe('searchExerciseLibrary', () => {
       if (previousAuthSession === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
       else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousAuthSession;
 
-      if (previousExerciseFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE;
+      if (previousExerciseFixture === undefined)
+        delete process.env.EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE;
       else process.env.EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE = previousExerciseFixture;
 
-      if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+      if (previousDev === undefined)
+        delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
       else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
     }
   });
@@ -112,7 +114,10 @@ describe('searchExerciseLibrary', () => {
     assert.equal(capturedUrl, 'http://localhost:3400/integrations/exercise/search');
     assert.equal(capturedInit?.method, 'POST');
     assert.equal((capturedInit?.headers as Record<string, string>)['x-request-id'], 'req-pt-1');
-    assert.equal((capturedInit?.headers as Record<string, string>)?.Authorization, 'Bearer server-access-token');
+    assert.equal(
+      (capturedInit?.headers as Record<string, string>)?.Authorization,
+      'Bearer server-access-token',
+    );
 
     const parsedBody = JSON.parse(String(capturedInit?.body)) as {
       lang: string;
@@ -133,34 +138,41 @@ describe('searchExerciseLibrary', () => {
     let capturedUrl = '';
     let capturedInit: RequestInit | undefined;
 
-    const result = await searchExerciseLibrary('push', 5, makeDeps({
-      getServerBaseUrl: () => 'http://localhost:3400/',
-      getCurrentAccessToken: async () => 'server-access-token',
-      fetchFn: async (url: string | URL | Request, init?: RequestInit) => {
-        capturedUrl = String(url);
-        capturedInit = init;
-        return makeResponse(200, {
-          page: 1,
-          pageSize: 5,
-          total: 1,
-          results: [
-            {
-              id: 'server-push-up',
-              slug: 'server-push-up',
-              title: 'Server Push-Up',
-              muscleGroup: 'chest',
-              equipment: 'bodyweight',
-              hasVideo: false,
-              hasVideoWhite: false,
-              hasVideoGym: false,
-            },
-          ],
-        });
-      },
-    }));
+    const result = await searchExerciseLibrary(
+      'push',
+      5,
+      makeDeps({
+        getServerBaseUrl: () => 'http://localhost:3400/',
+        getCurrentAccessToken: async () => 'server-access-token',
+        fetchFn: async (url: string | URL | Request, init?: RequestInit) => {
+          capturedUrl = String(url);
+          capturedInit = init;
+          return makeResponse(200, {
+            page: 1,
+            pageSize: 5,
+            total: 1,
+            results: [
+              {
+                id: 'server-push-up',
+                slug: 'server-push-up',
+                title: 'Server Push-Up',
+                muscleGroup: 'chest',
+                equipment: 'bodyweight',
+                hasVideo: false,
+                hasVideoWhite: false,
+                hasVideoGym: false,
+              },
+            ],
+          });
+        },
+      }),
+    );
 
     assert.equal(capturedUrl, 'http://localhost:3400/integrations/exercise/search');
-    assert.equal((capturedInit?.headers as Record<string, string>)?.Authorization, 'Bearer server-access-token');
+    assert.equal(
+      (capturedInit?.headers as Record<string, string>)?.Authorization,
+      'Bearer server-access-token',
+    );
     assert.equal((capturedInit?.headers as Record<string, string>)['x-request-id'], 'req-test-1');
     assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
       query: 'push',
@@ -174,36 +186,44 @@ describe('searchExerciseLibrary', () => {
   it('fails closed when the MyChampions server URL is missing', async () => {
     await assert.rejects(
       () =>
-        searchExerciseLibrary('push', 5, makeDeps({
-          getServerBaseUrl: () => undefined,
-          getCurrentAccessToken: async () => 'server-access-token',
-          fetchFn: async () => {
-            throw new Error('fetch should not be called without a local server URL');
-          },
-        })),
+        searchExerciseLibrary(
+          'push',
+          5,
+          makeDeps({
+            getServerBaseUrl: () => undefined,
+            getCurrentAccessToken: async () => 'server-access-token',
+            fetchFn: async () => {
+              throw new Error('fetch should not be called without a local server URL');
+            },
+          }),
+        ),
       (err: ExerciseServiceSourceError) => {
         assert.equal(err.code, 'configuration');
         assert.ok(err.message.includes('MyChampions server URL'));
         return true;
-      }
+      },
     );
   });
 
   it('fails closed when the MyChampions server bearer token is missing', async () => {
     await assert.rejects(
       () =>
-        searchExerciseLibrary('push', 5, makeDeps({
-          getServerBaseUrl: () => 'http://localhost:3400',
-          getCurrentAccessToken: async () => null,
-          fetchFn: async () => {
-            throw new Error('fetch should not be called without a server token');
-          },
-        })),
+        searchExerciseLibrary(
+          'push',
+          5,
+          makeDeps({
+            getServerBaseUrl: () => 'http://localhost:3400',
+            getCurrentAccessToken: async () => null,
+            fetchFn: async () => {
+              throw new Error('fetch should not be called without a server token');
+            },
+          }),
+        ),
       (err: ExerciseServiceSourceError) => {
         assert.equal(err.code, 'unauthenticated');
         assert.ok(err.message.includes('No authenticated server token'));
         return true;
-      }
+      },
     );
   });
 
@@ -270,7 +290,7 @@ describe('searchExerciseLibrary', () => {
       (err: ExerciseServiceSourceError) => {
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 });
@@ -299,7 +319,10 @@ describe('getExerciseById', () => {
       },
     });
 
-    assert.equal(capturedUrl, 'http://localhost:3400/integrations/exercise/exercises/abc123?lang=en-US');
+    assert.equal(
+      capturedUrl,
+      'http://localhost:3400/integrations/exercise/exercises/abc123?lang=en-US',
+    );
     assert.equal(exercise?.id, 'abc123');
     assert.equal(exercise?.thumbnailUrl, 'https://cdn/thumb.jpg');
   });
@@ -308,63 +331,78 @@ describe('getExerciseById', () => {
     let capturedUrl = '';
     let capturedInit: RequestInit | undefined;
 
-    const exercise = await getExerciseById('server-push-up', makeDeps({
-      getServerBaseUrl: () => 'http://localhost:3400/',
-      getCurrentAccessToken: async () => 'server-access-token',
-      fetchFn: async (url: string | URL | Request, init?: RequestInit) => {
-        capturedUrl = String(url);
-        capturedInit = init;
-        return makeResponse(200, {
-          id: 'server-push-up',
-          slug: 'server-push-up',
-          title: 'Server Push-Up',
-          muscleGroup: 'chest',
-          equipment: 'bodyweight',
-          hasVideo: false,
-          hasVideoWhite: false,
-          hasVideoGym: false,
-        });
-      },
-    }));
+    const exercise = await getExerciseById(
+      'server-push-up',
+      makeDeps({
+        getServerBaseUrl: () => 'http://localhost:3400/',
+        getCurrentAccessToken: async () => 'server-access-token',
+        fetchFn: async (url: string | URL | Request, init?: RequestInit) => {
+          capturedUrl = String(url);
+          capturedInit = init;
+          return makeResponse(200, {
+            id: 'server-push-up',
+            slug: 'server-push-up',
+            title: 'Server Push-Up',
+            muscleGroup: 'chest',
+            equipment: 'bodyweight',
+            hasVideo: false,
+            hasVideoWhite: false,
+            hasVideoGym: false,
+          });
+        },
+      }),
+    );
 
-    assert.equal(capturedUrl, 'http://localhost:3400/integrations/exercise/exercises/server-push-up?lang=en-US');
-    assert.equal((capturedInit?.headers as Record<string, string>)?.Authorization, 'Bearer server-access-token');
+    assert.equal(
+      capturedUrl,
+      'http://localhost:3400/integrations/exercise/exercises/server-push-up?lang=en-US',
+    );
+    assert.equal(
+      (capturedInit?.headers as Record<string, string>)?.Authorization,
+      'Bearer server-access-token',
+    );
     assert.equal(exercise?.id, 'server-push-up');
   });
 
   it('fails closed for detail lookup when the MyChampions server URL is missing', async () => {
     await assert.rejects(
       () =>
-        getExerciseById('server-push-up', makeDeps({
-          getServerBaseUrl: () => undefined,
-          getCurrentAccessToken: async () => 'server-access-token',
-          fetchFn: async () => {
-            throw new Error('fetch should not be called without a local server URL');
-          },
-        })),
+        getExerciseById(
+          'server-push-up',
+          makeDeps({
+            getServerBaseUrl: () => undefined,
+            getCurrentAccessToken: async () => 'server-access-token',
+            fetchFn: async () => {
+              throw new Error('fetch should not be called without a local server URL');
+            },
+          }),
+        ),
       (err: ExerciseServiceSourceError) => {
         assert.equal(err.code, 'configuration');
         assert.ok(err.message.includes('MyChampions server URL'));
         return true;
-      }
+      },
     );
   });
 
   it('fails closed for detail lookup when the MyChampions server bearer token is missing', async () => {
     await assert.rejects(
       () =>
-        getExerciseById('server-push-up', makeDeps({
-          getServerBaseUrl: () => 'http://localhost:3400',
-          getCurrentAccessToken: async () => null,
-          fetchFn: async () => {
-            throw new Error('fetch should not be called without a server token');
-          },
-        })),
+        getExerciseById(
+          'server-push-up',
+          makeDeps({
+            getServerBaseUrl: () => 'http://localhost:3400',
+            getCurrentAccessToken: async () => null,
+            fetchFn: async () => {
+              throw new Error('fetch should not be called without a server token');
+            },
+          }),
+        ),
       (err: ExerciseServiceSourceError) => {
         assert.equal(err.code, 'unauthenticated');
         assert.ok(err.message.includes('No authenticated server token'));
         return true;
-      }
+      },
     );
   });
 
@@ -394,7 +432,7 @@ describe('getExerciseById', () => {
         assert.equal(err.code, 'service');
         assert.equal(err.status, 500);
         return true;
-      }
+      },
     );
   });
 });

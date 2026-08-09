@@ -1,12 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { DsRadius, DsShadow, DsSpace, getDsTheme } from '@/constants/design-system';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -56,38 +51,43 @@ export default function AcceptTermsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.color.canvas }]} testID="auth.terms.screen">
+    <View
+      style={[styles.container, { backgroundColor: theme.color.canvas }]}
+      testID="auth.terms.screen"
+    >
       <Stack.Screen options={{ title: t('auth.terms.title'), headerShown: false }} />
 
       <View
         pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobTopLeft,
-          { backgroundColor: theme.blob.topLeft },
-        ]}
+        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
       />
       <View
         pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobBottomRight,
-          { backgroundColor: theme.blob.bottomRight },
-        ]}
+        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
       />
 
       <View style={styles.content}>
         <View style={styles.titleArea}>
-          <View style={[styles.badge, { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft }]}>
+          <View
+            style={[
+              styles.badge,
+              { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft },
+            ]}
+          >
             <MaterialIcons color={theme.color.accentPrimary} name="gavel" size={30} />
           </View>
           <Text style={[styles.title, { color: palette.text }]} testID="auth.terms.title">
             {t('auth.terms.title')}
           </Text>
-          <Text style={[styles.subtitle, { color: palette.icon }]}>{t('auth.terms.description')}</Text>
+          <Text style={[styles.subtitle, { color: palette.icon }]}>
+            {t('auth.terms.description')}
+          </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.color.surface }]} testID="auth.terms.card">
+        <View
+          style={[styles.card, { backgroundColor: theme.color.surface }]}
+          testID="auth.terms.card"
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('auth.terms.open_link')}
@@ -99,9 +99,12 @@ export default function AcceptTermsScreen() {
                 backgroundColor: pressed ? theme.color.accentPrimarySoft : 'transparent',
               },
             ]}
-            testID="auth.terms.openLinkButton">
+            testID="auth.terms.openLinkButton"
+          >
             <MaterialIcons color={theme.color.accentPrimary} name="open-in-new" size={20} />
-            <Text style={[styles.linkButtonText, { color: theme.color.accentPrimary }]}>{t('auth.terms.open_link')}</Text>
+            <Text style={[styles.linkButtonText, { color: theme.color.accentPrimary }]}>
+              {t('auth.terms.open_link')}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -109,19 +112,30 @@ export default function AcceptTermsScreen() {
             accessibilityState={{ checked: isChecked }}
             onPress={() => setIsChecked((prev) => !prev)}
             style={styles.checkboxRow}
-            testID="auth.terms.checkbox">
+            testID="auth.terms.checkbox"
+          >
             <View
               style={[
                 styles.checkbox,
                 {
-                  borderColor: isChecked ? theme.color.accentPrimary : isDark ? theme.color.borderStrong : theme.color.border,
+                  borderColor: isChecked
+                    ? theme.color.accentPrimary
+                    : isDark
+                      ? theme.color.borderStrong
+                      : theme.color.border,
                   backgroundColor: isChecked ? theme.color.accentPrimary : 'transparent',
                 },
               ]}
-              testID="auth.terms.checkbox.control">
-              {isChecked ? <MaterialIcons color={theme.color.onAccent} name="check" size={15} /> : null}
+              testID="auth.terms.checkbox.control"
+            >
+              {isChecked ? (
+                <MaterialIcons color={theme.color.onAccent} name="check" size={15} />
+              ) : null}
             </View>
-            <Text style={[styles.checkboxLabel, { color: palette.text }]}> {t('auth.terms.checkbox')}</Text>
+            <Text style={[styles.checkboxLabel, { color: palette.text }]}>
+              {' '}
+              {t('auth.terms.checkbox')}
+            </Text>
           </Pressable>
 
           <Text style={[styles.versionText, { color: palette.icon }]} testID="auth.terms.version">
@@ -130,7 +144,10 @@ export default function AcceptTermsScreen() {
 
           {errorKey ? (
             <View accessibilityLiveRegion="polite">
-              <Text style={[styles.errorText, { color: theme.color.danger }]} testID="auth.terms.error">
+              <Text
+                style={[styles.errorText, { color: theme.color.danger }]}
+                testID="auth.terms.error"
+              >
                 {t(errorKey)}
               </Text>
             </View>
@@ -146,7 +163,9 @@ export default function AcceptTermsScreen() {
             testID={isChecked ? 'auth.terms.acceptButton' : 'auth.terms.acceptButton.disabled'}
           />
 
-          <Text style={[styles.offlineHint, { color: palette.icon }]}>{t('auth.terms.offline_hint')}</Text>
+          <Text style={[styles.offlineHint, { color: palette.icon }]}>
+            {t('auth.terms.offline_hint')}
+          </Text>
         </View>
       </View>
     </View>

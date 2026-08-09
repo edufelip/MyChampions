@@ -5,7 +5,7 @@ import {
 } from './subscription-source';
 
 export function resolvePaywallPresentationError(
-  result: RawPaywallResult | void
+  result: RawPaywallResult | void,
 ): SubscriptionErrorReason | null {
   if (result === 'NOT_PRESENTED') return 'configuration';
   if (result === 'ERROR') return 'store_problem';
@@ -38,8 +38,7 @@ export async function runPaywallPresentation({
   try {
     presentationError = resolvePaywallPresentationError(await present());
   } catch (error: unknown) {
-    const reason =
-      error instanceof SubscriptionSourceError ? error.code : 'unknown';
+    const reason = error instanceof SubscriptionSourceError ? error.code : 'unknown';
     if (reason !== 'purchase_cancelled') {
       presentationError = reason;
     }

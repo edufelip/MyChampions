@@ -63,12 +63,12 @@ export function usePlanForm<T extends Record<string, any>>({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const result = await onSave(values);
-    
+
     if (isMounted.current) setIsSaving(false);
 
     // Some handlers return an error object, others return a result with id
     const hasError = result && (result.error || (typeof result === 'string' && result !== ''));
-    
+
     if (hasError) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return result; // Allow component to handle specific alert if needed
@@ -95,14 +95,10 @@ export function usePlanForm<T extends Record<string, any>>({
     };
 
     if (isDirty) {
-      Alert.alert(
-        t('pro.plan.discard.title'),
-        t('pro.plan.discard.body'),
-        [
-          { text: t('pro.plan.discard.no'), style: 'cancel' },
-          { text: t('pro.plan.discard.yes'), style: 'destructive', onPress: goBack },
-        ]
-      );
+      Alert.alert(t('pro.plan.discard.title'), t('pro.plan.discard.body'), [
+        { text: t('pro.plan.discard.no'), style: 'cancel' },
+        { text: t('pro.plan.discard.yes'), style: 'destructive', onPress: goBack },
+      ]);
     } else {
       goBack();
     }

@@ -15,14 +15,14 @@ test('Metro prewarm URLs match the native Expo development bundle contracts', ()
       port: 8081,
       platform: 'ios',
       appId: 'com.edufelip.mychampions.dev',
-    })
+    }),
   );
   const androidUrl = new URL(
     createMetroBundlePrewarmUrl({
       port: 8081,
       platform: 'android',
       appId: 'com.edufelip.mychampions.dev',
-    })
+    }),
   );
 
   assert.equal(iosUrl.origin, 'http://127.0.0.1:8081');
@@ -92,7 +92,7 @@ test('Metro prewarm fails closed on response and body errors', async () => {
       appId: 'com.edufelip.mychampions.dev',
       fetchImpl: async () => new Response('failed', { status: 503 }),
     }),
-    /HTTP 503/
+    /HTTP 503/,
   );
   await assert.rejects(
     prewarmMetroBundle({
@@ -101,7 +101,7 @@ test('Metro prewarm fails closed on response and body errors', async () => {
       appId: 'com.edufelip.mychampions.dev',
       fetchImpl: async () => new Response(null, { status: 200 }),
     }),
-    /returned no body/
+    /returned no body/,
   );
   await assert.rejects(
     prewarmMetroBundle({
@@ -110,7 +110,7 @@ test('Metro prewarm fails closed on response and body errors', async () => {
       appId: 'com.edufelip.mychampions.dev',
       fetchImpl: async () => new Response('', { status: 200 }),
     }),
-    /returned an empty body/
+    /returned an empty body/,
   );
   await assert.rejects(
     prewarmMetroBundle({
@@ -125,10 +125,10 @@ test('Metro prewarm fails closed on response and body errors', async () => {
               controller.error(new Error('connection reset'));
             },
           }),
-          { status: 200 }
+          { status: 200 },
         ),
     }),
-    /connection reset/
+    /connection reset/,
   );
 });
 
@@ -155,8 +155,6 @@ test('Metro prewarm aborts a stalled request at its bounded timeout', async () =
         }),
     }),
     (error: unknown) =>
-      error instanceof Error &&
-      error.name === 'TimeoutError' &&
-      /timeout/i.test(error.message)
+      error instanceof Error && error.name === 'TimeoutError' && /timeout/i.test(error.message),
   );
 });

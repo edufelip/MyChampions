@@ -27,6 +27,6 @@ test('resolveLatestSyncTimestamp ignores invalid timestamps while comparing vali
       'also-bad',
       '2026-07-03T09:00:01.000Z',
     ]),
-    '2026-07-03T09:00:01.000Z'
+    '2026-07-03T09:00:01.000Z',
   );
 });

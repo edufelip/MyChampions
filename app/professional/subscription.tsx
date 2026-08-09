@@ -59,8 +59,7 @@ export default function ProfessionalSubscriptionScreen() {
     openProPaywall,
     purchaseCapability,
     lastSyncedAtIso: subscriptionSyncedAtIso,
-  } =
-    useSubscription(currentUser?.uid ?? null, { loadProfessionalActiveStudentCount: true });
+  } = useSubscription(currentUser?.uid ?? null, { loadProfessionalActiveStudentCount: true });
 
   const subState = resolveSubscriptionState({
     activeStudentCount,
@@ -87,15 +86,15 @@ export default function ProfessionalSubscriptionScreen() {
     statusPresentation === 'active'
       ? t('pro.subscription.status.active')
       : statusPresentation === 'inactive'
-      ? t('pro.subscription.status.inactive')
-      : t('pro.subscription.status.unknown');
+        ? t('pro.subscription.status.inactive')
+        : t('pro.subscription.status.unknown');
 
   const statusColor =
     statusPresentation === 'active'
       ? theme.color.success
       : statusPresentation === 'inactive'
-      ? theme.color.danger
-      : theme.color.textSecondary;
+        ? theme.color.danger
+        : theme.color.textSecondary;
   const statusBackground =
     statusPresentation === 'active'
       ? theme.color.successSoft
@@ -119,7 +118,7 @@ export default function ProfessionalSubscriptionScreen() {
   const capLabel = (t('pro.subscription.cap_usage') as string)
     .replace(
       '{count}',
-      hasCapacityData ? String(activeStudentCount) : t('common.value.unavailable')
+      hasCapacityData ? String(activeStudentCount) : t('common.value.unavailable'),
     )
     .replace('{limit}', String(FREE_STUDENT_CAP));
   const capProgress = hasCapacityData
@@ -132,7 +131,8 @@ export default function ProfessionalSubscriptionScreen() {
       contentWidth="form"
       withBlobs={false}
       testID="pro.subscription.screen"
-      contentContainerStyle={styles.content}>
+      contentContainerStyle={styles.content}
+    >
       <Stack.Screen options={{ title: t('pro.subscription.title'), headerShown: false }} />
 
       <DsBackButton
@@ -159,7 +159,10 @@ export default function ProfessionalSubscriptionScreen() {
       ) : null}
 
       <View style={styles.pageIntro}>
-        <Text accessibilityRole="header" style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
+        <Text
+          accessibilityRole="header"
+          style={[styles.screenTitle, { color: theme.color.textPrimary }]}
+        >
           {t('pro.subscription.title')}
         </Text>
         <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
@@ -188,11 +191,14 @@ export default function ProfessionalSubscriptionScreen() {
               accessible
               accessibilityLabel={`${t('pro.subscription.title') as string}: ${statusLabel as string}`}
               style={[styles.statusBadge, { backgroundColor: statusBackground }]}
-              testID="pro.subscription.statusValue">
+              testID="pro.subscription.statusValue"
+            >
               <MaterialIcons color={statusColor} name={statusIcon} size={18} />
               <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
             </View>
-            <Text style={[styles.statusBody, { color: theme.color.textSecondary }]}>{statusBody}</Text>
+            <Text style={[styles.statusBody, { color: theme.color.textSecondary }]}>
+              {statusBody}
+            </Text>
           </>
         )}
 
@@ -201,7 +207,13 @@ export default function ProfessionalSubscriptionScreen() {
           <Text style={[styles.capacityTitle, { color: theme.color.textPrimary }]}>
             {t('pro.subscription.capacity_title')}
           </Text>
-          <Text style={[styles.capacityValue, { color: isLocked ? theme.color.danger : theme.color.textPrimary }]} testID="pro.subscription.capUsage">
+          <Text
+            style={[
+              styles.capacityValue,
+              { color: isLocked ? theme.color.danger : theme.color.textPrimary },
+            ]}
+            testID="pro.subscription.capUsage"
+          >
             {capLabel}
           </Text>
         </View>
@@ -214,7 +226,8 @@ export default function ProfessionalSubscriptionScreen() {
             now: hasCapacityData ? Math.min(activeStudentCount, FREE_STUDENT_CAP) : undefined,
             text: capLabel,
           }}
-          style={[styles.capacityTrack, { backgroundColor: theme.color.surfaceMuted }]}>
+          style={[styles.capacityTrack, { backgroundColor: theme.color.surfaceMuted }]}
+        >
           <View
             style={[
               styles.capacityFill,
@@ -225,7 +238,9 @@ export default function ProfessionalSubscriptionScreen() {
             ]}
           />
         </View>
-        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>{t('pro.subscription.free_tier')}</Text>
+        <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
+          {t('pro.subscription.free_tier')}
+        </Text>
       </DsCard>
 
       {subState.isPreLapseWarningVisible ? (
@@ -233,7 +248,8 @@ export default function ProfessionalSubscriptionScreen() {
           scheme={scheme}
           variant="warning"
           testID="pro.subscription.warning"
-          style={styles.warningCard}>
+          style={styles.warningCard}
+        >
           <Text style={[styles.warningTitle, { color: theme.color.textPrimary }]}>
             {t('pro.subscription.pre_lapse.title')}
           </Text>
@@ -257,7 +273,7 @@ export default function ProfessionalSubscriptionScreen() {
             {t(
               entitlementStatus === 'unknown'
                 ? 'pro.subscription.locked_unknown'
-                : 'pro.subscription.locked'
+                : 'pro.subscription.locked',
             )}
           </Text>
         </DsCard>
@@ -268,7 +284,8 @@ export default function ProfessionalSubscriptionScreen() {
           scheme={scheme}
           variant="muted"
           style={styles.capabilityCard}
-          testID="pro.subscription.capabilityUnavailable">
+          testID="pro.subscription.capabilityUnavailable"
+        >
           <MaterialIcons color={theme.color.textSecondary} name="info-outline" size={20} />
           <Text style={[styles.capabilityText, { color: theme.color.textSecondary }]}>
             {t('pro.subscription.unavailable_note')}
@@ -280,7 +297,7 @@ export default function ProfessionalSubscriptionScreen() {
             {t(
               purchaseCapability === 'native_purchase'
                 ? 'pro.subscription.purchase_note'
-                : 'pro.subscription.handoff_note'
+                : 'pro.subscription.handoff_note',
             )}
           </Text>
 
@@ -295,7 +312,7 @@ export default function ProfessionalSubscriptionScreen() {
               t(
                 purchaseCapability === 'native_purchase'
                   ? 'pro.subscription.cta_purchase'
-                  : 'pro.subscription.cta_mobile_handoff'
+                  : 'pro.subscription.cta_mobile_handoff',
               ) as string
             }
             testID="pro.subscription.purchaseCta"

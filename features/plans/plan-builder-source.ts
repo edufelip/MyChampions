@@ -42,11 +42,7 @@ import {
 
 // ─── Error types ──────────────────────────────────────────────────────────────
 
-type PlanBuilderSourceErrorCode =
-  | 'configuration'
-  | 'network'
-  | 'graphql'
-  | 'invalid_response';
+type PlanBuilderSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
 export class PlanBuilderSourceError extends Error {
   code: PlanBuilderSourceErrorCode;
@@ -130,7 +126,10 @@ function defaultGetServerBaseUrl(): string | undefined {
 function normalizePlanBuilderSourceError(error: unknown): PlanBuilderSourceError {
   if (error instanceof PlanBuilderSourceError) return error;
 
-  return new PlanBuilderSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected plan builder source error.');
+  return new PlanBuilderSourceError(
+    'invalid_response',
+    (error as Error)?.message ?? 'Unexpected plan builder source error.',
+  );
 }
 
 function resolveServerPlanBuilderSource(deps: PlanBuilderSourceDeps): {
@@ -144,8 +143,7 @@ function resolveServerPlanBuilderSource(deps: PlanBuilderSourceDeps): {
   // Browser fetch is a host function and must retain the global receiver. Calling it
   // later as `source.fetchFn(...)` otherwise supplies the source object as `this`,
   // which Firefox rejects with "Illegal invocation".
-  const fetchFn: AppFetch = (input, init) =>
-    Reflect.apply(sourceFetch, globalThis, [input, init]);
+  const fetchFn: AppFetch = (input, init) => Reflect.apply(sourceFetch, globalThis, [input, init]);
 
   return { baseUrl, fetchFn };
 }
@@ -166,7 +164,7 @@ function requireServerResult<T>(value: T | null, operation: string): T {
   if (value === null) {
     throw new PlanBuilderSourceError(
       'configuration',
-      `${operation} requires the local MyChampions server URL and bearer token.`
+      `${operation} requires the local MyChampions server URL and bearer token.`,
     );
   }
   return value;
@@ -176,7 +174,7 @@ function requireServerSuccess(value: boolean, operation: string): void {
   if (!value) {
     throw new PlanBuilderSourceError(
       'configuration',
-      `${operation} requires the local MyChampions server URL and bearer token.`
+      `${operation} requires the local MyChampions server URL and bearer token.`,
     );
   }
 }
@@ -187,7 +185,9 @@ function parseServerNutritionPlanDetail(raw: unknown): NutritionPlanDetail | nul
   if (
     typeof value.id !== 'string' ||
     typeof value.name !== 'string' ||
-    (value.sourceKind !== 'predefined' && value.sourceKind !== 'assigned' && value.sourceKind !== 'self_managed') ||
+    (value.sourceKind !== 'predefined' &&
+      value.sourceKind !== 'assigned' &&
+      value.sourceKind !== 'self_managed') ||
     typeof value.studentAuthUid !== 'string' ||
     !Array.isArray(value.meals) ||
     typeof value.createdAt !== 'string' ||
@@ -200,7 +200,8 @@ function parseServerNutritionPlanDetail(raw: unknown): NutritionPlanDetail | nul
     id: value.id,
     name: value.name,
     sourceKind: value.sourceKind,
-    ownerProfessionalUid: typeof value.ownerProfessionalUid === 'string' ? value.ownerProfessionalUid : null,
+    ownerProfessionalUid:
+      typeof value.ownerProfessionalUid === 'string' ? value.ownerProfessionalUid : null,
     studentAuthUid: value.studentAuthUid,
     hydrationGoalMl: typeof value.hydrationGoalMl === 'number' ? value.hydrationGoalMl : null,
     caloriesTarget: typeof value.caloriesTarget === 'number' ? value.caloriesTarget : 0,
@@ -220,7 +221,9 @@ function parseServerTrainingPlanDetail(raw: unknown): TrainingPlanDetail | null 
   if (
     typeof value.id !== 'string' ||
     typeof value.name !== 'string' ||
-    (value.sourceKind !== 'predefined' && value.sourceKind !== 'assigned' && value.sourceKind !== 'self_managed') ||
+    (value.sourceKind !== 'predefined' &&
+      value.sourceKind !== 'assigned' &&
+      value.sourceKind !== 'self_managed') ||
     typeof value.studentAuthUid !== 'string' ||
     !Array.isArray(value.sessions) ||
     typeof value.createdAt !== 'string' ||
@@ -233,7 +236,8 @@ function parseServerTrainingPlanDetail(raw: unknown): TrainingPlanDetail | null 
     id: value.id,
     name: value.name,
     sourceKind: value.sourceKind,
-    ownerProfessionalUid: typeof value.ownerProfessionalUid === 'string' ? value.ownerProfessionalUid : null,
+    ownerProfessionalUid:
+      typeof value.ownerProfessionalUid === 'string' ? value.ownerProfessionalUid : null,
     studentAuthUid: value.studentAuthUid,
     sessions: value.sessions as TrainingSession[],
     isDraft: value.isDraft || undefined,
@@ -270,7 +274,8 @@ async function readServerErrorPayload(response: Response): Promise<unknown> {
 }
 
 function extractServerError(payload: unknown): { code: string | null; message: string | null } {
-  const error = payload && typeof payload === 'object' ? (payload as { error?: unknown }).error : null;
+  const error =
+    payload && typeof payload === 'object' ? (payload as { error?: unknown }).error : null;
   if (typeof error === 'string') {
     return { code: error, message: null };
   }
@@ -287,7 +292,7 @@ function extractServerError(payload: unknown): { code: string | null; message: s
 async function throwPlanBuilderServerError(
   response: Response,
   fallbackMessage: string,
-  notFoundMessage: string
+  notFoundMessage: string,
 ): Promise<never> {
   if (response.status === 404) {
     throw new PlanBuilderSourceError('graphql', notFoundMessage);
@@ -295,7 +300,10 @@ async function throwPlanBuilderServerError(
 
   const serverError = extractServerError(await readServerErrorPayload(response));
   if (response.status === 402 && serverError.code === 'professional_subscription_required') {
-    throw new PlanBuilderSourceError('graphql', serverError.message ?? 'Professional subscription required.');
+    throw new PlanBuilderSourceError(
+      'graphql',
+      serverError.message ?? 'Professional subscription required.',
+    );
   }
 
   throw new PlanBuilderSourceError('network', fallbackMessage);
@@ -304,7 +312,11 @@ async function throwPlanBuilderServerError(
 function parseServerNutritionMeal(raw: unknown): NutritionMeal | null {
   if (!raw || typeof raw !== 'object') return null;
   const value = raw as Partial<NutritionMeal>;
-  if (typeof value.id !== 'string' || typeof value.name !== 'string' || !Array.isArray(value.items)) {
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.name !== 'string' ||
+    !Array.isArray(value.items)
+  ) {
     return null;
   }
   return {
@@ -335,7 +347,9 @@ function parseServerNutritionMealItem(raw: unknown): NutritionMealItem | null {
     ...(typeof value.proteins === 'number' ? { proteins: value.proteins } : {}),
     ...(typeof value.fats === 'number' ? { fats: value.fats } : {}),
     ...(value.sourceKind ? { sourceKind: value.sourceKind } : {}),
-    ...(value.customMealSnapshot !== undefined ? { customMealSnapshot: value.customMealSnapshot } : {}),
+    ...(value.customMealSnapshot !== undefined
+      ? { customMealSnapshot: value.customMealSnapshot }
+      : {}),
   };
 }
 
@@ -381,28 +395,37 @@ function parseServerTrainingSessionItem(raw: unknown): TrainingSessionItem | nul
 
 async function getNutritionPlanDetailFromServer(
   planId: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<NutritionPlanDetail | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}`, {
-    method: 'GET',
-    headers: {
-      authorization: `Bearer ${source.token}`,
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}`,
+    {
+      method: 'GET',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+      },
     },
-  });
+  );
   if (response.status === 404) {
     throw new PlanBuilderSourceError('graphql', 'Nutrition plan not found.');
   }
   if (!response.ok) {
-    throw new PlanBuilderSourceError('network', `Server nutrition plan detail failed with status ${response.status}.`);
+    throw new PlanBuilderSourceError(
+      'network',
+      `Server nutrition plan detail failed with status ${response.status}.`,
+    );
   }
 
-  const payload = await response.json() as { plan?: unknown };
+  const payload = (await response.json()) as { plan?: unknown };
   const plan = parseServerNutritionPlanDetail(payload.plan);
   if (!plan) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid nutrition plan detail.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid nutrition plan detail.',
+    );
   }
   return plan;
 }
@@ -411,36 +434,43 @@ async function updateNutritionPlanOnServer(
   planId: string,
   input: NutritionPlanInput,
   publish: boolean | undefined,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<NutritionPlanDetail | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
 
   const hydrationGoalMl = parseInt(input.hydrationGoalMl.trim(), 10);
-  const response = await source.fetchFn(`${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}`, {
-    method: 'PATCH',
-    headers: {
-      authorization: `Bearer ${source.token}`,
-      'content-type': 'application/json',
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: input.name.trim(),
+        hydrationGoalMl:
+          Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
+        publish,
+      }),
     },
-    body: JSON.stringify({
-      name: input.name.trim(),
-      hydrationGoalMl: Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
-      publish,
-    }),
-  });
+  );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server nutrition plan update failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
 
-  const payload = await response.json() as { plan?: unknown };
+  const payload = (await response.json()) as { plan?: unknown };
   const plan = parseServerNutritionPlanDetail(payload.plan);
   if (!plan) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid nutrition plan detail.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid nutrition plan detail.',
+    );
   }
   return plan;
 }
@@ -448,7 +478,7 @@ async function updateNutritionPlanOnServer(
 async function createNutritionPlanOnServer(
   input: NutritionPlanInput,
   mode: NutritionPlanCreationMode,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<NutritionPlanDetail | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
@@ -462,7 +492,8 @@ async function createNutritionPlanOnServer(
     },
     body: JSON.stringify({
       name: input.name.trim(),
-      hydrationGoalMl: Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
+      hydrationGoalMl:
+        Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
       mode,
     }),
   });
@@ -470,36 +501,42 @@ async function createNutritionPlanOnServer(
     await throwPlanBuilderServerError(
       response,
       `Server nutrition plan creation failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
 
-  const payload = await response.json() as { plan?: unknown };
+  const payload = (await response.json()) as { plan?: unknown };
   const plan = parseServerNutritionPlanDetail(payload.plan);
   if (!plan) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid nutrition plan detail.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid nutrition plan detail.',
+    );
   }
   return plan;
 }
 
 async function deleteNutritionPlanOnServer(
   planId: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}`, {
-    method: 'DELETE',
-    headers: {
-      authorization: `Bearer ${source.token}`,
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}`,
+    {
+      method: 'DELETE',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+      },
     },
-  });
+  );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server nutrition plan delete failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
   return true;
@@ -508,28 +545,31 @@ async function deleteNutritionPlanOnServer(
 async function addNutritionMealOnServer(
   planId: string,
   meal: NutritionMealInput,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<NutritionMeal | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}/meals`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${source.token}`,
-      'content-type': 'application/json',
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}/meals`,
+    {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ name: meal.name.trim() }),
     },
-    body: JSON.stringify({ name: meal.name.trim() }),
-  });
+  );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server nutrition meal creation failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
 
-  const payload = await response.json() as { meal?: unknown };
+  const payload = (await response.json()) as { meal?: unknown };
   const serverMeal = parseServerNutritionMeal(payload.meal);
   if (!serverMeal) {
     throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid nutrition meal.');
@@ -540,7 +580,7 @@ async function addNutritionMealOnServer(
 async function removeNutritionMealOnServer(
   planId: string,
   mealId: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
@@ -550,13 +590,13 @@ async function removeNutritionMealOnServer(
     {
       method: 'DELETE',
       headers: { authorization: `Bearer ${source.token}` },
-    }
+    },
   );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server nutrition meal removal failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
   return true;
@@ -565,24 +605,27 @@ async function removeNutritionMealOnServer(
 async function reorderNutritionMealsOnServer(
   planId: string,
   mealIds: string[],
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}/meals/reorder`, {
-    method: 'PUT',
-    headers: {
-      authorization: `Bearer ${source.token}`,
-      'content-type': 'application/json',
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/nutrition/${encodeURIComponent(planId)}/meals/reorder`,
+    {
+      method: 'PUT',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ mealIds }),
     },
-    body: JSON.stringify({ mealIds }),
-  });
+  );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server nutrition meal reorder failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
   return true;
@@ -592,7 +635,7 @@ async function addNutritionMealItemOnServer(
   planId: string,
   mealId: string,
   item: NutritionMealItemInput,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<NutritionMealItem | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
@@ -614,22 +657,27 @@ async function addNutritionMealItemOnServer(
         ...(typeof item.proteins === 'number' ? { proteins: item.proteins } : {}),
         ...(typeof item.fats === 'number' ? { fats: item.fats } : {}),
         ...(item.sourceKind ? { sourceKind: item.sourceKind } : {}),
-        ...(item.customMealSnapshot !== undefined ? { customMealSnapshot: item.customMealSnapshot } : {}),
+        ...(item.customMealSnapshot !== undefined
+          ? { customMealSnapshot: item.customMealSnapshot }
+          : {}),
       }),
-    }
+    },
   );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server nutrition meal item creation failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
 
-  const payload = await response.json() as { item?: unknown };
+  const payload = (await response.json()) as { item?: unknown };
   const serverItem = parseServerNutritionMealItem(payload.item);
   if (!serverItem) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid nutrition meal item.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid nutrition meal item.',
+    );
   }
   return serverItem;
 }
@@ -638,7 +686,7 @@ async function removeNutritionMealItemOnServer(
   planId: string,
   mealId: string,
   itemId: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
@@ -648,13 +696,13 @@ async function removeNutritionMealItemOnServer(
     {
       method: 'DELETE',
       headers: { authorization: `Bearer ${source.token}` },
-    }
+    },
   );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server nutrition meal item removal failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
   return true;
@@ -664,7 +712,7 @@ async function reorderNutritionMealItemsOnServer(
   planId: string,
   mealId: string,
   itemIds: string[],
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
@@ -678,13 +726,13 @@ async function reorderNutritionMealItemsOnServer(
         'content-type': 'application/json',
       },
       body: JSON.stringify({ itemIds }),
-    }
+    },
   );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server nutrition meal item reorder failed with status ${response.status}.`,
-      'Nutrition plan not found.'
+      'Nutrition plan not found.',
     );
   }
   return true;
@@ -692,28 +740,37 @@ async function reorderNutritionMealItemsOnServer(
 
 async function getTrainingPlanDetailFromServer(
   planId: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<TrainingPlanDetail | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/training/${encodeURIComponent(planId)}`, {
-    method: 'GET',
-    headers: {
-      authorization: `Bearer ${source.token}`,
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/training/${encodeURIComponent(planId)}`,
+    {
+      method: 'GET',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+      },
     },
-  });
+  );
   if (response.status === 404) {
     throw new PlanBuilderSourceError('graphql', 'Training plan not found.');
   }
   if (!response.ok) {
-    throw new PlanBuilderSourceError('network', `Server training plan detail failed with status ${response.status}.`);
+    throw new PlanBuilderSourceError(
+      'network',
+      `Server training plan detail failed with status ${response.status}.`,
+    );
   }
 
-  const payload = await response.json() as { plan?: unknown };
+  const payload = (await response.json()) as { plan?: unknown };
   const plan = parseServerTrainingPlanDetail(payload.plan);
   if (!plan) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid training plan detail.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid training plan detail.',
+    );
   }
   return plan;
 }
@@ -721,7 +778,7 @@ async function getTrainingPlanDetailFromServer(
 async function createTrainingPlanOnServer(
   input: TrainingPlanInput,
   mode: TrainingPlanCreationMode,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<TrainingPlanDetail | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
@@ -741,36 +798,42 @@ async function createTrainingPlanOnServer(
     await throwPlanBuilderServerError(
       response,
       `Server training plan creation failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
 
-  const payload = await response.json() as { plan?: unknown };
+  const payload = (await response.json()) as { plan?: unknown };
   const plan = parseServerTrainingPlanDetail(payload.plan);
   if (!plan) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid training plan detail.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid training plan detail.',
+    );
   }
   return plan;
 }
 
 async function deleteTrainingPlanOnServer(
   planId: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/training/${encodeURIComponent(planId)}`, {
-    method: 'DELETE',
-    headers: {
-      authorization: `Bearer ${source.token}`,
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/training/${encodeURIComponent(planId)}`,
+    {
+      method: 'DELETE',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+      },
     },
-  });
+  );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server training plan delete failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
   return true;
@@ -779,34 +842,40 @@ async function deleteTrainingPlanOnServer(
 async function addTrainingSessionOnServer(
   planId: string,
   session: TrainingSessionInput,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<TrainingSession | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/training/${encodeURIComponent(planId)}/sessions`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${source.token}`,
-      'content-type': 'application/json',
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/training/${encodeURIComponent(planId)}/sessions`,
+    {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: session.name.trim(),
+        notes: session.notes.trim(),
+      }),
     },
-    body: JSON.stringify({
-      name: session.name.trim(),
-      notes: session.notes.trim(),
-    }),
-  });
+  );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server training session creation failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
 
-  const payload = await response.json() as { session?: unknown };
+  const payload = (await response.json()) as { session?: unknown };
   const serverSession = parseServerTrainingSession(payload.session);
   if (!serverSession) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid training session.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid training session.',
+    );
   }
   return serverSession;
 }
@@ -814,7 +883,7 @@ async function addTrainingSessionOnServer(
 async function removeTrainingSessionOnServer(
   planId: string,
   sessionId: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
@@ -824,13 +893,13 @@ async function removeTrainingSessionOnServer(
     {
       method: 'DELETE',
       headers: { authorization: `Bearer ${source.token}` },
-    }
+    },
   );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server training session removal failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
   return true;
@@ -839,24 +908,27 @@ async function removeTrainingSessionOnServer(
 async function reorderTrainingSessionsOnServer(
   planId: string,
   sessionIds: string[],
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/training/${encodeURIComponent(planId)}/sessions/reorder`, {
-    method: 'PUT',
-    headers: {
-      authorization: `Bearer ${source.token}`,
-      'content-type': 'application/json',
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/training/${encodeURIComponent(planId)}/sessions/reorder`,
+    {
+      method: 'PUT',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ sessionIds }),
     },
-    body: JSON.stringify({ sessionIds }),
-  });
+  );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server training session reorder failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
   return true;
@@ -866,7 +938,7 @@ async function addTrainingSessionItemOnServer(
   planId: string,
   sessionId: string,
   item: TrainingSessionItemInput,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<TrainingSessionItem | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
@@ -886,20 +958,23 @@ async function addTrainingSessionItemOnServer(
         ...(item.exerciseId ? { exerciseId: item.exerciseId } : {}),
         ...(item.ymoveId ? { ymoveId: item.ymoveId } : {}),
       }),
-    }
+    },
   );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server training session item creation failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
 
-  const payload = await response.json() as { item?: unknown };
+  const payload = (await response.json()) as { item?: unknown };
   const serverItem = parseServerTrainingSessionItem(payload.item);
   if (!serverItem) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid training session item.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid training session item.',
+    );
   }
   return serverItem;
 }
@@ -908,7 +983,7 @@ async function removeTrainingSessionItemOnServer(
   planId: string,
   sessionId: string,
   itemId: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
@@ -918,13 +993,13 @@ async function removeTrainingSessionItemOnServer(
     {
       method: 'DELETE',
       headers: { authorization: `Bearer ${source.token}` },
-    }
+    },
   );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server training session item removal failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
   return true;
@@ -934,7 +1009,7 @@ async function reorderTrainingSessionItemsOnServer(
   planId: string,
   sessionId: string,
   itemIds: string[],
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<boolean> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return false;
@@ -948,13 +1023,13 @@ async function reorderTrainingSessionItemsOnServer(
         'content-type': 'application/json',
       },
       body: JSON.stringify({ itemIds }),
-    }
+    },
   );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server training session item reorder failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
   return true;
@@ -962,32 +1037,44 @@ async function reorderTrainingSessionItemsOnServer(
 
 async function getStarterTemplatesFromServer(
   planType: PlanType,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<StarterTemplate[] | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/starter-templates?planType=${planType}`, {
-    headers: {
-      authorization: `Bearer ${source.token}`,
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/starter-templates?planType=${planType}`,
+    {
+      headers: {
+        authorization: `Bearer ${source.token}`,
+      },
     },
-  });
+  );
 
   if (response.status === 401) {
     throw new PlanBuilderSourceError('graphql', 'Starter templates require authentication.');
   }
   if (!response.ok) {
-    throw new PlanBuilderSourceError('network', `Server starter template list failed with status ${response.status}.`);
+    throw new PlanBuilderSourceError(
+      'network',
+      `Server starter template list failed with status ${response.status}.`,
+    );
   }
 
-  const payload = await response.json() as { templates?: unknown[] };
+  const payload = (await response.json()) as { templates?: unknown[] };
   if (!Array.isArray(payload.templates)) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid starter template list.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid starter template list.',
+    );
   }
 
   const templates = payload.templates.map(parseServerStarterTemplate);
   if (templates.some((template) => template === null)) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid starter template.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid starter template.',
+    );
   }
 
   return templates as StarterTemplate[];
@@ -996,7 +1083,7 @@ async function getStarterTemplatesFromServer(
 async function cloneStarterTemplateOnServer(
   templateId: string,
   name: string,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<NutritionPlanDetail | TrainingPlanDetail | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
@@ -1010,7 +1097,7 @@ async function cloneStarterTemplateOnServer(
         'content-type': 'application/json',
       },
       body: JSON.stringify({ name: name.trim() }),
-    }
+    },
   );
 
   if (response.status === 401) {
@@ -1020,19 +1107,26 @@ async function cloneStarterTemplateOnServer(
     throw new PlanBuilderSourceError('graphql', 'Starter template not found.');
   }
   if (!response.ok) {
-    throw new PlanBuilderSourceError('network', `Server starter template clone failed with status ${response.status}.`);
+    throw new PlanBuilderSourceError(
+      'network',
+      `Server starter template clone failed with status ${response.status}.`,
+    );
   }
 
-  const payload = await response.json() as { plan?: unknown };
+  const payload = (await response.json()) as { plan?: unknown };
   const planType = deriveStarterTemplatePlanType(templateId);
-  const plan = planType === 'nutrition'
-    ? parseServerNutritionPlanDetail(payload.plan)
-    : planType === 'training'
-      ? parseServerTrainingPlanDetail(payload.plan)
-      : null;
+  const plan =
+    planType === 'nutrition'
+      ? parseServerNutritionPlanDetail(payload.plan)
+      : planType === 'training'
+        ? parseServerTrainingPlanDetail(payload.plan)
+        : null;
 
   if (!plan) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid cloned starter template plan.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid cloned starter template plan.',
+    );
   }
 
   return plan;
@@ -1043,35 +1137,41 @@ async function updateTrainingPlanOnServer(
   input: TrainingPlanInput,
   sessions: TrainingSession[] | undefined,
   publish: boolean | undefined,
-  deps: PlanBuilderSourceDeps
+  deps: PlanBuilderSourceDeps,
 ): Promise<TrainingPlanDetail | null> {
   const source = await getServerPlanBuilderSource(deps);
   if (!source) return null;
 
-  const response = await source.fetchFn(`${source.baseUrl}/plans/training/${encodeURIComponent(planId)}`, {
-    method: 'PATCH',
-    headers: {
-      authorization: `Bearer ${source.token}`,
-      'content-type': 'application/json',
+  const response = await source.fetchFn(
+    `${source.baseUrl}/plans/training/${encodeURIComponent(planId)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        authorization: `Bearer ${source.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: input.name.trim(),
+        publish,
+        ...(sessions ? { sessions } : {}),
+      }),
     },
-    body: JSON.stringify({
-      name: input.name.trim(),
-      publish,
-      ...(sessions ? { sessions } : {}),
-    }),
-  });
+  );
   if (!response.ok) {
     await throwPlanBuilderServerError(
       response,
       `Server training plan update failed with status ${response.status}.`,
-      'Training plan not found.'
+      'Training plan not found.',
     );
   }
 
-  const payload = await response.json() as { plan?: unknown };
+  const payload = (await response.json()) as { plan?: unknown };
   const plan = parseServerTrainingPlanDetail(payload.plan);
   if (!plan) {
-    throw new PlanBuilderSourceError('invalid_response', 'Server returned invalid training plan detail.');
+    throw new PlanBuilderSourceError(
+      'invalid_response',
+      'Server returned invalid training plan detail.',
+    );
   }
   return plan;
 }
@@ -1147,7 +1247,7 @@ function findE2ETrainingPlanDetail(planId: string): TrainingPlanDetail | null | 
 
 function updateE2ENutritionPlanDetail(
   planId: string,
-  updater: (plan: NutritionPlanDetail) => NutritionPlanDetail
+  updater: (plan: NutritionPlanDetail) => NutritionPlanDetail,
 ): NutritionPlanDetail | null | undefined {
   if (!getE2EPlanBuilderOverride()) return undefined;
   const index = e2eNutritionPlanDetails.findIndex((candidate) => candidate.id === planId);
@@ -1193,7 +1293,7 @@ function updateE2ENutritionPlanDetail(
 
 function updateE2ETrainingPlanDetail(
   planId: string,
-  updater: (plan: TrainingPlanDetail) => TrainingPlanDetail
+  updater: (plan: TrainingPlanDetail) => TrainingPlanDetail,
 ): TrainingPlanDetail | null | undefined {
   if (!getE2EPlanBuilderOverride()) return undefined;
   const index = e2eTrainingPlanDetails.findIndex((candidate) => candidate.id === planId);
@@ -1234,7 +1334,7 @@ function updateE2ETrainingPlanDetail(
 
 function createE2ENutritionPlanDetail(
   input: NutritionPlanInput,
-  mode: NutritionPlanCreationMode
+  mode: NutritionPlanCreationMode,
 ): NutritionPlanDetail | null {
   const override = getE2EPlanBuilderOverride();
   if (!override) return null;
@@ -1248,7 +1348,8 @@ function createE2ENutritionPlanDetail(
     sourceKind: metadata.sourceKind,
     ownerProfessionalUid: metadata.ownerProfessionalUid,
     studentAuthUid: metadata.studentAuthUid,
-    hydrationGoalMl: Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
+    hydrationGoalMl:
+      Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
     caloriesTarget: 0,
     carbsTarget: 0,
     proteinsTarget: 0,
@@ -1288,7 +1389,7 @@ function createE2ENutritionPlanDetail(
 
 function createE2ETrainingPlanDetail(
   input: TrainingPlanInput,
-  mode: TrainingPlanCreationMode
+  mode: TrainingPlanCreationMode,
 ): TrainingPlanDetail | null {
   const override = getE2EPlanBuilderOverride();
   if (!override) return null;
@@ -1530,7 +1631,7 @@ function mapE2ETrainingPlanDetail(planId: string): TrainingPlanDetail | undefine
 export async function createNutritionPlan(
   input: NutritionPlanInput,
   mode: NutritionPlanCreationMode = 'professional_library',
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<NutritionPlanDetail> {
   if (deps === defaultDeps) {
     const fixture = createE2ENutritionPlanDetail(input, mode);
@@ -1549,7 +1650,7 @@ export async function updateNutritionPlan(
   planId: string,
   input: NutritionPlanInput,
   publish?: boolean,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const fixture = updateE2ENutritionPlanDetail(planId, (plan) => {
@@ -1557,7 +1658,8 @@ export async function updateNutritionPlan(
       return {
         ...plan,
         name: input.name.trim(),
-        hydrationGoalMl: Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
+        hydrationGoalMl:
+          Number.isFinite(hydrationGoalMl) && hydrationGoalMl > 0 ? hydrationGoalMl : null,
         isDraft: publish ? undefined : plan.isDraft,
       };
     });
@@ -1583,7 +1685,7 @@ export async function updateNutritionPlan(
 
 export async function getNutritionPlanDetail(
   planId: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<NutritionPlanDetail> {
   if (deps === defaultDeps) {
     const fixture = mapE2ENutritionPlanDetail(planId);
@@ -1601,7 +1703,7 @@ export async function getNutritionPlanDetail(
 export async function addNutritionMeal(
   planId: string,
   meal: NutritionMealInput,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<NutritionMeal> {
   if (deps === defaultDeps) {
     const insertedId = `e2e-nutrition-meal-${++e2eNutritionMealSequence}`;
@@ -1633,7 +1735,7 @@ export async function addNutritionMeal(
 export async function removeNutritionMeal(
   planId: string,
   mealId: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const updated = updateE2ENutritionPlanDetail(planId, (plan) => ({
@@ -1655,7 +1757,7 @@ export async function removeNutritionMeal(
 export async function reorderNutritionMeals(
   planId: string,
   mealIds: string[],
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const updated = updateE2ENutritionPlanDetail(planId, (plan) => ({
@@ -1680,7 +1782,7 @@ export async function addNutritionMealItem(
   planId: string,
   mealId: string,
   item: NutritionMealItemInput,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<NutritionMealItem> {
   if (deps === defaultDeps) {
     const insertedId = `e2e-nutrition-item-${++e2eNutritionItemSequence}`;
@@ -1704,7 +1806,10 @@ export async function addNutritionMealItem(
         return { ...meal, items: [...meal.items, insertedItem] };
       });
       if (!didAdd) {
-        throw new PlanBuilderSourceError('graphql', `Meal with ID ${mealId} not found in this plan.`);
+        throw new PlanBuilderSourceError(
+          'graphql',
+          `Meal with ID ${mealId} not found in this plan.`,
+        );
       }
       return { ...plan, meals };
     });
@@ -1724,13 +1829,15 @@ export async function removeNutritionMealItem(
   planId: string,
   mealId: string,
   itemId: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const updated = updateE2ENutritionPlanDetail(planId, (plan) => ({
       ...plan,
       meals: plan.meals.map((meal) =>
-        meal.id === mealId ? { ...meal, items: meal.items.filter((item) => item.id !== itemId) } : meal
+        meal.id === mealId
+          ? { ...meal, items: meal.items.filter((item) => item.id !== itemId) }
+          : meal,
       ),
     }));
     if (updated) return;
@@ -1749,7 +1856,7 @@ export async function reorderNutritionMealItems(
   planId: string,
   mealId: string,
   itemIds: string[],
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const updated = updateE2ENutritionPlanDetail(planId, (plan) => ({
@@ -1762,7 +1869,7 @@ export async function reorderNutritionMealItems(
                 .map((id) => meal.items.find((item) => item.id === id))
                 .filter((item): item is NutritionMealItem => Boolean(item)),
             }
-          : meal
+          : meal,
       ),
     }));
     if (updated) return;
@@ -1770,7 +1877,12 @@ export async function reorderNutritionMealItems(
   }
 
   try {
-    const reorderedOnServer = await reorderNutritionMealItemsOnServer(planId, mealId, itemIds, deps);
+    const reorderedOnServer = await reorderNutritionMealItemsOnServer(
+      planId,
+      mealId,
+      itemIds,
+      deps,
+    );
     requireServerSuccess(reorderedOnServer, 'reorderNutritionMealItems');
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
@@ -1779,7 +1891,7 @@ export async function reorderNutritionMealItems(
 
 export async function deleteNutritionPlan(
   planId: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const fixture = findE2ENutritionPlanDetail(planId);
@@ -1807,7 +1919,7 @@ export async function deleteNutritionPlan(
 
 export async function deleteTrainingPlan(
   planId: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const fixture = findE2ETrainingPlanDetail(planId);
@@ -1838,7 +1950,7 @@ export async function deleteTrainingPlan(
 export async function createTrainingPlan(
   input: TrainingPlanInput,
   mode: TrainingPlanCreationMode = 'professional_library',
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<TrainingPlanDetail> {
   if (deps === defaultDeps) {
     const fixture = createE2ETrainingPlanDetail(input, mode);
@@ -1857,7 +1969,7 @@ export async function updateTrainingPlan(
   planId: string,
   input: TrainingPlanInput,
   publish?: boolean,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const fixture = updateE2ETrainingPlanDetail(planId, (plan) => ({
@@ -1890,7 +2002,7 @@ export async function updateTrainingPlanWithSessions(
   input: TrainingPlanInput,
   sessions: TrainingSession[],
   publish?: boolean,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const fixture = updateE2ETrainingPlanDetail(planId, (plan) => ({
@@ -1921,7 +2033,7 @@ export async function updateTrainingPlanWithSessions(
 
 export async function getTrainingPlanDetail(
   planId: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<TrainingPlanDetail> {
   if (deps === defaultDeps) {
     const fixture = mapE2ETrainingPlanDetail(planId);
@@ -1939,7 +2051,7 @@ export async function getTrainingPlanDetail(
 export async function addTrainingSession(
   planId: string,
   session: TrainingSessionInput,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<TrainingSession> {
   try {
     const serverSession = await addTrainingSessionOnServer(planId, session, deps);
@@ -1952,7 +2064,7 @@ export async function addTrainingSession(
 export async function removeTrainingSession(
   planId: string,
   sessionId: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   try {
     const removedOnServer = await removeTrainingSessionOnServer(planId, sessionId, deps);
@@ -1965,7 +2077,7 @@ export async function removeTrainingSession(
 export async function reorderTrainingSessions(
   planId: string,
   sessionIds: string[],
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   try {
     const reorderedOnServer = await reorderTrainingSessionsOnServer(planId, sessionIds, deps);
@@ -1979,7 +2091,7 @@ export async function addTrainingSessionItem(
   planId: string,
   sessionId: string,
   item: TrainingSessionItemInput,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<TrainingSessionItem> {
   try {
     const serverItem = await addTrainingSessionItemOnServer(planId, sessionId, item, deps);
@@ -1993,10 +2105,15 @@ export async function removeTrainingSessionItem(
   planId: string,
   _sessionId: string,
   itemId: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   try {
-    const removedOnServer = await removeTrainingSessionItemOnServer(planId, _sessionId, itemId, deps);
+    const removedOnServer = await removeTrainingSessionItemOnServer(
+      planId,
+      _sessionId,
+      itemId,
+      deps,
+    );
     requireServerSuccess(removedOnServer, 'removeTrainingSessionItem');
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
@@ -2007,10 +2124,15 @@ export async function reorderTrainingSessionItems(
   planId: string,
   sessionId: string,
   itemIds: string[],
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   try {
-    const reorderedOnServer = await reorderTrainingSessionItemsOnServer(planId, sessionId, itemIds, deps);
+    const reorderedOnServer = await reorderTrainingSessionItemsOnServer(
+      planId,
+      sessionId,
+      itemIds,
+      deps,
+    );
     requireServerSuccess(reorderedOnServer, 'reorderTrainingSessionItems');
   } catch (error) {
     throw normalizePlanBuilderSourceError(error);
@@ -2019,7 +2141,7 @@ export async function reorderTrainingSessionItems(
 
 export async function getStarterTemplates(
   planType: PlanType,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<StarterTemplate[]> {
   try {
     const templates = await getStarterTemplatesFromServer(planType, deps);
@@ -2033,12 +2155,15 @@ export async function cloneStarterTemplate(
   _user: { uid: string },
   templateId: string,
   name: string,
-  deps: PlanBuilderSourceDeps = defaultDeps
+  deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<{ id: string; planType: PlanType; name: string }> {
   try {
     const planType = deriveStarterTemplatePlanType(templateId);
     if (!planType) {
-      throw new PlanBuilderSourceError('invalid_response', `Cannot derive planType from templateId: ${templateId}`);
+      throw new PlanBuilderSourceError(
+        'invalid_response',
+        `Cannot derive planType from templateId: ${templateId}`,
+      );
     }
 
     const plan = await cloneStarterTemplateOnServer(templateId, name, deps);

@@ -14,7 +14,9 @@ import StudentNutritionScreen from '@/app/student/nutrition';
 
 export default function NutritionTab() {
   const { currentUser, lockedRole } = useAuthSession();
-  const { state: specialtiesState } = useSpecialties(Boolean(currentUser) && lockedRole === 'professional');
+  const { state: specialtiesState } = useSpecialties(
+    Boolean(currentUser) && lockedRole === 'professional',
+  );
 
   if (lockedRole === 'professional') {
     if (specialtiesState.kind === 'loading' || specialtiesState.kind === 'idle') {

@@ -37,7 +37,12 @@ export type InviteCodeLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; code: InviteCode | null; displayCode: DisplayInviteCode; lastSyncedAtIso: string };
+  | {
+      kind: 'ready';
+      code: InviteCode | null;
+      displayCode: DisplayInviteCode;
+      lastSyncedAtIso: string;
+    };
 
 export type SpecialtiesLoadState =
   | { kind: 'idle' }
@@ -53,7 +58,10 @@ export type UseInviteCodeResult = {
   rotate: () => Promise<InviteCodeActionErrorReason | null>;
 };
 
-export function useInviteCode(isAuthenticated: boolean, specialty: Specialty | null): UseInviteCodeResult {
+export function useInviteCode(
+  isAuthenticated: boolean,
+  specialty: Specialty | null,
+): UseInviteCodeResult {
   const [state, setState] = useState<InviteCodeLoadState>({ kind: 'idle' });
 
   const load = useCallback(() => {
@@ -105,10 +113,10 @@ export type UseSpecialtiesResult = {
   checkRemoval: (
     specialty: Specialty,
     activeCount: number,
-    pendingCount: number
+    pendingCount: number,
   ) => SpecialtyRemovalResult;
   getRemovalBlockerCounts: (
-    specialty: Specialty
+    specialty: Specialty,
   ) => Promise<{ activeCount: number; pendingCount: number } | null>;
   addSpecialty: (specialty: Specialty) => Promise<{
     error: SpecialtyActionErrorReason | null;
@@ -117,7 +125,7 @@ export type UseSpecialtiesResult = {
   removeSpecialty: (specialtyId: string) => Promise<SpecialtyActionErrorReason | null>;
   upsertCredential: (
     specialtyId: string,
-    input: { registryId: string; authority: string; country: string }
+    input: { registryId: string; authority: string; country: string },
   ) => Promise<SpecialtyActionErrorReason | null>;
 };
 
@@ -146,15 +154,9 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
   }, [load]);
 
   const checkRemoval = useCallback(
-    (
-      specialty: Specialty,
-      activeCount: number,
-      pendingCount: number
-    ): SpecialtyRemovalResult => {
+    (specialty: Specialty, activeCount: number, pendingCount: number): SpecialtyRemovalResult => {
       const totalActive =
-        state.kind === 'ready'
-          ? state.specialties.filter((s) => s.isActive).length
-          : 0;
+        state.kind === 'ready' ? state.specialties.filter((s) => s.isActive).length : 0;
 
       return checkSpecialtyRemoval({
         specialtyToRemove: specialty,
@@ -163,7 +165,7 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
         totalActiveSpecialtyCount: totalActive,
       });
     },
-    [state]
+    [state],
   );
 
   const getRemovalBlockerCounts = useCallback(
@@ -175,12 +177,12 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
         return null;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated],
   );
 
   const addSpecialty = useCallback(
     async (
-      specialty: Specialty
+      specialty: Specialty,
     ): Promise<{
       error: SpecialtyActionErrorReason | null;
       record: { id: string; specialty: Specialty } | null;
@@ -195,7 +197,7 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
         return { error: normalizeSpecialtyActionError(err), record: null };
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   const removeSpecialty = useCallback(
@@ -210,13 +212,13 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
         return normalizeSpecialtyActionError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   const upsertCredential = useCallback(
     async (
       specialtyId: string,
-      input: { registryId: string; authority: string; country: string }
+      input: { registryId: string; authority: string; country: string },
     ): Promise<SpecialtyActionErrorReason | null> => {
       if (!isAuthenticated) return 'unknown';
 
@@ -228,7 +230,7 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
         return normalizeSpecialtyActionError(err);
       }
     },
-    [isAuthenticated, load]
+    [isAuthenticated, load],
   );
 
   return {

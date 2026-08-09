@@ -29,7 +29,7 @@ export function createBuilderPalette(theme: DsTheme) {
 
 export function createBuilderRoleTranslator(
   isStudentBuilder: boolean,
-  t: (key: TranslationKey, params?: Record<string, string | number>) => string
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string,
 ) {
   return (proKey: string, studentKey: string) =>
     t((isStudentBuilder ? studentKey : proKey) as TranslationKey);

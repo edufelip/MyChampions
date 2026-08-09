@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import path from 'node:path';
 
 const artifactRoot = path.resolve(
-  process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/server-current'
+  process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/server-current',
 );
 const serverRoot = path.resolve(process.env.MYCHAMPIONS_SERVER_ROOT ?? '../server');
 

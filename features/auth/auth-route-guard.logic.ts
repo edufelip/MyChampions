@@ -40,7 +40,10 @@ function encodeReturnTo(pathname: string): string {
   return encodeURIComponent(pathname);
 }
 
-function redirectWithReturnTo(pathname: '/auth/sign-in' | '/auth/accept-terms', returnTo: string): string {
+function redirectWithReturnTo(
+  pathname: '/auth/sign-in' | '/auth/accept-terms',
+  returnTo: string,
+): string {
   return `${pathname}?returnTo=${encodeReturnTo(returnTo)}`;
 }
 
@@ -92,7 +95,9 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   if (input.needsTermsAcceptance) {
     if (path !== '/auth/accept-terms') {
       const termsReturnTo = currentSharedRecipeReturnTo ?? safeReturnTo;
-      return termsReturnTo ? redirectWithReturnTo('/auth/accept-terms', termsReturnTo) : '/auth/accept-terms';
+      return termsReturnTo
+        ? redirectWithReturnTo('/auth/accept-terms', termsReturnTo)
+        : '/auth/accept-terms';
     }
 
     return null;
@@ -110,7 +115,10 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
     return '/auth/role-selection';
   }
 
-  if (safeReturnTo && (path === '/auth/sign-in' || path === '/auth/create-account' || path === '/auth/role-selection')) {
+  if (
+    safeReturnTo &&
+    (path === '/auth/sign-in' || path === '/auth/create-account' || path === '/auth/role-selection')
+  ) {
     return safeReturnTo;
   }
 
@@ -132,7 +140,11 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
 
   const home = roleHomePath(input.lockedRole);
 
-  if (path === '/auth/sign-in' || path === '/auth/create-account' || path === '/auth/role-selection') {
+  if (
+    path === '/auth/sign-in' ||
+    path === '/auth/create-account' ||
+    path === '/auth/role-selection'
+  ) {
     return home;
   }
 

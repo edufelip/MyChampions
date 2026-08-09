@@ -28,11 +28,7 @@ test('syncSubscriptionEntitlementSnapshot posts RevenueCat-derived statuses to t
     {
       getCurrentAccessToken: async () => 'server-token',
       getServerBaseUrl: () => 'http://localhost:3400/',
-      fetchFn: async function (
-        this: unknown,
-        input,
-        init
-      ) {
+      fetchFn: async function (this: unknown, input, init) {
         assert.equal(this, undefined);
         requests.push({ input, init });
         return new Response(JSON.stringify({ snapshot: { id: 'snapshot-1' } }), {
@@ -40,11 +36,14 @@ test('syncSubscriptionEntitlementSnapshot posts RevenueCat-derived statuses to t
           headers: { 'content-type': 'application/json' },
         });
       },
-    }
+    },
   );
 
   assert.equal(requests.length, 1);
-  assert.equal(String(requests[0].input), 'http://localhost:3400/subscription/entitlements/snapshot');
+  assert.equal(
+    String(requests[0].input),
+    'http://localhost:3400/subscription/entitlements/snapshot',
+  );
   assert.equal(requests[0].init?.method, 'POST');
   assert.deepEqual(requests[0].init?.headers, {
     authorization: 'Bearer server-token',
@@ -74,13 +73,13 @@ test('syncSubscriptionEntitlementSnapshot fails closed without local server auth
           fetchFn: async () => {
             throw new Error('fetch should not run');
           },
-        }
+        },
       ),
     (err: unknown) => {
       assert.ok(err instanceof SubscriptionServerSourceError);
       assert.equal(err.code, 'unauthenticated');
       return true;
-    }
+    },
   );
 });
 
@@ -98,13 +97,13 @@ test('syncSubscriptionEntitlementSnapshot requires a configured server URL', asy
           fetchFn: async () => {
             throw new Error('fetch should not run');
           },
-        }
+        },
       ),
     (err: unknown) => {
       assert.ok(err instanceof SubscriptionServerSourceError);
       assert.equal(err.code, 'configuration');
       return true;
-    }
+    },
   );
 });
 
@@ -123,7 +122,7 @@ test('syncSubscriptionEntitlementSnapshot fills safe optional defaults', async (
         requestBodyJson = String(init?.body);
         return new Response(null, { status: 202 });
       },
-    }
+    },
   );
 
   const requestBody = JSON.parse(requestBodyJson) as Record<string, unknown>;
@@ -149,13 +148,13 @@ test('syncSubscriptionEntitlementSnapshot normalizes transport and response fail
           fetchFn: async () => {
             throw new Error('offline');
           },
-        }
+        },
       ),
     (err: unknown) => {
       assert.ok(err instanceof SubscriptionServerSourceError);
       assert.equal(err.code, 'network');
       return true;
-    }
+    },
   );
 
   for (const [status, expectedCode] of [
@@ -169,13 +168,13 @@ test('syncSubscriptionEntitlementSnapshot normalizes transport and response fail
           {
             ...baseDeps,
             fetchFn: async () => new Response(null, { status }),
-          }
+          },
         ),
       (err: unknown) => {
         assert.ok(err instanceof SubscriptionServerSourceError);
         assert.equal(err.code, expectedCode);
         return true;
-      }
+      },
     );
   }
 });
@@ -199,13 +198,13 @@ test('syncSubscriptionEntitlementSnapshot rejects when the server session has ch
             return new Response(null, { status: 202 });
           },
         },
-        'server-user-a'
+        'server-user-a',
       ),
     (err: unknown) => {
       assert.ok(err instanceof SubscriptionServerSourceError);
       assert.equal(err.code, 'unauthenticated');
       return true;
-    }
+    },
   );
 
   assert.equal(requestCount, 0);
@@ -234,13 +233,13 @@ test('syncSubscriptionEntitlementSnapshot rejects when the server session change
             return new Response(null, { status: 202 });
           },
         },
-        'server-user-a'
+        'server-user-a',
       ),
     (err: unknown) => {
       assert.ok(err instanceof SubscriptionServerSourceError);
       assert.equal(err.code, 'unauthenticated');
       return true;
-    }
+    },
   );
 
   assert.equal(requestCount, 0);
@@ -270,13 +269,16 @@ test('getSubscriptionEntitlementSnapshot reads the current local server snapshot
         {
           status: 200,
           headers: { 'content-type': 'application/json' },
-        }
+        },
       );
     },
   });
 
   assert.equal(requests.length, 1);
-  assert.equal(String(requests[0].input), 'http://localhost:3400/subscription/entitlements/snapshot');
+  assert.equal(
+    String(requests[0].input),
+    'http://localhost:3400/subscription/entitlements/snapshot',
+  );
   assert.equal(requests[0].init?.method, 'GET');
   assert.deepEqual(requests[0].init?.headers, {
     authorization: 'Bearer server-token',
@@ -304,7 +306,7 @@ test('default subscription fetch retains the browser global receiver', async () 
     process.env.EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL = 'http://server.test';
     const receiverAwareFetch = async function (
       this: typeof globalThis,
-      input: string | URL | Request
+      input: string | URL | Request,
     ): Promise<Response> {
       assert.equal(this, globalThis);
       requestUrl = String(input);
@@ -325,7 +327,7 @@ test('default subscription fetch retains the browser global receiver', async () 
         {
           status: 200,
           headers: { 'content-type': 'application/json' },
-        }
+        },
       );
     };
     globalThis.fetch = receiverAwareFetch as typeof globalThis.fetch;
@@ -349,10 +351,7 @@ test('default subscription fetch retains the browser global receiver', async () 
 
     const snapshot = await getSubscriptionEntitlementSnapshot(undefined, authUid);
 
-    assert.equal(
-      requestUrl,
-      'http://server.test/subscription/entitlements/snapshot'
-    );
+    assert.equal(requestUrl, 'http://server.test/subscription/entitlements/snapshot');
     assert.equal(snapshot?.authUid, authUid);
     assert.equal(snapshot?.professionalEntitlementStatus, 'active');
   } finally {
@@ -403,16 +402,16 @@ test('getSubscriptionEntitlementSnapshot rejects a stale snapshot for another us
                   updatedAt: '2026-07-03T17:46:00.000Z',
                 },
               }),
-              { status: 200 }
+              { status: 200 },
             ),
         },
-        'auth-current'
+        'auth-current',
       ),
     (err: unknown) => {
       assert.ok(err instanceof SubscriptionServerSourceError);
       assert.equal(err.code, 'unauthenticated');
       return true;
-    }
+    },
   );
 });
 
@@ -431,13 +430,13 @@ test('getSubscriptionEntitlementSnapshot rejects a session switch during the rea
             return new Response(JSON.stringify({ snapshot: null }), { status: 200 });
           },
         },
-        'auth-current'
+        'auth-current',
       ),
     (err: unknown) => {
       assert.ok(err instanceof SubscriptionServerSourceError);
       assert.equal(err.code, 'unauthenticated');
       return true;
-    }
+    },
   );
 });
 
@@ -493,7 +492,7 @@ test('getSubscriptionEntitlementSnapshot rejects malformed transport responses',
         assert.ok(err instanceof SubscriptionServerSourceError);
         assert.equal(err.code, testCase.code);
         return true;
-      }
+      },
     );
   }
 });
@@ -539,7 +538,7 @@ test('getSubscriptionEntitlementSnapshot validates every snapshot field', async 
         assert.ok(err instanceof SubscriptionServerSourceError);
         assert.equal(err.code, 'invalid_response');
         return true;
-      }
+      },
     );
   }
 });
@@ -553,9 +552,12 @@ test('useSubscription syncs entitlement snapshots through the server source boun
   assert.equal(
     hookSource.includes('until server-side subscription enforcement replaces mobile-only gates'),
     false,
-    'useSubscription still describes server-side subscription enforcement as future work'
+    'useSubscription still describes server-side subscription enforcement as future work',
   );
-  assert.match(hookSource, /production cap-sensitive writes use signed webhook entitlement snapshots/);
+  assert.match(
+    hookSource,
+    /production cap-sensitive writes use signed webhook entitlement snapshots/,
+  );
 });
 
 test('useSubscription can hydrate from a server-owned snapshot when native entitlement reads fail', () => {
@@ -572,17 +574,11 @@ test('web useSubscription discards stale refresh completions after an account sw
 
   assert.match(hookSource, /const currentAuthUidRef = useRef<string \| null>\(activeAuthUid\)/);
   assert.match(hookSource, /const expectedAuthUid = activeAuthUid/);
+  assert.match(hookSource, /getSubscriptionEntitlementSnapshot\(undefined, expectedAuthUid\)/);
+  assert.match(hookSource, /if \(currentAuthUidRef\.current !== expectedAuthUid\) return/);
   assert.match(
     hookSource,
-    /getSubscriptionEntitlementSnapshot\(undefined, expectedAuthUid\)/
-  );
-  assert.match(
-    hookSource,
-    /if \(currentAuthUidRef\.current !== expectedAuthUid\) return/
-  );
-  assert.match(
-    hookSource,
-    /if \(currentAuthUidRef\.current === expectedAuthUid\) \{\s*setIsLoading\(false\)/
+    /if \(currentAuthUidRef\.current === expectedAuthUid\) \{\s*setIsLoading\(false\)/,
   );
 });
 
@@ -591,35 +587,29 @@ test('web useSubscription resolves professional counts as explicit, dev E2E, the
 
   assert.match(
     hookSource,
-    /import \{ resolveE2ESubscriptionOverride \} from '@\/features\/auth\/e2e-auth-session'/
+    /import \{ resolveE2ESubscriptionOverride \} from '@\/features\/auth\/e2e-auth-session'/,
   );
   assert.match(
     hookSource,
-    /import \{ getActiveProfessionalStudentCount \} from '@\/features\/professional\/professional-source'/
+    /import \{ getActiveProfessionalStudentCount \} from '@\/features\/professional\/professional-source'/,
   );
   assert.match(
     hookSource,
-    /optionsOrActiveStudentCount\.loadProfessionalActiveStudentCount === true/
+    /optionsOrActiveStudentCount\.loadProfessionalActiveStudentCount === true/,
   );
+  assert.match(hookSource, /const e2eSubscriptionOverride = getE2ESubscriptionOverride\(\)/);
   assert.match(
     hookSource,
-    /const e2eSubscriptionOverride = getE2ESubscriptionOverride\(\)/
+    /activeStudentCountOverride \?\? e2eSubscriptionOverride\?\.activeStudentCount/,
   );
-  assert.match(
-    hookSource,
-    /activeStudentCountOverride \?\? e2eSubscriptionOverride\?\.activeStudentCount/
-  );
-  assert.match(
-    hookSource,
-    /isDev: typeof __DEV__ !== 'undefined' && __DEV__/
-  );
+  assert.match(hookSource, /isDev: typeof __DEV__ !== 'undefined' && __DEV__/);
 
   const countEffectStart = hookSource.indexOf(
-    "useEffect(() => {\n    if (typeof resolvedActiveStudentCountOverride === 'number')"
+    "useEffect(() => {\n    if (typeof resolvedActiveStudentCountOverride === 'number')",
   );
   const countEffectEnd = hookSource.indexOf(
     '\n  }, [\n    activeAuthUid,\n    loadProfessionalActiveStudentCount,\n    resolvedActiveStudentCountOverride,\n  ]);',
-    countEffectStart
+    countEffectStart,
   );
   assert.notEqual(countEffectStart, -1);
   assert.notEqual(countEffectEnd, -1);
@@ -628,25 +618,22 @@ test('web useSubscription resolves professional counts as explicit, dev E2E, the
   assert.ok(
     countEffect.indexOf("typeof resolvedActiveStudentCountOverride === 'number'") <
       countEffect.indexOf('getActiveProfessionalStudentCount()'),
-    'an explicit or validated dev-E2E count must win before the live loader runs'
+    'an explicit or validated dev-E2E count must win before the live loader runs',
   );
   assert.match(countEffect, /if \(!activeAuthUid \|\| !loadProfessionalActiveStudentCount\)/);
   assert.match(countEffect, /setIsActiveStudentCountKnown\(false\)/);
   assert.match(countEffect, /getActiveProfessionalStudentCount\(\)/);
-  assert.match(
-    countEffect,
-    /!isCancelled && currentAuthUidRef\.current === expectedAuthUid/
-  );
+  assert.match(countEffect, /!isCancelled && currentAuthUidRef\.current === expectedAuthUid/);
   assert.match(countEffect, /setActiveStudentCount\(count\)/);
   assert.match(countEffect, /setIsActiveStudentCountKnown\(true\)/);
   assert.match(
     countEffect,
-    /\.catch\(\(\) => \{[\s\S]*setActiveStudentCount\(0\);[\s\S]*setIsActiveStudentCountKnown\(false\)/
+    /\.catch\(\(\) => \{[\s\S]*setActiveStudentCount\(0\);[\s\S]*setIsActiveStudentCountKnown\(false\)/,
   );
 
   assert.match(
     hookSource,
-    /else if \(!shouldLoadProfessionalActiveStudentCount\) \{\s*setActiveStudentCount\(snapshot\.activeStudentCount \?\? 0\)/
+    /else if \(!shouldLoadProfessionalActiveStudentCount\) \{\s*setActiveStudentCount\(snapshot\.activeStudentCount \?\? 0\)/,
   );
 });
 
@@ -665,7 +652,7 @@ test('useSubscription binds native RevenueCat calls to the current self-managed 
   assert.match(
     hookSource.slice(unauthenticatedBranchStart, unauthenticatedBranchStart + 320),
     /setIsLoading\(false\)/,
-    'an account switch to signed-out must clear loading state from an in-flight RevenueCat operation'
+    'an account switch to signed-out must clear loading state from an in-flight RevenueCat operation',
   );
 });
 

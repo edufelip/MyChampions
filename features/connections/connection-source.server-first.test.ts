@@ -17,7 +17,7 @@ test('server-backed connection reads do not load Firestore at module import', as
     this: unknown,
     request: string,
     parent: NodeModule | null,
-    isMain: boolean
+    isMain: boolean,
   ) {
     if (request === 'firebase/firestore') {
       blockedLoads.push(request);
@@ -27,7 +27,8 @@ test('server-backed connection reads do not load Firestore at module import', as
   };
 
   try {
-    const { getMyConnections } = require('./connection-source') as typeof import('./connection-source');
+    const { getMyConnections } =
+      require('./connection-source') as typeof import('./connection-source');
 
     const connections = await getMyConnections({
       getFirestoreInstance: () => {
@@ -39,17 +40,20 @@ test('server-backed connection reads do not load Firestore at module import', as
       getCurrentAccessToken: async () => 'server-token',
       getServerBaseUrl: () => 'http://server.test',
       fetchFn: async () =>
-        new Response(JSON.stringify({
-          connections: [
-            {
-              id: 'connection-1',
-              status: 'active',
-              canceledReason: null,
-              specialty: 'nutritionist',
-              professionalAuthUid: 'professional-1',
-            },
-          ],
-        }), { status: 200, headers: { 'content-type': 'application/json' } }),
+        new Response(
+          JSON.stringify({
+            connections: [
+              {
+                id: 'connection-1',
+                status: 'active',
+                canceledReason: null,
+                specialty: 'nutritionist',
+                professionalAuthUid: 'professional-1',
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
     } as any);
 
     assert.equal(connections[0]?.id, 'connection-1');

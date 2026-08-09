@@ -42,5 +42,7 @@ export const shareAdapter = createWebShareAdapter({
     window.open(url, '_blank', 'noopener,noreferrer');
   },
   isAbortError: (error) =>
-    typeof DOMException !== 'undefined' && error instanceof DOMException && error.name === 'AbortError',
+    typeof DOMException !== 'undefined' &&
+    error instanceof DOMException &&
+    error.name === 'AbortError',
 });

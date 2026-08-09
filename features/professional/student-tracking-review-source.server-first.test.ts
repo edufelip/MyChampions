@@ -17,7 +17,7 @@ test('server-backed student tracking review does not load Firestore at module im
     this: unknown,
     request: string,
     parent: NodeModule | null,
-    isMain: boolean
+    isMain: boolean,
   ) {
     if (request === 'firebase/firestore' || request === '../firestore') {
       blockedLoads.push(request);
@@ -30,25 +30,32 @@ test('server-backed student tracking review does not load Firestore at module im
     const { getStudentTrackingReview } =
       require('./student-tracking-review-source') as typeof import('./student-tracking-review-source');
 
-    const review = await getStudentTrackingReview('student-1', {
-      todayKey: '2026-06-28',
-      waterGoalMl: 2000,
-    }, {
-      getCurrentAccessToken: async () => 'server-token',
-      getServerBaseUrl: () => 'http://server.test',
-      fetchFn: async () =>
-        new Response(JSON.stringify({
-          waterLogs: [
-            {
-              id: 'water-today',
-              dateKey: '2026-06-28',
-              totalMl: 1500,
-              loggedAt: '2026-06-28T12:00:00.000Z',
-            },
-          ],
-          portionLogs: [],
-        }), { status: 200, headers: { 'content-type': 'application/json' } }),
-    } as any);
+    const review = await getStudentTrackingReview(
+      'student-1',
+      {
+        todayKey: '2026-06-28',
+        waterGoalMl: 2000,
+      },
+      {
+        getCurrentAccessToken: async () => 'server-token',
+        getServerBaseUrl: () => 'http://server.test',
+        fetchFn: async () =>
+          new Response(
+            JSON.stringify({
+              waterLogs: [
+                {
+                  id: 'water-today',
+                  dateKey: '2026-06-28',
+                  totalMl: 1500,
+                  loggedAt: '2026-06-28T12:00:00.000Z',
+                },
+              ],
+              portionLogs: [],
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          ),
+      } as any,
+    );
 
     assert.equal(review.todayWater.totalMl, 1500);
     assert.deepEqual(blockedLoads, []);

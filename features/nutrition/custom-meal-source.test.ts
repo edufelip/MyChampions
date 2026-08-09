@@ -30,7 +30,7 @@ const customMealInput = {
 async function assertRejectsWithConfiguration(operation: () => Promise<unknown>) {
   await assert.rejects(
     operation,
-    (error) => error instanceof CustomMealSourceError && error.code === 'configuration'
+    (error) => error instanceof CustomMealSourceError && error.code === 'configuration',
   );
 }
 
@@ -94,7 +94,9 @@ test('custom meal operations fail closed without local server auth outside E2E f
 
   await assertRejectsWithConfiguration(() => getMyCustomMeals(noAuthDeps));
   await assertRejectsWithConfiguration(() => createCustomMeal(customMealInput, noAuthDeps));
-  await assertRejectsWithConfiguration(() => updateCustomMeal('meal-1', customMealInput, noAuthDeps));
+  await assertRejectsWithConfiguration(() =>
+    updateCustomMeal('meal-1', customMealInput, noAuthDeps),
+  );
   await assertRejectsWithConfiguration(() => deleteCustomMeal('meal-1', noAuthDeps));
   await assertRejectsWithConfiguration(() => createMealShareLink('meal-1', noAuthDeps));
   await assertRejectsWithConfiguration(() => importSharedMeal('share-1', noAuthDeps));
@@ -104,8 +106,8 @@ test('custom meal operations fail closed without local server auth outside E2E f
       'meal-1',
       { calories: 400, carbs: 45, proteins: 30, fats: 12 },
       undefined,
-      noAuthDeps
-    )
+      noAuthDeps,
+    ),
   );
   await assertRejectsWithConfiguration(() => getTodayPortionLogs(noAuthDeps));
   await assertRejectsWithConfiguration(() =>
@@ -114,7 +116,7 @@ test('custom meal operations fail closed without local server auth outside E2E f
       fetchFn: async () => {
         throw new Error('Server should not be called without local server URL.');
       },
-    })
+    }),
   );
 });
 
@@ -145,7 +147,8 @@ test('previewSharedMeal returns the dev E2E shared recipe fixture through provid
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -175,7 +178,8 @@ test('importSharedMeal returns a personal copy for the dev E2E shared recipe fix
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -201,7 +205,7 @@ test('assigned nutrition E2E fixture logs assigned meal portions through provide
         sourceKind: 'assigned',
         ownerProfessionalUid: 'e2e-nutritionist',
         connectionId: 'e2e-active-nutritionist-connection',
-      }
+      },
     );
 
     const logs = await getTodayPortionLogs();
@@ -222,7 +226,7 @@ test('assigned nutrition E2E fixture logs assigned meal portions through provide
         sourceKind: 'assigned',
         connectionId: 'e2e-active-nutritionist-connection',
         calories: 520,
-      }
+      },
     );
   } finally {
     if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
@@ -231,10 +235,12 @@ test('assigned nutrition E2E fixture logs assigned meal portions through provide
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousStudentNutritionFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
+    if (previousStudentNutritionFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE = previousStudentNutritionFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -273,10 +279,10 @@ test('logAssignedMealPortion posts to the MyChampions server when a local bearer
               connectionId: 'connection-1',
             },
           }),
-          { status: 201, headers: { 'content-type': 'application/json' } }
+          { status: 201, headers: { 'content-type': 'application/json' } },
         );
       },
-    } as any
+    } as any,
   );
 
   assert.ok(captured);
@@ -321,7 +327,7 @@ test('getTodayPortionLogs reads from the MyChampions server when a local bearer 
             },
           ],
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     },
   } as any);
@@ -342,7 +348,10 @@ test('getTodayPortionLogs reads from the MyChampions server when a local bearer 
     },
   ]);
   assert.ok(captured);
-  assert.equal((captured as Request).url.startsWith('http://server.test/nutrition/portion-logs?from='), true);
+  assert.equal(
+    (captured as Request).url.startsWith('http://server.test/nutrition/portion-logs?from='),
+    true,
+  );
   assert.equal((captured as Request).method, 'GET');
   assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
 });
@@ -374,7 +383,7 @@ test('getMyCustomMeals reads from the MyChampions server when a local bearer tok
             },
           ],
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     },
   } as any);
@@ -436,10 +445,10 @@ test('createCustomMeal posts to the MyChampions server when a local bearer token
               updatedAt: '2026-06-28T09:00:00.000Z',
             },
           }),
-          { status: 201, headers: { 'content-type': 'application/json' } }
+          { status: 201, headers: { 'content-type': 'application/json' } },
         );
       },
-    } as any
+    } as any,
   );
 
   assert.equal(meal.id, 'server-meal-1');
@@ -496,15 +505,18 @@ test('updateCustomMeal puts to the MyChampions server when a local bearer token 
               updatedAt: '2026-06-28T10:00:00.000Z',
             },
           }),
-          { status: 200, headers: { 'content-type': 'application/json' } }
+          { status: 200, headers: { 'content-type': 'application/json' } },
         );
       },
-    } as any
+    } as any,
   );
 
   assert.equal(meal.name, 'Updated Server Bowl');
   assert.ok(captured);
-  assert.equal((captured as Request).url, 'http://server.test/nutrition/custom-meals/server-meal-1');
+  assert.equal(
+    (captured as Request).url,
+    'http://server.test/nutrition/custom-meals/server-meal-1',
+  );
   assert.equal((captured as Request).method, 'PUT');
   assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
 });
@@ -522,7 +534,10 @@ test('deleteCustomMeal deletes through the MyChampions server when a local beare
   } as any);
 
   assert.ok(captured);
-  assert.equal((captured as Request).url, 'http://server.test/nutrition/custom-meals/server-meal-1');
+  assert.equal(
+    (captured as Request).url,
+    'http://server.test/nutrition/custom-meals/server-meal-1',
+  );
   assert.equal((captured as Request).method, 'DELETE');
   assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
 });
@@ -544,7 +559,10 @@ test('createMealShareLink posts to the MyChampions server when a local bearer to
 
   assert.deepEqual(result, { shareLinkId: 'share-1' });
   assert.ok(captured);
-  assert.equal((captured as Request).url, 'http://server.test/nutrition/custom-meals/server-meal-1/share-links');
+  assert.equal(
+    (captured as Request).url,
+    'http://server.test/nutrition/custom-meals/server-meal-1/share-links',
+  );
   assert.equal((captured as Request).method, 'POST');
   assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
 });
@@ -567,7 +585,7 @@ test('previewSharedMeal reads from the MyChampions server', async () => {
             fats: 14,
           },
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     },
   } as any);
@@ -581,7 +599,10 @@ test('previewSharedMeal reads from the MyChampions server', async () => {
     fats: 14,
   });
   assert.ok(captured);
-  assert.equal((captured as Request).url, 'http://server.test/nutrition/custom-meal-shares/share-1');
+  assert.equal(
+    (captured as Request).url,
+    'http://server.test/nutrition/custom-meal-shares/share-1',
+  );
   assert.equal((captured as Request).method, 'GET');
   assert.equal((captured as Request).headers.get('authorization'), null);
 });
@@ -611,7 +632,7 @@ test('importSharedMeal imports through the MyChampions server when a local beare
             updatedAt: '2026-06-29T09:00:00.000Z',
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     },
   } as any);
@@ -621,7 +642,10 @@ test('importSharedMeal imports through the MyChampions server when a local beare
   assert.equal(meal.name, 'Shared Server Bowl');
   assert.equal(meal.ingredientCost, null);
   assert.ok(captured);
-  assert.equal((captured as Request).url, 'http://server.test/nutrition/custom-meal-shares/share-1/import');
+  assert.equal(
+    (captured as Request).url,
+    'http://server.test/nutrition/custom-meal-shares/share-1/import',
+  );
   assert.equal((captured as Request).method, 'POST');
   assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
 });
@@ -654,7 +678,7 @@ test('logPortionFromSource reads the custom meal and writes the portion log thro
               updatedAt: '2026-06-28T09:00:00.000Z',
             },
           }),
-          { status: 200, headers: { 'content-type': 'application/json' } }
+          { status: 200, headers: { 'content-type': 'application/json' } },
         );
       }
 
@@ -674,7 +698,7 @@ test('logPortionFromSource reads the custom meal and writes the portion log thro
             connectionId: null,
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     },
   } as any);
@@ -726,7 +750,7 @@ test('custom meal E2E fixture exposes library CRUD, share, and portion logging t
           calories: 480,
           ownerUid: 'e2e-auth-session-user',
         },
-      ]
+      ],
     );
 
     const created = await createCustomMeal({
@@ -773,11 +797,14 @@ test('custom meal E2E fixture exposes library CRUD, share, and portion logging t
         consumedGrams: 150,
         calories: 240,
         carbs: 27.5,
-      }
+      },
     );
 
     await deleteCustomMeal(created.id);
-    assert.equal((await getMyCustomMeals()).some((meal) => meal.id === created.id), false);
+    assert.equal(
+      (await getMyCustomMeals()).some((meal) => meal.id === created.id),
+      false,
+    );
   } finally {
     if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
     else process.env.APP_VARIANT = previousAppVariant;
@@ -785,10 +812,12 @@ test('custom meal E2E fixture exposes library CRUD, share, and portion logging t
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousCustomMealFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE;
+    if (previousCustomMealFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE = previousCustomMealFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });

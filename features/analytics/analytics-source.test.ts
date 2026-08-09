@@ -3,10 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import {
-  sendAnalyticsEventToServer,
-  type AnalyticsSourceDeps,
-} from './analytics-source';
+import { sendAnalyticsEventToServer, type AnalyticsSourceDeps } from './analytics-source';
 
 function makeDeps(overrides: Partial<AnalyticsSourceDeps> = {}): AnalyticsSourceDeps {
   return {
@@ -47,7 +44,7 @@ test('sendAnalyticsEventToServer posts redacted analytics events to the MyChampi
         email: 'person@example.test',
       },
     },
-    deps
+    deps,
   );
 
   assert.equal(result, 'sent');
@@ -79,7 +76,7 @@ test('sendAnalyticsEventToServer skips when the local server URL is unavailable'
         fetchCalls += 1;
         return makeResponse(202, {});
       },
-    })
+    }),
   );
 
   assert.equal(result, 'skipped');

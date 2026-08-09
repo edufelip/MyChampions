@@ -82,7 +82,7 @@ const E2E_AUTH_UID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
  */
 export function resolveE2EPhaseConfigValue(
   runtimeValue: string | undefined,
-  embeddedValue: string | undefined
+  embeddedValue: string | undefined,
 ): string | undefined {
   return runtimeValue ?? embeddedValue;
 }
@@ -106,24 +106,25 @@ function isEnabled(value: string | undefined) {
 function resolveConfiguredE2EAuthUid(
   fallback: string,
   suffix = '',
-  explicitOverride?: string
+  explicitOverride?: string,
 ): string | null {
   const configuredOverride = explicitOverride?.trim();
   const configuredBase = process.env.EXPO_PUBLIC_E2E_AUTH_UID?.trim();
-  const candidate = configuredOverride || (configuredBase ? `${configuredBase}${suffix}` : fallback);
-  if (
-    candidate.length > E2E_AUTH_UID_MAX_LENGTH ||
-    !E2E_AUTH_UID_PATTERN.test(candidate)
-  ) {
+  const candidate =
+    configuredOverride || (configuredBase ? `${configuredBase}${suffix}` : fallback);
+  if (candidate.length > E2E_AUTH_UID_MAX_LENGTH || !E2E_AUTH_UID_PATTERN.test(candidate)) {
     return null;
   }
 
   return candidate;
 }
 
-function normalizeE2EEntitlementStatus(value: string | undefined): E2ESubscriptionOverride['entitlementStatus'] | null {
+function normalizeE2EEntitlementStatus(
+  value: string | undefined,
+): E2ESubscriptionOverride['entitlementStatus'] | null {
   const normalized = value?.trim().toLowerCase();
-  if (normalized === 'active' || normalized === 'lapsed' || normalized === 'unknown') return normalized;
+  if (normalized === 'active' || normalized === 'lapsed' || normalized === 'unknown')
+    return normalized;
   return null;
 }
 
@@ -179,8 +180,7 @@ export function resolveE2EEmailPasswordSignInOverride({
 
   const normalizedEmail = email.trim().toLowerCase();
   const isPrimaryAccount =
-    normalizedEmail === E2E_AUTH_SESSION_EMAIL &&
-    password === E2E_AUTH_SESSION_PASSWORD;
+    normalizedEmail === E2E_AUTH_SESSION_EMAIL && password === E2E_AUTH_SESSION_PASSWORD;
   const isCreatedAccount =
     normalizedEmail === E2E_AUTH_CREATE_ACCOUNT_EMAIL &&
     password === E2E_AUTH_CREATE_ACCOUNT_PASSWORD;
@@ -251,7 +251,7 @@ export function resolveE2ESocialAuthOverride({
     const uid = resolveConfiguredE2EAuthUid(
       E2E_AUTH_GOOGLE_UID,
       '-google',
-      process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID
+      process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID,
     );
     if (!uid) return null;
     return {
@@ -307,7 +307,9 @@ export function resolveE2ESubscriptionOverride({
   }
 
   const normalizedEntitlementStatus = normalizeE2EEntitlementStatus(entitlementStatus);
-  const normalizedAiEntitlementStatus = normalizeE2EEntitlementStatus(aiEntitlementStatus ?? 'unknown');
+  const normalizedAiEntitlementStatus = normalizeE2EEntitlementStatus(
+    aiEntitlementStatus ?? 'unknown',
+  );
   const normalizedActiveStudentCount = normalizeE2EActiveStudentCount(activeStudentCount);
 
   if (

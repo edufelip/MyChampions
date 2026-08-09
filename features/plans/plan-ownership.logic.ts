@@ -6,7 +6,7 @@ export type PlanOwnershipSnapshot = {
 
 export function isSelfGuidedPlan(
   plan: PlanOwnershipSnapshot,
-  currentUserUid: string | null | undefined
+  currentUserUid: string | null | undefined,
 ): boolean {
   if (!currentUserUid) return false;
   return plan.sourceKind === 'self_managed';

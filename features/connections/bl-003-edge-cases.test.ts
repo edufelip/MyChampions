@@ -241,11 +241,14 @@ test('BL-003 Edge case: Code rotation when professional already at pending cap',
   }));
 
   // After code rotation:
-  const allCanceled: ConnectionRecord[] = atCapPending.map((r) => ({
-    ...r,
-    status: 'ended',
-    canceledReason: 'code_rotated',
-  } as ConnectionRecord));
+  const allCanceled: ConnectionRecord[] = atCapPending.map(
+    (r) =>
+      ({
+        ...r,
+        status: 'ended',
+        canceledReason: 'code_rotated',
+      }) as ConnectionRecord,
+  );
 
   const canceledStates = allCanceled.map(resolveConnectionDisplayState);
 

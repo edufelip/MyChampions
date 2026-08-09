@@ -22,10 +22,13 @@ if (!(batch in batches)) {
 }
 
 const now = new Date();
-const timestamp = now.toISOString().replace(/\.\d{3}Z$/, 'Z').replace(/[:]/g, '-');
+const timestamp = now
+  .toISOString()
+  .replace(/\.\d{3}Z$/, 'Z')
+  .replace(/[:]/g, '-');
 const runId = process.env.WEB_E2E_RUN_ID ?? `${timestamp}-${batch}`;
 const artifactRoot = path.resolve(
-  process.env.WEB_E2E_ARTIFACT_ROOT ?? path.join('.artifacts', 'web-e2e', runId)
+  process.env.WEB_E2E_ARTIFACT_ROOT ?? path.join('.artifacts', 'web-e2e', runId),
 );
 const playwrightArgs = ['playwright', 'test', ...batches[batch], ...extraArgs];
 const command = ['yarn', ...playwrightArgs].join(' ');
@@ -52,7 +55,7 @@ const metadata = {
 await writeFile(
   path.join(artifactRoot, 'run-metadata.json'),
   `${JSON.stringify(metadata, null, 2)}\n`,
-  'utf8'
+  'utf8',
 );
 
 const child = spawn(process.platform === 'win32' ? 'yarn.cmd' : 'yarn', playwrightArgs, {
@@ -94,7 +97,7 @@ metadata.screenshotCount = screenshots.length;
 await writeFile(
   path.join(artifactRoot, 'run-metadata.json'),
   `${JSON.stringify(metadata, null, 2)}\n`,
-  'utf8'
+  'utf8',
 );
 
 const screenshotRows = screenshots.length

@@ -16,7 +16,7 @@ const parentWorkspaceContractPaths = [
   '../docs/superpowers/specs/2026-06-21-mobile-backend-postgres-catalog-source-design.md',
 ];
 const parentWorkspaceContractsAvailable = parentWorkspaceContractPaths.every((relativePath) =>
-  existsSync(join(root, relativePath))
+  existsSync(join(root, relativePath)),
 );
 const parentWorkspaceTest = parentWorkspaceContractsAvailable ? test : test.skip;
 
@@ -80,7 +80,10 @@ const collectTestFiles = (relativeDir: string): string[] => {
   });
 };
 
-const collectMatchingPaths = (relativeDir: string, predicate: (relativePath: string) => boolean): string[] => {
+const collectMatchingPaths = (
+  relativeDir: string,
+  predicate: (relativePath: string) => boolean,
+): string[] => {
   const absoluteDir = join(root, relativeDir);
 
   if (!existsSync(absoluteDir)) {
@@ -118,16 +121,13 @@ const collectMatchingPaths = (relativeDir: string, predicate: (relativePath: str
 };
 
 test('mobile auth no longer keeps Firebase auth config modules', () => {
-  const removedModules = [
-    'features/auth/firebase.ts',
-    'features/auth/firebase-social-auth.ts',
-  ];
+  const removedModules = ['features/auth/firebase.ts', 'features/auth/firebase-social-auth.ts'];
 
   for (const relativePath of removedModules) {
     assert.equal(
       existsSync(join(root, relativePath)),
       false,
-      `${relativePath} should not exist after local server auth migration`
+      `${relativePath} should not exist after local server auth migration`,
     );
   }
 });
@@ -144,7 +144,11 @@ test('social auth source posts provider tokens to the MyChampions server without
   ];
 
   for (const token of forbiddenTokens) {
-    assert.equal(source.includes(token), false, `social-auth-source.ts should not contain ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `social-auth-source.ts should not contain ${token}`,
+    );
   }
 
   assert.equal(source.includes('/auth/social/sign-in'), true);
@@ -165,7 +169,11 @@ test('Apple social auth source captures native identity tokens without Firebase 
   ];
 
   for (const token of forbiddenTokens) {
-    assert.equal(source.includes(token), false, `apple-social-auth-source.ts should not contain ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `apple-social-auth-source.ts should not contain ${token}`,
+    );
   }
 
   assert.equal(source.includes("require('expo-apple-authentication')"), true);
@@ -173,11 +181,11 @@ test('Apple social auth source captures native identity tokens without Firebase 
   assert.equal(source.includes("provider: 'apple'"), true);
   assert.ok(
     signInScreen.indexOf('await signInWithAppleProviderTokenFromSource()') <
-      signInScreen.indexOf("await signInWithServerSocialAuth('apple')")
+      signInScreen.indexOf("await signInWithServerSocialAuth('apple')"),
   );
   assert.ok(
     createAccountScreen.indexOf('await signInWithAppleProviderTokenFromSource()') <
-    createAccountScreen.indexOf("await signInWithServerSocialAuth('apple')")
+      createAccountScreen.indexOf("await signInWithServerSocialAuth('apple')"),
   );
 });
 
@@ -195,7 +203,11 @@ test('Google social auth source captures native provider tokens without Firebase
   ];
 
   for (const token of forbiddenTokens) {
-    assert.equal(source.includes(token), false, `google-social-auth-source.ts should not contain ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `google-social-auth-source.ts should not contain ${token}`,
+    );
   }
 
   assert.equal(source.includes("require('@react-native-google-signin/google-signin')"), true);
@@ -204,11 +216,11 @@ test('Google social auth source captures native provider tokens without Firebase
   assert.equal(source.includes("provider: 'google'"), true);
   assert.ok(
     signInScreen.indexOf('await signInWithGoogleProviderTokenFromSource()') <
-      signInScreen.indexOf("await signInWithServerSocialAuth('google')")
+      signInScreen.indexOf("await signInWithServerSocialAuth('google')"),
   );
   assert.ok(
     createAccountScreen.indexOf('await signInWithGoogleProviderTokenFromSource()') <
-      createAccountScreen.indexOf("await signInWithServerSocialAuth('google')")
+      createAccountScreen.indexOf("await signInWithServerSocialAuth('google')"),
   );
 });
 
@@ -258,7 +270,11 @@ test('app config no longer requires Firebase env or exposes extra.firebase', () 
     'extra: { firebase',
     'firebase,',
   ]) {
-    assert.equal(appConfig.includes(token), false, `unexpected app.config Firebase token: ${token}`);
+    assert.equal(
+      appConfig.includes(token),
+      false,
+      `unexpected app.config Firebase token: ${token}`,
+    );
   }
 
   assert.equal(envExample.includes('FIREBASE_DEV_'), false);
@@ -272,7 +288,11 @@ test('app config no longer requires Firebase env or exposes extra.firebase', () 
     'EXPO_PUBLIC_FOOD_SEARCH_FUNCTION_URL',
     'EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL',
   ]) {
-    assert.equal(localEnv.includes(token), false, `.env still contains retired Firebase env token: ${token}`);
+    assert.equal(
+      localEnv.includes(token),
+      false,
+      `.env still contains retired Firebase env token: ${token}`,
+    );
   }
 
   assert.equal(packageJson.dependencies?.firebase, undefined);
@@ -283,12 +303,16 @@ test('app config no longer requires Firebase env or exposes extra.firebase', () 
   assert.equal(packageJson.scripts?.['test:rules'], undefined);
   assert.equal(packageJson.scripts?.['validate:firestore:smoke'], undefined);
   assert.equal(appJson.includes('"firebase"'), false, 'app.json should not expose extra.firebase');
-  assert.equal(appJson.includes('dataConnect'), false, 'app.json should not keep legacy Data Connect placeholders');
+  assert.equal(
+    appJson.includes('dataConnect'),
+    false,
+    'app.json should not keep legacy Data Connect placeholders',
+  );
 
   assert.equal(
     existsSync(join(root, 'package-lock.json')),
     false,
-    'mobile package uses yarn; stale npm lockfiles can preserve removed Firebase packages'
+    'mobile package uses yarn; stale npm lockfiles can preserve removed Firebase packages',
   );
 
   const yarnLock = readFileSync(join(root, 'yarn.lock'), 'utf8');
@@ -298,46 +322,64 @@ test('app config no longer requires Firebase env or exposes extra.firebase', () 
     'firebase-tools@',
     '@firebase/rules-unit-testing',
   ]) {
-    assert.equal(yarnLock.includes(token), false, `yarn.lock still contains Firebase package token: ${token}`);
-  }
-});
-
-parentWorkspaceTest('workspace package manifests and locks stay free of Firebase runtime packages', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const packageSurfaces: Record<string, string> = {
-    'mychampions/package.json': readFileSync(join(root, 'package.json'), 'utf8'),
-    'mychampions/yarn.lock': readFileSync(join(root, 'yarn.lock'), 'utf8'),
-    'package.json': readFileSync(join(root, '../package.json'), 'utf8'),
-    'server/package.json': readFileSync(join(root, '../server/package.json'), 'utf8'),
-    'server/bun.lock': readFileSync(join(root, '../server/bun.lock'), 'utf8'),
-  };
-
-  for (const [label, source] of Object.entries(packageSurfaces)) {
     assert.equal(
-      /"?(@react-native-firebase|@firebase\/rules-unit-testing|firebase-tools|firebase|dataconnect)[^"\s]*"?/i.test(source),
+      yarnLock.includes(token),
       false,
-      `${label} still contains a Firebase/Data Connect package reference`
+      `yarn.lock still contains Firebase package token: ${token}`,
     );
   }
-
-  assert.equal(taskCard.includes('A293 | Mobile package and lockfile Firebase dependency guard'), true);
 });
+
+parentWorkspaceTest(
+  'workspace package manifests and locks stay free of Firebase runtime packages',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const packageSurfaces: Record<string, string> = {
+      'mychampions/package.json': readFileSync(join(root, 'package.json'), 'utf8'),
+      'mychampions/yarn.lock': readFileSync(join(root, 'yarn.lock'), 'utf8'),
+      'package.json': readFileSync(join(root, '../package.json'), 'utf8'),
+      'server/package.json': readFileSync(join(root, '../server/package.json'), 'utf8'),
+      'server/bun.lock': readFileSync(join(root, '../server/bun.lock'), 'utf8'),
+    };
+
+    for (const [label, source] of Object.entries(packageSurfaces)) {
+      assert.equal(
+        /"?(@react-native-firebase|@firebase\/rules-unit-testing|firebase-tools|firebase|dataconnect)[^"\s]*"?/i.test(
+          source,
+        ),
+        false,
+        `${label} still contains a Firebase/Data Connect package reference`,
+      );
+    }
+
+    assert.equal(
+      taskCard.includes('A293 | Mobile package and lockfile Firebase dependency guard'),
+      true,
+    );
+  },
+);
 
 parentWorkspaceTest('current task card records the active runtime Firebase-free audit', () => {
   const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
+    join(
+      root,
+      '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+    ),
+    'utf8',
   );
 
   assert.equal(taskCard.includes('A294 | Active mobile runtime Firebase-free audit'), true);
   assert.equal(
     taskCard.includes(
-      'Active runtime source, native config, CI workflow, package/lock, and generated artifact scans returned no Firebase/Firestore/Data Connect matches outside test guard files'
+      'Active runtime source, native config, CI workflow, package/lock, and generated artifact scans returned no Firebase/Firestore/Data Connect matches outside test guard files',
     ),
-    true
+    true,
   );
 });
 
@@ -359,7 +401,10 @@ test('active mobile backend sources stay routed through the MyChampions server',
     { pattern: /functions\.firebase/i, label: 'Firebase functions host' },
     { pattern: /firebaseio\.com/i, label: 'Firebase realtime/database host' },
     { pattern: /EXPO_PUBLIC_FOOD_SEARCH_FUNCTION_URL/, label: 'legacy food function env' },
-    { pattern: /EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL/, label: 'legacy meal analysis function env' },
+    {
+      pattern: /EXPO_PUBLIC_MEAL_ANALYSIS_FUNCTION_URL/,
+      label: 'legacy meal analysis function env',
+    },
     { pattern: /EXPO_PUBLIC_EXERCISE_SEARCH_FUNCTION_URL/, label: 'legacy exercise function env' },
     { pattern: /EXPO_PUBLIC_FOOD_API_URL/, label: 'legacy food API env' },
     { pattern: /EXPO_PUBLIC_EXERCISE_API_URL/, label: 'legacy exercise API env' },
@@ -374,7 +419,7 @@ test('active mobile backend sources stay routed through the MyChampions server',
       assert.equal(
         pattern.test(source),
         false,
-        `${relativePath} still contains ${label}; active mobile backend calls must route through the root MyChampions server`
+        `${relativePath} still contains ${label}; active mobile backend calls must route through the root MyChampions server`,
       );
     }
   }
@@ -382,207 +427,301 @@ test('active mobile backend sources stay routed through the MyChampions server',
 
 parentWorkspaceTest('current task card records the active mobile backend boundary audit', () => {
   const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
+    join(
+      root,
+      '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+    ),
+    'utf8',
   );
 
   assert.equal(taskCard.includes('A295 | Active mobile backend boundary audit'), true);
   assert.equal(
     taskCard.includes(
-      'Active mobile server-boundary source scan returned no legacy food/exercise service URLs, Firebase function URLs, or Data Connect env routes outside explicit test guard files'
+      'Active mobile server-boundary source scan returned no legacy food/exercise service URLs, Firebase function URLs, or Data Connect env routes outside explicit test guard files',
     ),
-    true
+    true,
   );
 });
 
-parentWorkspaceTest('current task card records server-owned custom meal image upload path ownership', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records server-owned custom meal image upload path ownership',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A296 | Server-owned custom meal image upload path'), true);
-  assert.equal(
-    taskCard.includes(
-      'Mobile image upload now sends only `meals/{mealId}/{filename}` to the MyChampions server; owner identity stays server-owned through the bearer token'
-    ),
-    true
-  );
-});
+    assert.equal(taskCard.includes('A296 | Server-owned custom meal image upload path'), true);
+    assert.equal(
+      taskCard.includes(
+        'Mobile image upload now sends only `meals/{mealId}/{filename}` to the MyChampions server; owner identity stays server-owned through the bearer token',
+      ),
+      true,
+    );
+  },
+);
 
 parentWorkspaceTest('current task card records Google provider-token network normalization', () => {
   const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
+    join(
+      root,
+      '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+    ),
+    'utf8',
   );
 
   assert.equal(taskCard.includes('A297 | Google provider-token network error normalization'), true);
   assert.equal(
     taskCard.includes(
-      'Google OAuth token exchange failures now map to the provider-neutral `network` social-auth source error'
+      'Google OAuth token exchange failures now map to the provider-neutral `network` social-auth source error',
     ),
-    true
+    true,
   );
 });
 
 parentWorkspaceTest('current task card records Apple provider-token network normalization', () => {
   const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
+    join(
+      root,
+      '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+    ),
+    'utf8',
   );
 
   assert.equal(taskCard.includes('A298 | Apple provider-token network error normalization'), true);
   assert.equal(
     taskCard.includes(
-      'Native Apple sign-in failures now map to the provider-neutral `network` social-auth source error while cancellation remains cancelable'
+      'Native Apple sign-in failures now map to the provider-neutral `network` social-auth source error while cancellation remains cancelable',
     ),
-    true
+    true,
   );
 });
 
-parentWorkspaceTest('current task card records Apple availability-check network normalization', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records Apple availability-check network normalization',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A299 | Apple availability-check network error normalization'), true);
-  assert.equal(
-    taskCard.includes(
-      'Thrown native Apple availability-check failures now map to `network` while unavailable Apple auth still maps to `configuration`'
-    ),
-    true
-  );
-});
+    assert.equal(
+      taskCard.includes('A299 | Apple availability-check network error normalization'),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Thrown native Apple availability-check failures now map to `network` while unavailable Apple auth still maps to `configuration`',
+      ),
+      true,
+    );
+  },
+);
 
 parentWorkspaceTest('current task card records Google auth-request network normalization', () => {
   const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
+    join(
+      root,
+      '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+    ),
+    'utf8',
   );
 
   assert.equal(taskCard.includes('A300 | Google auth-request network error normalization'), true);
   assert.equal(
     taskCard.includes(
-      'Thrown Google auth-request failures now map to `network` while cancellation remains cancelable'
+      'Thrown Google auth-request failures now map to `network` while cancellation remains cancelable',
     ),
-    true
+    true,
   );
 });
 
-parentWorkspaceTest('current task card records Google redirect URI configuration normalization', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records Google redirect URI configuration normalization',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A301 | Google redirect URI configuration error normalization'), true);
-  assert.equal(
-    taskCard.includes(
-      'Thrown Google redirect URI construction failures now map to `configuration` before OAuth prompt startup'
-    ),
-    true
-  );
-});
+    assert.equal(
+      taskCard.includes('A301 | Google redirect URI configuration error normalization'),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Thrown Google redirect URI construction failures now map to `configuration` before OAuth prompt startup',
+      ),
+      true,
+    );
+  },
+);
 
-parentWorkspaceTest('current task card records Google client-id configuration normalization', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records Google client-id configuration normalization',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A302 | Google client-id configuration error normalization'), true);
-  assert.equal(
-    taskCard.includes(
-      'Thrown Google OAuth client-id resolution failures now map to `configuration` before nonce creation or OAuth prompt startup'
-    ),
-    true
-  );
-});
+    assert.equal(
+      taskCard.includes('A302 | Google client-id configuration error normalization'),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Thrown Google OAuth client-id resolution failures now map to `configuration` before nonce creation or OAuth prompt startup',
+      ),
+      true,
+    );
+  },
+);
 
-parentWorkspaceTest('current task card records social-auth server URL configuration normalization', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records social-auth server URL configuration normalization',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A303 | Social-auth server URL configuration error normalization'), true);
-  assert.equal(
-    taskCard.includes(
-      'Thrown MyChampions server URL resolution failures now map to `configuration` before social-auth fetch startup'
-    ),
-    true
-  );
-});
+    assert.equal(
+      taskCard.includes('A303 | Social-auth server URL configuration error normalization'),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Thrown MyChampions server URL resolution failures now map to `configuration` before social-auth fetch startup',
+      ),
+      true,
+    );
+  },
+);
 
-parentWorkspaceTest('current task card records server-auth restore cleanup storage normalization', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records server-auth restore cleanup storage normalization',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A304 | Server-auth restore cleanup storage normalization'), true);
-  assert.equal(
-    taskCard.includes(
-      'Corrupted persisted server-auth sessions now fail closed even when storage cleanup removal fails'
-    ),
-    true
-  );
-});
+    assert.equal(
+      taskCard.includes('A304 | Server-auth restore cleanup storage normalization'),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Corrupted persisted server-auth sessions now fail closed even when storage cleanup removal fails',
+      ),
+      true,
+    );
+  },
+);
 
-parentWorkspaceTest('current task card records server-auth persisted refresh failure normalization', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records server-auth persisted refresh failure normalization',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A305 | Server-auth persisted refresh failure normalization'), true);
-  assert.equal(
-    taskCard.includes(
-      'Expired persisted server-auth sessions now fail closed when local refresh URL resolution or transport fails'
-    ),
-    true
-  );
-});
+    assert.equal(
+      taskCard.includes('A305 | Server-auth persisted refresh failure normalization'),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Expired persisted server-auth sessions now fail closed when local refresh URL resolution or transport fails',
+      ),
+      true,
+    );
+  },
+);
 
-parentWorkspaceTest('current task card records server-auth refresh payload failure normalization', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records server-auth refresh payload failure normalization',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A306 | Server-auth refresh payload failure normalization'), true);
-  assert.equal(
-    taskCard.includes('Malformed local refresh payloads now fail closed during persisted server-auth restoration'),
-    true
-  );
-});
+    assert.equal(
+      taskCard.includes('A306 | Server-auth refresh payload failure normalization'),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Malformed local refresh payloads now fail closed during persisted server-auth restoration',
+      ),
+      true,
+    );
+  },
+);
 
-parentWorkspaceTest('current task card records email-auth URL resolution failure normalization', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'current task card records email-auth URL resolution failure normalization',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(taskCard.includes('A307 | Email-auth URL resolution failure normalization'), true);
-  assert.equal(
-    taskCard.includes('Thrown email-auth server URL resolution failures now map to configuration errors'),
-    true
-  );
-});
+    assert.equal(taskCard.includes('A307 | Email-auth URL resolution failure normalization'), true);
+    assert.equal(
+      taskCard.includes(
+        'Thrown email-auth server URL resolution failures now map to configuration errors',
+      ),
+      true,
+    );
+  },
+);
 
 parentWorkspaceTest('current task card records the local Firebase-removal completion audit', () => {
   const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
+    join(
+      root,
+      '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+    ),
+    'utf8',
   );
 
   assert.equal(taskCard.includes('A308 | Local Firebase-removal completion audit'), true);
   assert.equal(
     taskCard.includes(
-      'Active mobile runtime, native config, CI/workflow, package/lock, and source-boundary scans are Firebase-free outside explicit retired-document and test-guard references'
+      'Active mobile runtime, native config, CI/workflow, package/lock, and source-boundary scans are Firebase-free outside explicit retired-document and test-guard references',
     ),
-    true
+    true,
   );
 });
 
@@ -592,7 +731,7 @@ test('legacy Firestore rules harness is retired from the mobile package', () => 
   assert.equal(
     existsSync(join(root, 'features/plans/training-plan-rules.contract.test.ts')),
     false,
-    'Firestore rules contract tests should not remain after the rules file is retired'
+    'Firestore rules contract tests should not remain after the rules file is retired',
   );
 });
 
@@ -609,7 +748,7 @@ test('Firebase backend project files are retired from the mobile package', () =>
     assert.equal(
       existsSync(join(root, relativePath)),
       false,
-      `${relativePath} should not remain after local server migration`
+      `${relativePath} should not remain after local server migration`,
     );
   }
 
@@ -621,7 +760,11 @@ test('Firebase backend project files are retired from the mobile package', () =>
     'test-dc*.ts',
     'test-dc*.js',
   ]) {
-    assert.equal(gitignore.includes(token), false, `.gitignore should not keep retired Firebase/Data Connect pattern: ${token}`);
+    assert.equal(
+      gitignore.includes(token),
+      false,
+      `.gitignore should not keep retired Firebase/Data Connect pattern: ${token}`,
+    );
   }
 
   const tsconfig = readFileSync(join(root, 'tsconfig.json'), 'utf8');
@@ -642,7 +785,11 @@ test('native app builds no longer require Firebase config files', () => {
 
   for (const scriptName of ['ios', 'ios:dev', 'ios:prod', 'ios:release']) {
     const script = packageJson.scripts?.[scriptName] ?? '';
-    assert.equal(script.includes('check:ios-firebase'), false, `${scriptName} still runs Firebase config checks`);
+    assert.equal(
+      script.includes('check:ios-firebase'),
+      false,
+      `${scriptName} still runs Firebase config checks`,
+    );
   }
 
   assert.equal(existsSync(join(root, 'scripts/check-ios-firebase-config.mjs')), false);
@@ -652,7 +799,11 @@ test('native app builds no longer require Firebase config files', () => {
     'ios/mychampions/GoogleService-Info-Prod.plist',
     'android/app/google-services.json',
   ]) {
-    assert.equal(existsSync(join(root, relativePath)), false, `${relativePath} should not remain in the mobile tree`);
+    assert.equal(
+      existsSync(join(root, relativePath)),
+      false,
+      `${relativePath} should not remain in the mobile tree`,
+    );
   }
 
   for (const [relativePath, source] of [
@@ -672,13 +823,17 @@ test('native app builds no longer require Firebase config files', () => {
   }
 
   const generatedFirebaseConfigArtifacts = [
-    ...collectMatchingPaths('ios', (relativePath) => relativePath.endsWith('GoogleService-Info.plist')),
-    ...collectMatchingPaths('android', (relativePath) => relativePath.endsWith('google-services.json')),
+    ...collectMatchingPaths('ios', (relativePath) =>
+      relativePath.endsWith('GoogleService-Info.plist'),
+    ),
+    ...collectMatchingPaths('android', (relativePath) =>
+      relativePath.endsWith('google-services.json'),
+    ),
   ];
   assert.deepEqual(
     generatedFirebaseConfigArtifacts,
     [],
-    `generated native Firebase config artifacts should not remain: ${generatedFirebaseConfigArtifacts.join(', ')}`
+    `generated native Firebase config artifacts should not remain: ${generatedFirebaseConfigArtifacts.join(', ')}`,
   );
 
   for (const token of [
@@ -688,10 +843,17 @@ test('native app builds no longer require Firebase config files', () => {
     'google-services.json',
     'google-services-dev.json',
   ]) {
-    assert.equal(gitignore.includes(token), false, `.gitignore should not keep retired Firebase config pattern: ${token}`);
+    assert.equal(
+      gitignore.includes(token),
+      false,
+      `.gitignore should not keep retired Firebase config pattern: ${token}`,
+    );
   }
 
-  const issueTemplate = readFileSync(join(root, '.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md'), 'utf8');
+  const issueTemplate = readFileSync(
+    join(root, '.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md'),
+    'utf8',
+  );
   for (const token of [
     'Firebase',
     'firebase',
@@ -704,7 +866,7 @@ test('native app builds no longer require Firebase config files', () => {
     assert.equal(
       issueTemplate.includes(token),
       false,
-      `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md still contains ${token}`
+      `.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md still contains ${token}`,
     );
   }
 });
@@ -719,7 +881,11 @@ test('generated native build output does not preserve retired Firebase config', 
     'mychampions-fb928',
     'extra.firebase',
   ]) {
-    assert.equal(generatedLog.includes(token), false, `.expo/xcodebuild.log still contains ${token}`);
+    assert.equal(
+      generatedLog.includes(token),
+      false,
+      `.expo/xcodebuild.log still contains ${token}`,
+    );
   }
 
   const generatedFirebaseArtifacts = [
@@ -741,7 +907,11 @@ test('generated native build output does not preserve retired Firebase config', 
       'mychampions-fb928',
       'firebasestorage.app',
     ]) {
-      assert.equal(artifactSource.includes(token), false, `${relativePath} still contains ${token}`);
+      assert.equal(
+        artifactSource.includes(token),
+        false,
+        `${relativePath} still contains ${token}`,
+      );
     }
   }
 });
@@ -912,7 +1082,7 @@ test('server auth source is documented as the active local boundary, not tempora
 
 test('mobile tests no longer describe server-backed paths as Firestore precedence', () => {
   const testFiles = collectTestFiles('features').filter(
-    (relativePath) => relativePath !== 'features/auth/firebase-config-removal-scan.test.ts'
+    (relativePath) => relativePath !== 'features/auth/firebase-config-removal-scan.test.ts',
   );
   const staleTestPhrases = [
     'before Firestore',
@@ -1020,14 +1190,17 @@ test('current architecture docs no longer present Firebase as the active backend
 });
 
 test('retired provider docs use server-owned archival filenames', () => {
-  const providerNamedDocs = collectMatchingPaths('docs', (relativePath) =>
-    relativePath.endsWith('.md') && /firebase|firestore|data-connect|dataconnect/i.test(relativePath)
+  const providerNamedDocs = collectMatchingPaths(
+    'docs',
+    (relativePath) =>
+      relativePath.endsWith('.md') &&
+      /firebase|firestore|data-connect|dataconnect/i.test(relativePath),
   );
 
   assert.deepEqual(
     providerNamedDocs,
     [],
-    `retired provider docs should not keep Firebase/Data Connect branded filenames: ${providerNamedDocs.join(', ')}`
+    `retired provider docs should not keep Firebase/Data Connect branded filenames: ${providerNamedDocs.join(', ')}`,
   );
 });
 
@@ -1045,7 +1218,11 @@ test('Firebase-era superpower plans are explicitly marked superseded', () => {
     const source = readFileSync(join(root, relativePath), 'utf8');
 
     for (const line of requiredBannerLines) {
-      assert.equal(source.includes(line), true, `${relativePath} is missing superseded banner line: ${line}`);
+      assert.equal(
+        source.includes(line),
+        true,
+        `${relativePath} is missing superseded banner line: ${line}`,
+      );
     }
   }
 });
@@ -1064,7 +1241,11 @@ test('Firebase-era superpower specs are explicitly marked superseded', () => {
     const source = readFileSync(join(root, relativePath), 'utf8');
 
     for (const line of requiredBannerLines) {
-      assert.equal(source.includes(line), true, `${relativePath} is missing superseded banner line: ${line}`);
+      assert.equal(
+        source.includes(line),
+        true,
+        `${relativePath} is missing superseded banner line: ${line}`,
+      );
     }
   }
 });
@@ -1083,7 +1264,11 @@ test('older Firebase-era implementation docs are explicitly marked superseded', 
     const source = readFileSync(join(root, relativePath), 'utf8');
 
     for (const line of requiredBannerLines) {
-      assert.equal(source.includes(line), true, `${relativePath} is missing superseded banner line: ${line}`);
+      assert.equal(
+        source.includes(line),
+        true,
+        `${relativePath} is missing superseded banner line: ${line}`,
+      );
     }
   }
 });
@@ -1091,14 +1276,14 @@ test('older Firebase-era implementation docs are explicitly marked superseded', 
 test('retired plan customization doc no longer carries executable Firestore implementation steps', () => {
   const source = readFileSync(
     join(root, 'docs/plans/2026-05-31-plan-customization-and-student-tracking-plan.md'),
-    'utf8'
+    'utf8',
   );
   const retiredInstructionTokens = [
     'REQUIRED SUB-SKILL',
     '- [ ] **Step',
     'firestore.rules',
     'scripts/validate-firestore-smoke.mjs',
-    "firebase/firestore",
+    'firebase/firestore',
     'getFirestoreInstance',
     'npm run validate:firestore:smoke',
     'firebase emulators',
@@ -1106,14 +1291,18 @@ test('retired plan customization doc no longer carries executable Firestore impl
   ];
 
   for (const token of retiredInstructionTokens) {
-    assert.equal(source.includes(token), false, `retired plan customization doc still contains ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `retired plan customization doc still contains ${token}`,
+    );
   }
 });
 
 test('retired plan customization spec no longer carries executable Firestore design sections', () => {
   const source = readFileSync(
     join(root, 'docs/specs/2026-05-31-plan-customization-and-student-tracking-design.md'),
-    'utf8'
+    'utf8',
   );
   const retiredDesignTokens = [
     'participant FS as Firestore',
@@ -1127,14 +1316,18 @@ test('retired plan customization spec no longer carries executable Firestore des
   ];
 
   for (const token of retiredDesignTokens) {
-    assert.equal(source.includes(token), false, `retired plan customization spec still contains ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `retired plan customization spec still contains ${token}`,
+    );
   }
 });
 
 test('retired nutritionist governance superpower plan no longer carries executable Firestore tasks', () => {
   const source = readFileSync(
     join(root, 'docs/superpowers/plans/2026-06-01-nutritionist-experience-governance.md'),
-    'utf8'
+    'utf8',
   );
   const retiredPlanTokens = [
     'REQUIRED SUB-SKILL',
@@ -1150,14 +1343,18 @@ test('retired nutritionist governance superpower plan no longer carries executab
   ];
 
   for (const token of retiredPlanTokens) {
-    assert.equal(source.includes(token), false, `retired nutritionist governance plan still contains ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `retired nutritionist governance plan still contains ${token}`,
+    );
   }
 });
 
 test('retired AI provider superpower plan no longer carries executable Firebase Functions tasks', () => {
   const source = readFileSync(
     join(root, 'docs/superpowers/plans/2026-06-02-ai-provider-abstraction.md'),
-    'utf8'
+    'utf8',
   );
   const retiredPlanTokens = [
     'REQUIRED SUB-SKILL',
@@ -1177,419 +1374,982 @@ test('retired AI provider superpower plan no longer carries executable Firebase 
   }
 });
 
-parentWorkspaceTest('parent evidence adapter no longer recommends retired Firebase mobile checks', () => {
-  const adapter = readFileSync(join(root, '..', 'docs/superpowers/project-adapter.md'), 'utf8');
-  const retiredEvidenceCommands = [
-    'yarn test:rules',
-    'yarn check:ios-firebase',
-    'node scripts/validate-firestore-smoke.mjs',
-    'yarn validate:firestore:smoke',
-    'Firebase emulator output is valid rules evidence',
-  ];
+parentWorkspaceTest(
+  'parent evidence adapter no longer recommends retired Firebase mobile checks',
+  () => {
+    const adapter = readFileSync(join(root, '..', 'docs/superpowers/project-adapter.md'), 'utf8');
+    const retiredEvidenceCommands = [
+      'yarn test:rules',
+      'yarn check:ios-firebase',
+      'node scripts/validate-firestore-smoke.mjs',
+      'yarn validate:firestore:smoke',
+      'Firebase emulator output is valid rules evidence',
+    ];
 
-  for (const token of retiredEvidenceCommands) {
-    assert.equal(adapter.includes(token), false, `project adapter still recommends retired Firebase evidence: ${token}`);
-  }
-});
-
-parentWorkspaceTest('parent catalog-source docs no longer preserve Firebase-authenticated mobile food search', () => {
-  const parentCatalogDocs = [
-    '../docs/superpowers/specs/2026-06-21-mobile-backend-postgres-catalog-source-design.md',
-    '../docs/superpowers/plans/2026-06-21-mobile-backend-postgres-source-task-card.md',
-  ];
-  const staleCatalogAuthClaims = [
-    'Do not change Firebase/RevenueCat/auth behavior except for required mobile service URL config.',
-    'Food remains Firebase-authenticated',
-    'Food auth stays enforced',
-  ];
-
-  for (const relativePath of parentCatalogDocs) {
-    const source = readFileSync(join(root, relativePath), 'utf8');
-
-    for (const token of staleCatalogAuthClaims) {
-      assert.equal(source.includes(token), false, `${relativePath} still contains ${token}`);
+    for (const token of retiredEvidenceCommands) {
+      assert.equal(
+        adapter.includes(token),
+        false,
+        `project adapter still recommends retired Firebase evidence: ${token}`,
+      );
     }
-  }
-});
+  },
+);
 
-parentWorkspaceTest('current Firebase-removal task card no longer treats full mobile Firebase removal as out of scope', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'parent catalog-source docs no longer preserve Firebase-authenticated mobile food search',
+  () => {
+    const parentCatalogDocs = [
+      '../docs/superpowers/specs/2026-06-21-mobile-backend-postgres-catalog-source-design.md',
+      '../docs/superpowers/plans/2026-06-21-mobile-backend-postgres-source-task-card.md',
+    ];
+    const staleCatalogAuthClaims = [
+      'Do not change Firebase/RevenueCat/auth behavior except for required mobile service URL config.',
+      'Food remains Firebase-authenticated',
+      'Food auth stays enforced',
+    ];
 
-  const staleScopeClaims = [
-    'Do not remove all Firebase mobile usage in this slice.',
-    'Do not remove all Firebase mobile usage',
-    'Firebase mobile usage in this slice',
-  ];
+    for (const relativePath of parentCatalogDocs) {
+      const source = readFileSync(join(root, relativePath), 'utf8');
 
-  for (const claim of staleScopeClaims) {
-    assert.equal(taskCard.includes(claim), false, `current Firebase-removal task card still says: ${claim}`);
-  }
-});
-
-parentWorkspaceTest('current Firebase-removal task card affected surfaces reflect migrated CI and provider scope', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-
-  const staleSurfaceClaims = [
-    '| CI/deploy | Not changed |',
-    '| External providers | Supabase dependency only |',
-    'No live Supabase/Firebase mutation.',
-  ];
-
-  for (const claim of staleSurfaceClaims) {
-    assert.equal(taskCard.includes(claim), false, `current task-card surface map still says: ${claim}`);
-  }
-
-  assert.equal(taskCard.includes('Firebase App Distribution workflows'), true);
-  assert.equal(taskCard.includes('RevenueCat'), true);
-  assert.equal(taskCard.includes('self-managed auth/storage'), true);
-});
-
-parentWorkspaceTest('current Firebase-removal task card no longer frames local migration as scaffold-only', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const staleScaffoldClaims = [
-    'not required for local-only scaffold',
-    'Endpoint documented as local scaffolding.',
-    'Documented as local scaffold',
-    'Required: No for this local-only scaffold.',
-  ];
-
-  for (const claim of staleScaffoldClaims) {
-    assert.equal(taskCard.includes(claim), false, `current task card still frames migration as scaffold-only: ${claim}`);
-  }
-
-  assert.equal(taskCard.includes('local migration bridge'), true);
-  assert.equal(taskCard.includes('local-only migration work'), true);
-});
-
-parentWorkspaceTest('current Firebase-removal task card no longer tells workers to defer or roll back migrated mobile sources', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const staleMigrationGuidance = [
-    'deploy ordering: local server contract first, mobile source rewiring later.',
-    'rollback behavior: restore the previous `profile-source` provider implementation and remove/ignore `server/`.',
-    'Keep as local server foundation plus profile/support source rewiring; do not deploy until auth/storage and remaining mobile sources are designed and tested.',
-  ];
-
-  for (const claim of staleMigrationGuidance) {
-    assert.equal(taskCard.includes(claim), false, `current task card still has stale migration guidance: ${claim}`);
-  }
-
-  assert.equal(taskCard.includes('deploy ordering: keep local server and migrated mobile source boundaries together'), true);
-  assert.equal(taskCard.includes('rollback behavior: revert only the specific failing migration slice'), true);
-  assert.equal(taskCard.includes('Keep as local Firebase-removal migration evidence'), true);
-});
-
-parentWorkspaceTest('current Firebase-removal acceptance matrix no longer treats Firestore fallbacks as pending current behavior', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const acceptanceMatrix = taskCard.slice(
-    taskCard.indexOf('## Acceptance Matrix'),
-    taskCard.indexOf('## Open Questions')
-  );
-  const staleFallbackClaims = [
-    'Firestore fallback removal is tracked',
-    'falling back to Firestore for unmigrated sessions',
-    'full Firestore fallback removal is tracked',
-    'Full Firestore fallback removal is tracked',
-    'Firestore helpers load only inside the no-server legacy fallback',
-    'legacy Firebase session subscription and current-user reads are lazy fallback behavior',
-  ];
-
-  for (const claim of staleFallbackClaims) {
-    assert.equal(
-      acceptanceMatrix.includes(claim),
-      false,
-      `acceptance matrix still preserves stale Firebase fallback claim: ${claim}`
-    );
-  }
-
-  assert.equal(acceptanceMatrix.includes('fails closed without Firestore fallback'), true);
-});
-
-parentWorkspaceTest('current Firebase-removal acceptance matrix no longer preserves Firebase-shaped auth token contracts', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const acceptanceMatrix = taskCard.slice(
-    taskCard.indexOf('## Acceptance Matrix'),
-    taskCard.indexOf('## Open Questions')
-  );
-  const staleAuthContractClaims = [
-    'expose a user-shaped object with `getIdToken`',
-    'Profile hydration prefers a provider-neutral `getAccessToken()`',
-  ];
-
-  for (const claim of staleAuthContractClaims) {
-    assert.equal(
-      acceptanceMatrix.includes(claim),
-      false,
-      `acceptance matrix still preserves stale auth token contract: ${claim}`
-    );
-  }
-
-  assert.equal(
-    acceptanceMatrix.includes('Profile hydration resolves access through the central MyChampions server token source'),
-    true
-  );
-});
-
-parentWorkspaceTest('current Firebase-removal task card final evidence table describes the latest A308 continuation', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const finalEvidence = taskCard.slice(
-    taskCard.indexOf('## Final Evidence Report'),
-    taskCard.indexOf('## Human Approval')
-  );
-  const staleLatestEvidenceLabels = [
-    'latest auth-screen ordering cleanup',
-    'latest mobile source cleanup',
-    'latest provider-user bridge cleanup',
-  ];
-
-  for (const label of staleLatestEvidenceLabels) {
-    assert.equal(taskCard.includes(label), false, `final evidence table still points latest evidence at old slice: ${label}`);
-  }
-
-  assert.equal(taskCard.includes('Latest continuation updated this task card with A228'), false);
-  assert.equal(taskCard.includes('No integration route was rerun in this A228 docs/evidence continuation'), false);
-  assert.equal(taskCard.includes('No E2E run was needed for this A228 docs/evidence continuation'), false);
-  assert.equal(taskCard.includes('No build command was needed for this A228 docs/evidence continuation'), false);
-  assert.equal(taskCard.includes('No deploy/config command was needed for this A228 docs/evidence continuation'), false);
-  assert.equal(
-    finalEvidence.includes('Latest continuation: `cd mychampions && yarn test:unit` passed 1,216 tests across 72 suites'),
-    true
-  );
-  assert.equal(
-    finalEvidence.includes('`cd server && ../.local-bun/bin/bun test` passed 191 tests across 40 files under Bun `1.3.10`'),
-    true
-  );
-  assert.equal(
-    finalEvidence.includes('Active mobile runtime, native config, CI/workflow, package/lock, and source-boundary scans are Firebase-free outside explicit retired-document and test-guard references'),
-    true
-  );
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A308 local Firebase-removal completion audit continuation'), true);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A307 focused email-auth URL resolution failure normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A306 focused server-auth refresh payload failure normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A305 focused server-auth persisted refresh failure normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A304 focused server-auth restore cleanup normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A303 focused social-auth server URL configuration normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A302 focused Google client-id configuration normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A301 focused Google redirect URI configuration normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A300 focused Google auth-request network normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A299 focused Apple availability-check network normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A298 focused Apple provider-token network normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A297 focused Google provider-token network normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A296 server-owned custom meal image upload path continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A295 active mobile backend boundary audit continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A294 active runtime Firebase-free audit continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A293 focused package/lockfile dependency guard continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A292 focused local subscription snapshot read continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A291 focused meal-photo auth-error normalization continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A290 focused meal-photo provider-request contract continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A289 focused meal-photo blank-image guard continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A288 focused meal-photo prompt ownership continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A287 focused local meal-photo analysis size-cap continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A286 focused server-auth source local-boundary wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A285 focused mobile README local-server wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A284 focused server README active-auth wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A283 focused server README invite-submission wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A282 focused task-card local-dev bridge wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A281 focused server README contract continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A278 focused local dev-session variant-gate continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A277 focused subscription server-boundary wording continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A276 focused server README social-auth contract continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A275 focused server README contract continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A274 focused server-owned email verification session-state continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A273 focused language-switcher decision-log cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A272 focused support wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A271 focused legal URL decision-log cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A270 focused D-097 role-lock wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A269 focused D-104 professional tab decision-log cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A268 focused pending-tracker professional plan-library cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A267 focused plan-change notification decision-log cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A266 focused offline freshness decision-log cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A265 focused plan-builder localization stub-key cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A264 focused meal-photo analysis docs cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A263 focused auth terms provider-placeholder cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A262 focused auth-session API cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A261 focused mobile email-auth fallback removal continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A260 focused social-auth acceptance wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A259 focused auth-contract documentation cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A258 focused profile-token cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A257 focused acceptance-matrix cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A256 focused root server-script pinning continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A255 focused health runtime continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A254 focused workspace-local Bun continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A253 focused local doctor continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A252 focused Bun runtime enforcement continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A251 focused parent Bun runtime pin continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A250 focused Bun-first local setup docs continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A249 focused auth-screen social fallback cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A248 focused task-card social fallback cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A247 focused social-auth docs fallback cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A246 focused decision-log social fallback cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A245 focused pending-tracker top-level social fallback cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A244 focused pending-tracker auth status cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A243 focused pending-tracker social fallback wording cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A242 focused pending-tracker top-level email cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A241 focused auth-docs local credential cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A240 focused pending-tracker cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A239 focused local email credential continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A238 focused retired-design cleanup continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A237 focused compliance-evidence continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A236 focused local account deletion repository continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A235 focused RevenueCat webhook boundary continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A234 focused password-reset delivery gateway continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A233 focused local password-reset outbox continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A232 focused native Google token-capture continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A231 focused native Apple token-capture continuation'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A230 focused mobile social-auth source continuation'), false);
-  assert.equal(finalEvidence.includes('Latest continuation: `cd mychampions && yarn tsx --test features/auth/google-social-auth-source.test.ts` passed 4 tests'), false);
-  assert.equal(finalEvidence.includes('Latest continuation: `cd server && bun test tests/auth-account.test.ts tests/password-reset.test.ts tests/postgres-password-reset-service.test.ts` passed 7 tests / 22 expects'), false);
-  assert.equal(finalEvidence.includes('`cd mychampions && yarn tsx --test features/analytics/auth-onboarding-runtime.test.ts` passed 5 tests'), false);
-  assert.equal(finalEvidence.includes('passed 43 tests after adding the source-boundary guard and A230 evidence'), false);
-  assert.equal(finalEvidence.includes('passed 42 tests after adding A229'), false);
-  assert.equal(finalEvidence.includes('No E2E run was needed for this A229 focused route/source continuation'), false);
-  assert.equal(finalEvidence.includes('passed 38 tests after adding A226'), false);
-  assert.equal(
-    finalEvidence.includes('| Unit tests | Latest continuation: `cd mychampions && yarn tsx --test features/auth/firebase-config-removal-scan.test.ts` passed 39 tests'),
-    false
-  );
-  assert.equal(
-    finalEvidence.includes('| Unit tests | Latest continuation: `cd mychampions && yarn tsx --test features/auth/firebase-config-removal-scan.test.ts` passed 40 tests'),
-    false
-  );
-  assert.equal(finalEvidence.includes('passed 41 tests after adding A228'), false);
-});
-
-parentWorkspaceTest('current auth docs reserve deterministic local dev sessions for explicit local dev variants', () => {
-  const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
-  const pendingChecklist = readFileSync(join(root, 'docs/discovery/pending-wiring-checklist-v1.md'), 'utf8');
-  const businessRules = readFileSync(join(root, 'docs/business-rules/BR-002-role-assignment-and-plan-governance.md'), 'utf8');
-  const requirements = readFileSync(join(root, 'docs/functional-requirements/FR-001-domain-role-and-care-plans.md'), 'utf8');
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const docs = [
-    ['decisions log', decisionsLog],
-    ['pending tracker', pendingChecklist],
-    ['business rules', businessRules],
-    ['functional requirements', requirements],
-    ['task card', taskCard],
-  ] as const;
-  const broadClaims = [
-    'non-production local dev-session',
-    'non-production development uses deterministic local',
-    'non-production sign-in/create-account could use the local server dev-session endpoint',
-    'deterministic non-production/E2E sessions',
-    'deterministic dev sessions remain a non-production/E2E bridge',
-    'production variants must not use the deterministic local dev-session',
-    'production must not use the deterministic local dev-session',
-    'must not be used for production app variants',
-  ];
-
-  for (const [label, source] of docs) {
-    for (const claim of broadClaims) {
-      assert.equal(source.includes(claim), false, `${label} still scopes deterministic local dev sessions too broadly: ${claim}`);
+      for (const token of staleCatalogAuthClaims) {
+        assert.equal(source.includes(token), false, `${relativePath} still contains ${token}`);
+      }
     }
-  }
+  },
+);
 
-  assert.equal(
-    decisionsLog.includes('Deterministic local sessions are reserved for explicit local/dev provider-token configuration gaps outside E2E fixtures.'),
-    true
-  );
-  assert.equal(
-    pendingChecklist.includes('deterministic local dev-session fallback is available only in explicit local/dev app variants for explicit provider-token configuration gaps'),
-    true
-  );
-  assert.equal(
-    businessRules.includes('non-dev app variants must not use the deterministic local dev-session endpoint'),
-    true
-  );
-  assert.equal(
-    requirements.includes('the deterministic local dev-session endpoint must not be used for non-dev app variants'),
-    true
-  );
-  assert.equal(
-    taskCard.includes('Deterministic local dev-session endpoints are allowed only when the app variant is unset, blank, or `dev`'),
-    true
-  );
-});
+parentWorkspaceTest(
+  'current Firebase-removal task card no longer treats full mobile Firebase removal as out of scope',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-parentWorkspaceTest('current Firebase-removal task card no longer says mobile auth is waiting on legacy provider rewiring', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const staleAuthProviderEdgeCases = [
-    'skipped flow: mobile auth issuance still uses the existing auth provider until Supabase/server auth is migrated.',
-    'old app/client version: mobile still uses the existing auth provider until later rewiring.',
-  ];
+    const staleScopeClaims = [
+      'Do not remove all Firebase mobile usage in this slice.',
+      'Do not remove all Firebase mobile usage',
+      'Firebase mobile usage in this slice',
+    ];
 
-  for (const claim of staleAuthProviderEdgeCases) {
-    assert.equal(taskCard.includes(claim), false, `current task card still has stale auth-provider edge-case: ${claim}`);
-  }
+    for (const claim of staleScopeClaims) {
+      assert.equal(
+        taskCard.includes(claim),
+        false,
+        `current Firebase-removal task card still says: ${claim}`,
+      );
+    }
+  },
+);
 
-  assert.equal(taskCard.includes('skipped flow: remote provider auth exchange remains future work'), true);
-  assert.equal(taskCard.includes('old app/client version: local mobile clients use MyChampions server auth/data boundaries'), true);
-});
+parentWorkspaceTest(
+  'current Firebase-removal task card affected surfaces reflect migrated CI and provider scope',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+
+    const staleSurfaceClaims = [
+      '| CI/deploy | Not changed |',
+      '| External providers | Supabase dependency only |',
+      'No live Supabase/Firebase mutation.',
+    ];
+
+    for (const claim of staleSurfaceClaims) {
+      assert.equal(
+        taskCard.includes(claim),
+        false,
+        `current task-card surface map still says: ${claim}`,
+      );
+    }
+
+    assert.equal(taskCard.includes('Firebase App Distribution workflows'), true);
+    assert.equal(taskCard.includes('RevenueCat'), true);
+    assert.equal(taskCard.includes('self-managed auth/storage'), true);
+  },
+);
+
+parentWorkspaceTest(
+  'current Firebase-removal task card no longer frames local migration as scaffold-only',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const staleScaffoldClaims = [
+      'not required for local-only scaffold',
+      'Endpoint documented as local scaffolding.',
+      'Documented as local scaffold',
+      'Required: No for this local-only scaffold.',
+    ];
+
+    for (const claim of staleScaffoldClaims) {
+      assert.equal(
+        taskCard.includes(claim),
+        false,
+        `current task card still frames migration as scaffold-only: ${claim}`,
+      );
+    }
+
+    assert.equal(taskCard.includes('local migration bridge'), true);
+    assert.equal(taskCard.includes('local-only migration work'), true);
+  },
+);
+
+parentWorkspaceTest(
+  'current Firebase-removal task card no longer tells workers to defer or roll back migrated mobile sources',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const staleMigrationGuidance = [
+      'deploy ordering: local server contract first, mobile source rewiring later.',
+      'rollback behavior: restore the previous `profile-source` provider implementation and remove/ignore `server/`.',
+      'Keep as local server foundation plus profile/support source rewiring; do not deploy until auth/storage and remaining mobile sources are designed and tested.',
+    ];
+
+    for (const claim of staleMigrationGuidance) {
+      assert.equal(
+        taskCard.includes(claim),
+        false,
+        `current task card still has stale migration guidance: ${claim}`,
+      );
+    }
+
+    assert.equal(
+      taskCard.includes(
+        'deploy ordering: keep local server and migrated mobile source boundaries together',
+      ),
+      true,
+    );
+    assert.equal(
+      taskCard.includes('rollback behavior: revert only the specific failing migration slice'),
+      true,
+    );
+    assert.equal(taskCard.includes('Keep as local Firebase-removal migration evidence'), true);
+  },
+);
+
+parentWorkspaceTest(
+  'current Firebase-removal acceptance matrix no longer treats Firestore fallbacks as pending current behavior',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const acceptanceMatrix = taskCard.slice(
+      taskCard.indexOf('## Acceptance Matrix'),
+      taskCard.indexOf('## Open Questions'),
+    );
+    const staleFallbackClaims = [
+      'Firestore fallback removal is tracked',
+      'falling back to Firestore for unmigrated sessions',
+      'full Firestore fallback removal is tracked',
+      'Full Firestore fallback removal is tracked',
+      'Firestore helpers load only inside the no-server legacy fallback',
+      'legacy Firebase session subscription and current-user reads are lazy fallback behavior',
+    ];
+
+    for (const claim of staleFallbackClaims) {
+      assert.equal(
+        acceptanceMatrix.includes(claim),
+        false,
+        `acceptance matrix still preserves stale Firebase fallback claim: ${claim}`,
+      );
+    }
+
+    assert.equal(acceptanceMatrix.includes('fails closed without Firestore fallback'), true);
+  },
+);
+
+parentWorkspaceTest(
+  'current Firebase-removal acceptance matrix no longer preserves Firebase-shaped auth token contracts',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const acceptanceMatrix = taskCard.slice(
+      taskCard.indexOf('## Acceptance Matrix'),
+      taskCard.indexOf('## Open Questions'),
+    );
+    const staleAuthContractClaims = [
+      'expose a user-shaped object with `getIdToken`',
+      'Profile hydration prefers a provider-neutral `getAccessToken()`',
+    ];
+
+    for (const claim of staleAuthContractClaims) {
+      assert.equal(
+        acceptanceMatrix.includes(claim),
+        false,
+        `acceptance matrix still preserves stale auth token contract: ${claim}`,
+      );
+    }
+
+    assert.equal(
+      acceptanceMatrix.includes(
+        'Profile hydration resolves access through the central MyChampions server token source',
+      ),
+      true,
+    );
+  },
+);
+
+parentWorkspaceTest(
+  'current Firebase-removal task card final evidence table describes the latest A308 continuation',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const finalEvidence = taskCard.slice(
+      taskCard.indexOf('## Final Evidence Report'),
+      taskCard.indexOf('## Human Approval'),
+    );
+    const staleLatestEvidenceLabels = [
+      'latest auth-screen ordering cleanup',
+      'latest mobile source cleanup',
+      'latest provider-user bridge cleanup',
+    ];
+
+    for (const label of staleLatestEvidenceLabels) {
+      assert.equal(
+        taskCard.includes(label),
+        false,
+        `final evidence table still points latest evidence at old slice: ${label}`,
+      );
+    }
+
+    assert.equal(taskCard.includes('Latest continuation updated this task card with A228'), false);
+    assert.equal(
+      taskCard.includes('No integration route was rerun in this A228 docs/evidence continuation'),
+      false,
+    );
+    assert.equal(
+      taskCard.includes('No E2E run was needed for this A228 docs/evidence continuation'),
+      false,
+    );
+    assert.equal(
+      taskCard.includes('No build command was needed for this A228 docs/evidence continuation'),
+      false,
+    );
+    assert.equal(
+      taskCard.includes(
+        'No deploy/config command was needed for this A228 docs/evidence continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'Latest continuation: `cd mychampions && yarn test:unit` passed 1,216 tests across 72 suites',
+      ),
+      true,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        '`cd server && ../.local-bun/bin/bun test` passed 191 tests across 40 files under Bun `1.3.10`',
+      ),
+      true,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'Active mobile runtime, native config, CI/workflow, package/lock, and source-boundary scans are Firebase-free outside explicit retired-document and test-guard references',
+      ),
+      true,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A308 local Firebase-removal completion audit continuation',
+      ),
+      true,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A307 focused email-auth URL resolution failure normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A306 focused server-auth refresh payload failure normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A305 focused server-auth persisted refresh failure normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A304 focused server-auth restore cleanup normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A303 focused social-auth server URL configuration normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A302 focused Google client-id configuration normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A301 focused Google redirect URI configuration normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A300 focused Google auth-request network normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A299 focused Apple availability-check network normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A298 focused Apple provider-token network normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A297 focused Google provider-token network normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A296 server-owned custom meal image upload path continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A295 active mobile backend boundary audit continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A294 active runtime Firebase-free audit continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A293 focused package/lockfile dependency guard continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A292 focused local subscription snapshot read continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A291 focused meal-photo auth-error normalization continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A290 focused meal-photo provider-request contract continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A289 focused meal-photo blank-image guard continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A288 focused meal-photo prompt ownership continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A287 focused local meal-photo analysis size-cap continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A286 focused server-auth source local-boundary wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A285 focused mobile README local-server wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A284 focused server README active-auth wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A283 focused server README invite-submission wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A282 focused task-card local-dev bridge wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A281 focused server README contract continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A278 focused local dev-session variant-gate continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A277 focused subscription server-boundary wording continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A276 focused server README social-auth contract continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A275 focused server README contract continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A274 focused server-owned email verification session-state continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A273 focused language-switcher decision-log cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A272 focused support wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A271 focused legal URL decision-log cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A270 focused D-097 role-lock wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A269 focused D-104 professional tab decision-log cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A268 focused pending-tracker professional plan-library cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A267 focused plan-change notification decision-log cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A266 focused offline freshness decision-log cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A265 focused plan-builder localization stub-key cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A264 focused meal-photo analysis docs cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A263 focused auth terms provider-placeholder cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A262 focused auth-session API cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A261 focused mobile email-auth fallback removal continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A260 focused social-auth acceptance wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A259 focused auth-contract documentation cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A258 focused profile-token cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A257 focused acceptance-matrix cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A256 focused root server-script pinning continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A255 focused health runtime continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A254 focused workspace-local Bun continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A253 focused local doctor continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A252 focused Bun runtime enforcement continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A251 focused parent Bun runtime pin continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A250 focused Bun-first local setup docs continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A249 focused auth-screen social fallback cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A248 focused task-card social fallback cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A247 focused social-auth docs fallback cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A246 focused decision-log social fallback cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A245 focused pending-tracker top-level social fallback cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A244 focused pending-tracker auth status cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A243 focused pending-tracker social fallback wording cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A242 focused pending-tracker top-level email cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A241 focused auth-docs local credential cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A240 focused pending-tracker cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A239 focused local email credential continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A238 focused retired-design cleanup continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A237 focused compliance-evidence continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A236 focused local account deletion repository continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A235 focused RevenueCat webhook boundary continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A234 focused password-reset delivery gateway continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A233 focused local password-reset outbox continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A232 focused native Google token-capture continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A231 focused native Apple token-capture continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A230 focused mobile social-auth source continuation',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'Latest continuation: `cd mychampions && yarn tsx --test features/auth/google-social-auth-source.test.ts` passed 4 tests',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'Latest continuation: `cd server && bun test tests/auth-account.test.ts tests/password-reset.test.ts tests/postgres-password-reset-service.test.ts` passed 7 tests / 22 expects',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        '`cd mychampions && yarn tsx --test features/analytics/auth-onboarding-runtime.test.ts` passed 5 tests',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        'passed 43 tests after adding the source-boundary guard and A230 evidence',
+      ),
+      false,
+    );
+    assert.equal(finalEvidence.includes('passed 42 tests after adding A229'), false);
+    assert.equal(
+      finalEvidence.includes(
+        'No E2E run was needed for this A229 focused route/source continuation',
+      ),
+      false,
+    );
+    assert.equal(finalEvidence.includes('passed 38 tests after adding A226'), false);
+    assert.equal(
+      finalEvidence.includes(
+        '| Unit tests | Latest continuation: `cd mychampions && yarn tsx --test features/auth/firebase-config-removal-scan.test.ts` passed 39 tests',
+      ),
+      false,
+    );
+    assert.equal(
+      finalEvidence.includes(
+        '| Unit tests | Latest continuation: `cd mychampions && yarn tsx --test features/auth/firebase-config-removal-scan.test.ts` passed 40 tests',
+      ),
+      false,
+    );
+    assert.equal(finalEvidence.includes('passed 41 tests after adding A228'), false);
+  },
+);
+
+parentWorkspaceTest(
+  'current auth docs reserve deterministic local dev sessions for explicit local dev variants',
+  () => {
+    const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
+    const pendingChecklist = readFileSync(
+      join(root, 'docs/discovery/pending-wiring-checklist-v1.md'),
+      'utf8',
+    );
+    const businessRules = readFileSync(
+      join(root, 'docs/business-rules/BR-002-role-assignment-and-plan-governance.md'),
+      'utf8',
+    );
+    const requirements = readFileSync(
+      join(root, 'docs/functional-requirements/FR-001-domain-role-and-care-plans.md'),
+      'utf8',
+    );
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const docs = [
+      ['decisions log', decisionsLog],
+      ['pending tracker', pendingChecklist],
+      ['business rules', businessRules],
+      ['functional requirements', requirements],
+      ['task card', taskCard],
+    ] as const;
+    const broadClaims = [
+      'non-production local dev-session',
+      'non-production development uses deterministic local',
+      'non-production sign-in/create-account could use the local server dev-session endpoint',
+      'deterministic non-production/E2E sessions',
+      'deterministic dev sessions remain a non-production/E2E bridge',
+      'production variants must not use the deterministic local dev-session',
+      'production must not use the deterministic local dev-session',
+      'must not be used for production app variants',
+    ];
+
+    for (const [label, source] of docs) {
+      for (const claim of broadClaims) {
+        assert.equal(
+          source.includes(claim),
+          false,
+          `${label} still scopes deterministic local dev sessions too broadly: ${claim}`,
+        );
+      }
+    }
+
+    assert.equal(
+      decisionsLog.includes(
+        'Deterministic local sessions are reserved for explicit local/dev provider-token configuration gaps outside E2E fixtures.',
+      ),
+      true,
+    );
+    assert.equal(
+      pendingChecklist.includes(
+        'deterministic local dev-session fallback is available only in explicit local/dev app variants for explicit provider-token configuration gaps',
+      ),
+      true,
+    );
+    assert.equal(
+      businessRules.includes(
+        'non-dev app variants must not use the deterministic local dev-session endpoint',
+      ),
+      true,
+    );
+    assert.equal(
+      requirements.includes(
+        'the deterministic local dev-session endpoint must not be used for non-dev app variants',
+      ),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Deterministic local dev-session endpoints are allowed only when the app variant is unset, blank, or `dev`',
+      ),
+      true,
+    );
+  },
+);
+
+parentWorkspaceTest(
+  'current Firebase-removal task card no longer says mobile auth is waiting on legacy provider rewiring',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const staleAuthProviderEdgeCases = [
+      'skipped flow: mobile auth issuance still uses the existing auth provider until Supabase/server auth is migrated.',
+      'old app/client version: mobile still uses the existing auth provider until later rewiring.',
+    ];
+
+    for (const claim of staleAuthProviderEdgeCases) {
+      assert.equal(
+        taskCard.includes(claim),
+        false,
+        `current task card still has stale auth-provider edge-case: ${claim}`,
+      );
+    }
+
+    assert.equal(
+      taskCard.includes('skipped flow: remote provider auth exchange remains future work'),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'old app/client version: local mobile clients use MyChampions server auth/data boundaries',
+      ),
+      true,
+    );
+  },
+);
 
 test('pending tracker describes local Postgres email credentials instead of dev-session email auth', () => {
   const pendingChecklist = readFileSync(
     join(root, 'docs/discovery/pending-wiring-checklist-v1.md'),
-    'utf8'
+    'utf8',
   );
 
   assert.equal(
     pendingChecklist.includes(
-      'Non-production email/password sign-in and account creation can establish an in-memory local server bearer session through `/auth/dev/session` only after the server email-auth route reports a provider configuration failure'
+      'Non-production email/password sign-in and account creation can establish an in-memory local server bearer session through `/auth/dev/session` only after the server email-auth route reports a provider configuration failure',
     ),
-    false
+    false,
+  );
+  assert.equal(pendingChecklist.includes('before using any local dev-session fallback'), false);
+  assert.equal(
+    pendingChecklist.includes(
+      'server/provider boundary is unavailable outside the explicit non-production configuration fallback',
+    ),
+    false,
   );
   assert.equal(
-    pendingChecklist.includes('before using any local dev-session fallback'),
-    false
-  );
-  assert.equal(
-    pendingChecklist.includes('server/provider boundary is unavailable outside the explicit non-production configuration fallback'),
-    false
-  );
-  assert.equal(
-    pendingChecklist.includes('only falls back to the non-production local dev-session route for explicit configuration failures'),
-    false
+    pendingChecklist.includes(
+      'only falls back to the non-production local dev-session route for explicit configuration failures',
+    ),
+    false,
   );
   assert.equal(pendingChecklist.includes('local Postgres `local_email_auth_credentials`'), true);
+  assert.equal(pendingChecklist.includes('Local Postgres is the only credential store.'), true);
   assert.equal(
-    pendingChecklist.includes('Local Postgres is the only credential store.'),
-    true
-  );
-  assert.equal(
-    pendingChecklist.includes('without using the deterministic dev-session bridge for normal local email/password auth'),
-    true
+    pendingChecklist.includes(
+      'without using the deterministic dev-session bridge for normal local email/password auth',
+    ),
+    true,
   );
 });
 
 test('pending tracker limits social auth deterministic fallback to provider-token configuration gaps', () => {
   const pendingChecklist = readFileSync(
     join(root, 'docs/discovery/pending-wiring-checklist-v1.md'),
-    'utf8'
+    'utf8',
   );
   const staleSocialFallbackClaims = [
     'falls back to a deterministic local MyChampions server social session with provider-neutral `google` IDs only for configuration gaps.',
@@ -1604,121 +2364,176 @@ test('pending tracker limits social auth deterministic fallback to provider-toke
     assert.equal(
       pendingChecklist.includes(claim),
       false,
-      `pending tracker still presents social auth deterministic fallback too broadly: ${claim}`
+      `pending tracker still presents social auth deterministic fallback too broadly: ${claim}`,
     );
   }
 
   assert.equal(
-    pendingChecklist.includes('only using deterministic local dev-session fallback in unset, blank, or `dev` app variants for explicit provider-token configuration gaps'),
-    true
+    pendingChecklist.includes(
+      'only using deterministic local dev-session fallback in unset, blank, or `dev` app variants for explicit provider-token configuration gaps',
+    ),
+    true,
   );
   assert.equal(
-    pendingChecklist.includes('provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps'),
-    true
+    pendingChecklist.includes(
+      'provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps',
+    ),
+    true,
   );
   assert.equal(
-    pendingChecklist.includes('provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps'),
-    true
+    pendingChecklist.includes(
+      'provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps',
+    ),
+    true,
   );
 });
 
-parentWorkspaceTest('current decisions and task card limit local social fallback to provider-token configuration gaps', () => {
-  const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
-  const mobileNfr = readFileSync(join(root, 'docs/specs/mobile-nfr-tech-stack-spec.md'), 'utf8');
-  const signInSpec = readFileSync(join(root, 'docs/screens/v2/SC-217-auth-sign-in.md'), 'utf8');
-  const createAccountSpec = readFileSync(join(root, 'docs/screens/v2/SC-218-auth-create-account.md'), 'utf8');
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const staleDecisionClaims = [
-    'Google and Apple can still establish deterministic local MyChampions server sessions for configuration gaps outside explicit E2E fixtures.',
-    'Real production provider token exchange remains future server/Supabase provider work.',
-    'non-production development uses deterministic local MyChampions server social sessions, and production Supabase/provider token exchange remains future provider work.',
-  ];
-  const staleMobileNfrClaims = [
-    'Social auth uses explicit E2E fixtures first and deterministic local MyChampions server social sessions for non-production development; production Supabase/provider token exchange remains future provider work.',
-  ];
-  const staleAuthScreenClaims = [
-    'Configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs in non-production.',
-    'Configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs in non-production.',
-  ];
-  const staleTaskCardClaims = [
-    'local dev social buttons can now start deterministic MyChampions server sessions with provider-neutral `google`/`apple` IDs.',
-    'Non-production Google/Apple social buttons keep explicit E2E overrides first, then start deterministic local MyChampions server sessions with provider-neutral `authProviderIds` instead of failing closed or using Firebase credentials.',
-    'They now describe E2E-first local server social sessions and plan-store server/E2E/fail-closed auth ownership.',
-    'before falling back to deterministic local MyChampions server sessions in non-production configuration gaps.',
-    'D-090 now matches the current local behavior: email/password, Google, and Apple can establish deterministic local MyChampions server sessions in non-production, while real production provider token exchange remains future server/Supabase provider work.',
-    'They now describe explicit E2E social fixtures first, deterministic local MyChampions server social sessions for non-production development, and production Supabase/provider token exchange as future provider work.',
-    'Configuration failures fall back to `AuthSessionProvider#signInWithServerSocialAuth(...)` for deterministic local dev sessions.',
-    'External auth-provider token issuance is still present as an incremental bridge; full provider removal remains a later slice.',
-    'outside those fixtures, social provider auth fails closed with a configuration error until the local/Supabase bridge exists.',
-    'until the local/Supabase bridge exists.',
-  ];
+parentWorkspaceTest(
+  'current decisions and task card limit local social fallback to provider-token configuration gaps',
+  () => {
+    const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
+    const mobileNfr = readFileSync(join(root, 'docs/specs/mobile-nfr-tech-stack-spec.md'), 'utf8');
+    const signInSpec = readFileSync(join(root, 'docs/screens/v2/SC-217-auth-sign-in.md'), 'utf8');
+    const createAccountSpec = readFileSync(
+      join(root, 'docs/screens/v2/SC-218-auth-create-account.md'),
+      'utf8',
+    );
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const staleDecisionClaims = [
+      'Google and Apple can still establish deterministic local MyChampions server sessions for configuration gaps outside explicit E2E fixtures.',
+      'Real production provider token exchange remains future server/Supabase provider work.',
+      'non-production development uses deterministic local MyChampions server social sessions, and production Supabase/provider token exchange remains future provider work.',
+    ];
+    const staleMobileNfrClaims = [
+      'Social auth uses explicit E2E fixtures first and deterministic local MyChampions server social sessions for non-production development; production Supabase/provider token exchange remains future provider work.',
+    ];
+    const staleAuthScreenClaims = [
+      'Configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs in non-production.',
+      'Configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs in non-production.',
+    ];
+    const staleTaskCardClaims = [
+      'local dev social buttons can now start deterministic MyChampions server sessions with provider-neutral `google`/`apple` IDs.',
+      'Non-production Google/Apple social buttons keep explicit E2E overrides first, then start deterministic local MyChampions server sessions with provider-neutral `authProviderIds` instead of failing closed or using Firebase credentials.',
+      'They now describe E2E-first local server social sessions and plan-store server/E2E/fail-closed auth ownership.',
+      'before falling back to deterministic local MyChampions server sessions in non-production configuration gaps.',
+      'D-090 now matches the current local behavior: email/password, Google, and Apple can establish deterministic local MyChampions server sessions in non-production, while real production provider token exchange remains future server/Supabase provider work.',
+      'They now describe explicit E2E social fixtures first, deterministic local MyChampions server social sessions for non-production development, and production Supabase/provider token exchange as future provider work.',
+      'Configuration failures fall back to `AuthSessionProvider#signInWithServerSocialAuth(...)` for deterministic local dev sessions.',
+      'External auth-provider token issuance is still present as an incremental bridge; full provider removal remains a later slice.',
+      'outside those fixtures, social provider auth fails closed with a configuration error until the local/Supabase bridge exists.',
+      'until the local/Supabase bridge exists.',
+    ];
 
-  for (const claim of staleDecisionClaims) {
-    assert.equal(decisionsLog.includes(claim), false, `decisions log still scopes social fallback too broadly: ${claim}`);
-  }
+    for (const claim of staleDecisionClaims) {
+      assert.equal(
+        decisionsLog.includes(claim),
+        false,
+        `decisions log still scopes social fallback too broadly: ${claim}`,
+      );
+    }
 
-  for (const claim of staleMobileNfrClaims) {
-    assert.equal(mobileNfr.includes(claim), false, `mobile NFR still scopes social fallback too broadly: ${claim}`);
-  }
+    for (const claim of staleMobileNfrClaims) {
+      assert.equal(
+        mobileNfr.includes(claim),
+        false,
+        `mobile NFR still scopes social fallback too broadly: ${claim}`,
+      );
+    }
 
-  for (const claim of staleAuthScreenClaims) {
-    assert.equal(signInSpec.includes(claim), false, `sign-in spec still scopes social fallback too broadly: ${claim}`);
-    assert.equal(createAccountSpec.includes(claim), false, `create-account spec still scopes social fallback too broadly: ${claim}`);
-  }
+    for (const claim of staleAuthScreenClaims) {
+      assert.equal(
+        signInSpec.includes(claim),
+        false,
+        `sign-in spec still scopes social fallback too broadly: ${claim}`,
+      );
+      assert.equal(
+        createAccountSpec.includes(claim),
+        false,
+        `create-account spec still scopes social fallback too broadly: ${claim}`,
+      );
+    }
 
-  for (const claim of staleTaskCardClaims) {
-    assert.equal(taskCard.includes(claim), false, `task card still scopes social fallback too broadly: ${claim}`);
-  }
+    for (const claim of staleTaskCardClaims) {
+      assert.equal(
+        taskCard.includes(claim),
+        false,
+        `task card still scopes social fallback too broadly: ${claim}`,
+      );
+    }
 
-  assert.equal(
-    decisionsLog.includes('Deterministic local sessions are reserved for explicit local/dev provider-token configuration gaps outside E2E fixtures.'),
-    true
-  );
-  assert.equal(
-    decisionsLog.includes('Google and Apple ID tokens are verified directly by the server against configured issuer/audience claims.'),
-    true
-  );
-  assert.equal(
-    taskCard.includes('before using deterministic local MyChampions server sessions only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps.'),
-    true
-  );
-  assert.equal(
-    mobileNfr.includes('Social auth uses explicit E2E fixtures first, then native provider-token capture plus the MyChampions server `POST /auth/social/sign-in` boundary; deterministic local MyChampions server social sessions are reserved only for explicit provider-token configuration gaps.'),
-    true
-  );
-  assert.equal(
-    taskCard.includes('Explicit provider-token configuration failures fall back to `AuthSessionProvider#signInWithServerSocialAuth(...)` for deterministic local dev sessions only when the app variant is unset, blank, or `dev`.'),
-    true
-  );
-  assert.equal(
-    taskCard.includes('Google/Apple social buttons keep explicit E2E overrides first, then try native provider-token capture plus the MyChampions server social-auth boundary before using deterministic local sessions only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps.'),
-    true
-  );
-  assert.equal(
-    signInSpec.includes('provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.'),
-    true
-  );
-  assert.equal(
-    signInSpec.includes('provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.'),
-    true
-  );
-  assert.equal(
-    createAccountSpec.includes('provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.'),
-    true
-  );
-  assert.equal(
-    createAccountSpec.includes('provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.'),
-    true
-  );
-});
+    assert.equal(
+      decisionsLog.includes(
+        'Deterministic local sessions are reserved for explicit local/dev provider-token configuration gaps outside E2E fixtures.',
+      ),
+      true,
+    );
+    assert.equal(
+      decisionsLog.includes(
+        'Google and Apple ID tokens are verified directly by the server against configured issuer/audience claims.',
+      ),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'before using deterministic local MyChampions server sessions only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps.',
+      ),
+      true,
+    );
+    assert.equal(
+      mobileNfr.includes(
+        'Social auth uses explicit E2E fixtures first, then native provider-token capture plus the MyChampions server `POST /auth/social/sign-in` boundary; deterministic local MyChampions server social sessions are reserved only for explicit provider-token configuration gaps.',
+      ),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Explicit provider-token configuration failures fall back to `AuthSessionProvider#signInWithServerSocialAuth(...)` for deterministic local dev sessions only when the app variant is unset, blank, or `dev`.',
+      ),
+      true,
+    );
+    assert.equal(
+      taskCard.includes(
+        'Google/Apple social buttons keep explicit E2E overrides first, then try native provider-token capture plus the MyChampions server social-auth boundary before using deterministic local sessions only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps.',
+      ),
+      true,
+    );
+    assert.equal(
+      signInSpec.includes(
+        'provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.',
+      ),
+      true,
+    );
+    assert.equal(
+      signInSpec.includes(
+        'provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.',
+      ),
+      true,
+    );
+    assert.equal(
+      createAccountSpec.includes(
+        'provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.',
+      ),
+      true,
+    );
+    assert.equal(
+      createAccountSpec.includes(
+        'provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.',
+      ),
+      true,
+    );
+  },
+);
 
 test('pending tracker scopes remaining auth work to Apple profile proof', () => {
   const pendingChecklist = readFileSync(
     join(root, 'docs/discovery/pending-wiring-checklist-v1.md'),
-    'utf8'
+    'utf8',
   );
   const staleAuthStatusClaims = [
     '`In progress`: Replace legacy provider-backed auth session/profile behavior with MyChampions server/Supabase-backed auth.',
@@ -1729,98 +2544,139 @@ test('pending tracker scopes remaining auth work to Apple profile proof', () => 
     assert.equal(
       pendingChecklist.includes(claim),
       false,
-      `pending tracker still scopes auth status too broadly: ${claim}`
+      `pending tracker still scopes auth status too broadly: ${claim}`,
     );
   }
 
   assert.equal(
-    pendingChecklist.includes('`In progress`: Complete durable self-managed auth session persistence and approved production provider configuration after the remote server/database are ready.'),
-    true
+    pendingChecklist.includes(
+      '`In progress`: Complete durable self-managed auth session persistence and approved production provider configuration after the remote server/database are ready.',
+    ),
+    true,
   );
   assert.equal(
-    pendingChecklist.includes('Done: Durable self-managed server auth sessions are persisted in PostgreSQL with rotating refresh-token digests and stable configured JWT key material; local mobile auth/profile behavior is server-owned.'),
-    true
+    pendingChecklist.includes(
+      'Done: Durable self-managed server auth sessions are persisted in PostgreSQL with rotating refresh-token digests and stable configured JWT key material; local mobile auth/profile behavior is server-owned.',
+    ),
+    true,
   );
   assert.equal(
-    pendingChecklist.includes('Apple blocks profile creation until the account holder accepts the latest Program License Agreement'),
-    true
+    pendingChecklist.includes(
+      'Apple blocks profile creation until the account holder accepts the latest Program License Agreement',
+    ),
+    true,
   );
 });
 
-parentWorkspaceTest('current auth requirements and decisions describe local Postgres email credentials', () => {
-  const files = [
-    '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
-    'docs/discovery/decisions-log-v1.md',
-    'docs/discovery/backend-provider-migration-v1.md',
-    'docs/business-rules/BR-002-role-assignment-and-plan-governance.md',
-    'docs/functional-requirements/FR-001-domain-role-and-care-plans.md',
-  ];
-  const staleClaims = [
-    'non-production email/password auth can use the local MyChampions server dev session',
-    'email/password sign-up now routes through the local MyChampions server dev-session bridge',
-    'Email/password, Google, and Apple can establish deterministic local MyChampions server sessions',
-    'Current auth wiring notes point to the local server dev-session bridge and future server/Supabase provider bridge.',
-    'non-production email/password sign-in and account creation may establish a local MyChampions server bearer session; production must not use the local dev-session endpoint.',
-    'email/password sign-in and account creation may use the MyChampions server dev-session endpoint',
-    'Configuration is the only email-auth source failure reason that can reach the dev-session path.',
-    'before trying the non-production `/auth/dev/session` fallback',
-    'The fallback is only reached when the email-auth source maps the server response to `configuration`',
-  ];
+parentWorkspaceTest(
+  'current auth requirements and decisions describe local Postgres email credentials',
+  () => {
+    const files = [
+      '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      'docs/discovery/decisions-log-v1.md',
+      'docs/discovery/backend-provider-migration-v1.md',
+      'docs/business-rules/BR-002-role-assignment-and-plan-governance.md',
+      'docs/functional-requirements/FR-001-domain-role-and-care-plans.md',
+    ];
+    const staleClaims = [
+      'non-production email/password auth can use the local MyChampions server dev session',
+      'email/password sign-up now routes through the local MyChampions server dev-session bridge',
+      'Email/password, Google, and Apple can establish deterministic local MyChampions server sessions',
+      'Current auth wiring notes point to the local server dev-session bridge and future server/Supabase provider bridge.',
+      'non-production email/password sign-in and account creation may establish a local MyChampions server bearer session; production must not use the local dev-session endpoint.',
+      'email/password sign-in and account creation may use the MyChampions server dev-session endpoint',
+      'Configuration is the only email-auth source failure reason that can reach the dev-session path.',
+      'before trying the non-production `/auth/dev/session` fallback',
+      'The fallback is only reached when the email-auth source maps the server response to `configuration`',
+    ];
 
-  for (const file of files) {
-    const source = readFileSync(join(root, file), 'utf8');
-    for (const claim of staleClaims) {
-      assert.equal(source.includes(claim), false, `${file} still contains stale local email auth claim: ${claim}`);
+    for (const file of files) {
+      const source = readFileSync(join(root, file), 'utf8');
+      for (const claim of staleClaims) {
+        assert.equal(
+          source.includes(claim),
+          false,
+          `${file} still contains stale local email auth claim: ${claim}`,
+        );
+      }
     }
-  }
 
-  const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
-  assert.equal(decisionsLog.includes('local Postgres `local_email_auth_credentials`'), true);
+    const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
+    assert.equal(decisionsLog.includes('local Postgres `local_email_auth_credentials`'), true);
 
-  const businessRules = readFileSync(join(root, 'docs/business-rules/BR-002-role-assignment-and-plan-governance.md'), 'utf8');
-  assert.equal(businessRules.includes('local Postgres `local_email_auth_credentials`'), true);
+    const businessRules = readFileSync(
+      join(root, 'docs/business-rules/BR-002-role-assignment-and-plan-governance.md'),
+      'utf8',
+    );
+    assert.equal(businessRules.includes('local Postgres `local_email_auth_credentials`'), true);
 
-  const requirements = readFileSync(join(root, 'docs/functional-requirements/FR-001-domain-role-and-care-plans.md'), 'utf8');
-  assert.equal(requirements.includes('local Postgres `local_email_auth_credentials`'), true);
-});
+    const requirements = readFileSync(
+      join(root, 'docs/functional-requirements/FR-001-domain-role-and-care-plans.md'),
+      'utf8',
+    );
+    assert.equal(requirements.includes('local Postgres `local_email_auth_credentials`'), true);
+  },
+);
 
-parentWorkspaceTest('current Firebase-removal task card no longer says local plan-change notification delivery is future work', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const stalePlanChangeNotificationClaim =
-    'professional notification delivery after a student submits a plan-change request remains future work.';
+parentWorkspaceTest(
+  'current Firebase-removal task card no longer says local plan-change notification delivery is future work',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const stalePlanChangeNotificationClaim =
+      'professional notification delivery after a student submits a plan-change request remains future work.';
 
-  assert.equal(
-    taskCard.includes(stalePlanChangeNotificationClaim),
-    false,
-    'current task card still hides the completed local in-app plan-change notification surface behind future-work wording'
-  );
-  assert.equal(taskCard.includes('local in-app professional plan-change notification surface is server-backed'), true);
-});
+    assert.equal(
+      taskCard.includes(stalePlanChangeNotificationClaim),
+      false,
+      'current task card still hides the completed local in-app plan-change notification surface behind future-work wording',
+    );
+    assert.equal(
+      taskCard.includes(
+        'local in-app professional plan-change notification surface is server-backed',
+      ),
+      true,
+    );
+  },
+);
 
-parentWorkspaceTest('current Firebase-removal task card no longer says professional tracking review receives hydration goal from mobile caller', () => {
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
-  const staleTrackingReviewGoalClaim =
-    'hydration goal context is server-backed for the student-facing source, while professional review still receives the goal value from its current mobile caller contract.';
+parentWorkspaceTest(
+  'current Firebase-removal task card no longer says professional tracking review receives hydration goal from mobile caller',
+  () => {
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
+    const staleTrackingReviewGoalClaim =
+      'hydration goal context is server-backed for the student-facing source, while professional review still receives the goal value from its current mobile caller contract.';
 
-  assert.equal(
-    taskCard.includes(staleTrackingReviewGoalClaim),
-    false,
-    'current task card still says professional tracking review receives hydration goal context from the mobile caller'
-  );
-  assert.equal(
-    taskCard.includes('tracking-review scope: professional student tracking review reads and hydration goal context are server-backed'),
-    true
-  );
-});
+    assert.equal(
+      taskCard.includes(staleTrackingReviewGoalClaim),
+      false,
+      'current task card still says professional tracking review receives hydration goal context from the mobile caller',
+    );
+    assert.equal(
+      taskCard.includes(
+        'tracking-review scope: professional student tracking review reads and hydration goal context are server-backed',
+      ),
+      true,
+    );
+  },
+);
 
 test('deprecated food API evaluation no longer states Firebase-token food search as current', () => {
-  const source = readFileSync(join(root, 'docs/discovery/food-api-evaluation-2026-02-26.md'), 'utf8');
+  const source = readFileSync(
+    join(root, 'docs/discovery/food-api-evaluation-2026-02-26.md'),
+    'utf8',
+  );
   const staleCurrentClaims = [
     '## Current Decision',
     'Active provider contract is the VPS food-search microservice endpoint:',
@@ -1829,7 +2685,11 @@ test('deprecated food API evaluation no longer states Firebase-token food search
   ];
 
   for (const token of staleCurrentClaims) {
-    assert.equal(source.includes(token), false, `food API evaluation still presents stale current claim: ${token}`);
+    assert.equal(
+      source.includes(token),
+      false,
+      `food API evaluation still presents stale current claim: ${token}`,
+    );
   }
 });
 
@@ -1851,7 +2711,11 @@ test('current nutrition docs no longer route mobile food search directly to the 
     const source = readFileSync(join(root, relativePath), 'utf8');
 
     for (const token of staleDirectFoodServiceClaims) {
-      assert.equal(source.includes(token), false, `${relativePath} still routes food search directly to ${token}`);
+      assert.equal(
+        source.includes(token),
+        false,
+        `${relativePath} still routes food search directly to ${token}`,
+      );
     }
   }
 });
@@ -1939,7 +2803,11 @@ test('decision log no longer records retired Firebase services as active archite
   ];
 
   for (const token of staleActiveDecisions) {
-    assert.equal(decisionsLog.includes(token), false, `decisions-log still contains active Firebase claim: ${token}`);
+    assert.equal(
+      decisionsLog.includes(token),
+      false,
+      `decisions-log still contains active Firebase claim: ${token}`,
+    );
   }
 });
 
@@ -2014,37 +2882,34 @@ test('backend authority docs keep the MyChampions server baseline and Firebase r
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
   const migration = readFileSync(
     join(root, 'docs/discovery/backend-provider-migration-v1.md'),
-    'utf8'
+    'utf8',
   );
   const socialAuth = readFileSync(
     join(root, 'docs/specs/2026-07-13-native-social-auth-design.md'),
-    'utf8'
+    'utf8',
   );
-  const webSupport = readFileSync(
-    join(root, 'docs/specs/web-platform-support-spec.md'),
-    'utf8'
-  );
+  const webSupport = readFileSync(join(root, 'docs/specs/web-platform-support-spec.md'), 'utf8');
   const currentDocs = [agents, migration, socialAuth, webSupport];
 
   for (const source of currentDocs) {
     assert.equal(
       source.includes('Current backend baseline is Firebase'),
       false,
-      'current documentation must not restore Firebase as the backend baseline'
+      'current documentation must not restore Firebase as the backend baseline',
     );
   }
 
   assert.equal(
     agents.includes('Current app-domain backend baseline is the root-level MyChampions server'),
-    true
+    true,
   );
   assert.equal(
     agents.includes('Firebase Auth, Cloud Firestore, and Firebase Cloud Storage are retired'),
-    true
+    true,
   );
   assert.equal(
     migration.includes('Identity, sessions, profiles, and app-domain records are authoritative'),
-    true
+    true,
   );
   assert.match(migration, /RevenueCat SDK or signed webhook\s+observations/);
   assert.match(socialAuth, /does not restore\s+Firebase Auth as an application runtime/);
@@ -2055,16 +2920,21 @@ test('backend authority docs keep the MyChampions server baseline and Firebase r
 test('pending tracker no longer lists completed cap-sensitive write locks as remaining work', () => {
   const source = readFileSync(join(root, 'docs/discovery/pending-wiring-checklist-v1.md'), 'utf8');
 
-  assert.equal(source.includes('Wire RevenueCat entitlement checks to professional cap-sensitive actions'), true);
   assert.equal(
-    source.includes('Server-side pending connection confirmation now blocks activation of a new 11th unique active student'),
-    true
+    source.includes('Wire RevenueCat entitlement checks to professional cap-sensitive actions'),
+    true,
+  );
+  assert.equal(
+    source.includes(
+      'Server-side pending connection confirmation now blocks activation of a new 11th unique active student',
+    ),
+    true,
   );
   assert.equal(source.includes('subscription_entitlement_snapshots'), true);
   assert.equal(
     source.includes('remaining cap-sensitive write locks'),
     false,
-    'cap-sensitive write locks are already covered by server activation and assigned-plan write lock enforcement'
+    'cap-sensitive write locks are already covered by server activation and assigned-plan write lock enforcement',
   );
 });
 
@@ -2072,17 +2942,23 @@ test('pending tracker no longer describes implemented professional plan librarie
   const source = readFileSync(join(root, 'docs/discovery/pending-wiring-checklist-v1.md'), 'utf8');
 
   assert.equal(
-    source.includes('Professional nutrition placeholder (`app/professional/nutrition.tsx`) and training placeholder (`app/professional/training.tsx`) created for SC-207/SC-208 (not yet implemented).'),
+    source.includes(
+      'Professional nutrition placeholder (`app/professional/nutrition.tsx`) and training placeholder (`app/professional/training.tsx`) created for SC-207/SC-208 (not yet implemented).',
+    ),
     false,
-    'SC-207/SC-208 professional library screens are implemented server-backed surfaces, not current placeholders'
+    'SC-207/SC-208 professional library screens are implemented server-backed surfaces, not current placeholders',
   );
   assert.equal(
-    source.includes('SC-207 Nutrition Plan Builder implemented at `app/professional/nutrition/plans/[planId].tsx`; `app/professional/nutrition.tsx` converted to predefined plan library list screen.'),
-    true
+    source.includes(
+      'SC-207 Nutrition Plan Builder implemented at `app/professional/nutrition/plans/[planId].tsx`; `app/professional/nutrition.tsx` converted to predefined plan library list screen.',
+    ),
+    true,
   );
   assert.equal(
-    source.includes('SC-208 Training Plan Builder implemented at `app/professional/training/plans/[planId].tsx`; `app/professional/training.tsx` converted to predefined plan library list screen.'),
-    true
+    source.includes(
+      'SC-208 Training Plan Builder implemented at `app/professional/training/plans/[planId].tsx`; `app/professional/training.tsx` converted to predefined plan library list screen.',
+    ),
+    true,
   );
 });
 
@@ -2095,12 +2971,16 @@ test('decision log no longer claims offline sync timestamps are pending', () => 
   ];
 
   for (const claim of staleOfflineSyncClaims) {
-    assert.equal(decisionsLog.includes(claim), false, `decisions log still contains stale offline sync claim: ${claim}`);
+    assert.equal(
+      decisionsLog.includes(claim),
+      false,
+      `decisions log still contains stale offline sync claim: ${claim}`,
+    );
   }
 
   assert.equal(
     decisionsLog.includes('derive `lastSyncedAtIso` from server-backed source load timestamps'),
-    true
+    true,
   );
 });
 
@@ -2108,19 +2988,21 @@ test('decision log records local in-app plan-change notification surface as serv
   const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
 
   assert.equal(
-    decisionsLog.includes('Professional notification on submission is deferred until push notification infrastructure is provisioned.'),
+    decisionsLog.includes(
+      'Professional notification on submission is deferred until push notification infrastructure is provisioned.',
+    ),
     false,
-    'D-116 should distinguish the completed local in-app surface from future push/provider delivery'
+    'D-116 should distinguish the completed local in-app surface from future push/provider delivery',
   );
   assert.equal(
     decisionsLog.includes('local in-app professional notification surface is server-backed'),
     true,
-    'D-116 should record the server-backed local in-app notification surface'
+    'D-116 should record the server-backed local in-app notification surface',
   );
   assert.equal(
     decisionsLog.includes('push/provider notification delivery remains future work'),
     true,
-    'D-116 should keep only push/provider notification delivery as future work'
+    'D-116 should keep only push/provider notification delivery as future work',
   );
 });
 
@@ -2128,14 +3010,18 @@ test('decision log no longer describes implemented professional plan tabs as com
   const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
 
   assert.equal(
-    decisionsLog.includes('Professional SC-207 (nutrition plan builder) and SC-208 (training plan builder) tabs show "coming soon" placeholders until those screens are implemented.'),
+    decisionsLog.includes(
+      'Professional SC-207 (nutrition plan builder) and SC-208 (training plan builder) tabs show "coming soon" placeholders until those screens are implemented.',
+    ),
     false,
-    'D-104 should describe the current server-backed plan-library tabs instead of retired coming-soon placeholders'
+    'D-104 should describe the current server-backed plan-library tabs instead of retired coming-soon placeholders',
   );
   assert.equal(
-    decisionsLog.includes('Professional SC-207 and SC-208 tabs now route to server-backed plan-library screens'),
+    decisionsLog.includes(
+      'Professional SC-207 and SC-208 tabs now route to server-backed plan-library screens',
+    ),
     true,
-    'D-104 should record the implemented server-backed plan-library tab routes'
+    'D-104 should record the implemented server-backed plan-library tab routes',
   );
 });
 
@@ -2145,84 +3031,94 @@ test('decision log describes role-lock persistence as local server-owned, not re
   assert.equal(
     decisionsLog.includes('remote-only reads/writes'),
     false,
-    'D-097 should not describe local role-lock persistence as remote-only'
+    'D-097 should not describe local role-lock persistence as remote-only',
   );
   assert.equal(
     decisionsLog.includes('server-only profile reads/writes through the local bearer session'),
     true,
-    'D-097 should describe the local MyChampions server profile persistence boundary'
+    'D-097 should describe the local MyChampions server profile persistence boundary',
   );
   assert.equal(
     decisionsLog.includes('no client/provider role-lock fallback path remains'),
     true,
-    'D-097 should keep the no-fallback invariant without implying remote-only storage'
+    'D-097 should keep the no-fallback invariant without implying remote-only storage',
   );
 });
 
-parentWorkspaceTest('retired feature-inventory evidence no longer recommends Firebase provider-live follow-up', () => {
-  const source = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-22-feature-inventory-user-story-testing-task-card.md'),
-    'utf8'
-  );
-  const staleFeatureInventoryClaims = [
-    'stable non-production Firebase account',
-    'stable Firebase fixtures',
-    'Firebase Storage upload/download',
-    'Cloud Function/provider analysis',
-    'Firestore lifecycle writes',
-    'Firestore rows end to end',
-    'Firestore bulk assignment',
-    'Firestore plan item writes',
-    'Firestore share-link fixtures',
-    'Firestore rules integration-style checks via `yarn test:rules`',
-    '`yarn check:ios-firebase` passed',
-    'Provider-live Firebase auth',
-    'stable Firebase currentUser',
-    'stable non-production Firebase',
-    'real Firestore',
-    'Firestore writes',
-    'Firestore path',
-    'Firestore active-student count',
-    'Firebase mutations',
-    'Firebase auth and provider tokens',
-    'Firebase config',
-    'Firebase plist/json',
-    'backend/Firebase rules/function changes',
-    'Provider/API/Firebase behavior',
-    '`yarn test:rules` in `mychampions`',
-    '`yarn check:ios-firebase` in `mychampions`',
-    'Firestore rules tests',
-    'GoogleService-Info-Dev.plist',
-    'without Firebase mutation',
-    'without mutating Firebase',
-    'Firebase initialization',
-    'Firebase SDK auth/data state',
-    'Cloud Function, provider, or RevenueCat mutation',
-    'Firestore roster path',
-    'Firestore training session/item writes',
-    'shared-token Firestore preview/import',
-    'support-message Firestore write',
-    'failed Firebase auth',
-    'Firebase-backed helper',
-    'Firebase unauthenticated state',
-    'escaping to Firebase',
-    'escaping to Firestore',
-    'firebase.initializeApp',
-    'npx firebase emulators:exec',
-    'Firebase Tools emitted',
-    'live Firestore Listen',
-    'without Firestore',
-    'Firebase storage-path construction',
-    'Cloud Function URL/token/fetch behavior',
-    'provider-live',
-    'Provider-live',
-    'provider-auth',
-  ];
+parentWorkspaceTest(
+  'retired feature-inventory evidence no longer recommends Firebase provider-live follow-up',
+  () => {
+    const source = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-22-feature-inventory-user-story-testing-task-card.md',
+      ),
+      'utf8',
+    );
+    const staleFeatureInventoryClaims = [
+      'stable non-production Firebase account',
+      'stable Firebase fixtures',
+      'Firebase Storage upload/download',
+      'Cloud Function/provider analysis',
+      'Firestore lifecycle writes',
+      'Firestore rows end to end',
+      'Firestore bulk assignment',
+      'Firestore plan item writes',
+      'Firestore share-link fixtures',
+      'Firestore rules integration-style checks via `yarn test:rules`',
+      '`yarn check:ios-firebase` passed',
+      'Provider-live Firebase auth',
+      'stable Firebase currentUser',
+      'stable non-production Firebase',
+      'real Firestore',
+      'Firestore writes',
+      'Firestore path',
+      'Firestore active-student count',
+      'Firebase mutations',
+      'Firebase auth and provider tokens',
+      'Firebase config',
+      'Firebase plist/json',
+      'backend/Firebase rules/function changes',
+      'Provider/API/Firebase behavior',
+      '`yarn test:rules` in `mychampions`',
+      '`yarn check:ios-firebase` in `mychampions`',
+      'Firestore rules tests',
+      'GoogleService-Info-Dev.plist',
+      'without Firebase mutation',
+      'without mutating Firebase',
+      'Firebase initialization',
+      'Firebase SDK auth/data state',
+      'Cloud Function, provider, or RevenueCat mutation',
+      'Firestore roster path',
+      'Firestore training session/item writes',
+      'shared-token Firestore preview/import',
+      'support-message Firestore write',
+      'failed Firebase auth',
+      'Firebase-backed helper',
+      'Firebase unauthenticated state',
+      'escaping to Firebase',
+      'escaping to Firestore',
+      'firebase.initializeApp',
+      'npx firebase emulators:exec',
+      'Firebase Tools emitted',
+      'live Firestore Listen',
+      'without Firestore',
+      'Firebase storage-path construction',
+      'Cloud Function URL/token/fetch behavior',
+      'provider-live',
+      'Provider-live',
+      'provider-auth',
+    ];
 
-  for (const claim of staleFeatureInventoryClaims) {
-    assert.equal(source.includes(claim), false, `feature-inventory task card still contains ${claim}`);
-  }
-});
+    for (const claim of staleFeatureInventoryClaims) {
+      assert.equal(
+        source.includes(claim),
+        false,
+        `feature-inventory task card still contains ${claim}`,
+      );
+    }
+  },
+);
 
 test('current auth logic and tests no longer encode Firebase-specific error semantics', () => {
   const filesToCheck = [
@@ -2275,22 +3171,30 @@ test('auth session user contract no longer exposes Firebase-shaped token methods
   }
 });
 
-parentWorkspaceTest('profile hydration resolves access through the central server token source', () => {
-  const profileSource = readFileSync(join(root, 'features/auth/profile-source.ts'), 'utf8');
-  const taskCard = readFileSync(
-    join(root, '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md'),
-    'utf8'
-  );
+parentWorkspaceTest(
+  'profile hydration resolves access through the central server token source',
+  () => {
+    const profileSource = readFileSync(join(root, 'features/auth/profile-source.ts'), 'utf8');
+    const taskCard = readFileSync(
+      join(
+        root,
+        '../docs/superpowers/plans/2026-06-28-mobile-firebase-removal-server-foundation-task-card.md',
+      ),
+      'utf8',
+    );
 
-  assert.equal(profileSource.includes('user.getAccessToken'), false);
-  assert.equal(profileSource.includes('tokenFromUser'), false);
-  assert.equal(taskCard.includes('caller-provided token'), false);
-  assert.equal(taskCard.includes('legacy auth-session bridge'), false);
-  assert.equal(
-    taskCard.includes('Profile hydration resolves access through the central MyChampions server token source'),
-    true
-  );
-});
+    assert.equal(profileSource.includes('user.getAccessToken'), false);
+    assert.equal(profileSource.includes('tokenFromUser'), false);
+    assert.equal(taskCard.includes('caller-provided token'), false);
+    assert.equal(taskCard.includes('legacy auth-session bridge'), false);
+    assert.equal(
+      taskCard.includes(
+        'Profile hydration resolves access through the central MyChampions server token source',
+      ),
+      true,
+    );
+  },
+);
 
 test('auth session user contract no longer exposes Firebase providerData shape', () => {
   const filesToCheck = [
@@ -2302,7 +3206,11 @@ test('auth session user contract no longer exposes Firebase providerData shape',
 
   for (const relativePath of filesToCheck) {
     const source = readFileSync(join(root, relativePath), 'utf8');
-    assert.equal(source.includes('providerData'), false, `${relativePath} still contains providerData`);
+    assert.equal(
+      source.includes('providerData'),
+      false,
+      `${relativePath} still contains providerData`,
+    );
     assert.equal(source.includes('google.com'), false, `${relativePath} still contains google.com`);
     assert.equal(source.includes('apple.com'), false, `${relativePath} still contains apple.com`);
   }
@@ -2319,14 +3227,32 @@ test('terms configuration no longer carries the old google.com legal placeholder
 
   for (const relativePath of filesToCheck) {
     const source = readFileSync(join(root, relativePath), 'utf8');
-    assert.equal(source.includes('https://google.com'), false, `${relativePath} still contains google.com`);
-    assert.equal(source.includes('LEGACY_PLACEHOLDER_LEGAL_URL'), false, `${relativePath} still keeps legacy legal placeholder handling`);
+    assert.equal(
+      source.includes('https://google.com'),
+      false,
+      `${relativePath} still contains google.com`,
+    );
+    assert.equal(
+      source.includes('LEGACY_PLACEHOLDER_LEGAL_URL'),
+      false,
+      `${relativePath} still keeps legacy legal placeholder handling`,
+    );
   }
 
   const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
-  assert.equal(decisionsLog.includes('example.com'), false, 'decision log should not describe legal URLs as placeholders');
-  assert.equal(decisionsLog.includes('portfolio.eduwaldo.com/projects/my-champions/terms_of_use'), true);
-  assert.equal(decisionsLog.includes('portfolio.eduwaldo.com/projects/my-champions/privacy_policy'), true);
+  assert.equal(
+    decisionsLog.includes('example.com'),
+    false,
+    'decision log should not describe legal URLs as placeholders',
+  );
+  assert.equal(
+    decisionsLog.includes('portfolio.eduwaldo.com/projects/my-champions/terms_of_use'),
+    true,
+  );
+  assert.equal(
+    decisionsLog.includes('portfolio.eduwaldo.com/projects/my-champions/privacy_policy'),
+    true,
+  );
 });
 
 test('current account support docs no longer describe contact support as mailto-only', () => {
@@ -2345,7 +3271,11 @@ test('current account support docs no longer describe contact support as mailto-
     const source = readFileSync(join(root, relativePath), 'utf8');
 
     for (const claim of staleSupportClaims) {
-      assert.equal(source.includes(claim), false, `${relativePath} still describes support as mailto-only: ${claim}`);
+      assert.equal(
+        source.includes(claim),
+        false,
+        `${relativePath} still describes support as mailto-only: ${claim}`,
+      );
     }
   }
 
@@ -2359,20 +3289,33 @@ test('current account support docs no longer describe contact support as mailto-
 test('current account language docs match the dedicated language-select screen behavior', () => {
   const decisionsLog = readFileSync(join(root, 'docs/discovery/decisions-log-v1.md'), 'utf8');
   const accountScreen = readFileSync(join(root, 'app/settings/account.tsx'), 'utf8');
-  const accountDocs = readFileSync(join(root, 'docs/screens/v2/SC-213-account-privacy-settings.md'), 'utf8');
+  const accountDocs = readFileSync(
+    join(root, 'docs/screens/v2/SC-213-account-privacy-settings.md'),
+    'utf8',
+  );
   const staleLanguageClaims = [
     'Takes effect on next app launch; no server sync required.',
     'iOS uses `ActionSheetIOS`; Android uses `Alert` with locale options.',
   ];
 
   for (const claim of staleLanguageClaims) {
-    assert.equal(decisionsLog.includes(claim), false, `D-144 still describes retired language behavior: ${claim}`);
+    assert.equal(
+      decisionsLog.includes(claim),
+      false,
+      `D-144 still describes retired language behavior: ${claim}`,
+    );
   }
 
   assert.equal(decisionsLog.includes('Tapping pushes to `/settings/language-select`'), true);
-  assert.equal(decisionsLog.includes('takes effect immediately in-session via `LocaleContext`'), true);
+  assert.equal(
+    decisionsLog.includes('takes effect immediately in-session via `LocaleContext`'),
+    true,
+  );
   assert.equal(accountScreen.includes('Pushes to /settings/language-select'), true);
-  assert.equal(accountScreen.includes('Takes effect immediately in-session via LocaleContext'), true);
+  assert.equal(
+    accountScreen.includes('Takes effect immediately in-session via LocaleContext'),
+    true,
+  );
   assert.equal(accountDocs.includes('no app restart required'), true);
 });
 
@@ -2396,7 +3339,11 @@ test('current meal-photo analysis docs no longer describe the capture pipeline a
   for (const relativePath of filesToCheck) {
     const source = readFileSync(join(root, relativePath), 'utf8');
     for (const phrase of stalePhrases) {
-      assert.equal(source.includes(phrase), false, `${relativePath} still describes current meal-photo analysis as stubbed: ${phrase}`);
+      assert.equal(
+        source.includes(phrase),
+        false,
+        `${relativePath} still describes current meal-photo analysis as stubbed: ${phrase}`,
+      );
     }
   }
 });
@@ -2409,15 +3356,16 @@ test('current plan-builder copy no longer carries obsolete food-search stub_noti
     'docs/screens/v2/SC-207-nutrition-plan-builder.md',
     'docs/screens/v2/localized-copy-table-v2.md',
   ];
-  const obsoleteKeys = [
-    'pro.plan.food_search.stub_notice',
-    'student.plan.food_search.stub_notice',
-  ];
+  const obsoleteKeys = ['pro.plan.food_search.stub_notice', 'student.plan.food_search.stub_notice'];
 
   for (const relativePath of filesToCheck) {
     const source = readFileSync(join(root, relativePath), 'utf8');
     for (const key of obsoleteKeys) {
-      assert.equal(source.includes(key), false, `${relativePath} still carries obsolete food-search stub key: ${key}`);
+      assert.equal(
+        source.includes(key),
+        false,
+        `${relativePath} still carries obsolete food-search stub key: ${key}`,
+      );
     }
   }
 });
@@ -2445,27 +3393,34 @@ test('server-backed feature error semantics no longer mention legacy provider pa
   }
 });
 
-parentWorkspaceTest('root server README no longer describes migrated mobile paths as falling back to Firebase', () => {
-  const source = readFileSync(join(root, '../server/README.md'), 'utf8');
-  const staleReadmeClaims = [
-    'falls back to Firestore',
-    'fall back to Firestore',
-    'Firestore remains the fallback',
-    'falling back to Firebase Auth',
-    'legacy Firestore',
-    'legacy governed function',
-    'legacy governed removal function',
-    'legacy Cloud Function',
-    'Firebase-backed app logic',
-    'Firebase code is migrated',
-    'moving away from Firebase-backed app logic',
-    'Firebase Auth',
-  ];
+parentWorkspaceTest(
+  'root server README no longer describes migrated mobile paths as falling back to Firebase',
+  () => {
+    const source = readFileSync(join(root, '../server/README.md'), 'utf8');
+    const staleReadmeClaims = [
+      'falls back to Firestore',
+      'fall back to Firestore',
+      'Firestore remains the fallback',
+      'falling back to Firebase Auth',
+      'legacy Firestore',
+      'legacy governed function',
+      'legacy governed removal function',
+      'legacy Cloud Function',
+      'Firebase-backed app logic',
+      'Firebase code is migrated',
+      'moving away from Firebase-backed app logic',
+      'Firebase Auth',
+    ];
 
-  for (const claim of staleReadmeClaims) {
-    assert.equal(source.includes(claim), false, `server README still contains stale fallback claim: ${claim}`);
-  }
-});
+    for (const claim of staleReadmeClaims) {
+      assert.equal(
+        source.includes(claim),
+        false,
+        `server README still contains stale fallback claim: ${claim}`,
+      );
+    }
+  },
+);
 
 test('production mobile release workflows require the public MyChampions server URL', () => {
   const expectedServerUrl = 'https://api.mychampions.eduwaldo.com';
@@ -2479,12 +3434,12 @@ test('production mobile release workflows require the public MyChampions server 
     assert.equal(
       source.includes(expectedServerUrl),
       true,
-      `${relativePath} must require the public production MyChampions server URL`
+      `${relativePath} must require the public production MyChampions server URL`,
     );
     assert.equal(
       source.includes('EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL'),
       true,
-      `${relativePath} must validate EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL`
+      `${relativePath} must validate EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL`,
     );
   }
 });
@@ -2494,101 +3449,98 @@ test('production mobile release workflows require platform OAuth and RevenueCat 
   const androidRelease = readFileSync(join(root, '.github/workflows/android-release.yml'), 'utf8');
   const googleOAuthProduction = readFileSync(
     join(root, 'config/google-oauth-production.json'),
-    'utf8'
+    'utf8',
   );
 
   assert.equal(
     iosRelease.includes('EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID'),
     true,
-    'iOS release must require its platform Google OAuth client ID'
+    'iOS release must require its platform Google OAuth client ID',
   );
   assert.equal(
     iosRelease.includes('EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID'),
     true,
-    'iOS release must require the Google web OAuth audience used by the native SDK'
+    'iOS release must require the Google web OAuth audience used by the native SDK',
   );
   assert.equal(
     iosRelease.includes('config/google-oauth-production.json'),
     true,
-    'iOS release must validate the configured client against committed provider metadata'
+    'iOS release must validate the configured client against committed provider metadata',
   );
   assert.equal(
     iosRelease.includes('CFBundleURLSchemes'),
     true,
-    'iOS release must validate the configured client callback scheme'
+    'iOS release must validate the configured client callback scheme',
   );
   assert.equal(
     iosRelease.includes('EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_PROD'),
     true,
-    'iOS release must require its production RevenueCat public key'
+    'iOS release must require its production RevenueCat public key',
   );
   assert.equal(
     iosRelease.includes('appl_*'),
     true,
-    'iOS release must reject an invalid RevenueCat key prefix'
+    'iOS release must reject an invalid RevenueCat key prefix',
   );
   assert.equal(
     androidRelease.includes('EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID'),
     true,
-    'Android release must require its platform Google OAuth client ID'
+    'Android release must require its platform Google OAuth client ID',
   );
   assert.equal(
     androidRelease.includes('EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID'),
     true,
-    'Android release must require the Google web OAuth audience used by the native SDK'
+    'Android release must require the Google web OAuth audience used by the native SDK',
   );
   assert.equal(
     androidRelease.includes('config/google-oauth-production.json'),
     true,
-    'Android release must validate the configured client against committed provider metadata'
+    'Android release must validate the configured client against committed provider metadata',
   );
   assert.equal(
     androidRelease.includes('playSigningSha1'),
     true,
-    'Android release must pin the Google client to the recorded Play signing certificate'
+    'Android release must pin the Google client to the recorded Play signing certificate',
   );
   assert.equal(
     androidRelease.includes('applicationId'),
     true,
-    'Android release must validate the production application ID'
+    'Android release must validate the production application ID',
   );
   assert.equal(
     androidRelease.includes('EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_PROD'),
     true,
-    'Android release must require its production RevenueCat public key'
+    'Android release must require its production RevenueCat public key',
   );
   assert.equal(
     androidRelease.includes('goog_*'),
     true,
-    'Android release must reject an invalid RevenueCat key prefix'
+    'Android release must reject an invalid RevenueCat key prefix',
   );
   assert.equal(
     googleOAuthProduction.includes(
-      '942354515358-6pqkvvhajja4uon9igq3rtcp2q3k9qvo.apps.googleusercontent.com'
+      '942354515358-6pqkvvhajja4uon9igq3rtcp2q3k9qvo.apps.googleusercontent.com',
     ),
     true,
-    'provider metadata must pin the production iOS client ID'
+    'provider metadata must pin the production iOS client ID',
   );
   assert.equal(
     googleOAuthProduction.includes(
-      '942354515358-1r5l73l9vjlngq7i2l0i4j4p41p65d2o.apps.googleusercontent.com'
+      '942354515358-1r5l73l9vjlngq7i2l0i4j4p41p65d2o.apps.googleusercontent.com',
     ),
     true,
-    'provider metadata must pin the production Android client ID'
+    'provider metadata must pin the production Android client ID',
   );
   assert.equal(googleOAuthProduction.includes('com.edufelip.mychampions'), true);
   assert.equal(
     googleOAuthProduction.includes('85:E5:17:D8:91:E0:55:55:E4:26:A0:9F:CD:1D:97:C9:A8:8E:A9:AD'),
     true,
-    'provider metadata must pin the Play app-signing SHA-1'
+    'provider metadata must pin the Play app-signing SHA-1',
   );
 });
 
 test('Apple native entitlement is present and validated against the release profile', () => {
-  const entitlements = readFileSync(
-    join(root, 'ios/mychampions/mychampions.entitlements'),
-    'utf8'
-  );
+  const entitlements = readFileSync(join(root, 'ios/mychampions/mychampions.entitlements'), 'utf8');
   const iosRelease = readFileSync(join(root, '.github/workflows/ios-release.yml'), 'utf8');
 
   assert.equal(entitlements.includes('com.apple.developer.applesignin'), true);
@@ -2596,7 +3548,7 @@ test('Apple native entitlement is present and validated against the release prof
   assert.equal(iosRelease.includes('Entitlements:com.apple.developer.applesignin:0'), true);
   assert.equal(
     iosRelease.includes('Provisioning profile missing Sign in with Apple entitlement'),
-    true
+    true,
   );
 });
 

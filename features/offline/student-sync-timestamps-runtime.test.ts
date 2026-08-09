@@ -10,14 +10,18 @@ function readProjectFile(path: string): string {
 }
 
 test('student screens feed real server-backed sync timestamps into offline display state', () => {
-  for (const path of ['app/student/home.tsx', 'app/student/nutrition.tsx', 'app/student/training.tsx']) {
+  for (const path of [
+    'app/student/home.tsx',
+    'app/student/nutrition.tsx',
+    'app/student/training.tsx',
+  ]) {
     const source = readProjectFile(path);
 
     assert.match(source, /resolveLatestSyncTimestamp/, `${path} should derive a sync timestamp`);
     assert.doesNotMatch(
       source,
       /resolveOfflineDisplayState\(\{\s*networkStatus,\s*lastSyncedAtIso:\s*null,/,
-      `${path} should not hard-code a null sync timestamp`
+      `${path} should not hard-code a null sync timestamp`,
     );
   }
 });

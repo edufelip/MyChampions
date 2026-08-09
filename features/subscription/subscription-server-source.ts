@@ -1,4 +1,7 @@
-import { getCurrentServerUser, getValidServerAccessToken } from '@/features/auth/server-auth-source';
+import {
+  getCurrentServerUser,
+  getValidServerAccessToken,
+} from '@/features/auth/server-auth-source';
 import { resolveE2ESubscriptionOverride } from '@/features/auth/e2e-auth-session';
 import type { EntitlementStatus } from './subscription.logic';
 
@@ -24,10 +27,7 @@ export type SubscriptionEntitlementSnapshot = {
 };
 
 type SubscriptionServerSourceErrorCode =
-  | 'configuration'
-  | 'unauthenticated'
-  | 'network'
-  | 'invalid_response';
+  'configuration' | 'unauthenticated' | 'network' | 'invalid_response';
 
 export class SubscriptionServerSourceError extends Error {
   code: SubscriptionServerSourceErrorCode;
@@ -41,7 +41,7 @@ export class SubscriptionServerSourceError extends Error {
 
 export type SubscriptionServerFetch = (
   input: string | URL | Request,
-  init?: RequestInit
+  init?: RequestInit,
 ) => Promise<Response>;
 
 export type SubscriptionServerSourceDeps = {
@@ -75,8 +75,7 @@ const defaultDeps: SubscriptionServerSourceDeps = {
   getCurrentAccessToken: () => getValidServerAccessToken(),
   getCurrentAuthUid: () => getCurrentServerUser()?.uid ?? null,
   getServerBaseUrl: resolveServerBaseUrl,
-  fetchFn: (input, init) =>
-    Reflect.apply(globalThis.fetch, globalThis, [input, init]),
+  fetchFn: (input, init) => Reflect.apply(globalThis.fetch, globalThis, [input, init]),
 };
 
 function joinUrl(baseUrl: string, path: string): string {
@@ -101,7 +100,7 @@ function isIsoTimestamp(value: unknown): value is string {
 
 function parseSubscriptionEntitlementSnapshot(
   value: unknown,
-  expectedAuthUid?: string
+  expectedAuthUid?: string,
 ): SubscriptionEntitlementSnapshot {
   if (
     !isRecord(value) ||
@@ -116,8 +115,7 @@ function parseSubscriptionEntitlementSnapshot(
     typeof value.professionalEntitlementRenewalRisk !== 'boolean' ||
     !(
       value.activeStudentCount === null ||
-      (Number.isInteger(value.activeStudentCount) &&
-        Number(value.activeStudentCount) >= 0)
+      (Number.isInteger(value.activeStudentCount) && Number(value.activeStudentCount) >= 0)
     ) ||
     value.source !== 'revenuecat' ||
     !isIsoTimestamp(value.observedAt) ||
@@ -125,14 +123,14 @@ function parseSubscriptionEntitlementSnapshot(
   ) {
     throw new SubscriptionServerSourceError(
       'invalid_response',
-      'Subscription entitlement read returned a malformed snapshot.'
+      'Subscription entitlement read returned a malformed snapshot.',
     );
   }
 
   if (expectedAuthUid && value.authUid !== expectedAuthUid) {
     throw new SubscriptionServerSourceError(
       'unauthenticated',
-      'Subscription entitlement read returned a snapshot for a different user.'
+      'Subscription entitlement read returned a snapshot for a different user.',
     );
   }
 
@@ -142,20 +140,20 @@ function parseSubscriptionEntitlementSnapshot(
 async function requireLocalServerAuth(
   operation: string,
   deps: SubscriptionServerSourceDeps,
-  expectedAuthUid?: string
+  expectedAuthUid?: string,
 ): Promise<{ baseUrl: string; token: string }> {
   const baseUrl = deps.getServerBaseUrl?.();
   if (!baseUrl) {
     throw new SubscriptionServerSourceError(
       'configuration',
-      `MyChampions server URL is not configured for subscription ${operation}.`
+      `MyChampions server URL is not configured for subscription ${operation}.`,
     );
   }
 
   if (expectedAuthUid && deps.getCurrentAuthUid?.() !== expectedAuthUid) {
     throw new SubscriptionServerSourceError(
       'unauthenticated',
-      `MyChampions server session changed before ${operation} subscription entitlements could be used.`
+      `MyChampions server session changed before ${operation} subscription entitlements could be used.`,
     );
   }
 
@@ -163,14 +161,14 @@ async function requireLocalServerAuth(
   if (!token) {
     throw new SubscriptionServerSourceError(
       'unauthenticated',
-      `A local MyChampions server session is required to ${operation} subscription entitlements.`
+      `A local MyChampions server session is required to ${operation} subscription entitlements.`,
     );
   }
 
   if (expectedAuthUid && deps.getCurrentAuthUid?.() !== expectedAuthUid) {
     throw new SubscriptionServerSourceError(
       'unauthenticated',
-      `MyChampions server session changed while preparing to ${operation} subscription entitlements.`
+      `MyChampions server session changed while preparing to ${operation} subscription entitlements.`,
     );
   }
 
@@ -180,7 +178,7 @@ async function requireLocalServerAuth(
 export async function syncSubscriptionEntitlementSnapshot(
   input: SubscriptionEntitlementSnapshotInput,
   deps: SubscriptionServerSourceDeps = defaultDeps,
-  expectedAuthUid?: string
+  expectedAuthUid?: string,
 ): Promise<void> {
   const { baseUrl, token } = await requireLocalServerAuth('sync', deps, expectedAuthUid);
   const fetchFn = deps.fetchFn;
@@ -205,21 +203,21 @@ export async function syncSubscriptionEntitlementSnapshot(
   } catch (error) {
     throw new SubscriptionServerSourceError(
       'network',
-      `Failed to sync subscription entitlement snapshot: ${String(error)}`
+      `Failed to sync subscription entitlement snapshot: ${String(error)}`,
     );
   }
 
   if (!response.ok) {
     throw new SubscriptionServerSourceError(
       response.status === 401 ? 'unauthenticated' : 'invalid_response',
-      `Subscription entitlement sync failed with status ${response.status}.`
+      `Subscription entitlement sync failed with status ${response.status}.`,
     );
   }
 }
 
 export async function getSubscriptionEntitlementSnapshot(
   deps: SubscriptionServerSourceDeps = defaultDeps,
-  expectedAuthUid?: string
+  expectedAuthUid?: string,
 ): Promise<SubscriptionEntitlementSnapshot | null> {
   if (deps === defaultDeps) {
     const fixture = resolveE2ESubscriptionOverride({
@@ -228,8 +226,7 @@ export async function getSubscriptionEntitlementSnapshot(
       appVariant: process.env.APP_VARIANT,
       enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
       entitlementStatus: process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS,
-      professionalEntitlementRenewalRisk:
-        process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK,
+      professionalEntitlementRenewalRisk: process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK,
       isDev: typeof __DEV__ !== 'undefined' && __DEV__,
     });
     if (fixture && expectedAuthUid) {
@@ -262,21 +259,21 @@ export async function getSubscriptionEntitlementSnapshot(
   } catch (error) {
     throw new SubscriptionServerSourceError(
       'network',
-      `Failed to read subscription entitlement snapshot: ${String(error)}`
+      `Failed to read subscription entitlement snapshot: ${String(error)}`,
     );
   }
 
   if (!response.ok) {
     throw new SubscriptionServerSourceError(
       response.status === 401 ? 'unauthenticated' : 'invalid_response',
-      `Subscription entitlement read failed with status ${response.status}.`
+      `Subscription entitlement read failed with status ${response.status}.`,
     );
   }
 
   if (expectedAuthUid && deps.getCurrentAuthUid?.() !== expectedAuthUid) {
     throw new SubscriptionServerSourceError(
       'unauthenticated',
-      'MyChampions server session changed while reading subscription entitlements.'
+      'MyChampions server session changed while reading subscription entitlements.',
     );
   }
 
@@ -286,7 +283,7 @@ export async function getSubscriptionEntitlementSnapshot(
   } catch {
     throw new SubscriptionServerSourceError(
       'invalid_response',
-      'Subscription entitlement read returned invalid JSON.'
+      'Subscription entitlement read returned invalid JSON.',
     );
   }
 
@@ -297,7 +294,7 @@ export async function getSubscriptionEntitlementSnapshot(
   if (body.snapshot === undefined) {
     throw new SubscriptionServerSourceError(
       'invalid_response',
-      'Subscription entitlement read response is missing snapshot.'
+      'Subscription entitlement read response is missing snapshot.',
     );
   }
 

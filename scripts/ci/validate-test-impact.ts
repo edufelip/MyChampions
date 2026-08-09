@@ -12,9 +12,7 @@ const root = resolve(process.cwd());
 const manifest = loadManifest(root);
 const errors = validateManifest(manifest);
 errors.push(...validateFeatureBoundaries(root, manifest));
-const registeredSpecs = new Set(
-  Object.values(manifest.suites).flatMap((suite) => suite.specs)
-);
+const registeredSpecs = new Set(Object.values(manifest.suites).flatMap((suite) => suite.specs));
 
 for (const spec of discoverRegisteredTestFiles(root)) {
   if (!registeredSpecs.has(spec)) errors.push(`test spec is not registered in a suite: ${spec}`);
@@ -40,5 +38,5 @@ for (const [suiteId, suite] of Object.entries(manifest.suites)) {
 assert.deepEqual(errors, [], `test impact manifest is invalid:\n${errors.join('\n')}`);
 console.log(
   `Validated ${Object.keys(manifest.features).length} features, ` +
-    `${Object.keys(manifest.suites).length} suites, and ${registeredSpecs.size} UI specs.`
+    `${Object.keys(manifest.suites).length} suites, and ${registeredSpecs.size} UI specs.`,
 );

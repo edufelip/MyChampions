@@ -14,32 +14,26 @@ import {
 test('validatePlanChangeRequestInput returns no errors for valid input', () => {
   assert.deepEqual(
     validatePlanChangeRequestInput({ requestText: 'I would like more variety in my meals.' }),
-    {}
+    {},
   );
 });
 
 test('validatePlanChangeRequestInput requires requestText', () => {
-  assert.equal(
-    validatePlanChangeRequestInput({ requestText: '' }).requestText,
-    'required'
-  );
-  assert.equal(
-    validatePlanChangeRequestInput({ requestText: '   ' }).requestText,
-    'required'
-  );
+  assert.equal(validatePlanChangeRequestInput({ requestText: '' }).requestText, 'required');
+  assert.equal(validatePlanChangeRequestInput({ requestText: '   ' }).requestText, 'required');
 });
 
 test('validatePlanChangeRequestInput rejects requestText shorter than minimum', () => {
   assert.equal(
     validatePlanChangeRequestInput({ requestText: 'Too short' }).requestText,
-    'too_short'
+    'too_short',
   );
 });
 
 test('validatePlanChangeRequestInput accepts requestText at minimum length (10 chars)', () => {
   assert.equal(
     validatePlanChangeRequestInput({ requestText: '1234567890' }).requestText,
-    undefined
+    undefined,
   );
 });
 
@@ -78,8 +72,14 @@ test('normalizePlanChangeRequestError maps PLAN_NOT_FOUND', () => {
 });
 
 test('normalizePlanChangeRequestError maps NO_ACTIVE_ASSIGNMENT', () => {
-  assert.equal(normalizePlanChangeRequestError({ code: 'NO_ACTIVE_ASSIGNMENT' }), 'no_active_assignment');
-  assert.equal(normalizePlanChangeRequestError({ message: 'no active assignment' }), 'no_active_assignment');
+  assert.equal(
+    normalizePlanChangeRequestError({ code: 'NO_ACTIVE_ASSIGNMENT' }),
+    'no_active_assignment',
+  );
+  assert.equal(
+    normalizePlanChangeRequestError({ message: 'no active assignment' }),
+    'no_active_assignment',
+  );
 });
 
 test('normalizePlanChangeRequestError maps VALIDATION', () => {
@@ -93,7 +93,10 @@ test('normalizePlanChangeRequestError maps network error', () => {
 });
 
 test('normalizePlanChangeRequestError maps configuration error', () => {
-  assert.equal(normalizePlanChangeRequestError({ message: 'endpoint unavailable' }), 'configuration');
+  assert.equal(
+    normalizePlanChangeRequestError({ message: 'endpoint unavailable' }),
+    'configuration',
+  );
   assert.equal(normalizePlanChangeRequestError({ message: 'config not set' }), 'configuration');
 });
 
@@ -146,7 +149,7 @@ test('buildProfessionalPlanChangeNotificationSummary summarizes pending requests
       },
       affectedStudentUids: ['student-2', 'student-1'],
       planTypes: ['training', 'nutrition'],
-    }
+    },
   );
 });
 
