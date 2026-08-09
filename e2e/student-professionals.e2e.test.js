@@ -5,13 +5,14 @@ const qrInviteScenario = process.env.E2E_QR_INVITE_SCENARIO;
 if (
   process.env.E2E_AUTH_SESSION === 'true' &&
   qrInviteScenario !== undefined &&
-  qrInviteScenario !== 'invalid_payload'
+  !['valid_payload', 'invalid_payload'].includes(qrInviteScenario)
 ) {
   throw new Error(
-    'Student professionals requires E2E_QR_INVITE_SCENARIO=invalid_payload when a scenario is provided',
+    'Student professionals requires E2E_QR_INVITE_SCENARIO=valid_payload or invalid_payload when a scenario is provided',
   );
 }
 
+const itWithValidQrScenario = qrInviteScenario === 'valid_payload' ? it : it.skip;
 const itWithInvalidQrScenario = qrInviteScenario === 'invalid_payload' ? it : it.skip;
 
 async function selectStudentRole() {
@@ -103,19 +104,24 @@ describeWithE2EAuthSession('Student Professionals Invite Code', () => {
       .withTimeout(5000);
   });
 
-  it('creates a pending connection from a scanned QR invite payload', async () => {
-    await selectStudentRole();
-    await openProfessionalsScreen();
+  itWithValidQrScenario(
+    'creates a pending connection from a scanned QR invite payload',
+    async () => {
+      await selectStudentRole();
+      await openProfessionalsScreen();
 
-    await element(by.id('student.professionals.scanQrButton')).tap();
+      await element(by.id('student.professionals.scanQrButton')).tap();
 
-    await waitFor(
-      element(by.id('student.professionals.connectionPending.e2e-pending-nutritionist-connection')),
-    )
-      .toBeVisible()
-      .withTimeout(10000);
-    await expect(element(by.id('student.professionals.submitError'))).not.toBeVisible();
-  });
+      await waitFor(
+        element(
+          by.id('student.professionals.connectionPending.e2e-pending-nutritionist-connection'),
+        ),
+      )
+        .toBeVisible()
+        .withTimeout(10000);
+      await expect(element(by.id('student.professionals.submitError'))).not.toBeVisible();
+    },
+  );
 
   itWithInvalidQrScenario(
     'shows an actionable error for an invalid QR invite payload',

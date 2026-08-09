@@ -16,8 +16,10 @@ contract and device fixture.
 
 ## Coverage boundary
 
-- Valid QR scanning remains in the separate `qr-valid` phase and continues to
-  assert the pending-connection result.
+- Valid QR scanning remains in the separate `qr-valid` phase, which explicitly
+  sets `E2E_QR_INVITE_SCENARIO=valid_payload`; the valid result assertion is
+  skipped in the malformed-payload phase and continues to assert the
+  pending-connection result only in its own phase.
 - Image upload sheet and fixture-success behavior remain separate phases; the
   permission-denied phase intentionally does not set an image fixture.
 - Deterministic subscription tests cover entitlement and failure UI only.

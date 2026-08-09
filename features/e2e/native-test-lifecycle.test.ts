@@ -178,9 +178,11 @@ test('native gap phases remain scenario-isolated', () => {
     /EXPO_PUBLIC_E2E_ROLE_PERSISTENCE/,
   );
   assert.match(connectionSource, /qrInviteScenario === 'invalid_payload' \? it : it\.skip/);
+  assert.match(connectionSource, /qrInviteScenario === 'valid_payload' \? it : it\.skip/);
   assert.match(connectionSource, /student\.professionals\.qrScanError/);
   assert.match(fixtureSource, /auth-role-persistence/);
   assert.match(fixtureSource, /image-upload-permission-denied/);
+  assert.match(fixtureSource, /E2E_QR_INVITE_SCENARIO: 'valid_payload'/);
   assert.match(fixtureSource, /qr-invalid-payload/);
 });
 

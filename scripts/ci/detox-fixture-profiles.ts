@@ -199,7 +199,10 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_QR_INVITE_PAYLOAD: 'NUT123',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
-        runnerEnv: authenticatedRunnerEnv,
+        runnerEnv: {
+          ...authenticatedRunnerEnv,
+          E2E_QR_INVITE_SCENARIO: 'valid_payload',
+        },
       },
       {
         id: 'qr-invalid-payload',
