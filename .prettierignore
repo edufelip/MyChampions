@@ -1,0 +1,11 @@
+node_modules
+.expo
+.artifacts
+artifacts
+coverage
+dist
+playwright-report
+test-results
+android
+ios
+*.snap

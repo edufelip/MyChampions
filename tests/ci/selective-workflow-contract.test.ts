@@ -1246,7 +1246,15 @@ test('only hosted freshness, authorization, and final publication can write the 
   );
   assert.match(
     publisher,
-    /publish_required_status = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"pull_request"[\s\S]*?"workflow_dispatch"[\s\S]*?"merge_group"/
+    /publish_required_status = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"pull_request"[\s\S]*?"workflow_dispatch"[\s\S]*?"merge_group"[\s\S]*?"push"/
+  );
+  assert.match(
+    publisher,
+    /status_requires_pull_request_ownership = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"pull_request"[\s\S]*?"workflow_dispatch"[\s\S]*?"merge_group"[\s\S]*?\}/
+  );
+  assert.doesNotMatch(
+    publisher,
+    /status_requires_pull_request_ownership = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"push"/
   );
   assert.match(
     publisher,

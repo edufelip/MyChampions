@@ -1053,6 +1053,7 @@ jobs:
                   "pull_request",
                   "workflow_dispatch",
                   "merge_group",
+                  "push",
               }
 
               if event_name == "workflow_run":
@@ -4139,8 +4140,14 @@ jobs:
               "pull_request",
               "workflow_dispatch",
               "merge_group",
+              "push",
           }
-          if publish_required_status:
+          status_requires_pull_request_ownership = os.environ["CANDIDATE_KIND"] in {
+              "pull_request",
+              "workflow_dispatch",
+              "merge_group",
+          }
+          if status_requires_pull_request_ownership:
               try:
                   require_owned_pending_status()
               except Exception as error:
@@ -4156,7 +4163,7 @@ jobs:
               post_status("success", "Every selected trusted validation lane passed.")
               print("Published successful exact-head Selective CI status.")
           else:
-              print("Trusted main validation passed without publishing the PR status.")
+              print("Trusted validation passed without publishing the exact-head status.")
           PY
       - name: Reject an unauthorized or unresolved candidate
         if: >-

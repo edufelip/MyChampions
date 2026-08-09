@@ -32,7 +32,7 @@ async function dismissUploadSheet() {
   try {
     await element(by.text('Cancel')).tap();
   } catch (_error) {
-    await system.element(by.system.label('Cancel')).tap();
+    await element(by.system.label('Cancel')).tap();
   }
 }
 
