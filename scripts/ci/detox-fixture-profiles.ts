@@ -286,6 +286,7 @@ export const DETOX_FIXTURE_PROFILES = {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE: 'basic',
+          EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE: 'permission-denied',
           EXPO_PUBLIC_E2E_MEAL_ANALYSIS_FIXTURE: 'success',
           EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE: 'basic',

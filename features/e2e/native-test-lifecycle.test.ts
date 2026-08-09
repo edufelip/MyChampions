@@ -118,7 +118,16 @@ test('custom meal image upload executes only the fixture phase matching its scen
   assert.match(source, /itWithPermissionDeniedScenario\([\s\S]*'shows a permission error/);
   assert.match(
     source,
-    /if \(device\.getPlatform\(\) === 'android'\) \{\s+await device\.getUiDevice\(\)\.pressBack\(\);\s+\}/,
+    /if \(device\.getPlatform\(\) !== 'android'\) \{[\s\S]*?by\.text\('Take photo'\)/,
+  );
+  assert.doesNotMatch(source, /dismissAndroidCameraPermissionPrompt/);
+  const imageUploadHookSource = readFileSync(
+    join(root, 'features/nutrition/use-image-upload.ts'),
+    'utf8',
+  );
+  assert.match(
+    imageUploadHookSource,
+    /fixture === 'permission-denied' && Platform\.OS === 'android'/,
   );
   assert.equal(enUS['photo_picker.title'], 'Upload image');
   assert.match(source, /by\.text\('Upload image'\)/);

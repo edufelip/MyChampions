@@ -13,6 +13,7 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 
 import type { AuthUser } from '@/features/auth/auth-user';
 import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
@@ -103,6 +104,13 @@ const e2eImageUploadDeps: ImageUploadSourceDeps = {
   generateFilename: () => 'e2e-meal-photo.jpg',
 };
 
+const e2ePermissionDeniedImageUploadDeps: ImageUploadSourceDeps = {
+  ...e2eImageUploadDeps,
+  pickImage: async () => {
+    throw new ImageUploadSourceError('permission_denied', 'Photo permission denied for camera');
+  },
+};
+
 function getE2EImageUploadDeps(): ImageUploadSourceDeps | null {
   const override = resolveE2EAuthSessionSourceOverride({
     appVariant: process.env.APP_VARIANT,
@@ -110,11 +118,14 @@ function getE2EImageUploadDeps(): ImageUploadSourceDeps | null {
     isDev: typeof __DEV__ !== 'undefined' && __DEV__,
   });
 
-  if (!override || process.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE !== 'success') {
-    return null;
-  }
+  if (!override) return null;
 
-  return e2eImageUploadDeps;
+  const fixture = process.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE;
+  if (fixture === 'success') return e2eImageUploadDeps;
+  if (fixture === 'permission-denied' && Platform.OS === 'android') {
+    return e2ePermissionDeniedImageUploadDeps;
+  }
+  return null;
 }
 
 // ─── Hook result ──────────────────────────────────────────────────────────────

@@ -278,7 +278,10 @@ test('nutrition profile isolates scenario-specific native fixtures', () => {
   );
   assert.equal(imageUploadInvocations[0]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
   assert.equal(imageUploadInvocations[1]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, 'success');
-  assert.equal(imageUploadInvocations[2]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
+  assert.equal(
+    imageUploadInvocations[2]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
+    'permission-denied',
+  );
   assert.ok(
     unrelatedNutritionInvocations.every(
       (invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO === '',
