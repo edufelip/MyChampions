@@ -177,10 +177,12 @@ targets. Tests scroll lower auth actions into view before interaction so the
 same contract holds on the configured compact Android viewport. On macOS,
 process-group probing can return
 `EPERM` when even one group member has another UID. The cleanup fallback reads
-the numeric process table, signals only runner-UID group members, verifies TERM
-and KILL outcomes, and separately proves that the Metro port closed. Foreign
-processes are never signaled, while a surviving runner-owned member or listener
-fails the lane. CI also fails if a selected Detox invocation skips every test.
+the numeric process table, signals the owned supervisor before its descendants
+so its cleanup trap can run, then signals only runner-UID group members,
+verifies TERM and KILL outcomes, and separately proves that the Metro port
+closed. Foreign processes are never signaled, while a surviving runner-owned
+member or listener fails the lane. CI also fails if a selected Detox invocation
+skips every test.
 `detox:revenuecat-live` remains manual/provider-live and is never PR-eligible.
 For D-195 promotion, each native creation/use step arms idempotent `EXIT`, `INT`,
 and `TERM` handlers before materializing secrets or acquiring a native device.

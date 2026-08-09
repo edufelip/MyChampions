@@ -41,10 +41,17 @@ cleanup() {
 terminate_process_tree() {
   local parent_pid="$1"
   local child_pid
-  for child_pid in $(pgrep -P "$parent_pid" 2>/dev/null || true); do
+  local child_pids
+
+  # Signal the owned supervisor before its descendants. A descendant can
+  # terminate a set -e shell while it is handling the signal, preventing the
+  # supervisor's own cleanup trap from running. Capture the direct children
+  # first, then let the parent perform its normal shutdown before cascading.
+  child_pids="$(pgrep -P "$parent_pid" 2>/dev/null || true)"
+  kill -TERM "$parent_pid" >/dev/null 2>&1 || true
+  for child_pid in $child_pids; do
     terminate_process_tree "$child_pid"
   done
-  kill -TERM "$parent_pid" >/dev/null 2>&1 || true
 }
 
 trap cleanup EXIT
