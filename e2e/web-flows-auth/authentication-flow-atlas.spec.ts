@@ -4,9 +4,9 @@ import { captureFlowEvidence } from '../web/support/evidence';
 
 async function capture(page: Page, testInfo: TestInfo, checkpoint: string, testId: string) {
   await expect(page.getByTestId(testId).last()).toBeVisible();
-  await expect.poll(() =>
-    page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-  ).toBeLessThanOrEqual(1);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+    .toBeLessThanOrEqual(1);
   await captureFlowEvidence(page, testInfo, '00-authentication-and-terms', checkpoint);
 }
 
@@ -42,7 +42,12 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
     await expect(page.getByTestId('auth.createAccount.backToSignInButton')).toBeInViewport();
     await capture(page, testInfo, '05-create-account', 'auth.createAccount.screen');
     await page.getByTestId('auth.createAccount.submitButton').click();
-    await capture(page, testInfo, '06-create-account-validation', 'auth.createAccount.error.nameRequired');
+    await capture(
+      page,
+      testInfo,
+      '06-create-account-validation',
+      'auth.createAccount.error.nameRequired',
+    );
     await capture(page, testInfo, '07-google-and-apple-entry', 'auth.createAccount.googleButton');
   });
 
@@ -61,7 +66,9 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
   test('valid account creation reaches terms', async ({ page }, testInfo) => {
     await page.goto('/auth/create-account');
     await page.getByTestId('auth.createAccount.nameInput').fill('Flow Atlas User');
-    await page.getByTestId('auth.createAccount.emailInput').fill('e2e-created-account@example.test');
+    await page
+      .getByTestId('auth.createAccount.emailInput')
+      .fill('e2e-created-account@example.test');
     await page.getByTestId('auth.createAccount.passwordInput').fill('E2E-create-123!');
     await page.getByTestId('auth.createAccount.passwordConfirmationInput').fill('E2E-create-123!');
     await page.getByTestId('auth.createAccount.submitButton').click();

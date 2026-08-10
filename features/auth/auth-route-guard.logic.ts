@@ -6,6 +6,7 @@ export type AuthGuardInput = {
   needsTermsAcceptance: boolean;
   pathname: string;
   returnTo?: string | string[] | null;
+  pendingRoleSelectionRole?: RoleIntent | null;
 };
 
 export function normalizeGuardPathname(pathname: string | null | undefined): string {
@@ -40,7 +41,10 @@ function encodeReturnTo(pathname: string): string {
   return encodeURIComponent(pathname);
 }
 
-function redirectWithReturnTo(pathname: '/auth/sign-in' | '/auth/accept-terms', returnTo: string): string {
+function redirectWithReturnTo(
+  pathname: '/auth/sign-in' | '/auth/accept-terms',
+  returnTo: string,
+): string {
   return `${pathname}?returnTo=${encodeReturnTo(returnTo)}`;
 }
 
@@ -92,7 +96,9 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   if (input.needsTermsAcceptance) {
     if (path !== '/auth/accept-terms') {
       const termsReturnTo = currentSharedRecipeReturnTo ?? safeReturnTo;
-      return termsReturnTo ? redirectWithReturnTo('/auth/accept-terms', termsReturnTo) : '/auth/accept-terms';
+      return termsReturnTo
+        ? redirectWithReturnTo('/auth/accept-terms', termsReturnTo)
+        : '/auth/accept-terms';
     }
 
     return null;
@@ -110,7 +116,10 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
     return '/auth/role-selection';
   }
 
-  if (safeReturnTo && (path === '/auth/sign-in' || path === '/auth/create-account' || path === '/auth/role-selection')) {
+  if (
+    safeReturnTo &&
+    (path === '/auth/sign-in' || path === '/auth/create-account' || path === '/auth/role-selection')
+  ) {
     return safeReturnTo;
   }
 
@@ -132,7 +141,19 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
 
   const home = roleHomePath(input.lockedRole);
 
-  if (path === '/auth/sign-in' || path === '/auth/create-account' || path === '/auth/role-selection') {
+  // Role selection persists the role before navigating to the first
+  // role-specific screen. Keep that handoff alive for one render so the
+  // global guard does not race the screen's explicit destination. A direct
+  // visit has no pending role and still follows FR-173 below.
+  if (path === '/auth/role-selection' && input.pendingRoleSelectionRole === input.lockedRole) {
+    return null;
+  }
+
+  if (
+    path === '/auth/sign-in' ||
+    path === '/auth/create-account' ||
+    path === '/auth/role-selection'
+  ) {
     return home;
   }
 

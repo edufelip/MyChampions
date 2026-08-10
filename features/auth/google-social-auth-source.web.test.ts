@@ -32,7 +32,7 @@ describe('Google web social auth source', () => {
         requestCredential: async () => 'unused',
         signInWithSocialProviderToken: async () => {},
       }),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration',
     );
   });
 
@@ -47,7 +47,7 @@ describe('Google web social auth source', () => {
         },
         signInWithSocialProviderToken: async () => {},
       }),
-      (error: unknown) => error === cancellation
+      (error: unknown) => error === cancellation,
     );
   });
 
@@ -81,7 +81,7 @@ describe('Google web social auth source', () => {
         isNotDisplayed: () => false,
         isSkippedMoment: () => false,
       }),
-      null
+      null,
     );
   });
 });

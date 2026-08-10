@@ -65,23 +65,38 @@ async function defaultGetCurrentAccessToken(): Promise<string | null> {
   return getValidServerAccessToken();
 }
 
-function analysisErrorForResponse(responseStatus: number, body: RawAnalysisResponse): PhotoAnalysisSourceError | null {
+function analysisErrorForResponse(
+  responseStatus: number,
+  body: RawAnalysisResponse,
+): PhotoAnalysisSourceError | null {
   if (responseStatus === 401 || responseStatus === 403) {
-    return new PhotoAnalysisSourceError('unauthenticated', 'Meal analysis endpoint rejected bearer token.');
+    return new PhotoAnalysisSourceError(
+      'unauthenticated',
+      'Meal analysis endpoint rejected bearer token.',
+    );
   }
   if (body.error === 'unrecognizable_image') {
-    return new PhotoAnalysisSourceError('unrecognizable_image', 'Image does not contain a recognizable meal.');
+    return new PhotoAnalysisSourceError(
+      'unrecognizable_image',
+      'Image does not contain a recognizable meal.',
+    );
   }
   if (body.error === 'quota_exceeded' || responseStatus === 429) {
-    return new PhotoAnalysisSourceError('quota_exceeded', 'Meal analysis quota exceeded. Try again later.');
+    return new PhotoAnalysisSourceError(
+      'quota_exceeded',
+      'Meal analysis quota exceeded. Try again later.',
+    );
   }
   if (body.error === 'configuration') {
-    return new PhotoAnalysisSourceError('configuration', 'Meal analysis endpoint is not configured.');
+    return new PhotoAnalysisSourceError(
+      'configuration',
+      'Meal analysis endpoint is not configured.',
+    );
   }
   if (body.error !== undefined || responseStatus >= 500) {
     return new PhotoAnalysisSourceError(
       body.error === 'invalid_response' ? 'invalid_response' : 'unknown',
-      `Meal analysis endpoint error: ${String(body.error ?? responseStatus)}`
+      `Meal analysis endpoint error: ${String(body.error ?? responseStatus)}`,
     );
   }
   return null;
@@ -92,7 +107,7 @@ async function fetchAnalysisEstimate(
   token: string,
   base64Image: string,
   fetchFn: AppFetch,
-  invalidJsonMessage: string
+  invalidJsonMessage: string,
 ): Promise<MacroEstimate> {
   let response: Response;
   try {
@@ -105,11 +120,17 @@ async function fetchAnalysisEstimate(
       body: JSON.stringify({ image: base64Image, mimeType: 'image/jpeg' }),
     });
   } catch {
-    throw new PhotoAnalysisSourceError('network', 'Network request to meal analysis endpoint failed.');
+    throw new PhotoAnalysisSourceError(
+      'network',
+      'Network request to meal analysis endpoint failed.',
+    );
   }
 
   if (response.status === 401 || response.status === 403) {
-    throw new PhotoAnalysisSourceError('unauthenticated', 'Meal analysis endpoint rejected bearer token.');
+    throw new PhotoAnalysisSourceError(
+      'unauthenticated',
+      'Meal analysis endpoint rejected bearer token.',
+    );
   }
 
   let body: RawAnalysisResponse;
@@ -128,7 +149,7 @@ async function fetchAnalysisEstimate(
   if (!estimate) {
     throw new PhotoAnalysisSourceError(
       'invalid_response',
-      'Meal analysis endpoint response did not match expected macro estimate shape.'
+      'Meal analysis endpoint response did not match expected macro estimate shape.',
     );
   }
 
@@ -147,7 +168,7 @@ async function fetchAnalysisEstimate(
 export async function analyzeMealPhoto(
   _user: AuthUser,
   base64Image: string,
-  deps?: Partial<MealPhotoAnalysisSourceDeps>
+  deps?: Partial<MealPhotoAnalysisSourceDeps>,
 ): Promise<MacroEstimate> {
   const getServerBaseUrl = deps?.getServerBaseUrl ?? defaultGetServerBaseUrl;
   const getCurrentAccessToken = deps?.getCurrentAccessToken ?? defaultGetCurrentAccessToken;
@@ -157,7 +178,7 @@ export async function analyzeMealPhoto(
   if (!serverBaseUrl) {
     throw new PhotoAnalysisSourceError(
       'configuration',
-      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.'
+      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.',
     );
   }
 
@@ -171,6 +192,6 @@ export async function analyzeMealPhoto(
     serverAccessToken,
     base64Image,
     fetchFn,
-    'MyChampions server returned non-JSON body.'
+    'MyChampions server returned non-JSON body.',
   );
 }

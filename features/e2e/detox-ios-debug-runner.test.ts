@@ -116,19 +116,14 @@ async function runRevenueCatStudentMatrixRunner(explicitCustomerIds?: string) {
   const mobileRoot = join(tempDirectory, 'mychampions');
   const binDirectory = join(tempDirectory, 'bin');
   const runnerScriptsDirectory = join(mobileRoot, 'scripts');
-  const runnerCopyPath = join(
-    runnerScriptsDirectory,
-    'run-detox-revenuecat-student-matrix.sh',
-  );
+  const runnerCopyPath = join(runnerScriptsDirectory, 'run-detox-revenuecat-student-matrix.sh');
   const logPath = join(tempDirectory, 'runner.log');
 
   await mkdir(binDirectory);
   await mkdir(runnerScriptsDirectory, { recursive: true });
-  await writeFile(
-    runnerCopyPath,
-    await readFile(revenueCatStudentMatrixRunnerPath),
-    { mode: 0o755 },
-  );
+  await writeFile(runnerCopyPath, await readFile(revenueCatStudentMatrixRunnerPath), {
+    mode: 0o755,
+  });
   await writeExecutable(
     join(binDirectory, 'bash'),
     `#!/bin/bash
@@ -211,16 +206,8 @@ async function runRevenueCatLiveRunner() {
   const binDirectory = join(tempDirectory, 'bin');
   const runnerScriptsDirectory = join(mobileRoot, 'scripts');
   const runnerCopyPath = join(runnerScriptsDirectory, 'run-detox-revenuecat-test-store.sh');
-  const serverEvidenceDirectory = join(
-    workspaceDirectory,
-    'server',
-    'infra',
-    'scripts',
-  );
-  const serverEvidencePath = join(
-    serverEvidenceDirectory,
-    'verify-revenuecat-live-evidence.sh',
-  );
+  const serverEvidenceDirectory = join(workspaceDirectory, 'server', 'infra', 'scripts');
+  const serverEvidencePath = join(serverEvidenceDirectory, 'verify-revenuecat-live-evidence.sh');
   const logPath = join(tempDirectory, 'runner.log');
 
   await mkdir(binDirectory);
@@ -398,9 +385,7 @@ test('derives a fresh isolated customer set for each default live student matrix
   const secondRun = await runRevenueCatStudentMatrixRunner();
   const runLines = log.trim().split('\n');
   const customerIds = runLines.map((line) => line.match(/\|uid=([^|]+)\|/)?.[1] ?? '');
-  const alternateIds = runLines.map(
-    (line) => line.match(/\|alternate=([^|]+)\|/)?.[1] ?? '',
-  );
+  const alternateIds = runLines.map((line) => line.match(/\|alternate=([^|]+)\|/)?.[1] ?? '');
   const secondRunCustomerIds = secondRun.log
     .trim()
     .split('\n')
@@ -418,7 +403,10 @@ test('derives a fresh isolated customer set for each default live student matrix
     ),
     true,
   );
-  assert.equal(customerIds.some((customerId) => customerId === 'rc-student-v1-monthly'), false);
+  assert.equal(
+    customerIds.some((customerId) => customerId === 'rc-student-v1-monthly'),
+    false,
+  );
   assert.doesNotMatch(stdout, /REVENUECAT_STUDENT_MATRIX_CUSTOMER_IDS/);
 });
 
@@ -449,9 +437,8 @@ test('rejects duplicate or malformed explicit student matrix customer IDs', asyn
     /must contain distinct customer IDs/,
   );
 
-  const malformedIds = Array.from(
-    { length: 9 },
-    (_, index) => (index === 4 ? 'invalid customer' : `review-isolated-20260724-${index + 1}`),
+  const malformedIds = Array.from({ length: 9 }, (_, index) =>
+    index === 4 ? 'invalid customer' : `review-isolated-20260724-${index + 1}`,
   );
   await assert.rejects(
     runRevenueCatStudentMatrixRunner(malformedIds.join(',')),
@@ -504,8 +491,14 @@ test('runs auth-entry and authenticated smoke modes with incompatible E2E state 
 });
 
 test('keeps auth-entry and authenticated smoke specs separate', async () => {
-  const authEntryConfig = await readFile(join(repositoryRoot, 'e2e', 'jest.auth-entry.config.js'), 'utf8');
-  const authenticatedConfig = await readFile(join(repositoryRoot, 'e2e', 'jest.authenticated.config.js'), 'utf8');
+  const authEntryConfig = await readFile(
+    join(repositoryRoot, 'e2e', 'jest.auth-entry.config.js'),
+    'utf8',
+  );
+  const authenticatedConfig = await readFile(
+    join(repositoryRoot, 'e2e', 'jest.authenticated.config.js'),
+    'utf8',
+  );
 
   assert.match(authEntryConfig, /auth-sign-in\.e2e\.test\.js/);
   assert.doesNotMatch(authEntryConfig, /auth-role-selection\.e2e\.test\.js/);
@@ -515,7 +508,10 @@ test('keeps auth-entry and authenticated smoke specs separate', async () => {
 });
 
 test('delegates CI smoke fixture setup to the split-mode orchestrator', async () => {
-  const workflow = await readFile(join(repositoryRoot, '.github', 'workflows', 'ios-pr.yml'), 'utf8');
+  const workflow = await readFile(
+    join(repositoryRoot, '.github', 'workflows', 'ios-pr.yml'),
+    'utf8',
+  );
 
   assert.match(workflow, /run: yarn test:e2e:ios:debug:smoke/);
   assert.doesNotMatch(workflow, /EXPO_PUBLIC_E2E_AUTH_SESSION/);

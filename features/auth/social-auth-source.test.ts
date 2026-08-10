@@ -68,7 +68,7 @@ describe('social-auth-source', () => {
         accessToken: ' apple-access-token ',
         nonce: ' nonce-1 ',
       },
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
@@ -96,9 +96,9 @@ describe('social-auth-source', () => {
             },
             getServerBaseUrl: () => undefined,
             storage: createMemoryStorage(),
-          }
+          },
         ),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration',
     );
   });
 
@@ -117,9 +117,9 @@ describe('social-auth-source', () => {
               throw new Error('server URL resolver unavailable');
             },
             storage: createMemoryStorage(),
-          }
+          },
         ),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration',
     );
   });
 
@@ -139,13 +139,13 @@ describe('social-auth-source', () => {
                     message: 'Social auth provider is not configured for this local server.',
                   },
                 },
-                { status: 503 }
+                { status: 503 },
               ),
             getServerBaseUrl: () => 'http://server.test',
             storage: createMemoryStorage(),
-          }
+          },
         ),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration',
     );
   });
 
@@ -165,14 +165,14 @@ describe('social-auth-source', () => {
                     message: 'Invalid social auth token.',
                   },
                 },
-                { status: 401 }
+                { status: 401 },
               ),
             getServerBaseUrl: () => 'http://server.test',
             storage: createMemoryStorage(),
-          }
+          },
         ),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'invalid_credentials'
+      (error: unknown) =>
+        error instanceof SocialAuthSourceError && error.code === 'invalid_credentials',
     );
   });
-
 });

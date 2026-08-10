@@ -21,7 +21,10 @@ test('normalizeGuardPathname normalizes empty, duplicate, and trailing slash pat
 
 test('normalizeAuthReturnTo accepts only shared recipe app paths', () => {
   assert.equal(normalizeAuthReturnTo('/shared/recipes/share-123'), '/shared/recipes/share-123');
-  assert.equal(normalizeAuthReturnTo('%2Fshared%2Frecipes%2Fshare-123'), '/shared/recipes/share-123');
+  assert.equal(
+    normalizeAuthReturnTo('%2Fshared%2Frecipes%2Fshare-123'),
+    '/shared/recipes/share-123',
+  );
   assert.equal(normalizeAuthReturnTo([' /shared/recipes/share-456 ']), '/shared/recipes/share-456');
   assert.equal(normalizeAuthReturnTo('/professional/home'), null);
   assert.equal(normalizeAuthReturnTo('/student/nutrition'), null);
@@ -149,6 +152,18 @@ test('guard bypasses role-selection when role is locked', () => {
   });
 
   assert.equal(redirect, '/');
+});
+
+test('guard keeps the role-selection handoff open for the committed role', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: 'professional',
+    needsTermsAcceptance: false,
+    pathname: '/auth/role-selection',
+    pendingRoleSelectionRole: 'professional',
+  });
+
+  assert.equal(redirect, null);
 });
 
 test('guard blocks wrong-role tab access', () => {

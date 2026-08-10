@@ -1,9 +1,11 @@
 # AC-004 Custom Meals And Portion Logging (Proposed)
 
 ## Feature
+
 Users create reusable custom meals and log consumed portions in grams with proportional nutrient calculations.
 
 ## Acceptance Criteria
+
 - `AC-401`: User can create a custom meal with required fields: name, total grams, calories, carbs, proteins, fats.
 - `AC-402`: User can optionally save ingredient cost for a custom meal.
 - `AC-403`: User can select a saved custom meal and log consumed grams.
@@ -29,8 +31,10 @@ Users create reusable custom meals and log consumed portions in grams with propo
 - `AC-423`: Recipe identifiers conform to UUIDv7 format.
 - `AC-424`: Recipe image upload flows show visible upload progress and recoverable-failure reason with retry action.
 - `AC-425`: When a recoverable image upload failure occurs, recipe draft fields remain preserved for retry.
+- `AC-426`: If native camera permission is denied during image selection, the picker does not open, localized device-settings guidance is shown, no preview is created, and the custom-meal draft remains available; protected iOS and Android Detox cover the camera-denied fixture.
 
 ## Gherkin Scenarios
+
 ```gherkin
 Feature: Custom meal creation and portion logging
 

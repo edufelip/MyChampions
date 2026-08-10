@@ -10,18 +10,12 @@ function validEnvironment(): NodeJS.ProcessEnv {
     NODE_ENV: 'test',
     MYCHAMPIONS_ANDROID_SLOT_ID: 'mychampions-android-a',
     MYCHAMPIONS_ANDROID_AVD: 'Pixel_10',
-    MYCHAMPIONS_ANDROID_AVD_HOME:
-      '/var/lib/mychampions/mychampions-android-a/avd',
-    MYCHAMPIONS_ANDROID_USER_HOME:
-      '/var/lib/mychampions/mychampions-android-a/user',
-    MYCHAMPIONS_ANDROID_RECOVERY_ROOT:
-      '/var/lib/mychampions/mychampions-android-a/recovery',
-    MYCHAMPIONS_ANDROID_LOG_ROOT:
-      '/var/lib/mychampions/mychampions-android-a/logs',
-    MYCHAMPIONS_ANDROID_TEMP_ROOT:
-      '/var/lib/mychampions/mychampions-android-a/temp',
-    MYCHAMPIONS_ANDROID_LOCK_ROOT:
-      '/var/lib/mychampions/mychampions-android-a/lock',
+    MYCHAMPIONS_ANDROID_AVD_HOME: '/var/lib/mychampions/mychampions-android-a/avd',
+    MYCHAMPIONS_ANDROID_USER_HOME: '/var/lib/mychampions/mychampions-android-a/user',
+    MYCHAMPIONS_ANDROID_RECOVERY_ROOT: '/var/lib/mychampions/mychampions-android-a/recovery',
+    MYCHAMPIONS_ANDROID_LOG_ROOT: '/var/lib/mychampions/mychampions-android-a/logs',
+    MYCHAMPIONS_ANDROID_TEMP_ROOT: '/var/lib/mychampions/mychampions-android-a/temp',
+    MYCHAMPIONS_ANDROID_LOCK_ROOT: '/var/lib/mychampions/mychampions-android-a/lock',
     MYCHAMPIONS_ANDROID_EMULATOR_PORT: '5556',
     MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: 'emulator-5556',
     MYCHAMPIONS_ANDROID_ADB_SERVER_PORT: '5038',
@@ -48,33 +42,25 @@ test('Android runner slot parsing derives an isolated, exact port contract', () 
       emulatorSerial: 'emulator-5556',
       adbServerPort: 5038,
       metroPort: 18082,
-    }
+    },
   );
 });
 
 test('Android runner slot environment exports Detox and exact cleanup namespaces', () => {
-  const values = androidRunnerSlotEnvironment(
-    parseAndroidRunnerSlot(validEnvironment())
-  );
+  const values = androidRunnerSlotEnvironment(parseAndroidRunnerSlot(validEnvironment()));
 
   assert.equal(values.ADB_SERVER_PORT, '5038');
   assert.equal(values.ANDROID_ADB_SERVER_PORT, '5038');
   assert.equal(values.MYCHAMPIONS_ANDROID_ADB_SERVER_PORT, '5038');
   assert.equal(values.ANDROID_SERIAL, 'emulator-5556');
-  assert.equal(
-    values.ANDROID_TMPDIR,
-    '/var/lib/mychampions/mychampions-android-a/temp'
-  );
+  assert.equal(values.ANDROID_TMPDIR, '/var/lib/mychampions/mychampions-android-a/temp');
   assert.equal(values.DETOX_ANDROID_DEVICE, 'emulator-5556');
   assert.equal(values.DETOX_METRO_PORT, '18082');
   assert.equal(
     values.MYCHAMPIONS_NATIVE_STATE_ROOT,
-    '/var/lib/mychampions/mychampions-android-a/recovery'
+    '/var/lib/mychampions/mychampions-android-a/recovery',
   );
-  assert.equal(
-    values.ANDROID_AVD_HOME,
-    '/var/lib/mychampions/mychampions-android-a/avd'
-  );
+  assert.equal(values.ANDROID_AVD_HOME, '/var/lib/mychampions/mychampions-android-a/avd');
 });
 
 test('Android runner slot rejects an unscoped slot, serial mismatch, and port collision', () => {

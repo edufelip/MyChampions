@@ -30,22 +30,22 @@ export type ImageUploadState =
  */
 export type ImageUploadErrorReason =
   | 'permission_denied' // Native camera/library access denied — not retryable until settings change
-  | 'network'         // Transient connectivity failure — retryable
-  | 'storage_quota'   // Server storage quota exceeded — retryable
-  | 'file_too_large'  // File exceeds post-compression limit (BR-261) — not retryable; recompress first
-  | 'unauthorized'    // Auth token invalid or expired — not retryable; must re-authenticate
-  | 'configuration'   // Local server upload endpoint is not configured
-  | 'unknown';        // Unclassified failure — treated as retryable (optimistic)
+  | 'network' // Transient connectivity failure — retryable
+  | 'storage_quota' // Server storage quota exceeded — retryable
+  | 'file_too_large' // File exceeds post-compression limit (BR-261) — not retryable; recompress first
+  | 'unauthorized' // Auth token invalid or expired — not retryable; must re-authenticate
+  | 'configuration' // Local server upload endpoint is not configured
+  | 'unknown'; // Unclassified failure — treated as retryable (optimistic)
 
 /**
  * Locale key for image upload error messages.
  * Maps to keys in localization bundles (en-US, pt-BR, es-ES).
  */
 export type ImageUploadErrorMessageKey =
-  | 'custom_meal.image.upload_failed'   // retryable fallback key
-  | 'custom_meal.image.file_too_large'  // permanent — user must recompress
+  | 'custom_meal.image.upload_failed' // retryable fallback key
+  | 'custom_meal.image.file_too_large' // permanent — user must recompress
   | 'custom_meal.image.permission_denied'
-  | 'custom_meal.image.unauthorized';   // permanent — user must re-authenticate
+  | 'custom_meal.image.unauthorized'; // permanent — user must re-authenticate
 
 /**
  * Computed display state for rendering upload progress, errors, and retry CTA.
@@ -80,10 +80,7 @@ export function normalizeImageUploadError(error: unknown): ImageUploadErrorReaso
   const code = typeof e.code === 'string' ? e.code.toLowerCase() : '';
   const message = typeof e.message === 'string' ? e.message.toLowerCase() : '';
 
-  if (
-    code === 'photo_permission_denied' ||
-    message.includes('photo permission denied')
-  ) {
+  if (code === 'photo_permission_denied' || message.includes('photo permission denied')) {
     return 'permission_denied';
   }
 

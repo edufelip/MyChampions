@@ -19,6 +19,10 @@ test('plan source does not keep Firebase Firestore fallback code', () => {
   ];
 
   for (const snippet of forbiddenSnippets) {
-    assert.equal(source.includes(snippet), false, `Unexpected plan-source Firebase fallback snippet: ${snippet}`);
+    assert.equal(
+      source.includes(snippet),
+      false,
+      `Unexpected plan-source Firebase fallback snippet: ${snippet}`,
+    );
   }
 });

@@ -6,7 +6,15 @@
  * within the app using react-native-webview.
  */
 import { useLocalSearchParams, Stack } from 'expo-router';
-import { StyleSheet, View, ActivityIndicator, Text, Pressable, Platform, Linking } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  ActivityIndicator,
+  Text,
+  Pressable,
+  Platform,
+  Linking,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useState } from 'react';
 
@@ -32,18 +40,22 @@ export default function WebViewScreen() {
       <View
         style={[styles.container, styles.centered, { backgroundColor: theme.color.canvas }]}
         collapsable={false}
-        testID="shared.webview.screen">
-         <Stack.Screen options={{ title: title ?? '', headerShown: true }} />
-         <Text style={[styles.errorText, { color: theme.color.textPrimary, marginBottom: DsSpace.md }]}>
-           {t('auth.terms.offline_hint')}
-         </Text>
-         <Pressable
-           onPress={() => Linking.openURL(url)}
-           style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary }]}>
-           <Text style={[styles.retryText, { color: theme.color.onAccent }]}>
-             {t('auth.terms.open_link')}
-           </Text>
-         </Pressable>
+        testID="shared.webview.screen"
+      >
+        <Stack.Screen options={{ title: title ?? '', headerShown: true }} />
+        <Text
+          style={[styles.errorText, { color: theme.color.textPrimary, marginBottom: DsSpace.md }]}
+        >
+          {t('auth.terms.offline_hint')}
+        </Text>
+        <Pressable
+          onPress={() => Linking.openURL(url)}
+          style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary }]}
+        >
+          <Text style={[styles.retryText, { color: theme.color.onAccent }]}>
+            {t('auth.terms.open_link')}
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -52,7 +64,8 @@ export default function WebViewScreen() {
     <View
       style={[styles.container, { backgroundColor: theme.color.canvas }]}
       collapsable={false}
-      testID="shared.webview.screen">
+      testID="shared.webview.screen"
+    >
       <Stack.Screen
         options={{
           title: title ?? '',
@@ -71,9 +84,13 @@ export default function WebViewScreen() {
           <Pressable
             onPress={() => {
               setError(false);
-              setKey(k => k + 1);
+              setKey((k) => k + 1);
             }}
-            style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary, marginTop: DsSpace.md }]}>
+            style={[
+              styles.retryButton,
+              { backgroundColor: theme.color.accentPrimary, marginTop: DsSpace.md },
+            ]}
+          >
             <Text style={[styles.retryText, { color: theme.color.onAccent }]}>
               {t('common.error.retry')}
             </Text>
@@ -90,7 +107,10 @@ export default function WebViewScreen() {
           onError={() => setError(true)}
           onHttpError={() => setError(true)}
           renderLoading={() => (
-            <View style={[styles.loading, { backgroundColor: theme.color.canvas }]} testID="shared.webview.loading">
+            <View
+              style={[styles.loading, { backgroundColor: theme.color.canvas }]}
+              testID="shared.webview.loading"
+            >
               <ActivityIndicator size="large" color={theme.color.accentPrimary} />
             </View>
           )}

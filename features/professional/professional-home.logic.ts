@@ -20,10 +20,8 @@ export function resolveProfessionalHomeAttention(input: {
   const hasPlanChangeRequests =
     input.planChangeState === 'ready' && input.planChangeRequestCount > 0;
   const hasAnyAttention = hasConnectionRequests || hasPlanChangeRequests;
-  const hasLoadError =
-    input.connectionState === 'error' || input.planChangeState === 'error';
-  const isLoading =
-    input.connectionState === 'loading' || input.planChangeState === 'loading';
+  const hasLoadError = input.connectionState === 'error' || input.planChangeState === 'error';
+  const isLoading = input.connectionState === 'loading' || input.planChangeState === 'loading';
 
   return {
     hasConnectionRequests,
@@ -32,8 +30,6 @@ export function resolveProfessionalHomeAttention(input: {
     hasLoadError,
     isLoading,
     showAllCaughtUp:
-      input.connectionState === 'ready' &&
-      input.planChangeState === 'ready' &&
-      !hasAnyAttention,
+      input.connectionState === 'ready' && input.planChangeState === 'ready' && !hasAnyAttention,
   };
 }

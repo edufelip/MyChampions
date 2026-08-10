@@ -200,14 +200,22 @@ test('BL-011 Filter: blockers by specialty (active)', () => {
 });
 
 test('BL-011 Filter: blockers by specialty (pending)', () => {
-  const blockers = filterBlockersBySpecialty(mockConnections, 'fitness_coach', 'pending_confirmation');
+  const blockers = filterBlockersBySpecialty(
+    mockConnections,
+    'fitness_coach',
+    'pending_confirmation',
+  );
 
   assert.equal(blockers.length, 1);
   assert.equal(blockers[0]?.id, 'student-eve-345');
 });
 
 test('BL-011 Filter: blockers by specialty nutrition pending', () => {
-  const blockers = filterBlockersBySpecialty(mockConnections, 'nutritionist', 'pending_confirmation');
+  const blockers = filterBlockersBySpecialty(
+    mockConnections,
+    'nutritionist',
+    'pending_confirmation',
+  );
 
   assert.equal(blockers.length, 1); // charlie
 });

@@ -12,7 +12,9 @@ async function scrollToTrainingPlanSave() {
 async function scrollToTrainingPlanSaveAboveNavigation() {
   await scrollToTrainingPlanSave();
   await element(by.id('pro.training_plan.screen')).scroll(120, 'down', 0.5, 0.5);
-  await waitFor(element(by.id('pro.training_plan.saveButton'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('pro.training_plan.saveButton')))
+    .toBeVisible()
+    .withTimeout(5000);
 }
 
 module.exports = {

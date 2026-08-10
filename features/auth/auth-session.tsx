@@ -36,6 +36,7 @@ type AuthSessionContextValue = {
   isHydrated: boolean;
   isAuthenticated: boolean;
   lockedRole: RoleIntent | null;
+  pendingRoleSelectionRole: RoleIntent | null;
   currentUser: AuthSessionUser | null;
   termsRequiredVersion: string;
   acceptedTermsVersion: string | null;
@@ -53,6 +54,8 @@ type AuthSessionContextValue = {
   signInWithE2ESocialAuth: (provider: E2ESocialAuthProvider) => Promise<boolean>;
   signInWithServerSocialAuth: (provider: E2ESocialAuthProvider) => Promise<boolean>;
   adoptCurrentServerSession: () => boolean;
+  beginRoleSelectionNavigation: (role: RoleIntent) => void;
+  completeRoleSelectionNavigation: () => void;
   lockRole: (role: RoleIntent) => Promise<void>;
   acceptTerms: () => Promise<void>;
   clearSession: () => Promise<void>;
@@ -104,23 +107,23 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   const appVariant = expoExtra.appVariant ?? process.env.APP_VARIANT;
   const e2eAcceptedTermsVersion = resolveE2EPhaseConfigValue(
     process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
-    expoExtra.e2e?.acceptedTermsVersion
+    expoExtra.e2e?.acceptedTermsVersion,
   );
   const e2eAuthSession = resolveE2EPhaseConfigValue(
     process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
-    expoExtra.e2e?.authSession
+    expoExtra.e2e?.authSession,
   );
   const e2eCreateAccount = resolveE2EPhaseConfigValue(
     process.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT,
-    expoExtra.e2e?.createAccount
+    expoExtra.e2e?.createAccount,
   );
   const e2eEmailPasswordSignIn = resolveE2EPhaseConfigValue(
     process.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN,
-    expoExtra.e2e?.emailPasswordSignIn
+    expoExtra.e2e?.emailPasswordSignIn,
   );
   const e2eSocialAuth = resolveE2EPhaseConfigValue(
     process.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH,
-    expoExtra.e2e?.socialAuth
+    expoExtra.e2e?.socialAuth,
   );
   const e2eSession = useMemo(
     () =>
@@ -131,16 +134,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         isDev: __DEV__,
         requiredTermsVersion: termsRequiredVersion,
       }),
-    [
-      appVariant,
-      e2eAcceptedTermsVersion,
-      e2eAuthSession,
-      termsRequiredVersion,
-    ]
+    [appVariant, e2eAcceptedTermsVersion, e2eAuthSession, termsRequiredVersion],
   );
   const [isHydrated, setIsHydrated] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lockedRole, setLockedRole] = useState<RoleIntent | null>(null);
+  const [pendingRoleSelectionRole, setPendingRoleSelectionRole] = useState<RoleIntent | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthSessionUser | null>(null);
   const [acceptedTermsVersion, setAcceptedTermsVersion] = useState<string | null>(null);
   const [requiresTermsAcceptance, setRequiresTermsAcceptance] = useState(false);
@@ -150,29 +149,35 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     if (e2eSession) {
-      const persistedRole = readPersistedE2ELockedRole();
-      setCurrentUser(createE2EUser(e2eSession));
-      setIsAuthenticated(true);
-      setLockedRole(persistedRole ?? e2eSession.lockedRole);
-      setAcceptedTermsVersion(e2eSession.acceptedTermsVersion);
-      setLastProfileSyncedAtIso(new Date().toISOString());
-      setRequiresTermsAcceptance(
-        needsTermsAcceptance({
-          requiredVersion: termsRequiredVersion,
-          acceptedVersion: e2eSession.acceptedTermsVersion,
-        })
-      );
-      setIsHydrated(true);
+      void (async () => {
+        const persistedRole = await readPersistedE2ELockedRole();
+        if (cancelled) return;
+        setCurrentUser(createE2EUser(e2eSession));
+        setIsAuthenticated(true);
+        setLockedRole(persistedRole ?? e2eSession.lockedRole);
+        setAcceptedTermsVersion(e2eSession.acceptedTermsVersion);
+        setLastProfileSyncedAtIso(new Date().toISOString());
+        setRequiresTermsAcceptance(
+          needsTermsAcceptance({
+            requiredVersion: termsRequiredVersion,
+            acceptedVersion: e2eSession.acceptedTermsVersion,
+          }),
+        );
+        setIsHydrated(true);
+      })();
       return () => {
         cancelled = true;
       };
     }
 
-    async function hydrateServerUser(serverUser: ReturnType<typeof getCurrentServerUser>): Promise<void> {
+    async function hydrateServerUser(
+      serverUser: ReturnType<typeof getCurrentServerUser>,
+    ): Promise<void> {
       if (!serverUser) {
         setIsAuthenticated(false);
         setCurrentUser(null);
         setLockedRole(null);
+        setPendingRoleSelectionRole(null);
         setAcceptedTermsVersion(null);
         setRequiresTermsAcceptance(false);
         setLastProfileSyncedAtIso(null);
@@ -195,7 +200,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
             needsTermsAcceptance({
               requiredVersion: termsRequiredVersion,
               acceptedVersion: profile.acceptedTermsVersion,
-            })
+            }),
           );
         }
       } catch (error) {
@@ -247,6 +252,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(false);
         setCurrentUser(null);
         setLockedRole(null);
+        setPendingRoleSelectionRole(null);
         setAcceptedTermsVersion(null);
         setLastProfileSyncedAtIso(null);
         setRequiresTermsAcceptance(false);
@@ -262,7 +268,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         needsTermsAcceptance({
           requiredVersion: termsRequiredVersion,
           acceptedVersion: session.profile.acceptedTermsVersion,
-        })
+        }),
       );
     });
   }, [e2eSession, termsRequiredVersion]);
@@ -272,6 +278,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       isHydrated,
       isAuthenticated,
       lockedRole,
+      pendingRoleSelectionRole,
       currentUser,
       termsRequiredVersion: termsConfig.requiredVersion,
       acceptedTermsVersion,
@@ -304,7 +311,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           needsTermsAcceptance({
             requiredVersion: termsConfig.requiredVersion,
             acceptedVersion: session.acceptedTermsVersion,
-          })
+          }),
         );
         setIsHydrated(true);
         return true;
@@ -317,7 +324,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           isDev: __DEV__,
           provider: 'google',
           requiredTermsVersion: termsConfig.requiredVersion,
-        })
+        }),
       ),
       signInWithE2EEmailPassword: async (email: string, password: string) => {
         const session = resolveE2EEmailPasswordSignInOverride({
@@ -343,7 +350,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           needsTermsAcceptance({
             requiredVersion: termsConfig.requiredVersion,
             acceptedVersion: session.acceptedTermsVersion,
-          })
+          }),
         );
         setIsHydrated(true);
         return true;
@@ -371,7 +378,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           needsTermsAcceptance({
             requiredVersion: termsConfig.requiredVersion,
             acceptedVersion: session.acceptedTermsVersion,
-          })
+          }),
         );
         setIsHydrated(true);
         return true;
@@ -389,7 +396,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           needsTermsAcceptance({
             requiredVersion: termsConfig.requiredVersion,
             acceptedVersion: session.profile.acceptedTermsVersion,
-          })
+          }),
         );
         setIsHydrated(true);
         return true;
@@ -406,11 +413,17 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           needsTermsAcceptance({
             requiredVersion: termsConfig.requiredVersion,
             acceptedVersion: serverProfile.acceptedTermsVersion,
-          })
+          }),
         );
         setLastProfileSyncedAtIso(new Date().toISOString());
         setIsHydrated(true);
         return true;
+      },
+      beginRoleSelectionNavigation: (role: RoleIntent) => {
+        setPendingRoleSelectionRole(role);
+      },
+      completeRoleSelectionNavigation: () => {
+        setPendingRoleSelectionRole(null);
       },
       lockRole: async (role: RoleIntent) => {
         if (!currentUser) {
@@ -418,7 +431,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         }
 
         if (e2eSession) {
-          persistE2ELockedRole(role);
+          await persistE2ELockedRole(role);
           setLockedRole(role);
           setLastProfileSyncedAtIso(new Date().toISOString());
           return;
@@ -446,11 +459,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         setRequiresTermsAcceptance(false);
       },
       clearSession: async () => {
-        if (e2eSession) persistE2ELockedRole(null);
+        if (e2eSession) await persistE2ELockedRole(null);
         await clearPersistedServerAuthSession();
         setIsAuthenticated(false);
         setCurrentUser(null);
         setLockedRole(null);
+        setPendingRoleSelectionRole(null);
         setAcceptedTermsVersion(null);
         setLastProfileSyncedAtIso(null);
         setRequiresTermsAcceptance(false);
@@ -469,11 +483,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       isHydrated,
       lockedRole,
       lastProfileSyncedAtIso,
+      pendingRoleSelectionRole,
       requiresTermsAcceptance,
       termsConfig.requiredVersion,
       termsConfig.termsUrl,
       termsConfig.privacyPolicyUrl,
-    ]
+    ],
   );
 
   return <AuthSessionContext.Provider value={value}>{children}</AuthSessionContext.Provider>;

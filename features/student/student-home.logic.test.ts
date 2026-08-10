@@ -86,12 +86,12 @@ test('student home keeps independently successful sections visible during every 
     assert.equal(
       retryingState.hasCompletedInitialLoad,
       true,
-      `${scenario.source} retry should retain initial-load completion`
+      `${scenario.source} retry should retain initial-load completion`,
     );
     assert.equal(
       retryingState.isInitialLoading,
       false,
-      `${scenario.source} retry should not restore the full-screen spinner`
+      `${scenario.source} retry should not restore the full-screen spinner`,
     );
     assert.equal(retryingState.canRenderPlans, scenario.canRenderPlans);
     assert.equal(retryingState.canRenderWater, scenario.canRenderWater);

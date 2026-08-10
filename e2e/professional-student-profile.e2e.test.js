@@ -1,30 +1,49 @@
-const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const describeWithE2EAuthSession =
+  process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
 const { tapCredentialSkip } = require('./professional-specialty-actions');
 
 async function selectProfessionalRole() {
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(15000);
   await element(by.id('auth.roleSelection.professionalCard')).tap();
   await element(by.id('auth.roleSelection.continueButton')).tap();
-  await waitFor(element(by.id('pro.specialty.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.specialty.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function openStudentsTab() {
   await element(by.id('pro.specialty.cta_skip')).tap();
-  await waitFor(element(by.id('pro.home.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.home.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
   await element(by.id('tabs.students')).tap();
-  await waitFor(element(by.id('pro.students.search'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.students.search')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function addNutritionSpecialtyAndOpenStudentsTab() {
-  await waitFor(element(by.id('pro.specialty.add.nutritionist'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('pro.specialty.add.nutritionist')))
+    .toBeVisible()
+    .withTimeout(5000);
   await element(by.id('pro.specialty.add.nutritionist')).tap();
-  await waitFor(element(by.id('pro.specialty.credentialForm'))).toExist().withTimeout(5000);
+  await waitFor(element(by.id('pro.specialty.credentialForm')))
+    .toExist()
+    .withTimeout(5000);
   await tapCredentialSkip();
-  await waitFor(element(by.id('pro.specialty.row.nutritionist'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('pro.specialty.row.nutritionist')))
+    .toBeVisible()
+    .withTimeout(5000);
   await element(by.id('pro.specialty.cta_continue')).tap();
-  await waitFor(element(by.id('pro.home.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.home.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
   await element(by.id('tabs.students')).tap();
-  await waitFor(element(by.id('pro.students.search'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.students.search')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 describeWithE2EAuthSession('Professional Student Profile', () => {
@@ -42,20 +61,28 @@ describeWithE2EAuthSession('Professional Student Profile', () => {
     await selectProfessionalRole();
     await openStudentsTab();
 
-    await waitFor(element(by.id('pro.students.row.e2e-dual-student'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.students.row.e2e-dual-student')))
+      .toBeVisible()
+      .withTimeout(10000);
     await element(by.id('pro.students.row.e2e-dual-student')).tap();
 
-    await waitFor(element(by.id('pro.student_profile.screen'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.screen')))
+      .toBeVisible()
+      .withTimeout(10000);
     await expect(element(by.id('pro.student_profile.nutrition.assignmentCard'))).toBeVisible();
     await expect(element(by.id('pro.student_profile.nutrition.title'))).toBeVisible();
-    await expect(element(by.id('pro.student_profile.nutrition.status'))).toHaveText('Active, awaiting plan');
+    await expect(element(by.id('pro.student_profile.nutrition.status'))).toHaveText(
+      'Active, awaiting plan',
+    );
     await waitFor(element(by.id('pro.student_profile.training.assignmentCard')))
       .toBeVisible()
       .whileElement(by.id('pro.student_profile.screen'))
       .scroll(260, 'down', 0.5, 0.8);
     await expect(element(by.id('pro.student_profile.training.assignmentCard'))).toBeVisible();
     await expect(element(by.id('pro.student_profile.training.title'))).toBeVisible();
-    await expect(element(by.id('pro.student_profile.training.status'))).toHaveText('Active, awaiting plan');
+    await expect(element(by.id('pro.student_profile.training.status'))).toHaveText(
+      'Active, awaiting plan',
+    );
     await waitFor(element(by.id('pro.student_profile.unbindCta')))
       .toBeVisible()
       .whileElement(by.id('pro.student_profile.screen'))
@@ -67,31 +94,55 @@ describeWithE2EAuthSession('Professional Student Profile', () => {
     await selectProfessionalRole();
     await addNutritionSpecialtyAndOpenStudentsTab();
 
-    await waitFor(element(by.id('pro.students.row.e2e-dual-student'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.students.row.e2e-dual-student')))
+      .toBeVisible()
+      .withTimeout(10000);
     await element(by.id('pro.students.row.e2e-dual-student')).tap();
 
-    await waitFor(element(by.id('pro.student_profile.screen'))).toBeVisible().withTimeout(10000);
-    await waitFor(element(by.id('pro.student_profile.nutrition.cta_assign'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.screen')))
+      .toBeVisible()
+      .withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.nutrition.cta_assign')))
+      .toBeVisible()
+      .withTimeout(10000);
     await element(by.id('pro.student_profile.nutrition.cta_assign')).tap();
 
-    await waitFor(element(by.id('planPicker.modal'))).toBeVisible().withTimeout(5000);
-    await waitFor(element(by.id('planPicker.ready'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('planPicker.modal')))
+      .toBeVisible()
+      .withTimeout(5000);
+    await waitFor(element(by.id('planPicker.ready')))
+      .toBeVisible()
+      .withTimeout(5000);
     await expect(element(by.id('planPicker.row.e2e-nutrition-predefined-plan'))).toBeVisible();
     await expect(element(by.id('planPicker.row.e2e-training-predefined-plan'))).not.toBeVisible();
     await element(by.id('planPicker.assign.e2e-nutrition-predefined-plan')).tap();
 
-    await waitFor(element(by.text('Plan assigned successfully.'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.text('Plan assigned successfully.')))
+      .toBeVisible()
+      .withTimeout(5000);
     await element(by.text('OK')).tap();
-    await waitFor(element(by.id('pro.nutrition_plan.screen'))).toBeVisible().withTimeout(10000);
-    await waitFor(element(by.text('Draft Assignment: Customize this nutrition plan for the student before sending.')))
+    await waitFor(element(by.id('pro.nutrition_plan.screen')))
       .toBeVisible()
       .withTimeout(10000);
-    await expect(element(by.id('pro.plan.metadata.name'))).toHaveText('Balanced Nutrition Template');
+    await waitFor(
+      element(
+        by.text('Draft Assignment: Customize this nutrition plan for the student before sending.'),
+      ),
+    )
+      .toBeVisible()
+      .withTimeout(10000);
+    await expect(element(by.id('pro.plan.metadata.name'))).toHaveText(
+      'Balanced Nutrition Template',
+    );
     await expect(element(by.text('Could not load plan. Try again.'))).not.toExist();
 
-    await waitFor(element(by.id('pro.nutrition_plan.backButton'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('pro.nutrition_plan.backButton')))
+      .toBeVisible()
+      .withTimeout(5000);
     await element(by.id('pro.nutrition_plan.backButton')).tap();
-    await waitFor(element(by.id('pro.student_profile.screen'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.screen')))
+      .toBeVisible()
+      .withTimeout(10000);
     await waitFor(element(by.id('pro.student_profile.nutrition.status')))
       .toHaveText('Draft pending send')
       .withTimeout(10000);
@@ -99,41 +150,63 @@ describeWithE2EAuthSession('Professional Student Profile', () => {
     await expect(element(by.id('pro.student_profile.nutrition.cta_discard'))).toBeVisible();
 
     await element(by.id('pro.student_profile.nutrition.cta_discard')).tap();
-    await waitFor(element(by.text('Discard'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.text('Discard')))
+      .toBeVisible()
+      .withTimeout(5000);
     const discardConfirmation = element(by.text('Discard'));
     if (device.getPlatform() === 'ios') {
       await discardConfirmation.atIndex(1).tap();
     } else {
       await discardConfirmation.tap();
     }
-    await waitFor(element(by.text('Draft discarded successfully.'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.text('Draft discarded successfully.')))
+      .toBeVisible()
+      .withTimeout(5000);
     await element(by.text('OK')).tap();
 
     await waitFor(element(by.id('pro.student_profile.nutrition.status')))
       .toHaveText('Active, awaiting plan')
       .withTimeout(10000);
     await expect(element(by.id('pro.student_profile.nutrition.cta_assign'))).toBeVisible();
-    await expect(element(by.id('pro.student_profile.nutrition.cta_resume_draft'))).not.toBeVisible();
+    await expect(
+      element(by.id('pro.student_profile.nutrition.cta_resume_draft')),
+    ).not.toBeVisible();
   });
 
   it('shows student tracking review and can mark a plan change request reviewed', async () => {
     await selectProfessionalRole();
     await openStudentsTab();
 
-    await waitFor(element(by.id('pro.students.row.e2e-dual-student'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.students.row.e2e-dual-student')))
+      .toBeVisible()
+      .withTimeout(10000);
     await element(by.id('pro.students.row.e2e-dual-student')).tap();
 
-    await waitFor(element(by.id('pro.student_profile.screen'))).toBeVisible().withTimeout(10000);
-    await waitFor(element(by.id('pro.student_profile.trackingReview'))).toBeVisible().withTimeout(10000);
-    await waitFor(element(by.id('pro.student_profile.trackingReview.waterValue'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.screen')))
+      .toBeVisible()
+      .withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.trackingReview')))
+      .toBeVisible()
+      .withTimeout(10000);
+    await waitFor(element(by.id('pro.student_profile.trackingReview.waterValue')))
+      .toBeVisible()
+      .withTimeout(10000);
 
-    await waitFor(element(by.id('pro.student_profile.planChangeRequest.e2e-plan-change-request-nutrition')))
+    await waitFor(
+      element(by.id('pro.student_profile.planChangeRequest.e2e-plan-change-request-nutrition')),
+    )
       .toBeVisible()
       .whileElement(by.id('pro.student_profile.screen'))
       .scroll(520, 'down', 0.5, 0.8);
-    await expect(element(by.text('Please add one more high-protein breakfast option.'))).toBeVisible();
+    await expect(
+      element(by.text('Please add one more high-protein breakfast option.')),
+    ).toBeVisible();
 
-    await element(by.id('pro.student_profile.planChangeRequest.e2e-plan-change-request-nutrition.review')).tap();
-    await waitFor(element(by.text('No pending change requests.'))).toBeVisible().withTimeout(5000);
+    await element(
+      by.id('pro.student_profile.planChangeRequest.e2e-plan-change-request-nutrition.review'),
+    ).tap();
+    await waitFor(element(by.text('No pending change requests.')))
+      .toBeVisible()
+      .withTimeout(5000);
   });
 });

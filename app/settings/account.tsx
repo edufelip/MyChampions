@@ -24,14 +24,7 @@
  */
 import { useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,14 +35,9 @@ import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import type { AuthProviderId } from '@/features/auth/auth-user';
-import {
-  requestPasswordResetFromSource,
-} from '@/features/auth/account-auth-source';
+import { requestPasswordResetFromSource } from '@/features/auth/account-auth-source';
 import { E2E_AUTH_SESSION_UID } from '@/features/auth/e2e-auth-session';
-import {
-  deleteAccountAndDataFromSource,
-  ProfileSourceError,
-} from '@/features/auth/profile-source';
+import { deleteAccountAndDataFromSource, ProfileSourceError } from '@/features/auth/profile-source';
 
 import {
   resolveOfflineDisplayState,
@@ -63,8 +51,7 @@ import { useLocale } from '@/localization/locale-context';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const APP_VERSION: string =
-  (Constants.expoConfig?.version as string | undefined) ?? '—';
+const APP_VERSION: string = (Constants.expoConfig?.version as string | undefined) ?? '—';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,10 +62,7 @@ type DeleteRequestState =
   | { kind: 'error'; reason: 'network' | 'already_requested' | 'unauthenticated' | 'unknown' };
 
 type PasswordResetState =
-  | { kind: 'idle' }
-  | { kind: 'pending' }
-  | { kind: 'success' }
-  | { kind: 'error' };
+  { kind: 'idle' } | { kind: 'pending' } | { kind: 'success' } | { kind: 'error' };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -143,7 +127,6 @@ export default function AccountSettingsScreen() {
   const [isSignOutConfirmVisible, setIsSignOutConfirmVisible] = useState(false);
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
 
-
   // ── Derived ────────────────────────────────────────────────────────────────
   const email = currentUser?.email ?? null;
   const displayName = resolveDisplayName(currentUser?.displayName ?? null, email);
@@ -205,7 +188,7 @@ export default function AccountSettingsScreen() {
       Alert.alert(
         '',
         t('settings.account.change_password.oauth_notice', { provider: oauthProvider }) as string,
-        [{ text: 'OK' }]
+        [{ text: 'OK' }],
       );
       return;
     }
@@ -284,10 +267,16 @@ export default function AccountSettingsScreen() {
 
   return (
     <ScrollView
-      style={[styles.root, { backgroundColor: theme.color.canvas, marginBottom: bottomNavigationInset }]}
+      style={[
+        styles.root,
+        { backgroundColor: theme.color.canvas, marginBottom: bottomNavigationInset },
+      ]}
       contentContainerStyle={[styles.content, { paddingTop: topInsetPadding + DsSpace.sm }]}
-      testID="settings.account.screen">
-      <Stack.Screen options={{ title: t('settings.account.title') as string, headerShown: false }} />
+      testID="settings.account.screen"
+    >
+      <Stack.Screen
+        options={{ title: t('settings.account.title') as string, headerShown: false }}
+      />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -307,13 +296,16 @@ export default function AccountSettingsScreen() {
         style={[
           styles.heroCard,
           {
-            backgroundColor: isProfessional ? theme.color.accentPrimarySoft : theme.color.accentPrimarySoft,
+            backgroundColor: isProfessional
+              ? theme.color.accentPrimarySoft
+              : theme.color.accentPrimarySoft,
             borderColor: isProfessional ? theme.color.accentPrimary : theme.color.accentPrimary,
             flexDirection: 'row',
             alignItems: 'center',
           },
         ]}
-        testID="settings.account.profileCard">
+        testID="settings.account.profileCard"
+      >
         <View
           style={[
             styles.avatar,
@@ -321,12 +313,14 @@ export default function AccountSettingsScreen() {
               backgroundColor: theme.color.surface,
               borderColor: isProfessional ? theme.color.accentPrimary : theme.color.accentPrimary,
             },
-          ]}>
+          ]}
+        >
           <Text
             style={[
               styles.avatarInitial,
               { color: isProfessional ? theme.color.accentPrimary : theme.color.accentPrimary },
-            ]}>
+            ]}
+          >
             {avatarInitial}
           </Text>
         </View>
@@ -338,7 +332,8 @@ export default function AccountSettingsScreen() {
           {email ? (
             <Text
               style={[styles.profileEmail, { color: theme.color.textSecondary }]}
-              numberOfLines={1}>
+              numberOfLines={1}
+            >
               {email}
             </Text>
           ) : null}
@@ -347,8 +342,13 @@ export default function AccountSettingsScreen() {
             <View
               style={[
                 styles.rolePill,
-                { backgroundColor: isProfessional ? theme.color.accentPrimary : theme.color.accentPrimary },
-              ]}>
+                {
+                  backgroundColor: isProfessional
+                    ? theme.color.accentPrimary
+                    : theme.color.accentPrimary,
+                },
+              ]}
+            >
               <Text style={[styles.rolePillText, { color: theme.color.surface }]}>
                 {roleBadgeLabel}
               </Text>
@@ -356,7 +356,8 @@ export default function AccountSettingsScreen() {
             {isProfessional ? (
               <Text
                 style={[styles.freeTierText, { color: theme.color.textSecondary }]}
-                numberOfLines={1}>
+                numberOfLines={1}
+              >
                 {t('pro.subscription.free_tier')}
               </Text>
             ) : null}
@@ -367,15 +368,24 @@ export default function AccountSettingsScreen() {
           accessibilityLabel={t('settings.account.contact.label') as string}
           onPress={handleContactSupport}
           hitSlop={8}
-          style={[styles.supportQuickButton, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}
-          testID="settings.account.supportQuickCta">
+          style={[
+            styles.supportQuickButton,
+            { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+          ]}
+          testID="settings.account.supportQuickCta"
+        >
           <MaterialIcons name="help-outline" size={20} color={theme.color.accentPrimary} />
         </Pressable>
       </View>
 
       {/* ── Account section ────────────────────────────────────────────── */}
       <SectionHeader label={t('settings.account.section.account') as string} theme={theme} />
-      <View style={[styles.group, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}>
+      <View
+        style={[
+          styles.group,
+          { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+        ]}
+      >
         <SettingsRow
           label={t('settings.account.email.label') as string}
           value={email ?? '—'}
@@ -386,7 +396,13 @@ export default function AccountSettingsScreen() {
 
         {/* Change password */}
         {passwordState.kind === 'success' ? (
-          <View style={[styles.inlineBanner, { backgroundColor: theme.color.successSoft, borderColor: theme.color.success }]} testID="settings.account.passwordSuccess">
+          <View
+            style={[
+              styles.inlineBanner,
+              { backgroundColor: theme.color.successSoft, borderColor: theme.color.success },
+            ]}
+            testID="settings.account.passwordSuccess"
+          >
             <Text style={[styles.inlineBannerText, { color: theme.color.success }]}>
               {t('settings.account.change_password.success')}
             </Text>
@@ -402,8 +418,15 @@ export default function AccountSettingsScreen() {
         )}
         {isPasswordConfirmVisible ? (
           <View
-            style={[styles.confirmCard, { backgroundColor: theme.color.accentPrimarySoft, borderColor: theme.color.accentPrimary }]}
-            testID="settings.account.passwordConfirm">
+            style={[
+              styles.confirmCard,
+              {
+                backgroundColor: theme.color.accentPrimarySoft,
+                borderColor: theme.color.accentPrimary,
+              },
+            ]}
+            testID="settings.account.passwordConfirm"
+          >
             <Text style={[styles.confirmTitle, { color: theme.color.textPrimary }]}>
               {t('settings.account.change_password.confirm_title')}
             </Text>
@@ -415,7 +438,8 @@ export default function AccountSettingsScreen() {
                 accessibilityRole="button"
                 onPress={() => setIsPasswordConfirmVisible(false)}
                 style={[styles.confirmButton, { borderColor: theme.color.border }]}
-                testID="settings.account.passwordCancelCta">
+                testID="settings.account.passwordCancelCta"
+              >
                 <Text style={[styles.confirmButtonText, { color: theme.color.textSecondary }]}>
                   {t('settings.account.change_password.confirm_no')}
                 </Text>
@@ -423,8 +447,15 @@ export default function AccountSettingsScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={submitPasswordReset}
-                style={[styles.confirmButton, { backgroundColor: theme.color.accentPrimary, borderColor: theme.color.accentPrimary }]}
-                testID="settings.account.passwordConfirmCta">
+                style={[
+                  styles.confirmButton,
+                  {
+                    backgroundColor: theme.color.accentPrimary,
+                    borderColor: theme.color.accentPrimary,
+                  },
+                ]}
+                testID="settings.account.passwordConfirmCta"
+              >
                 <Text style={[styles.confirmButtonText, { color: theme.color.surface }]}>
                   {t('settings.account.change_password.confirm_yes')}
                 </Text>
@@ -433,7 +464,10 @@ export default function AccountSettingsScreen() {
           </View>
         ) : null}
         {passwordState.kind === 'error' ? (
-          <Text style={[styles.rowError, { color: theme.color.danger }]} testID="settings.account.passwordError">
+          <Text
+            style={[styles.rowError, { color: theme.color.danger }]}
+            testID="settings.account.passwordError"
+          >
             {t('settings.account.change_password.error')}
           </Text>
         ) : null}
@@ -453,15 +487,20 @@ export default function AccountSettingsScreen() {
         onPress={handleSignOut}
         style={[styles.signOutButton, { borderColor: theme.color.warning }]}
         accessibilityRole="button"
-        testID="settings.account.signOutCta">
+        testID="settings.account.signOutCta"
+      >
         <Text style={[styles.signOutText, { color: theme.color.warning }]}>
           {t('settings.account.sign_out.cta')}
         </Text>
       </Pressable>
       {isSignOutConfirmVisible ? (
         <View
-          style={[styles.confirmCard, { backgroundColor: theme.color.warningSoft, borderColor: theme.color.warning }]}
-          testID="settings.account.signOutConfirm">
+          style={[
+            styles.confirmCard,
+            { backgroundColor: theme.color.warningSoft, borderColor: theme.color.warning },
+          ]}
+          testID="settings.account.signOutConfirm"
+        >
           <Text style={[styles.confirmTitle, { color: theme.color.textPrimary }]}>
             {t('settings.account.sign_out.confirm_title')}
           </Text>
@@ -473,7 +512,8 @@ export default function AccountSettingsScreen() {
               accessibilityRole="button"
               onPress={() => setIsSignOutConfirmVisible(false)}
               style={[styles.confirmButton, { borderColor: theme.color.border }]}
-              testID="settings.account.signOutCancelCta">
+              testID="settings.account.signOutCancelCta"
+            >
               <Text style={[styles.confirmButtonText, { color: theme.color.textSecondary }]}>
                 {t('settings.account.sign_out.confirm_no')}
               </Text>
@@ -481,8 +521,13 @@ export default function AccountSettingsScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={submitSignOut}
-              style={[styles.confirmButton, styles.confirmDestructiveButton, { backgroundColor: theme.color.warning, borderColor: theme.color.warning }]}
-              testID="settings.account.signOutConfirmCta">
+              style={[
+                styles.confirmButton,
+                styles.confirmDestructiveButton,
+                { backgroundColor: theme.color.warning, borderColor: theme.color.warning },
+              ]}
+              testID="settings.account.signOutConfirmCta"
+            >
               <Text style={[styles.confirmButtonText, { color: theme.color.surface }]}>
                 {t('settings.account.sign_out.confirm_yes')}
               </Text>
@@ -493,7 +538,12 @@ export default function AccountSettingsScreen() {
 
       {/* ── Legal & Privacy section ─────────────────────────────────────── */}
       <SectionHeader label={t('settings.account.section.legal') as string} theme={theme} />
-      <View style={[styles.group, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}>
+      <View
+        style={[
+          styles.group,
+          { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+        ]}
+      >
         <SettingsRow
           label={t('settings.account.privacy_policy.label') as string}
           onPress={handleOpenPrivacyPolicy}
@@ -511,7 +561,12 @@ export default function AccountSettingsScreen() {
 
       {/* ── Support section ────────────────────────────────────────────── */}
       <SectionHeader label={t('settings.account.section.support') as string} theme={theme} />
-      <View style={[styles.group, { backgroundColor: theme.color.surface, borderColor: theme.color.border }]}>
+      <View
+        style={[
+          styles.group,
+          { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+        ]}
+      >
         <SettingsRow
           label={t('settings.account.contact.label') as string}
           onPress={handleContactSupport}
@@ -522,16 +577,25 @@ export default function AccountSettingsScreen() {
 
       {/* ── Danger zone ────────────────────────────────────────────────── */}
       <SectionHeader label={t('settings.account.section.danger') as string} theme={theme} danger />
-      <View style={[styles.group, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder }]}>
+      <View
+        style={[
+          styles.group,
+          { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder },
+        ]}
+      >
         <Text style={[styles.dangerBody, { color: theme.color.textSecondary }]}>
           {t('settings.account.delete.body')}
         </Text>
 
         {deleteState.kind === 'success' ? (
           <View
-            style={[styles.inlineBanner, { backgroundColor: theme.color.successSoft, borderColor: theme.color.success }]}
+            style={[
+              styles.inlineBanner,
+              { backgroundColor: theme.color.successSoft, borderColor: theme.color.success },
+            ]}
             testID="settings.account.deleteSuccess"
-            accessibilityRole="alert">
+            accessibilityRole="alert"
+          >
             <Text style={[styles.inlineBannerText, { color: theme.color.success }]}>
               {t('settings.account.delete.success')}
             </Text>
@@ -542,15 +606,20 @@ export default function AccountSettingsScreen() {
               <View accessibilityLiveRegion="polite">
                 <Text
                   style={[styles.rowError, { color: theme.color.danger }]}
-                  testID="settings.account.deleteError">
+                  testID="settings.account.deleteError"
+                >
                   {deleteErrorMessage}
                 </Text>
               </View>
             ) : null}
             {isDeleteConfirmVisible ? (
               <View
-                style={[styles.confirmCard, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.danger }]}
-                testID="settings.account.deleteConfirm">
+                style={[
+                  styles.confirmCard,
+                  { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.danger },
+                ]}
+                testID="settings.account.deleteConfirm"
+              >
                 <Text style={[styles.confirmTitle, { color: theme.color.textPrimary }]}>
                   {t('settings.account.delete.confirm_title')}
                 </Text>
@@ -562,7 +631,8 @@ export default function AccountSettingsScreen() {
                     accessibilityRole="button"
                     onPress={() => setIsDeleteConfirmVisible(false)}
                     style={[styles.confirmButton, { borderColor: theme.color.border }]}
-                    testID="settings.account.deleteCancelCta">
+                    testID="settings.account.deleteCancelCta"
+                  >
                     <Text style={[styles.confirmButtonText, { color: theme.color.textSecondary }]}>
                       {t('settings.account.delete.confirm_no')}
                     </Text>
@@ -570,8 +640,13 @@ export default function AccountSettingsScreen() {
                   <Pressable
                     accessibilityRole="button"
                     onPress={submitDeletionRequest}
-                    style={[styles.confirmButton, styles.confirmDestructiveButton, { backgroundColor: theme.color.danger, borderColor: theme.color.danger }]}
-                    testID="settings.account.deleteConfirmCta">
+                    style={[
+                      styles.confirmButton,
+                      styles.confirmDestructiveButton,
+                      { backgroundColor: theme.color.danger, borderColor: theme.color.danger },
+                    ]}
+                    testID="settings.account.deleteConfirmCta"
+                  >
                     <Text style={[styles.confirmButtonText, { color: theme.color.surface }]}>
                       {t('settings.account.delete.confirm_yes')}
                     </Text>
@@ -588,7 +663,8 @@ export default function AccountSettingsScreen() {
                 styles.destructiveButton,
                 { borderColor: theme.color.danger, opacity: isDeleteLocked ? 0.5 : 1 },
               ]}
-              testID="settings.account.deleteCta">
+              testID="settings.account.deleteCta"
+            >
               <Text style={[styles.destructiveButtonText, { color: theme.color.danger }]}>
                 {t('settings.account.delete.cta')}
               </Text>
@@ -598,7 +674,10 @@ export default function AccountSettingsScreen() {
       </View>
 
       {/* ── App version footer ────────────────────────────────────────── */}
-      <Text style={[styles.versionFooter, { color: theme.color.textTertiary }]} testID="settings.account.version">
+      <Text
+        style={[styles.versionFooter, { color: theme.color.textTertiary }]}
+        testID="settings.account.version"
+      >
         {t('settings.account.app_version.label')} {APP_VERSION}
       </Text>
 
@@ -631,7 +710,8 @@ function SectionHeader({
       style={[
         styles.sectionHeader,
         { color: danger ? theme.color.danger : theme.color.textTertiary },
-      ]}>
+      ]}
+    >
       {label.toUpperCase()}
     </Text>
   );
@@ -657,12 +737,10 @@ function SettingsRow({
     <Pressable
       onPress={isInteractive ? onPress : undefined}
       disabled={!isInteractive}
-      style={({ pressed }) => [
-        styles.settingsRow,
-        pressed && isInteractive && { opacity: 0.6 },
-      ]}
+      style={({ pressed }) => [styles.settingsRow, pressed && isInteractive && { opacity: 0.6 }]}
       testID={testID}
-      accessibilityRole={isInteractive ? 'button' : 'none'}>
+      accessibilityRole={isInteractive ? 'button' : 'none'}
+    >
       <Text style={[styles.rowLabel, { color: theme.color.textPrimary }]}>{label}</Text>
       <View style={styles.rowRight}>
         {value ? (

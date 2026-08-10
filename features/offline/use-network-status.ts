@@ -22,7 +22,7 @@ import { resolveE2ENetworkStatusOverride } from './network-status-override.logic
 export function useNetworkStatus(): NetworkStatus {
   const storedE2EStatus =
     process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' && typeof sessionStorage !== 'undefined'
-      ? sessionStorage.getItem('mychampions.e2e.network-status') ?? undefined
+      ? (sessionStorage.getItem('mychampions.e2e.network-status') ?? undefined)
       : undefined;
   const e2eNetworkStatusOverride = resolveE2ENetworkStatusOverride({
     appVariant: process.env.APP_VARIANT,

@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 async function renderedContrastRatio(
   page: Page,
   foregroundTestId: string,
-  backgroundTestId: string
+  backgroundTestId: string,
 ): Promise<number> {
   return page.evaluate(
     ({ foregroundTestId, backgroundTestId }) => {
@@ -12,13 +12,15 @@ async function renderedContrastRatio(
       if (!foreground || !background) throw new Error('Unable to resolve contrast test elements');
 
       const luminance = (value: string) => {
-        const channels = value.match(/[\d.]+/g)?.slice(0, 3).map(Number);
-        if (!channels || channels.length !== 3) throw new Error(`Unsupported rendered color: ${value}`);
+        const channels = value
+          .match(/[\d.]+/g)
+          ?.slice(0, 3)
+          .map(Number);
+        if (!channels || channels.length !== 3)
+          throw new Error(`Unsupported rendered color: ${value}`);
         const [red, green, blue] = channels.map((channel) => {
           const normalized = channel / 255;
-          return normalized <= 0.04045
-            ? normalized / 12.92
-            : ((normalized + 0.055) / 1.055) ** 2.4;
+          return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
         });
         return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
       };
@@ -29,7 +31,7 @@ async function renderedContrastRatio(
       const darker = Math.min(foregroundLuminance, backgroundLuminance);
       return (lighter + 0.05) / (darker + 0.05);
     },
-    { foregroundTestId, backgroundTestId }
+    { foregroundTestId, backgroundTestId },
   );
 }
 
@@ -39,15 +41,17 @@ const viewports = [
   { name: 'desktop', width: 1440, height: 1000 },
 ];
 
-test.describe(
-  '@smoke @critical @feature:shell @feature:auth @feature:student @feature:professional @feature:connections @feature:nutrition @feature:training responsive shell',
-  () => {
+test.describe('@smoke @critical @feature:shell @feature:auth @feature:student @feature:professional @feature:connections @feature:nutrition @feature:training responsive shell', () => {
   for (const viewport of viewports) {
-    test(`${viewport.name} shell has no horizontal overflow and supports role onboarding`, async ({ page }) => {
+    test(`${viewport.name} shell has no horizontal overflow and supports role onboarding`, async ({
+      page,
+    }) => {
       await page.setViewportSize(viewport);
       await page.goto('/auth/role-selection');
       await expect(page.getByTestId('auth.roleSelection.screen')).toBeVisible();
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
       expect(overflow).toBeLessThanOrEqual(1);
 
       const [studentRoleBox, professionalRoleBox, continueBox] = await Promise.all([
@@ -77,13 +81,11 @@ test.describe(
       await page.getByTestId('auth.roleSelection.continueButton').click();
       await expect(page.getByTestId('student.home.dashboardTitle').last()).toHaveText('Your day');
       await expect(page.getByTestId('student.home.accountButton').last()).toBeVisible();
-      await expect(page.getByTestId('student.home.accountButton').last()).toContainText('My coaches');
-      const trainingCard = page
-        .getByTestId(/student\.home\.training\.(goCta|emptyCta)/)
-        .last();
-      const nutritionCard = page
-        .getByTestId(/student\.home\.nutrition\.(goCta|emptyCta)/)
-        .last();
+      await expect(page.getByTestId('student.home.accountButton').last()).toContainText(
+        'My coaches',
+      );
+      const trainingCard = page.getByTestId(/student\.home\.training\.(goCta|emptyCta)/).last();
+      const nutritionCard = page.getByTestId(/student\.home\.nutrition\.(goCta|emptyCta)/).last();
       const [trainingCardBox, nutritionCardBox] = await Promise.all([
         trainingCard.boundingBox(),
         nutritionCard.boundingBox(),
@@ -94,13 +96,11 @@ test.describe(
         if (viewport.width >= 768) {
           expect(Math.abs(trainingCardBox.y - nutritionCardBox.y)).toBeLessThanOrEqual(1);
           expect(nutritionCardBox.x).toBeGreaterThanOrEqual(
-            trainingCardBox.x + trainingCardBox.width
+            trainingCardBox.x + trainingCardBox.width,
           );
           expect(Math.abs(trainingCardBox.width - nutritionCardBox.width)).toBeLessThanOrEqual(1);
         } else {
-          expect(nutritionCardBox.y).toBeGreaterThan(
-            trainingCardBox.y + trainingCardBox.height
-          );
+          expect(nutritionCardBox.y).toBeGreaterThan(trainingCardBox.y + trainingCardBox.height);
         }
       }
       const homeTab = page.getByTestId('tabs.home').last();
@@ -136,7 +136,9 @@ test.describe(
   }
 
   for (const viewport of viewports) {
-    test(`${viewport.name} professional dashboard prioritizes actionable work`, async ({ page }) => {
+    test(`${viewport.name} professional dashboard prioritizes actionable work`, async ({
+      page,
+    }) => {
       await page.setViewportSize(viewport);
       await page.goto('/auth/role-selection');
       await page.getByTestId('auth.roleSelection.professionalCard').click();
@@ -154,14 +156,16 @@ test.describe(
       await expect(dashboard.getByTestId('pro.home.inviteSpecialtyRequired')).toBeVisible();
       await expect(dashboard.getByTestId('pro.home.inviteSpecialtyCta')).toBeVisible();
       await expect(dashboard.getByTestId('pro.home.subscriptionCta')).toContainText(
-        '2 / 10 active students'
+        '2 / 10 active students',
       );
       expect(
-        await dashboard.getByTestId('pro.home.subscriptionCta').evaluate((card) =>
-          [card, ...Array.from(card.querySelectorAll('*'))].every(
-            (element) => getComputedStyle(element).backgroundImage === 'none'
-          )
-        )
+        await dashboard
+          .getByTestId('pro.home.subscriptionCta')
+          .evaluate((card) =>
+            [card, ...Array.from(card.querySelectorAll('*'))].every(
+              (element) => getComputedStyle(element).backgroundImage === 'none',
+            ),
+          ),
       ).toBe(true);
 
       const [primaryBox, inviteBox] = await Promise.all([
@@ -178,9 +182,9 @@ test.describe(
         }
       }
 
-      await expect.poll(() =>
-        page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-      ).toBeLessThanOrEqual(1);
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+        .toBeLessThanOrEqual(1);
     });
   }
 
@@ -192,9 +196,9 @@ test.describe(
 
     for (const tab of ['tabs.home', 'tabs.nutrition', 'tabs.training', 'tabs.account']) {
       await page.getByTestId(tab).last().click();
-      await expect.poll(() =>
-        page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-      ).toBeLessThanOrEqual(1);
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+        .toBeLessThanOrEqual(1);
     }
   });
 
@@ -218,7 +222,10 @@ test.describe(
     const connectButton = page.getByTestId('student.professionals.connectButton');
     await expect(connectButton).toBeVisible();
 
-    const [inputBox, buttonBox] = await Promise.all([input.boundingBox(), connectButton.boundingBox()]);
+    const [inputBox, buttonBox] = await Promise.all([
+      input.boundingBox(),
+      connectButton.boundingBox(),
+    ]);
     expect(inputBox).not.toBeNull();
     expect(buttonBox).not.toBeNull();
     if (!inputBox || !buttonBox) return;
@@ -229,12 +236,11 @@ test.describe(
     }
     expect(buttonBox.y).toBeGreaterThanOrEqual(inputBox.y + inputBox.height);
     expect(Math.abs(buttonBox.width - inputBox.width)).toBeLessThanOrEqual(1);
-    await expect.poll(() =>
-      page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-    ).toBeLessThanOrEqual(1);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+      .toBeLessThanOrEqual(1);
   });
-  }
-);
+});
 
 test.describe('@accessibility @critical @feature:shell keyboard and dialog behavior', () => {
   test('primary actions expose explicit readable enabled and disabled states', async ({ page }) => {
@@ -249,8 +255,8 @@ test.describe('@accessibility @critical @feature:shell keyboard and dialog behav
       await renderedContrastRatio(
         page,
         'auth.roleSelection.continueButton.label',
-        'auth.roleSelection.continueButton'
-      )
+        'auth.roleSelection.continueButton',
+      ),
     ).toBeGreaterThanOrEqual(4.5);
 
     await page.getByTestId('auth.roleSelection.studentCard').click();
@@ -260,8 +266,8 @@ test.describe('@accessibility @critical @feature:shell keyboard and dialog behav
       await renderedContrastRatio(
         page,
         'auth.roleSelection.continueButton.label',
-        'auth.roleSelection.continueButton'
-      )
+        'auth.roleSelection.continueButton',
+      ),
     ).toBeGreaterThanOrEqual(4.5);
   });
 
@@ -272,7 +278,9 @@ test.describe('@accessibility @critical @feature:shell keyboard and dialog behav
     await studentOption.focus();
     await page.keyboard.press('Tab');
     await expect(professionalOption).toBeFocused();
-    const outlineStyle = await professionalOption.evaluate((element) => getComputedStyle(element).outlineStyle);
+    const outlineStyle = await professionalOption.evaluate(
+      (element) => getComputedStyle(element).outlineStyle,
+    );
     expect(outlineStyle).not.toBe('none');
   });
 
@@ -291,9 +299,11 @@ test.describe('@accessibility @critical @feature:shell keyboard and dialog behav
     await expect(close).toBeFocused();
 
     await page.keyboard.press('Shift+Tab');
-    const lastFocusable = modal.locator(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]:not([aria-disabled="true"])'
-    ).last();
+    const lastFocusable = modal
+      .locator(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]:not([aria-disabled="true"])',
+      )
+      .last();
     await expect(lastFocusable).toBeFocused();
 
     await page.keyboard.press('Escape');

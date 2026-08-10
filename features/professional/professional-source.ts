@@ -4,10 +4,7 @@
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
-import {
-  normalizeInviteCodeStatus,
-  type InviteCode,
-} from './connection-invite.logic';
+import { normalizeInviteCodeStatus, type InviteCode } from './connection-invite.logic';
 import {
   normalizeSpecialty,
   type Specialty,
@@ -25,11 +22,7 @@ import { defaultAppFetch } from '../platform/default-app-fetch';
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
-type ProfessionalSourceErrorCode =
-  | 'configuration'
-  | 'network'
-  | 'graphql'
-  | 'invalid_response';
+type ProfessionalSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
 export class ProfessionalSourceError extends Error {
   code: ProfessionalSourceErrorCode;
@@ -171,7 +164,7 @@ function buildE2EConnectionId(studentAuthUid: string, specialty: ConnectionSpeci
 }
 
 function getE2EProfessionalStudentAssignmentSnapshotFixture(
-  studentAuthUid: string
+  studentAuthUid: string,
 ): ProfessionalStudentAssignmentSnapshot | null {
   const fixture = getE2EProfessionalRosterFixture();
   if (!fixture) return null;
@@ -204,7 +197,10 @@ function getE2EProfessionalStudentAssignmentSnapshotFixture(
   };
 }
 
-function getOrCreateE2EInviteCode(specialty: Specialty, rotatedAt: string | null = null): InviteCode | null {
+function getOrCreateE2EInviteCode(
+  specialty: Specialty,
+  rotatedAt: string | null = null,
+): InviteCode | null {
   if (!getActiveE2ESpecialty(specialty)) return null;
 
   const existing = e2eInviteCodeRecords.get(specialty);
@@ -227,7 +223,7 @@ function getOrCreateE2EInviteCode(specialty: Specialty, rotatedAt: string | null
 }
 
 function summarizeStudentConnections(
-  rows: Array<{ status: ConnectionStatus; specialty: ConnectionSpecialty }>
+  rows: Array<{ status: ConnectionStatus; specialty: ConnectionSpecialty }>,
 ): {
   assignmentStatus: 'active' | 'pending' | null;
   representativeSpecialty: ConnectionSpecialty;
@@ -238,7 +234,12 @@ function summarizeStudentConnections(
   let trainingStatus: 'active' | 'pending' | 'none' = 'none';
 
   for (const row of rows) {
-    const nextStatus = row.status === 'active' ? 'active' : row.status === 'pending_confirmation' ? 'pending' : 'none';
+    const nextStatus =
+      row.status === 'active'
+        ? 'active'
+        : row.status === 'pending_confirmation'
+          ? 'pending'
+          : 'none';
     if (nextStatus === 'none') continue;
 
     if (row.specialty === 'nutritionist') {
@@ -249,14 +250,14 @@ function summarizeStudentConnections(
     if (trainingStatus !== 'active') trainingStatus = nextStatus;
   }
 
-  const assignmentStatus = nutritionStatus === 'active' || trainingStatus === 'active'
-    ? 'active'
-    : nutritionStatus === 'pending' || trainingStatus === 'pending'
-      ? 'pending'
-      : null;
+  const assignmentStatus =
+    nutritionStatus === 'active' || trainingStatus === 'active'
+      ? 'active'
+      : nutritionStatus === 'pending' || trainingStatus === 'pending'
+        ? 'pending'
+        : null;
 
-  const representativeSpecialty =
-    nutritionStatus !== 'none' ? 'nutritionist' : 'fitness_coach';
+  const representativeSpecialty = nutritionStatus !== 'none' ? 'nutritionist' : 'fitness_coach';
 
   return { assignmentStatus, representativeSpecialty, nutritionStatus, trainingStatus };
 }
@@ -265,7 +266,7 @@ function normalizeProfessionalSourceError(error: unknown): ProfessionalSourceErr
   if (error instanceof ProfessionalSourceError) return error;
   return new ProfessionalSourceError(
     'invalid_response',
-    (error as Error)?.message ?? 'Unexpected professional source error.'
+    (error as Error)?.message ?? 'Unexpected professional source error.',
   );
 }
 
@@ -277,7 +278,7 @@ function requireServerResult<T>(result: T | null, operation: string): T {
 function requestProfessionalSource(
   deps: Pick<ProfessionalSourceDeps, 'fetchFn'>,
   input: RequestInfo | URL,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Response> {
   const fetchFn = deps.fetchFn;
   return fetchFn(input, init);
@@ -287,7 +288,10 @@ function buildSpecialtyId(professionalUid: string, specialty: Specialty): string
   return `${professionalUid}_${specialty}`;
 }
 
-export function buildInviteCodePath(professionalUid: string, specialty: Specialty): [string, string, string, string] {
+export function buildInviteCodePath(
+  professionalUid: string,
+  specialty: Specialty,
+): [string, string, string, string] {
   return ['professionals', professionalUid, 'inviteCodes', specialty];
 }
 
@@ -296,7 +300,7 @@ export function buildInviteCodeLookupPath(codeValue: string): [string, string] {
 }
 
 export function countUniqueActiveStudents(
-  rows: Array<{ status?: unknown; studentAuthUid?: unknown }>
+  rows: Array<{ status?: unknown; studentAuthUid?: unknown }>,
 ): number {
   const activeStudents = new Set<string>();
   for (const row of rows) {
@@ -384,7 +388,9 @@ type ServerProfessionalStudentAssignmentSnapshotResponse = {
   error?: { code?: unknown; message?: unknown } | string;
 };
 
-async function readServerInviteCodeJson(response: Response): Promise<ServerInviteCodeResponse | null> {
+async function readServerInviteCodeJson(
+  response: Response,
+): Promise<ServerInviteCodeResponse | null> {
   try {
     return (await response.json()) as ServerInviteCodeResponse;
   } catch {
@@ -393,7 +399,7 @@ async function readServerInviteCodeJson(response: Response): Promise<ServerInvit
 }
 
 async function readServerProfessionalSpecialtiesJson(
-  response: Response
+  response: Response,
 ): Promise<ServerProfessionalSpecialtiesResponse | null> {
   try {
     return (await response.json()) as ServerProfessionalSpecialtiesResponse;
@@ -414,7 +420,10 @@ function mapServerInviteCode(payload: ServerInviteCodeResponse | null): InviteCo
     !status ||
     typeof raw.createdAt !== 'string'
   ) {
-    throw new ProfessionalSourceError('invalid_response', 'Invite code server response is invalid.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Invite code server response is invalid.',
+    );
   }
 
   return {
@@ -428,7 +437,9 @@ function mapServerInviteCode(payload: ServerInviteCodeResponse | null): InviteCo
   };
 }
 
-function mapServerCredential(raw: NonNullable<ServerProfessionalSpecialtiesResponse['specialty']>['credential']): Credential | null {
+function mapServerCredential(
+  raw: NonNullable<ServerProfessionalSpecialtiesResponse['specialty']>['credential'],
+): Credential | null {
   if (raw === null || raw === undefined) return null;
   const specialty = normalizeSpecialty(raw.specialty);
   if (
@@ -439,7 +450,10 @@ function mapServerCredential(raw: NonNullable<ServerProfessionalSpecialtiesRespo
     typeof raw.authority !== 'string' ||
     typeof raw.country !== 'string'
   ) {
-    throw new ProfessionalSourceError('invalid_response', 'Professional specialty credential server response is invalid.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional specialty credential server response is invalid.',
+    );
   }
 
   return {
@@ -453,15 +467,14 @@ function mapServerCredential(raw: NonNullable<ServerProfessionalSpecialtiesRespo
 }
 
 function mapServerSpecialtyRecord(
-  raw: NonNullable<ServerProfessionalSpecialtiesResponse['specialties']>[number]
+  raw: NonNullable<ServerProfessionalSpecialtiesResponse['specialties']>[number],
 ): SpecialtyRecord {
   const specialty = normalizeSpecialty(raw.specialty);
-  if (
-    typeof raw.id !== 'string' ||
-    !specialty ||
-    typeof raw.isActive !== 'boolean'
-  ) {
-    throw new ProfessionalSourceError('invalid_response', 'Professional specialty server response is invalid.');
+  if (typeof raw.id !== 'string' || !specialty || typeof raw.isActive !== 'boolean') {
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional specialty server response is invalid.',
+    );
   }
 
   return {
@@ -474,12 +487,13 @@ function mapServerSpecialtyRecord(
 
 function normalizeServerInviteCodeError(
   status: number,
-  payload: ServerInviteCodeResponse | null
+  payload: ServerInviteCodeResponse | null,
 ): ProfessionalSourceError {
   const rawError = payload?.error;
-  const message = typeof rawError === 'object' && rawError && typeof rawError.message === 'string'
-    ? rawError.message
-    : `Invite code server request failed with status ${status}.`;
+  const message =
+    typeof rawError === 'object' && rawError && typeof rawError.message === 'string'
+      ? rawError.message
+      : `Invite code server request failed with status ${status}.`;
 
   if (status === 401 || status === 403) {
     return new ProfessionalSourceError('graphql', message);
@@ -492,23 +506,31 @@ function normalizeServerInviteCodeError(
 
 function normalizeServerProfessionalSpecialtyError(
   status: number,
-  payload: ServerProfessionalSpecialtiesResponse | null
+  payload: ServerProfessionalSpecialtiesResponse | null,
 ): ProfessionalSourceError {
   const rawError = payload?.error;
-  const rawCode = typeof rawError === 'object' && rawError && typeof rawError.code === 'string'
-    ? rawError.code
-    : typeof rawError === 'string'
-      ? rawError
-      : null;
-  const message = typeof rawError === 'object' && rawError && typeof rawError.message === 'string'
-    ? rawError.message
-    : `Professional specialty server request failed with status ${status}.`;
+  const rawCode =
+    typeof rawError === 'object' && rawError && typeof rawError.code === 'string'
+      ? rawError.code
+      : typeof rawError === 'string'
+        ? rawError
+        : null;
+  const message =
+    typeof rawError === 'object' && rawError && typeof rawError.message === 'string'
+      ? rawError.message
+      : `Professional specialty server request failed with status ${status}.`;
 
   if (rawCode === 'last_specialty') {
-    return new ProfessionalSourceError('graphql', message || 'Cannot remove the last active Specialty.');
+    return new ProfessionalSourceError(
+      'graphql',
+      message || 'Cannot remove the last active Specialty.',
+    );
   }
   if (rawCode === 'removal_blocked') {
-    return new ProfessionalSourceError('graphql', message || 'Specialty removal blocked by active/pending students.');
+    return new ProfessionalSourceError(
+      'graphql',
+      message || 'Specialty removal blocked by active/pending students.',
+    );
   }
   if (status === 401 || status === 403 || status === 404 || status === 409) {
     return new ProfessionalSourceError('graphql', message);
@@ -522,15 +544,16 @@ function normalizeServerProfessionalSpecialtyError(
 async function requestInviteCodeFromServer(
   specialty: Specialty,
   deps: ProfessionalSourceDeps,
-  action: 'read' | 'rotate'
+  action: 'read' | 'rotate',
 ): Promise<InviteCode | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
   if (!baseUrl || !accessToken) return null;
 
-  const path = action === 'rotate'
-    ? `/professional/invite-codes/${specialty}/rotate`
-    : `/professional/invite-codes/${specialty}`;
+  const path =
+    action === 'rotate'
+      ? `/professional/invite-codes/${specialty}/rotate`
+      : `/professional/invite-codes/${specialty}`;
 
   let response: Response;
   try {
@@ -551,7 +574,7 @@ async function requestInviteCodeFromServer(
 }
 
 async function requestProfessionalSpecialtiesFromServer(
-  deps: ProfessionalSourceDeps
+  deps: ProfessionalSourceDeps,
 ): Promise<SpecialtyRecord[] | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -563,7 +586,10 @@ async function requestProfessionalSpecialtiesFromServer(
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
-    throw new ProfessionalSourceError('network', 'Network request to professional specialties server failed.');
+    throw new ProfessionalSourceError(
+      'network',
+      'Network request to professional specialties server failed.',
+    );
   }
 
   const payload = await readServerProfessionalSpecialtiesJson(response);
@@ -571,7 +597,10 @@ async function requestProfessionalSpecialtiesFromServer(
     throw normalizeServerProfessionalSpecialtyError(response.status, payload);
   }
   if (!Array.isArray(payload?.specialties)) {
-    throw new ProfessionalSourceError('invalid_response', 'Professional specialties server response is missing specialties.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional specialties server response is missing specialties.',
+    );
   }
 
   return payload.specialties.map(mapServerSpecialtyRecord);
@@ -579,7 +608,7 @@ async function requestProfessionalSpecialtiesFromServer(
 
 async function getSpecialtyBlockerCountsFromServer(
   specialty: Specialty,
-  deps: ProfessionalSourceDeps
+  deps: ProfessionalSourceDeps,
 ): Promise<SpecialtyBlockerCounts | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -592,10 +621,13 @@ async function getSpecialtyBlockerCountsFromServer(
       `${baseUrl}/professional/specialties/${specialty}/blockers`,
       {
         headers: { authorization: `Bearer ${accessToken}` },
-      }
+      },
     );
   } catch {
-    throw new ProfessionalSourceError('network', 'Network request to professional specialty blockers server failed.');
+    throw new ProfessionalSourceError(
+      'network',
+      'Network request to professional specialty blockers server failed.',
+    );
   }
 
   const payload = await readServerProfessionalSpecialtiesJson(response);
@@ -604,7 +636,10 @@ async function getSpecialtyBlockerCountsFromServer(
   }
 
   if (typeof payload?.activeCount !== 'number' || typeof payload.pendingCount !== 'number') {
-    throw new ProfessionalSourceError('invalid_response', 'Professional specialty blockers server response is invalid.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional specialty blockers server response is invalid.',
+    );
   }
 
   return {
@@ -615,7 +650,7 @@ async function getSpecialtyBlockerCountsFromServer(
 
 async function addProfessionalSpecialtyToServer(
   specialty: Specialty,
-  deps: ProfessionalSourceDeps
+  deps: ProfessionalSourceDeps,
 ): Promise<{ id: string; specialty: Specialty } | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -632,7 +667,10 @@ async function addProfessionalSpecialtyToServer(
       body: JSON.stringify({ specialty }),
     });
   } catch {
-    throw new ProfessionalSourceError('network', 'Network request to add professional specialty failed.');
+    throw new ProfessionalSourceError(
+      'network',
+      'Network request to add professional specialty failed.',
+    );
   }
 
   const payload = await readServerProfessionalSpecialtiesJson(response);
@@ -640,7 +678,10 @@ async function addProfessionalSpecialtyToServer(
     throw normalizeServerProfessionalSpecialtyError(response.status, payload);
   }
   if (!payload?.specialty) {
-    throw new ProfessionalSourceError('invalid_response', 'Professional specialty server response is missing specialty.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional specialty server response is missing specialty.',
+    );
   }
 
   const record = mapServerSpecialtyRecord(payload.specialty);
@@ -649,7 +690,7 @@ async function addProfessionalSpecialtyToServer(
 
 async function removeProfessionalSpecialtyFromServer(
   specialtyId: string,
-  deps: ProfessionalSourceDeps
+  deps: ProfessionalSourceDeps,
 ): Promise<boolean> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -663,10 +704,13 @@ async function removeProfessionalSpecialtyFromServer(
       {
         method: 'DELETE',
         headers: { authorization: `Bearer ${accessToken}` },
-      }
+      },
     );
   } catch {
-    throw new ProfessionalSourceError('network', 'Network request to remove professional specialty failed.');
+    throw new ProfessionalSourceError(
+      'network',
+      'Network request to remove professional specialty failed.',
+    );
   }
 
   if (response.ok) return true;
@@ -678,7 +722,7 @@ async function removeProfessionalSpecialtyFromServer(
 async function upsertProfessionalCredentialToServer(
   specialtyId: string,
   input: { registryId: string; authority: string; country: string },
-  deps: ProfessionalSourceDeps
+  deps: ProfessionalSourceDeps,
 ): Promise<{ id: string } | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -696,10 +740,13 @@ async function upsertProfessionalCredentialToServer(
           'content-type': 'application/json',
         },
         body: JSON.stringify(input),
-      }
+      },
     );
   } catch {
-    throw new ProfessionalSourceError('network', 'Network request to upsert professional credential failed.');
+    throw new ProfessionalSourceError(
+      'network',
+      'Network request to upsert professional credential failed.',
+    );
   }
 
   const payload = await readServerProfessionalSpecialtiesJson(response);
@@ -709,7 +756,10 @@ async function upsertProfessionalCredentialToServer(
 
   const credential = mapServerCredential(payload?.credential);
   if (!credential) {
-    throw new ProfessionalSourceError('invalid_response', 'Professional credential server response is missing credential.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional credential server response is missing credential.',
+    );
   }
 
   return { id: credential.id };
@@ -724,7 +774,7 @@ function normalizeRosterAssignmentStatus(value: unknown): 'active' | 'pending' |
 }
 
 function mapServerRosterItem(
-  raw: NonNullable<ServerProfessionalStudentsResponse['students']>[number]
+  raw: NonNullable<ServerProfessionalStudentsResponse['students']>[number],
 ): ProfessionalStudentRosterItem {
   const specialty = normalizeConnectionSpecialty(raw.specialty);
   const assignmentStatus = normalizeRosterAssignmentStatus(raw.assignmentStatus);
@@ -738,7 +788,10 @@ function mapServerRosterItem(
     !nutritionStatus ||
     !trainingStatus
   ) {
-    throw new ProfessionalSourceError('invalid_response', 'Professional students server response is invalid.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional students server response is invalid.',
+    );
   }
 
   return {
@@ -752,7 +805,7 @@ function mapServerRosterItem(
 }
 
 function mapServerAssignmentSnapshot(
-  payload: ServerProfessionalStudentAssignmentSnapshotResponse | null
+  payload: ServerProfessionalStudentAssignmentSnapshotResponse | null,
 ): ProfessionalStudentAssignmentSnapshot {
   const raw = payload?.snapshot;
   const nutritionStatus = normalizeAssignmentStatus(raw?.nutritionStatus);
@@ -766,7 +819,10 @@ function mapServerAssignmentSnapshot(
     !Array.isArray(raw.activeConnectionIds) ||
     raw.activeConnectionIds.some((id) => typeof id !== 'string')
   ) {
-    throw new ProfessionalSourceError('invalid_response', 'Professional student assignment server response is invalid.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional student assignment server response is invalid.',
+    );
   }
 
   return {
@@ -780,12 +836,14 @@ function mapServerAssignmentSnapshot(
 
 function normalizeServerProfessionalStudentsError(
   status: number,
-  payload: ServerProfessionalStudentsResponse | ServerProfessionalStudentAssignmentSnapshotResponse | null
+  payload:
+    ServerProfessionalStudentsResponse | ServerProfessionalStudentAssignmentSnapshotResponse | null,
 ): ProfessionalSourceError {
   const rawError = payload?.error;
-  const message = typeof rawError === 'object' && rawError && typeof rawError.message === 'string'
-    ? rawError.message
-    : `Professional students server request failed with status ${status}.`;
+  const message =
+    typeof rawError === 'object' && rawError && typeof rawError.message === 'string'
+      ? rawError.message
+      : `Professional students server request failed with status ${status}.`;
 
   if (status === 401 || status === 403) {
     return new ProfessionalSourceError('graphql', message);
@@ -797,7 +855,7 @@ function normalizeServerProfessionalStudentsError(
 }
 
 async function readServerProfessionalStudentsJson(
-  response: Response
+  response: Response,
 ): Promise<ServerProfessionalStudentsResponse | null> {
   try {
     return (await response.json()) as ServerProfessionalStudentsResponse;
@@ -807,7 +865,7 @@ async function readServerProfessionalStudentsJson(
 }
 
 async function readServerAssignmentSnapshotJson(
-  response: Response
+  response: Response,
 ): Promise<ServerProfessionalStudentAssignmentSnapshotResponse | null> {
   try {
     return (await response.json()) as ServerProfessionalStudentAssignmentSnapshotResponse;
@@ -817,7 +875,7 @@ async function readServerAssignmentSnapshotJson(
 }
 
 async function requestProfessionalStudentRosterFromServer(
-  deps: ProfessionalSourceDeps
+  deps: ProfessionalSourceDeps,
 ): Promise<ProfessionalStudentRosterItem[] | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -829,7 +887,10 @@ async function requestProfessionalStudentRosterFromServer(
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
-    throw new ProfessionalSourceError('network', 'Network request to professional students server failed.');
+    throw new ProfessionalSourceError(
+      'network',
+      'Network request to professional students server failed.',
+    );
   }
 
   const payload = await readServerProfessionalStudentsJson(response);
@@ -837,7 +898,10 @@ async function requestProfessionalStudentRosterFromServer(
     throw normalizeServerProfessionalStudentsError(response.status, payload);
   }
   if (!Array.isArray(payload?.students)) {
-    throw new ProfessionalSourceError('invalid_response', 'Professional students server response is missing students.');
+    throw new ProfessionalSourceError(
+      'invalid_response',
+      'Professional students server response is missing students.',
+    );
   }
 
   return payload.students.map(mapServerRosterItem);
@@ -845,7 +909,7 @@ async function requestProfessionalStudentRosterFromServer(
 
 async function requestProfessionalStudentAssignmentSnapshotFromServer(
   studentAuthUid: string,
-  deps: ProfessionalSourceDeps
+  deps: ProfessionalSourceDeps,
 ): Promise<ProfessionalStudentAssignmentSnapshot | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -858,10 +922,13 @@ async function requestProfessionalStudentAssignmentSnapshotFromServer(
       `${baseUrl}/professional/students/${encodeURIComponent(studentAuthUid)}/assignment-snapshot`,
       {
         headers: { authorization: `Bearer ${accessToken}` },
-      }
+      },
     );
   } catch {
-    throw new ProfessionalSourceError('network', 'Network request to professional student assignment server failed.');
+    throw new ProfessionalSourceError(
+      'network',
+      'Network request to professional student assignment server failed.',
+    );
   }
 
   const payload = await readServerAssignmentSnapshotJson(response);
@@ -874,7 +941,7 @@ async function requestProfessionalStudentAssignmentSnapshotFromServer(
 
 export async function getOrCreateActiveInviteCode(
   specialty: Specialty,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<InviteCode | null> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
     return getOrCreateE2EInviteCode(specialty);
@@ -888,11 +955,17 @@ export async function getOrCreateActiveInviteCode(
   }
 }
 
-export async function rotateInviteCode(specialty: Specialty, deps = defaultDeps): Promise<InviteCode> {
+export async function rotateInviteCode(
+  specialty: Specialty,
+  deps = defaultDeps,
+): Promise<InviteCode> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
     const code = getOrCreateE2EInviteCode(specialty, nowIso());
     if (!code) {
-      throw new ProfessionalSourceError('configuration', 'No active Specialty found for invite code rotation.');
+      throw new ProfessionalSourceError(
+        'configuration',
+        'No active Specialty found for invite code rotation.',
+      );
     }
     return code;
   }
@@ -920,7 +993,7 @@ export async function getProfessionalSpecialties(deps = defaultDeps): Promise<Sp
 
 export async function addProfessionalSpecialty(
   specialty: Specialty,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<{ id: string; specialty: Specialty }> {
   const e2eSourceOverride = deps === defaultDeps ? getE2ESourceOverride() : null;
   if (e2eSourceOverride) {
@@ -945,7 +1018,7 @@ export async function addProfessionalSpecialty(
 
 export async function removeProfessionalSpecialty(
   specialtyId: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
     for (const [specialty, record] of e2eSpecialtyRecords.entries()) {
@@ -962,7 +1035,10 @@ export async function removeProfessionalSpecialty(
       return;
     }
 
-    throw new ProfessionalSourceError('configuration', 'Specialty removal requires local server auth.');
+    throw new ProfessionalSourceError(
+      'configuration',
+      'Specialty removal requires local server auth.',
+    );
   } catch (error) {
     throw normalizeProfessionalSourceError(error);
   }
@@ -970,7 +1046,7 @@ export async function removeProfessionalSpecialty(
 
 export async function getSpecialtyBlockerCounts(
   specialty: Specialty,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<SpecialtyBlockerCounts> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
     const roster = getE2EProfessionalRosterFixture();
@@ -982,7 +1058,7 @@ export async function getSpecialtyBlockerCounts(
           if (student.assignmentStatus === 'pending') counts.pendingCount += 1;
           return counts;
         },
-        { activeCount: 0, pendingCount: 0 }
+        { activeCount: 0, pendingCount: 0 },
       );
     }
     return { activeCount: 0, pendingCount: 0 };
@@ -999,7 +1075,7 @@ export async function getSpecialtyBlockerCounts(
 export async function upsertProfessionalCredential(
   specialtyId: string,
   input: { registryId: string; authority: string; country: string },
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<{ id: string }> {
   const e2eSourceOverride = deps === defaultDeps ? getE2ESourceOverride() : null;
   if (e2eSourceOverride) {
@@ -1030,7 +1106,7 @@ export async function upsertProfessionalCredential(
 }
 
 export async function getProfessionalStudentRoster(
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<ProfessionalStudentRosterItem[]> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
     const fixture = getE2EProfessionalRosterFixture();
@@ -1045,9 +1121,7 @@ export async function getProfessionalStudentRoster(
   }
 }
 
-export async function getActiveProfessionalStudentCount(
-  deps = defaultDeps
-): Promise<number> {
+export async function getActiveProfessionalStudentCount(deps = defaultDeps): Promise<number> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
     const fixture = getE2EProfessionalRosterFixture();
     if (fixture) return countUniqueActiveStudents(fixture);
@@ -1058,7 +1132,7 @@ export async function getActiveProfessionalStudentCount(
     const serverRoster = await requestProfessionalStudentRosterFromServer(deps);
     return requireServerResult(
       serverRoster?.filter((student) => student.assignmentStatus === 'active').length ?? null,
-      'Professional active-student count reads'
+      'Professional active-student count reads',
     );
   } catch (error) {
     throw normalizeProfessionalSourceError(error);
@@ -1067,7 +1141,7 @@ export async function getActiveProfessionalStudentCount(
 
 export async function getProfessionalStudentAssignmentSnapshot(
   studentAuthUid: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<ProfessionalStudentAssignmentSnapshot> {
   if (deps === defaultDeps && getE2ESourceOverride()) {
     const fixture = getE2EProfessionalStudentAssignmentSnapshotFixture(studentAuthUid);
@@ -1075,7 +1149,10 @@ export async function getProfessionalStudentAssignmentSnapshot(
   }
 
   try {
-    const serverSnapshot = await requestProfessionalStudentAssignmentSnapshotFromServer(studentAuthUid, deps);
+    const serverSnapshot = await requestProfessionalStudentAssignmentSnapshotFromServer(
+      studentAuthUid,
+      deps,
+    );
     return requireServerResult(serverSnapshot, 'Professional assignment snapshot reads');
   } catch (error) {
     throw normalizeProfessionalSourceError(error);
@@ -1084,17 +1161,17 @@ export async function getProfessionalStudentAssignmentSnapshot(
 
 export async function unbindStudentConnections(
   studentAuthUid: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<void> {
   try {
     const snapshot = requireServerResult(
       await requestProfessionalStudentAssignmentSnapshotFromServer(studentAuthUid, deps),
-      'Professional student unbind'
+      'Professional student unbind',
     );
     await Promise.all(
       snapshot.activeConnectionIds.map((connectionId) =>
-        endConnection(connectionId, deps as unknown as Parameters<typeof endConnection>[1])
-      )
+        endConnection(connectionId, deps as unknown as Parameters<typeof endConnection>[1]),
+      ),
     );
   } catch (error) {
     throw normalizeProfessionalSourceError(error);

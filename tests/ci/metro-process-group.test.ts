@@ -23,7 +23,7 @@ function errno(code: string): NodeJS.ErrnoException {
 }
 
 function processTable(
-  members: readonly { pid: number; processGroupId: number; uid: number }[]
+  members: readonly { pid: number; processGroupId: number; uid: number }[],
 ): string {
   return members
     .map(({ pid, processGroupId, uid }) => `${pid} ${processGroupId} ${uid}`)
@@ -35,7 +35,7 @@ async function firstOutputLine(child: ChildProcess): Promise<string> {
     let output = '';
     const timeout = setTimeout(
       () => reject(new Error('Timed out waiting for child readiness')),
-      3_000
+      3_000,
     );
     child.once('error', (error) => {
       clearTimeout(timeout);
@@ -83,13 +83,11 @@ async function waitForProcessExit(pid: number): Promise<void> {
 test('owned process-group parsing excludes foreign-UID members', () => {
   assert.deepEqual(
     parseOwnedProcessGroupPids(
-      ['4200 4200 501', '4201 4200 501', '9100 4200 0', '9200 9200 501'].join(
-        '\n'
-      ),
+      ['4200 4200 501', '4201 4200 501', '9100 4200 0', '9200 9200 501'].join('\n'),
       4200,
-      501
+      501,
     ),
-    [4200, 4201]
+    [4200, 4201],
   );
 });
 
@@ -119,11 +117,14 @@ test('Metro cleanup falls back to runner-owned members when group signaling retu
 
   assert.ok(signals.some(([pid, signal]) => pid === 4200 && signal === 'SIGTERM'));
   assert.ok(signals.some(([pid, signal]) => pid === 4201 && signal === 'SIGTERM'));
-  assert.equal(signals.some(([pid]) => pid === 9100), false);
+  assert.equal(
+    signals.some(([pid]) => pid === 9100),
+    false,
+  );
   assert.equal(
     signals.some(([, signal]) => signal === 'SIGKILL'),
     false,
-    'graceful runner-owned cleanup should not escalate'
+    'graceful runner-owned cleanup should not escalate',
   );
 });
 
@@ -138,8 +139,7 @@ test('Metro cleanup ignores an EPERM group after every runner-owned member exite
       signals.push([pid, signal]);
       throw errno('EPERM');
     },
-    readProcessTable: async () =>
-      processTable([{ pid: 9250, processGroupId, uid: 0 }]),
+    readProcessTable: async () => processTable([{ pid: 9250, processGroupId, uid: 0 }]),
   };
 
   await stopMetroProcessGroup(childProcess(processGroupId), { runtime });
@@ -173,11 +173,14 @@ test('Metro cleanup still fails closed when runner-owned members survive SIGKILL
       exitTimeoutMs: 0,
       runtime,
     }),
-    /Runner-owned Metro process group did not stop after SIGKILL/
+    /Runner-owned Metro process group did not stop after SIGKILL/,
   );
   assert.ok(signals.some(([pid, signal]) => pid === 4300 && signal === 'SIGKILL'));
   assert.ok(signals.some(([pid, signal]) => pid === 4301 && signal === 'SIGKILL'));
-  assert.equal(signals.some(([pid]) => pid === 9300), false);
+  assert.equal(
+    signals.some(([pid]) => pid === 9300),
+    false,
+  );
 });
 
 test(
@@ -208,7 +211,7 @@ while True:
       {
         detached: true,
         stdio: ['ignore', 'pipe', 'inherit'],
-      }
+      },
     );
     const memberPid = Number(await firstOutputLine(leader));
     assert.ok(Number.isSafeInteger(memberPid) && memberPid > 1);
@@ -228,7 +231,7 @@ while True:
         }
       }
     }
-  }
+  },
 );
 
 test(
@@ -280,5 +283,5 @@ setInterval(() => {}, 1000);
         }
       }
     }
-  }
+  },
 );

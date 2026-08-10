@@ -1,9 +1,5 @@
 export type SignInErrorReason =
-  | 'invalid_credentials'
-  | 'network'
-  | 'provider_conflict'
-  | 'configuration'
-  | 'unknown';
+  'invalid_credentials' | 'network' | 'provider_conflict' | 'configuration' | 'unknown';
 
 export type SignInRequest = {
   email: string;
@@ -16,8 +12,7 @@ export type SignInValidationErrors = {
 };
 
 export type SignInValidationAnalyticsReason =
-  | 'validation_email_required'
-  | 'validation_password_required';
+  'validation_email_required' | 'validation_password_required';
 
 export type SignInErrorMessageKey =
   | 'auth.signin.error.invalid_credentials'
@@ -51,7 +46,7 @@ export function validateSignInInput(input: SignInRequest): SignInValidationError
 }
 
 export function resolveSignInValidationAnalyticsReason(
-  errors: SignInValidationErrors
+  errors: SignInValidationErrors,
 ): SignInValidationAnalyticsReason | null {
   if (errors.email) {
     return 'validation_email_required';

@@ -38,10 +38,9 @@ describe('language-storage', () => {
 
   it('getEffectiveLocale prioritizes language override over device locale', async () => {
     storage.getItem = async () => 'pt-BR';
-    Intl.DateTimeFormat = (() =>
-      ({
-        resolvedOptions: () => ({ locale: 'en-US' }),
-      })) as unknown as typeof Intl.DateTimeFormat;
+    Intl.DateTimeFormat = (() => ({
+      resolvedOptions: () => ({ locale: 'en-US' }),
+    })) as unknown as typeof Intl.DateTimeFormat;
 
     const locale = await getEffectiveLocale();
     assert.equal(locale, 'pt-BR');
@@ -49,10 +48,9 @@ describe('language-storage', () => {
 
   it('getEffectiveLocale falls back to resolved device locale when override is missing', async () => {
     storage.getItem = async () => null;
-    Intl.DateTimeFormat = (() =>
-      ({
-        resolvedOptions: () => ({ locale: 'es-MX' }),
-      })) as unknown as typeof Intl.DateTimeFormat;
+    Intl.DateTimeFormat = (() => ({
+      resolvedOptions: () => ({ locale: 'es-MX' }),
+    })) as unknown as typeof Intl.DateTimeFormat;
 
     const locale = await getEffectiveLocale();
     assert.equal(locale, 'es-ES');

@@ -109,7 +109,7 @@ export function canCloneTemplate(errors: TemplateCloneValidationErrors): boolean
  */
 export function filterStarterTemplates(
   templates: StarterTemplate[],
-  filter: TemplateLibraryFilter
+  filter: TemplateLibraryFilter,
 ): StarterTemplate[] {
   let filtered = templates;
 
@@ -160,10 +160,7 @@ export function formatTemplateDisplayName(template: StarterTemplate): string {
  * Verify that a cloned plan is independent from its starter template.
  * After cloning, modifications to the cloned plan should not affect the original starter.
  */
-export function isClonedIndependently(
-  clonedPlanId: string,
-  originalTemplateId: string
-): boolean {
+export function isClonedIndependently(clonedPlanId: string, originalTemplateId: string): boolean {
   // Cloned plans should have different IDs and cloned plans should NOT be starter templates
   return clonedPlanId !== originalTemplateId && !isStarterTemplate(clonedPlanId);
 }
@@ -195,7 +192,7 @@ export type TemplateUsageStats = {
  */
 export function incrementTemplateCloneCount(
   stats: TemplateUsageStats,
-  incrementBy: number = 1
+  incrementBy: number = 1,
 ): TemplateUsageStats {
   return {
     ...stats,
@@ -208,7 +205,7 @@ export function incrementTemplateCloneCount(
  */
 export function incrementTemplateAssignmentCount(
   stats: TemplateUsageStats,
-  incrementBy: number = 1
+  incrementBy: number = 1,
 ): TemplateUsageStats {
   return {
     ...stats,

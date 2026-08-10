@@ -1,10 +1,7 @@
 import type { RoleIntent } from './role-selection.logic';
 import { needsTermsAcceptance } from './terms.logic';
 
-export type RetryableProfileHydrationErrorCode =
-  | 'configuration'
-  | 'network'
-  | 'token_unavailable';
+export type RetryableProfileHydrationErrorCode = 'configuration' | 'network' | 'token_unavailable';
 
 type CachedProfile = {
   authUid: string;
@@ -36,8 +33,7 @@ function isCachedProfile(value: unknown): value is CachedProfile {
     (profile.lockedRole === 'student' ||
       profile.lockedRole === 'professional' ||
       profile.lockedRole === null) &&
-    (typeof profile.acceptedTermsVersion === 'string' ||
-      profile.acceptedTermsVersion === null) &&
+    (typeof profile.acceptedTermsVersion === 'string' || profile.acceptedTermsVersion === null) &&
     typeof profile.updatedAt === 'string'
   );
 }

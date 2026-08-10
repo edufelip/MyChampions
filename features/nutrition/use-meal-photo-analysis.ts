@@ -52,10 +52,10 @@ function getE2EMealAnalysisEstimate(): MacroEstimate | null {
 
 export type PhotoAnalysisState =
   | { kind: 'idle' }
-  | { kind: 'capturing' }                        // native camera/picker is open
-  | { kind: 'compressing' }                      // client-side image compression
-  | { kind: 'analyzing' }                        // awaiting server analyzer response
-  | { kind: 'done'; estimate: MacroEstimate }    // result ready; fields pre-filled
+  | { kind: 'capturing' } // native camera/picker is open
+  | { kind: 'compressing' } // client-side image compression
+  | { kind: 'analyzing' } // awaiting server analyzer response
+  | { kind: 'done'; estimate: MacroEstimate } // result ready; fields pre-filled
   | { kind: 'error'; reason: PhotoAnalysisErrorReason };
 
 // ─── Hook result ──────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysi
       chooseFromLibrary: t('photo_picker.choose_from_library'),
       cancel: t('common.cta.cancel'),
     }),
-    [t]
+    [t],
   );
 
   // ── Core analyze step (exposed for direct injection in tests) ──────────────
@@ -119,13 +119,11 @@ export function useMealPhotoAnalysis(user: AuthUser | null): UseMealPhotoAnalysi
         // Prefer the strongly-typed code from PhotoAnalysisSourceError directly;
         // fall back to normalizePhotoAnalysisError for unexpected error shapes.
         const reason: PhotoAnalysisErrorReason =
-          err instanceof PhotoAnalysisSourceError
-            ? err.code
-            : normalizePhotoAnalysisError(err);
+          err instanceof PhotoAnalysisSourceError ? err.code : normalizePhotoAnalysisError(err);
         setState({ kind: 'error', reason });
       }
     },
-    [user]
+    [user],
   );
 
   // ── Full pipeline: pick → compress → analyze ───────────────────────────────

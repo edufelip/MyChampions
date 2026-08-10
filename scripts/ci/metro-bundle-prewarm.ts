@@ -11,11 +11,9 @@ export type MetroBundlePrewarmOptions = {
 };
 
 export function createMetroBundlePrewarmUrl(
-  options: Pick<MetroBundlePrewarmOptions, 'port' | 'platform' | 'appId'>
+  options: Pick<MetroBundlePrewarmOptions, 'port' | 'platform' | 'appId'>,
 ): string {
-  const url = new URL(
-    `http://127.0.0.1:${options.port}/.expo/.virtual-metro-entry.bundle`
-  );
+  const url = new URL(`http://127.0.0.1:${options.port}/.expo/.virtual-metro-entry.bundle`);
   const searchParams = new URLSearchParams({
     platform: options.platform,
     dev: 'true',
@@ -34,19 +32,13 @@ export function createMetroBundlePrewarmUrl(
   return url.toString();
 }
 
-export async function prewarmMetroBundle(
-  options: MetroBundlePrewarmOptions
-): Promise<number> {
+export async function prewarmMetroBundle(options: MetroBundlePrewarmOptions): Promise<number> {
   const url = createMetroBundlePrewarmUrl(options);
   const response = await (options.fetchImpl ?? fetch)(url, {
-    signal: AbortSignal.timeout(
-      options.timeoutMs ?? DEFAULT_METRO_BUNDLE_PREWARM_TIMEOUT_MS
-    ),
+    signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_METRO_BUNDLE_PREWARM_TIMEOUT_MS),
   });
   if (!response.ok) {
-    throw new Error(
-      `Metro bundle prewarm failed with HTTP ${response.status} at ${url}`
-    );
+    throw new Error(`Metro bundle prewarm failed with HTTP ${response.status} at ${url}`);
   }
   if (!response.body) {
     throw new Error(`Metro bundle prewarm returned no body at ${url}`);

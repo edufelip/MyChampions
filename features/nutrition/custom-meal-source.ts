@@ -13,11 +13,7 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-type CustomMealSourceErrorCode =
-  | 'configuration'
-  | 'network'
-  | 'graphql'
-  | 'invalid_response';
+type CustomMealSourceErrorCode = 'configuration' | 'network' | 'graphql' | 'invalid_response';
 
 export class CustomMealSourceError extends Error {
   code: CustomMealSourceErrorCode;
@@ -151,7 +147,8 @@ function resolveServerBaseUrl(): string | undefined {
 
 function resolveE2EAssignedNutritionFixture() {
   const override = resolveE2ESourceOverride();
-  if (!override || process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE !== 'assigned') return null;
+  if (!override || process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE !== 'assigned')
+    return null;
   return override;
 }
 
@@ -179,7 +176,9 @@ function sortCustomMeals(meals: CustomMeal[]): CustomMeal[] {
   return [...meals].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-function resolveE2ESharedMealFixture(shareToken: string): { ownerUid: string; snapshot: SharedMealSnapshot } | null {
+function resolveE2ESharedMealFixture(
+  shareToken: string,
+): { ownerUid: string; snapshot: SharedMealSnapshot } | null {
   const override = resolveE2ESourceOverride();
 
   if (!override || shareToken !== E2E_SHARED_MEAL_TOKEN) return null;
@@ -192,7 +191,10 @@ function resolveE2ESharedMealFixture(shareToken: string): { ownerUid: string; sn
 function normalizeCustomMealSourceError(error: unknown): CustomMealSourceError {
   if (error instanceof CustomMealSourceError) return error;
 
-  return new CustomMealSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected custom meal source error.');
+  return new CustomMealSourceError(
+    'invalid_response',
+    (error as Error)?.message ?? 'Unexpected custom meal source error.',
+  );
 }
 
 function requireServerResult<T>(result: T | null, operation: string): T {
@@ -224,9 +226,7 @@ function normalizeServerCustomMeal(input: ServerCustomMeal): CustomMeal | null {
       ? input.ingredientCost
       : null;
   const imageUrl =
-    input.imageUrl === null || typeof input.imageUrl === 'string'
-      ? input.imageUrl
-      : null;
+    input.imageUrl === null || typeof input.imageUrl === 'string' ? input.imageUrl : null;
 
   if (
     !id ||
@@ -302,7 +302,9 @@ function normalizeServerPortionLog(input: ServerPortionLog): PortionLog | null {
   };
 }
 
-function normalizeSharedMealSnapshot(input: Partial<SharedMealSnapshot> | undefined): SharedMealSnapshot | null {
+function normalizeSharedMealSnapshot(
+  input: Partial<SharedMealSnapshot> | undefined,
+): SharedMealSnapshot | null {
   if (
     !input ||
     typeof input.name !== 'string' ||
@@ -325,19 +327,28 @@ function normalizeSharedMealSnapshot(input: Partial<SharedMealSnapshot> | undefi
   };
 }
 
-function normalizeServerStatus(status: number, operation: 'create' | 'list'): CustomMealSourceError {
+function normalizeServerStatus(
+  status: number,
+  operation: 'create' | 'list',
+): CustomMealSourceError {
   if (status === 401 || status === 403) {
     return new CustomMealSourceError('graphql', `Portion log ${operation} is not authorized.`);
   }
   if (status >= 500) {
-    return new CustomMealSourceError('network', `Portion log ${operation} failed with status ${status}.`);
+    return new CustomMealSourceError(
+      'network',
+      `Portion log ${operation} failed with status ${status}.`,
+    );
   }
-  return new CustomMealSourceError('invalid_response', `Unexpected portion log ${operation} response: ${status}.`);
+  return new CustomMealSourceError(
+    'invalid_response',
+    `Unexpected portion log ${operation} response: ${status}.`,
+  );
 }
 
 function normalizeServerMealStatus(
   status: number,
-  operation: 'create' | 'read' | 'list' | 'update' | 'delete'
+  operation: 'create' | 'read' | 'list' | 'update' | 'delete',
 ): CustomMealSourceError {
   if (status === 401 || status === 403) {
     return new CustomMealSourceError('graphql', `Custom meal ${operation} is not authorized.`);
@@ -346,28 +357,45 @@ function normalizeServerMealStatus(
     return new CustomMealSourceError('graphql', 'Custom meal not found.');
   }
   if (status >= 500) {
-    return new CustomMealSourceError('network', `Custom meal ${operation} failed with status ${status}.`);
+    return new CustomMealSourceError(
+      'network',
+      `Custom meal ${operation} failed with status ${status}.`,
+    );
   }
-  return new CustomMealSourceError('invalid_response', `Unexpected custom meal ${operation} response: ${status}.`);
+  return new CustomMealSourceError(
+    'invalid_response',
+    `Unexpected custom meal ${operation} response: ${status}.`,
+  );
 }
 
 function normalizeServerShareStatus(
   status: number,
-  operation: 'create' | 'preview' | 'import'
+  operation: 'create' | 'preview' | 'import',
 ): CustomMealSourceError {
   if (status === 401 || status === 403) {
-    return new CustomMealSourceError('graphql', `Custom meal share ${operation} is not authorized.`);
+    return new CustomMealSourceError(
+      'graphql',
+      `Custom meal share ${operation} is not authorized.`,
+    );
   }
   if (status === 404) {
     return new CustomMealSourceError('graphql', 'Shared meal not found.');
   }
   if (status >= 500) {
-    return new CustomMealSourceError('network', `Custom meal share ${operation} failed with status ${status}.`);
+    return new CustomMealSourceError(
+      'network',
+      `Custom meal share ${operation} failed with status ${status}.`,
+    );
   }
-  return new CustomMealSourceError('invalid_response', `Unexpected custom meal share ${operation} response: ${status}.`);
+  return new CustomMealSourceError(
+    'invalid_response',
+    `Unexpected custom meal share ${operation} response: ${status}.`,
+  );
 }
 
-async function resolveServerAuth(deps: CustomMealSourceDeps): Promise<{ baseUrl: string; accessToken: string } | null> {
+async function resolveServerAuth(
+  deps: CustomMealSourceDeps,
+): Promise<{ baseUrl: string; accessToken: string } | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
   if (!baseUrl || !accessToken) return null;
@@ -388,7 +416,7 @@ async function parseJsonPayload<T>(response: Response): Promise<T | null> {
 
 async function createMealShareLinkOnServer(
   mealId: string,
-  deps: CustomMealSourceDeps
+  deps: CustomMealSourceDeps,
 ): Promise<{ shareLinkId: string } | null> {
   const auth = await resolveServerAuth(deps);
   if (!auth) return null;
@@ -400,10 +428,13 @@ async function createMealShareLinkOnServer(
       {
         method: 'POST',
         headers: { authorization: `Bearer ${auth.accessToken}` },
-      }
+      },
     );
   } catch {
-    throw new CustomMealSourceError('network', 'Network request to create custom meal share link failed.');
+    throw new CustomMealSourceError(
+      'network',
+      'Network request to create custom meal share link failed.',
+    );
   }
 
   const payload = await parseJsonPayload<{ shareLinkId?: string }>(response);
@@ -411,7 +442,10 @@ async function createMealShareLinkOnServer(
     throw normalizeServerShareStatus(response.status, 'create');
   }
   if (typeof payload?.shareLinkId !== 'string' || !payload.shareLinkId) {
-    throw new CustomMealSourceError('invalid_response', 'Custom meal share create response is missing shareLinkId.');
+    throw new CustomMealSourceError(
+      'invalid_response',
+      'Custom meal share create response is missing shareLinkId.',
+    );
   }
 
   return { shareLinkId: payload.shareLinkId };
@@ -419,7 +453,7 @@ async function createMealShareLinkOnServer(
 
 async function previewSharedMealFromServer(
   shareToken: string,
-  deps: CustomMealSourceDeps
+  deps: CustomMealSourceDeps,
 ): Promise<SharedMealSnapshot | null> {
   const baseUrl = resolveServerBase(deps);
   if (!baseUrl) return null;
@@ -427,7 +461,7 @@ async function previewSharedMealFromServer(
   let response: Response;
   try {
     response = await (deps.fetchFn ?? defaultAppFetch)(
-      `${baseUrl}/nutrition/custom-meal-shares/${encodeURIComponent(shareToken)}`
+      `${baseUrl}/nutrition/custom-meal-shares/${encodeURIComponent(shareToken)}`,
     );
   } catch {
     throw new CustomMealSourceError('network', 'Network request to preview shared meal failed.');
@@ -440,7 +474,10 @@ async function previewSharedMealFromServer(
 
   const snapshot = normalizeSharedMealSnapshot(payload?.snapshot);
   if (!snapshot) {
-    throw new CustomMealSourceError('invalid_response', 'Shared meal preview response is missing snapshot.');
+    throw new CustomMealSourceError(
+      'invalid_response',
+      'Shared meal preview response is missing snapshot.',
+    );
   }
 
   return snapshot;
@@ -448,7 +485,7 @@ async function previewSharedMealFromServer(
 
 async function importSharedMealOnServer(
   shareToken: string,
-  deps: CustomMealSourceDeps
+  deps: CustomMealSourceDeps,
 ): Promise<CustomMeal | null> {
   const auth = await resolveServerAuth(deps);
   if (!auth) return null;
@@ -460,7 +497,7 @@ async function importSharedMealOnServer(
       {
         method: 'POST',
         headers: { authorization: `Bearer ${auth.accessToken}` },
-      }
+      },
     );
   } catch {
     throw new CustomMealSourceError('network', 'Network request to import shared meal failed.');
@@ -473,7 +510,10 @@ async function importSharedMealOnServer(
 
   const meal = payload?.meal ? normalizeServerCustomMeal(payload.meal) : null;
   if (!meal) {
-    throw new CustomMealSourceError('invalid_response', 'Shared meal import response is missing meal.');
+    throw new CustomMealSourceError(
+      'invalid_response',
+      'Shared meal import response is missing meal.',
+    );
   }
 
   return meal;
@@ -505,7 +545,10 @@ async function getCustomMealsFromServer(deps: CustomMealSourceDeps): Promise<Cus
     .filter((meal): meal is CustomMeal => meal !== null);
 }
 
-async function getCustomMealFromServer(mealId: string, deps: CustomMealSourceDeps): Promise<CustomMeal | null> {
+async function getCustomMealFromServer(
+  mealId: string,
+  deps: CustomMealSourceDeps,
+): Promise<CustomMeal | null> {
   const auth = await resolveServerAuth(deps);
   if (!auth) return null;
 
@@ -513,7 +556,7 @@ async function getCustomMealFromServer(mealId: string, deps: CustomMealSourceDep
   try {
     response = await (deps.fetchFn ?? defaultAppFetch)(
       `${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(mealId)}`,
-      { headers: { authorization: `Bearer ${auth.accessToken}` } }
+      { headers: { authorization: `Bearer ${auth.accessToken}` } },
     );
   } catch {
     throw new CustomMealSourceError('network', 'Network request to read custom meal failed.');
@@ -543,7 +586,7 @@ async function createCustomMealOnServer(
     ingredientCost?: number | null;
     imageUrl?: string | null;
   },
-  deps: CustomMealSourceDeps
+  deps: CustomMealSourceDeps,
 ): Promise<CustomMeal | null> {
   const auth = await resolveServerAuth(deps);
   if (!auth) return null;
@@ -578,7 +621,10 @@ async function createCustomMealOnServer(
 
   const meal = payload?.meal ? normalizeServerCustomMeal(payload.meal) : null;
   if (!meal) {
-    throw new CustomMealSourceError('invalid_response', 'Custom meal create response is missing meal.');
+    throw new CustomMealSourceError(
+      'invalid_response',
+      'Custom meal create response is missing meal.',
+    );
   }
 
   return meal;
@@ -596,30 +642,33 @@ async function updateCustomMealOnServer(
     ingredientCost?: number | null;
     imageUrl?: string | null;
   },
-  deps: CustomMealSourceDeps
+  deps: CustomMealSourceDeps,
 ): Promise<CustomMeal | null> {
   const auth = await resolveServerAuth(deps);
   if (!auth) return null;
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? defaultAppFetch)(`${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      headers: {
-        authorization: `Bearer ${auth.accessToken}`,
-        'content-type': 'application/json',
+    response = await (deps.fetchFn ?? defaultAppFetch)(
+      `${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(id)}`,
+      {
+        method: 'PUT',
+        headers: {
+          authorization: `Bearer ${auth.accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: input.name,
+          totalGrams: input.totalGrams,
+          calories: input.calories,
+          carbs: input.carbs,
+          proteins: input.proteins,
+          fats: input.fats,
+          ingredientCost: input.ingredientCost ?? null,
+          imageUrl: input.imageUrl ?? null,
+        }),
       },
-      body: JSON.stringify({
-        name: input.name,
-        totalGrams: input.totalGrams,
-        calories: input.calories,
-        carbs: input.carbs,
-        proteins: input.proteins,
-        fats: input.fats,
-        ingredientCost: input.ingredientCost ?? null,
-        imageUrl: input.imageUrl ?? null,
-      }),
-    });
+    );
   } catch {
     throw new CustomMealSourceError('network', 'Network request to update custom meal failed.');
   }
@@ -631,7 +680,10 @@ async function updateCustomMealOnServer(
 
   const meal = payload?.meal ? normalizeServerCustomMeal(payload.meal) : null;
   if (!meal) {
-    throw new CustomMealSourceError('invalid_response', 'Custom meal update response is missing meal.');
+    throw new CustomMealSourceError(
+      'invalid_response',
+      'Custom meal update response is missing meal.',
+    );
   }
 
   return meal;
@@ -643,10 +695,13 @@ async function deleteCustomMealOnServer(id: string, deps: CustomMealSourceDeps):
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? defaultAppFetch)(`${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-      headers: { authorization: `Bearer ${auth.accessToken}` },
-    });
+    response = await (deps.fetchFn ?? defaultAppFetch)(
+      `${auth.baseUrl}/nutrition/custom-meals/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${auth.accessToken}` },
+      },
+    );
   } catch {
     throw new CustomMealSourceError('network', 'Network request to delete custom meal failed.');
   }
@@ -666,7 +721,7 @@ async function createPortionLogOnServer(
     snapshot: PortionLog['snapshot'];
     provenance?: AssignedMealPortionLogProvenance;
   },
-  deps: CustomMealSourceDeps
+  deps: CustomMealSourceDeps,
 ): Promise<boolean> {
   const auth = await resolveServerAuth(deps);
   if (!auth) return false;
@@ -721,7 +776,7 @@ async function getPortionLogsFromServer(deps: CustomMealSourceDeps): Promise<Por
   try {
     response = await (deps.fetchFn ?? defaultAppFetch)(
       `${baseUrl}/nutrition/portion-logs?from=${encodeURIComponent(todayStartIso)}`,
-      { headers: { authorization: `Bearer ${accessToken}` } }
+      { headers: { authorization: `Bearer ${accessToken}` } },
     );
   } catch {
     throw new CustomMealSourceError('network', 'Network request to read portion logs failed.');
@@ -750,7 +805,9 @@ export async function getMyCustomMeals(deps = defaultDeps): Promise<CustomMeal[]
   if (deps === defaultDeps) {
     const e2eFixture = resolveE2ECustomMealsFixture();
     if (e2eFixture) {
-      return sortCustomMeals([...getE2ECustomMealStore(e2eFixture.uid).values()].map(cloneCustomMeal));
+      return sortCustomMeals(
+        [...getE2ECustomMealStore(e2eFixture.uid).values()].map(cloneCustomMeal),
+      );
     }
   }
 
@@ -773,7 +830,7 @@ export async function createCustomMeal(
     ingredientCost?: number | null;
     imageUrl?: string | null;
   },
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<CustomMeal> {
   if (deps === defaultDeps) {
     const e2eFixture = resolveE2ECustomMealsFixture();
@@ -818,7 +875,7 @@ export async function updateCustomMeal(
     ingredientCost?: number | null;
     imageUrl?: string | null;
   },
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<CustomMeal> {
   if (deps === defaultDeps) {
     const e2eFixture = resolveE2ECustomMealsFixture();
@@ -882,7 +939,7 @@ export async function deleteCustomMeal(id: string, deps = defaultDeps): Promise<
 
 export async function createMealShareLink(
   mealId: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<{ shareLinkId: string }> {
   if (deps === defaultDeps) {
     const e2eFixture = resolveE2ECustomMealsFixture();
@@ -894,9 +951,10 @@ export async function createMealShareLink(
       if (meal.ownerUid !== e2eFixture.uid) {
         throw new CustomMealSourceError('graphql', 'Permission denied for share link generation.');
       }
-      const shareLinkId = mealId === 'e2e-custom-meal'
-        ? 'e2e-share-e2e-custom-meal'
-        : `e2e-share-${++e2eCustomMealShareSequence}`;
+      const shareLinkId =
+        mealId === 'e2e-custom-meal'
+          ? 'e2e-share-e2e-custom-meal'
+          : `e2e-share-${++e2eCustomMealShareSequence}`;
       return { shareLinkId };
     }
   }
@@ -911,7 +969,7 @@ export async function createMealShareLink(
 
 export async function previewSharedMeal(
   shareToken: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<SharedMealSnapshot> {
   const e2eFixture = resolveE2ESharedMealFixture(shareToken);
   if (e2eFixture) return e2eFixture.snapshot;
@@ -926,7 +984,7 @@ export async function previewSharedMeal(
 
 export async function importSharedMeal(
   shareToken: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<CustomMeal> {
   const e2eFixture = resolveE2ESharedMealFixture(shareToken);
   if (e2eFixture) {
@@ -953,7 +1011,7 @@ export async function importSharedMeal(
 export async function logPortionFromSource(
   mealId: string,
   grams: number,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const e2eFixture = resolveE2ECustomMealsFixture();
@@ -985,7 +1043,7 @@ export async function logPortionFromSource(
     const snapshot = calculatePortionNutrition(meal, grams);
     requireServerBoolean(
       await createPortionLogOnServer({ mealId, consumedGrams: grams, snapshot }, deps),
-      'Custom meal portion logging'
+      'Custom meal portion logging',
     );
   } catch (error) {
     throw normalizeCustomMealSourceError(error);
@@ -1001,7 +1059,7 @@ export async function logAssignedMealPortion(
     fats: number;
   },
   provenance?: AssignedMealPortionLogProvenance,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
     const e2eFixture = resolveE2EAssignedNutritionFixture();
@@ -1015,7 +1073,7 @@ export async function logAssignedMealPortion(
         provenance,
       });
       const existingIndex = e2eAssignedMealPortionLogs.findIndex(
-        (candidate) => candidate.ownerUid === log.ownerUid && candidate.mealId === log.mealId
+        (candidate) => candidate.ownerUid === log.ownerUid && candidate.mealId === log.mealId,
       );
       if (existingIndex >= 0) e2eAssignedMealPortionLogs[existingIndex] = log;
       else e2eAssignedMealPortionLogs.push(log);
@@ -1026,7 +1084,7 @@ export async function logAssignedMealPortion(
   try {
     requireServerBoolean(
       await createPortionLogOnServer({ mealId, consumedGrams: 0, snapshot, provenance }, deps),
-      'Assigned meal portion logging'
+      'Assigned meal portion logging',
     );
   } catch (error) {
     throw normalizeCustomMealSourceError(error);

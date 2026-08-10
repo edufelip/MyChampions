@@ -8,7 +8,7 @@ const iosSimulatorDevice = process.env.DETOX_IOS_SIMULATOR_UDID
 module.exports = {
   testRunner: {
     args: {
-      '$0': 'jest',
+      $0: 'jest',
       config: process.env.DETOX_JEST_CONFIG || 'e2e/jest.config.js',
     },
     jest: {

@@ -1,14 +1,17 @@
 # Pending Wiring Checklist V1
 
 ## Purpose
+
 Track intentionally deferred implementation wiring so it is completed before release hardening.
 
 ## Status Legend
+
 - `Pending`: not wired yet.
 - `In progress`: partially wired.
 - `Done`: fully wired and validated.
 
 ## Auth Wiring (Current Priority)
+
 - `Done`: Sign-in posts email/password credentials to the MyChampions server `POST /auth/email/sign-in` boundary, persists the returned local bearer session from local Postgres `local_email_auth_credentials`, and fails closed without falling back to Firebase email/password sign-in and without using the deterministic dev-session bridge for normal local email/password auth.
 - `Done`: Create-account submit posts to the MyChampions server `POST /auth/email/create-account` boundary, persists the returned local bearer session from local Postgres `local_email_auth_credentials`, and fails closed without falling back to Firebase email/password sign-up and without using the deterministic dev-session bridge for normal local email/password auth.
 - `Done`: Google Sign-In no longer constructs Firebase provider credentials. `features/auth/google-social-auth-source.ts` uses `@react-native-google-signin/google-signin` on iOS and Android, requires the web client ID plus the iOS client ID on iOS, and forwards the native Google `idToken` to the server-owned `POST /auth/social/sign-in` boundary. The deterministic local dev-session fallback is available only in explicit local/dev app variants for explicit provider-token configuration gaps, with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`, and only for explicit provider-token configuration gaps.
@@ -37,6 +40,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Documented auth/onboarding analytics events emit through the MyChampions server analytics path in real runtime telemetry. Sign-in and create-account screens emit entry, submit, async failure, and client-side validation failure events; role selection emits entry, selected-role, and student self-guided-start events.
 
 ## Native Bootstrap
+
 - `Done`: One-time `expo prebuild` executed and native directories generated (`ios/`, `android/`) for direct maintenance going forward.
 - `Done`: Native permissions policy — all native permission strings and manifest entries are applied directly to `ios/mychampions/Info.plist` and `android/app/src/main/AndroidManifest.xml`. Expo config plugins for packages with native side-effects (`expo-camera`, `expo-image-picker`) are **not** listed in `app.config.ts` plugins array to prevent accidental overwrite on any future `expo prebuild`. New packages requiring native permissions must add them directly to the native files (D-129).
 - `Done`: Native app-identity drift cleanup — iOS URL schemes and Android source packages are aligned with the documented Expo/native identifiers (`com.edufelip.mychampions`, `com.edufelip.mychampions.dev`, `mychampions`), removing the legacy `com.eduardo880.mychampions` runtime reference that could break Expo dev-client launches.
@@ -45,11 +49,13 @@ Track intentionally deferred implementation wiring so it is completed before rel
   - iOS no longer has a `[Firebase] Select GoogleService plist` build phase, and iOS run scripts no longer call `check:ios-firebase`.
 
 ## Manual QA Skill + Linear
+
 - `Done`: On-demand chat Skill contract documented (`docs/test-cases/qa-manual-run-playbook.md`, `qa-smoke-pack.md`, `qa-env-registry.md`) and implemented as global `~/.cursor/skills/qa-manual-run` with family adapter `families/mychampions.md` (D-199). Sibling API smoke packs live under `server/docs`, `mychampionsapi-food/docs`, `mychampionsapi-exercises/docs`. Linear MyChampions project + `qa-run` / workspace `Bug` / `doc-gap` / `known-deferred` labels are the system of record.
 - `Pending`: Dedicated VM **development** database + API host (or path) so QA env id `dev` can leave Placeholder status in `docs/test-cases/qa-env-registry.md`. Until then the Skill defaults to `local` and refuses `env=dev`.
 - `Pending`: Extend the manual QA Skill to native surfaces (iOS/Android simulator or TestFlight) with the same Linear QA Run / Bug contract. Web remains the only supported Skill surface in v1.
 
 ## E2E Wiring
+
 - `Done`: Detox project scaffolding added (`.detoxrc.js`, `e2e/jest.config.js`, auth smoke specs, Android instrumentation wiring, auth screen `testID` selectors).
 - `Done`: Focused iOS Detox manual smoke wiring added. `.detoxrc.js` supports `DETOX_JEST_CONFIG`, `e2e/jest.smoke.config.js` selects the migration-critical smoke specs, `package.json` exposes `test:e2e:ios:debug:smoke`, and the legacy manual-only `.github/workflows/ios-pr.yml` runs the debug Detox build/test commands when dispatched.
 - `Done`: Detox smoke coverage now includes auth sign-in, onboarding role-lock, wrong-role redirects, and student invite entry through `auth-sign-in.e2e.test.js`, `auth-role-selection.e2e.test.js`, and `student-professionals.e2e.test.js`; compact auth actions are scrolled into view, role selection uses a deterministic runtime source contract for the disabled Continue accessibility/interaction wiring plus native E2E for the preselection route state, and native selective phases suppress the in-app development LogBox overlay while preserving runner diagnostics.
@@ -60,6 +66,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Complete the server-backed, provider-live, browser-media, assistive-technology, and full student/professional workflow matrix in `docs/discovery/web-pending-items-and-future-improvements.md` before web release approval.
 
 ## CI/CD Wiring
+
 - `Done`: GitHub Actions workflow baseline copied/adapted from `meer` into `.github/workflows/`; the original Android/iOS/web PR-named checks remain as manual-only validation paths and the release pipelines remain separate.
 - `Retired`: Firebase App Distribution workflows and Firebase config injection steps were removed during the local-server migration.
 - `Done`: Workflows are adapted to this repository conventions (`yarn install --frozen-lockfile` with `yarn.lock`, `mychampions` iOS workspace/scheme, and `com.edufelip.mychampions` package identifiers).
@@ -168,6 +175,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Promotion evidence gate`: The promotion pull request must pass TC-519's trusted-workflow provenance, authorization-negative, stale-run, token-isolation, sole-collaborator/external-approval, repository-setting, cleanup, and exact-status probes plus the complete web/iOS/Android matrix on the same exact candidate head. Read-only workflow/run, host resource-lock, repository-setting, collaborator-roster, and GitHub status evidence—not checked-in workflow text, prior runner registration, or local tests—are required. No D-195 live deployment/settings evidence is claimed here yet.
 
 ## Professional Screen Wiring (Phase 5)
+
 - `Done`: SC-202 Specialty screen (`app/professional/specialty.tsx`) implemented — specialty list/add, blocker counts, removal, and credential upsert now use MyChampions server `GET /professional/specialties`, `POST /professional/specialties`, `GET /professional/specialties/:specialty/blockers`, `DELETE /professional/specialties/:specialtyId`, and `PUT /professional/specialties/:specialtyId/credential` with local bearer auth and fail closed without local/E2E auth.
 - `Done`: SC-204 Professional Home (`app/professional/home.tsx`) implemented — invite code display via `useInviteCode`, subscription state via `resolveSubscriptionState`; RevenueCat entitlement and unique active-student usage are wired through `useSubscription()`.
 - `Done`: SC-205 Student Roster (`app/professional/students.tsx`) implemented — search + filter chip UI, FlatList, and MyChampions server roster/assignment snapshot endpoints are wired for local bearer sessions.
@@ -183,6 +191,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Wire RevenueCat entitlement live state and unique active-student usage into SC-204, SC-206, SC-212 (replaced `useState<EntitlementStatus>('unknown')` stubs with `useSubscription()` hook; `features/subscription/subscription-source.ts` source layer with full injectable deps + 35 unit tests (TC-286); `features/subscription/use-subscription.ts` hook with lazy SDK configuration via module-level singleton guard and professional count loading; `features/professional/professional-source.ts#getActiveProfessionalStudentCount` now uses the MyChampions server roster endpoint outside E2E fixtures).
 
 ## Localization
+
 - `Done`: All `pro.home.*`, `pro.specialty.*`, `pro.students.*`, `pro.student_profile.*`, `pro.subscription.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts`.
 - `Done`: All `settings.account.*`, `meal.builder.*`, `meal.library.*`, `shared_recipe.*` keys synced across `en-US.ts`, `pt-BR.ts`, `es-ES.ts` (Phase 6).
 - `Done`: `useTranslation()` returns a locale-stable `t` function reference, reducing effect-churn re-fetch loops tied to translation callback identity.
@@ -195,6 +204,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Partial`: BL-009 pre-lapse warning UI and localized copy exist, but activation now correctly requires an authoritative billing-expiry risk signal. Active-student count is capacity data and no longer fabricates an expiry warning. Purchase/restore/handoff recovery remains available through entitlement-based plan locks; provider/server expiry-signal wiring is pending.
 
 ## Offline Banner + Write-Lock (BL-008)
+
 - `Done`: `features/offline/offline.logic.ts` — pure functions: `resolveCacheFreshness`, `checkWriteLock`, `resolveOfflineDisplayState`, `buildStaleElapsed`, `isDefinitelyOffline`. Unit tests in `offline.logic.test.ts` (included in 301-test suite, TC-261).
 - `Done`: `features/offline/use-network-status.ts` — React hook `useNetworkStatus` wiring `@react-native-community/netinfo`; returns `'online' | 'offline' | 'unknown'`.
 - `Done`: `@react-native-community/netinfo` installed (v12.0.1).
@@ -217,35 +227,38 @@ Track intentionally deferred implementation wiring so it is completed before rel
   - Done: Professional, account, custom-meal, and shared-recipe offline-aware screens derive offline freshness from server-backed or provider-bound profile, specialty, invite-code, connection, roster, assignment, subscription, plan, custom-meal, and shared-recipe preview reads.
 
 ## Professional Pending Queue Tools (BL-004)
+
 - `Done`: `features/connections/pending-queue.logic.ts` — pure functions: `filterPendingQueue`, `canBulkDeny`, `validateBulkDeny`, `buildBulkDenyConfirmationMessage`, `formatSearchResultsSummary`. Supports search by student UID, specialty filtering, and bulk deny validation.
 - `Done`: `features/connections/pending-queue.logic.test.ts` — comprehensive unit tests (26 tests, TC-257, TC-258) covering filter combinations, bulk deny validation, confirmation messaging, and edge cases.
 - `Done`: `app/professional/pending.tsx` (SC-204/SC-205) — Pending connection queue fully wired with:
-  * Search bar filtering by student ID (substring match, case-insensitive)
-  * Row-based selection for bulk operations
-  * Individual confirm/deny actions per pending request
-  * Bulk deny with confirmation alert showing count and specialty distribution
-  * Optimistic removal after successful bulk deny
-  * Error handling with retry CTA
-  * Empty state and loading indicators
+  - Search bar filtering by student ID (substring match, case-insensitive)
+  - Row-based selection for bulk operations
+  - Individual confirm/deny actions per pending request
+  - Bulk deny with confirmation alert showing count and specialty distribution
+  - Optimistic removal after successful bulk deny
+  - Error handling with retry CTA
+  - Empty state and loading indicators
 - `Done`: All `pro.pending.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (`search.placeholder`, `filter.label`, `bulk_deny.cta`, `bulk_deny.confirm_title`, `bulk_deny.confirm_body`, `bulk_deny.success`, `confirm.cta`, `deny.cta`, `empty`, `error`).
 - `Done`: `confirmPendingConnection` and `endConnection` now require the MyChampions server when local bearer auth is available and fail closed without local server auth outside E2E fixtures. Server-owned confirm/end release local pending invite guard/student-slot state, write tracking-access and active-specialty rows, and archive/restore matching nutrition/training plans in local Postgres. Both operations are consumed by `useConnections` in `app/professional/pending.tsx`; legacy Firestore fallback was removed from the mobile connection source.
 
 ## Professional Specialty Removal Assist (BL-011)
+
 - `Done`: `features/professional/specialty-removal-assist.logic.ts` — pure functions: `resolveRemovalAssistState`, `buildActionMetadata`, `filterBlockersBySpecialty`, `countBlockers`, `canRemovalProceedNow`, `formatRemovalBlockedMessage`, `shouldShowBlockers`. Provides direct navigation/actions to resolve blocking conditions (active/pending students, last specialty).
 - `Done`: `features/professional/specialty-removal-assist.logic.test.ts` — comprehensive unit tests (34 tests, TC-262, TC-263) covering:
-  * Assist state resolution: no blockers, active students, pending students, last specialty priority order
-  * Action metadata: navigation targets, labels, descriptions, priority levels
-  * Blocker filtering by specialty and status
-  * Blocker counting (active vs pending)
-  * Removal proceed validation after assist actions
-  * Blocked message formatting with proper singularization
-  * Edge cases: zero total specialties, large blocker counts, mixed statuses
+  - Assist state resolution: no blockers, active students, pending students, last specialty priority order
+  - Action metadata: navigation targets, labels, descriptions, priority levels
+  - Blocker filtering by specialty and status
+  - Blocker counting (active vs pending)
+  - Removal proceed validation after assist actions
+  - Blocked message formatting with proper singularization
+  - Edge cases: zero total specialties, large blocker counts, mixed statuses
 - `Done`: `app/professional/specialty.tsx` (SC-202) — Specialty removal flow with blocking reason display (already implemented, awaiting assist action wiring).
 - `Done`: All `pro.specialty.removal_assist.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (8 keys: view_active, view_active_desc, view_pending, view_pending_desc, bulk_deny, bulk_deny_desc, add_specialty, add_specialty_desc).
 - `Done`: Wire assist actions into SC-202 removal blocked state — `RemovalAssistCard` renders inline with title/body from `getRemovalBlockedMessageKeys`, action buttons from `buildActionMetadata`, and `useRouter.push` navigation to students roster, pending queue, or specialty setup; dismiss CTA clears blocked state. `pro.specialty.remove_blocked.dismiss` key added to all 3 locale bundles (D-124).
 - `Done`: SC-202 specialty removal now resolves active/pending blocker counts through `getSpecialtyBlockerCounts`, which uses the MyChampions server local Postgres blocker endpoint outside E2E fixtures; remove CTA shows assist flow from real blocker state instead of stubbed `0/0` counts.
 
 ## Plan Change Request Flow (BL-005)
+
 - `Done`: `features/plans/plan-change-request.logic.ts` — pure functions: `validatePlanChangeRequestInput`, `normalizePlanChangeRequestStatus`, `normalizePlanType`, `normalizePlanChangeRequestError`. Unit tests in `plan-change-request.logic.test.ts` (11 tests, TC-259).
 - `Done`: `features/plans/plan-source.ts` — `submitPlanChangeRequest`, `reviewPlanChangeRequest`, and `getStudentPlanChangeRequests` require MyChampions server plan-change endpoints with local bearer auth outside E2E fixtures and fail closed without local server auth.
 - `Done`: `features/plans/use-plans.ts` — React hook `usePlans` with `submitChangeRequest`, `validateChangeRequest`, `reviewChangeRequest`, `getChangeRequestsForStudent`.
@@ -258,6 +271,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Professional home now has a local in-app notification surface for pending student plan-change requests. `GET /professional/plan-change-requests?status=pending` lists pending requests across the authenticated professional's owned plans, `getProfessionalPlanChangeRequests()` reads it through the MyChampions server bearer path, and `app/professional/home.tsx` shows the count/latest request with a CTA to the existing student profile review card. Push notification delivery remains future provider work.
 
 ## Water Tracking (BL-104)
+
 - `Done`: `features/nutrition/water-tracking.logic.ts` — pure functions: `resolveEffectiveWaterGoal`, `resolveWaterDayStatus`, `calculateWaterStreak`, `validateWaterGoalInput`, `validateWaterIntakeInput`, `normalizeWaterTrackingError`.
 - `Done`: `features/nutrition/water-tracking.logic.test.ts` — unit tests included in 301-test suite (TC-264–TC-267).
 - `Done`: `features/nutrition/water-tracking-source.ts` — `getMyWaterLogs`, `logWaterIntake`, and `getMyWaterGoalContext` require MyChampions server endpoints with the local bearer token outside E2E fixtures; goal context reads local server `nutrition_plans` plus active nutritionist `connections`.
@@ -270,6 +284,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Wire hydration tracking source (`getMyWaterLogs`, `logWaterIntake`, `getMyWaterGoalContext`) replacing stubs in `water-tracking-source.ts` (D-126 batch), with plan-context precedence documented in D-172; water-log read/write and water-goal context now require the local MyChampions server outside E2E fixtures.
 
 ## Food/Plan/Data Wiring
+
 - `Done`: Local mobile auth and server-backed source modules now use the MyChampions server or explicit E2E fixtures. Missing local server URL/auth fails closed outside those fixtures.
   - Done: Root-level Bun/Elysia server added with local Postgres profile/session support.
   - Done: `features/auth/profile-source.ts` now calls MyChampions server profile endpoints for hydration, role lock, terms acceptance, and profile data deletion; default token resolution no longer reads Firebase Auth.
@@ -347,9 +362,10 @@ Track intentionally deferred implementation wiring so it is completed before rel
   - Source-controlled rules/index config (`firestore.rules`, `firestore.indexes.json`) was retired with the Firebase project files during the local-server migration.
 
 ## Bottom Navigation Shell (Phase 7)
+
 - `Done`: `app/(tabs)/_layout.tsx` replaced with role-aware tab layout (D-045):
   - Professional: Dashboard / Students / Nutrition / Training / Account
-   - Student: Home / Nutrition / Exercise / Recipes / Profile
+  - Student: Home / Nutrition / Exercise / Recipes / Profile
   - Tabs not belonging to the current role are hidden via `href: null`.
 - `Done`: `IconSymbol` MAPPING expanded with tab bar icon pairs (SF Symbols + Material Icons).
 - `Done`: `shell.tabs.*` and `shell.placeholder.coming_soon` localization keys added to en-US, pt-BR, es-ES.
@@ -366,6 +382,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `In progress`: Student-specific self-managed plan builder shell for SC-209/SC-210 currently reuses shared builder screens (`app/professional/nutrition/plans/[planId].tsx`, `app/professional/training/plans/[planId].tsx`) via student route aliases. Student-branded titles/actions are applied on student-prefixed routes; follow-up required for fully dedicated student-only layout treatment.
 
 ## Exercise Service Search (BL-106 — SC-208)
+
 - `Done`: `features/plans/exercise-service-source.ts` — catalog client: `searchExerciseLibrary`, `getExerciseById`; local bearer sessions now route through MyChampions server `POST /integrations/exercise/search` and `GET /integrations/exercise/exercises/:id` against the mirrored local catalog Postgres database. Missing local server URL/auth fails closed outside E2E fixtures. Requests keep effective locale `lang` and `x-request-id`.
 - `Done`: `features/plans/use-exercise-search.ts` — `useExerciseSearch` hook with `idle/loading/error/done` state machine.
 - `Done`: `features/plans/use-exercise-thumbnail.ts` — `useExerciseThumbnail(exerciseId)` hook; fetches fresh thumbnails on demand via `getExerciseById`; never caches expiring URLs.
@@ -376,6 +393,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: `.env` / `.env.example` use `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL` for exercise search; client-side upstream YMove and old public exercise-service URL contracts are removed.
 
 ## Plan Builder (BL-106 — SC-207, SC-208)
+
 - `Done`: `features/plans/plan-builder.logic.ts` — pure functions: `validateNutritionPlanInput`, `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `calculateNutritionTotals`, `isStarterTemplate`, `normalizePlanBuilderError`, plus food-search normalization helpers `normalizeFoodArray`, `normalizeFoodSearchResult` and associated raw types `RawFoodSearchFood`, `RawFoodSearchServing`, `FoodSearchResult` (D-127, TC-281).
 - `Done`: `features/plans/plan-builder.logic.test.ts` — 24 unit tests for `normalizeFoodArray` and `normalizeFoodSearchResult` covering per-100g scaling, single/array serving normalization, missing fields, unsupported units, rounding, empty serving array, negative serving amount, negative macro fields (TC-281). App test suite at 691 pass, 0 fail.
 - `Done`: `features/plans/plan-builder-source.ts` — server source surface for nutrition CRUD (`createNutritionPlan`, `updateNutritionPlan`, `getNutritionPlanDetail`, nutrition meal/item mutations) and training CRUD (`createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, training session/item mutations), server-backed starter template listing/cloning, and `searchFoods`.
@@ -405,6 +423,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: D-114 test coverage — `deriveStarterTemplatePlanType` and `coalesceTemplateDescription` extracted as pure helpers into `plan-builder.logic.ts`. `features/plans/plan-builder-source.test.ts` added with 29 tests (TC-280) covering prefix routing, null coalescing, edge cases, boundaries, and case-sensitivity. `StarterTemplateDeps` injection type exported for future integration test expansion. Test suite at 569 pass, 0 fail.
 
 ## Account Settings & Custom Meal Screens (Phase 6)
+
 - `Done`: SC-213 Account & Privacy Settings (`app/settings/account.tsx`) implemented — privacy policy link and account deletion confirmation flow; account deletion now uses the MyChampions server profile deletion endpoint for local bearer sessions.
 - `Done`: SC-214 Custom Meal Builder (`app/(tabs)/nutrition/custom-meals/[mealId].tsx`) implemented — create/edit form with all 7 fields, image upload, share CTA; custom meal definition/share-link storage now requires the MyChampions server outside E2E fixtures, while custom meal image upload requires the local server upload path.
 - `Done`: SC-215 Custom Meal Library & Quick Log (`app/(tabs)/nutrition/custom-meals/index.tsx`) implemented — FlatList of meals, quick-log grams input with nutrition preview; custom meal library, share/import, and portion-log storage now require the MyChampions server outside E2E fixtures.
@@ -422,12 +441,14 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Wire deep-link resume for SC-216. Unauthenticated `/shared/recipes/:shareToken` opens redirect to `/auth/sign-in?returnTo=...`; only safe normalized shared-recipe app paths are accepted as `returnTo`, and sign-in/create-account/terms/role-selection preserve the target until the recipient resumes the same share token route.
 
 ## Auth/Invite Error Copy Hardening (BL-010)
+
 - `Done`: `mapInviteSubmitReasonToMessageKey(reason: InviteSubmitErrorReason): string` added to `features/connections/connection.logic.ts`. Maps all 7 error reasons to specific locale keys per D-123.
 - `Done`: 7 unit tests added to `features/connections/connection.logic.test.ts` covering every reason branch (TC-252, TC-253).
 - `Done`: 3 previously missing locale keys (`relationship.error.already_connected`, `relationship.error.network`, `relationship.error.unknown`) added to `en-US`, `pt-BR`, `es-ES` and `localized-copy-table-v2.md`.
 - `Done`: Wire `mapInviteSubmitReasonToMessageKey` into the `app/student/professionals.tsx` invite-submit error display path. The inline `switch` block in `onSubmitCode` is replaced by `const messageKey = mapInviteSubmitReasonToMessageKey(errorReason); setSubmitError(t(messageKey))`. Behavior is identical; duplication eliminated (D-123).
 
 ## Analytics Event Emission (Phase 9 — BL-012)
+
 - `Done`: `features/analytics/analytics.logic.ts` — pure event builder functions for all Milestone A events (auth entry viewed, sign-in submitted/failed, sign-up submitted/failed, role selected, self-guided start clicked, invite submit requested/failed/pending-created/pending-canceled, professional pending confirmed/denied/bulk-denied) with `redactEventProperties` guard. Focused analytics tests cover all builders, redaction, and professional pending-screen wiring (TC-254, TC-255).
 - `Done`: `features/analytics/use-analytics.ts` sends provider-neutral, redacted, best-effort events to the MyChampions server `POST /analytics/events` route through `features/analytics/analytics-source.ts`. The server stores events in local Postgres `analytics_events` and rejects sensitive property keys before persistence.
 - `Done`: `app/auth/sign-in.tsx` — emits `auth.entry.viewed` on mount; `auth.sign_in.submitted` before each channel attempt; `auth.sign_in.failed` with `reason_code` on failure for email/password, Google, and Apple channels.
@@ -438,6 +459,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending`: Choose and wire any future remote analytics export/provider after the remote server/provider posture is decided; the mobile runtime path no longer keeps a console/no-op transport stub.
 
 ## Accessibility Baseline (Phase 8 — BL-013)
+
 - `Done`: All auth screens (`sign-in.tsx`, `create-account.tsx`, `role-selection.tsx`) annotated with `accessibilityLabel`, `accessibilityRole`, `accessibilityState`, and live-region wrappers on error messages.
 - `Done`: All student screens (`home.tsx`, `nutrition.tsx`, `training.tsx`, `professionals.tsx`) annotated with `accessibilityLabel` on `ActivityIndicator` loading states and `accessibilityLiveRegion="polite"` on error messages.
 - `Done`: All professional screens (`home.tsx`, `students.tsx`, `student-profile.tsx`, `specialty.tsx`, `subscription.tsx`, `pending.tsx`) annotated — composite `accessibilityLabel` on stat/row cards, `accessibilityRole="checkbox"` + `accessibilityState={{ checked }}` on pending-queue selection, live-region error wrappers.
@@ -449,10 +471,12 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending (deferred — release hardening)`: Color-contrast audit with automated tool (requires design token finalization, D-125).
 
 ## Media Wiring
+
 - `Done`: Wire image compression + upload pipeline to the local MyChampions server in production flow. `use-image-upload.ts` wires `expo-image-manipulator` (resize ≤ 1600 px, JPEG 0.75) and `POST /nutrition/custom-meal-images/:mealId` with progress callbacks; missing local server URL/auth now fails closed instead of using Firebase Storage. The server stores images on the local filesystem by default and switches to private GCS only when the server bucket and credentials are configured.
 - `Done`: Wire upload progress/retry state to the server-backed upload pipeline. `ImageUploadState` state machine (`idle | uploading | done | failed`) is driven by the `uploadMealImageToServer` progress callback around the authenticated `POST /nutrition/custom-meal-images/:mealId` request; retry re-runs pick -> compress -> upload pipeline from failed state.
 
 ## AI Meal Photo Analysis (BL-108)
+
 - `Done`: `features/nutrition/meal-photo-analysis.logic.ts` — mobile pure functions: `isValidMacroEstimate`, `parseMacroEstimateFromResponse`, `mapMacroEstimateToMealInput`, `normalizePhotoAnalysisError`. `PhotoAnalysisErrorReason` keeps native photo-permission denial distinct from user cancellation and includes `'unauthenticated'`. Analyzer prompt construction is server-owned in `server/src/nutrition/meal-photo-analysis-prompt.ts`.
 - `Done`: `features/nutrition/meal-photo-analysis.logic.test.ts` — unit tests included in 301-test suite (TC-271–TC-274); 3 new tests added for `'unauthenticated'` reason in `normalizePhotoAnalysisError`.
 - `Done`: `features/nutrition/meal-photo-analysis-source.test.ts` — 23 unit tests covering all branches: `PhotoAnalysisSourceError` constructor, configuration errors, fetch failures, unauthenticated missing-token/401/403 responses, `invalid_response` (non-JSON body, bad shape, negative field), domain errors (`unrecognizable_image`, `quota_exceeded` with and without status 429, `configuration`, `unknown` on 500/503), server bearer path, and happy paths (full result shape, rounding, confidence defaulting, request body/headers, URL routing) (TC-285).
@@ -474,6 +498,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Wire SC-214 photo attachment toggle into the image upload pipeline (D-109). The `attachPhoto` toggle is preserved; when `uploadState.kind === 'done'`, `uploadState.url` is persisted with the custom meal record on save/update via the server-backed custom meal source. Outside E2E fixtures, missing local server URL/auth now fails closed instead of falling back to Firestore.
 
 ## AI Meal Photo Analysis Paywall Gate (BL-108, D-132)
+
 - `Done`: `react-native-purchases-ui@9.10.5` installed. React Native autolinking handles iOS/Android; `pod install` + Gradle sync required before running on device/simulator.
 - `Done`: `subscription.logic.ts` — `AI_ENTITLEMENT_ID = 'student_pro'` constant added; `hasAiAnalysisAccess(professionalEntitlement, aiEntitlement)` pure function added. 8 unit tests cover all entitlement combinations.
 - `Done`: `subscription-source.ts` — `AI_FEATURES_ENTITLEMENT_ID`, `mapCustomerInfoToAiEntitlementStatus`, `presentPaywall` dep in `SubscriptionSourceDeps`, `presentAiPaywall()` function. `makeDeps()` in `subscription-source.test.ts` updated with `presentPaywall: async () => {}`; 6 + 3 new unit tests.
@@ -501,12 +526,51 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Pending (provider approval/permission)`: Add production Android products and the missing development Android app/products; create the first server-only secret API key; restrict sandbox entitlement access after live verification; deploy the canonical reconciler and send a signed test event; rerun device/Test Store smoke evidence for the updated student layout and the new professional Test Store paywall. The current dashboard reports that this account cannot add app configurations, so the Android dev app may require an owner/billing-plan permission change.
 
 ## Validation Gate Before Release
+
 - Every item in this checklist must be either `Done` or explicitly deferred in a release decision note.
 
 ## BL-002 QR Invite Scan (SC-211)
+
 - `Done`: `expo-camera@~16.0.18` installed and `CameraView` + `useCameraPermissions` wired into `app/student/professionals.tsx`.
 - `Done`: `parseQrInvitePayload` pure logic in `features/connections/qr-invite.logic.ts` handles bare codes, custom-scheme deep links, and HTTPS deep links (query-param and path-segment forms).
 - `Done`: QR and manual entry paths converge at `onSubmitCode(code, surface)` — same `submitCode` hook call, same analytics events, same error branches (BR-263).
 - `Done`: Camera permission denial shows inline error with fallback instruction to use manual entry (AC-249).
 - `Done`: Invalid QR payload shows actionable inline error within the modal; close button allows switch to manual entry (TC-251).
 - `Done`: iOS `NSCameraUsageDescription` applied directly to `ios/mychampions/Info.plist` (no expo prebuild policy — D-055, D-129). `expo-camera` plugin is intentionally omitted from `app.config.ts` plugins array to prevent accidental overwrite on any future `expo prebuild` run.
+
+## Testing Strategy Evidence Wiring (2026-08-08)
+
+- `Done`: Selective CI status publication includes exact-head `push` results;
+  local workflow-contract coverage proves the event split and publisher
+  authorization. A hosted rerun of the corrected main revision remains
+  `Pending` until the exact failure publication is observed remotely.
+- `Done`: App static gates are wired through typed ESLint, `tsc --noEmit`,
+  Prettier check, Husky, and lint-staged. `noUncheckedIndexedAccess` remains
+  `Pending` as a separately budgeted type-safety migration because enabling it
+  globally would change the baseline beyond this testing gate.
+- `Done`: Root server, food, and exercise service quality/consumer-contract
+  jobs are wired in isolated repositories. Hosted exact-head CI evidence is
+  `Pending`; local build/lint/test/contract evidence is recorded in the
+  service QA docs.
+- `Done`: Protected full Detox iOS/Android workflow, exact-SHA checkout,
+  build-once execution, explicit `MYCHAMPIONS_NATIVE_STATE_ROOT` preflight,
+  mode-checked host lock, deterministic fixture selection, and failure-only
+  diagnostics are wired. Hosted native runner execution and cleanup/SLO proof
+  remain `Pending`; no nightly is enabled.
+- `Done`: Native role-persistence, camera-permission-denied, and malformed-QR
+  phases are wired to dedicated fixture profiles and manifest entries. Local
+  device proof is `Pending` when no approved simulator/emulator lane is
+  available; static lifecycle and contract tests are required meanwhile.
+- `Done`: Playwright critical paths and visual metadata are wired into the
+  manifest and browser batch evidence. Approved visual baselines are
+  `Pending`; unbaselined screenshots remain triage artifacts.
+- `Done`: RevenueCat Test Store preflight, isolated IDs, iOS manual workflow,
+  read-only reconciliation, account switching, restore/failure scenarios, and
+  fail-closed missing-credential behavior are wired. Provider credentials,
+  provider-console permissions, Android Test Store configuration, and store
+  live purchase/restore proof remain `Pending`.
+- `Done`: Week-one browser-first persona QA is tracked in Linear `ET-25` and
+  the dated report. Native persona rotation, VM `dev` API/DB access, and a
+  recurring scheduled execution remain `Pending` rather than implicit.
+- `Done`: Monthly gap-sweep procedure and first dated report are added with
+  separate local/hosted/native/provider/store-live evidence columns.

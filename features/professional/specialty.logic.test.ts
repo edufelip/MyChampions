@@ -101,15 +101,15 @@ test('validateCredentialInput reports required for empty fields', () => {
 test('validateCredentialInput reports individual missing fields', () => {
   assert.equal(
     validateCredentialInput({ registryId: '', authority: 'CFN', country: 'BR' }).registryId,
-    'required'
+    'required',
   );
   assert.equal(
     validateCredentialInput({ registryId: 'R', authority: '', country: 'BR' }).authority,
-    'required'
+    'required',
   );
   assert.equal(
     validateCredentialInput({ registryId: 'R', authority: 'A', country: '' }).country,
-    'required'
+    'required',
   );
 });
 
@@ -153,7 +153,10 @@ test('normalizeSpecialtyActionError maps ALREADY_EXISTS code', () => {
 });
 
 test('normalizeSpecialtyActionError maps already exists message', () => {
-  assert.equal(normalizeSpecialtyActionError({ message: 'specialty already exists' }), 'already_exists');
+  assert.equal(
+    normalizeSpecialtyActionError({ message: 'specialty already exists' }),
+    'already_exists',
+  );
 });
 
 test('normalizeSpecialtyActionError maps REMOVAL_BLOCKED code', () => {
@@ -161,7 +164,10 @@ test('normalizeSpecialtyActionError maps REMOVAL_BLOCKED code', () => {
 });
 
 test('normalizeSpecialtyActionError maps removal blocked message', () => {
-  assert.equal(normalizeSpecialtyActionError({ message: 'removal blocked by constraints' }), 'removal_blocked');
+  assert.equal(
+    normalizeSpecialtyActionError({ message: 'removal blocked by constraints' }),
+    'removal_blocked',
+  );
 });
 
 test('normalizeSpecialtyActionError maps LAST_SPECIALTY code', () => {
@@ -169,7 +175,10 @@ test('normalizeSpecialtyActionError maps LAST_SPECIALTY code', () => {
 });
 
 test('normalizeSpecialtyActionError maps last specialty message', () => {
-  assert.equal(normalizeSpecialtyActionError({ message: 'cannot remove last specialty' }), 'last_specialty');
+  assert.equal(
+    normalizeSpecialtyActionError({ message: 'cannot remove last specialty' }),
+    'last_specialty',
+  );
 });
 
 test('normalizeSpecialtyActionError maps network error', () => {
@@ -178,7 +187,10 @@ test('normalizeSpecialtyActionError maps network error', () => {
 });
 
 test('normalizeSpecialtyActionError maps configuration error', () => {
-  assert.equal(normalizeSpecialtyActionError({ message: 'endpoint not configured' }), 'configuration');
+  assert.equal(
+    normalizeSpecialtyActionError({ message: 'endpoint not configured' }),
+    'configuration',
+  );
 });
 
 test('normalizeSpecialtyActionError returns unknown for unrecognized input', () => {

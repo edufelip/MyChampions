@@ -98,7 +98,7 @@ describe('server-auth-source', () => {
           });
         },
         getServerBaseUrl: () => 'http://server.test',
-      }
+      },
     );
 
     assert.ok(captured);
@@ -181,7 +181,7 @@ describe('server-auth-source', () => {
             expiresAt: '2999-01-01T00:00:00.000Z',
           }),
         getServerBaseUrl: () => 'http://server.test',
-      }
+      },
     );
 
     assert.equal(session?.user.emailVerified, false);
@@ -212,7 +212,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     clearServerAuthSession();
@@ -252,7 +252,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     await clearPersistedServerAuthSession({ storage });
@@ -285,7 +285,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     clearServerAuthSession();
@@ -340,7 +340,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     clearServerAuthSession();
@@ -407,7 +407,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     const deps = {
@@ -439,11 +439,10 @@ describe('server-auth-source', () => {
     ]);
 
     assert.equal(refreshCalls, 1);
-    assert.deepEqual([first, second, third], [
-      'refreshed-token',
-      'refreshed-token',
-      'refreshed-token',
-    ]);
+    assert.deepEqual(
+      [first, second, third],
+      ['refreshed-token', 'refreshed-token', 'refreshed-token'],
+    );
   });
 
   it('does not restore a cleared session when an older refresh finishes after sign-out', async () => {
@@ -477,7 +476,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     const staleRefresh = getValidServerAccessToken({
@@ -503,7 +502,7 @@ describe('server-auth-source', () => {
           acceptedTermsVersion: 'v1',
         },
         expiresAt: '2999-01-01T00:00:00.000Z',
-      })
+      }),
     );
 
     assert.equal(await staleRefresh, null);
@@ -542,7 +541,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     const staleRefresh = getValidServerAccessToken({
@@ -574,7 +573,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     resolveRefresh(
@@ -590,7 +589,7 @@ describe('server-auth-source', () => {
           acceptedTermsVersion: 'v1',
         },
         expiresAt: '2999-01-01T00:00:00.000Z',
-      })
+      }),
     );
 
     assert.equal(await staleRefresh, null);
@@ -600,11 +599,8 @@ describe('server-auth-source', () => {
 
   it('does not return or persist a refreshed token after sign-out races its storage write', async () => {
     clearServerAuthSession();
-    const {
-      storage,
-      blockedWriteStarted,
-      releaseBlockedWrite,
-    } = createBlockedPersistenceStorage('stale-refreshed-token');
+    const { storage, blockedWriteStarted, releaseBlockedWrite } =
+      createBlockedPersistenceStorage('stale-refreshed-token');
 
     await startLocalServerSession(
       { email: 'user@example.test', displayName: 'User One' },
@@ -625,7 +621,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     const staleRefresh = getValidServerAccessToken({
@@ -661,11 +657,9 @@ describe('server-auth-source', () => {
 
   it('repairs persistence and returns no old token when account replacement races refresh storage', async () => {
     clearServerAuthSession();
-    const {
-      storage,
-      blockedWriteStarted,
-      releaseBlockedWrite,
-    } = createBlockedPersistenceStorage('first-stale-refreshed-token');
+    const { storage, blockedWriteStarted, releaseBlockedWrite } = createBlockedPersistenceStorage(
+      'first-stale-refreshed-token',
+    );
 
     await startLocalServerSession(
       { email: 'first@example.test', displayName: 'First User' },
@@ -686,7 +680,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     const staleRefresh = getValidServerAccessToken({
@@ -729,7 +723,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     releaseBlockedWrite();
@@ -767,7 +761,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     const persistedBeforeRefresh = await storage.getItem('auth.server.session');
@@ -803,10 +797,7 @@ describe('server-auth-source', () => {
     assert.equal(token, 'refreshed-token');
     assert.equal(getCurrentServerAccessToken(), 'refreshed-token');
     assert.equal(getCurrentServerUser()?.uid, 'local_user');
-    assert.equal(
-      await storage.getItem('auth.server.session'),
-      persistedBeforeRefresh
-    );
+    assert.equal(await storage.getItem('auth.server.session'), persistedBeforeRefresh);
   });
 
   it('clears the active session when token refresh is rejected', async () => {
@@ -832,7 +823,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     const token = await getValidServerAccessToken({
@@ -869,7 +860,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
     const persistedBeforeFailure = await storage.getItem('auth.server.session');
 
@@ -909,7 +900,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
     const persistedBeforeFailure = await storage.getItem('auth.server.session');
 
@@ -971,7 +962,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     clearServerAuthSession();
@@ -1020,7 +1011,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     clearServerAuthSession();
@@ -1066,7 +1057,7 @@ describe('server-auth-source', () => {
           }),
         getServerBaseUrl: () => 'http://server.test',
         storage,
-      }
+      },
     );
 
     clearServerAuthSession();
@@ -1096,7 +1087,7 @@ describe('server-auth-source', () => {
           throw new Error('fetch should not be called');
         },
         getServerBaseUrl: () => undefined,
-      }
+      },
     );
 
     assert.equal(session, null);
@@ -1116,7 +1107,7 @@ describe('server-auth-source', () => {
             throw new Error('fetch should not be called');
           },
           getServerBaseUrl: () => 'http://server.test',
-        }
+        },
       );
 
       assert.equal(session, null);
@@ -1141,7 +1132,7 @@ describe('server-auth-source', () => {
               throw new Error(`fetch should not be called for ${appVariant}`);
             },
             getServerBaseUrl: () => 'http://server.test',
-          }
+          },
         );
         const socialSession = await startLocalServerSocialSession('google', {
           fetch: async () => {

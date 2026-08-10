@@ -8,7 +8,12 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { getDeviceLocale, resolveLocale, SUPPORTED_LOCALES, type SupportedLocale } from '@/localization/core';
+import {
+  getDeviceLocale,
+  resolveLocale,
+  SUPPORTED_LOCALES,
+  type SupportedLocale,
+} from '@/localization/core';
 
 const LANGUAGE_OVERRIDE_KEY = 'app.language.override';
 

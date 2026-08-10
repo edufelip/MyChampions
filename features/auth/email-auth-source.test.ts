@@ -67,7 +67,7 @@ describe('email-auth-source', () => {
 
     await signInWithEmailPasswordFromSource(
       { email: ' USER@Example.test ', password: 'Password1!' },
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
@@ -102,7 +102,7 @@ describe('email-auth-source', () => {
         password: 'Password1!',
         passwordConfirmation: 'Password1!',
       },
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
@@ -119,8 +119,12 @@ describe('email-auth-source', () => {
   it('fails closed for sign-in when E2E and server auth did not establish a session', async () => {
     clearServerAuthSession();
     await assert.rejects(
-      () => signInWithEmailPasswordFromSource({ email: ' USER@Example.test ', password: 'secret-password' }),
-      (error: unknown) => error instanceof SignInFailure && error.reason === 'configuration'
+      () =>
+        signInWithEmailPasswordFromSource({
+          email: ' USER@Example.test ',
+          password: 'secret-password',
+        }),
+      (error: unknown) => error instanceof SignInFailure && error.reason === 'configuration',
     );
   });
 
@@ -138,9 +142,9 @@ describe('email-auth-source', () => {
             getServerBaseUrl: () => {
               throw new Error('server URL unavailable');
             },
-          }
+          },
         ),
-      (error: unknown) => error instanceof SignInFailure && error.reason === 'configuration'
+      (error: unknown) => error instanceof SignInFailure && error.reason === 'configuration',
     );
   });
 
@@ -154,7 +158,7 @@ describe('email-auth-source', () => {
           password: 'secret-password',
           passwordConfirmation: 'secret-password',
         }),
-      (error: unknown) => error instanceof CreateAccountFailure && error.reason === 'configuration'
+      (error: unknown) => error instanceof CreateAccountFailure && error.reason === 'configuration',
     );
   });
 
@@ -177,9 +181,9 @@ describe('email-auth-source', () => {
             getServerBaseUrl: () => {
               throw new Error('server URL unavailable');
             },
-          }
+          },
         ),
-      (error: unknown) => error instanceof CreateAccountFailure && error.reason === 'configuration'
+      (error: unknown) => error instanceof CreateAccountFailure && error.reason === 'configuration',
     );
   });
 
@@ -199,13 +203,13 @@ describe('email-auth-source', () => {
                     message: 'Email auth provider is not configured for this local server.',
                   },
                 },
-                { status: 503 }
+                { status: 503 },
               ),
             getServerBaseUrl: () => 'http://server.test',
             storage: createMemoryStorage(),
-          }
+          },
         ),
-      (error: unknown) => error instanceof SignInFailure && error.reason === 'configuration'
+      (error: unknown) => error instanceof SignInFailure && error.reason === 'configuration',
     );
   });
 
@@ -230,13 +234,13 @@ describe('email-auth-source', () => {
                     message: 'Email auth provider is not configured for this local server.',
                   },
                 },
-                { status: 503 }
+                { status: 503 },
               ),
             getServerBaseUrl: () => 'http://server.test',
             storage: createMemoryStorage(),
-          }
+          },
         ),
-      (error: unknown) => error instanceof CreateAccountFailure && error.reason === 'configuration'
+      (error: unknown) => error instanceof CreateAccountFailure && error.reason === 'configuration',
     );
   });
 });

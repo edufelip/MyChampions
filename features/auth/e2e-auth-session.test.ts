@@ -50,17 +50,14 @@ test('dev E2E auth derives isolated customer identities from an explicit run UID
     } as const;
 
     assert.equal(resolveE2EAuthSessionOverride(input)?.uid, 'rc-live-20260723-001');
-    assert.equal(
-      resolveE2EAuthSessionSourceOverride(input)?.uid,
-      'rc-live-20260723-001'
-    );
+    assert.equal(resolveE2EAuthSessionSourceOverride(input)?.uid, 'rc-live-20260723-001');
     assert.equal(
       resolveE2EEmailPasswordSignInOverride({
         ...input,
         email: 'e2e-auth-session@example.test',
         password: E2E_AUTH_SESSION_PASSWORD,
       })?.uid,
-      'rc-live-20260723-001'
+      'rc-live-20260723-001',
     );
     assert.equal(
       resolveE2EEmailPasswordCreateAccountOverride({
@@ -69,7 +66,7 @@ test('dev E2E auth derives isolated customer identities from an explicit run UID
         name: 'RevenueCat Student',
         password: 'E2E-create-123!',
       })?.uid,
-      'rc-live-20260723-001-created'
+      'rc-live-20260723-001-created',
     );
     assert.equal(
       resolveE2EEmailPasswordSignInOverride({
@@ -77,14 +74,14 @@ test('dev E2E auth derives isolated customer identities from an explicit run UID
         email: 'e2e-created-account@example.test',
         password: 'E2E-create-123!',
       })?.uid,
-      'rc-live-20260723-001-created'
+      'rc-live-20260723-001-created',
     );
     assert.equal(
       resolveE2ESocialAuthOverride({
         ...input,
         provider: 'google',
       })?.uid,
-      'rc-live-20260723-001-google'
+      'rc-live-20260723-001-google',
     );
   } finally {
     if (previousUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_UID;
@@ -107,7 +104,7 @@ test('dev E2E auth accepts an explicit allowlisted Google switch identity', () =
         provider: 'google',
         requiredTermsVersion: 'v3',
       })?.uid,
-      'rc-student-v1-switch-alt'
+      'rc-student-v1-switch-alt',
     );
   } finally {
     if (previousUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_UID;
@@ -130,7 +127,7 @@ test('invalid explicit Google switch identity fails closed', () => {
         provider: 'google',
         requiredTermsVersion: 'v3',
       }),
-      null
+      null,
     );
   } finally {
     if (previousGoogleUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID;
@@ -150,7 +147,7 @@ test('invalid explicit E2E customer identities fail closed instead of sharing a 
         isDev: true,
         requiredTermsVersion: 'v3',
       }),
-      null
+      null,
     );
     assert.equal(
       resolveE2EAuthSessionSourceOverride({
@@ -158,7 +155,7 @@ test('invalid explicit E2E customer identities fail closed instead of sharing a 
         enabledFlag: 'true',
         isDev: true,
       }),
-      null
+      null,
     );
   } finally {
     if (previousUid === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_UID;
@@ -199,7 +196,7 @@ test('resolveE2EEmailPasswordSignInOverride accepts only the deterministic dev c
       email: 'e2e-created-account@example.test',
       lockedRole: null,
       uid: 'e2e-created-account-user',
-    }
+    },
   );
 
   assert.equal(
@@ -211,7 +208,7 @@ test('resolveE2EEmailPasswordSignInOverride accepts only the deterministic dev c
       password: 'mismatched-password',
       requiredTermsVersion: 'v3',
     }),
-    null
+    null,
   );
 });
 
@@ -244,7 +241,7 @@ test('resolveE2EEmailPasswordCreateAccountOverride accepts only the deterministi
       password: 'mismatched-password',
       requiredTermsVersion: 'v3',
     }),
-    null
+    null,
   );
 });
 
@@ -294,7 +291,7 @@ test('resolveE2ESocialAuthOverride stays disabled outside explicit dev social au
       provider: 'google',
       requiredTermsVersion: 'v1',
     }),
-    null
+    null,
   );
 
   assert.equal(
@@ -305,7 +302,7 @@ test('resolveE2ESocialAuthOverride stays disabled outside explicit dev social au
       provider: 'apple',
       requiredTermsVersion: 'v1',
     }),
-    null
+    null,
   );
 
   assert.equal(
@@ -316,7 +313,7 @@ test('resolveE2ESocialAuthOverride stays disabled outside explicit dev social au
       provider: 'google',
       requiredTermsVersion: 'v1',
     }),
-    null
+    null,
   );
 });
 
@@ -328,7 +325,7 @@ test('resolveE2EAuthSessionOverride stays disabled outside dev E2E', () => {
       isDev: true,
       requiredTermsVersion: 'v1',
     }),
-    null
+    null,
   );
 
   assert.equal(
@@ -338,7 +335,7 @@ test('resolveE2EAuthSessionOverride stays disabled outside dev E2E', () => {
       isDev: true,
       requiredTermsVersion: 'v1',
     }),
-    null
+    null,
   );
 
   assert.equal(
@@ -348,7 +345,7 @@ test('resolveE2EAuthSessionOverride stays disabled outside dev E2E', () => {
       isDev: false,
       requiredTermsVersion: 'v1',
     }),
-    null
+    null,
   );
 });
 
@@ -395,7 +392,7 @@ test('resolveE2EAuthSessionSourceOverride stays disabled outside dev E2E', () =>
       enabledFlag: 'true',
       isDev: true,
     }),
-    null
+    null,
   );
 });
 
@@ -427,7 +424,7 @@ test('resolveE2ESubscriptionOverride stays disabled outside dev E2E and ignores 
       entitlementStatus: 'lapsed',
       isDev: true,
     }),
-    null
+    null,
   );
 
   assert.equal(
@@ -438,6 +435,6 @@ test('resolveE2ESubscriptionOverride stays disabled outside dev E2E and ignores 
       entitlementStatus: 'expired',
       isDev: true,
     }),
-    null
+    null,
   );
 });

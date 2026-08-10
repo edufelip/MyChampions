@@ -28,7 +28,7 @@ test('remaining offline-aware screens feed server-backed sync timestamps into of
     assert.doesNotMatch(
       source,
       /resolveOfflineDisplayState\(\{\s*networkStatus,\s*lastSyncedAtIso:\s*null,/,
-      `${path} should not hard-code a null sync timestamp`
+      `${path} should not hard-code a null sync timestamp`,
     );
   }
 });

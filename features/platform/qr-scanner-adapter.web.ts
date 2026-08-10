@@ -9,7 +9,7 @@ export function isBrowserCameraAvailable(mediaDevices: BrowserCamera): boolean {
 }
 
 export async function requestBrowserCameraPermission(
-  mediaDevices: BrowserCamera
+  mediaDevices: BrowserCamera,
 ): Promise<boolean> {
   const getUserMedia = mediaDevices?.getUserMedia?.bind(mediaDevices);
   if (!getUserMedia) return false;

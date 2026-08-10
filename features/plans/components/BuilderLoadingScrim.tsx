@@ -1,6 +1,12 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { DsRadius, DsShadow, DsSpace, type DsColorScheme, type DsTheme } from '@/constants/design-system';
+import {
+  DsRadius,
+  DsShadow,
+  DsSpace,
+  type DsColorScheme,
+  type DsTheme,
+} from '@/constants/design-system';
 
 type BuilderLoadingScrimProps = {
   scheme: DsColorScheme;
@@ -19,7 +25,9 @@ export function BuilderLoadingScrim({
     <View
       style={[
         styles.scrim,
-        { backgroundColor: scheme === 'dark' ? 'rgba(0, 0, 0, 0.45)' : 'rgba(255, 255, 255, 0.62)' },
+        {
+          backgroundColor: scheme === 'dark' ? 'rgba(0, 0, 0, 0.45)' : 'rgba(255, 255, 255, 0.62)',
+        },
       ]}
       accessibilityRole="progressbar"
       accessibilityLabel={label}

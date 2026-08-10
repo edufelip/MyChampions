@@ -50,35 +50,22 @@ const minimumUnprivilegedPort = 1024;
 const maximumNonEphemeralPort = 49151;
 const maximumTimerDelayMs = 2_147_483_647;
 
-export function parseSelectiveInvocationTimeoutMs(
-  value: string | undefined
-): number | undefined {
+export function parseSelectiveInvocationTimeoutMs(value: string | undefined): number | undefined {
   if (value === undefined) return undefined;
   if (!/^[1-9][0-9]*$/.test(value)) {
-    throw new Error(
-      'SELECTIVE_INVOCATION_TIMEOUT_MS must be a positive decimal integer'
-    );
+    throw new Error('SELECTIVE_INVOCATION_TIMEOUT_MS must be a positive decimal integer');
   }
   const timeoutMs = Number(value);
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs > maximumTimerDelayMs) {
-    throw new Error(
-      `SELECTIVE_INVOCATION_TIMEOUT_MS must not exceed ${maximumTimerDelayMs}`
-    );
+    throw new Error(`SELECTIVE_INVOCATION_TIMEOUT_MS must not exceed ${maximumTimerDelayMs}`);
   }
   return timeoutMs;
 }
 
-export function validateNativeMetroPort(
-  platform: 'ios' | 'android',
-  port: number
-): number {
-  if (
-    !Number.isInteger(port) ||
-    port < minimumUnprivilegedPort ||
-    port > maximumNonEphemeralPort
-  ) {
+export function validateNativeMetroPort(platform: 'ios' | 'android', port: number): number {
+  if (!Number.isInteger(port) || port < minimumUnprivilegedPort || port > maximumNonEphemeralPort) {
     throw new Error(
-      `native Metro port must be an integer from ${minimumUnprivilegedPort} to ${maximumNonEphemeralPort}`
+      `native Metro port must be an integer from ${minimumUnprivilegedPort} to ${maximumNonEphemeralPort}`,
     );
   }
   return port;
@@ -86,7 +73,7 @@ export function validateNativeMetroPort(
 
 export function parseNativeMetroPort(
   platform: 'ios' | 'android',
-  value: string | undefined
+  value: string | undefined,
 ): number {
   if (value === undefined || value.trim() === '') {
     return defaultNativeMetroPort;
@@ -131,7 +118,7 @@ function mergeEnvironment(...values: Array<Environment | undefined>): Record<str
 function validateSelectedSuite(
   manifest: TestImpactManifest,
   suiteId: string,
-  platform: SelectivePlatform
+  platform: SelectivePlatform,
 ): string[] {
   const suite = manifest.suites[suiteId];
   if (!suite) return [`unknown selected suite ${suiteId}`];
@@ -190,7 +177,7 @@ export function validateSelectiveExecutionManifest(manifest: TestImpactManifest)
 function validateSelection(
   manifest: TestImpactManifest,
   platform: SelectivePlatform,
-  selectedSuites: string[]
+  selectedSuites: string[],
 ): void {
   const errors = validateSelectiveExecutionManifest(manifest);
   if (selectedSuites.length === 0) errors.push(`no suites selected for ${platform}`);
@@ -216,7 +203,7 @@ type WebGroup = {
 function createWebPlan(
   manifest: TestImpactManifest,
   selectedSuites: string[],
-  diagnosticsRoot: string
+  diagnosticsRoot: string,
 ): SelectiveExecutionPlan {
   const groups = new Map<string, WebGroup>();
 
@@ -225,15 +212,13 @@ function createWebPlan(
     const runner = suite.runner as WebGroup['runner'];
     for (const project of suite.projects ?? []) {
       const key = `${runner}:${project}`;
-      const group =
-        groups.get(key) ??
-        {
-          runner,
-          project,
-          specs: new Set<string>(),
-          greps: new Set<string>(),
-          suites: new Set<string>(),
-        };
+      const group = groups.get(key) ?? {
+        runner,
+        project,
+        specs: new Set<string>(),
+        greps: new Set<string>(),
+        suites: new Set<string>(),
+      };
       for (const spec of suite.specs) group.specs.add(spec);
       if (suite.grep) group.greps.add(suite.grep);
       group.suites.add(suiteId);
@@ -243,7 +228,7 @@ function createWebPlan(
 
   const invocations = [...groups.values()]
     .sort((left, right) =>
-      `${left.runner}:${left.project}`.localeCompare(`${right.runner}:${right.project}`)
+      `${left.runner}:${left.project}`.localeCompare(`${right.runner}:${right.project}`),
     )
     .map((group): CommandInvocation => {
       const id = `${group.runner}-${group.project}`;
@@ -271,8 +256,7 @@ function createWebPlan(
           ...baseExecutionEnvironment(),
           WEB_E2E_ARTIFACT_ROOT: join(diagnosticsRoot, 'web', safeSegment(id)),
         },
-        requiredEnv:
-          group.runner === 'playwright-server' ? ['MYCHAMPIONS_SERVER_ROOT'] : undefined,
+        requiredEnv: group.runner === 'playwright-server' ? ['MYCHAMPIONS_SERVER_ROOT'] : undefined,
       };
     });
 
@@ -293,13 +277,10 @@ function createNativePlan(
   platform: 'ios' | 'android',
   selectedSuites: string[],
   options: SelectiveExecutionOptions,
-  diagnosticsRoot: string
+  diagnosticsRoot: string,
 ): SelectiveExecutionPlan {
   const configuration = platform === 'ios' ? 'ios.sim.debug' : 'android.emu.debug';
-  const metroPort = validateNativeMetroPort(
-    platform,
-    options.metroPort ?? defaultNativeMetroPort
-  );
+  const metroPort = validateNativeMetroPort(platform, options.metroPort ?? defaultNativeMetroPort);
   const buildCommand: CommandInvocation = {
     id: `build-${platform}-debug`,
     command: 'yarn',
@@ -387,7 +368,7 @@ export function createSelectiveExecutionPlan(
   manifest: TestImpactManifest,
   platform: SelectivePlatform,
   selectedSuites: string[],
-  options: SelectiveExecutionOptions = {}
+  options: SelectiveExecutionOptions = {},
 ): SelectiveExecutionPlan {
   validateSelection(manifest, platform, selectedSuites);
   const diagnosticsRoot = options.diagnosticsRoot ?? '.artifacts/ci-diagnostics';
@@ -405,7 +386,7 @@ export function parseSelectedSuitesJson(value: string | undefined): string[] {
     parsed = JSON.parse(value);
   } catch (error) {
     throw new Error(
-      `SELECTED_SUITES_JSON must be valid JSON: ${error instanceof Error ? error.message : String(error)}`
+      `SELECTED_SUITES_JSON must be valid JSON: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
   if (!Array.isArray(parsed) || !parsed.every((entry) => typeof entry === 'string')) {

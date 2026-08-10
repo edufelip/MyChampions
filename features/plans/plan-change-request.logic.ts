@@ -51,7 +51,7 @@ const MIN_REQUEST_TEXT_LENGTH = 10;
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 export function validatePlanChangeRequestInput(
-  input: PlanChangeRequestInput
+  input: PlanChangeRequestInput,
 ): PlanChangeRequestValidationErrors {
   const errors: PlanChangeRequestValidationErrors = {};
   if (!input.requestText.trim()) {
@@ -79,10 +79,12 @@ export function normalizePlanType(raw: unknown): PlanType | null {
 export function normalizePlanChangeRequestError(error: unknown): PlanChangeRequestErrorReason {
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code: unknown }).code) : null;
-    const msg = 'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
+    const msg =
+      'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
 
     if (code === 'PLAN_NOT_FOUND' || msg?.includes('plan not found')) return 'plan_not_found';
-    if (code === 'NO_ACTIVE_ASSIGNMENT' || msg?.includes('no active assignment')) return 'no_active_assignment';
+    if (code === 'NO_ACTIVE_ASSIGNMENT' || msg?.includes('no active assignment'))
+      return 'no_active_assignment';
     if (code === 'VALIDATION' || msg?.includes('validation')) return 'validation';
     if (code === 'NETWORK_ERROR' || msg?.includes('network')) return 'network';
     if (msg?.includes('endpoint') || msg?.includes('config')) return 'configuration';
@@ -91,7 +93,7 @@ export function normalizePlanChangeRequestError(error: unknown): PlanChangeReque
 }
 
 export function buildProfessionalPlanChangeNotificationSummary(
-  requests: PlanChangeRequest[]
+  requests: PlanChangeRequest[],
 ): ProfessionalPlanChangeNotificationSummary {
   const pendingRequests = requests
     .filter((request) => request.status === 'pending')

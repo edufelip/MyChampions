@@ -1,8 +1,7 @@
 /* global beforeAll, by, describe, device, element, expect, it, waitFor */
 
 const isLiveRevenueCatRun =
-  process.env.E2E_AUTH_SESSION === 'true' &&
-  process.env.REVENUECAT_LIVE_E2E === 'true';
+  process.env.E2E_AUTH_SESSION === 'true' && process.env.REVENUECAT_LIVE_E2E === 'true';
 const describeLiveRevenueCat = isLiveRevenueCatRun ? describe : describe.skip;
 const liveScenario = process.env.REVENUECAT_LIVE_SCENARIO?.trim() || 'all';
 const itWithExpirationMonitor =
@@ -17,14 +16,13 @@ const CREATED_EMAIL = 'e2e-created-account@example.test';
 const CREATED_PASSWORD = 'E2E-create-123!';
 
 const PROFESSIONAL_PAYWALL = {
-  title: /^(Grow your professional practice|Expanda sua atuação profissional|Haz crecer tu práctica profesional)$/,
+  title:
+    /^(Grow your professional practice|Expanda sua atuação profissional|Haz crecer tu práctica profesional)$/,
   value:
     /^(Manage more than 10 active students and unlock AI meal-photo analysis\.|Gerencie mais de 10 alunos ativos e desbloqueie a análise de refeições por foto com IA\.|Gestiona más de 10 alumnos activos y desbloquea el análisis de comidas por foto con IA\.)$/,
   benefits: [],
-  monthly:
-    /^(Monthly|Mensal|Mensual),.*(month|mês|mes)$/i,
-  annual:
-    /^(Annual|Anual),.*(year|ano|año)$/i,
+  monthly: /^(Monthly|Mensal|Mensual),.*(month|mês|mes)$/i,
+  annual: /^(Annual|Anual),.*(year|ano|año)$/i,
   purchase:
     /^(Continue with selected plan|Continuar com o plano selecionado|Continuar con el plan seleccionado)$/,
   storeNote:
@@ -55,10 +53,8 @@ const STUDENT_PAYWALL = {
     /^(Review and edit every estimate before saving|Revise e edite cada estimativa antes de salvar|Revisa y edita cada estimación antes de guardar)$/,
     /^(Keep standard meal tracking available for free|Continue usando o acompanhamento padrão de refeições gratuitamente|Sigue usando gratis el seguimiento estándar de comidas)$/,
   ],
-  monthly:
-    /^(Monthly|Mensal|Mensual),.*(month|mês|mes)$/i,
-  annual:
-    /^(Annual|Anual),.*(year|ano|año)$/i,
+  monthly: /^(Monthly|Mensal|Mensual),.*(month|mês|mes)$/i,
+  annual: /^(Annual|Anual),.*(year|ano|año)$/i,
   purchase:
     /^(Continue with selected plan|Continuar com o plano selecionado|Continuar con el plan seleccionado)$/,
   storeNote:
@@ -108,7 +104,9 @@ async function dismissPasswordSavePromptIfPresent() {
 }
 
 async function selectProfessionalRole() {
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(15000);
   await device.enableSynchronization();
   try {
     await dismissPasswordSavePromptIfPresent();
@@ -120,7 +118,9 @@ async function selectProfessionalRole() {
     await device.tap({ x: 370, y: 820 });
     await new Promise((resolve) => setTimeout(resolve, 250));
     await element(by.id('auth.roleSelection.continueButton')).tap();
-    await waitFor(element(by.id('pro.specialty.screen'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('pro.specialty.screen')))
+      .toBeVisible()
+      .withTimeout(10000);
   } finally {
     await device.disableSynchronization();
   }
@@ -128,10 +128,14 @@ async function selectProfessionalRole() {
 
 async function completeProfessionalOnboarding() {
   await selectProfessionalRole();
-  await waitFor(element(by.id('pro.specialty.cta_skip'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('pro.specialty.cta_skip')))
+    .toBeVisible()
+    .withTimeout(5000);
   await new Promise((resolve) => setTimeout(resolve, 750));
   await element(by.id('pro.specialty.cta_skip')).tap();
-  await waitFor(element(by.id('pro.home.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.home.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function openProfessionalSubscription() {
@@ -141,11 +145,15 @@ async function openProfessionalSubscription() {
     .whileElement(by.id('pro.home.screen'))
     .scroll(300, 'down', 0.5, 0.5);
   await element(by.id('pro.home.subscriptionCta')).tap();
-  await waitFor(element(by.id('pro.subscription.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.subscription.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function selectStudentRole() {
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(15000);
   await device.enableSynchronization();
   try {
     await dismissPasswordSavePromptIfPresent();
@@ -155,7 +163,9 @@ async function selectStudentRole() {
     await device.tap({ x: 370, y: 820 });
     await new Promise((resolve) => setTimeout(resolve, 250));
     await element(by.id('auth.roleSelection.continueButton')).tap();
-    await waitFor(element(by.id('student.home.screen'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('student.home.screen')))
+      .toBeVisible()
+      .withTimeout(10000);
   } finally {
     await device.disableSynchronization();
   }
@@ -163,7 +173,9 @@ async function selectStudentRole() {
 
 async function openAiMealBuilder() {
   await device.openURL({ url: 'mychampions://nutrition/custom-meals/new' });
-  await waitFor(element(by.id('meal.builder.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('meal.builder.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function openStudentAiGate() {
@@ -213,13 +225,17 @@ async function enterTestStorePurchase(paywall, interval = 'monthly') {
   // and used only after the corresponding accessibility contract is asserted.
   await device.tap(paywall.purchaseCoordinate);
   try {
-    await waitFor(element(by.text('Test Store Purchase'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.text('Test Store Purchase')))
+      .toBeVisible()
+      .withTimeout(5000);
   } catch {
     // Some StoreKit/Test Store combinations insert the native confirmation
     // sheet before RevenueCat's Test Store outcome controls.
     await waitForFirstVisible([by.label('Purchase'), by.label('Comprar')]);
     await device.tap({ x: 201, y: 760 });
-    await waitFor(element(by.text('Test Store Purchase'))).toBeVisible().withTimeout(15000);
+    await waitFor(element(by.text('Test Store Purchase')))
+      .toBeVisible()
+      .withTimeout(15000);
   }
   await device.takeScreenshot(
     `revenuecat-${liveScenario}-${paywall.expectedEntitlement}-${interval}-purchase-sheet`,
@@ -243,37 +259,55 @@ async function dismissPaywall(role, returnScreenId = 'pro.subscription.screen') 
     // Failed and valid Test Store outcomes may already dismiss the paywall,
     // depending on the RevenueCat SDK version.
   }
-  await waitFor(element(by.id(returnScreenId))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id(returnScreenId)))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function signOut() {
   await device.openURL({ url: 'mychampions://settings/account' });
-  await waitFor(element(by.id('settings.account.screen'))).toBeVisible().withTimeout(10000);
-  await waitFor(element(by.id('settings.account.signOutCta'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('settings.account.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
+  await waitFor(element(by.id('settings.account.signOutCta')))
+    .toBeVisible()
+    .withTimeout(5000);
   await element(by.id('settings.account.signOutCta')).tap();
-  await waitFor(element(by.id('settings.account.signOutConfirm'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('settings.account.signOutConfirm')))
+    .toBeVisible()
+    .withTimeout(5000);
   await element(by.id('settings.account.signOutConfirmCta')).tap();
-  await waitFor(element(by.id('auth.signIn.title'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('auth.signIn.title')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function signInWithGoogleFixture() {
-  await waitFor(element(by.id('auth.signIn.googleButton'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('auth.signIn.googleButton')))
+    .toBeVisible()
+    .withTimeout(5000);
   await element(by.id('auth.signIn.googleButton')).tap();
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function signInWithPrimaryFixture() {
   await element(by.id('auth.signIn.emailInput')).replaceText(PRIMARY_EMAIL);
   await element(by.id('auth.signIn.passwordInput')).replaceText(PRIMARY_PASSWORD);
   await element(by.id('auth.signIn.submitButton')).tap();
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function signInWithCreatedFixture() {
   await element(by.id('auth.signIn.emailInput')).replaceText(CREATED_EMAIL);
   await element(by.id('auth.signIn.passwordInput')).replaceText(CREATED_PASSWORD);
   await element(by.id('auth.signIn.submitButton')).tap();
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function createStudentFixtureAccount() {
@@ -286,11 +320,15 @@ async function createStudentFixtureAccount() {
     .toBeVisible(35)
     .withTimeout(5000);
   await device.tap({ x: 201, y: 790 });
-  await waitFor(element(by.id('auth.createAccount.title'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('auth.createAccount.title')))
+    .toBeVisible()
+    .withTimeout(5000);
   await element(by.id('auth.createAccount.nameInput')).replaceText('RevenueCat Student');
   await element(by.id('auth.createAccount.emailInput')).replaceText(CREATED_EMAIL);
   await element(by.id('auth.createAccount.scrollView')).scrollTo('bottom', NaN, 0.2);
-  await waitFor(element(by.id('auth.createAccount.passwordInput'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('auth.createAccount.passwordInput')))
+    .toBeVisible()
+    .withTimeout(5000);
   await element(by.id('auth.createAccount.passwordInput')).replaceText(CREATED_PASSWORD);
   // Activating the keyboard changes the compact iPhone viewport after the
   // initial scroll, so re-anchor the form before locating confirmation.
@@ -298,12 +336,18 @@ async function createStudentFixtureAccount() {
   await waitFor(element(by.id('auth.createAccount.passwordConfirmationInput')))
     .toBeVisible()
     .withTimeout(5000);
-  await element(by.id('auth.createAccount.passwordConfirmationInput')).replaceText(CREATED_PASSWORD);
+  await element(by.id('auth.createAccount.passwordConfirmationInput')).replaceText(
+    CREATED_PASSWORD,
+  );
   await new Promise((resolve) => setTimeout(resolve, 500));
   await element(by.id('auth.createAccount.scrollView')).scrollTo('bottom', NaN, 0.8);
-  await waitFor(element(by.id('auth.createAccount.submitButton'))).toBeVisible().withTimeout(5000);
+  await waitFor(element(by.id('auth.createAccount.submitButton')))
+    .toBeVisible()
+    .withTimeout(5000);
   await element(by.id('auth.createAccount.submitButton')).tap();
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function expectProfessionalStatus(label, timeout = 15000) {
@@ -313,13 +357,17 @@ async function expectProfessionalStatus(label, timeout = 15000) {
 }
 
 async function expectStudentAiLocked(timeout = 15000) {
-  await waitFor(element(by.id('meal.photoAnalysis.paywall'))).toBeVisible().withTimeout(timeout);
+  await waitFor(element(by.id('meal.photoAnalysis.paywall')))
+    .toBeVisible()
+    .withTimeout(timeout);
   await expect(element(by.id('meal.photoAnalysis.paywall.cta'))).toBeVisible();
   await expect(element(by.id('meal.photoAnalysis.cta'))).not.toBeVisible();
 }
 
 async function expectStudentAiActive(timeout = 30000) {
-  await waitFor(element(by.id('meal.photoAnalysis.cta'))).toBeVisible().withTimeout(timeout);
+  await waitFor(element(by.id('meal.photoAnalysis.cta')))
+    .toBeVisible()
+    .withTimeout(timeout);
   await expect(element(by.id('meal.photoAnalysis.paywall'))).not.toBeVisible();
 }
 
@@ -345,7 +393,9 @@ async function launchFreshPrimaryProfessionalAiGate() {
 
 async function openProfessionalSubscriptionFromCurrentSession() {
   await device.openURL({ url: 'mychampions://professional/subscription' });
-  await waitFor(element(by.id('pro.subscription.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.subscription.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 describeLiveRevenueCat('RevenueCat Test Store live subscription lifecycle', () => {
@@ -396,10 +446,7 @@ describeLiveRevenueCat('RevenueCat Test Store live subscription lifecycle', () =
 
       await openTestStorePurchase('pro.subscription.purchaseCta', 'professional');
       await element(by.text('Test failed purchase')).tap();
-      const failedPurchaseAlertCta = await waitForFirstVisible([
-        by.label('OK'),
-        by.text('OK'),
-      ]);
+      const failedPurchaseAlertCta = await waitForFirstVisible([by.label('OK'), by.text('OK')]);
       await failedPurchaseAlertCta.tap();
       await dismissPaywall('professional');
 
@@ -520,26 +567,19 @@ describeLiveRevenueCat('RevenueCat Test Store live subscription lifecycle', () =
     },
   );
 
-  itForScenario(
-    'student-fail',
-    'keeps student AI locked after Test Store failure',
-    async () => {
-      await launchFreshPrimaryStudent();
-      await expectStudentAiLocked();
+  itForScenario('student-fail', 'keeps student AI locked after Test Store failure', async () => {
+    await launchFreshPrimaryStudent();
+    await expectStudentAiLocked();
 
-      await openTestStorePurchase('meal.photoAnalysis.paywall.cta', 'student');
-      await element(by.text('Test failed purchase')).tap();
-      const failedPurchaseAlertCta = await waitForFirstVisible([
-        by.label('OK'),
-        by.text('OK'),
-      ]);
-      await failedPurchaseAlertCta.tap();
-      await dismissPaywall('student', 'meal.builder.screen');
+    await openTestStorePurchase('meal.photoAnalysis.paywall.cta', 'student');
+    await element(by.text('Test failed purchase')).tap();
+    const failedPurchaseAlertCta = await waitForFirstVisible([by.label('OK'), by.text('OK')]);
+    await failedPurchaseAlertCta.tap();
+    await dismissPaywall('student', 'meal.builder.screen');
 
-      await expectStudentAiLocked();
-      await device.takeScreenshot('revenuecat-student-v1-failed-locked');
-    },
-  );
+    await expectStudentAiLocked();
+    await device.takeScreenshot('revenuecat-student-v1-failed-locked');
+  });
 
   itForScenario(
     'student-duplicate',
@@ -553,11 +593,15 @@ describeLiveRevenueCat('RevenueCat Test Store live subscription lifecycle', () =
       await device.tap(paywall.purchaseCoordinate);
       await device.tap(paywall.purchaseCoordinate);
       try {
-        await waitFor(element(by.text('Test Store Purchase'))).toBeVisible().withTimeout(5000);
+        await waitFor(element(by.text('Test Store Purchase')))
+          .toBeVisible()
+          .withTimeout(5000);
       } catch {
         await waitForFirstVisible([by.label('Purchase'), by.label('Comprar')]);
         await device.tap({ x: 201, y: 760 });
-        await waitFor(element(by.text('Test Store Purchase'))).toBeVisible().withTimeout(15000);
+        await waitFor(element(by.text('Test Store Purchase')))
+          .toBeVisible()
+          .withTimeout(15000);
       }
       await device.takeScreenshot('revenuecat-student-v1-duplicate-purchase-sheet');
       await element(by.text('Cancel')).tap();
@@ -709,7 +753,9 @@ describeLiveRevenueCat('RevenueCat Test Store live subscription lifecycle', () =
       }
 
       if (!expired) {
-        throw new Error('Test Store monthly entitlement did not expire within the expected window.');
+        throw new Error(
+          'Test Store monthly entitlement did not expire within the expected window.',
+        );
       }
       await device.takeScreenshot('revenuecat-live-professional-expired');
     },

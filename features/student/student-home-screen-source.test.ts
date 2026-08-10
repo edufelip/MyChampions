@@ -10,19 +10,13 @@ test('student home retains the completed initial-load state across source-specif
   assert.match(source, /const \[initialLoadHistory, setInitialLoadHistory\] = useState\(\{/);
   assert.match(
     source,
-    /hasCompletedInitialLoad:\s*accountChanged \? false : initialLoadHistory\.hasCompleted/
+    /hasCompletedInitialLoad:\s*accountChanged \? false : initialLoadHistory\.hasCompleted/,
   );
-  assert.match(
-    source,
-    /!current\.hasCompleted && displayState\.hasCompletedInitialLoad/
-  );
+  assert.match(source, /!current\.hasCompleted && displayState\.hasCompletedInitialLoad/);
 });
 
 test('student home resets retained load completion when the authenticated account changes', () => {
-  assert.match(
-    source,
-    /const accountChanged = initialLoadHistory\.accountId !== accountId/
-  );
+  assert.match(source, /const accountChanged = initialLoadHistory\.accountId !== accountId/);
   assert.match(source, /if \(current\.accountId !== accountId\)/);
   assert.match(source, /connections:\s*accountChanged \? 'idle' : connectionsState\.kind/);
   assert.match(source, /plans:\s*accountChanged \? 'idle' : plansState\.kind/);

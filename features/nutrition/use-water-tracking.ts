@@ -6,11 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  getMyWaterLogs,
-  logWaterIntake,
-  getMyWaterGoalContext,
-} from './water-tracking-source';
+import { getMyWaterLogs, logWaterIntake, getMyWaterGoalContext } from './water-tracking-source';
 import {
   resolveEffectiveWaterGoal,
   resolveWaterDayStatus,
@@ -51,51 +47,57 @@ export type UseWaterTrackingResult = {
   logIntake: (amountMl: number) => Promise<WaterTrackingActionErrorReason | null>;
 };
 
-export function useWaterTracking(isAuthenticated: boolean, todayKey: string): UseWaterTrackingResult {
+export function useWaterTracking(
+  isAuthenticated: boolean,
+  todayKey: string,
+): UseWaterTrackingResult {
   const [state, setState] = useState<WaterTrackingLoadState>({ kind: 'idle' });
 
-  const load = useCallback((options?: { silent?: boolean }) => {
-    if (!isAuthenticated) {
-      setState({ kind: 'idle' });
-      return;
-    }
+  const load = useCallback(
+    (options?: { silent?: boolean }) => {
+      if (!isAuthenticated) {
+        setState({ kind: 'idle' });
+        return;
+      }
 
-    if (!options?.silent) {
-      setState({ kind: 'loading' });
-    }
+      if (!options?.silent) {
+        setState({ kind: 'loading' });
+      }
 
-    void Promise.all([getMyWaterLogs(), getMyWaterGoalContext()])
-      .then(([logs, goalContext]) => {
-        const effectiveGoal = resolveEffectiveWaterGoal(goalContext);
+      void Promise.all([getMyWaterLogs(), getMyWaterGoalContext()])
+        .then(([logs, goalContext]) => {
+          const effectiveGoal = resolveEffectiveWaterGoal(goalContext);
 
-        const todayLog = logs.find((l) => l.dateKey === todayKey);
-        const todayConsumedMl = todayLog?.totalMl ?? 0;
+          const todayLog = logs.find((l) => l.dateKey === todayKey);
+          const todayConsumedMl = todayLog?.totalMl ?? 0;
 
-        const todayStatus =
-          effectiveGoal !== null
-            ? resolveWaterDayStatus(todayConsumedMl, effectiveGoal.dailyMl)
-            : null;
+          const todayStatus =
+            effectiveGoal !== null
+              ? resolveWaterDayStatus(todayConsumedMl, effectiveGoal.dailyMl)
+              : null;
 
-        const streak =
-          effectiveGoal !== null
-            ? calculateWaterStreak(logs, effectiveGoal.dailyMl, todayKey)
-            : 0;
+          const streak =
+            effectiveGoal !== null
+              ? calculateWaterStreak(logs, effectiveGoal.dailyMl, todayKey)
+              : 0;
 
-        setState({
-          kind: 'ready',
-          logs,
-          effectiveGoal,
-          todayConsumedMl,
-          todayStatus,
-          streak,
-          lastSyncedAtIso: new Date().toISOString(),
-          isMutating: false,
+          setState({
+            kind: 'ready',
+            logs,
+            effectiveGoal,
+            todayConsumedMl,
+            todayStatus,
+            streak,
+            lastSyncedAtIso: new Date().toISOString(),
+            isMutating: false,
+          });
+        })
+        .catch((err: Error) => {
+          setState({ kind: 'error', message: err.message });
         });
-      })
-      .catch((err: Error) => {
-        setState({ kind: 'error', message: err.message });
-      });
-  }, [isAuthenticated, todayKey]);
+    },
+    [isAuthenticated, todayKey],
+  );
 
   useEffect(() => {
     load();
@@ -103,7 +105,7 @@ export function useWaterTracking(isAuthenticated: boolean, todayKey: string): Us
 
   const validateIntake = useCallback(
     (input: WaterIntakeInput) => validateWaterIntakeInput(input),
-    []
+    [],
   );
 
   const logIntake = useCallback(
@@ -134,7 +136,7 @@ export function useWaterTracking(isAuthenticated: boolean, todayKey: string): Us
         return normalizeWaterTrackingError(err);
       }
     },
-    [isAuthenticated, load, todayKey, state]
+    [isAuthenticated, load, todayKey, state],
   );
 
   return { state, reload: load, validateIntake, logIntake };

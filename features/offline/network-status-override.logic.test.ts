@@ -10,7 +10,7 @@ test('resolveE2ENetworkStatusOverride returns a valid dev E2E network status', (
       isDev: true,
       status: 'offline',
     }),
-    'offline'
+    'offline',
   );
   assert.equal(
     resolveE2ENetworkStatusOverride({
@@ -18,7 +18,7 @@ test('resolveE2ENetworkStatusOverride returns a valid dev E2E network status', (
       isDev: true,
       status: 'online',
     }),
-    'online'
+    'online',
   );
 });
 
@@ -29,7 +29,7 @@ test('resolveE2ENetworkStatusOverride ignores invalid or non-dev values', () => 
       isDev: true,
       status: 'offline',
     }),
-    null
+    null,
   );
   assert.equal(
     resolveE2ENetworkStatusOverride({
@@ -37,7 +37,7 @@ test('resolveE2ENetworkStatusOverride ignores invalid or non-dev values', () => 
       isDev: false,
       status: 'offline',
     }),
-    null
+    null,
   );
   assert.equal(
     resolveE2ENetworkStatusOverride({
@@ -45,6 +45,6 @@ test('resolveE2ENetworkStatusOverride ignores invalid or non-dev values', () => 
       isDev: true,
       status: 'airplane',
     }),
-    null
+    null,
   );
 });

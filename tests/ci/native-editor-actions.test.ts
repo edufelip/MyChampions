@@ -12,42 +12,34 @@ const {
 test('recognizes Detox iOS and Android no-match failures', () => {
   assert.equal(
     isElementNotFoundError(
-      new Error(
-        'Test Failed: No elements found for “MATCHER(id == “removed.row”)”'
-      )
+      new Error('Test Failed: No elements found for “MATCHER(id == “removed.row”)”'),
     ),
-    true
+    true,
   );
   assert.equal(
     isElementNotFoundError({
       name: 'DetoxRuntimeError',
-      message:
-        'Test Failed: No elements found for “MATCHER(id == “removed.row”)”',
+      message: 'Test Failed: No elements found for “MATCHER(id == “removed.row”)”',
     }),
     true,
-    'Detox marshals runtime failures across a realm where instanceof Error is false'
+    'Detox marshals runtime failures across a realm where instanceof Error is false',
   );
   assert.equal(
     isElementNotFoundError(
       new Error(
-        'Test Failed: androidx.test.espresso.NoMatchingViewException: No views in hierarchy found matching: with id removed.row'
-      )
+        'Test Failed: androidx.test.espresso.NoMatchingViewException: No views in hierarchy found matching: with id removed.row',
+      ),
     ),
-    true
+    true,
   );
 });
 
 test('does not mistake Detox transport or app failures for element absence', () => {
   assert.equal(
-    isElementNotFoundError(
-      new Error('The app has unexpectedly disconnected from Detox server.')
-    ),
-    false
+    isElementNotFoundError(new Error('The app has unexpectedly disconnected from Detox server.')),
+    false,
   );
   assert.equal(isElementNotFoundError(new Error('socket hang up')), false);
   assert.equal(isElementNotFoundError('No elements found for removed.row'), false);
-  assert.equal(
-    isElementNotFoundError({ message: 'The app has disconnected.' }),
-    false
-  );
+  assert.equal(isElementNotFoundError({ message: 'The app has disconnected.' }), false);
 });

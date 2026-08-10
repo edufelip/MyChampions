@@ -61,13 +61,18 @@ function getE2EWaterTrackingSourceOverride() {
 }
 
 function isE2EAssignedNutritionFixtureEnabled(): boolean {
-  return Boolean(getE2EWaterTrackingSourceOverride()) &&
-    process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE === 'assigned';
+  return (
+    Boolean(getE2EWaterTrackingSourceOverride()) &&
+    process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE === 'assigned'
+  );
 }
 
 function normalizeWaterSourceError(error: unknown): WaterTrackingSourceError {
   if (error instanceof WaterTrackingSourceError) return error;
-  return new WaterTrackingSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected water source error.');
+  return new WaterTrackingSourceError(
+    'invalid_response',
+    (error as Error)?.message ?? 'Unexpected water source error.',
+  );
 }
 
 type ServerWaterLog = Partial<WaterIntakeLog>;
@@ -101,7 +106,9 @@ function normalizeNullableGoal(value: unknown): number | null | undefined {
   return undefined;
 }
 
-function normalizeServerWaterGoalContext(input: ServerWaterGoalContext | null): WaterGoalContext | null {
+function normalizeServerWaterGoalContext(
+  input: ServerWaterGoalContext | null,
+): WaterGoalContext | null {
   if (!input) return null;
 
   const studentGoalMl = normalizeNullableGoal(input.studentGoalMl);
@@ -123,14 +130,23 @@ function normalizeServerWaterGoalContext(input: ServerWaterGoalContext | null): 
   };
 }
 
-function normalizeServerStatus(status: number, operation: 'create' | 'list'): WaterTrackingSourceError {
+function normalizeServerStatus(
+  status: number,
+  operation: 'create' | 'list',
+): WaterTrackingSourceError {
   if (status === 401 || status === 403) {
     return new WaterTrackingSourceError('graphql', `Water log ${operation} is not authorized.`);
   }
   if (status >= 500) {
-    return new WaterTrackingSourceError('network', `Water log ${operation} failed with status ${status}.`);
+    return new WaterTrackingSourceError(
+      'network',
+      `Water log ${operation} failed with status ${status}.`,
+    );
   }
-  return new WaterTrackingSourceError('invalid_response', `Unexpected water log ${operation} response: ${status}.`);
+  return new WaterTrackingSourceError(
+    'invalid_response',
+    `Unexpected water log ${operation} response: ${status}.`,
+  );
 }
 
 function normalizeWaterGoalContextStatus(status: number): WaterTrackingSourceError {
@@ -138,9 +154,15 @@ function normalizeWaterGoalContextStatus(status: number): WaterTrackingSourceErr
     return new WaterTrackingSourceError('graphql', 'Water goal context read is not authorized.');
   }
   if (status >= 500) {
-    return new WaterTrackingSourceError('network', `Water goal context read failed with status ${status}.`);
+    return new WaterTrackingSourceError(
+      'network',
+      `Water goal context read failed with status ${status}.`,
+    );
   }
-  return new WaterTrackingSourceError('invalid_response', `Unexpected water goal context response: ${status}.`);
+  return new WaterTrackingSourceError(
+    'invalid_response',
+    `Unexpected water goal context response: ${status}.`,
+  );
 }
 
 function requireServerBaseUrl(deps: WaterTrackingSourceDeps, operation: string): string {
@@ -148,16 +170,22 @@ function requireServerBaseUrl(deps: WaterTrackingSourceDeps, operation: string):
   if (!baseUrl) {
     throw new WaterTrackingSourceError(
       'configuration',
-      `MyChampions server URL is not configured for ${operation}.`
+      `MyChampions server URL is not configured for ${operation}.`,
     );
   }
   return baseUrl;
 }
 
-async function requireAccessToken(deps: WaterTrackingSourceDeps, operation: string): Promise<string> {
+async function requireAccessToken(
+  deps: WaterTrackingSourceDeps,
+  operation: string,
+): Promise<string> {
   const accessToken = await deps.getCurrentAccessToken?.();
   if (!accessToken) {
-    throw new WaterTrackingSourceError('graphql', `No authenticated server token found for ${operation}.`);
+    throw new WaterTrackingSourceError(
+      'graphql',
+      `No authenticated server token found for ${operation}.`,
+    );
   }
   return accessToken;
 }
@@ -194,7 +222,9 @@ async function getWaterLogsFromServer(deps: WaterTrackingSourceDeps): Promise<Wa
     .filter((log): log is WaterIntakeLog => log !== null);
 }
 
-async function getWaterGoalContextFromServer(deps: WaterTrackingSourceDeps): Promise<WaterGoalContext> {
+async function getWaterGoalContextFromServer(
+  deps: WaterTrackingSourceDeps,
+): Promise<WaterGoalContext> {
   const baseUrl = requireServerBaseUrl(deps, 'water goal context reads');
   const accessToken = await requireAccessToken(deps, 'water goal context reads');
 
@@ -204,7 +234,10 @@ async function getWaterGoalContextFromServer(deps: WaterTrackingSourceDeps): Pro
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
-    throw new WaterTrackingSourceError('network', 'Network request to read water goal context failed.');
+    throw new WaterTrackingSourceError(
+      'network',
+      'Network request to read water goal context failed.',
+    );
   }
 
   let payload: ServerWaterGoalContext | null = null;
@@ -220,7 +253,10 @@ async function getWaterGoalContextFromServer(deps: WaterTrackingSourceDeps): Pro
 
   const context = normalizeServerWaterGoalContext(payload);
   if (!context) {
-    throw new WaterTrackingSourceError('invalid_response', 'Water goal context response is invalid.');
+    throw new WaterTrackingSourceError(
+      'invalid_response',
+      'Water goal context response is invalid.',
+    );
   }
 
   return context;
@@ -229,7 +265,7 @@ async function getWaterGoalContextFromServer(deps: WaterTrackingSourceDeps): Pro
 async function logWaterIntakeToServer(
   amountMl: number,
   dateKey: string,
-  deps: WaterTrackingSourceDeps
+  deps: WaterTrackingSourceDeps,
 ): Promise<string> {
   const baseUrl = requireServerBaseUrl(deps, 'water logging');
   const accessToken = await requireAccessToken(deps, 'water logging');
@@ -281,7 +317,7 @@ export async function getMyWaterLogs(deps = defaultDeps): Promise<WaterIntakeLog
 export async function logWaterIntake(
   amountMl: number,
   dateKey: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<string> {
   if (deps === defaultDeps && isE2EAssignedNutritionFixtureEnabled()) {
     const uid = getE2EWaterTrackingSourceOverride()?.uid ?? 'e2e-auth-session-user';

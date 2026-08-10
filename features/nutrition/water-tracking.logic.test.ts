@@ -219,7 +219,10 @@ test('validateWaterIntakeInput rejects non-positive values', () => {
 
 test('normalizeWaterTrackingError maps INVALID_AMOUNT', () => {
   assert.equal(normalizeWaterTrackingError({ code: 'INVALID_AMOUNT' }), 'invalid_amount');
-  assert.equal(normalizeWaterTrackingError({ message: 'invalid amount provided' }), 'invalid_amount');
+  assert.equal(
+    normalizeWaterTrackingError({ message: 'invalid amount provided' }),
+    'invalid_amount',
+  );
 });
 
 test('normalizeWaterTrackingError maps network error', () => {

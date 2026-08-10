@@ -4,7 +4,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 test('exercise service source does not keep the legacy exercise microservice fallback', () => {
-  const source = readFileSync(join(process.cwd(), 'features/plans/exercise-service-source.ts'), 'utf8');
+  const source = readFileSync(
+    join(process.cwd(), 'features/plans/exercise-service-source.ts'),
+    'utf8',
+  );
   const forbiddenMarkers = [
     'EXPO_PUBLIC_EXERCISE_SERVICE_URL',
     'getServiceBaseUrl',
@@ -14,6 +17,10 @@ test('exercise service source does not keep the legacy exercise microservice fal
   ];
 
   for (const marker of forbiddenMarkers) {
-    assert.equal(source.includes(marker), false, `Unexpected legacy exercise fallback marker: ${marker}`);
+    assert.equal(
+      source.includes(marker),
+      false,
+      `Unexpected legacy exercise fallback marker: ${marker}`,
+    );
   }
 });

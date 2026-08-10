@@ -2,14 +2,19 @@ import type { Page, TestInfo } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
+import { captureVisualEvidenceMetadata } from './visual-evidence';
+
 function safeSegment(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 export async function captureEvidence(
   page: Page,
   testInfo: TestInfo,
-  checkpoint: string
+  checkpoint: string,
 ): Promise<string> {
   // Let the product's documented 150-250 ms navigation/state transitions settle
   // so evidence captures the resting UI rather than an in-flight opacity frame.
@@ -19,7 +24,7 @@ export async function captureEvidence(
   });
 
   const artifactRoot = path.resolve(
-    process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/current'
+    process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/current',
   );
   const projectName = safeSegment(testInfo.project.name);
   const screenshotName = `${safeSegment(checkpoint)}.png`;
@@ -33,7 +38,15 @@ export async function captureEvidence(
     animations: 'disabled',
     caret: 'hide',
   });
+  const metadataPath = await captureVisualEvidenceMetadata(screenshotPath, checkpoint, [
+    projectName,
+    screenshotName,
+  ]);
   await testInfo.attach(checkpoint, { path: screenshotPath, contentType: 'image/png' });
+  await testInfo.attach(`${checkpoint}:metadata`, {
+    path: metadataPath,
+    contentType: 'application/json',
+  });
 
   return screenshotPath;
 }
@@ -42,7 +55,7 @@ export async function captureFlowEvidence(
   page: Page,
   testInfo: TestInfo,
   flow: string,
-  checkpoint: string
+  checkpoint: string,
 ): Promise<string> {
   await page.waitForTimeout(250);
   await page.evaluate(async () => {
@@ -50,7 +63,7 @@ export async function captureFlowEvidence(
   });
 
   const artifactRoot = path.resolve(
-    process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/flow-atlas'
+    process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/flow-atlas',
   );
   const platform = safeSegment(testInfo.project.name);
   const screenshotName = `${safeSegment(checkpoint)}.png`;
@@ -64,9 +77,18 @@ export async function captureFlowEvidence(
     animations: 'disabled',
     caret: 'hide',
   });
+  const metadataPath = await captureVisualEvidenceMetadata(screenshotPath, checkpoint, [
+    safeSegment(flow),
+    platform,
+    screenshotName,
+  ]);
   await testInfo.attach(`${flow}: ${checkpoint}`, {
     path: screenshotPath,
     contentType: 'image/png',
+  });
+  await testInfo.attach(`${flow}: ${checkpoint}:metadata`, {
+    path: metadataPath,
+    contentType: 'application/json',
   });
 
   return screenshotPath;

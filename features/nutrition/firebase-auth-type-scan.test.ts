@@ -11,7 +11,9 @@ const files = [
 
 test('nutrition upload and photo-analysis boundaries do not import firebase/auth types', () => {
   const root = join(__dirname, '..', '..');
-  const offenders = files.filter((file) => readFileSync(join(root, file), 'utf8').includes('firebase/auth'));
+  const offenders = files.filter((file) =>
+    readFileSync(join(root, file), 'utf8').includes('firebase/auth'),
+  );
 
   assert.deepEqual(offenders, []);
 });

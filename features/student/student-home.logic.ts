@@ -25,11 +25,8 @@ export function resolveStudentHomeDisplayState(input: {
     ['plans', input.plans],
     ['water', input.water],
   ];
-  const haveAllSourcesSettled = entries.every(
-    ([, kind]) => kind === 'ready' || kind === 'error'
-  );
-  const hasCompletedInitialLoad =
-    input.hasCompletedInitialLoad === true || haveAllSourcesSettled;
+  const haveAllSourcesSettled = entries.every(([, kind]) => kind === 'ready' || kind === 'error');
+  const hasCompletedInitialLoad = input.hasCompletedInitialLoad === true || haveAllSourcesSettled;
 
   return {
     hasCompletedInitialLoad,

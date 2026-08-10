@@ -1,0 +1,355 @@
+name: Protected Detox full validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Native platform to validate
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - ios
+          - android
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+env:
+  APP_VARIANT: dev
+  CI: 'true'
+  CI_REQUIRE_E2E_EXECUTION: 'true'
+  EXPO_PUBLIC_ENV: dev
+  SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
+  SELECTED_SUITES_JSON: >-
+    ["detox:auth","detox:auth-role-persistence","detox:connections","detox:nutrition","detox:training",
+    "detox:plans","detox:professional","detox:subscription","detox:support",
+    "detox:student","detox:offline","detox:platform"]
+  SELECTIVE_TEST_DIAGNOSTICS_ROOT: .artifacts/ci-diagnostics
+
+jobs:
+  resolve-ios-tests:
+    name: Resolve iOS test toggle
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.resolve.outputs.enabled }}
+    steps:
+      - id: resolve
+        name: Evaluate exact iOS test toggle value
+        env:
+          IOS_TESTS_VALUE: ${{ vars.MYCHAMPIONS_ENABLE_IOS_TESTS }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          import os
+
+          enabled = os.environ.get("IOS_TESTS_VALUE", "") != "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"enabled={'true' if enabled else 'false'}\n")
+          PY
+
+  detox-ios-full:
+    name: Full iOS Detox validation
+    needs: resolve-ios-tests
+    if: >-
+      needs.resolve-ios-tests.outputs.enabled == 'true' &&
+      (github.event_name == 'release' || github.ref == 'refs/heads/main') &&
+      (github.event_name == 'release' || inputs.platform == 'both' || inputs.platform == 'ios')
+    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    concurrency:
+      group: mychampions-protected-ios-detox
+      cancel-in-progress: false
+    env:
+      DETOX_IOS_SIMULATOR: iPhone 17
+      DETOX_METRO_PORT: '18081'
+      DETOX_REQUIRE_FRESH_METRO: 'true'
+      XCODE_REQUIRED_MAJOR: '26'
+    steps:
+      - name: Checkout exact validation revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Select Xcode and verify SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcode_app="$({ for candidate in /Applications/Xcode_${XCODE_REQUIRED_MAJOR}*.app; do [[ -d "$candidate" ]] && printf '%s\n' "$candidate"; done; } | sort | tail -n 1)"
+          if [[ -z "$xcode_app" && -d /Applications/Xcode.app ]]; then xcode_app=/Applications/Xcode.app; fi
+          [[ -n "$xcode_app" ]] || { echo "Xcode ${XCODE_REQUIRED_MAJOR}.x is not installed." >&2; exit 1; }
+          echo "DEVELOPER_DIR=$xcode_app/Contents/Developer" >> "$GITHUB_ENV"
+          export DEVELOPER_DIR="$xcode_app/Contents/Developer"
+          sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
+          [[ "${sdk_version%%.*}" -ge "$XCODE_REQUIRED_MAJOR" ]] || {
+            echo "Expected iPhoneOS SDK ${XCODE_REQUIRED_MAJOR}.0+; found $sdk_version." >&2
+            exit 1
+          }
+
+      - name: Verify isolated Metro port
+        shell: bash
+        run: |
+          set -euo pipefail
+          if lsof -nP -iTCP:"$DETOX_METRO_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+            echo "Metro port $DETOX_METRO_PORT is already occupied." >&2
+            exit 1
+          fi
+
+      - name: Verify native recovery root and host-lock prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          [[ "$recovery_root" == /* && -d "$recovery_root" && ! -L "$recovery_root" ]] || {
+            echo 'MYCHAMPIONS_NATIVE_STATE_ROOT must be an existing non-symlink absolute directory.' >&2
+            exit 1
+          }
+          [[ "$(stat -f '%Lp' "$recovery_root")" == '700' ]] || {
+            echo 'MYCHAMPIONS_NATIVE_STATE_ROOT must have mode 0700.' >&2
+            exit 1
+          }
+          : > "$recovery_root/mychampions-native-host.lock"
+          chmod 600 "$recovery_root/mychampions-native-host.lock"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Install JavaScript dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          yarn install --frozen-lockfile --no-progress
+
+      - name: Install iOS pods
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ios
+          pod install --silent
+
+      - name: Build once and execute every deterministic iOS fixture profile
+        shell: bash
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          env_file="$GITHUB_WORKSPACE/.env"
+          secret_file="$RUNNER_TEMP/mychampions-protected-ios-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.env"
+          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          host_lock_file="$recovery_root/mychampions-native-host.lock"
+          host_lock_ready="$RUNNER_TEMP/mychampions-protected-ios-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.lock-ready"
+          host_lock_pid=
+          cleanup() {
+            local status=$?
+            trap - EXIT
+            if [[ -n "${host_lock_pid:-}" ]]; then
+              kill "$host_lock_pid" 2>/dev/null || true
+              wait "$host_lock_pid" 2>/dev/null || true
+            fi
+            rm -f "$host_lock_ready"
+            rm -f "$env_file" "$secret_file"
+            exit "$status"
+          }
+          trap cleanup EXIT
+          [[ -n "${ENV_FILE_CONTENT:-}" ]] || { echo 'ENV_FILE secret is required.' >&2; exit 1; }
+          umask 077
+          SECRET_FILE="$secret_file" /usr/bin/python3 - <<'PY'
+          import os
+          path = os.environ['SECRET_FILE']
+          with open(path, 'x', encoding='utf-8') as handle:
+              handle.write(os.environ['ENV_FILE_CONTENT'] + '\n')
+          os.chmod(path, 0o600)
+          PY
+          ln -s "$secret_file" "$env_file"
+          unset ENV_FILE_CONTENT
+          /usr/bin/python3 - "$host_lock_file" "$host_lock_ready" <<'PY' &
+          import fcntl
+          import os
+          import signal
+          import sys
+          import time
+
+          lock_path, ready_path = sys.argv[1:]
+          lock_handle = open(lock_path, 'a+', encoding='utf-8')
+          fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+          open(ready_path, 'a', encoding='utf-8').close()
+          signal.pause()
+          time.sleep(0)
+          PY
+          host_lock_pid=$!
+          for _ in $(seq 1 60); do
+            [[ -f "$host_lock_ready" ]] && break
+            kill -0 "$host_lock_pid" 2>/dev/null || {
+              echo 'Native host lock process exited before acquiring the lock.' >&2
+              exit 1
+            }
+            sleep 1
+          done
+          [[ -f "$host_lock_ready" ]] || {
+            echo 'Timed out waiting for the shared native host lock.' >&2
+            exit 1
+          }
+          yarn test:e2e:build:ios:debug
+          DETOX_SKIP_BUILD=true yarn test:impact:execute --platform ios
+
+      - name: Upload iOS failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: protected-detox-ios-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/ci-diagnostics/ios
+          if-no-files-found: warn
+          retention-days: 1
+
+  detox-android-full:
+    name: Full Android Detox validation
+    if: >-
+      (github.event_name == 'release' || github.ref == 'refs/heads/main') &&
+      (github.event_name == 'release' || inputs.platform == 'both' || inputs.platform == 'android')
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    concurrency:
+      group: mychampions-protected-android-detox
+      cancel-in-progress: false
+    env:
+      DETOX_ANDROID_AVD: Pixel_10
+      DETOX_CONFIGURATION: android.emu.debug
+      DETOX_METRO_PORT: '18082'
+      DETOX_REQUIRE_FRESH_METRO: 'true'
+    steps:
+      - name: Checkout exact validation revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Verify Android runner and AVD
+        shell: bash
+        run: |
+          set -euo pipefail
+          adb version
+          emulator -list-avds | grep -Fx "$DETOX_ANDROID_AVD"
+
+      - name: Verify native recovery root and host-lock prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          [[ "$recovery_root" == /* && -d "$recovery_root" && ! -L "$recovery_root" ]] || {
+            echo 'MYCHAMPIONS_NATIVE_STATE_ROOT must be an existing non-symlink absolute directory.' >&2
+            exit 1
+          }
+          [[ "$(stat -c '%a' "$recovery_root")" == '700' ]] || {
+            echo 'MYCHAMPIONS_NATIVE_STATE_ROOT must have mode 0700.' >&2
+            exit 1
+          }
+          : > "$recovery_root/mychampions-native-host.lock"
+          chmod 600 "$recovery_root/mychampions-native-host.lock"
+
+      - name: Install JavaScript dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          yarn install --frozen-lockfile --no-progress
+
+      - name: Build once and execute every deterministic Android fixture profile
+        shell: bash
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          env_file="$GITHUB_WORKSPACE/.env"
+          secret_file="$RUNNER_TEMP/mychampions-protected-android-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.env"
+          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          host_lock_file="$recovery_root/mychampions-native-host.lock"
+          host_lock_ready="$RUNNER_TEMP/mychampions-protected-android-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.lock-ready"
+          host_lock_pid=
+          cleanup() {
+            local status=$?
+            trap - EXIT
+            if [[ -n "${host_lock_pid:-}" ]]; then
+              kill "$host_lock_pid" 2>/dev/null || true
+              wait "$host_lock_pid" 2>/dev/null || true
+            fi
+            rm -f "$host_lock_ready"
+            rm -f "$env_file" "$secret_file"
+            exit "$status"
+          }
+          trap cleanup EXIT
+          [[ -n "${ENV_FILE_CONTENT:-}" ]] || { echo 'ENV_FILE secret is required.' >&2; exit 1; }
+          umask 077
+          SECRET_FILE="$secret_file" /usr/bin/python3 - <<'PY'
+          import os
+          path = os.environ['SECRET_FILE']
+          with open(path, 'x', encoding='utf-8') as handle:
+              handle.write(os.environ['ENV_FILE_CONTENT'] + '\n')
+          os.chmod(path, 0o600)
+          PY
+          ln -s "$secret_file" "$env_file"
+          unset ENV_FILE_CONTENT
+          /usr/bin/python3 - "$host_lock_file" "$host_lock_ready" <<'PY' &
+          import fcntl
+          import os
+          import signal
+          import sys
+          import time
+
+          lock_path, ready_path = sys.argv[1:]
+          lock_handle = open(lock_path, 'a+', encoding='utf-8')
+          fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+          open(ready_path, 'a', encoding='utf-8').close()
+          signal.pause()
+          time.sleep(0)
+          PY
+          host_lock_pid=$!
+          for _ in $(seq 1 60); do
+            [[ -f "$host_lock_ready" ]] && break
+            kill -0 "$host_lock_pid" 2>/dev/null || {
+              echo 'Native host lock process exited before acquiring the lock.' >&2
+              exit 1
+            }
+            sleep 1
+          done
+          [[ -f "$host_lock_ready" ]] || {
+            echo 'Timed out waiting for the shared native host lock.' >&2
+            exit 1
+          }
+          cd android
+          ./gradlew --no-daemon lintDevDebug testDevDebugUnitTest app:assembleDevDebug app:assembleDevDebugAndroidTest -DtestBuildType=debug
+          cd "$GITHUB_WORKSPACE"
+          adb -s emulator-5554 start-server
+          adb -s emulator-5554 get-state
+          DETOX_SKIP_BUILD=true yarn test:impact:execute --platform android
+
+      - name: Upload Android failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: protected-detox-android-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/ci-diagnostics/android
+          if-no-files-found: warn
+          retention-days: 1

@@ -83,7 +83,7 @@ function pickPhoto(copy: PhotoPickerCopy): Promise<PickedPhoto | null> {
         },
         { text: copy.cancel, style: 'cancel', onPress: () => resolve(null) },
       ],
-      { cancelable: true, onDismiss: () => resolve(null) }
+      { cancelable: true, onDismiss: () => resolve(null) },
     );
   });
 }
@@ -112,7 +112,7 @@ async function compressToBlob(photo: PickedPhoto): Promise<Blob> {
         base64: false,
         compress: attempt.quality,
         format: ImageManipulator.SaveFormat.JPEG,
-      }
+      },
     );
     const blob = await (await fetch(result.uri)).blob();
     if (blob.size <= MAX_COMPRESSED_PHOTO_BYTES) return blob;
@@ -139,7 +139,7 @@ async function compressToBase64(photo: PickedPhoto): Promise<string> {
         base64: true,
         compress: attempt.quality,
         format: ImageManipulator.SaveFormat.JPEG,
-      }
+      },
     );
     if (!result.base64) throw new Error('image_compression_failed');
     if (decodedBase64ByteLength(result.base64) <= MAX_COMPRESSED_PHOTO_BYTES) {

@@ -54,7 +54,10 @@ test('pending cap counts unique students, not specialty-scoped request documents
 });
 
 test('existing invite connection conflict treats active and pending as blockers', () => {
-  assert.equal(getExistingInviteConnectionConflict([{ status: 'pending_confirmation' }]), 'pending');
+  assert.equal(
+    getExistingInviteConnectionConflict([{ status: 'pending_confirmation' }]),
+    'pending',
+  );
   assert.equal(getExistingInviteConnectionConflict([{ status: 'active' }]), 'active');
   assert.equal(getExistingInviteConnectionConflict([{ status: 'ended' }]), null);
 });
@@ -69,7 +72,7 @@ test('submitInviteCode posts to the MyChampions server when a local bearer token
       captured = new Request(input, init);
       return new Response(
         JSON.stringify({ connectionId: 'connection-1', status: 'pending_confirmation' }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     },
   });
@@ -87,33 +90,36 @@ test('submitInviteCode fails closed without local server auth and never requests
   let functionUrlCalls = 0;
   const legacyTokenProperty = ['get', 'Current', 'Id', 'Token'].join('');
   const legacyFunctionUrlProperty = ['get', 'Submit', 'Invite', 'Function', 'Url'].join('');
-  const deps = new Proxy({
-    getCurrentAccessToken: async () => null,
-    getServerBaseUrl: () => 'http://server.test',
-    fetchFn: async () => {
-      throw new Error('Network should not be called without local server auth.');
+  const deps = new Proxy(
+    {
+      getCurrentAccessToken: async () => null,
+      getServerBaseUrl: () => 'http://server.test',
+      fetchFn: async () => {
+        throw new Error('Network should not be called without local server auth.');
+      },
     },
-  }, {
-    get(target, property, receiver) {
-      if (property === legacyTokenProperty) {
-        providerTokenCalls += 1;
-        return async () => {
-          throw new Error('provider token fallback should not be used');
-        };
-      }
-      if (property === legacyFunctionUrlProperty) {
-        functionUrlCalls += 1;
-        return () => {
-          throw new Error('function URL fallback should not be used');
-        };
-      }
-      return Reflect.get(target, property, receiver);
+    {
+      get(target, property, receiver) {
+        if (property === legacyTokenProperty) {
+          providerTokenCalls += 1;
+          return async () => {
+            throw new Error('provider token fallback should not be used');
+          };
+        }
+        if (property === legacyFunctionUrlProperty) {
+          functionUrlCalls += 1;
+          return () => {
+            throw new Error('function URL fallback should not be used');
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      },
     },
-  }) as ConnectionSourceDeps;
+  ) as ConnectionSourceDeps;
 
   await assert.rejects(
     () => submitInviteCode('NUT123', deps),
-    (error: unknown) => error instanceof Error && error.message.includes('local server auth')
+    (error: unknown) => error instanceof Error && error.message.includes('local server auth'),
   );
 
   assert.equal(providerTokenCalls, 0);
@@ -145,16 +151,20 @@ test('getMyConnections uses the dev E2E auth-session fixture through provider-fr
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousStudentNutritionFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
+    if (previousStudentNutritionFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE = previousStudentNutritionFixture;
 
-    if (previousStudentTrainingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
+    if (previousStudentTrainingFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE = previousStudentTrainingFixture;
 
-    if (previousProfessionalPendingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
+    if (previousProfessionalPendingFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE = previousProfessionalPendingFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -187,10 +197,12 @@ test('getMyConnections exposes a deterministic professional pending-queue fixtur
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousPendingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
+    if (previousPendingFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE = previousPendingFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -215,7 +227,7 @@ test('getMyConnections reads from the MyChampions server when a local bearer tok
             },
           ],
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     },
   } as Parameters<typeof getMyConnections>[0] & {
@@ -239,17 +251,18 @@ test('getMyConnections reads from the MyChampions server when a local bearer tok
 
 test('getMyConnections fails closed without local server auth', async () => {
   await assert.rejects(
-    () => getMyConnections({
-      getCurrentAccessToken: async () => null,
-      getServerBaseUrl: () => 'http://server.test',
-      fetchFn: async () => {
-        throw new Error('Network should not be called without local server auth.');
-      },
-    }),
+    () =>
+      getMyConnections({
+        getCurrentAccessToken: async () => null,
+        getServerBaseUrl: () => 'http://server.test',
+        fetchFn: async () => {
+          throw new Error('Network should not be called without local server auth.');
+        },
+      }),
     (error: unknown) =>
       error instanceof ConnectionSourceError &&
       error.code === 'configuration' &&
-      error.message.includes('Connection reads requires local server auth')
+      error.message.includes('Connection reads requires local server auth'),
   );
 });
 
@@ -261,10 +274,10 @@ test('confirmPendingConnection posts to the MyChampions server when a local bear
     getServerBaseUrl: () => 'http://server.test/',
     fetchFn: async (input, init) => {
       captured = new Request(input, init);
-      return new Response(
-        JSON.stringify({ connectionId: 'connection-1', status: 'active' }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ connectionId: 'connection-1', status: 'active' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
     },
   } satisfies ConnectionSourceDeps);
 
@@ -277,34 +290,37 @@ test('confirmPendingConnection posts to the MyChampions server when a local bear
 
 test('confirmPendingConnection maps server subscription-required cap failures', async () => {
   await assert.rejects(
-    () => confirmPendingConnection('connection-1', {
-      getCurrentAccessToken: async () => 'server-token',
-      getServerBaseUrl: () => 'http://server.test',
-      fetchFn: async () => new Response(
-        JSON.stringify({ error: 'professional_subscription_required' }),
-        { status: 402, headers: { 'content-type': 'application/json' } }
-      ),
-    } satisfies ConnectionSourceDeps),
+    () =>
+      confirmPendingConnection('connection-1', {
+        getCurrentAccessToken: async () => 'server-token',
+        getServerBaseUrl: () => 'http://server.test',
+        fetchFn: async () =>
+          new Response(JSON.stringify({ error: 'professional_subscription_required' }), {
+            status: 402,
+            headers: { 'content-type': 'application/json' },
+          }),
+      } satisfies ConnectionSourceDeps),
     (error: unknown) =>
       error instanceof ConnectionSourceError &&
       error.code === 'graphql' &&
-      error.message.includes('Professional subscription required')
+      error.message.includes('Professional subscription required'),
   );
 });
 
 test('confirmPendingConnection fails closed without local server auth', async () => {
   await assert.rejects(
-    () => confirmPendingConnection('connection-1', {
-      getCurrentAccessToken: async () => null,
-      getServerBaseUrl: () => 'http://server.test',
-      fetchFn: async () => {
-        throw new Error('Network should not be called without local server auth.');
-      },
-    }),
+    () =>
+      confirmPendingConnection('connection-1', {
+        getCurrentAccessToken: async () => null,
+        getServerBaseUrl: () => 'http://server.test',
+        fetchFn: async () => {
+          throw new Error('Network should not be called without local server auth.');
+        },
+      }),
     (error: unknown) =>
       error instanceof ConnectionSourceError &&
       error.code === 'configuration' &&
-      error.message.includes('Connection confirmation requires local server auth')
+      error.message.includes('Connection confirmation requires local server auth'),
   );
 });
 
@@ -316,10 +332,10 @@ test('endConnection posts to the MyChampions server when a local bearer token is
     getServerBaseUrl: () => 'http://server.test/',
     fetchFn: async (input, init) => {
       captured = new Request(input, init);
-      return new Response(
-        JSON.stringify({ connectionId: 'connection-1', status: 'ended' }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ connectionId: 'connection-1', status: 'ended' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
     },
   } satisfies ConnectionSourceDeps);
 
@@ -331,17 +347,18 @@ test('endConnection posts to the MyChampions server when a local bearer token is
 
 test('endConnection fails closed without local server auth', async () => {
   await assert.rejects(
-    () => endConnection('connection-1', {
-      getCurrentAccessToken: async () => null,
-      getServerBaseUrl: () => 'http://server.test',
-      fetchFn: async () => {
-        throw new Error('Network should not be called without local server auth.');
-      },
-    }),
+    () =>
+      endConnection('connection-1', {
+        getCurrentAccessToken: async () => null,
+        getServerBaseUrl: () => 'http://server.test',
+        fetchFn: async () => {
+          throw new Error('Network should not be called without local server auth.');
+        },
+      }),
     (error: unknown) =>
       error instanceof ConnectionSourceError &&
       error.code === 'configuration' &&
-      error.message.includes('Connection end requires local server auth')
+      error.message.includes('Connection end requires local server auth'),
   );
 });
 
@@ -379,10 +396,12 @@ test('submitInviteCode creates a pending dev E2E fixture without backend mutatio
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousInviteSubmitFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE;
+    if (previousInviteSubmitFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE = previousInviteSubmitFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -415,10 +434,12 @@ test('getMyConnections returns the assigned nutrition dev E2E fixture through pr
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousStudentNutritionFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
+    if (previousStudentNutritionFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE = previousStudentNutritionFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -451,10 +472,12 @@ test('getMyConnections returns the assigned training dev E2E fixture through pro
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousStudentTrainingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
+    if (previousStudentTrainingFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE = previousStudentTrainingFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -489,10 +512,12 @@ test('endConnection marks the assigned nutrition dev E2E fixture ended through p
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousStudentNutritionFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
+    if (previousStudentNutritionFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE = previousStudentNutritionFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });

@@ -121,7 +121,7 @@ export function optimisticUpdatePredefinedPlan(plan: PredefinedPlan) {
     globalPredefinedPlansCache = next.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } else {
     globalPredefinedPlansCache = [plan, ...globalPredefinedPlansCache].sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt)
+      b.updatedAt.localeCompare(a.updatedAt),
     );
   }
 }
@@ -160,7 +160,7 @@ export function validatePlanAssignmentTargets({
   const requiredSpecialty = getRequiredAssignmentSpecialty(planType);
   const activeTargets = new Set(activeStudentUids.filter(Boolean));
   const invalidStudentUids = [...new Set(targetStudentUids.filter(Boolean))].filter(
-    (uid) => !activeTargets.has(uid)
+    (uid) => !activeTargets.has(uid),
   );
 
   return {
@@ -324,22 +324,24 @@ function getE2EPlanChangeRequests(studentUid: string): PlanChangeRequest[] | nul
 
 export function getE2EAssignedPlanFixture(
   planId: string,
-  planType: PlanType
+  planType: PlanType,
 ): Plan | null | undefined {
   const plans = getE2EAssignedPlanFixtures();
   if (!plans) return undefined;
-  const plan = plans.find((candidate) => candidate.id === planId && candidate.planType === planType);
+  const plan = plans.find(
+    (candidate) => candidate.id === planId && candidate.planType === planType,
+  );
   return plan ? cloneE2EPlan(plan) : null;
 }
 
 export function updateE2EAssignedPlanFixture(
   planId: string,
   planType: PlanType,
-  updates: { name?: string; isDraft?: boolean; updatedAt?: string }
+  updates: { name?: string; isDraft?: boolean; updatedAt?: string },
 ): boolean | undefined {
   if (!getE2EPredefinedPlans()) return undefined;
   const planIndex = e2eAssignedPlans.findIndex(
-    (candidate) => candidate.id === planId && candidate.planType === planType
+    (candidate) => candidate.id === planId && candidate.planType === planType,
   );
   if (planIndex < 0) return false;
 
@@ -354,11 +356,11 @@ export function updateE2EAssignedPlanFixture(
 
 export function removeE2EAssignedPlanFixture(
   planId: string,
-  planType: PlanType
+  planType: PlanType,
 ): boolean | undefined {
   if (!getE2EPredefinedPlans()) return undefined;
   const planIndex = e2eAssignedPlans.findIndex(
-    (candidate) => candidate.id === planId && candidate.planType === planType
+    (candidate) => candidate.id === planId && candidate.planType === planType,
   );
   if (planIndex < 0) return false;
 
@@ -369,7 +371,7 @@ export function removeE2EAssignedPlanFixture(
 export function upsertE2EPredefinedPlanFixture(plan: PredefinedPlan): boolean | undefined {
   if (!getE2EPredefinedPlans()) return undefined;
   const existingIndex = e2ePredefinedPlanFixtures.findIndex(
-    (candidate) => candidate.id === plan.id && candidate.planType === plan.planType
+    (candidate) => candidate.id === plan.id && candidate.planType === plan.planType,
   );
   if (existingIndex >= 0) {
     e2ePredefinedPlanFixtures[existingIndex] = cloneE2EPredefinedPlan(plan);
@@ -379,10 +381,13 @@ export function upsertE2EPredefinedPlanFixture(plan: PredefinedPlan): boolean | 
   return true;
 }
 
-export function removeE2EPredefinedPlanFixture(planId: string, planType: PlanType): boolean | undefined {
+export function removeE2EPredefinedPlanFixture(
+  planId: string,
+  planType: PlanType,
+): boolean | undefined {
   if (!getE2EPredefinedPlans()) return undefined;
   const existingIndex = e2ePredefinedPlanFixtures.findIndex(
-    (candidate) => candidate.id === planId && candidate.planType === planType
+    (candidate) => candidate.id === planId && candidate.planType === planType,
   );
   if (existingIndex < 0) return false;
   e2ePredefinedPlanFixtures.splice(existingIndex, 1);
@@ -392,7 +397,7 @@ export function removeE2EPredefinedPlanFixture(planId: string, planType: PlanTyp
 export function upsertE2EMyPlanFixture(plan: Plan): boolean | undefined {
   if (!getE2EPredefinedPlans()) return undefined;
   const existingIndex = e2eAssignedPlans.findIndex(
-    (candidate) => candidate.id === plan.id && candidate.planType === plan.planType
+    (candidate) => candidate.id === plan.id && candidate.planType === plan.planType,
   );
   if (existingIndex >= 0) {
     e2eAssignedPlans[existingIndex] = cloneE2EPlan(plan);
@@ -405,12 +410,18 @@ export function upsertE2EMyPlanFixture(plan: Plan): boolean | undefined {
 function normalizePlanSourceError(error: unknown): PlanSourceError {
   if (error instanceof PlanSourceError) return error;
 
-  return new PlanSourceError('invalid_response', (error as Error)?.message ?? 'Unexpected plan source error.');
+  return new PlanSourceError(
+    'invalid_response',
+    (error as Error)?.message ?? 'Unexpected plan source error.',
+  );
 }
 
 function requireServerResult<T>(result: T | null, operation: string): T {
   if (result !== null) return result;
-  throw new PlanSourceError('configuration', `${operation} requires local MyChampions server URL and auth.`);
+  throw new PlanSourceError(
+    'configuration',
+    `${operation} requires local MyChampions server URL and auth.`,
+  );
 }
 
 function resolveServerPlanSource(deps: PlanSourceDeps): {
@@ -425,8 +436,7 @@ function resolveServerPlanSource(deps: PlanSourceDeps): {
   // Browser fetch is a host function and must retain the global receiver. Calling it
   // later as `source.fetchFn(...)` otherwise supplies the source object as `this`,
   // which Firefox rejects with "Illegal invocation".
-  const fetchFn: AppFetch = (input, init) =>
-    Reflect.apply(sourceFetch, globalThis, [input, init]);
+  const fetchFn: AppFetch = (input, init) => Reflect.apply(sourceFetch, globalThis, [input, init]);
 
   return {
     baseUrl,
@@ -567,15 +577,20 @@ async function readServerJson(response: Response): Promise<unknown> {
 }
 
 function planServerError(status: number, payload: unknown): PlanSourceError {
-  const nestedError = payload && typeof payload === 'object' ? (payload as { error?: unknown }).error : null;
+  const nestedError =
+    payload && typeof payload === 'object' ? (payload as { error?: unknown }).error : null;
   const nestedCode =
-    nestedError && typeof nestedError === 'object' && typeof (nestedError as { code?: unknown }).code === 'string'
+    nestedError &&
+    typeof nestedError === 'object' &&
+    typeof (nestedError as { code?: unknown }).code === 'string'
       ? (nestedError as { code: string }).code
       : typeof nestedError === 'string'
         ? nestedError
         : null;
   const nestedMessage =
-    nestedError && typeof nestedError === 'object' && typeof (nestedError as { message?: unknown }).message === 'string'
+    nestedError &&
+    typeof nestedError === 'object' &&
+    typeof (nestedError as { message?: unknown }).message === 'string'
       ? (nestedError as { message: string }).message
       : null;
   const message =
@@ -603,7 +618,7 @@ async function submitPlanChangeRequestToServer(
   planId: string,
   planType: PlanType,
   requestText: string,
-  deps: PlanSourceDeps
+  deps: PlanSourceDeps,
 ): Promise<PlanChangeRequest | null> {
   const source = await getServerPlanSource(deps);
   if (!source) return null;
@@ -619,7 +634,10 @@ async function submitPlanChangeRequestToServer(
       body: JSON.stringify({ planId, planType, requestText }),
     });
   } catch (error) {
-    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+    throw new PlanSourceError(
+      'network',
+      (error as Error)?.message ?? 'Plan server request failed.',
+    );
   }
 
   const payload = await readServerJson(response);
@@ -627,14 +645,17 @@ async function submitPlanChangeRequestToServer(
 
   const request = parseServerPlanChangeRequest((payload as { request?: unknown }).request);
   if (!request) {
-    throw new PlanSourceError('invalid_response', 'Plan server returned an invalid change request.');
+    throw new PlanSourceError(
+      'invalid_response',
+      'Plan server returned an invalid change request.',
+    );
   }
   return request;
 }
 
 async function getStudentPlanChangeRequestsFromServer(
   studentUid: string,
-  deps: PlanSourceDeps
+  deps: PlanSourceDeps,
 ): Promise<PlanChangeRequest[] | null> {
   const source = await getServerPlanSource(deps);
   if (!source) return null;
@@ -647,10 +668,13 @@ async function getStudentPlanChangeRequestsFromServer(
         headers: {
           Authorization: `Bearer ${source.token}`,
         },
-      }
+      },
     );
   } catch (error) {
-    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+    throw new PlanSourceError(
+      'network',
+      (error as Error)?.message ?? 'Plan server request failed.',
+    );
   }
 
   const payload = await readServerJson(response);
@@ -658,13 +682,18 @@ async function getStudentPlanChangeRequestsFromServer(
 
   const rawRequests = (payload as { requests?: unknown }).requests;
   if (!Array.isArray(rawRequests)) {
-    throw new PlanSourceError('invalid_response', 'Plan server returned invalid change request list.');
+    throw new PlanSourceError(
+      'invalid_response',
+      'Plan server returned invalid change request list.',
+    );
   }
-  return rawRequests.map(parseServerPlanChangeRequest).filter((request): request is PlanChangeRequest => request !== null);
+  return rawRequests
+    .map(parseServerPlanChangeRequest)
+    .filter((request): request is PlanChangeRequest => request !== null);
 }
 
 async function getProfessionalPlanChangeRequestsFromServer(
-  deps: PlanSourceDeps
+  deps: PlanSourceDeps,
 ): Promise<PlanChangeRequest[] | null> {
   const source = await getServerPlanSource(deps);
   if (!source) return null;
@@ -677,10 +706,13 @@ async function getProfessionalPlanChangeRequestsFromServer(
         headers: {
           Authorization: `Bearer ${source.token}`,
         },
-      }
+      },
     );
   } catch (error) {
-    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+    throw new PlanSourceError(
+      'network',
+      (error as Error)?.message ?? 'Plan server request failed.',
+    );
   }
 
   const payload = await readServerJson(response);
@@ -688,15 +720,20 @@ async function getProfessionalPlanChangeRequestsFromServer(
 
   const rawRequests = (payload as { requests?: unknown }).requests;
   if (!Array.isArray(rawRequests)) {
-    throw new PlanSourceError('invalid_response', 'Plan server returned invalid professional change request list.');
+    throw new PlanSourceError(
+      'invalid_response',
+      'Plan server returned invalid professional change request list.',
+    );
   }
-  return rawRequests.map(parseServerPlanChangeRequest).filter((request): request is PlanChangeRequest => request !== null);
+  return rawRequests
+    .map(parseServerPlanChangeRequest)
+    .filter((request): request is PlanChangeRequest => request !== null);
 }
 
 async function reviewPlanChangeRequestOnServer(
   requestId: string,
   status: 'reviewed' | 'dismissed',
-  deps: PlanSourceDeps
+  deps: PlanSourceDeps,
 ): Promise<{ id: string; status: PlanChangeRequestStatus } | null> {
   const source = await getServerPlanSource(deps);
   if (!source) return null;
@@ -712,10 +749,13 @@ async function reviewPlanChangeRequestOnServer(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status }),
-      }
+      },
     );
   } catch (error) {
-    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+    throw new PlanSourceError(
+      'network',
+      (error as Error)?.message ?? 'Plan server request failed.',
+    );
   }
 
   const payload = await readServerJson(response);
@@ -723,7 +763,10 @@ async function reviewPlanChangeRequestOnServer(
 
   const nextStatus = normalizePlanChangeRequestStatus((payload as { status?: unknown }).status);
   if (typeof (payload as { id?: unknown }).id !== 'string' || !nextStatus) {
-    throw new PlanSourceError('invalid_response', 'Plan server returned an invalid review response.');
+    throw new PlanSourceError(
+      'invalid_response',
+      'Plan server returned an invalid review response.',
+    );
   }
 
   return {
@@ -744,7 +787,10 @@ async function getMyPlansFromServer(deps: PlanSourceDeps): Promise<Plan[] | null
       },
     });
   } catch (error) {
-    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+    throw new PlanSourceError(
+      'network',
+      (error as Error)?.message ?? 'Plan server request failed.',
+    );
   }
 
   const payload = await readServerJson(response);
@@ -758,7 +804,9 @@ async function getMyPlansFromServer(deps: PlanSourceDeps): Promise<Plan[] | null
   return rawPlans.map(parseServerPlan).filter((plan): plan is Plan => plan !== null);
 }
 
-async function getMyPredefinedPlansFromServer(deps: PlanSourceDeps): Promise<PredefinedPlan[] | null> {
+async function getMyPredefinedPlansFromServer(
+  deps: PlanSourceDeps,
+): Promise<PredefinedPlan[] | null> {
   const source = await getServerPlanSource(deps);
   if (!source) return null;
 
@@ -770,7 +818,10 @@ async function getMyPredefinedPlansFromServer(deps: PlanSourceDeps): Promise<Pre
       },
     });
   } catch (error) {
-    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+    throw new PlanSourceError(
+      'network',
+      (error as Error)?.message ?? 'Plan server request failed.',
+    );
   }
 
   const payload = await readServerJson(response);
@@ -778,16 +829,21 @@ async function getMyPredefinedPlansFromServer(deps: PlanSourceDeps): Promise<Pre
 
   const rawPlans = (payload as { plans?: unknown }).plans;
   if (!Array.isArray(rawPlans)) {
-    throw new PlanSourceError('invalid_response', 'Plan server returned invalid predefined plan list.');
+    throw new PlanSourceError(
+      'invalid_response',
+      'Plan server returned invalid predefined plan list.',
+    );
   }
 
-  return rawPlans.map(parseServerPredefinedPlan).filter((plan): plan is PredefinedPlan => plan !== null);
+  return rawPlans
+    .map(parseServerPredefinedPlan)
+    .filter((plan): plan is PredefinedPlan => plan !== null);
 }
 
 async function bulkAssignPredefinedPlanOnServer(
   predefinedPlanId: string,
   studentUids: string[],
-  deps: PlanSourceDeps
+  deps: PlanSourceDeps,
 ): Promise<{ assignedCount: number } | null> {
   const source = await getServerPlanSource(deps);
   if (!source) return null;
@@ -803,10 +859,13 @@ async function bulkAssignPredefinedPlanOnServer(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ studentUids }),
-      }
+      },
     );
   } catch (error) {
-    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+    throw new PlanSourceError(
+      'network',
+      (error as Error)?.message ?? 'Plan server request failed.',
+    );
   }
 
   const payload = await readServerJson(response);
@@ -814,7 +873,10 @@ async function bulkAssignPredefinedPlanOnServer(
 
   const assignedCount = (payload as { assignedCount?: unknown }).assignedCount;
   if (typeof assignedCount !== 'number' || !Number.isFinite(assignedCount)) {
-    throw new PlanSourceError('invalid_response', 'Plan server returned invalid assignment result.');
+    throw new PlanSourceError(
+      'invalid_response',
+      'Plan server returned invalid assignment result.',
+    );
   }
   return { assignedCount };
 }
@@ -822,7 +884,7 @@ async function bulkAssignPredefinedPlanOnServer(
 async function createDraftAssignedPlanOnServer(
   predefinedPlanId: string,
   studentUid: string,
-  deps: PlanSourceDeps
+  deps: PlanSourceDeps,
 ): Promise<{ id: string } | null> {
   const source = await getServerPlanSource(deps);
   if (!source) return null;
@@ -838,10 +900,13 @@ async function createDraftAssignedPlanOnServer(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ studentUid }),
-      }
+      },
     );
   } catch (error) {
-    throw new PlanSourceError('network', (error as Error)?.message ?? 'Plan server request failed.');
+    throw new PlanSourceError(
+      'network',
+      (error as Error)?.message ?? 'Plan server request failed.',
+    );
   }
 
   const payload = await readServerJson(response);
@@ -849,7 +914,10 @@ async function createDraftAssignedPlanOnServer(
 
   const plan = parseServerPlan((payload as { plan?: unknown }).plan);
   if (!plan || !plan.isDraft || plan.sourceKind !== 'assigned') {
-    throw new PlanSourceError('invalid_response', 'Plan server returned an invalid draft assignment.');
+    throw new PlanSourceError(
+      'invalid_response',
+      'Plan server returned an invalid draft assignment.',
+    );
   }
 
   return { id: plan.id };
@@ -893,11 +961,9 @@ export async function getMyPredefinedPlans(deps = defaultDeps): Promise<Predefin
   try {
     const serverPlans = requireServerResult(
       await getMyPredefinedPlansFromServer(deps),
-      'Predefined plan reads'
+      'Predefined plan reads',
     );
-    const result = [...serverPlans].sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt)
-    );
+    const result = [...serverPlans].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     setCachedPredefinedPlans(result);
     return result;
   } catch (error) {
@@ -908,7 +974,7 @@ export async function getMyPredefinedPlans(deps = defaultDeps): Promise<Predefin
 export async function bulkAssignPredefinedPlan(
   predefinedPlanId: string,
   studentUids: string[],
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<{ assignedCount: number }> {
   if (deps === defaultDeps) {
     const e2ePlans = getE2EPredefinedPlans();
@@ -927,7 +993,7 @@ export async function bulkAssignPredefinedPlan(
       if (!validation.isValid) {
         throw new PlanSourceError(
           'configuration',
-          `No active assignment for ${validation.requiredSpecialty}: ${validation.invalidStudentUids.join(', ')}`
+          `No active assignment for ${validation.requiredSpecialty}: ${validation.invalidStudentUids.join(', ')}`,
         );
       }
 
@@ -955,7 +1021,7 @@ export async function bulkAssignPredefinedPlan(
   try {
     return requireServerResult(
       await bulkAssignPredefinedPlanOnServer(predefinedPlanId, studentUids, deps),
-      'Predefined bulk assignment'
+      'Predefined bulk assignment',
     );
   } catch (error) {
     throw normalizePlanSourceError(error);
@@ -965,7 +1031,7 @@ export async function bulkAssignPredefinedPlan(
 export async function createDraftAssignedPlan(
   predefinedPlanId: string,
   studentUid: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<{ id: string }> {
   if (deps === defaultDeps) {
     const e2ePlans = getE2EPredefinedPlans();
@@ -983,7 +1049,7 @@ export async function createDraftAssignedPlan(
       if (!validation.isValid) {
         throw new PlanSourceError(
           'configuration',
-          `No active assignment for ${validation.requiredSpecialty}: ${validation.invalidStudentUids.join(', ')}`
+          `No active assignment for ${validation.requiredSpecialty}: ${validation.invalidStudentUids.join(', ')}`,
         );
       }
 
@@ -1009,7 +1075,7 @@ export async function createDraftAssignedPlan(
   try {
     return requireServerResult(
       await createDraftAssignedPlanOnServer(predefinedPlanId, studentUid, deps),
-      'Predefined draft assignment'
+      'Predefined draft assignment',
     );
   } catch (error) {
     throw normalizePlanSourceError(error);
@@ -1020,7 +1086,7 @@ export async function submitPlanChangeRequest(
   planId: string,
   planType: PlanType,
   requestText: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<PlanChangeRequest> {
   if (deps === defaultDeps && getE2EPlanSourceOverride()) {
     const studentUid = getE2EPlanSourceOverride()?.uid ?? 'e2e-auth-session-user';
@@ -1038,7 +1104,7 @@ export async function submitPlanChangeRequest(
   try {
     return requireServerResult(
       await submitPlanChangeRequestToServer(planId, planType, requestText, deps),
-      'Plan change request submission'
+      'Plan change request submission',
     );
   } catch (error) {
     throw normalizePlanSourceError(error);
@@ -1047,7 +1113,7 @@ export async function submitPlanChangeRequest(
 
 export async function getStudentPlanChangeRequests(
   studentUid: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<PlanChangeRequest[]> {
   if (deps === defaultDeps) {
     const e2eRequests = getE2EPlanChangeRequests(studentUid);
@@ -1057,7 +1123,7 @@ export async function getStudentPlanChangeRequests(
   try {
     return requireServerResult(
       await getStudentPlanChangeRequestsFromServer(studentUid, deps),
-      'Plan change request reads'
+      'Plan change request reads',
     );
   } catch (error) {
     throw normalizePlanSourceError(error);
@@ -1065,7 +1131,7 @@ export async function getStudentPlanChangeRequests(
 }
 
 export async function getProfessionalPlanChangeRequests(
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<PlanChangeRequest[]> {
   if (deps === defaultDeps) {
     const e2eRequests = getE2EPlanChangeRequests('e2e-dual-student');
@@ -1075,7 +1141,7 @@ export async function getProfessionalPlanChangeRequests(
   try {
     return requireServerResult(
       await getProfessionalPlanChangeRequestsFromServer(deps),
-      'Professional plan change request reads'
+      'Professional plan change request reads',
     );
   } catch (error) {
     throw normalizePlanSourceError(error);
@@ -1085,7 +1151,7 @@ export async function getProfessionalPlanChangeRequests(
 export async function reviewPlanChangeRequest(
   requestId: string,
   status: 'reviewed' | 'dismissed',
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<{ id: string; status: PlanChangeRequestStatus }> {
   if (deps === defaultDeps && getE2EPlanSourceOverride()) {
     if (requestId !== 'e2e-plan-change-request-nutrition') {
@@ -1098,7 +1164,7 @@ export async function reviewPlanChangeRequest(
   try {
     return requireServerResult(
       await reviewPlanChangeRequestOnServer(requestId, status, deps),
-      'Plan change request review'
+      'Plan change request review',
     );
   } catch (error) {
     throw normalizePlanSourceError(error);

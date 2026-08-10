@@ -1,19 +1,27 @@
-const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
-const assignedTrainingSessionId = process.env.E2E_ASSIGNED_TRAINING_SESSION_ID || 'e2e-assigned-session';
+const describeWithE2EAuthSession =
+  process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const assignedTrainingSessionId =
+  process.env.E2E_ASSIGNED_TRAINING_SESSION_ID || 'e2e-assigned-session';
 const expectedLoggedLabel = process.env.E2E_ASSIGNED_TRAINING_LOGGED_LABEL || 'Completed';
 const trainingPlanChangeRequestText =
   process.env.E2E_TRAINING_PLAN_CHANGE_REQUEST_TEXT || 'Please adjust leg day volume this week.';
 
 async function selectStudentRole() {
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(15000);
   await element(by.id('auth.roleSelection.studentCard')).tap();
   await element(by.id('auth.roleSelection.continueButton')).tap();
-  await waitFor(element(by.id('student.home.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('student.home.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function openTrainingScreen() {
   await device.openURL({ url: 'mychampions://student/training' });
-  await waitFor(element(by.id('student.training.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('student.training.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function dismissPlanChangeKeyboardIfVisible() {
@@ -25,7 +33,9 @@ async function dismissPlanChangeKeyboardIfVisible() {
 }
 
 async function expectAssignedTrainingContent() {
-  await waitFor(element(by.id('student.training.weekStrip'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('student.training.weekStrip')))
+    .toBeVisible()
+    .withTimeout(10000);
   await waitFor(element(by.id(`student.training.sessionCard-${assignedTrainingSessionId}`)))
     .toBeVisible()
     .whileElement(by.id('student.training.screen'))
@@ -86,7 +96,9 @@ describeWithE2EAuthSession('Student Assigned Training', () => {
       .toBeVisible()
       .withTimeout(5000);
 
-    await element(by.id('student.training.planChangeForm.input')).replaceText(trainingPlanChangeRequestText);
+    await element(by.id('student.training.planChangeForm.input')).replaceText(
+      trainingPlanChangeRequestText,
+    );
     await dismissPlanChangeKeyboardIfVisible();
     await waitFor(element(by.id('student.training.planChangeForm.submitButton')))
       .toBeVisible()

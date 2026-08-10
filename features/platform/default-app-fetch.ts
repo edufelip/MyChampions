@@ -1,7 +1,4 @@
-export type AppFetch = (
-  input: string | URL | Request,
-  init?: RequestInit
-) => Promise<Response>;
+export type AppFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 /**
  * Late-bound application fetch default.

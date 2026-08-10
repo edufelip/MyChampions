@@ -32,10 +32,7 @@ export type AndroidRunnerSlot = {
 
 export type AndroidRunnerSlotEnvironment = Record<string, string>;
 
-function required(
-  environment: NodeJS.ProcessEnv,
-  name: string
-): string {
+function required(environment: NodeJS.ProcessEnv, name: string): string {
   const value = environment[name];
   if (!value?.trim()) throw new Error(`${name} is required for Android runner slot validation`);
   if (/\0|\r|\n/.test(value)) throw new Error(`${name} contains an unsafe control character`);
@@ -63,16 +60,13 @@ function parseEmulatorPort(value: string): number {
     port % 2 !== 0
   ) {
     throw new Error(
-      `MYCHAMPIONS_ANDROID_EMULATOR_PORT must be an even console port from ${minimumEmulatorPort} to ${maximumEmulatorPort}`
+      `MYCHAMPIONS_ANDROID_EMULATOR_PORT must be an even console port from ${minimumEmulatorPort} to ${maximumEmulatorPort}`,
     );
   }
   return port;
 }
 
-function requiredAbsolutePath(
-  environment: NodeJS.ProcessEnv,
-  name: string
-): string {
+function requiredAbsolutePath(environment: NodeJS.ProcessEnv, name: string): string {
   const value = required(environment, name);
   if (!isAbsolute(value)) throw new Error(`${name} must be an absolute path`);
   return value;
@@ -80,17 +74,16 @@ function requiredAbsolutePath(
 
 function isSameOrNested(first: string, second: string): boolean {
   const relation = relative(first, second);
-  return relation === '' || (!relation.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`) && relation !== '..');
+  return (
+    relation === '' ||
+    (!relation.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`) && relation !== '..')
+  );
 }
 
-export function parseAndroidRunnerSlot(
-  environment: NodeJS.ProcessEnv
-): AndroidRunnerSlot {
+export function parseAndroidRunnerSlot(environment: NodeJS.ProcessEnv): AndroidRunnerSlot {
   const slotId = required(environment, 'MYCHAMPIONS_ANDROID_SLOT_ID');
   if (!/^mychampions-[a-z0-9][a-z0-9._-]*$/.test(slotId)) {
-    throw new Error(
-      'MYCHAMPIONS_ANDROID_SLOT_ID must identify a mychampions-* runner slot'
-    );
+    throw new Error('MYCHAMPIONS_ANDROID_SLOT_ID must identify a mychampions-* runner slot');
   }
 
   const avd = required(environment, 'MYCHAMPIONS_ANDROID_AVD');
@@ -98,30 +91,12 @@ export function parseAndroidRunnerSlot(
     throw new Error('MYCHAMPIONS_ANDROID_AVD contains unsafe characters');
   }
 
-  const avdHome = requiredAbsolutePath(
-    environment,
-    'MYCHAMPIONS_ANDROID_AVD_HOME'
-  );
-  const userHome = requiredAbsolutePath(
-    environment,
-    'MYCHAMPIONS_ANDROID_USER_HOME'
-  );
-  const recoveryRoot = requiredAbsolutePath(
-    environment,
-    'MYCHAMPIONS_ANDROID_RECOVERY_ROOT'
-  );
-  const logRoot = requiredAbsolutePath(
-    environment,
-    'MYCHAMPIONS_ANDROID_LOG_ROOT'
-  );
-  const tempRoot = requiredAbsolutePath(
-    environment,
-    'MYCHAMPIONS_ANDROID_TEMP_ROOT'
-  );
-  const lockRoot = requiredAbsolutePath(
-    environment,
-    'MYCHAMPIONS_ANDROID_LOCK_ROOT'
-  );
+  const avdHome = requiredAbsolutePath(environment, 'MYCHAMPIONS_ANDROID_AVD_HOME');
+  const userHome = requiredAbsolutePath(environment, 'MYCHAMPIONS_ANDROID_USER_HOME');
+  const recoveryRoot = requiredAbsolutePath(environment, 'MYCHAMPIONS_ANDROID_RECOVERY_ROOT');
+  const logRoot = requiredAbsolutePath(environment, 'MYCHAMPIONS_ANDROID_LOG_ROOT');
+  const tempRoot = requiredAbsolutePath(environment, 'MYCHAMPIONS_ANDROID_TEMP_ROOT');
+  const lockRoot = requiredAbsolutePath(environment, 'MYCHAMPIONS_ANDROID_LOCK_ROOT');
   for (const [name, value] of [
     ['MYCHAMPIONS_ANDROID_AVD_HOME', avdHome],
     ['MYCHAMPIONS_ANDROID_USER_HOME', userHome],
@@ -152,33 +127,23 @@ export function parseAndroidRunnerSlot(
     }
   }
   const emulatorPort = parseEmulatorPort(
-    required(environment, 'MYCHAMPIONS_ANDROID_EMULATOR_PORT')
+    required(environment, 'MYCHAMPIONS_ANDROID_EMULATOR_PORT'),
   );
-  const emulatorSerial = required(
-    environment,
-    'MYCHAMPIONS_ANDROID_EMULATOR_SERIAL'
-  );
+  const emulatorSerial = required(environment, 'MYCHAMPIONS_ANDROID_EMULATOR_SERIAL');
   if (emulatorSerial !== `emulator-${emulatorPort}`) {
-    throw new Error(
-      'MYCHAMPIONS_ANDROID_EMULATOR_SERIAL must match the configured emulator port'
-    );
+    throw new Error('MYCHAMPIONS_ANDROID_EMULATOR_SERIAL must match the configured emulator port');
   }
   const adbServerPort = parsePort(
     'MYCHAMPIONS_ANDROID_ADB_SERVER_PORT',
-    required(environment, 'MYCHAMPIONS_ANDROID_ADB_SERVER_PORT')
+    required(environment, 'MYCHAMPIONS_ANDROID_ADB_SERVER_PORT'),
   );
   const metroPort = parsePort(
     'MYCHAMPIONS_ANDROID_METRO_PORT',
-    required(environment, 'MYCHAMPIONS_ANDROID_METRO_PORT')
+    required(environment, 'MYCHAMPIONS_ANDROID_METRO_PORT'),
   );
   const emulatorBridgePort = emulatorPort + 1;
-  if (
-    new Set([emulatorPort, emulatorBridgePort, adbServerPort, metroPort]).size !==
-    4
-  ) {
-    throw new Error(
-      'Android emulator, ADB server, and Metro ports must be distinct'
-    );
+  if (new Set([emulatorPort, emulatorBridgePort, adbServerPort, metroPort]).size !== 4) {
+    throw new Error('Android emulator, ADB server, and Metro ports must be distinct');
   }
 
   return {
@@ -198,7 +163,7 @@ export function parseAndroidRunnerSlot(
 }
 
 export function androidRunnerSlotEnvironment(
-  slot: AndroidRunnerSlot
+  slot: AndroidRunnerSlot,
 ): AndroidRunnerSlotEnvironment {
   return {
     ANDROID_AVD_HOME: slot.avdHome,
@@ -235,7 +200,7 @@ function validatePrivateDirectory(
   name: string,
   value: string,
   workspace: string,
-  runnerTemp: string
+  runnerTemp: string,
 ): void {
   let metadata: ReturnType<typeof lstatSync>;
   let canonical: string;
@@ -267,11 +232,7 @@ function validatePrivateDirectory(
   }
 }
 
-function commandOutput(
-  command: string,
-  args: string[],
-  environment: NodeJS.ProcessEnv
-): string {
+function commandOutput(command: string, args: string[], environment: NodeJS.ProcessEnv): string {
   try {
     return execFileSync(command, args, {
       encoding: 'utf8',
@@ -284,10 +245,7 @@ function commandOutput(
   }
 }
 
-function validateHost(
-  slot: AndroidRunnerSlot,
-  environment: NodeJS.ProcessEnv
-): void {
+function validateHost(slot: AndroidRunnerSlot, environment: NodeJS.ProcessEnv): void {
   const workspace = requiredAbsolutePath(environment, 'GITHUB_WORKSPACE');
   const runnerTemp = requiredAbsolutePath(environment, 'RUNNER_TEMP');
   for (const [name, value] of [
@@ -318,22 +276,14 @@ function validateHost(
     ANDROID_EMULATOR_HOME: slot.userHome,
     ANDROID_USER_HOME: slot.userHome,
   };
-  const availableAvds = commandOutput(
-    emulatorPath,
-    ['-list-avds'],
-    emulatorEnvironment
-  )
+  const availableAvds = commandOutput(emulatorPath, ['-list-avds'], emulatorEnvironment)
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
   if (!availableAvds.includes(slot.avd)) {
     fail(`configured AVD ${slot.avd} is not available in the slot AVD home`);
   }
-  const acceleration = commandOutput(
-    emulatorPath,
-    ['-accel-check'],
-    emulatorEnvironment
-  );
+  const acceleration = commandOutput(emulatorPath, ['-accel-check'], emulatorEnvironment);
   if (!/kvm.*usable|accel.*usable/i.test(acceleration)) {
     fail('emulator -accel-check did not report usable KVM acceleration');
   }
@@ -344,18 +294,14 @@ function validateHost(
     slot.adbServerPort,
     slot.metroPort,
   ]) {
-    const listeners = commandOutput(
-      'ss',
-      ['-H', '-ltn', `( sport = :${port} )`],
-      environment
-    );
+    const listeners = commandOutput('ss', ['-H', '-ltn', `( sport = :${port} )`], environment);
     if (listeners.trim()) fail(`configured port ${port} is already occupied`);
   }
 }
 
 export function writeAndroidRunnerSlotEnvironment(
   environment: NodeJS.ProcessEnv,
-  target: string
+  target: string,
 ): AndroidRunnerSlot {
   const slot = parseAndroidRunnerSlot(environment);
   validateHost(slot, environment);
@@ -365,7 +311,7 @@ export function writeAndroidRunnerSlotEnvironment(
     `${Object.entries(entries)
       .map(([name, value]) => `${name}=${value}`)
       .join('\n')}\n`,
-    { encoding: 'utf8' }
+    { encoding: 'utf8' },
   );
   return slot;
 }
@@ -374,11 +320,9 @@ function main(): void {
   const githubEnv = requiredAbsolutePath(process.env, 'GITHUB_ENV');
   const slot = writeAndroidRunnerSlotEnvironment(process.env, githubEnv);
   console.log(
-    `Validated ${slot.slotId}: AVD ${slot.avd}, emulator ${slot.emulatorSerial}, ADB ${slot.adbServerPort}, Metro ${slot.metroPort}`
+    `Validated ${slot.slotId}: AVD ${slot.avd}, emulator ${slot.emulatorSerial}, ADB ${slot.adbServerPort}, Metro ${slot.metroPort}`,
   );
 }
 
-const entrypoint = process.argv[1]
-  ? pathToFileURL(resolve(process.argv[1])).href
-  : undefined;
+const entrypoint = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : undefined;
 if (entrypoint === import.meta.url) main();

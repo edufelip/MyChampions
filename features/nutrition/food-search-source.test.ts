@@ -60,7 +60,7 @@ describe('searchFoodsFromSource — configuration error', () => {
         assert.equal(err.code, 'configuration');
         assert.ok(err.message.includes('URL is not configured'));
         return true;
-      }
+      },
     );
   });
 });
@@ -74,10 +74,9 @@ describe('searchFoodsFromSource — auth errors', () => {
         assert.equal(err.code, 'unauthenticated');
         assert.ok(err.message.includes('No authenticated server token'));
         return true;
-      }
+      },
     );
   });
-
 });
 
 describe('searchFoodsFromSource — network errors', () => {
@@ -92,7 +91,7 @@ describe('searchFoodsFromSource — network errors', () => {
       (err: FoodSearchSourceError) => {
         assert.equal(err.code, 'network');
         return true;
-      }
+      },
     );
   });
 });
@@ -107,7 +106,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
       (err: FoodSearchSourceError) => {
         assert.equal(err.code, 'unauthenticated');
         return true;
-      }
+      },
     );
   });
 
@@ -120,7 +119,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
       (err: FoodSearchSourceError) => {
         assert.equal(err.code, 'quota');
         return true;
-      }
+      },
     );
   });
 
@@ -134,7 +133,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
         assert.equal(err.code, 'unknown');
         assert.equal(err.message, 'something_broke');
         return true;
-      }
+      },
     );
   });
 
@@ -144,7 +143,9 @@ describe('searchFoodsFromSource — proxy errors', () => {
         return {
           status: 200,
           ok: true,
-          json: async () => { throw new Error('syntax error'); },
+          json: async () => {
+            throw new Error('syntax error');
+          },
         } as unknown as Response;
       },
     });
@@ -154,7 +155,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
         assert.equal(err.code, 'unknown');
         assert.ok(err.message.includes('non-JSON'));
         return true;
-      }
+      },
     );
   });
 
@@ -168,7 +169,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
         assert.equal(err.code, 'unknown');
         assert.ok(err.message.includes('error status: 500'));
         return true;
-      }
+      },
     );
   });
 
@@ -181,7 +182,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
       (err: FoodSearchSourceError) => {
         assert.equal(err.code, 'quota');
         return true;
-      }
+      },
     );
   });
 
@@ -198,7 +199,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
       (err: FoodSearchSourceError) => {
         assert.equal(err.code, 'network');
         return true;
-      }
+      },
     );
   });
 
@@ -215,7 +216,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
       (err: FoodSearchSourceError) => {
         assert.equal(err.code, 'network');
         return true;
-      }
+      },
     );
   });
 
@@ -233,7 +234,7 @@ describe('searchFoodsFromSource — proxy errors', () => {
         assert.equal(err.code, 'unknown');
         assert.equal(err.message, 'region and language are required');
         return true;
-      }
+      },
     );
   });
 });
@@ -290,7 +291,7 @@ describe('searchFoodsFromSource — happy path', () => {
     assert.equal(capturedUrl, 'http://localhost:3400/integrations/food/search');
     assert.equal(
       (capturedInit?.headers as Record<string, string>)?.Authorization,
-      'Bearer server-access-token'
+      'Bearer server-access-token',
     );
     assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
       query: 'rice',
@@ -359,7 +360,7 @@ describe('searchFoodsFromSource — happy path', () => {
     assert.equal(capturedInit?.method, 'POST');
     assert.equal(
       (capturedInit?.headers as Record<string, string>)?.Authorization,
-      'Bearer server-access-token'
+      'Bearer server-access-token',
     );
     assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
       query: 'banana',
@@ -518,7 +519,8 @@ describe('searchFoodsFromSource — E2E auth fixture', () => {
       if (previousFoodFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE;
       else process.env.EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE = previousFoodFixture;
 
-      if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+      if (previousDev === undefined)
+        delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
       else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
     }
   });

@@ -28,11 +28,7 @@ const defaultDeps: WorkoutLogSourceDeps = {
 const e2eWorkoutLogs = new Map<string, WorkoutLog>();
 
 type WorkoutLogSourceErrorCode =
-  | 'configuration'
-  | 'network'
-  | 'permission'
-  | 'invalid_response'
-  | 'unknown';
+  'configuration' | 'network' | 'permission' | 'invalid_response' | 'unknown';
 
 export class WorkoutLogSourceError extends Error {
   code: WorkoutLogSourceErrorCode;
@@ -45,7 +41,10 @@ export class WorkoutLogSourceError extends Error {
 
 function normalizeError(error: any): WorkoutLogSourceError {
   if (error instanceof WorkoutLogSourceError) return error;
-  return new WorkoutLogSourceError('unknown', (error as Error)?.message ?? 'Workout log operation failed.');
+  return new WorkoutLogSourceError(
+    'unknown',
+    (error as Error)?.message ?? 'Workout log operation failed.',
+  );
 }
 
 function resolveServerBaseUrl(): string | undefined {
@@ -77,8 +76,10 @@ function getE2EWorkoutLogSourceOverride() {
 }
 
 function isE2EAssignedTrainingFixtureEnabled(): boolean {
-  return Boolean(getE2EWorkoutLogSourceOverride()) &&
-    process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE === 'assigned';
+  return (
+    Boolean(getE2EWorkoutLogSourceOverride()) &&
+    process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE === 'assigned'
+  );
 }
 
 type ServerWorkoutLog = Partial<WorkoutLog>;
@@ -100,26 +101,35 @@ function normalizeServerError(status: number, operation: 'create' | 'list'): Wor
     return new WorkoutLogSourceError('permission', `Workout log ${operation} is not authorized.`);
   }
   if (status >= 500) {
-    return new WorkoutLogSourceError('network', `Workout log ${operation} failed with status ${status}.`);
+    return new WorkoutLogSourceError(
+      'network',
+      `Workout log ${operation} failed with status ${status}.`,
+    );
   }
-  return new WorkoutLogSourceError('invalid_response', `Unexpected workout log ${operation} response: ${status}.`);
+  return new WorkoutLogSourceError(
+    'invalid_response',
+    `Unexpected workout log ${operation} response: ${status}.`,
+  );
 }
 
 async function logWorkoutSessionToServer(
   sessionId: string,
   sessionName: string,
-  deps: WorkoutLogSourceDeps
+  deps: WorkoutLogSourceDeps,
 ): Promise<void> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
   if (!baseUrl) {
     throw new WorkoutLogSourceError(
       'configuration',
-      'MyChampions server URL is not configured for workout logging.'
+      'MyChampions server URL is not configured for workout logging.',
     );
   }
   if (!accessToken) {
-    throw new WorkoutLogSourceError('permission', 'No authenticated server token found for workout logging.');
+    throw new WorkoutLogSourceError(
+      'permission',
+      'No authenticated server token found for workout logging.',
+    );
   }
 
   let response: Response;
@@ -152,25 +162,31 @@ async function logWorkoutSessionToServer(
 
 async function getWorkoutLogsFromServer(
   fromIso: string,
-  deps: WorkoutLogSourceDeps
+  deps: WorkoutLogSourceDeps,
 ): Promise<WorkoutLog[]> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
   if (!baseUrl) {
     throw new WorkoutLogSourceError(
       'configuration',
-      'MyChampions server URL is not configured for workout log reads.'
+      'MyChampions server URL is not configured for workout log reads.',
     );
   }
   if (!accessToken) {
-    throw new WorkoutLogSourceError('permission', 'No authenticated server token found for workout log reads.');
+    throw new WorkoutLogSourceError(
+      'permission',
+      'No authenticated server token found for workout log reads.',
+    );
   }
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/training/workout-logs?from=${encodeURIComponent(fromIso)}`, {
-      headers: { authorization: `Bearer ${accessToken}` },
-    });
+    response = await (deps.fetchFn ?? defaultAppFetch)(
+      `${baseUrl}/training/workout-logs?from=${encodeURIComponent(fromIso)}`,
+      {
+        headers: { authorization: `Bearer ${accessToken}` },
+      },
+    );
   } catch {
     throw new WorkoutLogSourceError('network', 'Network request to read workout logs failed.');
   }
@@ -198,7 +214,7 @@ async function getWorkoutLogsFromServer(
 export async function logWorkoutSession(
   sessionId: string,
   sessionName: string,
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps && isE2EAssignedTrainingFixtureEnabled()) {
     const ownerUid = getE2EWorkoutLogSourceOverride()?.uid ?? 'e2e-auth-session-user';

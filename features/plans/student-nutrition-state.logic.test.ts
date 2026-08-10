@@ -31,7 +31,7 @@ describe('resolveStudentNutritionState', () => {
         hasActiveNutritionistConnection: true,
         plans: [],
       }).kind,
-      'waiting'
+      'waiting',
     );
   });
 
@@ -42,7 +42,7 @@ describe('resolveStudentNutritionState', () => {
         hasActiveNutritionistConnection: true,
         plans: [plan({ isDraft: true })],
       }).kind,
-      'waiting'
+      'waiting',
     );
   });
 
@@ -53,7 +53,7 @@ describe('resolveStudentNutritionState', () => {
         hasActiveNutritionistConnection: false,
         plans: [plan({ sourceKind: 'self_managed', ownerProfessionalUid: null })],
       }).kind,
-      'self_managed'
+      'self_managed',
     );
   });
 
@@ -64,7 +64,7 @@ describe('resolveStudentNutritionState', () => {
         hasActiveNutritionistConnection: false,
         plans: [],
       }).kind,
-      'empty'
+      'empty',
     );
   });
 });
@@ -78,7 +78,7 @@ describe('resolveStudentNutritionDisplayState', () => {
         connectionsKind: 'error',
         nutritionKind: 'assigned',
       }),
-      'content'
+      'content',
     );
   });
 
@@ -90,7 +90,7 @@ describe('resolveStudentNutritionDisplayState', () => {
         connectionsKind: 'error',
         nutritionKind: 'self_managed',
       }),
-      'content'
+      'content',
     );
   });
 
@@ -102,7 +102,7 @@ describe('resolveStudentNutritionDisplayState', () => {
         connectionsKind: 'loading',
         nutritionKind: 'self_managed',
       }),
-      'loading'
+      'loading',
     );
   });
 
@@ -114,7 +114,7 @@ describe('resolveStudentNutritionDisplayState', () => {
         connectionsKind: 'error',
         nutritionKind: 'empty',
       }),
-      'load_error'
+      'load_error',
     );
   });
 });

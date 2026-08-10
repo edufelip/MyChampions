@@ -35,7 +35,7 @@ test.describe('@server-auth @critical @feature:auth browser cookie session', () 
     await expectReadyStudentHome(page);
 
     const initialCookie = (await context.cookies()).find(
-      (cookie) => cookie.name === 'mychampions_refresh_token'
+      (cookie) => cookie.name === 'mychampions_refresh_token',
     );
     expect(initialCookie).toMatchObject({
       httpOnly: true,
@@ -53,7 +53,7 @@ test.describe('@server-auth @critical @feature:auth browser cookie session', () 
     await page.reload();
     await expectReadyStudentHome(page);
     const rotatedCookie = (await context.cookies()).find(
-      (cookie) => cookie.name === 'mychampions_refresh_token'
+      (cookie) => cookie.name === 'mychampions_refresh_token',
     );
     expect(rotatedCookie?.value).toBeTruthy();
     expect(rotatedCookie?.value).not.toBe(initialCookie?.value);
@@ -64,7 +64,7 @@ test.describe('@server-auth @critical @feature:auth browser cookie session', () 
     await page.getByTestId('settings.account.signOutConfirmCta').click();
     await expect(page.getByTestId('auth.signIn.title')).toBeVisible();
     expect(
-      (await context.cookies()).some((cookie) => cookie.name === 'mychampions_refresh_token')
+      (await context.cookies()).some((cookie) => cookie.name === 'mychampions_refresh_token'),
     ).toBe(false);
 
     await page.getByTestId('auth.signIn.emailInput').fill(email);

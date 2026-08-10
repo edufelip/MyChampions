@@ -63,7 +63,7 @@ export type ImageUploadSourceDeps = {
   uploadBlob: (
     uploadTarget: string,
     blob: Blob,
-    onProgress: UploadProgressCallback
+    onProgress: UploadProgressCallback,
   ) => Promise<string>;
   /**
    * Generates a unique filename for the uploaded image (e.g. UUIDv4 + .jpg).
@@ -79,9 +79,7 @@ export type ServerImageUploadDeps = {
 
 // ─── Pick result ──────────────────────────────────────────────────────────────
 
-export type PickAndUploadResult =
-  | { kind: 'cancelled' }
-  | { kind: 'done'; downloadUrl: string };
+export type PickAndUploadResult = { kind: 'cancelled' } | { kind: 'done'; downloadUrl: string };
 
 function parseMealImageUploadTarget(uploadTarget: string): { mealId: string; filename: string } {
   const match = uploadTarget.match(/^meals\/([^/]+)\/([^/]+)$/);
@@ -106,20 +104,26 @@ export async function uploadMealImageToServer(
   uploadTarget: string,
   blob: Blob,
   onProgress: UploadProgressCallback,
-  deps: ServerImageUploadDeps
+  deps: ServerImageUploadDeps,
 ): Promise<string> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
   if (!baseUrl) {
-    throw new ImageUploadSourceError('configuration', 'MyChampions server URL is required for image upload.');
+    throw new ImageUploadSourceError(
+      'configuration',
+      'MyChampions server URL is required for image upload.',
+    );
   }
   if (!accessToken) {
-    throw new ImageUploadSourceError('unauthorized', 'Local server auth is required for image upload.');
+    throw new ImageUploadSourceError(
+      'unauthorized',
+      'Local server auth is required for image upload.',
+    );
   }
 
   const { mealId, filename } = parseMealImageUploadTarget(uploadTarget);
   const requestUrl = `${baseUrl}/nutrition/custom-meal-images/${encodeURIComponent(
-    mealId
+    mealId,
   )}?filename=${encodeURIComponent(filename)}`;
   const fetchFn = deps.fetchFn ?? defaultAppFetch;
 
@@ -138,14 +142,14 @@ export async function uploadMealImageToServer(
   } catch (error) {
     throw new ImageUploadSourceError(
       'network',
-      `Network request to upload meal image failed: ${String(error)}`
+      `Network request to upload meal image failed: ${String(error)}`,
     );
   }
 
   if (!response.ok) {
     throw new ImageUploadSourceError(
       uploadErrorForStatus(response.status),
-      `MyChampions server image upload failed with status ${response.status}.`
+      `MyChampions server image upload failed with status ${response.status}.`,
     );
   }
 
@@ -155,13 +159,16 @@ export async function uploadMealImageToServer(
   } catch (error) {
     throw new ImageUploadSourceError(
       'unknown',
-      `MyChampions server image upload returned invalid JSON: ${String(error)}`
+      `MyChampions server image upload returned invalid JSON: ${String(error)}`,
     );
   }
 
   const url = (payload as { url?: unknown }).url;
   if (typeof url !== 'string' || url.trim().length === 0) {
-    throw new ImageUploadSourceError('unknown', 'MyChampions server image upload response is missing url.');
+    throw new ImageUploadSourceError(
+      'unknown',
+      'MyChampions server image upload response is missing url.',
+    );
   }
 
   onProgress(100);
@@ -188,7 +195,7 @@ export async function uploadMealImageToServer(
 export async function pickAndUploadMealImage(
   mealId: string,
   deps: ImageUploadSourceDeps,
-  onProgress: UploadProgressCallback
+  onProgress: UploadProgressCallback,
 ): Promise<PickAndUploadResult> {
   // Step 1: Pick image
   let picked: { uri: string; width: number; height: number } | null;
@@ -216,7 +223,7 @@ export async function pickAndUploadMealImage(
   if (blob.size > MAX_BYTES) {
     throw new ImageUploadSourceError(
       'file_too_large',
-      `Compressed image exceeds 1.5 MB limit (${blob.size} bytes).`
+      `Compressed image exceeds 1.5 MB limit (${blob.size} bytes).`,
     );
   }
 

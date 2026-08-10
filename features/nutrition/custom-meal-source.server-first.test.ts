@@ -17,7 +17,7 @@ test('server-backed custom meal reads do not load Firestore at module import', a
     this: unknown,
     request: string,
     parent: NodeModule | null,
-    isMain: boolean
+    isMain: boolean,
   ) {
     if (request === 'firebase/firestore') {
       blockedLoads.push(request);
@@ -27,7 +27,8 @@ test('server-backed custom meal reads do not load Firestore at module import', a
   };
 
   try {
-    const { getMyCustomMeals } = require('./custom-meal-source') as typeof import('./custom-meal-source');
+    const { getMyCustomMeals } =
+      require('./custom-meal-source') as typeof import('./custom-meal-source');
 
     let captured: Request | null = null;
     const meals = await getMyCustomMeals({
@@ -54,7 +55,7 @@ test('server-backed custom meal reads do not load Firestore at module import', a
               },
             ],
           }),
-          { status: 200, headers: { 'content-type': 'application/json' } }
+          { status: 200, headers: { 'content-type': 'application/json' } },
         );
       },
     } as any);

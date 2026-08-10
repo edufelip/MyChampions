@@ -159,7 +159,11 @@ test('BL-003 TC-256: only code_rotated reason triggers canceled_code_rotated dis
   };
 
   const displayState = resolveConnectionDisplayState(endedWithoutReason);
-  assert.equal(displayState.kind, 'ended', 'null reason should map to ended, not canceled_code_rotated');
+  assert.equal(
+    displayState.kind,
+    'ended',
+    'null reason should map to ended, not canceled_code_rotated',
+  );
 });
 
 test('BL-003 TC-256: canceled_code_rotated preserves specialty for correct messaging', () => {
@@ -190,65 +194,47 @@ test('BL-003 TC-256: canceled_code_rotated preserves specialty for correct messa
 // --- normalizeInviteSubmitError ---
 
 test('normalizeInviteSubmitError maps CODE_NOT_FOUND code', () => {
-  assert.equal(
-    normalizeInviteSubmitError({ code: 'CODE_NOT_FOUND' }),
-    'code_not_found'
-  );
+  assert.equal(normalizeInviteSubmitError({ code: 'CODE_NOT_FOUND' }), 'code_not_found');
 });
 
 test('normalizeInviteSubmitError maps message containing invite code not found', () => {
-  assert.equal(
-    normalizeInviteSubmitError({ message: 'Invite code not found' }),
-    'code_not_found'
-  );
+  assert.equal(normalizeInviteSubmitError({ message: 'Invite code not found' }), 'code_not_found');
 });
 
 test('normalizeInviteSubmitError maps CODE_EXPIRED code', () => {
-  assert.equal(
-    normalizeInviteSubmitError({ code: 'CODE_EXPIRED' }),
-    'code_expired'
-  );
+  assert.equal(normalizeInviteSubmitError({ code: 'CODE_EXPIRED' }), 'code_expired');
 });
 
 test('normalizeInviteSubmitError maps ALREADY_CONNECTED code', () => {
-  assert.equal(
-    normalizeInviteSubmitError({ code: 'ALREADY_CONNECTED' }),
-    'already_connected'
-  );
+  assert.equal(normalizeInviteSubmitError({ code: 'ALREADY_CONNECTED' }), 'already_connected');
 });
 
 test('normalizeInviteSubmitError maps duplicate pending request to already connected', () => {
   assert.equal(
     normalizeInviteSubmitError({ message: 'Pending request already exists.' }),
-    'already_connected'
+    'already_connected',
   );
 });
 
 test('normalizeInviteSubmitError maps PENDING_CAP_REACHED code', () => {
-  assert.equal(
-    normalizeInviteSubmitError({ code: 'PENDING_CAP_REACHED' }),
-    'pending_cap_reached'
-  );
+  assert.equal(normalizeInviteSubmitError({ code: 'PENDING_CAP_REACHED' }), 'pending_cap_reached');
 });
 
 test('normalizeInviteSubmitError maps message containing pending cap', () => {
   assert.equal(
     normalizeInviteSubmitError({ message: 'Pending cap reached for this professional' }),
-    'pending_cap_reached'
+    'pending_cap_reached',
   );
 });
 
 test('normalizeInviteSubmitError maps NETWORK_ERROR code to network', () => {
-  assert.equal(
-    normalizeInviteSubmitError({ code: 'NETWORK_ERROR' }),
-    'network'
-  );
+  assert.equal(normalizeInviteSubmitError({ code: 'NETWORK_ERROR' }), 'network');
 });
 
 test('normalizeInviteSubmitError maps config message to configuration', () => {
   assert.equal(
     normalizeInviteSubmitError({ message: 'MyChampions server endpoint is not configured' }),
-    'configuration'
+    'configuration',
   );
 });
 
@@ -264,63 +250,59 @@ test('normalizeInviteSubmitError falls back to unknown', () => {
 test('normalizeConnectionActionError maps CONNECTION_NOT_FOUND code', () => {
   assert.equal(
     normalizeConnectionActionError({ code: 'CONNECTION_NOT_FOUND' }),
-    'connection_not_found'
+    'connection_not_found',
   );
 });
 
 test('normalizeConnectionActionError maps message containing connection not found', () => {
   assert.equal(
     normalizeConnectionActionError({ message: 'Connection not found' }),
-    'connection_not_found'
+    'connection_not_found',
   );
 });
 
 test('normalizeConnectionActionError maps INVALID_TRANSITION code', () => {
   assert.equal(
     normalizeConnectionActionError({ code: 'INVALID_TRANSITION' }),
-    'invalid_transition'
+    'invalid_transition',
   );
 });
 
 test('normalizeConnectionActionError maps message containing cannot transition', () => {
   assert.equal(
-    normalizeConnectionActionError({ message: 'Cannot transition from active to pending_confirmation' }),
-    'invalid_transition'
+    normalizeConnectionActionError({
+      message: 'Cannot transition from active to pending_confirmation',
+    }),
+    'invalid_transition',
   );
 });
 
 test('normalizeConnectionActionError maps professional subscription cap failures', () => {
   assert.equal(
     normalizeConnectionActionError({ message: 'Professional subscription required.' }),
-    'subscription_required'
+    'subscription_required',
   );
 });
 
 test('normalizeConnectionActionError maps NETWORK_ERROR to network', () => {
-  assert.equal(
-    normalizeConnectionActionError({ code: 'NETWORK_ERROR' }),
-    'network'
-  );
+  assert.equal(normalizeConnectionActionError({ code: 'NETWORK_ERROR' }), 'network');
 });
 
 test('normalizeConnectionActionError maps message containing network to network', () => {
-  assert.equal(
-    normalizeConnectionActionError({ message: 'network timeout occurred' }),
-    'network'
-  );
+  assert.equal(normalizeConnectionActionError({ message: 'network timeout occurred' }), 'network');
 });
 
 test('normalizeConnectionActionError maps message containing endpoint to configuration', () => {
   assert.equal(
     normalizeConnectionActionError({ message: 'MyChampions server endpoint is not configured' }),
-    'configuration'
+    'configuration',
   );
 });
 
 test('normalizeConnectionActionError maps message containing config to configuration', () => {
   assert.equal(
     normalizeConnectionActionError({ message: 'Missing config for remote call' }),
-    'configuration'
+    'configuration',
   );
 });
 
@@ -334,48 +316,39 @@ test('normalizeConnectionActionError falls back to unknown', () => {
 test('mapInviteSubmitReasonToMessageKey maps code_not_found to invalid_code key', () => {
   assert.equal(
     mapInviteSubmitReasonToMessageKey('code_not_found'),
-    'relationship.error.invalid_code'
+    'relationship.error.invalid_code',
   );
 });
 
 test('mapInviteSubmitReasonToMessageKey maps code_expired to invalid_code key', () => {
   assert.equal(
     mapInviteSubmitReasonToMessageKey('code_expired'),
-    'relationship.error.invalid_code'
+    'relationship.error.invalid_code',
   );
 });
 
 test('mapInviteSubmitReasonToMessageKey maps already_connected', () => {
   assert.equal(
     mapInviteSubmitReasonToMessageKey('already_connected'),
-    'relationship.error.already_connected'
+    'relationship.error.already_connected',
   );
 });
 
 test('mapInviteSubmitReasonToMessageKey maps pending_cap_reached to pending_cap key', () => {
   assert.equal(
     mapInviteSubmitReasonToMessageKey('pending_cap_reached'),
-    'relationship.error.pending_cap'
+    'relationship.error.pending_cap',
   );
 });
 
 test('mapInviteSubmitReasonToMessageKey maps network', () => {
-  assert.equal(
-    mapInviteSubmitReasonToMessageKey('network'),
-    'relationship.error.network'
-  );
+  assert.equal(mapInviteSubmitReasonToMessageKey('network'), 'relationship.error.network');
 });
 
 test('mapInviteSubmitReasonToMessageKey maps configuration to unknown key', () => {
-  assert.equal(
-    mapInviteSubmitReasonToMessageKey('configuration'),
-    'relationship.error.unknown'
-  );
+  assert.equal(mapInviteSubmitReasonToMessageKey('configuration'), 'relationship.error.unknown');
 });
 
 test('mapInviteSubmitReasonToMessageKey maps unknown to unknown key', () => {
-  assert.equal(
-    mapInviteSubmitReasonToMessageKey('unknown'),
-    'relationship.error.unknown'
-  );
+  assert.equal(mapInviteSubmitReasonToMessageKey('unknown'), 'relationship.error.unknown');
 });
