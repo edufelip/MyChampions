@@ -1125,6 +1125,10 @@ test('self-hosted selected lanes require authorization and selected skips fail p
     /const rawMetroPort = process\.env\.DETOX_METRO_PORT \|\| '8081'/,
   );
   assert.match(detoxConfigSource, /reversePorts: \[androidMetroPort\]/);
+  assert.match(
+    androidGradleSource,
+    /findProperty\('detoxMetroPort'\) \?: System\.getenv\('DETOX_METRO_PORT'\) \?: '8081'/,
+  );
   assert.match(androidGradleSource, /DETOX_METRO_HOST/);
   assert.match(androidDetoxTestSource, /BuildConfig\.DETOX_METRO_HOST/);
 

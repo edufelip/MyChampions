@@ -159,7 +159,7 @@ android {
         missingDimensionStrategy 'detox', 'full'
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
-        def detoxMetroPort = findProperty('detoxMetroPort') ?: '8081'
+        def detoxMetroPort = findProperty('detoxMetroPort') ?: System.getenv('DETOX_METRO_PORT') ?: '8081'
         if (!(detoxMetroPort.toString() ==~ /[0-9]+/) ||
                 detoxMetroPort.toString().toInteger() < 1024 ||
                 detoxMetroPort.toString().toInteger() > 49151) {
