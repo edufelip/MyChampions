@@ -31,7 +31,8 @@ test('water tracking source uses the dev E2E auth-session fixture through provid
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -70,10 +71,12 @@ test('assigned nutrition E2E fixture uses nutritionist hydration goal and logs i
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousStudentNutritionFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
+    if (previousStudentNutritionFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE = previousStudentNutritionFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -95,7 +98,7 @@ test('logWaterIntake posts to the MyChampions server when a local bearer token i
             loggedAt: '2026-06-28T10:00:00.000Z',
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     },
   } as any);
@@ -121,7 +124,7 @@ test('logWaterIntake fails closed when local server auth is missing', async () =
           throw new Error('fetch should not be called without a token');
         },
       }),
-    (error: unknown) => error instanceof WaterTrackingSourceError && error.code === 'graphql'
+    (error: unknown) => error instanceof WaterTrackingSourceError && error.code === 'graphql',
   );
 });
 
@@ -135,7 +138,7 @@ test('logWaterIntake fails closed when local server URL is missing', async () =>
           throw new Error('fetch should not be called without a server URL');
         },
       }),
-    (error: unknown) => error instanceof WaterTrackingSourceError && error.code === 'configuration'
+    (error: unknown) => error instanceof WaterTrackingSourceError && error.code === 'configuration',
   );
 });
 
@@ -158,7 +161,7 @@ test('getMyWaterLogs reads from the MyChampions server when a local bearer token
             },
           ],
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     },
   } as any);
@@ -187,7 +190,7 @@ test('getMyWaterLogs fails closed when local server auth is missing', async () =
           throw new Error('fetch should not be called without a token');
         },
       }),
-    (error: unknown) => error instanceof WaterTrackingSourceError && error.code === 'graphql'
+    (error: unknown) => error instanceof WaterTrackingSourceError && error.code === 'graphql',
   );
 });
 
@@ -205,7 +208,7 @@ test('getMyWaterGoalContext reads from the MyChampions server when a local beare
           nutritionistGoalMl: 2800,
           hasActiveNutritionistAssignment: true,
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     },
   } as any);
@@ -231,6 +234,6 @@ test('getMyWaterGoalContext fails closed when local server auth is missing', asy
           throw new Error('fetch should not be called without a token');
         },
       }),
-    (error: unknown) => error instanceof WaterTrackingSourceError && error.code === 'graphql'
+    (error: unknown) => error instanceof WaterTrackingSourceError && error.code === 'graphql',
   );
 });

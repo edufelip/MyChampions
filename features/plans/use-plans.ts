@@ -24,28 +24,28 @@ export type UsePlansResult = {
   submitChangeRequest: (
     planId: string,
     planType: PlanType,
-    requestText: string
+    requestText: string,
   ) => Promise<{ data: PlanChangeRequest } | { error: PlanChangeRequestErrorReason }>;
   reviewChangeRequest: (
     requestId: string,
-    action: 'reviewed' | 'dismissed'
+    action: 'reviewed' | 'dismissed',
   ) => Promise<PlanChangeRequestErrorReason | null>;
   getChangeRequestsForStudent: (
-    studentUid: string
+    studentUid: string,
   ) => Promise<{ data: PlanChangeRequest[] } | { error: PlanChangeRequestErrorReason }>;
   bulkAssign: (
     predefinedPlanId: string,
-    studentUids: string[]
+    studentUids: string[],
   ) => Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }>;
   createDraftAssignedPlan: (
     predefinedPlanId: string,
-    studentUid: string
+    studentUid: string,
   ) => Promise<{ id: string } | { error: PlanChangeRequestErrorReason }>;
 };
 
 export function usePlans(
   isAuthenticated: boolean,
-  options: { fetchOnMount?: boolean } = { fetchOnMount: true }
+  options: { fetchOnMount?: boolean } = { fetchOnMount: true },
 ): UsePlansResult {
   const {
     state,
@@ -70,7 +70,7 @@ export function usePlans(
       getChangeRequestsForStudentFromStore: s.getChangeRequestsForStudent,
       bulkAssignFromStore: s.bulkAssign,
       createDraftAssignedPlanFromStore: s.createDraftAssignedPlan,
-    }))
+    })),
   );
 
   const reload = useCallback(() => {
@@ -96,35 +96,35 @@ export function usePlans(
     (planId: string, planType: PlanType, requestText: string) => {
       return submitChangeRequestFromStore(isAuthenticated, planId, planType, requestText);
     },
-    [isAuthenticated, submitChangeRequestFromStore]
+    [isAuthenticated, submitChangeRequestFromStore],
   );
 
   const reviewChangeRequest = useCallback(
     (requestId: string, action: 'reviewed' | 'dismissed') => {
       return reviewChangeRequestFromStore(isAuthenticated, requestId, action);
     },
-    [isAuthenticated, reviewChangeRequestFromStore]
+    [isAuthenticated, reviewChangeRequestFromStore],
   );
 
   const getChangeRequestsForStudent = useCallback(
     (studentUid: string) => {
       return getChangeRequestsForStudentFromStore(isAuthenticated, studentUid);
     },
-    [isAuthenticated, getChangeRequestsForStudentFromStore]
+    [isAuthenticated, getChangeRequestsForStudentFromStore],
   );
 
   const bulkAssign = useCallback(
     (predefinedPlanId: string, studentUids: string[]) => {
       return bulkAssignFromStore(isAuthenticated, predefinedPlanId, studentUids);
     },
-    [bulkAssignFromStore, isAuthenticated]
+    [bulkAssignFromStore, isAuthenticated],
   );
 
   const createDraftAssignedPlan = useCallback(
     (predefinedPlanId: string, studentUid: string) => {
       return createDraftAssignedPlanFromStore(isAuthenticated, predefinedPlanId, studentUid);
     },
-    [createDraftAssignedPlanFromStore, isAuthenticated]
+    [createDraftAssignedPlanFromStore, isAuthenticated],
   );
 
   return {

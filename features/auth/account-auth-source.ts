@@ -38,7 +38,7 @@ function makeDeps(): AccountAuthSourceDeps {
 
 export async function requestPasswordResetFromSource(
   email: string,
-  deps: AccountAuthSourceDeps = makeDeps()
+  deps: AccountAuthSourceDeps = makeDeps(),
 ): Promise<void> {
   const emailNormalized = email.trim().toLowerCase();
   const baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
@@ -58,8 +58,6 @@ export async function requestPasswordResetFromSource(
   }
 }
 
-export async function signOutFromSource(
-  deps: AccountAuthSourceDeps = makeDeps()
-): Promise<void> {
+export async function signOutFromSource(deps: AccountAuthSourceDeps = makeDeps()): Promise<void> {
   await clearPersistedServerAuthSession(deps);
 }

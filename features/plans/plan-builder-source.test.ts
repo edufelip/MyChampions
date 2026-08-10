@@ -36,7 +36,7 @@ describe('deriveStarterTemplatePlanType', () => {
   it('returns "nutrition" for starter_nutrition_ with UUID suffix', () => {
     assert.equal(
       deriveStarterTemplatePlanType('starter_nutrition_e5b7c2d8-1a3f-4e9b-8c0d-7f2a1b3e4c5d'),
-      'nutrition'
+      'nutrition',
     );
   });
 
@@ -53,7 +53,7 @@ describe('deriveStarterTemplatePlanType', () => {
   it('returns "training" for starter_training_ with UUID suffix', () => {
     assert.equal(
       deriveStarterTemplatePlanType('starter_training_f1c2d3e4-5678-90ab-cdef-1234567890ab'),
-      'training'
+      'training',
     );
   });
 
@@ -238,9 +238,9 @@ describe('shouldExposePlanInMyPlans', () => {
           ownerProfessionalUid: 'pro-1',
           isDraft: true,
         },
-        'student-1'
+        'student-1',
       ),
-      false
+      false,
     );
   });
 
@@ -254,9 +254,9 @@ describe('shouldExposePlanInMyPlans', () => {
           ownerProfessionalUid: 'pro-1',
           isDraft: true,
         },
-        'pro-1'
+        'pro-1',
       ),
-      true
+      true,
     );
   });
 });

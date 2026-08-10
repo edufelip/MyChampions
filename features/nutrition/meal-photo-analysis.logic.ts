@@ -52,11 +52,16 @@ export type RawAnalysisResponse = {
 export function isValidMacroEstimate(estimate: MacroEstimate): boolean {
   const { calories, carbs, proteins, fats, totalGrams } = estimate;
   return (
-    Number.isFinite(calories) && calories >= 0 &&
-    Number.isFinite(carbs) && carbs >= 0 &&
-    Number.isFinite(proteins) && proteins >= 0 &&
-    Number.isFinite(fats) && fats >= 0 &&
-    Number.isFinite(totalGrams) && totalGrams > 0
+    Number.isFinite(calories) &&
+    calories >= 0 &&
+    Number.isFinite(carbs) &&
+    carbs >= 0 &&
+    Number.isFinite(proteins) &&
+    proteins >= 0 &&
+    Number.isFinite(fats) &&
+    fats >= 0 &&
+    Number.isFinite(totalGrams) &&
+    totalGrams > 0
   );
 }
 
@@ -145,14 +150,9 @@ export function normalizePhotoAnalysisError(error: unknown): PhotoAnalysisErrorR
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code: unknown }).code) : null;
     const msg =
-      'message' in error
-        ? String((error as { message: unknown }).message).toLowerCase()
-        : null;
+      'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
 
-    if (
-      code === 'photo_permission_denied' ||
-      msg?.includes('photo permission denied')
-    ) {
+    if (code === 'photo_permission_denied' || msg?.includes('photo permission denied')) {
       return 'permission_denied';
     }
     if (code === 'file_too_large' || msg?.includes('exceeds 1.5 mb')) {

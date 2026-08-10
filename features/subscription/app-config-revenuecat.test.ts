@@ -16,7 +16,7 @@ const REVENUECAT_ENV_KEYS = [
 
 function withRevenueCatEnv(run: () => void): void {
   const previous = Object.fromEntries(
-    REVENUECAT_ENV_KEYS.map((key) => [key, process.env[key]])
+    REVENUECAT_ENV_KEYS.map((key) => [key, process.env[key]]),
   ) as Record<(typeof REVENUECAT_ENV_KEYS)[number], string | undefined>;
 
   try {
@@ -86,10 +86,7 @@ test('app config keeps default_student for normal development', () => {
     process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV = 'appl_dev_key';
     process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV = 'goog_dev_key';
 
-    assert.equal(
-      resolveRevenueCatConfig('dev').revenueCatStudentOfferingId,
-      'default_student'
-    );
+    assert.equal(resolveRevenueCatConfig('dev').revenueCatStudentOfferingId, 'default_student');
   });
 });
 
@@ -116,7 +113,7 @@ test('app config rejects a production test_student override', () => {
 
     assert.throws(
       () => resolveRevenueCatConfig('prod'),
-      /allowed only in an explicit development Test Store build/
+      /allowed only in an explicit development Test Store build/,
     );
   });
 });
@@ -128,7 +125,7 @@ test('app config rejects a production test_professional override', () => {
 
     assert.throws(
       () => resolveRevenueCatConfig('prod'),
-      /allowed only in an explicit development Test Store build/
+      /allowed only in an explicit development Test Store build/,
     );
   });
 });
@@ -139,7 +136,7 @@ test('app config rejects test_student when the development Test Store guard is o
 
     assert.throws(
       () => resolveRevenueCatConfig('dev'),
-      /allowed only in an explicit development Test Store build/
+      /allowed only in an explicit development Test Store build/,
     );
   });
 });
@@ -150,7 +147,7 @@ test('app config rejects test_professional when the development Test Store guard
 
     assert.throws(
       () => resolveRevenueCatConfig('dev'),
-      /allowed only in an explicit development Test Store build/
+      /allowed only in an explicit development Test Store build/,
     );
   });
 });
@@ -159,10 +156,7 @@ test('app config rejects a malformed student offering override', () => {
   withRevenueCatEnv(() => {
     process.env.EXPO_PUBLIC_REVENUECAT_STUDENT_OFFERING_ID = 'student_preview';
 
-    assert.throws(
-      () => resolveRevenueCatConfig('dev'),
-      /must be default_student or test_student/
-    );
+    assert.throws(() => resolveRevenueCatConfig('dev'), /must be default_student or test_student/);
   });
 });
 
@@ -172,7 +166,7 @@ test('app config rejects a malformed professional offering override', () => {
 
     assert.throws(
       () => resolveRevenueCatConfig('dev'),
-      /must be default_professional or test_professional/
+      /must be default_professional or test_professional/,
     );
   });
 });

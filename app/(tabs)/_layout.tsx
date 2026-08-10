@@ -70,7 +70,9 @@ export default function TabLayout() {
     establishedUid: establishedUidRef.current,
     establishedRole,
   });
-  const { state: specialtiesState } = useSpecialties(Boolean(currentUser) && effectiveRole === 'professional');
+  const { state: specialtiesState } = useSpecialties(
+    Boolean(currentUser) && effectiveRole === 'professional',
+  );
 
   useEffect(() => {
     if (!__DEV__) return;
@@ -119,7 +121,8 @@ export default function TabLayout() {
         animation: 'fade',
         headerShown: false,
         tabBarButton: HapticTab,
-      }}>
+      }}
+    >
       {/* ── index: Pro = Dashboard / Student = Home ─────────────────────── */}
       <Tabs.Screen
         name="index"
@@ -143,9 +146,7 @@ export default function TabLayout() {
         name="students"
         options={{
           title: t('shell.tabs.students'),
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="person.2.fill" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="person.2.fill" color={color} />,
           tabBarButtonTestID: 'tabs.students',
           href: isPro ? undefined : null,
         }}
@@ -156,9 +157,7 @@ export default function TabLayout() {
         name="nutrition"
         options={{
           title: t('shell.tabs.nutrition'),
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="fork.knife" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="fork.knife" color={color} />,
           tabBarButtonTestID: 'tabs.nutrition',
           href: canUseNutrition ? undefined : null,
         }}
@@ -169,9 +168,7 @@ export default function TabLayout() {
         name="training"
         options={{
           title: isStudent ? t('shell.tabs.exercise') : t('shell.tabs.training'),
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="figure.run" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="figure.run" color={color} />,
           tabBarButtonTestID: 'tabs.training',
           href: effectiveRole ? undefined : null,
         }}
@@ -183,9 +180,7 @@ export default function TabLayout() {
         options={{
           title: t('shell.tabs.recipes'),
           tabBarLabel: t('shell.tabs.recipes'),
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="book.closed.fill" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="book.closed.fill" color={color} />,
           tabBarButtonTestID: 'tabs.recipes',
           href: isStudent ? undefined : null,
         }}
@@ -204,7 +199,6 @@ export default function TabLayout() {
           href: effectiveRole ? undefined : null,
         }}
       />
-
     </Tabs>
   );
 }

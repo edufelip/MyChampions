@@ -54,7 +54,7 @@ describe('profile-source server api', () => {
     });
     const result = await hydrateProfileFromSource(
       { uid: 'uid-1', displayName: 'A', email: 'a@a.com' },
-      deps
+      deps,
     );
 
     assert.equal(result.lockedRole, 'professional');
@@ -73,7 +73,11 @@ describe('profile-source server api', () => {
       return response({ profile });
     });
     let userTokenAccessorCalled = false;
-    const userWithTokenAccessor: { uid: string; displayName: string | null; email: string | null } & {
+    const userWithTokenAccessor: {
+      uid: string;
+      displayName: string | null;
+      email: string | null;
+    } & {
       getAccessToken: () => Promise<string>;
     } = {
       uid: 'uid-1',
@@ -97,7 +101,7 @@ describe('profile-source server api', () => {
       const deps = makeDeps(() => response({ error: { code: 'unauthorized' } }, { status }));
       await assert.rejects(
         () => hydrateProfileFromSource({ uid: 'uid-1', displayName: 'A', email: 'a@a.com' }, deps),
-        (error: unknown) => error instanceof ProfileSourceError && error.code === 'unauthenticated'
+        (error: unknown) => error instanceof ProfileSourceError && error.code === 'unauthenticated',
       );
     }
   });
@@ -113,7 +117,7 @@ describe('profile-source server api', () => {
 
     await assert.rejects(
       () => hydrateProfileFromSource({ uid: 'uid-1', displayName: 'A', email: 'a@a.com' }, deps),
-      (error: unknown) => error instanceof ProfileSourceError && error.code === 'token_unavailable'
+      (error: unknown) => error instanceof ProfileSourceError && error.code === 'token_unavailable',
     );
   });
 
@@ -130,11 +134,11 @@ describe('profile-source server api', () => {
 
   it('maps role conflicts to graphql source errors', async () => {
     const deps = makeDeps(() =>
-      response({ error: { code: 'role_already_locked' } }, { status: 409 })
+      response({ error: { code: 'role_already_locked' } }, { status: 409 }),
     );
     await assert.rejects(
       () => lockRoleInSource('student', deps),
-      (error: unknown) => error instanceof ProfileSourceError && error.code === 'graphql'
+      (error: unknown) => error instanceof ProfileSourceError && error.code === 'graphql',
     );
   });
 
@@ -148,7 +152,7 @@ describe('profile-source server api', () => {
     assert.deepEqual(body, { acceptedTermsVersion: 'v2' });
     const result = await hydrateProfileFromSource(
       { uid: 'uid-1', displayName: 'A', email: 'a@a.com' },
-      deps
+      deps,
     );
     assert.equal(result.acceptedTermsVersion, 'v2');
   });
@@ -185,7 +189,7 @@ describe('profile-source server api', () => {
           injectedFetchCalls += 1;
           assert.equal(request.method, 'DELETE');
           return new Response(null, { status: 204 });
-        })
+        }),
       );
       await deleteAccountAndDataFromSource();
       assert.equal(injectedFetchCalls, 1);

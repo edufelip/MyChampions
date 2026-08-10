@@ -177,7 +177,7 @@ export function validatePortionLogInput(input: PortionLogInput): PortionLogValid
  */
 export function calculatePortionNutrition(
   meal: Pick<CustomMeal, 'totalGrams' | 'calories' | 'carbs' | 'proteins' | 'fats'>,
-  consumedGrams: number
+  consumedGrams: number,
 ): NutritionSnapshot {
   const ratio = consumedGrams / meal.totalGrams;
   return {
@@ -224,13 +224,25 @@ export function buildCustomMealPlanSnapshot(meal: CustomMeal): CustomMealPlanSna
 export function normalizeMealActionError(error: unknown): MealActionErrorReason {
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code: unknown }).code) : null;
-    const msg = 'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
+    const msg =
+      'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
 
     if (code === 'NOT_FOUND' || msg?.includes('not found')) return 'not_found';
     if (code === 'VALIDATION' || msg?.includes('validation')) return 'validation';
-    if (code === 'RATE_LIMITED' || msg?.includes('rate limit') || msg?.includes('too many')) return 'share_rate_limited';
-    if (code === 'INVALID_TOKEN' || msg?.includes('invalid token') || msg?.includes('invalid share')) return 'invalid_share_token';
-    if (code === 'ALREADY_IMPORTED' || msg?.includes('already imported') || msg?.includes('already saved')) return 'already_imported';
+    if (code === 'RATE_LIMITED' || msg?.includes('rate limit') || msg?.includes('too many'))
+      return 'share_rate_limited';
+    if (
+      code === 'INVALID_TOKEN' ||
+      msg?.includes('invalid token') ||
+      msg?.includes('invalid share')
+    )
+      return 'invalid_share_token';
+    if (
+      code === 'ALREADY_IMPORTED' ||
+      msg?.includes('already imported') ||
+      msg?.includes('already saved')
+    )
+      return 'already_imported';
     if (code === 'NETWORK_ERROR' || msg?.includes('network')) return 'network';
     if (msg?.includes('endpoint') || msg?.includes('config')) return 'configuration';
   }

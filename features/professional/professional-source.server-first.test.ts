@@ -17,7 +17,7 @@ test('server-backed professional specialties do not load Firestore at module imp
     this: unknown,
     request: string,
     parent: NodeModule | null,
-    isMain: boolean
+    isMain: boolean,
   ) {
     if (request === 'firebase/firestore' || request === '../firestore') {
       blockedLoads.push(request);
@@ -47,7 +47,7 @@ test('server-backed professional specialties do not load Firestore at module imp
               },
             ],
           }),
-          { status: 200, headers: { 'content-type': 'application/json' } }
+          { status: 200, headers: { 'content-type': 'application/json' } },
         );
       },
       generateInviteCode: () => {

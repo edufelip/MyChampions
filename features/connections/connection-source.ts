@@ -74,22 +74,23 @@ export function buildPendingConnectionFromInvite(input: {
 export function isPendingStudentCapReached(
   pendingConnections: Array<{ studentAuthUid?: string | null }>,
   nextStudentUid: string,
-  cap = MAX_PENDING_STUDENTS
+  cap = MAX_PENDING_STUDENTS,
 ): boolean {
   const pendingStudentUids = new Set(
     pendingConnections
       .map((connection) => connection.studentAuthUid)
-      .filter((uid): uid is string => typeof uid === 'string' && uid.length > 0)
+      .filter((uid): uid is string => typeof uid === 'string' && uid.length > 0),
   );
   pendingStudentUids.add(nextStudentUid);
   return pendingStudentUids.size > cap;
 }
 
 export function getExistingInviteConnectionConflict(
-  connections: Array<{ status?: string | null }>
+  connections: Array<{ status?: string | null }>,
 ): 'active' | 'pending' | null {
   if (connections.some((connection) => connection.status === 'active')) return 'active';
-  if (connections.some((connection) => connection.status === 'pending_confirmation')) return 'pending';
+  if (connections.some((connection) => connection.status === 'pending_confirmation'))
+    return 'pending';
   return null;
 }
 
@@ -145,11 +146,15 @@ function getE2EInviteSubmitFixture() {
 
 function buildE2EPendingConnectionFromCode(code: string): ConnectionRecord {
   const normalizedCode = code.trim().toUpperCase();
-  const specialty: ConnectionSpecialty = normalizedCode.startsWith('FIT') ? 'fitness_coach' : 'nutritionist';
-  const professionalAuthUid = specialty === 'fitness_coach' ? 'e2e-fitness-coach' : 'e2e-nutritionist';
-  const id = specialty === 'fitness_coach'
-    ? 'e2e-pending-fitness-coach-connection'
-    : 'e2e-pending-nutritionist-connection';
+  const specialty: ConnectionSpecialty = normalizedCode.startsWith('FIT')
+    ? 'fitness_coach'
+    : 'nutritionist';
+  const professionalAuthUid =
+    specialty === 'fitness_coach' ? 'e2e-fitness-coach' : 'e2e-nutritionist';
+  const id =
+    specialty === 'fitness_coach'
+      ? 'e2e-pending-fitness-coach-connection'
+      : 'e2e-pending-nutritionist-connection';
 
   return {
     id,
@@ -208,7 +213,7 @@ function normalizeConnectionSourceError(error: unknown): ConnectionSourceError {
 
   return new ConnectionSourceError(
     'invalid_response',
-    (error as Error)?.message ?? 'Unexpected connection source error.'
+    (error as Error)?.message ?? 'Unexpected connection source error.',
   );
 }
 
@@ -272,7 +277,9 @@ async function readServerJson(response: Response): Promise<ServerConnectionRespo
   }
 }
 
-async function readServerInviteJson(response: Response): Promise<ServerInviteSubmitResponse | null> {
+async function readServerInviteJson(
+  response: Response,
+): Promise<ServerInviteSubmitResponse | null> {
   try {
     return (await response.json()) as ServerInviteSubmitResponse;
   } catch {
@@ -280,7 +287,9 @@ async function readServerInviteJson(response: Response): Promise<ServerInviteSub
   }
 }
 
-async function readServerConnectionActionJson(response: Response): Promise<ServerConnectionActionResponse | null> {
+async function readServerConnectionActionJson(
+  response: Response,
+): Promise<ServerConnectionActionResponse | null> {
   try {
     return (await response.json()) as ServerConnectionActionResponse;
   } catch {
@@ -290,10 +299,11 @@ async function readServerConnectionActionJson(response: Response): Promise<Serve
 
 function normalizeServerConnectionError(
   status: number,
-  payload: ServerConnectionResponse | null
+  payload: ServerConnectionResponse | null,
 ): ConnectionSourceError {
   const code = payload?.error?.code;
-  const message = payload?.error?.message ?? `Connections server request failed with status ${status}.`;
+  const message =
+    payload?.error?.message ?? `Connections server request failed with status ${status}.`;
 
   if (status === 401 || code === 'unauthorized') {
     return new ConnectionSourceError('graphql', message);
@@ -305,7 +315,7 @@ function normalizeServerConnectionError(
 }
 
 async function getMyConnectionsFromServer(
-  deps: ConnectionSourceDeps
+  deps: ConnectionSourceDeps,
 ): Promise<ConnectionRecord[] | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -331,7 +341,7 @@ async function getMyConnectionsFromServer(
 
 function normalizeServerInviteSubmitError(
   status: number,
-  payload: ServerInviteSubmitResponse | null
+  payload: ServerInviteSubmitResponse | null,
 ): ConnectionSourceError {
   const error = payload?.error;
   if (error === 'not_found') {
@@ -352,12 +362,15 @@ function normalizeServerInviteSubmitError(
   if (status >= 500) {
     return new ConnectionSourceError('network', `Invite submission failed with status ${status}.`);
   }
-  return new ConnectionSourceError('invalid_response', `Unexpected invite submission response: ${status}.`);
+  return new ConnectionSourceError(
+    'invalid_response',
+    `Unexpected invite submission response: ${status}.`,
+  );
 }
 
 async function submitInviteCodeToServer(
   code: string,
-  deps: ConnectionSourceDeps
+  deps: ConnectionSourceDeps,
 ): Promise<{ connectionId: string; status: 'pending_confirmation' } | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -365,14 +378,17 @@ async function submitInviteCodeToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/invite-submissions`, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${accessToken}`,
-        'content-type': 'application/json',
+    response = await (deps.fetchFn ?? defaultAppFetch)(
+      `${baseUrl}/connections/invite-submissions`,
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ code: code.trim() }),
       },
-      body: JSON.stringify({ code: code.trim() }),
-    });
+    );
   } catch {
     throw new ConnectionSourceError('network', 'Network request to submit invite code failed.');
   }
@@ -392,7 +408,7 @@ async function submitInviteCodeToServer(
 function normalizeServerConnectionActionError(
   status: number,
   payload: ServerConnectionActionResponse | null,
-  action: 'confirm' | 'end'
+  action: 'confirm' | 'end',
 ): ConnectionSourceError {
   const error = payload?.error;
   if (error === 'not_found') {
@@ -411,14 +427,20 @@ function normalizeServerConnectionActionError(
     return new ConnectionSourceError('graphql', `Connection ${action} is not authorized.`);
   }
   if (status >= 500) {
-    return new ConnectionSourceError('network', `Connection ${action} failed with status ${status}.`);
+    return new ConnectionSourceError(
+      'network',
+      `Connection ${action} failed with status ${status}.`,
+    );
   }
-  return new ConnectionSourceError('invalid_response', `Unexpected connection ${action} response: ${status}.`);
+  return new ConnectionSourceError(
+    'invalid_response',
+    `Unexpected connection ${action} response: ${status}.`,
+  );
 }
 
 async function confirmPendingConnectionToServer(
   connectionId: string,
-  deps: ConnectionSourceDeps
+  deps: ConnectionSourceDeps,
 ): Promise<{ connectionId: string; status: 'active' } | null> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -426,20 +448,19 @@ async function confirmPendingConnectionToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/${connectionId}/confirm`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${accessToken}` },
-    });
+    response = await (deps.fetchFn ?? defaultAppFetch)(
+      `${baseUrl}/connections/${connectionId}/confirm`,
+      {
+        method: 'POST',
+        headers: { authorization: `Bearer ${accessToken}` },
+      },
+    );
   } catch {
     throw new ConnectionSourceError('network', 'Network request to confirm connection failed.');
   }
 
   const payload = await readServerConnectionActionJson(response);
-  if (
-    response.ok &&
-    typeof payload?.connectionId === 'string' &&
-    payload.status === 'active'
-  ) {
+  if (response.ok && typeof payload?.connectionId === 'string' && payload.status === 'active') {
     return { connectionId: payload.connectionId, status: 'active' };
   }
 
@@ -448,7 +469,7 @@ async function confirmPendingConnectionToServer(
 
 async function endConnectionToServer(
   connectionId: string,
-  deps: ConnectionSourceDeps
+  deps: ConnectionSourceDeps,
 ): Promise<boolean> {
   const baseUrl = deps.getServerBaseUrl?.()?.replace(/\/+$/, '');
   const accessToken = await deps.getCurrentAccessToken?.();
@@ -456,20 +477,19 @@ async function endConnectionToServer(
 
   let response: Response;
   try {
-    response = await (deps.fetchFn ?? defaultAppFetch)(`${baseUrl}/connections/${connectionId}/end`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${accessToken}` },
-    });
+    response = await (deps.fetchFn ?? defaultAppFetch)(
+      `${baseUrl}/connections/${connectionId}/end`,
+      {
+        method: 'POST',
+        headers: { authorization: `Bearer ${accessToken}` },
+      },
+    );
   } catch {
     throw new ConnectionSourceError('network', 'Network request to end connection failed.');
   }
 
   const payload = await readServerConnectionActionJson(response);
-  if (
-    response.ok &&
-    typeof payload?.connectionId === 'string' &&
-    payload.status === 'ended'
-  ) {
+  if (response.ok && typeof payload?.connectionId === 'string' && payload.status === 'ended') {
     return true;
   }
 
@@ -478,7 +498,7 @@ async function endConnectionToServer(
 
 export async function submitInviteCode(
   code: string,
-  deps: ConnectionSourceDeps = defaultConnectionSourceDeps
+  deps: ConnectionSourceDeps = defaultConnectionSourceDeps,
 ): Promise<{ connectionId: string; status: 'pending_confirmation' }> {
   if (deps === defaultConnectionSourceDeps && getE2EInviteSubmitFixture() === 'success') {
     const connection = buildE2EPendingConnectionFromCode(code);
@@ -492,7 +512,7 @@ export async function submitInviteCode(
 
     throw new ConnectionSourceError(
       'configuration',
-      'Invite submission requires local server auth.'
+      'Invite submission requires local server auth.',
     );
   } catch (error) {
     throw normalizeConnectionSourceError(error);
@@ -501,12 +521,12 @@ export async function submitInviteCode(
 
 export async function confirmPendingConnection(
   connectionId: string,
-  deps: ConnectionSourceDeps = defaultConnectionSourceDeps
+  deps: ConnectionSourceDeps = defaultConnectionSourceDeps,
 ): Promise<{ connectionId: string; status: 'active' }> {
   try {
     return requireServerResult(
       await confirmPendingConnectionToServer(connectionId, deps),
-      'Connection confirmation'
+      'Connection confirmation',
     );
   } catch (error) {
     throw normalizeConnectionSourceError(error);
@@ -515,7 +535,7 @@ export async function confirmPendingConnection(
 
 export async function endConnection(
   connectionId: string,
-  deps: ConnectionSourceDeps = defaultConnectionSourceDeps
+  deps: ConnectionSourceDeps = defaultConnectionSourceDeps,
 ): Promise<void> {
   if (deps === defaultConnectionSourceDeps) {
     const e2eConnections = getE2EConnectionFixtures();
@@ -530,17 +550,14 @@ export async function endConnection(
   }
 
   try {
-    requireServerResult(
-      await endConnectionToServer(connectionId, deps),
-      'Connection end'
-    );
+    requireServerResult(await endConnectionToServer(connectionId, deps), 'Connection end');
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }
 }
 
 export async function getMyConnections(
-  deps: ConnectionSourceDeps = defaultConnectionSourceDeps
+  deps: ConnectionSourceDeps = defaultConnectionSourceDeps,
 ): Promise<ConnectionRecord[]> {
   if (deps === defaultConnectionSourceDeps) {
     const e2eConnections = getE2EConnectionFixtures();
@@ -548,10 +565,7 @@ export async function getMyConnections(
   }
 
   try {
-    return requireServerResult(
-      await getMyConnectionsFromServer(deps),
-      'Connection reads'
-    );
+    return requireServerResult(await getMyConnectionsFromServer(deps), 'Connection reads');
   } catch (error) {
     throw normalizeConnectionSourceError(error);
   }

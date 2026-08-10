@@ -7,9 +7,7 @@ import {
 } from './google-social-auth-source';
 import { SocialAuthSourceError, type SocialAuthSourceInput } from './social-auth-source';
 
-function makeDeps(
-  overrides: Partial<GoogleSocialAuthSourceDeps> = {}
-): GoogleSocialAuthSourceDeps {
+function makeDeps(overrides: Partial<GoogleSocialAuthSourceDeps> = {}): GoogleSocialAuthSourceDeps {
   return {
     configure: () => undefined,
     ensurePlayServices: async () => true,
@@ -47,7 +45,7 @@ describe('google-social-auth-source', () => {
         signInWithSocialProviderToken: async (input) => {
           socialInputs.push(input);
         },
-      })
+      }),
     );
 
     assert.deepEqual(configurations, [
@@ -77,7 +75,7 @@ describe('google-social-auth-source', () => {
           return true;
         },
         getPlatform: () => 'ios',
-      })
+      }),
     );
 
     assert.deepEqual(configurations, [
@@ -101,9 +99,9 @@ describe('google-social-auth-source', () => {
             signIn: async () => {
               throw new Error('Google prompt should not run');
             },
-          })
+          }),
         ),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration',
     );
   });
 
@@ -116,9 +114,9 @@ describe('google-social-auth-source', () => {
               webClientId: 'web-client-id.apps.googleusercontent.com',
             }),
             getPlatform: () => 'ios',
-          })
+          }),
         ),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration',
     );
   });
 
@@ -128,12 +126,12 @@ describe('google-social-auth-source', () => {
         signInWithGoogleProviderTokenFromSource(
           makeDeps({
             signIn: async () => ({ type: 'cancelled', data: null }),
-          })
+          }),
         ),
       (error: unknown) =>
         error instanceof Error &&
         typeof (error as { code?: unknown }).code === 'string' &&
-        String((error as { code?: unknown }).code).includes('ERR_REQUEST_CANCELED')
+        String((error as { code?: unknown }).code).includes('ERR_REQUEST_CANCELED'),
     );
   });
 
@@ -147,12 +145,12 @@ describe('google-social-auth-source', () => {
               error.code = 'SIGN_IN_CANCELLED';
               throw error;
             },
-          })
+          }),
         ),
       (error: unknown) =>
         error instanceof Error &&
         typeof (error as { code?: unknown }).code === 'string' &&
-        String((error as { code?: unknown }).code).includes('ERR_REQUEST_CANCELED')
+        String((error as { code?: unknown }).code).includes('ERR_REQUEST_CANCELED'),
     );
   });
 
@@ -165,10 +163,10 @@ describe('google-social-auth-source', () => {
               type: 'success',
               data: { idToken: null },
             }),
-          })
+          }),
         ),
       (error: unknown) =>
-        error instanceof SocialAuthSourceError && error.code === 'invalid_credentials'
+        error instanceof SocialAuthSourceError && error.code === 'invalid_credentials',
     );
   });
 
@@ -176,9 +174,9 @@ describe('google-social-auth-source', () => {
     await assert.rejects(
       () =>
         signInWithGoogleProviderTokenFromSource(
-          makeDeps({ ensurePlayServices: async () => false })
+          makeDeps({ ensurePlayServices: async () => false }),
         ),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'network'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'network',
     );
 
     await assert.rejects(
@@ -188,9 +186,9 @@ describe('google-social-auth-source', () => {
             signIn: async () => {
               throw new Error('native provider unavailable');
             },
-          })
+          }),
         ),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'network'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'network',
     );
   });
 });

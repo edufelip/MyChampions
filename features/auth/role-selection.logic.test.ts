@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { resolvePostRoleRoute, validateRoleSelectionInput, type RoleIntent } from './role-selection.logic';
+import {
+  resolvePostRoleRoute,
+  validateRoleSelectionInput,
+  type RoleIntent,
+} from './role-selection.logic';
 
 // ─── Input validation tests ────────────────────────────────────────────────────
 

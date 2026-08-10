@@ -41,15 +41,17 @@ status, repository-setting, and complete exact-head matrix evidence.
 Configure the repository variable `MYCHAMPIONS_ENABLE_IOS_TESTS` under
 **Settings → Secrets and variables → Actions → Variables**. The exact value
 `false` skips new iOS test-only jobs, including the manual `ios-pr.yml` smoke
-lane, selected iOS Detox suites, and the system/account-verification tests that
-run through those lanes. An unset variable or any value other than the exact
-string `false` keeps iOS testing enabled. The variable does not cancel jobs
-that are already running, and it does not gate the credentialed
-`ios-release.yml` distribution workflow. When disabled, the final selective
-gate treats the iOS job's intentional `skipped` result as allowed while all
-other enabled quality and platform lanes remain enforced. This checkout has no
-scheduled or nightly iOS test workflow; any future iOS test-only lane must use
-the same guard.
+lane, selected iOS Detox suites, the system/account-verification tests that run
+through those lanes, the full iOS Detox job in `detox-protected-full.yml`, and
+the provider-backed iOS Test Store job in `provider-validation.yml`. The full
+Detox workflow remains test-only even when started by a published release
+event. An unset variable or any value other than the exact string `false` keeps
+iOS testing enabled. The variable does not cancel jobs that are already
+running, and it does not gate the credentialed `ios-release.yml` distribution
+workflow. When disabled, the final selective gate treats the iOS job's
+intentional `skipped` result as allowed while all other enabled quality and
+platform lanes remain enforced. This checkout has no scheduled or nightly iOS
+test workflow; any future iOS test-only lane must use the same guard.
 
 ## Sources of truth
 
@@ -135,7 +137,9 @@ dev-only deterministic fixture harness remains enabled. Each native job builds
 once, then runs isolated fixture phases with a freshly owned Metro process and
 explicit environment. Runtime phase values take precedence over the app config
 embedded by the one-time native build; an explicit empty runtime value clears a
-fixture from the preceding phase. The Metro status endpoint proves only that the
+fixture from the preceding phase and is omitted from the child process
+environment, so an inherited self-hosted-runner value cannot masquerade as an
+active scenario. The Metro status endpoint proves only that the
 listener exists. The executor next requests the platform-specific Expo magic
 development-bundle URL and fully consumes its rewritten response before spawning
 Detox, so the first screen wait never owns a cold transform. The cold transform
@@ -175,10 +179,12 @@ targets. Tests scroll lower auth actions into view before interaction so the
 same contract holds on the configured compact Android viewport. On macOS,
 process-group probing can return
 `EPERM` when even one group member has another UID. The cleanup fallback reads
-the numeric process table, signals only runner-UID group members, verifies TERM
-and KILL outcomes, and separately proves that the Metro port closed. Foreign
-processes are never signaled, while a surviving runner-owned member or listener
-fails the lane. CI also fails if a selected Detox invocation skips every test.
+the numeric process table, signals the owned supervisor before its descendants
+so its cleanup trap can run, then signals only runner-UID group members,
+verifies TERM and KILL outcomes, and separately proves that the Metro port
+closed. Foreign processes are never signaled, while a surviving runner-owned
+member or listener fails the lane. CI also fails if a selected Detox invocation
+skips every test.
 `detox:revenuecat-live` remains manual/provider-live and is never PR-eligible.
 For D-195 promotion, each native creation/use step arms idempotent `EXIT`, `INT`,
 and `TERM` handlers before materializing secrets or acquiring a native device.
@@ -363,9 +369,11 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   web, iOS, and Android. Each planned executor invocation owns a detached process
   group; crossing the deadline terminates that exact group and reports the
   invocation ID. The parser fails closed for invalid configured values, while an
-  absent variable keeps local execution unbounded. Native jobs retain their
-  existing cleanup traps and are additionally contained by a 75-minute job
-  limit.
+  absent variable keeps local execution unbounded. The executable timeout-cleanup
+  contract gives its nested child-process fixture a bounded startup window before
+  asserting the descendant PID, so full-suite scheduling cannot turn readiness
+  delay into a false cleanup failure. Native jobs retain their existing cleanup
+  traps and are additionally contained by a 75-minute job limit.
 - The Playwright lane targets only `mychampions-web-only` and uses a web-specific
   runner service. Android retains `mychampions-android`; both WSL lanes use the
   shared `mychampions-wsl-ui` concurrency group after live overlap exceeded the

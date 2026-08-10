@@ -83,7 +83,9 @@ export default function ProfessionalStudentsScreen() {
   const { currentUser } = useAuthSession();
   const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
   const inviteSpecialty =
-    specialtiesState.kind === 'ready' ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties) : null;
+    specialtiesState.kind === 'ready'
+      ? resolvePrimaryInviteCodeSpecialty(specialtiesState.specialties)
+      : null;
   const { state: inviteCodeState } = useInviteCode(Boolean(currentUser), inviteSpecialty);
   const { state: plansState, bulkAssign } = usePlans(Boolean(currentUser));
 
@@ -156,11 +158,12 @@ export default function ProfessionalStudentsScreen() {
 
   const visible = useMemo(
     () => filterStudentRosterRows(students, { filter, search: debouncedSearch }),
-    [debouncedSearch, filter, students]
+    [debouncedSearch, filter, students],
   );
   const assignmentVisible = useMemo(
-    () => (isSelectionMode ? filterBulkAssignmentStudentsByPlanType(visible, bulkPlanType) : visible),
-    [bulkPlanType, isSelectionMode, visible]
+    () =>
+      isSelectionMode ? filterBulkAssignmentStudentsByPlanType(visible, bulkPlanType) : visible,
+    [bulkPlanType, isSelectionMode, visible],
   );
 
   useEffect(() => {
@@ -179,7 +182,7 @@ export default function ProfessionalStudentsScreen() {
 
   const toggleSelection = (uid: string) => {
     setSelectedStudentUids((prev) =>
-      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid],
     );
   };
 
@@ -213,7 +216,8 @@ export default function ProfessionalStudentsScreen() {
       contentWidth="wide"
       scrollable={false}
       testID="pro.students.screen"
-      contentContainerStyle={styles.content}>
+      contentContainerStyle={styles.content}
+    >
       <Stack.Screen options={{ title: t('pro.students.title'), headerShown: false }} />
 
       {offlineDisplay.showOfflineBanner ? (
@@ -233,18 +237,21 @@ export default function ProfessionalStudentsScreen() {
                 backgroundColor: theme.color.accentPrimarySoft,
                 borderColor: theme.color.accentPrimary,
               },
-            ]}>
+            ]}
+          >
             <MaterialIcons name="groups" size={20} color={theme.color.accentPrimary} />
           </View>
           <View style={styles.heroCopy}>
             <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
-              {isSelectionMode ? t('pro.students.bulk_assign.selection_mode') : t('pro.students.title')}
+              {isSelectionMode
+                ? t('pro.students.bulk_assign.selection_mode')
+                : t('pro.students.title')}
             </Text>
             <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
               {isSelectionMode
                 ? (t('pro.plan.assign.student_count') as string).replace(
                     '{count}',
-                    String(selectedStudentUids.length)
+                    String(selectedStudentUids.length),
                   )
                 : t('pro.students.bulk_assign.select_hint')}
             </Text>
@@ -254,7 +261,11 @@ export default function ProfessionalStudentsScreen() {
               scheme={scheme}
               variant="outline"
               size="xs"
-              label={isSelectionMode ? (t('pro.students.bulk_assign.cancel') as string) : (t('pro.students.bulk_assign.cta') as string)}
+              label={
+                isSelectionMode
+                  ? (t('pro.students.bulk_assign.cancel') as string)
+                  : (t('pro.students.bulk_assign.cta') as string)
+              }
               onPress={() => {
                 setIsSelectionMode(!isSelectionMode);
                 setBulkPlanType('nutrition');
@@ -273,7 +284,10 @@ export default function ProfessionalStudentsScreen() {
             <View
               style={[
                 styles.emptyHeroGlow,
-                { backgroundColor: theme.color.accentPrimarySoft, borderColor: theme.color.accentPrimarySoft },
+                {
+                  backgroundColor: theme.color.accentPrimarySoft,
+                  borderColor: theme.color.accentPrimarySoft,
+                },
               ]}
             />
             <View
@@ -283,12 +297,19 @@ export default function ProfessionalStudentsScreen() {
                   backgroundColor: theme.color.surface,
                   borderColor: theme.color.border,
                 },
-              ]}>
+              ]}
+            >
               <MaterialIcons name="group-add" size={74} color={theme.color.accentPrimary} />
               <View style={styles.emptyHeroDots}>
-                <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
-                <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimary }]} />
-                <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
+                <View
+                  style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]}
+                />
+                <View
+                  style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimary }]}
+                />
+                <View
+                  style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]}
+                />
               </View>
             </View>
           </View>
@@ -315,7 +336,8 @@ export default function ProfessionalStudentsScreen() {
                   backgroundColor: theme.color.surface,
                 },
               ]}
-              testID="pro.students.empty.shareCta">
+              testID="pro.students.empty.shareCta"
+            >
               <MaterialIcons
                 name="share"
                 size={20}
@@ -339,7 +361,8 @@ export default function ProfessionalStudentsScreen() {
                     borderColor: theme.color.border,
                     backgroundColor: theme.color.surfaceMuted,
                   },
-                ]}>
+                ]}
+              >
                 <MaterialIcons
                   name="search"
                   size={18}
@@ -404,13 +427,15 @@ export default function ProfessionalStudentsScreen() {
                   loadErrorKey ? (
                     <Text
                       style={[styles.emptyText, { color: theme.color.danger }]}
-                      testID="pro.students.error">
+                      testID="pro.students.error"
+                    >
                       {loadErrorKey ? (t(loadErrorKey) as string) : ''}
                     </Text>
                   ) : (
                     <Text
                       style={[styles.emptyText, { color: theme.color.textSecondary }]}
-                      testID="pro.students.empty">
+                      testID="pro.students.empty"
+                    >
                       {t('pro.students.empty')}
                     </Text>
                   )
@@ -421,11 +446,14 @@ export default function ProfessionalStudentsScreen() {
           </DsCard>
 
           {isSelectionMode && (
-            <View style={[
-              styles.bulkActionContainer,
-              DsShadow.soft,
-              { backgroundColor: theme.color.surface, borderColor: theme.color.border },
-            ]} testID="pro.students.bulkActionTray">
+            <View
+              style={[
+                styles.bulkActionContainer,
+                DsShadow.soft,
+                { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+              ]}
+              testID="pro.students.bulkActionTray"
+            >
               <View style={styles.bulkPlanTypeRow}>
                 <DsPillButton
                   scheme={scheme}
@@ -449,7 +477,10 @@ export default function ProfessionalStudentsScreen() {
               {selectedStudentUids.length > 0 ? (
                 <DsPillButton
                   scheme={scheme}
-                  label={(t('pro.students.bulk_assign.cta_confirm') as string).replace('{count}', String(selectedStudentUids.length))}
+                  label={(t('pro.students.bulk_assign.cta_confirm') as string).replace(
+                    '{count}',
+                    String(selectedStudentUids.length),
+                  )}
                   onPress={() => setIsPlanPickerVisible(true)}
                   testID="pro.students.bulk.assignSelected"
                 />
@@ -506,12 +537,14 @@ function FilterChips({
                 borderColor: isSelected ? theme.color.accentPrimary : theme.color.border,
               },
             ]}
-            testID={`pro.students.filter.${chip.kind}`}>
+            testID={`pro.students.filter.${chip.kind}`}
+          >
             <Text
               style={[
                 styles.chipText,
                 { color: isSelected ? theme.color.onAccent : theme.color.textPrimary },
-              ]}>
+              ]}
+            >
               {chip.label}
             </Text>
           </Pressable>
@@ -563,13 +596,24 @@ function StudentRowItem({
       onPress={onPress}
       style={[
         styles.row,
-        { borderColor: isSelected ? theme.color.accentPrimary : theme.color.border, backgroundColor: theme.color.surface },
-        isSelected && { borderWidth: 2 }
+        {
+          borderColor: isSelected ? theme.color.accentPrimary : theme.color.border,
+          backgroundColor: theme.color.surface,
+        },
+        isSelected && { borderWidth: 2 },
       ]}
-      testID={`pro.students.row.${student.studentAuthUid}`}>
-
+      testID={`pro.students.row.${student.studentAuthUid}`}
+    >
       {isSelectionMode && (
-        <View style={[styles.selectionIcon, { backgroundColor: isSelected ? theme.color.accentPrimary : theme.color.surface, borderColor: theme.color.border }]}>
+        <View
+          style={[
+            styles.selectionIcon,
+            {
+              backgroundColor: isSelected ? theme.color.accentPrimary : theme.color.surface,
+              borderColor: theme.color.border,
+            },
+          ]}
+        >
           {isSelected && <MaterialIcons name="check" size={16} color={theme.color.onAccent} />}
         </View>
       )}
@@ -593,7 +637,12 @@ function StudentRowItem({
           <Text style={[styles.badgeText, { color: statusColor }]}>{statusLabel}</Text>
         </View>
       )}
-      <MaterialIcons name={isSelectionMode ? "chevron-right" : "chevron-right"} size={20} color={theme.color.textSecondary} style={{ opacity: isSelectionMode ? 0 : 1 }} />
+      <MaterialIcons
+        name={isSelectionMode ? 'chevron-right' : 'chevron-right'}
+        size={20}
+        color={theme.color.textSecondary}
+        style={{ opacity: isSelectionMode ? 0 : 1 }}
+      />
     </Pressable>
   );
 }

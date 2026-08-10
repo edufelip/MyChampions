@@ -1,5 +1,13 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -51,323 +59,369 @@ type AddItemFormProps = {
   testIDPrefix?: string;
 };
 
-export const AddItemForm = React.memo(({
-  palette,
-  theme,
-  t,
-  tr,
-  name,
-  quantity,
-  notes,
-  carbs,
-  proteins,
-  fats,
-  foodQuery,
-  foodSearchState,
-  selectedFood,
-  customMeals = [],
-  isCustomMealsLoading = false,
-  selectedCustomMealName,
-  isInteractionLocked = false,
-  onNameChange,
-  onQuantityChange,
-  onNotesChange,
-  onCarbsChange,
-  onProteinsChange,
-  onFatsChange,
-  onQueryChange,
-  onSearch,
-  onSelectFood,
-  onClearFood,
-  onSelectCustomMeal,
-  onClearCustomMeal,
-  onAdd,
-  onClose,
-  style,
-  testIDPrefix,
-}: AddItemFormProps) => {
-  const scheme = theme.color.canvas === '#102215' ? 'dark' : 'light';
-  const hasSelectedCustomMeal = Boolean(selectedCustomMealName);
-  const hasSelectedSource = Boolean(selectedFood || selectedCustomMealName);
+export const AddItemForm = React.memo(
+  ({
+    palette,
+    theme,
+    t,
+    tr,
+    name,
+    quantity,
+    notes,
+    carbs,
+    proteins,
+    fats,
+    foodQuery,
+    foodSearchState,
+    selectedFood,
+    customMeals = [],
+    isCustomMealsLoading = false,
+    selectedCustomMealName,
+    isInteractionLocked = false,
+    onNameChange,
+    onQuantityChange,
+    onNotesChange,
+    onCarbsChange,
+    onProteinsChange,
+    onFatsChange,
+    onQueryChange,
+    onSearch,
+    onSelectFood,
+    onClearFood,
+    onSelectCustomMeal,
+    onClearCustomMeal,
+    onAdd,
+    onClose,
+    style,
+    testIDPrefix,
+  }: AddItemFormProps) => {
+    const scheme = theme.color.canvas === '#102215' ? 'dark' : 'light';
+    const hasSelectedCustomMeal = Boolean(selectedCustomMealName);
+    const hasSelectedSource = Boolean(selectedFood || selectedCustomMealName);
 
-  return (
-    <Animated.View
-      entering={FadeIn.duration(300)}
-      exiting={FadeOut.duration(200)}
-      style={[styles.container, { backgroundColor: theme.color.surface }, style]}
-      testID={testIDPrefix ? `${testIDPrefix}.form` : undefined}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: palette.text }]}>
-          {tr('pro.plan.cta.add_food', 'student.plan.cta.add_food')}
-        </Text>
-        <Pressable
-          onPress={onClose}
-          disabled={isInteractionLocked}
-          hitSlop={12}
-          testID={testIDPrefix ? `${testIDPrefix}.close` : undefined}
-        >
-          <MaterialIcons name="close" size={24} color={palette.icon} />
-        </Pressable>
-      </View>
-
-      {onSelectCustomMeal && !hasSelectedSource && (
-        <View style={styles.customMealSection}>
-          <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
-            {t('pro.plan.custom_meal.section')}
+    return (
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        exiting={FadeOut.duration(200)}
+        style={[styles.container, { backgroundColor: theme.color.surface }, style]}
+        testID={testIDPrefix ? `${testIDPrefix}.form` : undefined}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: palette.text }]}>
+            {tr('pro.plan.cta.add_food', 'student.plan.cta.add_food')}
           </Text>
-          {isCustomMealsLoading ? (
-            <ActivityIndicator color={palette.tint} style={styles.inlineLoader} />
-          ) : customMeals.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.customMealList}>
-              {customMeals.map((meal) => (
-                <Pressable
-                  key={meal.id}
-                  style={[styles.customMealChip, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}
-                  onPress={() => onSelectCustomMeal(meal)}
-                  disabled={isInteractionLocked}
-                  testID={testIDPrefix ? `${testIDPrefix}.customMeal.${meal.id}` : undefined}
-                >
-                  <Text style={[styles.customMealName, { color: palette.text }]} numberOfLines={1}>
-                    {meal.name}
-                  </Text>
-                  <Text style={[styles.customMealMacros, { color: palette.icon }]}>
-                    {meal.calories} {t('common.nutrition.calories')} •{' '}
-                    {t('common.nutrition.carbs')}:{meal.carbs}{' '}
-                    {t('common.nutrition.proteins')}:{meal.proteins}{' '}
-                    {t('common.nutrition.fats')}:{meal.fats}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          ) : (
-            <Text style={[styles.customMealEmpty, { color: palette.icon }]}>
-              {t('pro.plan.custom_meal.empty')}
-            </Text>
-          )}
-        </View>
-      )}
-
-      {/* Search Input or Selected Food Indicator */}
-      {!hasSelectedSource ? (
-        <View style={[styles.searchRow, { backgroundColor: theme.color.surfaceMuted }]}>
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('pro.plan.food_search.placeholder')}
-            disabled={isInteractionLocked || !foodQuery.trim()}
-            onPress={onSearch}
-            hitSlop={8}
-            testID={testIDPrefix ? `${testIDPrefix}.searchButton` : undefined}
+            onPress={onClose}
+            disabled={isInteractionLocked}
+            hitSlop={12}
+            testID={testIDPrefix ? `${testIDPrefix}.close` : undefined}
           >
-            <IconSymbol name="magnifyingglass" size={18} color={palette.icon} />
+            <MaterialIcons name="close" size={24} color={palette.icon} />
           </Pressable>
-          <TextInput
-            style={[styles.searchInput, { color: palette.text }]}
-            placeholder={t('pro.plan.food_search.placeholder')}
-            placeholderTextColor={palette.icon}
-            value={foodQuery}
-            onChangeText={onQueryChange}
-            onSubmitEditing={onSearch}
-            editable={!isInteractionLocked}
-            returnKeyType="search"
-            testID={testIDPrefix ? `${testIDPrefix}.searchInput` : undefined}
-          />
-          {foodQuery.length > 0 && (
-            <Pressable onPress={() => onQueryChange('')} disabled={isInteractionLocked}>
-              <MaterialIcons name="cancel" size={18} color={palette.icon} />
-            </Pressable>
-          )}
         </View>
-      ) : (
-        <View
-          style={[styles.selectedFoodRow, { backgroundColor: theme.color.surfaceMuted }]}
-          testID={testIDPrefix ? `${testIDPrefix}.selectedFood` : undefined}
-        >
-          <View style={styles.selectedFoodInfo}>
-            <IconSymbol name="checkmark.circle.fill" size={18} color={palette.tint} />
-            <Text style={[styles.selectedFoodText, { color: palette.text }]} numberOfLines={1}>
-              {selectedFood?.name ?? selectedCustomMealName}
+
+        {onSelectCustomMeal && !hasSelectedSource && (
+          <View style={styles.customMealSection}>
+            <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
+              {t('pro.plan.custom_meal.section')}
             </Text>
-            {hasSelectedCustomMeal && (
-              <Text style={[styles.sourceBadge, { color: palette.tint }]}>
-                {t('pro.plan.custom_meal.badge')}
+            {isCustomMealsLoading ? (
+              <ActivityIndicator color={palette.tint} style={styles.inlineLoader} />
+            ) : customMeals.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.customMealList}
+              >
+                {customMeals.map((meal) => (
+                  <Pressable
+                    key={meal.id}
+                    style={[
+                      styles.customMealChip,
+                      {
+                        backgroundColor: theme.color.surfaceMuted,
+                        borderColor: theme.color.border,
+                      },
+                    ]}
+                    onPress={() => onSelectCustomMeal(meal)}
+                    disabled={isInteractionLocked}
+                    testID={testIDPrefix ? `${testIDPrefix}.customMeal.${meal.id}` : undefined}
+                  >
+                    <Text
+                      style={[styles.customMealName, { color: palette.text }]}
+                      numberOfLines={1}
+                    >
+                      {meal.name}
+                    </Text>
+                    <Text style={[styles.customMealMacros, { color: palette.icon }]}>
+                      {meal.calories} {t('common.nutrition.calories')} •{' '}
+                      {t('common.nutrition.carbs')}:{meal.carbs} {t('common.nutrition.proteins')}:
+                      {meal.proteins} {t('common.nutrition.fats')}:{meal.fats}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={[styles.customMealEmpty, { color: palette.icon }]}>
+                {t('pro.plan.custom_meal.empty')}
               </Text>
             )}
           </View>
-          <Pressable
-            onPress={hasSelectedCustomMeal ? onClearCustomMeal : onClearFood}
-            disabled={isInteractionLocked}
-            hitSlop={8}
-            style={styles.clearFoodBtn}
+        )}
+
+        {/* Search Input or Selected Food Indicator */}
+        {!hasSelectedSource ? (
+          <View style={[styles.searchRow, { backgroundColor: theme.color.surfaceMuted }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('pro.plan.food_search.placeholder')}
+              disabled={isInteractionLocked || !foodQuery.trim()}
+              onPress={onSearch}
+              hitSlop={8}
+              testID={testIDPrefix ? `${testIDPrefix}.searchButton` : undefined}
+            >
+              <IconSymbol name="magnifyingglass" size={18} color={palette.icon} />
+            </Pressable>
+            <TextInput
+              style={[styles.searchInput, { color: palette.text }]}
+              placeholder={t('pro.plan.food_search.placeholder')}
+              placeholderTextColor={palette.icon}
+              value={foodQuery}
+              onChangeText={onQueryChange}
+              onSubmitEditing={onSearch}
+              editable={!isInteractionLocked}
+              returnKeyType="search"
+              testID={testIDPrefix ? `${testIDPrefix}.searchInput` : undefined}
+            />
+            {foodQuery.length > 0 && (
+              <Pressable onPress={() => onQueryChange('')} disabled={isInteractionLocked}>
+                <MaterialIcons name="cancel" size={18} color={palette.icon} />
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          <View
+            style={[styles.selectedFoodRow, { backgroundColor: theme.color.surfaceMuted }]}
+            testID={testIDPrefix ? `${testIDPrefix}.selectedFood` : undefined}
           >
-            <Text style={[styles.clearFoodText, { color: theme.color.danger }]}>
-              {t('common.cta.clear') || 'Clear'}
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
-      {/* Search Results */}
-      {!hasSelectedSource && (
-        <View style={styles.resultsWrap}>
-          {foodSearchState.kind === 'searching' && (
-            <ActivityIndicator color={palette.tint} style={styles.loader} />
-          )}
-
-          {foodSearchState.kind === 'done' && (
-            <ScrollView style={styles.resultsList} contentContainerStyle={styles.resultsContent} keyboardShouldPersistTaps="handled">
-              {foodSearchState.results.map((item) => (
-                <FoodSearchItem
-                  key={item.id}
-                  item={item}
-                  palette={palette}
-                  theme={theme}
-                  t={t}
-                  disabled={isInteractionLocked}
-                  onSelect={() => onSelectFood(item)}
-                  testID={testIDPrefix ? `${testIDPrefix}.searchResult.${item.id}` : undefined}
-                />
-              ))}
-            </ScrollView>
-          )}
-
-          {foodSearchState.kind === 'error' && (
-            <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color={theme.color.danger} />
-              <Text style={[styles.errorText, { color: theme.color.danger }]}>
-                {foodSearchState.reason === 'quota_exceeded'
-                  ? t('pro.plan.food_search.error.quota')
-                  : t('pro.plan.food_search.error')}
+            <View style={styles.selectedFoodInfo}>
+              <IconSymbol name="checkmark.circle.fill" size={18} color={palette.tint} />
+              <Text style={[styles.selectedFoodText, { color: palette.text }]} numberOfLines={1}>
+                {selectedFood?.name ?? selectedCustomMealName}
               </Text>
+              {hasSelectedCustomMeal && (
+                <Text style={[styles.sourceBadge, { color: palette.tint }]}>
+                  {t('pro.plan.custom_meal.badge')}
+                </Text>
+              )}
             </View>
-          )}
-        </View>
-      )}
+            <Pressable
+              onPress={hasSelectedCustomMeal ? onClearCustomMeal : onClearFood}
+              disabled={isInteractionLocked}
+              hitSlop={8}
+              style={styles.clearFoodBtn}
+            >
+              <Text style={[styles.clearFoodText, { color: theme.color.danger }]}>
+                {t('common.cta.clear') || 'Clear'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
-      {/* Detail Fields */}
-      <View style={styles.detailsSection}>
-        <View style={styles.fieldRow}>
-          <View style={[styles.field, { flex: 2 }]}>
+        {/* Search Results */}
+        {!hasSelectedSource && (
+          <View style={styles.resultsWrap}>
+            {foodSearchState.kind === 'searching' && (
+              <ActivityIndicator color={palette.tint} style={styles.loader} />
+            )}
+
+            {foodSearchState.kind === 'done' && (
+              <ScrollView
+                style={styles.resultsList}
+                contentContainerStyle={styles.resultsContent}
+                keyboardShouldPersistTaps="handled"
+              >
+                {foodSearchState.results.map((item) => (
+                  <FoodSearchItem
+                    key={item.id}
+                    item={item}
+                    palette={palette}
+                    theme={theme}
+                    t={t}
+                    disabled={isInteractionLocked}
+                    onSelect={() => onSelectFood(item)}
+                    testID={testIDPrefix ? `${testIDPrefix}.searchResult.${item.id}` : undefined}
+                  />
+                ))}
+              </ScrollView>
+            )}
+
+            {foodSearchState.kind === 'error' && (
+              <View style={styles.errorContainer}>
+                <MaterialIcons name="error-outline" size={20} color={theme.color.danger} />
+                <Text style={[styles.errorText, { color: theme.color.danger }]}>
+                  {foodSearchState.reason === 'quota_exceeded'
+                    ? t('pro.plan.food_search.error.quota')
+                    : t('pro.plan.food_search.error')}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Detail Fields */}
+        <View style={styles.detailsSection}>
+          <View style={styles.fieldRow}>
+            <View style={[styles.field, { flex: 2 }]}>
+              <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
+                {t('pro.plan.item.field.nutrition_name.label')}
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted },
+                ]}
+                value={name}
+                onChangeText={onNameChange}
+                editable={!isInteractionLocked}
+                placeholder={t('pro.plan.item.field.nutrition_name.placeholder')}
+                placeholderTextColor={theme.color.textTertiary}
+                multiline
+                testID={testIDPrefix ? `${testIDPrefix}.name` : undefined}
+              />
+            </View>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
+                {t('pro.plan.item.field.nutrition_quantity.label')}
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted },
+                ]}
+                value={quantity}
+                onChangeText={(text) => onQuantityChange(text.replace(/[^0-9.]/g, ''))}
+                editable={!isInteractionLocked}
+                keyboardType="decimal-pad"
+                placeholder={t('pro.plan.item.field.nutrition_quantity.placeholder')}
+                placeholderTextColor={theme.color.textTertiary}
+                testID={testIDPrefix ? `${testIDPrefix}.quantity` : undefined}
+              />
+            </View>
+          </View>
+
+          <View style={styles.fieldRow}>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
+                {t('common.nutrition.carbs')} (g) {selectedFood ? '🔒' : ''}
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: selectedFood ? theme.color.textSecondary : theme.color.textPrimary,
+                    backgroundColor: theme.color.surfaceMuted,
+                  },
+                ]}
+                value={carbs}
+                onChangeText={(text) => onCarbsChange(text.replace(/[^0-9.]/g, ''))}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={theme.color.textTertiary}
+                editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
+                testID={testIDPrefix ? `${testIDPrefix}.carbs` : undefined}
+              />
+            </View>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
+                {t('common.nutrition.proteins')} (g) {selectedFood ? '🔒' : ''}
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: selectedFood ? theme.color.textSecondary : theme.color.textPrimary,
+                    backgroundColor: theme.color.surfaceMuted,
+                  },
+                ]}
+                value={proteins}
+                onChangeText={(text) => onProteinsChange(text.replace(/[^0-9.]/g, ''))}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={theme.color.textTertiary}
+                editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
+                testID={testIDPrefix ? `${testIDPrefix}.proteins` : undefined}
+              />
+            </View>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
+                {t('common.nutrition.fats')} (g) {selectedFood ? '🔒' : ''}
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: selectedFood ? theme.color.textSecondary : theme.color.textPrimary,
+                    backgroundColor: theme.color.surfaceMuted,
+                  },
+                ]}
+                value={fats}
+                onChangeText={(text) => onFatsChange(text.replace(/[^0-9.]/g, ''))}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={theme.color.textTertiary}
+                editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
+                testID={testIDPrefix ? `${testIDPrefix}.fats` : undefined}
+              />
+            </View>
+          </View>
+
+          <View style={styles.field}>
             <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
-              {t('pro.plan.item.field.nutrition_name.label')}
+              {t('pro.plan.item.field.nutrition_notes.label')}
             </Text>
             <TextInput
-              style={[styles.input, styles.textArea, { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
-              value={name}
-              onChangeText={onNameChange}
+              style={[
+                styles.input,
+                { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted },
+              ]}
+              value={notes}
+              onChangeText={onNotesChange}
               editable={!isInteractionLocked}
-              placeholder={t('pro.plan.item.field.nutrition_name.placeholder')}
+              placeholder={t('pro.plan.item.field.nutrition_notes.placeholder')}
               placeholderTextColor={theme.color.textTertiary}
-              multiline
-              testID={testIDPrefix ? `${testIDPrefix}.name` : undefined}
-            />
-          </View>
-          <View style={[styles.field, { flex: 1 }]}>
-            <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
-              {t('pro.plan.item.field.nutrition_quantity.label')}
-            </Text>
-            <TextInput
-              style={[styles.input, { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
-              value={quantity}
-              onChangeText={(text) => onQuantityChange(text.replace(/[^0-9.]/g, ''))}
-              editable={!isInteractionLocked}
-              keyboardType="decimal-pad"
-              placeholder={t('pro.plan.item.field.nutrition_quantity.placeholder')}
-              placeholderTextColor={theme.color.textTertiary}
-              testID={testIDPrefix ? `${testIDPrefix}.quantity` : undefined}
+              testID={testIDPrefix ? `${testIDPrefix}.notes` : undefined}
             />
           </View>
         </View>
 
-        <View style={styles.fieldRow}>
-          <View style={[styles.field, { flex: 1 }]}>
-            <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
-              {t('common.nutrition.carbs')} (g) {selectedFood ? '🔒' : ''}
-            </Text>
-            <TextInput
-              style={[styles.input, { color: selectedFood ? theme.color.textSecondary : theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
-              value={carbs}
-              onChangeText={(text) => onCarbsChange(text.replace(/[^0-9.]/g, ''))}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
-              testID={testIDPrefix ? `${testIDPrefix}.carbs` : undefined}
-            />
-          </View>
-          <View style={[styles.field, { flex: 1 }]}>
-            <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
-              {t('common.nutrition.proteins')} (g) {selectedFood ? '🔒' : ''}
-            </Text>
-            <TextInput
-              style={[styles.input, { color: selectedFood ? theme.color.textSecondary : theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
-              value={proteins}
-              onChangeText={(text) => onProteinsChange(text.replace(/[^0-9.]/g, ''))}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
-              testID={testIDPrefix ? `${testIDPrefix}.proteins` : undefined}
-            />
-          </View>
-          <View style={[styles.field, { flex: 1 }]}>
-            <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
-              {t('common.nutrition.fats')} (g) {selectedFood ? '🔒' : ''}
-            </Text>
-            <TextInput
-              style={[styles.input, { color: selectedFood ? theme.color.textSecondary : theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
-              value={fats}
-              onChangeText={(text) => onFatsChange(text.replace(/[^0-9.]/g, ''))}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              placeholderTextColor={theme.color.textTertiary}
-              editable={!selectedFood && !hasSelectedCustomMeal && !isInteractionLocked}
-              testID={testIDPrefix ? `${testIDPrefix}.fats` : undefined}
-            />
-          </View>
-        </View>
+        <DsPillButton
+          scheme={scheme}
+          label={t('common.cta.add') as string}
+          onPress={onAdd}
+          disabled={isInteractionLocked || !name.trim()}
+          style={styles.addBtn}
+          testID={testIDPrefix ? `${testIDPrefix}.add` : undefined}
+        />
+      </Animated.View>
+    );
+  },
+);
 
-        <View style={styles.field}>
-          <Text style={[styles.fieldLabel, { color: theme.color.textSecondary }]}>
-            {t('pro.plan.item.field.nutrition_notes.label')}
-          </Text>
-          <TextInput
-            style={[styles.input, { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted }]}
-            value={notes}
-            onChangeText={onNotesChange}
-            editable={!isInteractionLocked}
-            placeholder={t('pro.plan.item.field.nutrition_notes.placeholder')}
-            placeholderTextColor={theme.color.textTertiary}
-            testID={testIDPrefix ? `${testIDPrefix}.notes` : undefined}
-          />
-        </View>
-      </View>
-
-      <DsPillButton
-        scheme={scheme}
-        label={t('common.cta.add') as string}
-        onPress={onAdd}
-        disabled={isInteractionLocked || !name.trim()}
-        style={styles.addBtn}
-        testID={testIDPrefix ? `${testIDPrefix}.add` : undefined}
-      />
-    </Animated.View>
-  );
-});
-
-function FoodSearchItem({ 
-  item, 
-  palette, 
-  theme, 
-  t, 
+function FoodSearchItem({
+  item,
+  palette,
+  theme,
+  t,
   onSelect,
   disabled = false,
   testID,
-}: { 
-  item: FoodSearchResult; 
-  palette: any; 
-  theme: any; 
-  t: (key: TranslationKey) => string; 
+}: {
+  item: FoodSearchResult;
+  palette: any;
+  theme: any;
+  t: (key: TranslationKey) => string;
   onSelect: () => void;
   disabled?: boolean;
   testID?: string;
@@ -377,7 +431,7 @@ function FoodSearchItem({
       style={({ pressed }) => [
         styles.searchItem,
         { borderBottomColor: theme.color.border },
-        pressed && { backgroundColor: theme.color.surfaceMuted }
+        pressed && { backgroundColor: theme.color.surfaceMuted },
       ]}
       onPress={onSelect}
       disabled={disabled}
@@ -386,7 +440,8 @@ function FoodSearchItem({
       <View style={styles.searchItemInfo}>
         <Text style={[styles.searchItemName, { color: palette.text }]}>{item.name}</Text>
         <Text style={[styles.searchItemMacros, { color: palette.icon }]}>
-          {item.caloriesPer100g} kcal • C:{item.carbsPer100g} P:{item.proteinsPer100g} F:{item.fatsPer100g} {t('pro.plan.food_search.per_100g')}
+          {item.caloriesPer100g} kcal • C:{item.carbsPer100g} P:{item.proteinsPer100g} F:
+          {item.fatsPer100g} {t('pro.plan.food_search.per_100g')}
         </Text>
       </View>
       <MaterialIcons name="add-circle-outline" size={24} color={palette.tint} />

@@ -37,7 +37,7 @@ function readProcessTable(): Promise<string> {
           return;
         }
         resolveResult(stdout);
-      }
+      },
     );
   });
 }
@@ -52,8 +52,7 @@ function defaultRuntime(): MetroProcessGroupRuntime {
     },
     readProcessTable,
     now: () => Date.now(),
-    delay: (milliseconds) =>
-      new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds)),
+    delay: (milliseconds) => new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds)),
   };
 }
 
@@ -64,7 +63,7 @@ function errorCode(error: unknown): string | undefined {
 export function parseOwnedProcessGroupPids(
   processTable: string,
   processGroupId: number,
-  ownerUid: number
+  ownerUid: number,
 ): number[] {
   const ownedPids = new Set<number>();
 
@@ -97,22 +96,20 @@ export function parseOwnedProcessGroupPids(
 async function ownedProcessGroupPids(
   processGroupId: number,
   runtime: MetroProcessGroupRuntime,
-  label: string
+  label: string,
 ): Promise<number[]> {
   if (runtime.currentUid === undefined) {
-    throw new Error(
-      `Cannot inspect ${label} ${processGroupId}: current UID is unavailable`
-    );
+    throw new Error(`Cannot inspect ${label} ${processGroupId}: current UID is unavailable`);
   }
 
   const ownedPids = parseOwnedProcessGroupPids(
     await runtime.readProcessTable(),
     processGroupId,
-    runtime.currentUid
+    runtime.currentUid,
   );
   if (ownedPids.includes(runtime.currentPid)) {
     throw new Error(
-      `Refusing to clean ${label} ${processGroupId}: it contains the selective executor`
+      `Refusing to clean ${label} ${processGroupId}: it contains the selective executor`,
     );
   }
   return ownedPids;
@@ -121,7 +118,7 @@ async function ownedProcessGroupPids(
 async function metroProcessGroupExists(
   metro: ChildProcess,
   runtime: MetroProcessGroupRuntime,
-  label: string
+  label: string,
 ): Promise<boolean> {
   if (runtime.platform === 'win32' || metro.pid === undefined) {
     return metro.exitCode === null && metro.signalCode === null;
@@ -145,7 +142,7 @@ async function signalMetroProcessGroup(
   metro: ChildProcess,
   signal: NodeJS.Signals,
   runtime: MetroProcessGroupRuntime,
-  label: string
+  label: string,
 ): Promise<void> {
   if (runtime.platform === 'win32' || metro.pid === undefined) {
     if (metro.exitCode === null && metro.signalCode === null) metro.kill(signal);
@@ -167,9 +164,7 @@ async function signalMetroProcessGroup(
     } catch (error) {
       if (errorCode(error) === 'ESRCH') continue;
       throw new Error(
-        `Cannot send ${signal} to ${label} member ${pid}: ${
-          errorCode(error) ?? String(error)
-        }`
+        `Cannot send ${signal} to ${label} member ${pid}: ${errorCode(error) ?? String(error)}`,
       );
     }
   }
@@ -180,7 +175,7 @@ async function waitForMetroProcessGroupExit(
   timeoutMs: number,
   pollIntervalMs: number,
   runtime: MetroProcessGroupRuntime,
-  label: string
+  label: string,
 ): Promise<boolean> {
   const deadline = runtime.now() + timeoutMs;
   while (runtime.now() < deadline) {
@@ -193,7 +188,7 @@ async function waitForMetroProcessGroupExit(
 async function stopProcessGroup(
   child: ChildProcess,
   label: string,
-  options: StopRunnerOwnedProcessGroupOptions
+  options: StopRunnerOwnedProcessGroupOptions,
 ): Promise<void> {
   const runtime = { ...defaultRuntime(), ...options.runtime };
   const exitTimeoutMs = options.exitTimeoutMs ?? 5_000;
@@ -201,46 +196,26 @@ async function stopProcessGroup(
 
   if (!(await metroProcessGroupExists(child, runtime, label))) return;
   await signalMetroProcessGroup(child, 'SIGTERM', runtime, label);
-  if (
-    await waitForMetroProcessGroupExit(
-      child,
-      exitTimeoutMs,
-      pollIntervalMs,
-      runtime,
-      label
-    )
-  ) {
+  if (await waitForMetroProcessGroupExit(child, exitTimeoutMs, pollIntervalMs, runtime, label)) {
     return;
   }
 
   await signalMetroProcessGroup(child, 'SIGKILL', runtime, label);
-  if (
-    !(await waitForMetroProcessGroupExit(
-      child,
-      exitTimeoutMs,
-      pollIntervalMs,
-      runtime,
-      label
-    ))
-  ) {
+  if (!(await waitForMetroProcessGroupExit(child, exitTimeoutMs, pollIntervalMs, runtime, label))) {
     throw new Error(`${label} did not stop after SIGKILL`);
   }
 }
 
 export async function stopRunnerOwnedProcessGroup(
   child: ChildProcess,
-  options: StopRunnerOwnedProcessGroupOptions = {}
+  options: StopRunnerOwnedProcessGroupOptions = {},
 ): Promise<void> {
   return stopProcessGroup(child, 'Runner-owned child process group', options);
 }
 
 export async function stopMetroProcessGroup(
   metro: ChildProcess,
-  options: StopMetroProcessGroupOptions = {}
+  options: StopMetroProcessGroupOptions = {},
 ): Promise<void> {
-  return stopProcessGroup(
-    metro,
-    'Runner-owned Metro process group',
-    options
-  );
+  return stopProcessGroup(metro, 'Runner-owned Metro process group', options);
 }

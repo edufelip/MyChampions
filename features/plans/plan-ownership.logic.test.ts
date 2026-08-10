@@ -22,9 +22,9 @@ test('isSelfGuidedPlan returns false for predefined plan owned by same student',
         ownerProfessionalUid: 'student-1',
         studentUid: 'student-1',
       }),
-      'student-1'
+      'student-1',
     ),
-    false
+    false,
   );
 });
 
@@ -36,9 +36,9 @@ test('isSelfGuidedPlan returns false for predefined plan owned by professional',
         ownerProfessionalUid: 'pro-1',
         studentUid: 'student-1',
       }),
-      'student-1'
+      'student-1',
     ),
-    false
+    false,
   );
 });
 

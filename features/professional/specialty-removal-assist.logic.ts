@@ -79,7 +79,7 @@ export function resolveRemovalAssistState(input: {
  */
 export function buildActionMetadata(
   action: AssistAction,
-  specialty: Specialty
+  specialty: Specialty,
 ): AssistActionMetadata {
   switch (action) {
     case 'view_active':
@@ -122,7 +122,7 @@ export function buildActionMetadata(
 export function filterBlockersBySpecialty(
   connections: ConnectionRecord[],
   specialty: Specialty,
-  status: 'pending_confirmation' | 'active'
+  status: 'pending_confirmation' | 'active',
 ): ConnectionRecord[] {
   return connections.filter((c) => c.specialty === specialty && c.status === status);
 }
@@ -132,16 +132,16 @@ export function filterBlockersBySpecialty(
  */
 export function countBlockers(
   connections: ConnectionRecord[],
-  specialty: Specialty
+  specialty: Specialty,
 ): {
   activeCount: number;
   pendingCount: number;
 } {
   const active = connections.filter(
-    (c) => c.specialty === specialty && c.status === 'active'
+    (c) => c.specialty === specialty && c.status === 'active',
   ).length;
   const pending = connections.filter(
-    (c) => c.specialty === specialty && c.status === 'pending_confirmation'
+    (c) => c.specialty === specialty && c.status === 'pending_confirmation',
   ).length;
   return { activeCount: active, pendingCount: pending };
 }
@@ -152,7 +152,7 @@ export function countBlockers(
 export function canRemovalProceedNow(
   activeCount: number,
   pendingCount: number,
-  totalSpecialties: number
+  totalSpecialties: number,
 ): boolean {
   if (totalSpecialties <= 1) return false;
   if (activeCount > 0) return false;
@@ -164,9 +164,7 @@ export function canRemovalProceedNow(
  * Get localization keys for blocked removal message.
  * Returns structured keys and parameters for message formatting by UI layer.
  */
-export function getRemovalBlockedMessageKeys(
-  blockReason: SpecialtyRemovalBlockReason
-): {
+export function getRemovalBlockedMessageKeys(blockReason: SpecialtyRemovalBlockReason): {
   titleKey: TranslationKey;
   bodyKey: TranslationKey;
   bodyParams?: Record<string, string | number>;
@@ -198,7 +196,7 @@ export function getRemovalBlockedMessageKeys(
 export function formatRemovalBlockedMessage(
   blockReason: SpecialtyRemovalBlockReason,
   activeCount: number,
-  pendingCount: number
+  pendingCount: number,
 ): {
   title: string;
   body: string;

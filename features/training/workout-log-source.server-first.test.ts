@@ -17,7 +17,7 @@ test('server-backed workout logging does not load Firestore at module import', a
     this: unknown,
     request: string,
     parent: NodeModule | null,
-    isMain: boolean
+    isMain: boolean,
   ) {
     if (request === 'firebase/firestore') {
       blockedLoads.push(request);
@@ -27,7 +27,8 @@ test('server-backed workout logging does not load Firestore at module import', a
   };
 
   try {
-    const { logWorkoutSession } = require('./workout-log-source') as typeof import('./workout-log-source');
+    const { logWorkoutSession } =
+      require('./workout-log-source') as typeof import('./workout-log-source');
 
     let captured: Request | null = null;
     await logWorkoutSession('session-1', 'Server Strength', {
@@ -45,7 +46,7 @@ test('server-backed workout logging does not load Firestore at module import', a
               createdAt: '2026-06-28T10:00:00.000Z',
             },
           }),
-          { status: 201, headers: { 'content-type': 'application/json' } }
+          { status: 201, headers: { 'content-type': 'application/json' } },
         );
       },
     } as any);

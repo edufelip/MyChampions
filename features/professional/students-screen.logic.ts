@@ -21,7 +21,7 @@ export type ResolveStudentRosterViewStateInput = {
  * SC-205 view-state arbitration so loading and empty states do not overlap.
  */
 export function resolveStudentRosterViewState(
-  input: ResolveStudentRosterViewStateInput
+  input: ResolveStudentRosterViewStateInput,
 ): StudentRosterViewState {
   if (input.hasLoadedOnce && !input.isLoading && !input.hasError && input.visibleCount === 0) {
     return 'hero_empty';
@@ -32,7 +32,7 @@ export function resolveStudentRosterViewState(
 
 export function filterStudentRosterRows<T extends FilterableRosterStudent>(
   students: T[],
-  input: { filter: 'all' | 'active' | 'pending'; search: string }
+  input: { filter: 'all' | 'active' | 'pending'; search: string },
 ): T[] {
   const query = input.search.trim().toLowerCase();
   return students.filter((student) => {
@@ -49,11 +49,11 @@ export function filterStudentRosterRows<T extends FilterableRosterStudent>(
 
 export function filterBulkAssignmentStudentsByPlanType<T extends BulkAssignableStudent>(
   students: T[],
-  planType: 'nutrition' | 'training'
+  planType: 'nutrition' | 'training',
 ): T[] {
   return students.filter((student) =>
     planType === 'nutrition'
       ? student.nutritionStatus === 'active'
-      : student.trainingStatus === 'active'
+      : student.trainingStatus === 'active',
   );
 }

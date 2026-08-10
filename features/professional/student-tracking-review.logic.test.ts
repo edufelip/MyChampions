@@ -19,15 +19,18 @@ test('buildStudentTrackingReview shows today water progress and seven-day hydrat
   assert.equal(review.todayWater.totalMl, 1500);
   assert.equal(review.todayWater.goalMl, 2000);
   assert.equal(review.todayWater.progressPercent, 75);
-  assert.deepEqual(review.sevenDayHydration.map((day) => day.dateKey), [
-    '2026-06-01',
-    '2026-05-31',
-    '2026-05-30',
-    '2026-05-29',
-    '2026-05-28',
-    '2026-05-27',
-    '2026-05-26',
-  ]);
+  assert.deepEqual(
+    review.sevenDayHydration.map((day) => day.dateKey),
+    [
+      '2026-06-01',
+      '2026-05-31',
+      '2026-05-30',
+      '2026-05-29',
+      '2026-05-28',
+      '2026-05-27',
+      '2026-05-26',
+    ],
+  );
   assert.equal(review.sevenDayHydration[1].goalMet, true);
   assert.equal(review.sevenDayHydration[6].totalMl, 1800);
 });
@@ -89,5 +92,8 @@ test('buildStudentTrackingReview shows today meal check-offs and recent seven-da
       connectionId: 'connection-1',
     },
   ]);
-  assert.deepEqual(review.recentPortionLogs.map((log) => log.id), ['today-1', 'recent-1']);
+  assert.deepEqual(
+    review.recentPortionLogs.map((log) => log.id),
+    ['today-1', 'recent-1'],
+  );
 });

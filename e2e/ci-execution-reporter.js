@@ -9,7 +9,7 @@ class CiExecutionReporter {
     const executedTests = results.numPassedTests + results.numFailedTests;
     if (executedTests === 0) {
       this.executionError = new Error(
-        'Selective Detox invocation executed no tests; refusing an all-skipped result.'
+        'Selective Detox invocation executed no tests; refusing an all-skipped result.',
       );
     }
   }

@@ -46,10 +46,15 @@ function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function formatStaleElapsed(elapsed: StaleElapsed, t: ReturnType<typeof useTranslation>['t']): string {
+function formatStaleElapsed(
+  elapsed: StaleElapsed,
+  t: ReturnType<typeof useTranslation>['t'],
+): string {
   const value = String(elapsed.value);
-  if (elapsed.unit === 'minutes') return (t('offline.stale_minutes') as string).replace('{value}', value);
-  if (elapsed.unit === 'hours') return (t('offline.stale_hours') as string).replace('{value}', value);
+  if (elapsed.unit === 'minutes')
+    return (t('offline.stale_minutes') as string).replace('{value}', value);
+  if (elapsed.unit === 'hours')
+    return (t('offline.stale_hours') as string).replace('{value}', value);
   return (t('offline.stale_days') as string).replace('{value}', value);
 }
 
@@ -64,8 +69,13 @@ export default function StudentHomeScreen() {
   const { currentUser } = useAuthSession();
 
   const networkStatus = useNetworkStatus();
-  const { state: connectionsState, reload: reloadConnections } = useConnections(Boolean(currentUser));
-  const { state: waterState, reload: reloadWater } = useWaterTracking(Boolean(currentUser), todayKey());
+  const { state: connectionsState, reload: reloadConnections } = useConnections(
+    Boolean(currentUser),
+  );
+  const { state: waterState, reload: reloadWater } = useWaterTracking(
+    Boolean(currentUser),
+    todayKey(),
+  );
   const { state: plansState, reload: reloadPlans } = usePlans(Boolean(currentUser));
   const [initialLoadHistory, setInitialLoadHistory] = useState({
     accountId: currentUser?.uid ?? null,
@@ -112,17 +122,27 @@ export default function StudentHomeScreen() {
     connectionsState.kind === 'ready' &&
     connectionsState.displayStates.some((display) => display.kind === 'pending');
 
-  const nutritionPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'nutrition' && !p.isArchived) : [];
-  const trainingPlans = plansState.kind === 'ready' ? plansState.plans.filter(p => p.planType === 'training' && !p.isArchived) : [];
+  const nutritionPlans =
+    plansState.kind === 'ready'
+      ? plansState.plans.filter((p) => p.planType === 'nutrition' && !p.isArchived)
+      : [];
+  const trainingPlans =
+    plansState.kind === 'ready'
+      ? plansState.plans.filter((p) => p.planType === 'training' && !p.isArchived)
+      : [];
 
   const hasNutritionPlan = nutritionPlans.length > 0;
   const hasTrainingPlan = trainingPlans.length > 0;
 
-  const assignedNutritionPlan = nutritionPlans.find(p => p.sourceKind === 'assigned');
-  const selfManagedNutritionPlan = nutritionPlans.find((plan) => isSelfGuidedPlan(plan, currentUser?.uid ?? null));
+  const assignedNutritionPlan = nutritionPlans.find((p) => p.sourceKind === 'assigned');
+  const selfManagedNutritionPlan = nutritionPlans.find((plan) =>
+    isSelfGuidedPlan(plan, currentUser?.uid ?? null),
+  );
 
-  const assignedTrainingPlan = trainingPlans.find(p => p.sourceKind === 'assigned');
-  const selfManagedTrainingPlan = trainingPlans.find((plan) => isSelfGuidedPlan(plan, currentUser?.uid ?? null));
+  const assignedTrainingPlan = trainingPlans.find((p) => p.sourceKind === 'assigned');
+  const selfManagedTrainingPlan = trainingPlans.find((plan) =>
+    isSelfGuidedPlan(plan, currentUser?.uid ?? null),
+  );
 
   const nutritionPlanCount = nutritionPlans.length;
   const trainingPlanCount = trainingPlans.length;
@@ -135,9 +155,7 @@ export default function StudentHomeScreen() {
       ? Math.max(0, Math.min(100, Math.round((hydrationConsumed / hydrationGoal) * 100)))
       : 0;
   const hydrationValue =
-    hydrationGoal > 0
-      ? `${Math.round((hydrationConsumed / 1000) * 10) / 10}L`
-      : '0L';
+    hydrationGoal > 0 ? `${Math.round((hydrationConsumed / 1000) * 10) / 10}L` : '0L';
 
   const displayName = currentUser?.displayName?.trim() || currentUser?.email?.split('@')[0] || '';
   const firstName = displayName.split(/\s+/)[0] || t('student.home.title');
@@ -149,20 +167,31 @@ export default function StudentHomeScreen() {
     <ScrollView
       style={[styles.container, { backgroundColor: theme.color.canvas }]}
       contentContainerStyle={styles.content}
-      testID="student.home.screen">
+      testID="student.home.screen"
+    >
       <Stack.Screen options={{ title: t('student.home.title'), headerShown: false }} />
 
-      <View pointerEvents="none" style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]} />
-      <View pointerEvents="none" style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]} />
+      <View
+        pointerEvents="none"
+        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
+      />
 
       <View style={[styles.shell, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerRow}>
           <View style={styles.profileWrap}>
             <View style={[styles.avatarOuter, { borderColor: theme.color.accentPrimary }]}>
               <View style={[styles.avatarInner, { backgroundColor: theme.color.surface }]}>
-                <Text style={[styles.avatarInitial, { color: theme.color.textPrimary }]}>{profileInitial}</Text>
+                <Text style={[styles.avatarInitial, { color: theme.color.textPrimary }]}>
+                  {profileInitial}
+                </Text>
               </View>
-              <View style={[styles.avatarStatusDot, { backgroundColor: theme.color.accentPrimary }]} />
+              <View
+                style={[styles.avatarStatusDot, { backgroundColor: theme.color.accentPrimary }]}
+              />
             </View>
             <View style={styles.profileCopy}>
               <Text style={[styles.welcomeLine, { color: theme.color.textSecondary }]}>
@@ -171,7 +200,8 @@ export default function StudentHomeScreen() {
               <Text
                 numberOfLines={1}
                 style={[styles.helloLine, { color: theme.color.textPrimary }]}
-                testID="student.home.greeting">
+                testID="student.home.greeting"
+              >
                 {firstName}
               </Text>
             </View>
@@ -192,20 +222,32 @@ export default function StudentHomeScreen() {
 
         {offlineDisplay.showOfflineBanner ? (
           <View
-            style={[styles.offlineBanner, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder }]}
+            style={[
+              styles.offlineBanner,
+              { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder },
+            ]}
             testID="student.home.offlineBanner"
-            accessibilityRole="alert">
+            accessibilityRole="alert"
+          >
             <MaterialIcons color={theme.color.danger} name="cloud-off" size={18} />
-            <Text style={[styles.offlineModeText, { color: theme.color.danger }]}>{t('student.home.offline.mode')}</Text>
+            <Text style={[styles.offlineModeText, { color: theme.color.danger }]}>
+              {t('student.home.offline.mode')}
+            </Text>
             {offlineDisplay.staleElapsed ? (
-              <Text style={[styles.offlineTimeText, { color: theme.color.danger }]}>• {formatStaleElapsed(offlineDisplay.staleElapsed, t)}</Text>
+              <Text style={[styles.offlineTimeText, { color: theme.color.danger }]}>
+                • {formatStaleElapsed(offlineDisplay.staleElapsed, t)}
+              </Text>
             ) : null}
           </View>
         ) : null}
 
         {displayState.isInitialLoading ? (
           <View testID="student.home.loading" style={styles.loadingWrap}>
-            <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} size="large" />
+            <ActivityIndicator
+              accessibilityLabel={t('a11y.loading.default')}
+              color={theme.color.accentPrimary}
+              size="large"
+            />
           </View>
         ) : (
           <View testID="student.home.ready">
@@ -213,7 +255,8 @@ export default function StudentHomeScreen() {
               <Text
                 accessibilityRole="header"
                 style={[styles.pageTitle, { color: theme.color.textPrimary }]}
-                testID="student.home.dashboardTitle">
+                testID="student.home.dashboardTitle"
+              >
                 {t('student.home.your_day')}
               </Text>
               <Text style={[styles.pageSubtitle, { color: theme.color.textSecondary }]}>
@@ -222,9 +265,15 @@ export default function StudentHomeScreen() {
             </View>
 
             {hasPendingConnection ? (
-              <View style={[styles.pendingPill, { backgroundColor: theme.color.warningSoft }]} testID="student.home.pendingBadge" accessibilityRole="alert">
+              <View
+                style={[styles.pendingPill, { backgroundColor: theme.color.warningSoft }]}
+                testID="student.home.pendingBadge"
+                accessibilityRole="alert"
+              >
                 <MaterialIcons color={theme.color.warning} name="hourglass-empty" size={16} />
-                <Text style={[styles.pendingText, { color: theme.color.warning }]}>{t('student.home.pending_connection')}</Text>
+                <Text style={[styles.pendingText, { color: theme.color.warning }]}>
+                  {t('student.home.pending_connection')}
+                </Text>
               </View>
             ) : null}
 
@@ -292,11 +341,7 @@ export default function StudentHomeScreen() {
                 theme={theme}
                 icon="water-drop"
                 label={t('student.home.hydration.title') as string}
-                value={
-                  displayState.canRenderWater
-                    ? hydrationValue
-                    : t('common.value.unavailable')
-                }
+                value={displayState.canRenderWater ? hydrationValue : t('common.value.unavailable')}
                 progress={hydrationPercent}
                 tint={theme.color.accentCyan}
                 testID="student.home.hydrationCard"
@@ -307,106 +352,159 @@ export default function StudentHomeScreen() {
             {displayState.canRenderPlans ? (
               <View
                 style={[styles.planCards, usesPlanCardColumns && styles.planCardsWide]}
-                testID="student.home.planCards">
-              <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
-            <SectionTitle title={t('student.home.training.section') as string} theme={theme} />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                if (assignedTrainingPlan) {
-                  router.navigate('/(tabs)/training');
-                } else if (selfManagedTrainingPlan) {
-                  router.push(`/student/training/plans/${selfManagedTrainingPlan.id}`);
-                } else {
-                  router.navigate('/(tabs)/training');
-                }
-              }}
-              style={[styles.heroCard, { borderColor: theme.color.border }]}
-              testID={hasTrainingPlan ? 'student.home.training.goCta' : 'student.home.training.emptyCta'}>
-              <ImageBackground
-                source={require('@/assets/images/hero-workout.jpg')}
-                style={StyleSheet.absoluteFillObject}
-                resizeMode="cover"
-              />
-              <View style={styles.heroGradientTop} />
-              <View style={styles.heroGradientBottom} />
-              <View style={styles.heroContent}>
-                <View style={styles.heroTopRow}>
-                  <View style={[styles.heroBadge, { backgroundColor: 'rgba(10, 36, 99, 0.52)' }]}>
-                    <Text style={styles.heroBadgeText}>
-                      {hasTrainingPlan ? t('student.home.training.plan_available') : t('student.home.no_active_plan')}
-                    </Text>
-                  </View>
-                  <View style={[styles.heroArrowCircle, { backgroundColor: 'rgba(10, 36, 99, 0.52)' }]}>
-                    <MaterialIcons color="white" name="arrow-forward" size={18} />
-                  </View>
+                testID="student.home.planCards"
+              >
+                <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
+                  <SectionTitle
+                    title={t('student.home.training.section') as string}
+                    theme={theme}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      if (assignedTrainingPlan) {
+                        router.navigate('/(tabs)/training');
+                      } else if (selfManagedTrainingPlan) {
+                        router.push(`/student/training/plans/${selfManagedTrainingPlan.id}`);
+                      } else {
+                        router.navigate('/(tabs)/training');
+                      }
+                    }}
+                    style={[styles.heroCard, { borderColor: theme.color.border }]}
+                    testID={
+                      hasTrainingPlan
+                        ? 'student.home.training.goCta'
+                        : 'student.home.training.emptyCta'
+                    }
+                  >
+                    <ImageBackground
+                      source={require('@/assets/images/hero-workout.jpg')}
+                      style={StyleSheet.absoluteFillObject}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.heroGradientTop} />
+                    <View style={styles.heroGradientBottom} />
+                    <View style={styles.heroContent}>
+                      <View style={styles.heroTopRow}>
+                        <View
+                          style={[styles.heroBadge, { backgroundColor: 'rgba(10, 36, 99, 0.52)' }]}
+                        >
+                          <Text style={styles.heroBadgeText}>
+                            {hasTrainingPlan
+                              ? t('student.home.training.plan_available')
+                              : t('student.home.no_active_plan')}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.heroArrowCircle,
+                            { backgroundColor: 'rgba(10, 36, 99, 0.52)' },
+                          ]}
+                        >
+                          <MaterialIcons color="white" name="arrow-forward" size={18} />
+                        </View>
+                      </View>
+
+                      <View>
+                        <Text style={styles.heroTitle}>
+                          {hasTrainingPlan
+                            ? t('student.home.cta_training')
+                            : t('student.home.no_active_plan')}
+                        </Text>
+                        <Text style={styles.heroMeta}>
+                          {hasTrainingPlan
+                            ? t('student.home.training.plan_available')
+                            : t('student.home.cta_start_self')}
+                        </Text>
+
+                        <View
+                          style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}
+                        >
+                          <MaterialIcons color={theme.color.onAccent} name="play-arrow" size={20} />
+                          <Text style={[styles.heroCtaText, { color: theme.color.onAccent }]}>
+                            {hasTrainingPlan
+                              ? t('student.home.cta_training')
+                              : t('student.home.cta_start_self')}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </Pressable>
                 </View>
 
-                <View>
-                  <Text style={styles.heroTitle}>{hasTrainingPlan ? t('student.home.cta_training') : t('student.home.no_active_plan')}</Text>
-                  <Text style={styles.heroMeta}>{hasTrainingPlan ? t('student.home.training.plan_available') : t('student.home.cta_start_self')}</Text>
+                <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
+                  <SectionTitle
+                    title={t('student.home.nutrition.section') as string}
+                    theme={theme}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      if (assignedNutritionPlan) {
+                        router.navigate('/(tabs)/nutrition');
+                      } else if (selfManagedNutritionPlan) {
+                        router.push(`/student/nutrition/plans/${selfManagedNutritionPlan.id}`);
+                      } else {
+                        router.navigate('/(tabs)/nutrition');
+                      }
+                    }}
+                    style={[styles.heroCard, { borderColor: theme.color.border }]}
+                    testID={
+                      hasNutritionPlan
+                        ? 'student.home.nutrition.goCta'
+                        : 'student.home.nutrition.emptyCta'
+                    }
+                  >
+                    <ImageBackground
+                      source={require('@/assets/images/hero-meal.jpg')}
+                      style={StyleSheet.absoluteFillObject}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.mealGradientTop} />
+                    <View style={styles.mealGradientBottom} />
+                    <View style={styles.heroContent}>
+                      <View style={styles.heroTopRow}>
+                        <View
+                          style={[styles.heroBadge, { backgroundColor: 'rgba(146, 64, 14, 0.52)' }]}
+                        >
+                          <Text style={styles.heroBadgeText}>
+                            {hasNutritionPlan
+                              ? t('student.home.nutrition.plan_available')
+                              : t('student.home.no_active_plan')}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.heroArrowCircle,
+                            { backgroundColor: 'rgba(146, 64, 14, 0.52)' },
+                          ]}
+                        >
+                          <MaterialIcons color="white" name="arrow-forward" size={18} />
+                        </View>
+                      </View>
 
-                  <View style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}>
-                    <MaterialIcons color={theme.color.onAccent} name="play-arrow" size={20} />
-                    <Text style={[styles.heroCtaText, { color: theme.color.onAccent }]}>
-                      {hasTrainingPlan ? t('student.home.cta_training') : t('student.home.cta_start_self')}
-                    </Text>
-                  </View>
+                      <View>
+                        <Text style={styles.heroTitle}>{t('student.home.nutrition.section')}</Text>
+                        <Text style={styles.heroMeta}>
+                          {hasNutritionPlan
+                            ? t('student.home.nutrition.plan_available')
+                            : t('student.home.no_active_plan')}
+                        </Text>
+
+                        <View
+                          style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}
+                        >
+                          <MaterialIcons color={theme.color.onAccent} name="restaurant" size={20} />
+                          <Text style={[styles.heroCtaText, { color: theme.color.onAccent }]}>
+                            {hasNutritionPlan
+                              ? t('student.home.cta_nutrition')
+                              : t('student.home.cta_start_nutrition')}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </Pressable>
                 </View>
-              </View>
-            </Pressable>
-              </View>
-
-              <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
-            <SectionTitle title={t('student.home.nutrition.section') as string} theme={theme} />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                if (assignedNutritionPlan) {
-                  router.navigate('/(tabs)/nutrition');
-                } else if (selfManagedNutritionPlan) {
-                  router.push(`/student/nutrition/plans/${selfManagedNutritionPlan.id}`);
-                } else {
-                  router.navigate('/(tabs)/nutrition');
-                }
-              }}
-              style={[styles.heroCard, { borderColor: theme.color.border }]}
-              testID={hasNutritionPlan ? 'student.home.nutrition.goCta' : 'student.home.nutrition.emptyCta'}>
-              <ImageBackground
-                source={require('@/assets/images/hero-meal.jpg')}
-                style={StyleSheet.absoluteFillObject}
-                resizeMode="cover"
-              />
-              <View style={styles.mealGradientTop} />
-              <View style={styles.mealGradientBottom} />
-              <View style={styles.heroContent}>
-                <View style={styles.heroTopRow}>
-                  <View style={[styles.heroBadge, { backgroundColor: 'rgba(146, 64, 14, 0.52)' }]}>
-                    <Text style={styles.heroBadgeText}>
-                      {hasNutritionPlan ? t('student.home.nutrition.plan_available') : t('student.home.no_active_plan')}
-                    </Text>
-                  </View>
-                  <View style={[styles.heroArrowCircle, { backgroundColor: 'rgba(146, 64, 14, 0.52)' }]}>
-                    <MaterialIcons color="white" name="arrow-forward" size={18} />
-                  </View>
-                </View>
-
-                <View>
-                  <Text style={styles.heroTitle}>{t('student.home.nutrition.section')}</Text>
-                  <Text style={styles.heroMeta}>
-                    {hasNutritionPlan ? t('student.home.nutrition.plan_available') : t('student.home.no_active_plan')}
-                  </Text>
-
-                  <View style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}>
-                    <MaterialIcons color={theme.color.onAccent} name="restaurant" size={20} />
-                    <Text style={[styles.heroCtaText, { color: theme.color.onAccent }]}>
-                      {hasNutritionPlan ? t('student.home.cta_nutrition') : t('student.home.cta_start_nutrition')}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </Pressable>
-              </View>
               </View>
             ) : null}
           </View>
@@ -442,7 +540,8 @@ function DashboardIssue({
         styles.issueCard,
         { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder },
       ]}
-      testID="student.home.error">
+      testID="student.home.error"
+    >
       <View style={styles.issueCopy}>
         <MaterialIcons color={theme.color.danger} name="error-outline" size={20} />
         <Text style={[styles.issueText, { color: theme.color.textPrimary }]}>{label}</Text>
@@ -486,7 +585,8 @@ function StatCard({
         { backgroundColor: theme.color.surface, borderColor: theme.color.border },
         style,
       ]}
-      testID={testID}>
+      testID={testID}
+    >
       <View style={[styles.statIconBubble, { backgroundColor: theme.color.surfaceMuted }]}>
         <MaterialIcons color={tint} name={icon} size={18} />
       </View>
@@ -689,6 +789,4 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(146, 64, 14, 0.52)',
   },
-
-
 });

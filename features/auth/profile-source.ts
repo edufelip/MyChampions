@@ -119,7 +119,10 @@ function mapServerProfile(profile: Partial<ServerProfile> | undefined): AuthProf
   };
 }
 
-function normalizeServerError(status: number, payload: ServerProfileResponse | null): ProfileSourceError {
+function normalizeServerError(
+  status: number,
+  payload: ServerProfileResponse | null,
+): ProfileSourceError {
   const code = payload?.error?.code;
   const message = payload?.error?.message ?? `Profile server request failed with status ${status}.`;
 
@@ -160,13 +163,13 @@ async function requestProfile(
     method?: string;
     body?: unknown;
     accessToken?: string | null;
-  } = {}
+  } = {},
 ): Promise<ServerProfileResponse | null> {
   const baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
   if (!baseUrl) {
     throw new ProfileSourceError(
       'configuration',
-      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.'
+      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.',
     );
   }
 
@@ -194,7 +197,7 @@ async function requestProfile(
 
 export async function hydrateProfileFromSource(
   user: { uid: string; displayName: string | null; email: string | null },
-  deps: ProfileSourceDeps = getProfileSourceDeps()
+  deps: ProfileSourceDeps = getProfileSourceDeps(),
 ): Promise<AuthProfile> {
   try {
     const payload = await requestProfile('/me/hydrate', deps, {
@@ -212,7 +215,7 @@ export async function hydrateProfileFromSource(
 
 export async function lockRoleInSource(
   role: RoleIntent,
-  deps: ProfileSourceDeps = getProfileSourceDeps()
+  deps: ProfileSourceDeps = getProfileSourceDeps(),
 ): Promise<AuthProfile> {
   try {
     const payload = await requestProfile('/me/role', deps, {
@@ -225,9 +228,7 @@ export async function lockRoleInSource(
   }
 }
 
-export async function deleteAccountAndDataFromSource(
-  deps?: ProfileSourceDeps
-): Promise<void> {
+export async function deleteAccountAndDataFromSource(deps?: ProfileSourceDeps): Promise<void> {
   if (deps === undefined && resolveProfileSourceE2EOverride()) {
     return;
   }
@@ -241,7 +242,7 @@ export async function deleteAccountAndDataFromSource(
 
 export async function setAcceptedTermsVersionInSource(
   version: string,
-  deps: ProfileSourceDeps = getProfileSourceDeps()
+  deps: ProfileSourceDeps = getProfileSourceDeps(),
 ): Promise<void> {
   try {
     await requestProfile('/me/terms', deps, {

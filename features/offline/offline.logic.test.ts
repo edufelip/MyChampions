@@ -24,29 +24,20 @@ test('resolveCacheFreshness returns empty when lastSyncedAt is invalid', () => {
 test('resolveCacheFreshness returns fresh within 24h TTL (D-047)', () => {
   const now = new Date('2024-06-01T12:00:00Z');
   const lastSync = new Date(now.getTime() - CACHE_STALE_TTL_MS + 1); // 1ms before stale
-  assert.equal(
-    resolveCacheFreshness(lastSync.toISOString(), now.toISOString()),
-    'fresh'
-  );
+  assert.equal(resolveCacheFreshness(lastSync.toISOString(), now.toISOString()), 'fresh');
 });
 
 test('resolveCacheFreshness returns stale after 24h TTL', () => {
   const now = new Date('2024-06-01T12:00:00Z');
   const lastSync = new Date(now.getTime() - CACHE_STALE_TTL_MS - 1); // 1ms past stale
-  assert.equal(
-    resolveCacheFreshness(lastSync.toISOString(), now.toISOString()),
-    'stale'
-  );
+  assert.equal(resolveCacheFreshness(lastSync.toISOString(), now.toISOString()), 'stale');
 });
 
 test('resolveCacheFreshness returns stale at exactly TTL boundary (inclusive)', () => {
   const now = new Date('2024-06-01T12:00:00Z');
   const lastSync = new Date(now.getTime() - CACHE_STALE_TTL_MS); // exactly at TTL
   // <= means exactly TTL is still fresh
-  assert.equal(
-    resolveCacheFreshness(lastSync.toISOString(), now.toISOString()),
-    'fresh'
-  );
+  assert.equal(resolveCacheFreshness(lastSync.toISOString(), now.toISOString()), 'fresh');
 });
 
 // ─── checkWriteLock ───────────────────────────────────────────────────────────

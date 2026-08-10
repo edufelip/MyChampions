@@ -1,7 +1,8 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const DEFAULT_TERMS_URL = 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use';
-const DEFAULT_PRIVACY_POLICY_URL = 'https://portfolio.eduwaldo.com/projects/my-champions/privacy_policy';
+const DEFAULT_PRIVACY_POLICY_URL =
+  'https://portfolio.eduwaldo.com/projects/my-champions/privacy_policy';
 
 type AppVariant = 'dev' | 'prod';
 
@@ -76,7 +77,7 @@ export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
     studentOfferingOverride !== 'test_student'
   ) {
     throw new Error(
-      'EXPO_PUBLIC_REVENUECAT_STUDENT_OFFERING_ID must be default_student or test_student.'
+      'EXPO_PUBLIC_REVENUECAT_STUDENT_OFFERING_ID must be default_student or test_student.',
     );
   }
   if (
@@ -84,7 +85,7 @@ export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
     (variant !== 'dev' || !revenueCatTestStoreEnabled)
   ) {
     throw new Error(
-      'RevenueCat test_student offering is allowed only in an explicit development Test Store build.'
+      'RevenueCat test_student offering is allowed only in an explicit development Test Store build.',
     );
   }
 
@@ -94,7 +95,7 @@ export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
     professionalOfferingOverride !== 'test_professional'
   ) {
     throw new Error(
-      'EXPO_PUBLIC_REVENUECAT_PROFESSIONAL_OFFERING_ID must be default_professional or test_professional.'
+      'EXPO_PUBLIC_REVENUECAT_PROFESSIONAL_OFFERING_ID must be default_professional or test_professional.',
     );
   }
   if (
@@ -102,7 +103,7 @@ export function resolveRevenueCatConfig(variant: AppVariant): RevenueCatConfig {
     (variant !== 'dev' || !revenueCatTestStoreEnabled)
   ) {
     throw new Error(
-      'RevenueCat test_professional offering is allowed only in an explicit development Test Store build.'
+      'RevenueCat test_professional offering is allowed only in an explicit development Test Store build.',
     );
   }
 
@@ -168,11 +169,14 @@ function resolveAppleWebAuthConfig(): AppleWebAuthConfig {
 
 function resolveE2EConfig(variant: AppVariant): E2EConfig {
   return {
-    acceptedTermsVersion: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION?.trim() ?? '' : '',
-    authSession: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_AUTH_SESSION?.trim() ?? '' : '',
-    createAccount: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT?.trim() ?? '' : '',
-    emailPasswordSignIn: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN?.trim() ?? '' : '',
-    socialAuth: variant === 'dev' ? process.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH?.trim() ?? '' : '',
+    acceptedTermsVersion:
+      variant === 'dev' ? (process.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION?.trim() ?? '') : '',
+    authSession: variant === 'dev' ? (process.env.EXPO_PUBLIC_E2E_AUTH_SESSION?.trim() ?? '') : '',
+    createAccount:
+      variant === 'dev' ? (process.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT?.trim() ?? '') : '',
+    emailPasswordSignIn:
+      variant === 'dev' ? (process.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN?.trim() ?? '') : '',
+    socialAuth: variant === 'dev' ? (process.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH?.trim() ?? '') : '',
   };
 }
 
@@ -281,8 +285,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       revenueCatProfessionalOfferingId: revenueCat.revenueCatProfessionalOfferingId,
       googleAuth,
       appleWebAuth,
-      subscriptionHandoffUrl:
-        process.env.EXPO_PUBLIC_SUBSCRIPTION_HANDOFF_URL?.trim() ?? '',
+      subscriptionHandoffUrl: process.env.EXPO_PUBLIC_SUBSCRIPTION_HANDOFF_URL?.trim() ?? '',
       e2e,
     },
   };

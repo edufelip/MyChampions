@@ -285,7 +285,11 @@ describe('filterStarterTemplates()', () => {
 
   it('should handle search with special characters', () => {
     const templatesWithSpecial = [
-      { id: 'starter_nutrition_high-protein', planType: 'nutrition' as const, name: 'High-Protein Diet' },
+      {
+        id: 'starter_nutrition_high-protein',
+        planType: 'nutrition' as const,
+        name: 'High-Protein Diet',
+      },
     ];
     const result = filterStarterTemplates(templatesWithSpecial, { searchQuery: 'high-protein' });
     assert.equal(result.length, 1);
@@ -371,27 +375,21 @@ describe('formatTemplateDisplayName()', () => {
 
 describe('isClonedIndependently()', () => {
   it('should verify that cloned plan is independent from original template', () => {
-    assert.equal(
-      isClonedIndependently('user_plan_abc123', 'starter_nutrition_basic'),
-      true
-    );
-    assert.equal(
-      isClonedIndependently('cloned_plan_xyz', 'starter_training_full_body'),
-      true
-    );
+    assert.equal(isClonedIndependently('user_plan_abc123', 'starter_nutrition_basic'), true);
+    assert.equal(isClonedIndependently('cloned_plan_xyz', 'starter_training_full_body'), true);
   });
 
   it('should return false if cloned plan has same ID as original', () => {
     assert.equal(
       isClonedIndependently('starter_nutrition_basic', 'starter_nutrition_basic'),
-      false
+      false,
     );
   });
 
   it('should return false if cloned plan is itself a starter template', () => {
     assert.equal(
       isClonedIndependently('starter_nutrition_custom', 'starter_nutrition_basic'),
-      false
+      false,
     );
   });
 });
@@ -719,7 +717,10 @@ describe('Performance and stress testing', () => {
     const elapsed = performance.now() - start;
 
     assert.equal(result.length, 1);
-    assert.ok(elapsed < 100, `Combined filter should complete in <100ms, took ${elapsed.toFixed(2)}ms`);
+    assert.ok(
+      elapsed < 100,
+      `Combined filter should complete in <100ms, took ${elapsed.toFixed(2)}ms`,
+    );
   });
 
   it('should handle 100,000 increments without performance degradation', () => {
@@ -736,7 +737,10 @@ describe('Performance and stress testing', () => {
     const elapsed = performance.now() - start;
 
     assert.equal(stats.cloneCount, 100000);
-    assert.ok(elapsed < 500, `100k increments should complete in <500ms, took ${elapsed.toFixed(2)}ms`);
+    assert.ok(
+      elapsed < 500,
+      `100k increments should complete in <500ms, took ${elapsed.toFixed(2)}ms`,
+    );
   });
 
   it('should efficiently format 10,000 template display names', () => {
@@ -751,7 +755,10 @@ describe('Performance and stress testing', () => {
     const elapsed = performance.now() - start;
 
     assert.equal(names.length, 10000);
-    assert.ok(elapsed < 100, `Format 10k names should complete in <100ms, took ${elapsed.toFixed(2)}ms`);
+    assert.ok(
+      elapsed < 100,
+      `Format 10k names should complete in <100ms, took ${elapsed.toFixed(2)}ms`,
+    );
   });
 
   it('should handle worst-case search with no matches across 50,000 templates', () => {
@@ -766,7 +773,10 @@ describe('Performance and stress testing', () => {
     const elapsed = performance.now() - start;
 
     assert.equal(result.length, 0);
-    assert.ok(elapsed < 200, `Worst-case search should complete in <200ms, took ${elapsed.toFixed(2)}ms`);
+    assert.ok(
+      elapsed < 200,
+      `Worst-case search should complete in <200ms, took ${elapsed.toFixed(2)}ms`,
+    );
   });
 });
 
@@ -970,7 +980,7 @@ describe('Null safety and undefined handling', () => {
     assert.throws(
       () => filterStarterTemplates(templates, nullFilter),
       { message: /null|undefined/ },
-      'Should throw on null filter'
+      'Should throw on null filter',
     );
   });
 
@@ -1006,13 +1016,13 @@ describe('Null safety and undefined handling', () => {
     assert.throws(
       () => isStarterTemplate(null as unknown as string),
       { message: /null|undefined|startsWith/ },
-      'Should throw on null'
+      'Should throw on null',
     );
 
     assert.throws(
       () => isStarterTemplate(undefined as unknown as string),
       { message: /null|undefined|startsWith/ },
-      'Should throw on undefined'
+      'Should throw on undefined',
     );
   });
 
@@ -1020,13 +1030,13 @@ describe('Null safety and undefined handling', () => {
     assert.throws(
       () => extractTemplateCategory(null as unknown as string),
       { message: /null|undefined|startsWith/ },
-      'Should throw on null'
+      'Should throw on null',
     );
 
     assert.throws(
       () => extractTemplateCategory(undefined as unknown as string),
       { message: /null|undefined|startsWith/ },
-      'Should throw on undefined'
+      'Should throw on undefined',
     );
   });
 
@@ -1035,7 +1045,7 @@ describe('Null safety and undefined handling', () => {
     assert.throws(
       () => incrementTemplateCloneCount(nullStats),
       { message: /null|undefined|spread/ },
-      'Should throw on null stats'
+      'Should throw on null stats',
     );
   });
 
@@ -1044,7 +1054,7 @@ describe('Null safety and undefined handling', () => {
     assert.throws(
       () => incrementTemplateCloneCount(undefinedStats),
       { message: /null|undefined|spread/ },
-      'Should throw on undefined stats'
+      'Should throw on undefined stats',
     );
   });
 
@@ -1053,7 +1063,7 @@ describe('Null safety and undefined handling', () => {
     assert.throws(
       () => incrementTemplateAssignmentCount(nullStats),
       { message: /null|undefined|spread/ },
-      'Should throw on null stats'
+      'Should throw on null stats',
     );
   });
 
@@ -1067,7 +1077,7 @@ describe('Null safety and undefined handling', () => {
     // null !== originalTemplateId is true, then !isStarterTemplate(null) throws
     assert.throws(
       () => isClonedIndependently(null as unknown as string, 'starter_nutrition_basic'),
-      'Should throw on null clonedPlanId because isStarterTemplate(null) throws'
+      'Should throw on null clonedPlanId because isStarterTemplate(null) throws',
     );
   });
 
@@ -1086,7 +1096,7 @@ describe('Null safety and undefined handling', () => {
     assert.throws(
       () => isEditableAsDraft(null as unknown as string),
       { message: /null|undefined|startsWith/ },
-      'Should throw on null'
+      'Should throw on null',
     );
   });
 
@@ -1095,7 +1105,7 @@ describe('Null safety and undefined handling', () => {
     assert.throws(
       () => canCloneTemplate(nullErrors),
       { message: /null|undefined|keys/ },
-      'Should throw on null errors'
+      'Should throw on null errors',
     );
   });
 });

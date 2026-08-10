@@ -62,7 +62,14 @@ describe('ImageUploadSourceError', () => {
   });
 
   it('stores all error reason codes', () => {
-    const codes = ['network', 'storage_quota', 'file_too_large', 'unauthorized', 'configuration', 'unknown'] as const;
+    const codes = [
+      'network',
+      'storage_quota',
+      'file_too_large',
+      'unauthorized',
+      'configuration',
+      'unknown',
+    ] as const;
     for (const code of codes) {
       const err = new ImageUploadSourceError(code, `error: ${code}`);
       assert.equal(err.code, code);
@@ -80,14 +87,18 @@ describe('pickAndUploadMealImage — picker outcomes', () => {
   });
 
   it('throws unknown when pickImage throws', async () => {
-    const deps = makeDeps({ pickImage: async () => { throw new Error('picker crashed'); } });
+    const deps = makeDeps({
+      pickImage: async () => {
+        throw new Error('picker crashed');
+      },
+    });
     await assert.rejects(
       pickAndUploadMealImage('meal-1', deps, () => {}),
       (err: unknown) => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'unknown');
         return true;
-      }
+      },
     );
   });
 });
@@ -95,7 +106,9 @@ describe('pickAndUploadMealImage — picker outcomes', () => {
 describe('pickAndUploadMealImage — compression outcomes', () => {
   it('throws normalized error when compressImage throws with network code', async () => {
     const deps = makeDeps({
-      compressImage: async () => { throw { code: 'network_error', message: 'network' }; },
+      compressImage: async () => {
+        throw { code: 'network_error', message: 'network' };
+      },
     });
     await assert.rejects(
       pickAndUploadMealImage('meal-1', deps, () => {}),
@@ -103,13 +116,15 @@ describe('pickAndUploadMealImage — compression outcomes', () => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'network');
         return true;
-      }
+      },
     );
   });
 
   it('throws unknown when compressImage throws unrecognized error', async () => {
     const deps = makeDeps({
-      compressImage: async () => { throw { weirdProp: true }; },
+      compressImage: async () => {
+        throw { weirdProp: true };
+      },
     });
     await assert.rejects(
       pickAndUploadMealImage('meal-1', deps, () => {}),
@@ -117,7 +132,7 @@ describe('pickAndUploadMealImage — compression outcomes', () => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'unknown');
         return true;
-      }
+      },
     );
   });
 
@@ -129,7 +144,7 @@ describe('pickAndUploadMealImage — compression outcomes', () => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'file_too_large');
         return true;
-      }
+      },
     );
   });
 
@@ -158,7 +173,9 @@ describe('pickAndUploadMealImage — upload outcomes', () => {
 
   it('throws normalized error when uploadBlob throws with quota_exceeded server code', async () => {
     const deps = makeDeps({
-      uploadBlob: async () => { throw { code: 'quota_exceeded', message: 'quota exceeded' }; },
+      uploadBlob: async () => {
+        throw { code: 'quota_exceeded', message: 'quota exceeded' };
+      },
     });
     await assert.rejects(
       pickAndUploadMealImage('meal-1', deps, () => {}),
@@ -166,13 +183,15 @@ describe('pickAndUploadMealImage — upload outcomes', () => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'storage_quota');
         return true;
-      }
+      },
     );
   });
 
   it('throws normalized error when uploadBlob throws with unauthorized server code', async () => {
     const deps = makeDeps({
-      uploadBlob: async () => { throw { code: 'unauthorized', message: 'unauthorized' }; },
+      uploadBlob: async () => {
+        throw { code: 'unauthorized', message: 'unauthorized' };
+      },
     });
     await assert.rejects(
       pickAndUploadMealImage('meal-1', deps, () => {}),
@@ -180,27 +199,31 @@ describe('pickAndUploadMealImage — upload outcomes', () => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'unauthorized');
         return true;
-      }
+      },
     );
   });
 
   it('passes through ImageUploadSourceError from uploadBlob directly', async () => {
     const original = new ImageUploadSourceError('network', 'upload network fail');
     const deps = makeDeps({
-      uploadBlob: async () => { throw original; },
+      uploadBlob: async () => {
+        throw original;
+      },
     });
     await assert.rejects(
       pickAndUploadMealImage('meal-1', deps, () => {}),
       (err: unknown) => {
         assert.ok(err === original);
         return true;
-      }
+      },
     );
   });
 
   it('throws unknown for unrecognized upload error', async () => {
     const deps = makeDeps({
-      uploadBlob: async () => { throw { randomProp: 42 }; },
+      uploadBlob: async () => {
+        throw { randomProp: 42 };
+      },
     });
     await assert.rejects(
       pickAndUploadMealImage('meal-1', deps, () => {}),
@@ -208,7 +231,7 @@ describe('pickAndUploadMealImage — upload outcomes', () => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'unknown');
         return true;
-      }
+      },
     );
   });
 });
@@ -280,28 +303,29 @@ describe('uploadMealImageToServer', () => {
     let captured: Request | null = null;
     const blob = new Blob(['jpeg-bytes'], { type: 'image/jpeg' });
 
-    const result = await uploadMealImageToServer(
-      'meals/meal-1/photo.jpg',
-      blob,
-      () => {},
-      {
-        getServerBaseUrl: () => 'http://server.test/',
-        getCurrentAccessToken: async () => 'server-token',
-        fetchFn: async (input: RequestInfo | URL, init?: RequestInit) => {
-          captured = new Request(input, init);
-          return new Response(
-            JSON.stringify({
-              url: 'http://server.test/media/custom-meal-images/server-user-1/meal-1/photo.jpg',
-            }),
-            { status: 201, headers: { 'content-type': 'application/json' } }
-          );
-        },
-      }
-    );
+    const result = await uploadMealImageToServer('meals/meal-1/photo.jpg', blob, () => {}, {
+      getServerBaseUrl: () => 'http://server.test/',
+      getCurrentAccessToken: async () => 'server-token',
+      fetchFn: async (input: RequestInfo | URL, init?: RequestInit) => {
+        captured = new Request(input, init);
+        return new Response(
+          JSON.stringify({
+            url: 'http://server.test/media/custom-meal-images/server-user-1/meal-1/photo.jpg',
+          }),
+          { status: 201, headers: { 'content-type': 'application/json' } },
+        );
+      },
+    });
 
-    assert.equal(result, 'http://server.test/media/custom-meal-images/server-user-1/meal-1/photo.jpg');
+    assert.equal(
+      result,
+      'http://server.test/media/custom-meal-images/server-user-1/meal-1/photo.jpg',
+    );
     assert.ok(captured);
-    assert.equal((captured as Request).url, 'http://server.test/nutrition/custom-meal-images/meal-1?filename=photo.jpg');
+    assert.equal(
+      (captured as Request).url,
+      'http://server.test/nutrition/custom-meal-images/meal-1?filename=photo.jpg',
+    );
     assert.equal((captured as Request).method, 'POST');
     assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
     assert.equal((captured as Request).headers.get('content-type'), 'image/jpeg');
@@ -310,45 +334,47 @@ describe('uploadMealImageToServer', () => {
 
   it('throws configuration when the local server URL is unavailable', async () => {
     await assert.rejects(
-      () => uploadMealImageToServer(
-        'meals/meal-1/photo.jpg',
-        new Blob(['jpeg-bytes'], { type: 'image/jpeg' }),
-        () => {},
-        {
-          getServerBaseUrl: () => undefined,
-          getCurrentAccessToken: async () => 'server-token',
-          fetchFn: async () => {
-            throw new Error('fetch should not be called without a local server URL.');
+      () =>
+        uploadMealImageToServer(
+          'meals/meal-1/photo.jpg',
+          new Blob(['jpeg-bytes'], { type: 'image/jpeg' }),
+          () => {},
+          {
+            getServerBaseUrl: () => undefined,
+            getCurrentAccessToken: async () => 'server-token',
+            fetchFn: async () => {
+              throw new Error('fetch should not be called without a local server URL.');
+            },
           },
-        }
-      ),
+        ),
       (err: unknown) => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 
   it('throws unauthorized when the local server bearer token is unavailable', async () => {
     await assert.rejects(
-      () => uploadMealImageToServer(
-        'meals/meal-1/photo.jpg',
-        new Blob(['jpeg-bytes'], { type: 'image/jpeg' }),
-        () => {},
-        {
-          getServerBaseUrl: () => 'http://server.test',
-          getCurrentAccessToken: async () => null,
-          fetchFn: async () => {
-            throw new Error('fetch should not be called without local server auth.');
+      () =>
+        uploadMealImageToServer(
+          'meals/meal-1/photo.jpg',
+          new Blob(['jpeg-bytes'], { type: 'image/jpeg' }),
+          () => {},
+          {
+            getServerBaseUrl: () => 'http://server.test',
+            getCurrentAccessToken: async () => null,
+            fetchFn: async () => {
+              throw new Error('fetch should not be called without local server auth.');
+            },
           },
-        }
-      ),
+        ),
       (err: unknown) => {
         assert.ok(err instanceof ImageUploadSourceError);
         assert.equal(err.code, 'unauthorized');
         return true;
-      }
+      },
     );
   });
 });

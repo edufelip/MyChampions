@@ -9,10 +9,7 @@ import {
 
 describe('resolvePaywallPresentationError', () => {
   it('maps NOT_PRESENTED to a recoverable configuration failure', () => {
-    assert.equal(
-      resolvePaywallPresentationError('NOT_PRESENTED'),
-      'configuration'
-    );
+    assert.equal(resolvePaywallPresentationError('NOT_PRESENTED'), 'configuration');
   });
 
   it('maps ERROR to a recoverable storefront failure', () => {
@@ -48,11 +45,7 @@ describe('runPaywallPresentation', () => {
       isCurrent: () => true,
     });
 
-    assert.deepEqual(events, [
-      'present',
-      'refresh',
-      'error:configuration',
-    ]);
+    assert.deepEqual(events, ['present', 'refresh', 'error:configuration']);
     assert.equal(visibleError, 'configuration');
   });
 
@@ -98,10 +91,7 @@ describe('runPaywallPresentation', () => {
 
     await runPaywallPresentation({
       present: async () => {
-        throw new SubscriptionSourceError(
-          'purchase_cancelled',
-          'User cancelled the purchase.'
-        );
+        throw new SubscriptionSourceError('purchase_cancelled', 'User cancelled the purchase.');
       },
       refresh: async () => {
         refreshCount += 1;

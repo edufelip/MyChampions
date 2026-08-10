@@ -10,10 +10,24 @@ import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View, type DimensionValue } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type DimensionValue,
+} from 'react-native';
 
 import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import { logAssignedMealPortion, getTodayPortionLogs, type PortionLog } from '@/features/nutrition/custom-meal-source';
+import {
+  logAssignedMealPortion,
+  getTodayPortionLogs,
+  type PortionLog,
+} from '@/features/nutrition/custom-meal-source';
 import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/plan-builder.logic';
 
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
@@ -52,7 +66,11 @@ export default function StudentNutritionScreen() {
 
   const networkStatus = useNetworkStatus();
   const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
-  const { state: plansState, submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser));
+  const {
+    state: plansState,
+    submitChangeRequest,
+    validateChangeRequest,
+  } = usePlans(Boolean(currentUser));
   const { state: connectionsState } = useConnections(Boolean(currentUser));
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
     waterHook.state.kind === 'ready' ? waterHook.state.lastSyncedAtIso : null,
@@ -68,21 +86,23 @@ export default function StudentNutritionScreen() {
   const hasActiveNutritionistConnection =
     connectionsState.kind === 'ready' &&
     connectionsState.connections.some(
-      (connection) => connection.specialty === 'nutritionist' && connection.status === 'active'
+      (connection) => connection.specialty === 'nutritionist' && connection.status === 'active',
     );
   const activeNutritionistConnection =
     connectionsState.kind === 'ready'
-      ? connectionsState.connections.find(
-          (connection) => connection.specialty === 'nutritionist' && connection.status === 'active'
-        ) ?? null
+      ? (connectionsState.connections.find(
+          (connection) => connection.specialty === 'nutritionist' && connection.status === 'active',
+        ) ?? null)
       : null;
   const nutritionState = resolveStudentNutritionState({
     currentUserUid: currentUser?.uid ?? null,
     hasActiveNutritionistConnection,
     plans: plansState.kind === 'ready' ? plansState.plans : [],
   });
-  const assignedNutritionPlan = nutritionState.kind === 'assigned' ? nutritionState.assignedPlan : null;
-  const selfManagedNutritionPlan = nutritionState.kind === 'self_managed' ? nutritionState.selfManagedPlan : null;
+  const assignedNutritionPlan =
+    nutritionState.kind === 'assigned' ? nutritionState.assignedPlan : null;
+  const selfManagedNutritionPlan =
+    nutritionState.kind === 'self_managed' ? nutritionState.selfManagedPlan : null;
   const nutritionDisplayState = resolveStudentNutritionDisplayState({
     hasCurrentUser: Boolean(currentUser),
     plansKind: plansState.kind,
@@ -90,7 +110,10 @@ export default function StudentNutritionScreen() {
     nutritionKind: nutritionState.kind,
   });
 
-  const { state: builderState, loadPlan } = useNutritionPlanBuilder(Boolean(currentUser), 'student-assigned');
+  const { state: builderState, loadPlan } = useNutritionPlanBuilder(
+    Boolean(currentUser),
+    'student-assigned',
+  );
   const [todayPortionLogs, setTodayPortionLogs] = useState<PortionLog[]>([]);
   const [expandedMealIds, setExpandedMealIds] = useState<string[]>([]);
   const [isLoggingMealId, setIsLoggingMealId] = useState<string | null>(null);
@@ -134,24 +157,25 @@ export default function StudentNutritionScreen() {
         })
         .catch((err) => {
           console.error('Error loading today portion logs:', err);
-      });
+        });
     }
   }, [currentUser]);
 
   useFocusEffect(
     useCallback(() => {
       setScreenFocusKey((current) => current + 1);
-    }, [])
+    }, []),
   );
 
   const toggleMealExpand = (mealId: string) => {
     setExpandedMealIds((prev) =>
-      prev.includes(mealId) ? prev.filter((id) => id !== mealId) : [...prev, mealId]
+      prev.includes(mealId) ? prev.filter((id) => id !== mealId) : [...prev, mealId],
     );
   };
 
   const handleLogMeal = async (meal: NutritionMeal) => {
-    if (isWriteLocked || loggedMealIds.includes(meal.id) || loggingMealsRef.current.has(meal.id)) return;
+    if (isWriteLocked || loggedMealIds.includes(meal.id) || loggingMealsRef.current.has(meal.id))
+      return;
 
     loggingMealsRef.current.add(meal.id);
     setIsLoggingMealId(meal.id);
@@ -188,7 +212,10 @@ export default function StudentNutritionScreen() {
       setTodayPortionLogs((prev) => [...prev, newLog]);
     } catch (err) {
       console.error('Failed to log meal portion:', err);
-      Alert.alert(t('common.error.generic'), t('student.nutrition.plan_change.error.unknown') || 'Something went wrong. Try again.');
+      Alert.alert(
+        t('common.error.generic'),
+        t('student.nutrition.plan_change.error.unknown') || 'Something went wrong. Try again.',
+      );
     } finally {
       loggingMealsRef.current.delete(meal.id);
       setIsLoggingMealId(null);
@@ -214,37 +241,78 @@ export default function StudentNutritionScreen() {
         </View>
 
         {offlineDisplay.showOfflineBanner ? (
-          <DsOfflineBanner scheme={scheme} text={t('offline.banner')} testID="student.nutrition.offlineBanner" />
+          <DsOfflineBanner
+            scheme={scheme}
+            text={t('offline.banner')}
+            testID="student.nutrition.offlineBanner"
+          />
         ) : null}
 
         <View style={styles.sectionStack}>
           {nutritionDisplayState === 'loading' ? (
-            <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.plansLoading">
-              <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+            <DsCard
+              scheme={scheme}
+              style={styles.loadingCard}
+              testID="student.nutrition.plansLoading"
+            >
+              <ActivityIndicator
+                accessibilityLabel={t('a11y.loading.default')}
+                color={theme.color.accentPrimary}
+              />
             </DsCard>
           ) : nutritionDisplayState === 'load_error' ? (
             <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.loadError">
-              <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
+              <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
+                {t('common.error.generic')}
+              </Text>
             </DsCard>
           ) : nutritionState.kind === 'assigned' && assignedNutritionPlan ? (
             <>
               {builderState.kind === 'loading' ? (
-                <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.planDetailsLoading">
-                  <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+                <DsCard
+                  scheme={scheme}
+                  style={styles.loadingCard}
+                  testID="student.nutrition.planDetailsLoading"
+                >
+                  <ActivityIndicator
+                    accessibilityLabel={t('a11y.loading.default')}
+                    color={theme.color.accentPrimary}
+                  />
                 </DsCard>
               ) : builderState.kind === 'error' ? (
-                <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.planDetailsError">
-                  <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
+                <DsCard
+                  scheme={scheme}
+                  style={styles.loadingCard}
+                  testID="student.nutrition.planDetailsError"
+                >
+                  <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
+                    {t('common.error.generic')}
+                  </Text>
                 </DsCard>
               ) : builderState.kind === 'ready' ? (
                 <>
-                  <DsCard scheme={scheme} style={styles.macroCard} testID="student.nutrition.macroCard">
+                  <DsCard
+                    scheme={scheme}
+                    style={styles.macroCard}
+                    testID="student.nutrition.macroCard"
+                  >
                     <View style={styles.macroHeaderRow}>
-                      <View style={[styles.macroIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
-                        <MaterialIcons color={theme.color.accentPrimary} name="local-fire-department" size={24} />
+                      <View
+                        style={[
+                          styles.macroIconWrap,
+                          { backgroundColor: theme.color.accentPrimarySoft },
+                        ]}
+                      >
+                        <MaterialIcons
+                          color={theme.color.accentPrimary}
+                          name="local-fire-department"
+                          size={24}
+                        />
                       </View>
                       <View style={styles.macroHeaderTextWrap}>
-                        <Text style={[styles.macroHeaderSubtitle, { color: theme.color.textSecondary }]}>
+                        <Text
+                          style={[styles.macroHeaderSubtitle, { color: theme.color.textSecondary }]}
+                        >
                           {t('student.nutrition.target_dashboard.title')}
                         </Text>
                         <Text style={[styles.macroHeaderTitle, { color: theme.color.textPrimary }]}>
@@ -253,44 +321,117 @@ export default function StudentNutritionScreen() {
                       </View>
                     </View>
 
-                    <View style={[styles.progressBarTrack, { backgroundColor: theme.color.surfaceMuted }]}>
-                      <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.calories, builderState.plan.caloriesTarget), backgroundColor: theme.color.accentPrimary }]} />
+                    <View
+                      style={[
+                        styles.progressBarTrack,
+                        { backgroundColor: theme.color.surfaceMuted },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          {
+                            width: getProgressWidth(
+                              todayConsumed.calories,
+                              builderState.plan.caloriesTarget,
+                            ),
+                            backgroundColor: theme.color.accentPrimary,
+                          },
+                        ]}
+                      />
                     </View>
 
                     <View style={styles.macroGrid}>
-                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                      <View
+                        style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}
+                      >
                         <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
                           {t('common.nutrition.carbs')}
                         </Text>
                         <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
                           {`${Math.round(todayConsumed.carbs)}/${Math.round(builderState.plan.carbsTarget || 0)}g`}
                         </Text>
-                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
-                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.carbs, builderState.plan.carbsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        <View
+                          style={[
+                            styles.progressBarTrack,
+                            { backgroundColor: theme.color.border, height: 4, marginTop: 4 },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.progressBarFill,
+                              {
+                                width: getProgressWidth(
+                                  todayConsumed.carbs,
+                                  builderState.plan.carbsTarget,
+                                ),
+                                backgroundColor: theme.color.accentPrimary,
+                                height: 4,
+                              },
+                            ]}
+                          />
                         </View>
                       </View>
 
-                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                      <View
+                        style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}
+                      >
                         <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
                           {t('common.nutrition.proteins')}
                         </Text>
                         <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
                           {`${Math.round(todayConsumed.proteins)}/${Math.round(builderState.plan.proteinsTarget || 0)}g`}
                         </Text>
-                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
-                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.proteins, builderState.plan.proteinsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        <View
+                          style={[
+                            styles.progressBarTrack,
+                            { backgroundColor: theme.color.border, height: 4, marginTop: 4 },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.progressBarFill,
+                              {
+                                width: getProgressWidth(
+                                  todayConsumed.proteins,
+                                  builderState.plan.proteinsTarget,
+                                ),
+                                backgroundColor: theme.color.accentPrimary,
+                                height: 4,
+                              },
+                            ]}
+                          />
                         </View>
                       </View>
 
-                      <View style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}>
+                      <View
+                        style={[styles.macroItem, { backgroundColor: theme.color.surfaceMuted }]}
+                      >
                         <Text style={[styles.macroLabel, { color: theme.color.textSecondary }]}>
                           {t('common.nutrition.fats')}
                         </Text>
                         <Text style={[styles.macroValue, { color: theme.color.textPrimary }]}>
                           {`${Math.round(todayConsumed.fats)}/${Math.round(builderState.plan.fatsTarget || 0)}g`}
                         </Text>
-                        <View style={[styles.progressBarTrack, { backgroundColor: theme.color.border, height: 4, marginTop: 4 }]}>
-                          <View style={[styles.progressBarFill, { width: getProgressWidth(todayConsumed.fats, builderState.plan.fatsTarget), backgroundColor: theme.color.accentPrimary, height: 4 }]} />
+                        <View
+                          style={[
+                            styles.progressBarTrack,
+                            { backgroundColor: theme.color.border, height: 4, marginTop: 4 },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.progressBarFill,
+                              {
+                                width: getProgressWidth(
+                                  todayConsumed.fats,
+                                  builderState.plan.fatsTarget,
+                                ),
+                                backgroundColor: theme.color.accentPrimary,
+                                height: 4,
+                              },
+                            ]}
+                          />
                         </View>
                       </View>
                     </View>
@@ -334,7 +475,12 @@ export default function StudentNutritionScreen() {
                                 <Text style={[styles.mealName, { color: theme.color.textPrimary }]}>
                                   {meal.name}
                                 </Text>
-                                <Text style={[styles.mealSummaryText, { color: theme.color.textSecondary }]}>
+                                <Text
+                                  style={[
+                                    styles.mealSummaryText,
+                                    { color: theme.color.textSecondary },
+                                  ]}
+                                >
                                   {`${Math.round(mealCal)} kcal · ${Math.round(mealCarbs)}g C · ${Math.round(mealProt)}g P · ${Math.round(mealFats)}g F`}
                                 </Text>
                               </View>
@@ -342,11 +488,23 @@ export default function StudentNutritionScreen() {
                               <View style={styles.mealHeaderRight}>
                                 {isLogged ? (
                                   <View
-                                    style={[styles.loggedBadge, { backgroundColor: theme.color.successSoft }]}
+                                    style={[
+                                      styles.loggedBadge,
+                                      { backgroundColor: theme.color.successSoft },
+                                    ]}
                                     testID={`student.nutrition.loggedMealBadge.${meal.id}`}
                                   >
-                                    <MaterialIcons color={theme.color.success} name="check-circle" size={16} />
-                                    <Text style={[styles.loggedBadgeText, { color: theme.color.success }]}>
+                                    <MaterialIcons
+                                      color={theme.color.success}
+                                      name="check-circle"
+                                      size={16}
+                                    />
+                                    <Text
+                                      style={[
+                                        styles.loggedBadgeText,
+                                        { color: theme.color.success },
+                                      ]}
+                                    >
                                       {t('student.nutrition.meal.logged_badge')}
                                     </Text>
                                   </View>
@@ -371,10 +529,20 @@ export default function StudentNutritionScreen() {
                             </Pressable>
 
                             {isExpanded && (
-                              <View style={styles.mealDetails} testID={`student.nutrition.mealDetails.${meal.id}`}>
-                                <View style={[styles.divider, { backgroundColor: theme.color.border }]} />
+                              <View
+                                style={styles.mealDetails}
+                                testID={`student.nutrition.mealDetails.${meal.id}`}
+                              >
+                                <View
+                                  style={[styles.divider, { backgroundColor: theme.color.border }]}
+                                />
 
-                                <Text style={[styles.detailsLabel, { color: theme.color.textSecondary }]}>
+                                <Text
+                                  style={[
+                                    styles.detailsLabel,
+                                    { color: theme.color.textSecondary },
+                                  ]}
+                                >
                                   {t('student.nutrition.meal.items_label')}
                                 </Text>
 
@@ -382,18 +550,38 @@ export default function StudentNutritionScreen() {
                                   <View style={styles.itemsList}>
                                     {meal.items.map((item) => (
                                       <View key={item.id} style={styles.itemRow}>
-                                        <View style={[styles.itemDot, { backgroundColor: theme.color.accentPrimary }]} />
+                                        <View
+                                          style={[
+                                            styles.itemDot,
+                                            { backgroundColor: theme.color.accentPrimary },
+                                          ]}
+                                        />
                                         <View style={styles.itemInfo}>
-                                          <Text style={[styles.itemName, { color: theme.color.textPrimary }]}>
+                                          <Text
+                                            style={[
+                                              styles.itemName,
+                                              { color: theme.color.textPrimary },
+                                            ]}
+                                          >
                                             {item.name}
                                           </Text>
                                           {Boolean(item.quantity) && (
-                                            <Text style={[styles.itemQuantity, { color: theme.color.textSecondary }]}>
+                                            <Text
+                                              style={[
+                                                styles.itemQuantity,
+                                                { color: theme.color.textSecondary },
+                                              ]}
+                                            >
                                               {item.quantity}
                                             </Text>
                                           )}
                                           {Boolean(item.notes) && (
-                                            <Text style={[styles.itemNotes, { color: theme.color.textSecondary }]}>
+                                            <Text
+                                              style={[
+                                                styles.itemNotes,
+                                                { color: theme.color.textSecondary },
+                                              ]}
+                                            >
                                               {item.notes}
                                             </Text>
                                           )}
@@ -402,7 +590,12 @@ export default function StudentNutritionScreen() {
                                     ))}
                                   </View>
                                 ) : (
-                                  <Text style={[styles.noItemsText, { color: theme.color.textTertiary }]}>
+                                  <Text
+                                    style={[
+                                      styles.noItemsText,
+                                      { color: theme.color.textTertiary },
+                                    ]}
+                                  >
                                     No food items.
                                   </Text>
                                 )}
@@ -420,9 +613,12 @@ export default function StudentNutritionScreen() {
                 </>
               ) : null}
 
-              <WaterWidget waterHook={waterHook} scheme={scheme} t={t} isWriteLocked={isWriteLocked} />
-
-
+              <WaterWidget
+                waterHook={waterHook}
+                scheme={scheme}
+                t={t}
+                isWriteLocked={isWriteLocked}
+              />
 
               <PlanChangeRequestCard
                 scheme={scheme}
@@ -430,7 +626,9 @@ export default function StudentNutritionScreen() {
                 isWriteLocked={isWriteLocked}
                 testID="student.nutrition.planChangeForm"
                 validate={validateChangeRequest}
-                submit={(requestText) => submitChangeRequest(assignedNutritionPlan.id, 'nutrition', requestText)}
+                submit={(requestText) =>
+                  submitChangeRequest(assignedNutritionPlan.id, 'nutrition', requestText)
+                }
                 keys={{
                   title: 'student.nutrition.plan_change.title',
                   label: 'student.nutrition.plan_change.label',
@@ -440,14 +638,18 @@ export default function StudentNutritionScreen() {
                   validationRequired: 'student.nutrition.plan_change.validation.required',
                   validationTooShort: 'student.nutrition.plan_change.validation.too_short',
                   errorPlanNotFound: 'student.nutrition.plan_change.error.plan_not_found',
-                  errorNoActiveAssignment: 'student.nutrition.plan_change.error.no_active_assignment',
+                  errorNoActiveAssignment:
+                    'student.nutrition.plan_change.error.no_active_assignment',
                   errorNetwork: 'student.nutrition.plan_change.error.network',
                   errorUnknown: 'student.nutrition.plan_change.error.unknown',
                 }}
               />
             </>
           ) : nutritionState.kind === 'waiting' ? (
-            <View style={styles.emptyStateWrap} testID="student.nutrition.waitingForNutritionistPlan">
+            <View
+              style={styles.emptyStateWrap}
+              testID="student.nutrition.waitingForNutritionistPlan"
+            >
               <View style={styles.emptyHero}>
                 <View
                   style={[
@@ -465,17 +667,23 @@ export default function StudentNutritionScreen() {
                     DsShadow.floating,
                     {
                       backgroundColor: theme.color.surface,
-                      borderColor: scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
+                      borderColor:
+                        scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
                       shadowColor: scheme === 'dark' ? '#000000' : theme.color.accentPrimary,
                     },
-                  ]}>
+                  ]}
+                >
                   <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
                 </View>
               </View>
 
               <View style={styles.emptyCopyBlock}>
-                <Text style={[styles.emptyTitle, { color: theme.color.textPrimary }]}>{t('student.nutrition.waiting.title')}</Text>
-                <Text style={[styles.emptyBody, { color: theme.color.textSecondary }]}>{t('student.nutrition.waiting.body')}</Text>
+                <Text style={[styles.emptyTitle, { color: theme.color.textPrimary }]}>
+                  {t('student.nutrition.waiting.title')}
+                </Text>
+                <Text style={[styles.emptyBody, { color: theme.color.textSecondary }]}>
+                  {t('student.nutrition.waiting.body')}
+                </Text>
               </View>
 
               <DsPillButton
@@ -490,19 +698,31 @@ export default function StudentNutritionScreen() {
               />
             </View>
           ) : nutritionState.kind === 'self_managed' && selfManagedNutritionPlan ? (
-             <>
-              <WaterWidget waterHook={waterHook} scheme={scheme} t={t} isWriteLocked={isWriteLocked} />
+            <>
+              <WaterWidget
+                waterHook={waterHook}
+                scheme={scheme}
+                t={t}
+                isWriteLocked={isWriteLocked}
+              />
 
               <DsCard scheme={scheme} testID="student.nutrition.selfManagedPlanCard">
                 <View style={styles.selfManagedHeader}>
-                  <View style={[styles.selfManagedIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+                  <View
+                    style={[
+                      styles.selfManagedIconWrap,
+                      { backgroundColor: theme.color.accentPrimarySoft },
+                    ]}
+                  >
                     <MaterialIcons color={theme.color.accentPrimary} name="restaurant" size={24} />
                   </View>
                   <View style={styles.selfManagedTextWrap}>
                     <Text style={[styles.selfManagedTitle, { color: theme.color.textPrimary }]}>
                       {selfManagedNutritionPlan.name || t('student.home.nutrition.section')}
                     </Text>
-                    <Text style={[styles.selfManagedSubtitle, { color: theme.color.textSecondary }]}>
+                    <Text
+                      style={[styles.selfManagedSubtitle, { color: theme.color.textSecondary }]}
+                    >
                       {t('student.plan.nutrition.title.edit')}
                     </Text>
                   </View>
@@ -511,7 +731,9 @@ export default function StudentNutritionScreen() {
                 <DsPillButton
                   scheme={scheme}
                   label={t('student.home.cta_nutrition')}
-                  onPress={() => router.push(`/student/nutrition/plans/${selfManagedNutritionPlan.id}`)}
+                  onPress={() =>
+                    router.push(`/student/nutrition/plans/${selfManagedNutritionPlan.id}`)
+                  }
                   style={styles.selfManagedCta}
                   testID="student.nutrition.editSelfManagedPlanCta"
                 />
@@ -536,35 +758,81 @@ export default function StudentNutritionScreen() {
                     DsShadow.floating,
                     {
                       backgroundColor: theme.color.surface,
-                      borderColor: scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
+                      borderColor:
+                        scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
                       shadowColor: scheme === 'dark' ? '#000000' : theme.color.accentPrimary,
                     },
-                  ]}>
+                  ]}
+                >
                   <View
                     style={[
                       styles.emptyPlate,
-                      { backgroundColor: scheme === 'dark' ? '#203828' : '#eef8f0', borderColor: '#13ec49' },
-                    ]}>
-                    <View style={[styles.emptyFoodLeaf, styles.emptyFoodLeafTop, { backgroundColor: '#13ec49' }]} />
-                    <View style={[styles.emptyFoodLeaf, styles.emptyFoodLeafLeft, { backgroundColor: '#7ddf75' }]} />
-                    <View style={[styles.emptyFoodLeaf, styles.emptyFoodLeafRight, { backgroundColor: '#43c463' }]} />
+                      {
+                        backgroundColor: scheme === 'dark' ? '#203828' : '#eef8f0',
+                        borderColor: '#13ec49',
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.emptyFoodLeaf,
+                        styles.emptyFoodLeafTop,
+                        { backgroundColor: '#13ec49' },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.emptyFoodLeaf,
+                        styles.emptyFoodLeafLeft,
+                        { backgroundColor: '#7ddf75' },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.emptyFoodLeaf,
+                        styles.emptyFoodLeafRight,
+                        { backgroundColor: '#43c463' },
+                      ]}
+                    />
                     <View style={[styles.emptyFoodSlice, { backgroundColor: '#ff8a65' }]} />
-                    <View style={[styles.emptyFoodBean, styles.emptyFoodBeanOne, { backgroundColor: '#ffd54f' }]} />
-                    <View style={[styles.emptyFoodBean, styles.emptyFoodBeanTwo, { backgroundColor: '#ffd54f' }]} />
+                    <View
+                      style={[
+                        styles.emptyFoodBean,
+                        styles.emptyFoodBeanOne,
+                        { backgroundColor: '#ffd54f' },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.emptyFoodBean,
+                        styles.emptyFoodBeanTwo,
+                        { backgroundColor: '#ffd54f' },
+                      ]}
+                    />
                   </View>
 
                   <View
                     style={[
                       styles.emptyOverlayPanel,
-                      { backgroundColor: scheme === 'dark' ? 'rgba(16, 34, 21, 0.9)' : 'rgba(255,255,255,0.92)' },
-                    ]}>
+                      {
+                        backgroundColor:
+                          scheme === 'dark' ? 'rgba(16, 34, 21, 0.9)' : 'rgba(255,255,255,0.92)',
+                      },
+                    ]}
+                  >
                     <View style={styles.emptyOverlayRow}>
                       <MaterialIcons color="#13ec49" name="restaurant-menu" size={18} />
                       <View
                         style={[
                           styles.emptyProgressTrack,
-                          { backgroundColor: scheme === 'dark' ? 'rgba(19, 236, 73, 0.18)' : 'rgba(19, 236, 73, 0.16)' },
-                        ]}>
+                          {
+                            backgroundColor:
+                              scheme === 'dark'
+                                ? 'rgba(19, 236, 73, 0.18)'
+                                : 'rgba(19, 236, 73, 0.16)',
+                          },
+                        ]}
+                      >
                         <View style={styles.emptyProgressFill} />
                       </View>
                     </View>
@@ -600,14 +868,17 @@ export default function StudentNutritionScreen() {
                   styles.emptyTertiaryCta,
                   { opacity: isWriteLocked ? 0.5 : pressed ? 0.7 : 1 },
                 ]}
-                testID="student.nutrition.emptySelfGuidedCta">
+                testID="student.nutrition.emptySelfGuidedCta"
+              >
                 <Text style={[styles.emptyTertiaryText, { color: theme.color.textSecondary }]}>
                   {t('student.nutrition.empty.self_guided_cta')}
                 </Text>
               </Pressable>
 
               {isWriteLocked ? (
-                <Text style={[styles.writeLockText, { color: theme.color.danger }]}>{t('offline.write_lock')}</Text>
+                <Text style={[styles.writeLockText, { color: theme.color.danger }]}>
+                  {t('offline.write_lock')}
+                </Text>
               ) : null}
             </View>
           )}
@@ -650,7 +921,7 @@ function WaterWidget({
       setIntakeError(
         errors.amountMl === 'required'
           ? t('student.nutrition.water.log.validation.required')
-          : t('student.nutrition.water.log.validation.must_be_positive')
+          : t('student.nutrition.water.log.validation.must_be_positive'),
       );
       return;
     }
@@ -671,9 +942,14 @@ function WaterWidget({
   return (
     <DsCard scheme={scheme} style={styles.waterCard} testID="student.nutrition.waterWidget">
       {state.kind === 'loading' ? (
-        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+        <ActivityIndicator
+          accessibilityLabel={t('a11y.loading.default')}
+          color={theme.color.accentPrimary}
+        />
       ) : state.kind === 'error' ? (
-        <Text style={[styles.inlineError, { color: theme.color.danger }]}>{t('common.error.generic')}</Text>
+        <Text style={[styles.inlineError, { color: theme.color.danger }]}>
+          {t('common.error.generic')}
+        </Text>
       ) : state.kind === 'ready' ? (
         <>
           <View style={styles.waterHeaderRow}>
@@ -681,25 +957,33 @@ function WaterWidget({
               <View style={styles.waterValueRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text
-                    style={[styles.waterValue, { color: theme.color.textPrimary }, isMutating && { opacity: 0.5 }]}
+                    style={[
+                      styles.waterValue,
+                      { color: theme.color.textPrimary },
+                      isMutating && { opacity: 0.5 },
+                    ]}
                     testID="student.nutrition.waterWidget.consumedValue"
                   >
                     {String(consumed)}
                   </Text>
-                  {isMutating && (
-                    <ActivityIndicator size="small" color={theme.color.accentCyan} />
-                  )}
+                  {isMutating && <ActivityIndicator size="small" color={theme.color.accentCyan} />}
                 </View>
-                <Text style={[styles.waterGoalValue, { color: theme.color.textSecondary }]}>{`/ ${goal ?? 0} ml`}</Text>
+                <Text
+                  style={[styles.waterGoalValue, { color: theme.color.textSecondary }]}
+                >{`/ ${goal ?? 0} ml`}</Text>
               </View>
 
               <View style={[styles.goalBadge, { backgroundColor: theme.color.accentPrimarySoft }]}>
                 <MaterialIcons color={theme.color.accentPrimary} name="flag" size={14} />
-                <Text style={[styles.goalBadgeText, { color: theme.color.accentPrimary }]}>{goalOwnerLabel}</Text>
+                <Text style={[styles.goalBadgeText, { color: theme.color.accentPrimary }]}>
+                  {goalOwnerLabel}
+                </Text>
               </View>
             </View>
 
-            <View style={[styles.waterIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
+            <View
+              style={[styles.waterIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}
+            >
               <MaterialIcons color={theme.color.accentCyan} name="water-drop" size={32} />
             </View>
           </View>
@@ -760,7 +1044,8 @@ function WaterWidget({
           ) : (
             <Text
               style={[styles.writeLockText, { color: theme.color.danger }]}
-              testID="student.nutrition.waterWidget.writeLock">
+              testID="student.nutrition.waterWidget.writeLock"
+            >
               {t('offline.write_lock')}
             </Text>
           )}

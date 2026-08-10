@@ -21,8 +21,7 @@ export type SubscriptionState = {
 export type SubscriptionStatusPresentation = 'loading' | 'active' | 'inactive' | 'unavailable';
 
 export type CapEnforcementResult =
-  | { allowed: true }
-  | { allowed: false; reason: 'requires_entitlement' | 'lapsed_above_cap' };
+  { allowed: true } | { allowed: false; reason: 'requires_entitlement' | 'lapsed_above_cap' };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

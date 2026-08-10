@@ -8,7 +8,7 @@ const root = join(__dirname, '..', '..');
 test('iOS build settings resolve React Native from repository-local node_modules', () => {
   const project = readFileSync(
     join(root, 'ios', 'mychampions.xcodeproj', 'project.pbxproj'),
-    'utf8'
+    'utf8',
   );
   const expected = 'REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";';
 

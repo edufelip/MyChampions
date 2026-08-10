@@ -9,7 +9,7 @@ describe('Apple web social auth source', () => {
   it('uses cryptographically secure browser randomness for the Apple nonce', () => {
     const source = readFileSync(
       new URL('./apple-social-auth-source.web.ts', import.meta.url).pathname,
-      'utf8'
+      'utf8',
     );
     assert.match(source, /crypto\.getRandomValues/);
     assert.doesNotMatch(source, /Math\.random/);
@@ -44,7 +44,7 @@ describe('Apple web social auth source', () => {
         signIn: async () => 'unused',
         signInWithSocialProviderToken: async () => {},
       }),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration',
     );
   });
 
@@ -60,7 +60,7 @@ describe('Apple web social auth source', () => {
         },
         signInWithSocialProviderToken: async () => {},
       }),
-      (error: unknown) => error === cancellation
+      (error: unknown) => error === cancellation,
     );
   });
 });

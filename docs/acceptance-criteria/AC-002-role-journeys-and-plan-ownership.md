@@ -1,9 +1,11 @@
 # AC-002 Role Journeys And Plan Ownership (Proposed)
 
 ## Feature
+
 Role-based onboarding and dual journey model for Students and Professionals.
 
 ## Acceptance Criteria
+
 - `AC-201`: New users must select Student or Professional before accessing the main product journey.
 - `AC-202`: Professional users must choose at least one specialty (nutritionist or fitness coach).
 - `AC-203`: Students cannot have more than one active nutritionist at any time.
@@ -56,6 +58,8 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-247`: Cached data older than 24 hours is shown as stale with last-sync metadata while remaining readable and write-blocked until connectivity returns.
 - `AC-248`: Student onboarding includes a self-guided start path (Student selection + Continue) that commits `student` role and routes directly to self-managed tracking setup.
 - `AC-249`: Relationship flow supports QR invite scanning and produces the same validation outcomes as manual invite entry.
+- `AC-249A`: A malformed QR payload fails closed inside the scanner, does not create a pending connection, and leaves manual invite entry available after the scanner is closed; protected iOS and Android Detox cover this state with a deterministic payload fixture.
+- `AC-249B`: A selected role remains available after a fresh native app-process launch; protected iOS and Android Detox cover the auth-harness persistence boundary without weakening the server-owned production profile contract.
 - `AC-250`: Auth and invite failures render reason-specific actionable copy rather than generic error messaging.
 - `AC-251`: Milestone A analytics events are emitted for auth entry, role selection, self-guided start, invite submit, and invite outcome transitions.
 - `AC-252`: Milestone A analytics payloads include structured context fields (`surface`, `step`, `result`, optional `reason_code`) and redact sensitive values.
@@ -103,6 +107,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-524`: When an OAuth account user (Google or Apple) taps "Change password", an informational alert is shown noting that the password is managed by the provider; no password reset request is submitted.
 
 ## Gherkin Scenarios
+
 ```gherkin
 Feature: Role-based onboarding and care assignments
 

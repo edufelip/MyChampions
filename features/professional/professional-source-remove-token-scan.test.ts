@@ -8,7 +8,10 @@ test('professional specialty removal source does not contain provider token fall
 
   assert.equal(source.includes(['get', 'Current', 'Id', 'Token'].join('')), false);
   assert.equal(source.includes(['get', 'Remove', 'Specialty', 'Function', 'Url'].join('')), false);
-  assert.equal(source.includes(['EXPO_PUBLIC', 'REMOVE_SPECIALTY', 'FUNCTION_URL'].join('_')), false);
+  assert.equal(
+    source.includes(['EXPO_PUBLIC', 'REMOVE_SPECIALTY', 'FUNCTION_URL'].join('_')),
+    false,
+  );
   assert.equal(source.includes(['get', 'Firebase', 'Auth'].join('')), false);
   assert.equal(source.includes(['request', 'Remove', 'Specialty'].join('')), false);
 });

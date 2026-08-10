@@ -16,14 +16,7 @@
  *       BR-203–205, BR-213, BR-215–217, BR-222–223, BR-247, BR-269, BR-278–279
  */
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -180,14 +173,16 @@ export default function ProfessionalStudentProfileScreen() {
 
       reloadPlans();
       void loadAssignments();
-    }, [currentUser, loadAssignments, reloadPlans, studentId])
+    }, [currentUser, loadAssignments, reloadPlans, studentId]),
   );
 
   async function handleReviewChangeRequest(requestId: string, action: 'reviewed' | 'dismissed') {
     setChangeRequestsActionError(null);
     const err = await reviewChangeRequest(requestId, action);
     if (err) {
-      setChangeRequestsActionError(t('pro.student_profile.plan_change_requests.action_error') as string);
+      setChangeRequestsActionError(
+        t('pro.student_profile.plan_change_requests.action_error') as string,
+      );
       return;
     }
     setChangeRequests((prev) => prev.filter((r) => r.id !== requestId));
@@ -217,7 +212,7 @@ export default function ProfessionalStudentProfileScreen() {
             void handleUnbind();
           },
         },
-      ]
+      ],
     );
   }
 
@@ -229,22 +224,29 @@ export default function ProfessionalStudentProfileScreen() {
   const deleteNutritionPlanAction = usePlansStore((s) => s.deleteNutritionPlanAction);
   const deleteTrainingPlanAction = usePlansStore((s) => s.deleteTrainingPlanAction);
 
-  const studentNutritionPlans = plansState.kind === 'ready'
-    ? plansState.plans.filter(p => p.studentUid === studentId && p.planType === 'nutrition' && !p.isArchived)
-    : [];
-  const draftNutritionPlan = studentNutritionPlans.find(p => p.isDraft) ?? null;
-  const activeNutritionPlan = studentNutritionPlans.find(p => !p.isDraft) ?? null;
-  const studentTrainingPlans = plansState.kind === 'ready'
-    ? plansState.plans.filter(p => p.studentUid === studentId && p.planType === 'training' && !p.isArchived)
-    : [];
-  const draftTrainingPlan = studentTrainingPlans.find(p => p.isDraft) ?? null;
-  const activeTrainingPlan = studentTrainingPlans.find(p => !p.isDraft) ?? null;
+  const studentNutritionPlans =
+    plansState.kind === 'ready'
+      ? plansState.plans.filter(
+          (p) => p.studentUid === studentId && p.planType === 'nutrition' && !p.isArchived,
+        )
+      : [];
+  const draftNutritionPlan = studentNutritionPlans.find((p) => p.isDraft) ?? null;
+  const activeNutritionPlan = studentNutritionPlans.find((p) => !p.isDraft) ?? null;
+  const studentTrainingPlans =
+    plansState.kind === 'ready'
+      ? plansState.plans.filter(
+          (p) => p.studentUid === studentId && p.planType === 'training' && !p.isArchived,
+        )
+      : [];
+  const draftTrainingPlan = studentTrainingPlans.find((p) => p.isDraft) ?? null;
+  const activeTrainingPlan = studentTrainingPlans.find((p) => !p.isDraft) ?? null;
 
   const handleDiscardDraft = useCallback(
     async (planId: string, planType: 'nutrition' | 'training') => {
       if (!currentUser) return;
       setIsAssigning(true);
-      const action = planType === 'nutrition' ? deleteNutritionPlanAction : deleteTrainingPlanAction;
+      const action =
+        planType === 'nutrition' ? deleteNutritionPlanAction : deleteTrainingPlanAction;
       const error = await action(Boolean(currentUser), planId);
       setIsAssigning(false);
 
@@ -256,34 +258,41 @@ export default function ProfessionalStudentProfileScreen() {
         void loadAssignments();
       }
     },
-    [currentUser, deleteNutritionPlanAction, deleteTrainingPlanAction, t, reloadPlans, loadAssignments]
+    [
+      currentUser,
+      deleteNutritionPlanAction,
+      deleteTrainingPlanAction,
+      t,
+      reloadPlans,
+      loadAssignments,
+    ],
   );
 
   const confirmDiscardDraft = useCallback(
     (planId: string, planType: 'nutrition' | 'training') => {
-      Alert.alert(
-        t('pro.plan.discard.title') as string,
-        t('pro.plan.discard.body') as string,
-        [
-          { text: t('pro.plan.discard.no') as string, style: 'cancel' },
-          {
-            text: t('pro.plan.discard.yes') as string,
-            style: 'destructive',
-            onPress: () => {
-              void handleDiscardDraft(planId, planType);
-            },
+      Alert.alert(t('pro.plan.discard.title') as string, t('pro.plan.discard.body') as string, [
+        { text: t('pro.plan.discard.no') as string, style: 'cancel' },
+        {
+          text: t('pro.plan.discard.yes') as string,
+          style: 'destructive',
+          onPress: () => {
+            void handleDiscardDraft(planId, planType);
           },
-        ]
-      );
+        },
+      ]);
     },
-    [handleDiscardDraft, t]
+    [handleDiscardDraft, t],
   );
 
-  const onViewPlan = useCallback((planId: string) => {
-    const plan = plansState.kind === 'ready' ? plansState.plans.find(p => p.id === planId) : null;
-    if (!plan) return;
-    router.push(`/professional/${plan.planType}/plans/${planId}`);
-  }, [plansState, router]);
+  const onViewPlan = useCallback(
+    (planId: string) => {
+      const plan =
+        plansState.kind === 'ready' ? plansState.plans.find((p) => p.id === planId) : null;
+      if (!plan) return;
+      router.push(`/professional/${plan.planType}/plans/${planId}`);
+    },
+    [plansState, router],
+  );
 
   const handleAssignPlan = async (planId: string) => {
     if (!studentId) return;
@@ -343,7 +352,12 @@ export default function ProfessionalStudentProfileScreen() {
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   return (
-    <DsScreen scheme={scheme} contentWidth="content" testID="pro.student_profile.screen" contentContainerStyle={styles.content}>
+    <DsScreen
+      scheme={scheme}
+      contentWidth="content"
+      testID="pro.student_profile.screen"
+      contentContainerStyle={styles.content}
+    >
       <Stack.Screen options={{ title: t('pro.student_profile.title'), headerShown: false }} />
 
       <DsBackButton
@@ -405,8 +419,16 @@ export default function ProfessionalStudentProfileScreen() {
         testID="pro.student_profile.nutrition"
         onAssign={() => handleOpenPicker('nutrition')}
         isWriteLocked={isWriteLocked}
-        activePlan={activeNutritionPlan ? { id: activeNutritionPlan.id, name: activeNutritionPlan.name ?? 'Nutrition Plan' } : null}
-        draftPlan={draftNutritionPlan ? { id: draftNutritionPlan.id, name: draftNutritionPlan.name ?? 'Nutrition Plan' } : null}
+        activePlan={
+          activeNutritionPlan
+            ? { id: activeNutritionPlan.id, name: activeNutritionPlan.name ?? 'Nutrition Plan' }
+            : null
+        }
+        draftPlan={
+          draftNutritionPlan
+            ? { id: draftNutritionPlan.id, name: draftNutritionPlan.name ?? 'Nutrition Plan' }
+            : null
+        }
         onViewPlan={onViewPlan}
         onDiscardDraft={(planId) => confirmDiscardDraft(planId, 'nutrition')}
       />
@@ -430,8 +452,16 @@ export default function ProfessionalStudentProfileScreen() {
         testID="pro.student_profile.training"
         onAssign={() => handleOpenPicker('training')}
         isWriteLocked={isWriteLocked}
-        activePlan={activeTrainingPlan ? { id: activeTrainingPlan.id, name: activeTrainingPlan.name ?? 'Training Plan' } : null}
-        draftPlan={draftTrainingPlan ? { id: draftTrainingPlan.id, name: draftTrainingPlan.name ?? 'Training Plan' } : null}
+        activePlan={
+          activeTrainingPlan
+            ? { id: activeTrainingPlan.id, name: activeTrainingPlan.name ?? 'Training Plan' }
+            : null
+        }
+        draftPlan={
+          draftTrainingPlan
+            ? { id: draftTrainingPlan.id, name: draftTrainingPlan.name ?? 'Training Plan' }
+            : null
+        }
         onViewPlan={onViewPlan}
         onDiscardDraft={(planId) => confirmDiscardDraft(planId, 'training')}
       />
@@ -441,7 +471,8 @@ export default function ProfessionalStudentProfileScreen() {
           accessibilityRole="button"
           onPress={confirmUnbind}
           style={[styles.destructiveButton, { borderColor: theme.color.danger }]}
-          testID="pro.student_profile.unbindCta">
+          testID="pro.student_profile.unbindCta"
+        >
           <Text style={[styles.destructiveButtonText, { color: theme.color.danger }]}>
             {t('pro.student_profile.unbind.cta')}
           </Text>
@@ -452,7 +483,8 @@ export default function ProfessionalStudentProfileScreen() {
         <View accessibilityLiveRegion="polite">
           <Text
             style={[styles.errorText, { color: theme.color.danger }]}
-            testID="pro.student_profile.unbind.error">
+            testID="pro.student_profile.unbind.error"
+          >
             {unbindError}
           </Text>
         </View>
@@ -525,7 +557,8 @@ function TrackingReviewCard({
             </Text>
             <Text
               style={[styles.trackingValue, { color: theme.color.textPrimary }]}
-              testID="pro.student_profile.trackingReview.waterValue">
+              testID="pro.student_profile.trackingReview.waterValue"
+            >
               {review.todayWater.goalMl
                 ? t('pro.student_profile.tracking_review.water_progress_value', {
                     total: review.todayWater.totalMl,
@@ -545,15 +578,20 @@ function TrackingReviewCard({
                 style={[
                   styles.hydrationDayPill,
                   {
-                    backgroundColor: day.goalMet ? theme.color.successSoft : theme.color.surfaceMuted,
+                    backgroundColor: day.goalMet
+                      ? theme.color.successSoft
+                      : theme.color.surfaceMuted,
                     borderColor: day.goalMet ? theme.color.success : theme.color.border,
                   },
-                ]}>
+                ]}
+              >
                 <Text style={[styles.hydrationDayText, { color: theme.color.textPrimary }]}>
                   {day.dateKey.slice(5)}
                 </Text>
                 <Text style={[styles.hydrationMlText, { color: theme.color.textSecondary }]}>
-                  {t('pro.student_profile.tracking_review.water_total_value', { total: day.totalMl })}
+                  {t('pro.student_profile.tracking_review.water_total_value', {
+                    total: day.totalMl,
+                  })}
                 </Text>
               </View>
             ))}
@@ -569,7 +607,10 @@ function TrackingReviewCard({
               </Text>
             ) : (
               review.todayMealCheckOffs.map((meal) => (
-                <Text key={`${meal.mealId}-${meal.loggedAt}`} style={[styles.meta, { color: theme.color.textPrimary }]}>
+                <Text
+                  key={`${meal.mealId}-${meal.loggedAt}`}
+                  style={[styles.meta, { color: theme.color.textPrimary }]}
+                >
                   {t('pro.student_profile.tracking_review.meal_calories_value', {
                     mealId: meal.mealId,
                     calories: meal.calories,
@@ -724,7 +765,10 @@ function AssignmentCard({
     <DsCard scheme={scheme} testID={`${testID}.assignmentCard`}>
       <View style={styles.assignmentHeader}>
         <View accessibilityLabel={`${specialtyLabel}: ${statusLabel}`} style={{ flex: 1 }}>
-          <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]} testID={`${testID}.title`}>
+          <Text
+            style={[styles.cardTitle, { color: theme.color.textPrimary }]}
+            testID={`${testID}.title`}
+          >
             {specialtyLabel}
           </Text>
           <Text style={[styles.statusBadge, { color: statusColor }]} testID={`${testID}.status`}>
@@ -732,15 +776,11 @@ function AssignmentCard({
           </Text>
         </View>
         {status !== 'active' || !draftPlan ? (
-          <View style={styles.assignmentCtaContainer}>
-            {renderActions()}
-          </View>
+          <View style={styles.assignmentCtaContainer}>{renderActions()}</View>
         ) : null}
       </View>
       {status === 'active' && draftPlan ? (
-        <View style={styles.draftActionsContainer}>
-          {renderActions()}
-        </View>
+        <View style={styles.draftActionsContainer}>{renderActions()}</View>
       ) : null}
     </DsCard>
   );
@@ -768,7 +808,11 @@ function PlanChangeRequestsCard({
   onDismiss: (id: string) => void;
 }) {
   return (
-    <DsCard scheme={scheme} testID="pro.student_profile.planChangeRequests" style={styles.cardWithGap}>
+    <DsCard
+      scheme={scheme}
+      testID="pro.student_profile.planChangeRequests"
+      style={styles.cardWithGap}
+    >
       <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
         {t('pro.student_profile.plan_change_requests.title')}
       </Text>
@@ -777,7 +821,8 @@ function PlanChangeRequestsCard({
         <View accessibilityLiveRegion="polite">
           <Text
             style={[styles.errorText, { color: theme.color.danger }]}
-            testID="pro.student_profile.planChangeRequests.loadError">
+            testID="pro.student_profile.planChangeRequests.loadError"
+          >
             {loadError}
           </Text>
         </View>
@@ -790,8 +835,11 @@ function PlanChangeRequestsCard({
           <View
             key={req.id}
             style={[styles.requestRow, { borderColor: theme.color.border }]}
-            testID={`pro.student_profile.planChangeRequest.${req.id}`}>
-            <Text style={[styles.requestText, { color: theme.color.textPrimary }]}>{req.requestText}</Text>
+            testID={`pro.student_profile.planChangeRequest.${req.id}`}
+          >
+            <Text style={[styles.requestText, { color: theme.color.textPrimary }]}>
+              {req.requestText}
+            </Text>
             <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
               {req.planType} · {req.status}
             </Text>
@@ -827,7 +875,8 @@ function PlanChangeRequestsCard({
         <View accessibilityLiveRegion="polite">
           <Text
             style={[styles.errorText, { color: theme.color.danger }]}
-            testID="pro.student_profile.planChangeRequests.actionError">
+            testID="pro.student_profile.planChangeRequests.actionError"
+          >
             {actionError}
           </Text>
         </View>

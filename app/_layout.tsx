@@ -47,8 +47,22 @@ function RootLayoutContent() {
   const normalizedPathname = normalizeGuardPathname(pathname);
   const authReturnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const lastRedirectAttemptRef = useRef<string | null>(null);
-  const { isHydrated, isAuthenticated, lockedRole, needsTermsAcceptance, currentUser } = useAuthSession();
+  const {
+    isHydrated,
+    isAuthenticated,
+    lockedRole,
+    needsTermsAcceptance,
+    currentUser,
+    pendingRoleSelectionRole,
+    completeRoleSelectionNavigation,
+  } = useAuthSession();
   const currentUserUid = currentUser?.uid ?? null;
+
+  useEffect(() => {
+    if (pendingRoleSelectionRole && normalizedPathname !== '/auth/role-selection') {
+      completeRoleSelectionNavigation();
+    }
+  }, [completeRoleSelectionNavigation, normalizedPathname, pendingRoleSelectionRole]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -65,6 +79,7 @@ function RootLayoutContent() {
       isAuthenticated,
       lockedRole,
       needsTermsAcceptance,
+      pendingRoleSelectionRole,
       pathname: normalizedPathname,
       returnTo: authReturnTo,
     });
@@ -76,6 +91,7 @@ function RootLayoutContent() {
         isAuthenticated,
         lockedRole,
         needsTermsAcceptance,
+        pendingRoleSelectionRole,
         pathname: normalizedPathname,
         returnTo: authReturnTo,
         redirect,
@@ -96,11 +112,28 @@ function RootLayoutContent() {
     if (redirect !== normalizedPathname) {
       router.replace(redirect as never);
     }
-  }, [authReturnTo, currentUserUid, isAuthenticated, isHydrated, lockedRole, needsTermsAcceptance, normalizedPathname, router]);
+  }, [
+    authReturnTo,
+    currentUserUid,
+    isAuthenticated,
+    isHydrated,
+    lockedRole,
+    needsTermsAcceptance,
+    normalizedPathname,
+    pendingRoleSelectionRole,
+    router,
+  ]);
 
   if (!isHydrated) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ds.color.canvas }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: ds.color.canvas,
+        }}
+      >
         <ActivityIndicator color={ds.color.accentPrimary} />
       </View>
     );
@@ -139,8 +172,14 @@ function RootLayoutContent() {
         <Stack.Screen name="professional/students" options={{ headerShown: false }} />
         <Stack.Screen name="professional/student-profile" options={{ headerShown: false }} />
         <Stack.Screen name="professional/subscription" options={{ headerShown: false }} />
-        <Stack.Screen name="professional/nutrition/plans/[planId]" options={{ headerShown: false }} />
-        <Stack.Screen name="professional/training/plans/[planId]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="professional/nutrition/plans/[planId]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="professional/training/plans/[planId]"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="settings/account" options={{ headerShown: false }} />
         <Stack.Screen name="settings/language-select" options={{ headerShown: false }} />
         <Stack.Screen name="shared/recipes/[shareToken]" options={{ headerShown: false }} />

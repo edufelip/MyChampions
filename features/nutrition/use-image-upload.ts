@@ -13,6 +13,7 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 
 import type { AuthUser } from '@/features/auth/auth-user';
 import { resolveE2EAuthSessionSourceOverride } from '@/features/auth/e2e-auth-session';
@@ -20,10 +21,7 @@ import { getValidServerAccessToken } from '@/features/auth/server-auth-source';
 import { defaultAppFetch } from '@/features/platform/default-app-fetch';
 import { photoPickerAdapter } from '@/features/platform/photo-picker-adapter';
 import { useTranslation } from '@/localization';
-import {
-  normalizeImageUploadError,
-  type ImageUploadState,
-} from './image-upload.logic';
+import { normalizeImageUploadError, type ImageUploadState } from './image-upload.logic';
 import {
   pickAndUploadMealImage,
   ImageUploadSourceError,
@@ -44,11 +42,7 @@ import {
  * Compresses a local image URI and returns a Blob.
  * Resizes to ≤ 1600 px longest side, compresses at 0.75 JPEG quality (D-061, BR-261).
  */
-async function productionCompressImage(
-  uri: string,
-  width: number,
-  height: number
-): Promise<Blob> {
+async function productionCompressImage(uri: string, width: number, height: number): Promise<Blob> {
   return photoPickerAdapter.compressToBlob({ uri, width, height });
 }
 
@@ -58,7 +52,7 @@ async function productionCompressImage(
 async function productionUploadBlob(
   uploadTarget: string,
   blob: Blob,
-  onProgress: UploadProgressCallback
+  onProgress: UploadProgressCallback,
 ): Promise<string> {
   return uploadMealImageToServer(uploadTarget, blob, onProgress, {
     getServerBaseUrl: resolveServerBaseUrl,
@@ -101,13 +95,20 @@ const E2E_IMAGE_DATA_URI =
 
 const e2eImageUploadDeps: ImageUploadSourceDeps = {
   pickImage: async () => ({ uri: 'file://e2e-meal-photo.jpg', width: 800, height: 600 }),
-  compressImage: async () => ({ size: 256 } as Blob),
+  compressImage: async () => ({ size: 256 }) as Blob,
   uploadBlob: async (_storagePath, _blob, onProgress) => {
     onProgress(35);
     onProgress(100);
     return E2E_IMAGE_DATA_URI;
   },
   generateFilename: () => 'e2e-meal-photo.jpg',
+};
+
+const e2ePermissionDeniedImageUploadDeps: ImageUploadSourceDeps = {
+  ...e2eImageUploadDeps,
+  pickImage: async () => {
+    throw new ImageUploadSourceError('permission_denied', 'Photo permission denied for camera');
+  },
 };
 
 function getE2EImageUploadDeps(): ImageUploadSourceDeps | null {
@@ -117,11 +118,14 @@ function getE2EImageUploadDeps(): ImageUploadSourceDeps | null {
     isDev: typeof __DEV__ !== 'undefined' && __DEV__,
   });
 
-  if (!override || process.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE !== 'success') {
-    return null;
-  }
+  if (!override) return null;
 
-  return e2eImageUploadDeps;
+  const fixture = process.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE;
+  if (fixture === 'success') return e2eImageUploadDeps;
+  if (fixture === 'permission-denied' && Platform.OS === 'android') {
+    return e2ePermissionDeniedImageUploadDeps;
+  }
+  return null;
 }
 
 // ─── Hook result ──────────────────────────────────────────────────────────────
@@ -160,7 +164,7 @@ export type UseImageUploadResult = {
  */
 export function useImageUpload(
   user: AuthUser | null,
-  deps?: ImageUploadSourceDeps
+  deps?: ImageUploadSourceDeps,
 ): UseImageUploadResult {
   const { t } = useTranslation();
   const localizedProductionDeps = useMemo<ImageUploadSourceDeps>(
@@ -177,7 +181,7 @@ export function useImageUpload(
       uploadBlob: productionUploadBlob,
       generateFilename,
     }),
-    [t]
+    [t],
   );
   const resolvedDeps = deps ?? getE2EImageUploadDeps() ?? localizedProductionDeps;
   const [uploadState, setUploadState] = useState<ImageUploadState>({ kind: 'idle' });
@@ -208,20 +212,19 @@ export function useImageUpload(
 
         setUploadState({ kind: 'done', url: result.downloadUrl });
       } catch (err: unknown) {
-        const reason = err instanceof ImageUploadSourceError
-          ? err.code
-          : normalizeImageUploadError(err);
+        const reason =
+          err instanceof ImageUploadSourceError ? err.code : normalizeImageUploadError(err);
         setUploadState({ kind: 'failed', reason });
       }
     },
-    [user, resolvedDeps]
+    [user, resolvedDeps],
   );
 
   const pickAndUpload = useCallback(
     async (mealId: string) => {
       await doUpload(mealId);
     },
-    [doUpload]
+    [doUpload],
   );
 
   const retry = useCallback(async () => {

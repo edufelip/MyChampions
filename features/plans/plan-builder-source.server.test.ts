@@ -65,7 +65,7 @@ const {
 } = require('./plan-builder-source') as typeof import('./plan-builder-source');
 
 function makeServerDeps(
-  handler: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+  handler: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
 ): import('./plan-builder-source').PlanBuilderSourceDeps {
   return {
     getServerBaseUrl: () => 'http://server.test/',
@@ -79,7 +79,7 @@ describe('plan-builder server source', () => {
     let requestUrl: string | null = null;
     const receiverAwareFetch = async function (
       this: typeof globalThis,
-      input: RequestInfo | URL
+      input: RequestInfo | URL,
     ): Promise<Response> {
       assert.equal(this, globalThis);
       requestUrl = String(input);
@@ -113,15 +113,20 @@ describe('plan-builder server source', () => {
       (error: unknown) =>
         error instanceof Error &&
         error.name === 'PlanBuilderSourceError' &&
-        (error as { code?: string }).code === 'configuration'
+        (error as { code?: string }).code === 'configuration',
     );
 
     await assert.rejects(
-      () => createNutritionPlan({ name: 'Plan', hydrationGoalMl: '2000' }, 'professional_library', deps),
+      () =>
+        createNutritionPlan(
+          { name: 'Plan', hydrationGoalMl: '2000' },
+          'professional_library',
+          deps,
+        ),
       (error: unknown) =>
         error instanceof Error &&
         error.name === 'PlanBuilderSourceError' &&
-        (error as { code?: string }).code === 'configuration'
+        (error as { code?: string }).code === 'configuration',
     );
 
     await assert.rejects(
@@ -129,7 +134,7 @@ describe('plan-builder server source', () => {
       (error: unknown) =>
         error instanceof Error &&
         error.name === 'PlanBuilderSourceError' &&
-        (error as { code?: string }).code === 'configuration'
+        (error as { code?: string }).code === 'configuration',
     );
 
     await assert.rejects(
@@ -137,7 +142,7 @@ describe('plan-builder server source', () => {
       (error: unknown) =>
         error instanceof Error &&
         error.name === 'PlanBuilderSourceError' &&
-        (error as { code?: string }).code === 'configuration'
+        (error as { code?: string }).code === 'configuration',
     );
   });
 
@@ -156,7 +161,7 @@ describe('plan-builder server source', () => {
             },
           ],
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     });
 
@@ -164,7 +169,10 @@ describe('plan-builder server source', () => {
 
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/starter-templates?planType=nutrition');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
     assert.deepEqual(templates, [
       {
         id: 'starter_nutrition_default_balance',
@@ -214,7 +222,7 @@ describe('plan-builder server source', () => {
             updatedAt: '2026-07-03T12:00:00.000Z',
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     });
 
@@ -222,17 +230,22 @@ describe('plan-builder server source', () => {
       { uid: 'professional-1' },
       'starter_nutrition_default_balance',
       'Client Balanced Starter',
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
     assert.equal(
       requests[0].url,
-      'http://server.test/plans/starter-templates/starter_nutrition_default_balance/clone'
+      'http://server.test/plans/starter-templates/starter_nutrition_default_balance/clone',
     );
     assert.equal(requests[0].init?.method, 'POST');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
-    assert.deepEqual(JSON.parse(String(requests[0].init?.body)), { name: 'Client Balanced Starter' });
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
+    assert.deepEqual(JSON.parse(String(requests[0].init?.body)), {
+      name: 'Client Balanced Starter',
+    });
     assert.deepEqual(plan, {
       id: 'nutrition-clone-1',
       planType: 'nutrition',
@@ -283,7 +296,7 @@ describe('plan-builder server source', () => {
             updatedAt: '2026-06-29T11:00:00.000Z',
           },
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     });
 
@@ -292,7 +305,10 @@ describe('plan-builder server source', () => {
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/nutrition/nutrition-plan-1');
     assert.equal(requests[0].init?.method, 'GET');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
     assert.deepEqual(plan, {
       id: 'nutrition-plan-1',
       sourceKind: 'assigned',
@@ -364,7 +380,7 @@ describe('plan-builder server source', () => {
             updatedAt: '2026-06-29T11:00:00.000Z',
           },
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     });
     const sessions = [
@@ -384,12 +400,21 @@ describe('plan-builder server source', () => {
       },
     ];
 
-    await updateTrainingPlanWithSessions('training-plan-1', { name: ' Upper A ' }, sessions, true, deps);
+    await updateTrainingPlanWithSessions(
+      'training-plan-1',
+      { name: ' Upper A ' },
+      sessions,
+      true,
+      deps,
+    );
 
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/training/training-plan-1');
     assert.equal(requests[0].init?.method, 'PATCH');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
     assert.deepEqual(JSON.parse(String(requests[0].init?.body)), {
       name: 'Upper A',
       publish: true,
@@ -398,39 +423,47 @@ describe('plan-builder server source', () => {
   });
 
   it('maps subscription-required nutrition plan updates to a domain source error', async () => {
-    const deps = makeServerDeps(async () =>
-      new Response(
-        JSON.stringify({
-          error: {
-            code: 'professional_subscription_required',
-            message: 'Professional subscription required.',
-          },
-        }),
-        { status: 402, headers: { 'content-type': 'application/json' } }
-      )
+    const deps = makeServerDeps(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 'professional_subscription_required',
+              message: 'Professional subscription required.',
+            },
+          }),
+          { status: 402, headers: { 'content-type': 'application/json' } },
+        ),
     );
 
     await assert.rejects(
-      () => updateNutritionPlan('nutrition-plan-1', { name: 'Updated Nutrition', hydrationGoalMl: '2600' }, true, deps),
+      () =>
+        updateNutritionPlan(
+          'nutrition-plan-1',
+          { name: 'Updated Nutrition', hydrationGoalMl: '2600' },
+          true,
+          deps,
+        ),
       (error: unknown) =>
         error instanceof Error &&
         error.name === 'PlanBuilderSourceError' &&
         (error as { code?: string }).code === 'graphql' &&
-        error.message === 'Professional subscription required.'
+        error.message === 'Professional subscription required.',
     );
   });
 
   it('maps subscription-required training session mutations to a domain source error', async () => {
-    const deps = makeServerDeps(async () =>
-      new Response(
-        JSON.stringify({
-          error: {
-            code: 'professional_subscription_required',
-            message: 'Professional subscription required.',
-          },
-        }),
-        { status: 402, headers: { 'content-type': 'application/json' } }
-      )
+    const deps = makeServerDeps(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 'professional_subscription_required',
+              message: 'Professional subscription required.',
+            },
+          }),
+          { status: 402, headers: { 'content-type': 'application/json' } },
+        ),
     );
 
     await assert.rejects(
@@ -439,7 +472,7 @@ describe('plan-builder server source', () => {
         error instanceof Error &&
         error.name === 'PlanBuilderSourceError' &&
         (error as { code?: string }).code === 'graphql' &&
-        error.message === 'Professional subscription required.'
+        error.message === 'Professional subscription required.',
     );
   });
 
@@ -468,20 +501,23 @@ describe('plan-builder server source', () => {
             updatedAt: '2026-06-29T10:00:00.000Z',
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     });
 
     const plan = await createNutritionPlan(
       { name: ' New Nutrition ', hydrationGoalMl: '2600' },
       'self_managed',
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/nutrition');
     assert.equal(requests[0].init?.method, 'POST');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
     assert.deepEqual(JSON.parse(String(requests[0].init?.body)), {
       name: 'New Nutrition',
       hydrationGoalMl: 2600,
@@ -517,7 +553,10 @@ describe('plan-builder server source', () => {
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/training/training-plan-1');
     assert.equal(requests[0].init?.method, 'DELETE');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
   });
 
   it('creates training plans through the MyChampions server', async () => {
@@ -540,20 +579,23 @@ describe('plan-builder server source', () => {
             updatedAt: '2026-06-29T10:00:00.000Z',
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     });
 
     const plan = await createTrainingPlan(
       { name: ' Strength Template ' },
       'professional_library',
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/training');
     assert.equal(requests[0].init?.method, 'POST');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
     assert.deepEqual(JSON.parse(String(requests[0].init?.body)), {
       name: 'Strength Template',
       mode: 'professional_library',
@@ -575,7 +617,10 @@ describe('plan-builder server source', () => {
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/nutrition/nutrition-plan-1');
     assert.equal(requests[0].init?.method, 'DELETE');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
   });
 
   it('adds nutrition meals through the MyChampions server', async () => {
@@ -586,7 +631,7 @@ describe('plan-builder server source', () => {
         JSON.stringify({
           meal: { id: 'meal-created-1', name: 'Breakfast', items: [] },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     });
 
@@ -595,7 +640,10 @@ describe('plan-builder server source', () => {
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/nutrition/nutrition-plan-1/meals');
     assert.equal(requests[0].init?.method, 'POST');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
     assert.deepEqual(JSON.parse(String(requests[0].init?.body)), { name: 'Breakfast' });
     assert.deepEqual(meal, { id: 'meal-created-1', name: 'Breakfast', items: [] });
   });
@@ -618,7 +666,7 @@ describe('plan-builder server source', () => {
             sourceKind: 'manual',
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     });
 
@@ -635,11 +683,14 @@ describe('plan-builder server source', () => {
         fats: 2,
         sourceKind: 'manual',
       },
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
-    assert.equal(requests[0].url, 'http://server.test/plans/nutrition/nutrition-plan-1/meals/meal-1/items');
+    assert.equal(
+      requests[0].url,
+      'http://server.test/plans/nutrition/nutrition-plan-1/meals/meal-1/items',
+    );
     assert.equal(requests[0].init?.method, 'POST');
     assert.deepEqual(JSON.parse(String(requests[0].init?.body)), {
       name: 'Greek Yogurt',
@@ -689,7 +740,7 @@ describe('plan-builder server source', () => {
             updatedAt: '2026-06-29T11:00:00.000Z',
           },
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     });
 
@@ -698,12 +749,15 @@ describe('plan-builder server source', () => {
     await removeNutritionMealItem('nutrition-plan-1', 'meal-1', 'item-1', deps);
     await reorderNutritionMealItems('nutrition-plan-1', 'meal-1', ['item-2', 'item-1'], deps);
 
-    assert.deepEqual(requests.map((request) => [request.init?.method, request.url]), [
-      ['DELETE', 'http://server.test/plans/nutrition/nutrition-plan-1/meals/meal-1'],
-      ['PUT', 'http://server.test/plans/nutrition/nutrition-plan-1/meals/reorder'],
-      ['DELETE', 'http://server.test/plans/nutrition/nutrition-plan-1/meals/meal-1/items/item-1'],
-      ['PUT', 'http://server.test/plans/nutrition/nutrition-plan-1/meals/meal-1/items/reorder'],
-    ]);
+    assert.deepEqual(
+      requests.map((request) => [request.init?.method, request.url]),
+      [
+        ['DELETE', 'http://server.test/plans/nutrition/nutrition-plan-1/meals/meal-1'],
+        ['PUT', 'http://server.test/plans/nutrition/nutrition-plan-1/meals/reorder'],
+        ['DELETE', 'http://server.test/plans/nutrition/nutrition-plan-1/meals/meal-1/items/item-1'],
+        ['PUT', 'http://server.test/plans/nutrition/nutrition-plan-1/meals/meal-1/items/reorder'],
+      ],
+    );
     assert.deepEqual(JSON.parse(String(requests[1].init?.body)), { mealIds: ['meal-2', 'meal-1'] });
     assert.deepEqual(JSON.parse(String(requests[3].init?.body)), { itemIds: ['item-2', 'item-1'] });
   });
@@ -714,27 +768,40 @@ describe('plan-builder server source', () => {
       requests.push({ url: String(input), init });
       return new Response(
         JSON.stringify({
-          session: { id: 'session-created-1', name: 'Upper A', notes: 'Controlled tempo', items: [] },
+          session: {
+            id: 'session-created-1',
+            name: 'Upper A',
+            notes: 'Controlled tempo',
+            items: [],
+          },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     });
 
     const session = await addTrainingSession(
       'training-plan-1',
       { name: ' Upper A ', notes: ' Controlled tempo ' },
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, 'http://server.test/plans/training/training-plan-1/sessions');
     assert.equal(requests[0].init?.method, 'POST');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
     assert.deepEqual(JSON.parse(String(requests[0].init?.body)), {
       name: 'Upper A',
       notes: 'Controlled tempo',
     });
-    assert.deepEqual(session, { id: 'session-created-1', name: 'Upper A', notes: 'Controlled tempo', items: [] });
+    assert.deepEqual(session, {
+      id: 'session-created-1',
+      name: 'Upper A',
+      notes: 'Controlled tempo',
+      items: [],
+    });
   });
 
   it('adds training session items through the MyChampions server', async () => {
@@ -751,7 +818,7 @@ describe('plan-builder server source', () => {
             exerciseId: 'exercise-catalog-1',
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     });
 
@@ -764,13 +831,19 @@ describe('plan-builder server source', () => {
         notes: 'RPE 8',
         exerciseId: 'exercise-catalog-1',
       },
-      deps
+      deps,
     );
 
     assert.equal(requests.length, 1);
-    assert.equal(requests[0].url, 'http://server.test/plans/training/training-plan-1/sessions/session-1/items');
+    assert.equal(
+      requests[0].url,
+      'http://server.test/plans/training/training-plan-1/sessions/session-1/items',
+    );
     assert.equal(requests[0].init?.method, 'POST');
-    assert.equal((requests[0].init?.headers as Record<string, string>).authorization, 'Bearer server-token');
+    assert.equal(
+      (requests[0].init?.headers as Record<string, string>).authorization,
+      'Bearer server-token',
+    );
     assert.deepEqual(JSON.parse(String(requests[0].init?.body)), {
       name: 'Bench Press',
       quantity: '3x8',
@@ -806,7 +879,7 @@ describe('plan-builder server source', () => {
             updatedAt: '2026-06-29T11:00:00.000Z',
           },
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     });
 
@@ -815,13 +888,24 @@ describe('plan-builder server source', () => {
     await removeTrainingSessionItem('training-plan-1', 'session-1', 'item-1', deps);
     await reorderTrainingSessionItems('training-plan-1', 'session-1', ['item-2', 'item-1'], deps);
 
-    assert.deepEqual(requests.map((request) => [request.init?.method, request.url]), [
-      ['DELETE', 'http://server.test/plans/training/training-plan-1/sessions/session-1'],
-      ['PUT', 'http://server.test/plans/training/training-plan-1/sessions/reorder'],
-      ['DELETE', 'http://server.test/plans/training/training-plan-1/sessions/session-1/items/item-1'],
-      ['PUT', 'http://server.test/plans/training/training-plan-1/sessions/session-1/items/reorder'],
-    ]);
-    assert.deepEqual(JSON.parse(String(requests[1].init?.body)), { sessionIds: ['session-2', 'session-1'] });
+    assert.deepEqual(
+      requests.map((request) => [request.init?.method, request.url]),
+      [
+        ['DELETE', 'http://server.test/plans/training/training-plan-1/sessions/session-1'],
+        ['PUT', 'http://server.test/plans/training/training-plan-1/sessions/reorder'],
+        [
+          'DELETE',
+          'http://server.test/plans/training/training-plan-1/sessions/session-1/items/item-1',
+        ],
+        [
+          'PUT',
+          'http://server.test/plans/training/training-plan-1/sessions/session-1/items/reorder',
+        ],
+      ],
+    );
+    assert.deepEqual(JSON.parse(String(requests[1].init?.body)), {
+      sessionIds: ['session-2', 'session-1'],
+    });
     assert.deepEqual(JSON.parse(String(requests[3].init?.body)), { itemIds: ['item-2', 'item-1'] });
   });
 });

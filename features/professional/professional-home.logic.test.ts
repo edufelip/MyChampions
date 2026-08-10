@@ -18,7 +18,7 @@ test('shows all caught up only after both task sources settle empty', () => {
       hasLoadError: false,
       isLoading: false,
       showAllCaughtUp: true,
-    }
+    },
   );
 });
 

@@ -112,12 +112,16 @@ export function matchesAny(path: string, patterns: string[]): boolean {
 }
 
 export function loadManifest(root: string): TestImpactManifest {
-  return JSON.parse(readFileSync(join(root, 'config', 'test-impact.json'), 'utf8')) as TestImpactManifest;
+  return JSON.parse(
+    readFileSync(join(root, 'config', 'test-impact.json'), 'utf8'),
+  ) as TestImpactManifest;
 }
 
 function canonicalCycle(cycle: string[]): string {
   const values = [...new Set(cycle)];
-  const rotations = values.map((_, index) => [...values.slice(index), ...values.slice(0, index)].join('>'));
+  const rotations = values.map((_, index) =>
+    [...values.slice(index), ...values.slice(0, index)].join('>'),
+  );
   return rotations.sort()[0] ?? '';
 }
 
@@ -135,22 +139,27 @@ export function validateManifest(manifest: TestImpactManifest): string[] {
     if (feature.sourcePaths.length === 0) errors.push(`feature ${featureId} has no sourcePaths`);
     if (feature.owners.length === 0) errors.push(`feature ${featureId} has no owners`);
     for (const dependency of feature.dependsOn) {
-      if (!featureIds.has(dependency)) errors.push(`feature ${featureId} depends on unknown feature ${dependency}`);
+      if (!featureIds.has(dependency))
+        errors.push(`feature ${featureId} depends on unknown feature ${dependency}`);
     }
     for (const suiteId of [...feature.webSuites, ...feature.detoxSuites]) {
-      if (!suiteIds.has(suiteId)) errors.push(`feature ${featureId} references unknown suite ${suiteId}`);
+      if (!suiteIds.has(suiteId))
+        errors.push(`feature ${featureId} references unknown suite ${suiteId}`);
     }
   }
 
   for (const [suiteId, suite] of Object.entries(manifest.suites)) {
     if (suite.specs.length === 0) errors.push(`suite ${suiteId} has no specs`);
-    if (!['detox', 'playwright', 'playwright-server', 'playwright-evidence'].includes(suite.runner)) {
+    if (
+      !['detox', 'playwright', 'playwright-server', 'playwright-evidence'].includes(suite.runner)
+    ) {
       errors.push(`suite ${suiteId} uses unsupported runner ${suite.runner}`);
     }
   }
   for (const suiteId of manifest.criticalSuites) {
     if (!suiteIds.has(suiteId)) errors.push(`unknown critical suite ${suiteId}`);
-    else if (!manifest.suites[suiteId]?.ci) errors.push(`critical suite ${suiteId} is not CI eligible`);
+    else if (!manifest.suites[suiteId]?.ci)
+      errors.push(`critical suite ${suiteId} is not CI eligible`);
   }
 
   const allowedCycles = new Set(manifest.allowedDependencyCycles.map(canonicalCycle));
@@ -217,7 +226,7 @@ export function changedFilesFromGit(root: string, base: string, head: string): C
       cwd: root,
       encoding: 'utf8',
       maxBuffer: 20 * 1024 * 1024,
-    }
+    },
   );
   return parseNameStatus(output);
 }
@@ -231,14 +240,19 @@ function listWorkingTreeSourceFiles(root: string): string[] {
       const absolute = join(directory, entry);
       const stats = statSync(absolute);
       if (stats.isDirectory()) walk(absolute);
-      else if (sourceExtensions.includes(extname(entry))) files.push(normalizePath(relative(root, absolute)));
+      else if (sourceExtensions.includes(extname(entry)))
+        files.push(normalizePath(relative(root, absolute)));
     }
   };
   walk(root);
   return files.sort();
 }
 
-function resolveImportPaths(fromPath: string, specifier: string, knownFiles: Set<string>): string[] {
+function resolveImportPaths(
+  fromPath: string,
+  specifier: string,
+  knownFiles: Set<string>,
+): string[] {
   if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return [];
   const base = specifier.startsWith('@/')
     ? specifier.slice(2)
@@ -247,18 +261,22 @@ function resolveImportPaths(fromPath: string, specifier: string, knownFiles: Set
   const candidates = [
     base,
     ...platformSuffixes.flatMap((suffix) =>
-      sourceExtensions.map((extension) => `${base}${suffix}${extension}`)
+      sourceExtensions.map((extension) => `${base}${suffix}${extension}`),
     ),
     ...sourceExtensions.map((extension) => `${base}${extension}`),
     ...platformSuffixes.flatMap((suffix) =>
-      sourceExtensions.map((extension) => `${base}/index${suffix}${extension}`)
+      sourceExtensions.map((extension) => `${base}/index${suffix}${extension}`),
     ),
     ...sourceExtensions.map((extension) => `${base}/index${extension}`),
   ].map(normalizePath);
   return [...new Set(candidates.filter((candidate) => knownFiles.has(candidate)))];
 }
 
-function resolveImportPath(fromPath: string, specifier: string, knownFiles: Set<string>): string | null {
+function resolveImportPath(
+  fromPath: string,
+  specifier: string,
+  knownFiles: Set<string>,
+): string | null {
   return resolveImportPaths(fromPath, specifier, knownFiles)[0] ?? null;
 }
 
@@ -287,16 +305,13 @@ export function buildWorkingTreeGraph(root: string): ImportGraph {
   return createReverseGraph(files);
 }
 
-export function validateFeatureBoundaries(
-  root: string,
-  manifest: TestImpactManifest
-): string[] {
+export function validateFeatureBoundaries(root: string, manifest: TestImpactManifest): string[] {
   const sourceFiles = listWorkingTreeSourceFiles(root).filter(
-    (path) => path.startsWith('features/') && !/\.(test|spec)\.[jt]sx?$/.test(path)
+    (path) => path.startsWith('features/') && !/\.(test|spec)\.[jt]sx?$/.test(path),
   );
   const knownFiles = new Set(listWorkingTreeSourceFiles(root));
   const allowedLegacyPairs = new Set(
-    manifest.allowedDependencyCycles.map((pair) => [...pair].sort().join('>'))
+    manifest.allowedDependencyCycles.map((pair) => [...pair].sort().join('>')),
   );
   const errors: string[] = [];
 
@@ -317,7 +332,7 @@ export function validateFeatureBoundaries(
       const legacyException = allowedLegacyPairs.has([fromFeature, toFeature].sort().join('>'));
       if (!declared && !legacyException) {
         errors.push(
-          `${path} imports ${resolvedImport}, but ${fromFeature} does not declare dependency ${toFeature}`
+          `${path} imports ${resolvedImport}, but ${fromFeature} does not declare dependency ${toFeature}`,
         );
       }
     }
@@ -345,7 +360,7 @@ export function buildGitRefGraph(root: string, ref: string): ImportGraph {
           cwd: root,
           encoding: 'utf8',
           maxBuffer: 5 * 1024 * 1024,
-        })
+        }),
       );
     } catch {
       // A single unreadable historical source is handled conservatively by path ownership.
@@ -363,7 +378,7 @@ function featureOwnersForPath(manifest: TestImpactManifest, path: string): strin
 function reverseImportFeatures(
   manifest: TestImpactManifest,
   paths: string[],
-  graphs: ImportGraph[]
+  graphs: ImportGraph[],
 ): Set<string> {
   const affected = new Set<string>();
   const queue = [...paths];
@@ -386,7 +401,7 @@ function reverseImportFeatures(
 
 function addReverseFeatureDependencies(
   manifest: TestImpactManifest,
-  affectedFeatures: Set<string>
+  affectedFeatures: Set<string>,
 ): void {
   let changed = true;
   while (changed) {
@@ -405,10 +420,10 @@ export function resolveImpact(
   manifest: TestImpactManifest,
   changedFiles: ChangedFile[],
   graphs: ImportGraph[] = [],
-  options: { forceFull?: boolean; validationErrors?: string[] } = {}
+  options: { forceFull?: boolean; validationErrors?: string[] } = {},
 ): ImpactResult {
   const allPaths = changedFiles.flatMap((change) =>
-    change.previousPath ? [change.previousPath, change.path] : [change.path]
+    change.previousPath ? [change.previousPath, change.path] : [change.path],
   );
   const validationErrors = options.validationErrors ?? validateManifest(manifest);
   const fallbackReasons: string[] = [];
@@ -426,11 +441,13 @@ export function resolveImpact(
   }
   if (changedFiles.length > manifest.maxChangedFiles) {
     fallbackReasons.push(
-      `change count ${changedFiles.length} exceeds limit ${manifest.maxChangedFiles}`
+      `change count ${changedFiles.length} exceeds limit ${manifest.maxChangedFiles}`,
     );
   }
   if (allPaths.some((path) => matchesAny(path, manifest.fullFallbackPaths))) {
-    fallbackReasons.push('a test-impact, workflow, lockfile, native configuration, or tooling file changed');
+    fallbackReasons.push(
+      'a test-impact, workflow, lockfile, native configuration, or tooling file changed',
+    );
   }
 
   const documentationOnly =
@@ -477,7 +494,7 @@ export function resolveImpact(
       featureOwnersForPath(manifest, path).length === 0 &&
       !manifest.sharedRules.some((rule) => matchesAny(path, rule.paths)) &&
       !matchesAny(path, manifest.fullFallbackPaths) &&
-      !Object.values(manifest.suites).some((suite) => suite.specs.includes(path))
+      !Object.values(manifest.suites).some((suite) => suite.specs.includes(path)),
   );
   if (unmappedRuntimePaths.length > 0) {
     fallbackReasons.push(`unmapped runtime paths: ${unmappedRuntimePaths.join(', ')}`);
@@ -533,10 +550,10 @@ export function resolveImpact(
   }
 
   const hasSelectedWeb = [...selectedSuites].some((suiteId) =>
-    manifest.suites[suiteId]?.runner.startsWith('playwright')
+    manifest.suites[suiteId]?.runner.startsWith('playwright'),
   );
   const hasSelectedDetox = [...selectedSuites].some(
-    (suiteId) => manifest.suites[suiteId]?.runner === 'detox'
+    (suiteId) => manifest.suites[suiteId]?.runner === 'detox',
   );
   for (const suiteId of manifest.criticalSuites) {
     const suite = manifest.suites[suiteId];
@@ -546,17 +563,17 @@ export function resolveImpact(
   }
 
   const webSuites = [...selectedSuites].filter((suiteId) =>
-    manifest.suites[suiteId]?.runner.startsWith('playwright')
+    manifest.suites[suiteId]?.runner.startsWith('playwright'),
   );
   const detoxIosSuites = [...selectedSuites].filter(
     (suiteId) =>
       manifest.suites[suiteId]?.runner === 'detox' &&
-      manifest.suites[suiteId]?.platforms?.includes('ios')
+      manifest.suites[suiteId]?.platforms?.includes('ios'),
   );
   const detoxAndroidSuites = [...selectedSuites].filter(
     (suiteId) =>
       manifest.suites[suiteId]?.runner === 'detox' &&
-      manifest.suites[suiteId]?.platforms?.includes('android')
+      manifest.suites[suiteId]?.platforms?.includes('android'),
   );
 
   return {
@@ -603,7 +620,8 @@ export function discoverRegisteredTestFiles(root: string): string[] {
 }
 
 export function formatImpactMarkdown(result: ImpactResult): string {
-  const list = (values: string[]) => (values.length > 0 ? values.map((v) => `\`${v}\``).join(', ') : 'None');
+  const list = (values: string[]) =>
+    values.length > 0 ? values.map((v) => `\`${v}\``).join(', ') : 'None';
   return [
     '# Selective test impact',
     '',

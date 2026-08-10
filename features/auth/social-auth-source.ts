@@ -15,11 +15,7 @@ export type SocialAuthSourceInput = {
 };
 
 export type SocialAuthSourceErrorCode =
-  | 'configuration'
-  | 'network'
-  | 'invalid_credentials'
-  | 'provider_conflict'
-  | 'unknown';
+  'configuration' | 'network' | 'invalid_credentials' | 'provider_conflict' | 'unknown';
 
 export class SocialAuthSourceError extends Error {
   readonly code: SocialAuthSourceErrorCode;
@@ -101,7 +97,7 @@ function trimOptional(value: string | undefined): string | undefined {
 
 export async function signInWithSocialProviderTokenFromSource(
   input: SocialAuthSourceInput,
-  deps: SocialAuthSourceDeps = makeDeps()
+  deps: SocialAuthSourceDeps = makeDeps(),
 ): Promise<void> {
   await waitForPendingServerAuthSignOut();
   let baseUrl: string | undefined;
@@ -111,7 +107,10 @@ export async function signInWithSocialProviderTokenFromSource(
     if (error instanceof SocialAuthSourceError) {
       throw error;
     }
-    throw new SocialAuthSourceError('configuration', 'MyChampions server URL could not be resolved.');
+    throw new SocialAuthSourceError(
+      'configuration',
+      'MyChampions server URL could not be resolved.',
+    );
   }
 
   if (!baseUrl) {
@@ -132,7 +131,9 @@ export async function signInWithSocialProviderTokenFromSource(
       body: JSON.stringify({
         provider: input.provider,
         idToken,
-        ...(trimOptional(input.accessToken) ? { accessToken: trimOptional(input.accessToken) } : {}),
+        ...(trimOptional(input.accessToken)
+          ? { accessToken: trimOptional(input.accessToken) }
+          : {}),
         ...(trimOptional(input.nonce) ? { nonce: trimOptional(input.nonce) } : {}),
         ...authSessionRuntime.sessionRequestFields,
       }),
@@ -148,6 +149,9 @@ export async function signInWithSocialProviderTokenFromSource(
 
   const session = await persistServerAuthSessionFromPayload(payload, deps);
   if (!session) {
-    throw new SocialAuthSourceError('unknown', 'Social auth response did not contain a valid server session.');
+    throw new SocialAuthSourceError(
+      'unknown',
+      'Social auth response did not contain a valid server session.',
+    );
   }
 }

@@ -8,7 +8,7 @@ export function usePlanDraft<T>(
   currentValues: T,
   isDirty: boolean,
   onRestore: (values: T) => void,
-  t: (key: string) => string
+  t: (key: string) => string,
 ) {
   const lastSavedRef = useRef<string>(JSON.stringify(currentValues));
   const draftKey = `${DRAFT_PREFIX}${planId}`;

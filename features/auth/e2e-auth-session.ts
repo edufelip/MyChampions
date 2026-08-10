@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import type { RoleIntent } from './role-selection.logic';
 import type { AuthProviderId } from './auth-user';
 
@@ -82,18 +84,33 @@ const E2E_AUTH_UID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
  */
 export function resolveE2EPhaseConfigValue(
   runtimeValue: string | undefined,
-  embeddedValue: string | undefined
+  embeddedValue: string | undefined,
 ): string | undefined {
   return runtimeValue ?? embeddedValue;
 }
 
-export function readPersistedE2ELockedRole(): RoleIntent | null {
-  if (typeof sessionStorage === 'undefined') return null;
-  const value = sessionStorage.getItem(E2E_LOCKED_ROLE_STORAGE_KEY);
+function usesNativeE2ERoleStorage(): boolean {
+  return process.env.EXPO_PUBLIC_E2E_ROLE_PERSISTENCE === 'true';
+}
+
+function parsePersistedE2ELockedRole(value: string | null): RoleIntent | null {
   return value === 'student' || value === 'professional' ? value : null;
 }
 
-export function persistE2ELockedRole(role: RoleIntent | null): void {
+export async function readPersistedE2ELockedRole(): Promise<RoleIntent | null> {
+  if (usesNativeE2ERoleStorage()) {
+    return parsePersistedE2ELockedRole(await AsyncStorage.getItem(E2E_LOCKED_ROLE_STORAGE_KEY));
+  }
+  if (typeof sessionStorage === 'undefined') return null;
+  return parsePersistedE2ELockedRole(sessionStorage.getItem(E2E_LOCKED_ROLE_STORAGE_KEY));
+}
+
+export async function persistE2ELockedRole(role: RoleIntent | null): Promise<void> {
+  if (usesNativeE2ERoleStorage()) {
+    if (role) await AsyncStorage.setItem(E2E_LOCKED_ROLE_STORAGE_KEY, role);
+    else await AsyncStorage.removeItem(E2E_LOCKED_ROLE_STORAGE_KEY);
+    return;
+  }
   if (typeof sessionStorage === 'undefined') return;
   if (role) sessionStorage.setItem(E2E_LOCKED_ROLE_STORAGE_KEY, role);
   else sessionStorage.removeItem(E2E_LOCKED_ROLE_STORAGE_KEY);
@@ -106,24 +123,25 @@ function isEnabled(value: string | undefined) {
 function resolveConfiguredE2EAuthUid(
   fallback: string,
   suffix = '',
-  explicitOverride?: string
+  explicitOverride?: string,
 ): string | null {
   const configuredOverride = explicitOverride?.trim();
   const configuredBase = process.env.EXPO_PUBLIC_E2E_AUTH_UID?.trim();
-  const candidate = configuredOverride || (configuredBase ? `${configuredBase}${suffix}` : fallback);
-  if (
-    candidate.length > E2E_AUTH_UID_MAX_LENGTH ||
-    !E2E_AUTH_UID_PATTERN.test(candidate)
-  ) {
+  const candidate =
+    configuredOverride || (configuredBase ? `${configuredBase}${suffix}` : fallback);
+  if (candidate.length > E2E_AUTH_UID_MAX_LENGTH || !E2E_AUTH_UID_PATTERN.test(candidate)) {
     return null;
   }
 
   return candidate;
 }
 
-function normalizeE2EEntitlementStatus(value: string | undefined): E2ESubscriptionOverride['entitlementStatus'] | null {
+function normalizeE2EEntitlementStatus(
+  value: string | undefined,
+): E2ESubscriptionOverride['entitlementStatus'] | null {
   const normalized = value?.trim().toLowerCase();
-  if (normalized === 'active' || normalized === 'lapsed' || normalized === 'unknown') return normalized;
+  if (normalized === 'active' || normalized === 'lapsed' || normalized === 'unknown')
+    return normalized;
   return null;
 }
 
@@ -179,8 +197,7 @@ export function resolveE2EEmailPasswordSignInOverride({
 
   const normalizedEmail = email.trim().toLowerCase();
   const isPrimaryAccount =
-    normalizedEmail === E2E_AUTH_SESSION_EMAIL &&
-    password === E2E_AUTH_SESSION_PASSWORD;
+    normalizedEmail === E2E_AUTH_SESSION_EMAIL && password === E2E_AUTH_SESSION_PASSWORD;
   const isCreatedAccount =
     normalizedEmail === E2E_AUTH_CREATE_ACCOUNT_EMAIL &&
     password === E2E_AUTH_CREATE_ACCOUNT_PASSWORD;
@@ -251,7 +268,7 @@ export function resolveE2ESocialAuthOverride({
     const uid = resolveConfiguredE2EAuthUid(
       E2E_AUTH_GOOGLE_UID,
       '-google',
-      process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID
+      process.env.EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID,
     );
     if (!uid) return null;
     return {
@@ -307,7 +324,9 @@ export function resolveE2ESubscriptionOverride({
   }
 
   const normalizedEntitlementStatus = normalizeE2EEntitlementStatus(entitlementStatus);
-  const normalizedAiEntitlementStatus = normalizeE2EEntitlementStatus(aiEntitlementStatus ?? 'unknown');
+  const normalizedAiEntitlementStatus = normalizeE2EEntitlementStatus(
+    aiEntitlementStatus ?? 'unknown',
+  );
   const normalizedActiveStudentCount = normalizeE2EActiveStudentCount(activeStudentCount);
 
   if (

@@ -1,11 +1,16 @@
-const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const describeWithE2EAuthSession =
+  process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
 const { submitFocusedEditor } = require('./native-editor-actions');
 
 async function selectProfessionalRole() {
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(15000);
   await element(by.id('auth.roleSelection.professionalCard')).tap();
   await element(by.id('auth.roleSelection.continueButton')).tap();
-  await waitFor(element(by.id('pro.specialty.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('pro.specialty.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function scrollToCredentialSave() {
@@ -31,12 +36,18 @@ describeWithE2EAuthSession('Professional Specialty Setup', () => {
 
     await expect(element(by.id('pro.specialty.pageTitle'))).toBeVisible();
     await expect(element(by.id('pro.specialty.error'))).not.toBeVisible();
-    await waitFor(element(by.id('pro.specialty.empty'))).toBeVisible().withTimeout(5000);
-    await waitFor(element(by.id('pro.specialty.add.nutritionist'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('pro.specialty.empty')))
+      .toBeVisible()
+      .withTimeout(5000);
+    await waitFor(element(by.id('pro.specialty.add.nutritionist')))
+      .toBeVisible()
+      .withTimeout(5000);
 
     await element(by.id('pro.specialty.add.nutritionist')).tap();
 
-    await waitFor(element(by.id('pro.specialty.credentialForm'))).toExist().withTimeout(5000);
+    await waitFor(element(by.id('pro.specialty.credentialForm')))
+      .toExist()
+      .withTimeout(5000);
     await expect(element(by.id('pro.specialty.credential.registryId'))).toBeVisible();
     await expect(element(by.id('pro.specialty.credential.authority'))).toExist();
     await expect(element(by.id('pro.specialty.credential.country'))).toExist();
@@ -48,10 +59,14 @@ describeWithE2EAuthSession('Professional Specialty Setup', () => {
     await scrollToCredentialSave();
     await element(by.id('pro.specialty.credential.save')).tap();
 
-    await waitFor(element(by.id('pro.specialty.credential.error'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('pro.specialty.credential.error')))
+      .toBeVisible()
+      .withTimeout(5000);
     await element(by.id('pro.specialty.credential.skip')).tap();
 
-    await waitFor(element(by.id('pro.specialty.row.nutritionist'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('pro.specialty.row.nutritionist')))
+      .toBeVisible()
+      .withTimeout(5000);
     await expect(element(by.id('pro.specialty.cta_continue'))).toBeVisible();
   });
 });

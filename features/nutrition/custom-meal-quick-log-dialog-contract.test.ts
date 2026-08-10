@@ -5,17 +5,8 @@ import test from 'node:test';
 
 test('custom meal quick log uses the shared web modal focus and Escape contract', () => {
   const source = readFileSync(
-    join(
-      __dirname,
-      '..',
-      '..',
-      'app',
-      '(tabs)',
-      'nutrition',
-      'custom-meals',
-      'index.tsx'
-    ),
-    'utf8'
+    join(__dirname, '..', '..', 'app', '(tabs)', 'nutrition', 'custom-meals', 'index.tsx'),
+    'utf8',
   );
 
   const panelStart = source.indexOf('function QuickLogPanel');

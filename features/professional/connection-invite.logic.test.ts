@@ -104,7 +104,10 @@ test('normalizeInviteCodeActionError maps network message', () => {
 });
 
 test('normalizeInviteCodeActionError maps config/endpoint message to configuration', () => {
-  assert.equal(normalizeInviteCodeActionError({ message: 'endpoint not configured' }), 'configuration');
+  assert.equal(
+    normalizeInviteCodeActionError({ message: 'endpoint not configured' }),
+    'configuration',
+  );
   assert.equal(normalizeInviteCodeActionError({ message: 'config missing' }), 'configuration');
 });
 
@@ -123,40 +126,70 @@ test('shouldCancelPendingConnectionForRotatedInvite only matches same specialty 
     specialty: 'nutritionist' as const,
   };
 
-  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
-    status: 'pending_confirmation',
-    specialty: 'nutritionist',
-    sourceInviteCodeId: 'nutritionist',
-    sourceInviteCodeValue: 'NUT123',
-  }, rotated), true);
+  assert.equal(
+    shouldCancelPendingConnectionForRotatedInvite(
+      {
+        status: 'pending_confirmation',
+        specialty: 'nutritionist',
+        sourceInviteCodeId: 'nutritionist',
+        sourceInviteCodeValue: 'NUT123',
+      },
+      rotated,
+    ),
+    true,
+  );
 
-  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
-    status: 'pending_confirmation',
-    specialty: 'fitness_coach',
-    sourceInviteCodeId: 'nutritionist',
-    sourceInviteCodeValue: 'NUT123',
-  }, rotated), false);
+  assert.equal(
+    shouldCancelPendingConnectionForRotatedInvite(
+      {
+        status: 'pending_confirmation',
+        specialty: 'fitness_coach',
+        sourceInviteCodeId: 'nutritionist',
+        sourceInviteCodeValue: 'NUT123',
+      },
+      rotated,
+    ),
+    false,
+  );
 
-  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
-    status: 'pending_confirmation',
-    specialty: 'nutritionist',
-    sourceInviteCodeId: 'fitness_coach',
-    sourceInviteCodeValue: 'NUT123',
-  }, rotated), false);
+  assert.equal(
+    shouldCancelPendingConnectionForRotatedInvite(
+      {
+        status: 'pending_confirmation',
+        specialty: 'nutritionist',
+        sourceInviteCodeId: 'fitness_coach',
+        sourceInviteCodeValue: 'NUT123',
+      },
+      rotated,
+    ),
+    false,
+  );
 
-  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
-    status: 'pending_confirmation',
-    specialty: 'nutritionist',
-    sourceInviteCodeId: 'nutritionist',
-    sourceInviteCodeValue: 'OLD123',
-  }, rotated), false);
+  assert.equal(
+    shouldCancelPendingConnectionForRotatedInvite(
+      {
+        status: 'pending_confirmation',
+        specialty: 'nutritionist',
+        sourceInviteCodeId: 'nutritionist',
+        sourceInviteCodeValue: 'OLD123',
+      },
+      rotated,
+    ),
+    false,
+  );
 
-  assert.equal(shouldCancelPendingConnectionForRotatedInvite({
-    status: 'active',
-    specialty: 'nutritionist',
-    sourceInviteCodeId: 'nutritionist',
-    sourceInviteCodeValue: 'NUT123',
-  }, rotated), false);
+  assert.equal(
+    shouldCancelPendingConnectionForRotatedInvite(
+      {
+        status: 'active',
+        specialty: 'nutritionist',
+        sourceInviteCodeId: 'nutritionist',
+        sourceInviteCodeValue: 'NUT123',
+      },
+      rotated,
+    ),
+    false,
+  );
 });
 
 // --- resolvePrimaryInviteCodeSpecialty ---
@@ -166,7 +199,7 @@ test('resolvePrimaryInviteCodeSpecialty uses fitness coach when that is the only
     resolvePrimaryInviteCodeSpecialty([
       { id: 'fitness_coach', specialty: 'fitness_coach', isActive: true, credential: null },
     ]),
-    'fitness_coach'
+    'fitness_coach',
   );
 });
 
@@ -175,6 +208,6 @@ test('resolvePrimaryInviteCodeSpecialty returns null when there are no active sp
     resolvePrimaryInviteCodeSpecialty([
       { id: 'nutritionist', specialty: 'nutritionist', isActive: false, credential: null },
     ]),
-    null
+    null,
   );
 });

@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test.describe(
-  '@functional @feature:connections @feature:subscription @feature:platform platform fallbacks',
-  () => {
+test.describe('@functional @feature:connections @feature:subscription @feature:platform platform fallbacks', () => {
   test('manual invite entry remains available when browser camera permission is denied', async ({
     browser,
   }) => {
@@ -27,8 +25,8 @@ test.describe(
     await expect(page.getByTestId('pro.subscription.capabilityUnavailable')).toBeVisible();
     await expect(
       page.getByText(
-        'Subscription changes are not available in this browser right now. You can still refresh your status.'
-      )
+        'Subscription changes are not available in this browser right now. You can still refresh your status.',
+      ),
     ).toBeVisible();
     await expect(page.getByTestId('pro.subscription.restoreCta')).toHaveCount(0);
     await expect(page.getByTestId('pro.subscription.refreshCta')).toBeEnabled();
@@ -44,5 +42,4 @@ test.describe(
     await page.getByTestId('settings.languageSelect.saveButton').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
   });
-  }
-);
+});

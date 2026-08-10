@@ -171,11 +171,7 @@ test('BL-001 empty-state copy scenarios', () => {
   assert.equal(
     hasNutritionPlan,
     false,
-    'should show: "No nutritionist connected? You can still build and track your own plan today."'
+    'should show: "No nutritionist connected? You can still build and track your own plan today."',
   );
-  assert.equal(
-    hasTrainingPlan,
-    true,
-    'should NOT show training CTA since plan exists'
-  );
+  assert.equal(hasTrainingPlan, true, 'should NOT show training CTA since plan exists');
 });

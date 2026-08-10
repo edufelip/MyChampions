@@ -18,11 +18,7 @@ import { defaultAppFetch } from '../platform/default-app-fetch';
 // ─── Error type ───────────────────────────────────────────────────────────────
 
 export type FoodSearchErrorCode =
-  | 'configuration'
-  | 'network'
-  | 'unauthenticated'
-  | 'quota'
-  | 'unknown';
+  'configuration' | 'network' | 'unauthenticated' | 'quota' | 'unknown';
 
 export class FoodSearchSourceError extends Error {
   code: FoodSearchErrorCode;
@@ -156,7 +152,7 @@ function mapMicroserviceFoodResult(raw: unknown): FoodSearchResult | null {
     logNetworkDebug(
       'searchFoodsFromSource',
       `Skipping "${name}" due to invalid serving value (expected 100):`,
-      value.serving
+      value.serving,
     );
     return null;
   }
@@ -188,12 +184,15 @@ function normalizeResultsArray(results: unknown): unknown[] {
 
 function mapErrorToSourceError(
   responseStatus: number,
-  body: SearchFoodsErrorBody | null
+  body: SearchFoodsErrorBody | null,
 ): FoodSearchSourceError | null {
   const errorCode = body?.error ?? null;
 
   if (responseStatus === 401 || responseStatus === 403 || errorCode === 'unauthenticated') {
-    return new FoodSearchSourceError('unauthenticated', 'Food search service rejected the server access token.');
+    return new FoodSearchSourceError(
+      'unauthenticated',
+      'Food search service rejected the server access token.',
+    );
   }
 
   if (responseStatus === 429 || errorCode === 'quota_exceeded') {
@@ -201,11 +200,17 @@ function mapErrorToSourceError(
   }
 
   if (responseStatus === 400 || errorCode === 'bad_request') {
-    return new FoodSearchSourceError('unknown', body?.message ?? 'Food search request was rejected (bad_request).');
+    return new FoodSearchSourceError(
+      'unknown',
+      body?.message ?? 'Food search request was rejected (bad_request).',
+    );
   }
 
   if (responseStatus === 503 || errorCode === 'configuration') {
-    return new FoodSearchSourceError('configuration', body?.message ?? 'Food search endpoint is not configured.');
+    return new FoodSearchSourceError(
+      'configuration',
+      body?.message ?? 'Food search endpoint is not configured.',
+    );
   }
 
   if (errorCode === 'upstream_ip_not_allowlisted') {
@@ -222,7 +227,9 @@ function mapErrorToSourceError(
 
   return new FoodSearchSourceError(
     'unknown',
-    errorCode ? `${errorCode}${body?.message ? `: ${body.message}` : ''}` : `Service returned error status: ${responseStatus}`
+    errorCode
+      ? `${errorCode}${body?.message ? `: ${body.message}` : ''}`
+      : `Service returned error status: ${responseStatus}`,
   );
 }
 
@@ -237,7 +244,7 @@ function mapErrorToSourceError(
  */
 export async function searchFoodsFromSource(
   query: string,
-  deps: FoodSearchSourceDeps = defaultDeps
+  deps: FoodSearchSourceDeps = defaultDeps,
 ): Promise<FoodSearchResult[]> {
   logNetworkDebug('searchFoodsFromSource', 'Starting service search for:', query);
 
@@ -255,7 +262,7 @@ export async function searchFoodsFromSource(
   if (!endpoint) {
     throw new FoodSearchSourceError(
       'configuration',
-      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.'
+      'MyChampions server URL is not configured. Set EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL.',
     );
   }
 

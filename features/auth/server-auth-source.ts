@@ -160,7 +160,9 @@ function fallbackExpiresAt(): string {
 
 function normalizeAuthProviderIds(value: unknown): AuthProviderId[] {
   if (!Array.isArray(value)) return ['email_password'];
-  const ids = value.filter((id): id is AuthProviderId => typeof id === 'string' && id.trim().length > 0);
+  const ids = value.filter(
+    (id): id is AuthProviderId => typeof id === 'string' && id.trim().length > 0,
+  );
   return ids.length > 0 ? ids : ['email_password'];
 }
 
@@ -169,7 +171,7 @@ function makeServerUser(
   accessToken: string,
   expiresAt: string,
   authProviderIds: AuthProviderId[],
-  emailVerified: boolean
+  emailVerified: boolean,
 ): ServerAuthUser {
   return {
     uid: profile.authUid,
@@ -208,8 +210,10 @@ function normalizeProfile(profile: Partial<ServerAuthProfile>): ServerAuthProfil
         : null,
     acceptedTermsVersion:
       typeof profile.acceptedTermsVersion === 'string' ? profile.acceptedTermsVersion : null,
-    createdAt: typeof profile.createdAt === 'string' ? profile.createdAt : new Date(0).toISOString(),
-    updatedAt: typeof profile.updatedAt === 'string' ? profile.updatedAt : new Date(0).toISOString(),
+    createdAt:
+      typeof profile.createdAt === 'string' ? profile.createdAt : new Date(0).toISOString(),
+    updatedAt:
+      typeof profile.updatedAt === 'string' ? profile.updatedAt : new Date(0).toISOString(),
   };
 }
 
@@ -219,7 +223,7 @@ function makeSession(
   expiresAt: string,
   authProviderIds: AuthProviderId[] = ['email_password'],
   refreshToken: string | null = null,
-  emailVerified = false
+  emailVerified = false,
 ): ServerAuthSession {
   return {
     accessToken,
@@ -279,12 +283,12 @@ function parsePersistedSession(value: string): ServerAuthSession | null {
     persisted.expiresAt,
     normalizeAuthProviderIds(persisted.authProviderIds),
     typeof persisted.refreshToken === 'string' ? persisted.refreshToken : null,
-    persisted.emailVerified === true
+    persisted.emailVerified === true,
   );
 }
 
 async function reconcilePersistedSessionWithCurrentState(
-  storage: ServerAuthStorage
+  storage: ServerAuthStorage,
 ): Promise<void> {
   while (true) {
     const reconciliationRevision = sessionRevision;
@@ -292,10 +296,7 @@ async function reconcilePersistedSessionWithCurrentState(
 
     try {
       if (activeSession) {
-        await storage.setItem(
-          SERVER_AUTH_SESSION_STORAGE_KEY,
-          serializeSession(activeSession)
-        );
+        await storage.setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(activeSession));
       } else {
         await storage.removeItem(SERVER_AUTH_SESSION_STORAGE_KEY);
       }
@@ -304,10 +305,7 @@ async function reconcilePersistedSessionWithCurrentState(
       return;
     }
 
-    if (
-      sessionRevision === reconciliationRevision &&
-      currentSession === activeSession
-    ) {
+    if (sessionRevision === reconciliationRevision && currentSession === activeSession) {
       return;
     }
   }
@@ -337,7 +335,7 @@ export async function waitForPendingServerAuthSignOut(): Promise<void> {
 }
 
 export function subscribeServerAuthSession(
-  listener: (session: ServerAuthSession | null) => void
+  listener: (session: ServerAuthSession | null) => void,
 ): () => void {
   sessionListeners.add(listener);
   return () => {
@@ -346,7 +344,7 @@ export function subscribeServerAuthSession(
 }
 
 export async function getValidServerAccessToken(
-  deps: Partial<ServerAuthDeps> = makeDeps()
+  deps: Partial<ServerAuthDeps> = makeDeps(),
 ): Promise<string | null> {
   const session = currentSession;
   if (!session) return null;
@@ -371,7 +369,7 @@ export async function getValidServerAccessToken(
     flight.promise = refreshServerSession(
       session.refreshToken,
       deps,
-      () => sessionRevision === refreshRevision && currentSession === session
+      () => sessionRevision === refreshRevision && currentSession === session,
     )
       .then(async (outcome) => {
         if (outcome.kind !== 'rejected') return outcome;
@@ -406,7 +404,7 @@ export async function getValidServerAccessToken(
 }
 
 export async function clearPersistedServerAuthSession(
-  deps: Partial<ServerAuthDeps> = makeDeps()
+  deps: Partial<ServerAuthDeps> = makeDeps(),
 ): Promise<void> {
   const runtime = deps.runtime ?? authSessionRuntime;
   if (!runtime.persistsSession) {
@@ -455,14 +453,14 @@ export async function clearPersistedServerAuthSession(
 }
 
 export async function restoreServerAuthSession(
-  deps: Partial<ServerAuthDeps> = makeDeps()
+  deps: Partial<ServerAuthDeps> = makeDeps(),
 ): Promise<ServerAuthSession | null> {
   if (!authSessionRuntime.persistsSession) {
     const restoreRevision = sessionRevision;
     const outcome = await refreshServerSession(
       null,
       deps,
-      () => sessionRevision === restoreRevision
+      () => sessionRevision === restoreRevision,
     );
     if (outcome.kind === 'success') return outcome.session;
     if (outcome.kind === 'rejected' && sessionRevision === restoreRevision) {
@@ -502,7 +500,7 @@ export async function restoreServerAuthSession(
     const outcome = await refreshServerSession(
       session.refreshToken,
       deps,
-      () => sessionRevision === restoreRevision
+      () => sessionRevision === restoreRevision,
     );
     if (outcome.kind === 'success') return outcome.session;
     if (sessionRevision !== restoreRevision || outcome.kind === 'stale') return null;
@@ -526,7 +524,7 @@ export async function restoreServerAuthSession(
 async function refreshServerSession(
   refreshToken: string | null,
   deps: Partial<ServerAuthDeps> = makeDeps(),
-  canCommit: () => boolean = () => true
+  canCommit: () => boolean = () => true,
 ): Promise<RefreshServerSessionOutcome> {
   if (!deps.fetch || !deps.getServerBaseUrl) return { kind: 'transient_failure' };
 
@@ -567,16 +565,16 @@ async function refreshServerSession(
   const committedRevision = sessionRevision;
   if (authSessionRuntime.persistsSession) {
     try {
-      await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(session));
+      await resolveStorage(deps).setItem(
+        SERVER_AUTH_SESSION_STORAGE_KEY,
+        serializeSession(session),
+      );
     } catch {
       // Refreshed in-memory auth still works if platform storage is unavailable.
     }
   }
 
-  if (
-    sessionRevision !== committedRevision ||
-    currentSession !== session
-  ) {
+  if (sessionRevision !== committedRevision || currentSession !== session) {
     if (authSessionRuntime.persistsSession) {
       await reconcilePersistedSessionWithCurrentState(resolveStorage(deps));
     }
@@ -588,7 +586,7 @@ async function refreshServerSession(
 
 export async function startLocalServerSession(
   input: { email: string; displayName: string; authProviderId?: AuthProviderId },
-  deps: ServerAuthDeps = makeDeps()
+  deps: ServerAuthDeps = makeDeps(),
 ): Promise<ServerAuthSession | null> {
   await waitForPendingServerAuthSignOut();
   if (!isLocalServerAuthEnabled()) return null;
@@ -616,7 +614,10 @@ export async function startLocalServerSession(
   setCurrentSession(session);
   if (authSessionRuntime.persistsSession) {
     try {
-      await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(session));
+      await resolveStorage(deps).setItem(
+        SERVER_AUTH_SESSION_STORAGE_KEY,
+        serializeSession(session),
+      );
     } catch {
       // Local dev auth must still work in test/runtime contexts where AsyncStorage is unavailable.
     }
@@ -649,7 +650,8 @@ async function sessionFromPayload(payload: unknown): Promise<ServerAuthSession |
   const profile = normalizeProfile(sessionPayload.profile);
   if (!profile) return null;
   const expiresAt =
-    typeof sessionPayload.expiresAt === 'string' && Number.isFinite(Date.parse(sessionPayload.expiresAt))
+    typeof sessionPayload.expiresAt === 'string' &&
+    Number.isFinite(Date.parse(sessionPayload.expiresAt))
       ? sessionPayload.expiresAt
       : fallbackExpiresAt();
 
@@ -659,13 +661,13 @@ async function sessionFromPayload(payload: unknown): Promise<ServerAuthSession |
     expiresAt,
     normalizeAuthProviderIds(sessionPayload.authProviderIds),
     typeof sessionPayload.refreshToken === 'string' ? sessionPayload.refreshToken : null,
-    sessionPayload.emailVerified === true
+    sessionPayload.emailVerified === true,
   );
 }
 
 export async function persistServerAuthSessionFromPayload(
   payload: unknown,
-  deps: Pick<ServerAuthDeps, 'storage'> = makeDeps()
+  deps: Pick<ServerAuthDeps, 'storage'> = makeDeps(),
 ): Promise<ServerAuthSession | null> {
   await waitForPendingServerAuthSignOut();
   const session = await sessionFromPayload(payload);
@@ -674,7 +676,10 @@ export async function persistServerAuthSessionFromPayload(
   setCurrentSession(session);
   if (authSessionRuntime.persistsSession) {
     try {
-      await resolveStorage(deps).setItem(SERVER_AUTH_SESSION_STORAGE_KEY, serializeSession(session));
+      await resolveStorage(deps).setItem(
+        SERVER_AUTH_SESSION_STORAGE_KEY,
+        serializeSession(session),
+      );
     } catch {
       // In-memory auth remains useful when platform storage is unavailable.
     }
@@ -684,7 +689,7 @@ export async function persistServerAuthSessionFromPayload(
 
 export async function startLocalServerSocialSession(
   provider: LocalServerSocialAuthProvider,
-  deps: ServerAuthDeps = makeDeps()
+  deps: ServerAuthDeps = makeDeps(),
 ): Promise<ServerAuthSession | null> {
   const providerName = provider === 'google' ? 'Google' : 'Apple';
   return startLocalServerSession(
@@ -693,6 +698,6 @@ export async function startLocalServerSocialSession(
       displayName: `Local ${providerName} User`,
       authProviderId: provider,
     },
-    deps
+    deps,
   );
 }

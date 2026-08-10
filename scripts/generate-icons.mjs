@@ -108,17 +108,18 @@ async function toAdaptiveForeground(canvasPx, hex, outPath) {
   const logoSize = Math.round(canvasPx * (72 / 108));
   const offset = Math.round((canvasPx - logoSize) / 2);
 
-  const logoBuffer = await sharp(SVG_SOURCE)
-    .resize(logoSize, logoSize)
-    .png()
-    .toBuffer();
+  const logoBuffer = await sharp(SVG_SOURCE).resize(logoSize, logoSize).png().toBuffer();
 
-  await sharp({ create: { width: canvasPx, height: canvasPx, channels: 4, background: { ...bg, alpha: 0 } } })
+  await sharp({
+    create: { width: canvasPx, height: canvasPx, channels: 4, background: { ...bg, alpha: 0 } },
+  })
     .composite([{ input: logoBuffer, left: offset, top: offset }])
     .webp({ lossless: true })
     .toFile(outPath);
 
-  console.log(`  ✓ Adaptive FG WebP ${canvasPx}×${canvasPx} (logo ${logoSize}px centred) → ${label(outPath)}`);
+  console.log(
+    `  ✓ Adaptive FG WebP ${canvasPx}×${canvasPx} (logo ${logoSize}px centred) → ${label(outPath)}`,
+  );
 }
 
 // ─── Density maps ────────────────────────────────────────────────────────────
@@ -129,10 +130,10 @@ async function toAdaptiveForeground(canvasPx, hex, outPath) {
  * the visible area is the inner 72dp circle/squircle.
  */
 const ANDROID_ADAPTIVE_DENSITIES = [
-  { dpi: 'mdpi',    canvas: 108 },
-  { dpi: 'hdpi',    canvas: 162 },
-  { dpi: 'xhdpi',   canvas: 216 },
-  { dpi: 'xxhdpi',  canvas: 324 },
+  { dpi: 'mdpi', canvas: 108 },
+  { dpi: 'hdpi', canvas: 162 },
+  { dpi: 'xhdpi', canvas: 216 },
+  { dpi: 'xxhdpi', canvas: 324 },
   { dpi: 'xxxhdpi', canvas: 432 },
 ];
 
@@ -141,10 +142,10 @@ const ANDROID_ADAPTIVE_DENSITIES = [
  * ic_launcher_round.webp (non-adaptive paths, pre-API-26 fallback).
  */
 const ANDROID_LEGACY_DENSITIES = [
-  { dpi: 'mdpi',    px: 48  },
-  { dpi: 'hdpi',    px: 72  },
-  { dpi: 'xhdpi',   px: 96  },
-  { dpi: 'xxhdpi',  px: 144 },
+  { dpi: 'mdpi', px: 48 },
+  { dpi: 'hdpi', px: 72 },
+  { dpi: 'xhdpi', px: 96 },
+  { dpi: 'xxhdpi', px: 144 },
   { dpi: 'xxxhdpi', px: 192 },
 ];
 
@@ -152,10 +153,10 @@ const ANDROID_LEGACY_DENSITIES = [
  * Splash screen logo sizes (200dp baseline from app.config.ts imageWidth:200).
  */
 const ANDROID_SPLASH_DENSITIES = [
-  { dpi: 'mdpi',    px: 200 },
-  { dpi: 'hdpi',    px: 300 },
-  { dpi: 'xhdpi',   px: 400 },
-  { dpi: 'xxhdpi',  px: 600 },
+  { dpi: 'mdpi', px: 200 },
+  { dpi: 'hdpi', px: 300 },
+  { dpi: 'xhdpi', px: 400 },
+  { dpi: 'xxhdpi', px: 600 },
   { dpi: 'xxxhdpi', px: 800 },
 ];
 
@@ -178,7 +179,7 @@ async function main() {
   console.log('── 1. Universal source assets ──');
   await Promise.all([
     toPng(1024, path.join(ROOT, 'assets', 'images', 'icon.png')),
-    toPng(512,  path.join(ROOT, 'assets', 'images', 'splash-icon.png')),
+    toPng(512, path.join(ROOT, 'assets', 'images', 'splash-icon.png')),
   ]);
 
   // ── 2. Android adaptive icon source layers (assets/images/ copies) ──────
@@ -191,10 +192,7 @@ async function main() {
 
   // ── 3. iOS App Icon ─────────────────────────────────────────────────────
   console.log('\n── 3. iOS App Icon ──');
-  await toPng(
-    1024,
-    path.join(IOS_XCASSETS, 'AppIcon.appiconset', 'App-Icon-1024x1024@1x.png'),
-  );
+  await toPng(1024, path.join(IOS_XCASSETS, 'AppIcon.appiconset', 'App-Icon-1024x1024@1x.png'));
 
   // ── 4. iOS Splash Screen logo ───────────────────────────────────────────
   console.log('\n── 4. iOS SplashScreen logo ──');
@@ -222,8 +220,8 @@ async function main() {
       const dir = path.join(ANDROID_RES, `mipmap-${dpi}`);
       return Promise.all([
         toAdaptiveForeground(canvas, BRAND_BG, path.join(dir, 'ic_launcher_foreground.webp')),
-        toSolidWebp(canvas, BRAND_BG,           path.join(dir, 'ic_launcher_background.webp')),
-        toGreyscaleWebp(canvas,                  path.join(dir, 'ic_launcher_monochrome.webp')),
+        toSolidWebp(canvas, BRAND_BG, path.join(dir, 'ic_launcher_background.webp')),
+        toGreyscaleWebp(canvas, path.join(dir, 'ic_launcher_monochrome.webp')),
       ]);
     }),
   );

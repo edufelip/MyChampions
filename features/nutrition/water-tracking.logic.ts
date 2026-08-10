@@ -31,10 +31,7 @@ export type PlanHydrationSnapshot = {
 export type WaterDayStatus = 'goal_met' | 'on_track' | 'below_goal';
 
 export type WaterTrackingActionErrorReason =
-  | 'invalid_amount'
-  | 'network'
-  | 'configuration'
-  | 'unknown';
+  'invalid_amount' | 'network' | 'configuration' | 'unknown';
 
 // ─── Goal precedence ──────────────────────────────────────────────────────────
 
@@ -68,20 +65,27 @@ export function resolvePlanHydrationGoalContext(input: {
   hasActiveNutritionistAssignment: boolean;
 } | null {
   const plans = input.plans
-    .filter((p) => typeof p.hydrationGoalMl === 'number' && Number.isFinite(p.hydrationGoalMl) && p.hydrationGoalMl > 0)
+    .filter(
+      (p) =>
+        typeof p.hydrationGoalMl === 'number' &&
+        Number.isFinite(p.hydrationGoalMl) &&
+        p.hydrationGoalMl > 0,
+    )
     .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
 
-  const assignedPlanGoal = plans.find(
-    (p) =>
-      p.sourceKind === 'assigned' &&
-      Boolean(p.ownerProfessionalUid) &&
-      input.activeNutritionistUids.has(p.ownerProfessionalUid as string)
-  )?.hydrationGoalMl ?? null;
+  const assignedPlanGoal =
+    plans.find(
+      (p) =>
+        p.sourceKind === 'assigned' &&
+        Boolean(p.ownerProfessionalUid) &&
+        input.activeNutritionistUids.has(p.ownerProfessionalUid as string),
+    )?.hydrationGoalMl ?? null;
 
   const selfManagedPlanGoal =
     plans.find((p) => p.sourceKind === 'self_managed')?.hydrationGoalMl ??
-    plans.find((p) => p.sourceKind === 'predefined' && p.ownerProfessionalUid === input.currentUserUid)
-      ?.hydrationGoalMl ??
+    plans.find(
+      (p) => p.sourceKind === 'predefined' && p.ownerProfessionalUid === input.currentUserUid,
+    )?.hydrationGoalMl ??
     null;
 
   if (assignedPlanGoal !== null) {
@@ -105,10 +109,7 @@ export function resolvePlanHydrationGoalContext(input: {
 
 // ─── Day status ───────────────────────────────────────────────────────────────
 
-export function resolveWaterDayStatus(
-  consumedMl: number,
-  goalMl: number
-): WaterDayStatus {
+export function resolveWaterDayStatus(consumedMl: number, goalMl: number): WaterDayStatus {
   if (consumedMl >= goalMl) return 'goal_met';
   if (consumedMl > 0) return 'on_track';
   return 'below_goal';
@@ -128,7 +129,7 @@ export function resolveWaterDayStatus(
 export function calculateWaterStreak(
   logs: { dateKey: string; totalMl: number }[],
   goalMl: number,
-  todayKey: string
+  todayKey: string,
 ): number {
   if (goalMl <= 0) return 0;
 
@@ -195,7 +196,8 @@ export function validateWaterIntakeInput(input: WaterIntakeInput): WaterIntakeVa
 export function normalizeWaterTrackingError(error: unknown): WaterTrackingActionErrorReason {
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code: unknown }).code) : null;
-    const msg = 'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
+    const msg =
+      'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
 
     if (code === 'INVALID_AMOUNT' || msg?.includes('invalid amount')) return 'invalid_amount';
     if (code === 'NETWORK_ERROR' || msg?.includes('network')) return 'network';

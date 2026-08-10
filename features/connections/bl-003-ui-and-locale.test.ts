@@ -109,7 +109,7 @@ test('BL-003 Locale: pending state maps to relationship.pending.helper key', () 
   const expectedLocaleKey = 'relationship.pending.helper';
   assert.ok(
     expectedLocaleKey === 'relationship.pending.helper',
-    'pending state uses different key than canceled'
+    'pending state uses different key than canceled',
   );
 });
 

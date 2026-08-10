@@ -31,85 +31,108 @@ type FoodItemRowProps = {
   testID?: string;
 };
 
-export const FoodItemRow = React.memo(({
-  name,
-  quantity,
-  notes,
-  calories,
-  carbs,
-  proteins,
-  fats,
-  palette,
-  theme,
-  isLast,
-  onRemove,
-  isSortMode,
-  onMoveUp,
-  onMoveDown,
-  isFirstInList,
-  isLastInList,
-  isInteractionLocked,
-  t,
-  testID,
-}: FoodItemRowProps) => {
-  return (
-    <View
-      style={[styles.itemRow, !isLast && { borderBottomWidth: 1, borderBottomColor: theme.color.border }]}
-      testID={testID}
-    >
-      {isSortMode && (
-        <View style={styles.sortControls}>
-          <Pressable onPress={onMoveUp} disabled={isInteractionLocked || isFirstInList}>
-            <IconSymbol name="chevron.up" size={16} color={isFirstInList ? theme.color.textSecondary : palette.tint} />
-          </Pressable>
-          <Pressable onPress={onMoveDown} disabled={isInteractionLocked || isLastInList}>
-            <IconSymbol name="chevron.down" size={16} color={isLastInList ? theme.color.textSecondary : palette.tint} />
-          </Pressable>
-        </View>
-      )}
-      <View style={styles.itemInfo}>
-        <Text style={[styles.itemName, { color: palette.text }]}>{name}</Text>
-        
-        {/* Only show metadata if at least one value exists or if there's no note (to show dash) */}
-        {(quantity || calories != null || carbs || proteins || fats || !notes) && (
-          <View style={styles.itemMetaWrap}>
-            {(quantity || calories != null || (!carbs && !proteins && !fats && !notes)) && (
-              <Text style={[styles.itemMeta, { color: palette.icon }]}>
-                {quantity ? `${quantity}g` : (calories == null ? '-' : '')}
-                {quantity && calories != null ? ' • ' : ''}
-                {calories != null ? `${calories} kcal` : ''}
-              </Text>
-            )}
-            {(carbs || proteins || fats) ? (
-              <Text style={[styles.itemMeta, { color: palette.icon, marginTop: 2 }]}>
-                {carbs ?? 0}g C • {proteins ?? 0}g P • {fats ?? 0}g {t('common.nutrition.fats_initial')}
-              </Text>
-            ) : null}
+export const FoodItemRow = React.memo(
+  ({
+    name,
+    quantity,
+    notes,
+    calories,
+    carbs,
+    proteins,
+    fats,
+    palette,
+    theme,
+    isLast,
+    onRemove,
+    isSortMode,
+    onMoveUp,
+    onMoveDown,
+    isFirstInList,
+    isLastInList,
+    isInteractionLocked,
+    t,
+    testID,
+  }: FoodItemRowProps) => {
+    return (
+      <View
+        style={[
+          styles.itemRow,
+          !isLast && { borderBottomWidth: 1, borderBottomColor: theme.color.border },
+        ]}
+        testID={testID}
+      >
+        {isSortMode && (
+          <View style={styles.sortControls}>
+            <Pressable onPress={onMoveUp} disabled={isInteractionLocked || isFirstInList}>
+              <IconSymbol
+                name="chevron.up"
+                size={16}
+                color={isFirstInList ? theme.color.textSecondary : palette.tint}
+              />
+            </Pressable>
+            <Pressable onPress={onMoveDown} disabled={isInteractionLocked || isLastInList}>
+              <IconSymbol
+                name="chevron.down"
+                size={16}
+                color={isLastInList ? theme.color.textSecondary : palette.tint}
+              />
+            </Pressable>
           </View>
         )}
+        <View style={styles.itemInfo}>
+          <Text style={[styles.itemName, { color: palette.text }]}>{name}</Text>
 
-        {notes ? (
-          <Text style={[styles.itemMeta, { color: palette.icon, marginTop: (quantity || calories != null || carbs || proteins || fats) ? 4 : 2 }]}>
-            {(quantity || calories != null || carbs || proteins || fats) ? '• ' : ''}{notes}
-          </Text>
-        ) : null}
+          {/* Only show metadata if at least one value exists or if there's no note (to show dash) */}
+          {(quantity || calories != null || carbs || proteins || fats || !notes) && (
+            <View style={styles.itemMetaWrap}>
+              {(quantity || calories != null || (!carbs && !proteins && !fats && !notes)) && (
+                <Text style={[styles.itemMeta, { color: palette.icon }]}>
+                  {quantity ? `${quantity}g` : calories == null ? '-' : ''}
+                  {quantity && calories != null ? ' • ' : ''}
+                  {calories != null ? `${calories} kcal` : ''}
+                </Text>
+              )}
+              {carbs || proteins || fats ? (
+                <Text style={[styles.itemMeta, { color: palette.icon, marginTop: 2 }]}>
+                  {carbs ?? 0}g C • {proteins ?? 0}g P • {fats ?? 0}g{' '}
+                  {t('common.nutrition.fats_initial')}
+                </Text>
+              ) : null}
+            </View>
+          )}
+
+          {notes ? (
+            <Text
+              style={[
+                styles.itemMeta,
+                {
+                  color: palette.icon,
+                  marginTop: quantity || calories != null || carbs || proteins || fats ? 4 : 2,
+                },
+              ]}
+            >
+              {quantity || calories != null || carbs || proteins || fats ? '• ' : ''}
+              {notes}
+            </Text>
+          ) : null}
+        </View>
+        {!isSortMode && (
+          <Pressable
+            onPress={onRemove}
+            disabled={isInteractionLocked}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${name}`}
+            hitSlop={8}
+            style={styles.removeBtnWrapper}
+            testID={testID ? `${testID}.remove` : undefined}
+          >
+            <IconSymbol name="minus.circle" size={20} color={palette.icon} />
+          </Pressable>
+        )}
       </View>
-      {!isSortMode && (
-        <Pressable
-          onPress={onRemove}
-          disabled={isInteractionLocked}
-          accessibilityRole="button"
-          accessibilityLabel={`Remove ${name}`}
-          hitSlop={8}
-          style={styles.removeBtnWrapper}
-          testID={testID ? `${testID}.remove` : undefined}
-        >
-          <IconSymbol name="minus.circle" size={20} color={palette.icon} />
-        </Pressable>
-      )}
-    </View>
-  );
-});
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   itemRow: {
@@ -127,9 +150,9 @@ const styles = StyleSheet.create({
   itemName: { ...DsTypography.body, fontWeight: '600' },
   itemMetaWrap: { flexDirection: 'column' },
   itemMeta: { ...DsTypography.caption },
-  removeBtnWrapper: { 
-    padding: DsSpace.xs, 
-    justifyContent: 'center', 
+  removeBtnWrapper: {
+    padding: DsSpace.xs,
+    justifyContent: 'center',
     alignItems: 'center',
   },
 });

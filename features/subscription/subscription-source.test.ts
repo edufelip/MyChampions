@@ -89,7 +89,7 @@ describe('resolveRevenueCatApiKey', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 
@@ -100,7 +100,7 @@ describe('resolveRevenueCatApiKey', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 
@@ -133,7 +133,7 @@ describe('resolveRevenueCatApiKey', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
 
     assert.throws(
@@ -147,7 +147,7 @@ describe('resolveRevenueCatApiKey', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 
@@ -163,7 +163,7 @@ describe('resolveRevenueCatApiKey', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 
@@ -174,7 +174,7 @@ describe('resolveRevenueCatApiKey', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 
@@ -185,7 +185,7 @@ describe('resolveRevenueCatApiKey', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 
@@ -196,7 +196,7 @@ describe('resolveRevenueCatApiKey', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 });
@@ -239,7 +239,9 @@ describe('mapCustomerInfoToEntitlementStatus', () => {
   it('returns unknown on unexpected shape throw', () => {
     // Simulate a getter that throws on access
     const info = Object.defineProperty({}, 'entitlements', {
-      get() { throw new Error('boom'); },
+      get() {
+        throw new Error('boom');
+      },
     }) as RawCustomerInfo;
     const result = mapCustomerInfoToEntitlementStatus(info);
     assert.equal(result, 'unknown');
@@ -272,7 +274,7 @@ describe('mapCustomerInfoToProfessionalEntitlementMetadata', () => {
           },
         },
       }),
-      { expiresAt: '2026-08-03T16:45:00.000Z', renewalRisk: false }
+      { expiresAt: '2026-08-03T16:45:00.000Z', renewalRisk: false },
     );
   });
 
@@ -294,7 +296,7 @@ describe('mapCustomerInfoToProfessionalEntitlementMetadata', () => {
             },
           },
         }).renewalRisk,
-        true
+        true,
       );
     }
   });
@@ -364,7 +366,10 @@ describe('normalizeSubscriptionError', () => {
   });
 
   it('returns purchase_cancelled for message containing cancelled', () => {
-    assert.equal(normalizeSubscriptionError({ message: 'User cancelled the purchase' }), 'purchase_cancelled');
+    assert.equal(
+      normalizeSubscriptionError({ message: 'User cancelled the purchase' }),
+      'purchase_cancelled',
+    );
   });
 
   it('returns configuration for invalid_api_key code', () => {
@@ -372,7 +377,10 @@ describe('normalizeSubscriptionError', () => {
   });
 
   it('returns configuration for message containing api key', () => {
-    assert.equal(normalizeSubscriptionError({ message: 'invalid api key provided' }), 'configuration');
+    assert.equal(
+      normalizeSubscriptionError({ message: 'invalid api key provided' }),
+      'configuration',
+    );
   });
 
   it('returns network for network_error code', () => {
@@ -388,7 +396,10 @@ describe('normalizeSubscriptionError', () => {
   });
 
   it('returns store_problem for message containing store', () => {
-    assert.equal(normalizeSubscriptionError({ message: 'app store error occurred' }), 'store_problem');
+    assert.equal(
+      normalizeSubscriptionError({ message: 'app store error occurred' }),
+      'store_problem',
+    );
   });
 
   it('returns unauthenticated for unauthorized code', () => {
@@ -406,7 +417,9 @@ describe('configureRevenueCat', () => {
   it('calls configure with the API key and self-managed auth UID', () => {
     const calls: { apiKey: string; appUserId: string | undefined }[] = [];
     const deps = makeDeps({
-      configure: (apiKey, appUserId) => { calls.push({ apiKey, appUserId }); },
+      configure: (apiKey, appUserId) => {
+        calls.push({ apiKey, appUserId });
+      },
       getApiKey: () => 'appl_live_test',
     });
     configureRevenueCat(deps, 'server-user-42');
@@ -416,7 +429,9 @@ describe('configureRevenueCat', () => {
   it('rejects a blank auth UID before configuring RevenueCat', () => {
     const calls: string[] = [];
     const deps = makeDeps({
-      configure: () => { calls.push('configured'); },
+      configure: () => {
+        calls.push('configured');
+      },
     });
 
     assert.throws(
@@ -425,14 +440,16 @@ describe('configureRevenueCat', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
     assert.deepEqual(calls, []);
   });
 
   it('throws configuration error when getApiKey throws', () => {
     const deps = makeDeps({
-      getApiKey: () => { throw new SubscriptionSourceError('configuration', 'No key'); },
+      getApiKey: () => {
+        throw new SubscriptionSourceError('configuration', 'No key');
+      },
     });
     assert.throws(
       () => configureRevenueCat(deps, 'server-user-42'),
@@ -440,7 +457,7 @@ describe('configureRevenueCat', () => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 });
@@ -448,11 +465,7 @@ describe('configureRevenueCat', () => {
 // ─── RevenueCat identity coordination ─────────────────────────────────────────
 
 type RevenueCatIdentityCoordinator = {
-  run<T>(
-    deps: SubscriptionSourceDeps,
-    appUserId: string,
-    operation: () => Promise<T>
-  ): Promise<T>;
+  run<T>(deps: SubscriptionSourceDeps, appUserId: string, operation: () => Promise<T>): Promise<T>;
 };
 
 async function createRevenueCatIdentityCoordinator(): Promise<RevenueCatIdentityCoordinator> {
@@ -463,9 +476,11 @@ async function createRevenueCatIdentityCoordinator(): Promise<RevenueCatIdentity
   assert.equal(
     typeof sourceModule.createRevenueCatIdentityCoordinator,
     'function',
-    'subscription source must expose an identity coordinator for the singleton RevenueCat SDK'
+    'subscription source must expose an identity coordinator for the singleton RevenueCat SDK',
   );
-  return (sourceModule.createRevenueCatIdentityCoordinator as () => RevenueCatIdentityCoordinator)();
+  return (
+    sourceModule.createRevenueCatIdentityCoordinator as () => RevenueCatIdentityCoordinator
+  )();
 }
 
 describe('RevenueCat identity coordinator', () => {
@@ -483,7 +498,9 @@ describe('RevenueCat identity coordinator', () => {
       releaseSecondLogin = resolve;
     });
     const deps = makeDeps({
-      configure: (apiKey, appUserId) => { calls.push(`configure:${apiKey}:${appUserId}`); },
+      configure: (apiKey, appUserId) => {
+        calls.push(`configure:${apiKey}:${appUserId}`);
+      },
       logIn: async (appUserId) => {
         calls.push(`login:${appUserId}`);
         signalLoginStarted?.();
@@ -521,7 +538,9 @@ describe('RevenueCat identity coordinator', () => {
     const coordinator = await createRevenueCatIdentityCoordinator();
     let secondUserLoginAttempts = 0;
     const deps = makeDeps({
-      configure: (apiKey, appUserId) => { calls.push(`configure:${apiKey}:${appUserId}`); },
+      configure: (apiKey, appUserId) => {
+        calls.push(`configure:${apiKey}:${appUserId}`);
+      },
       logIn: async (appUserId) => {
         calls.push(`login:${appUserId}`);
         if (appUserId === 'server-user-b' && secondUserLoginAttempts++ === 0) {
@@ -535,14 +554,15 @@ describe('RevenueCat identity coordinator', () => {
       calls.push('operation:server-user-a');
     });
     await assert.rejects(
-      () => coordinator.run(deps, 'server-user-b', async () => {
-        calls.push('operation:unexpected');
-      }),
+      () =>
+        coordinator.run(deps, 'server-user-b', async () => {
+          calls.push('operation:unexpected');
+        }),
       (err: unknown) => {
         assert.ok(err instanceof SubscriptionSourceError);
         assert.equal(err.code, 'network');
         return true;
-      }
+      },
     );
     await coordinator.run(deps, 'server-user-b', async () => {
       calls.push('operation:server-user-b');
@@ -575,44 +595,41 @@ describe('fetchEntitlementStatus', () => {
 
   it('throws SubscriptionSourceError with network reason on SDK network failure', async () => {
     const deps = makeDeps({
-      getCustomerInfo: async () => { throw new Error('network request failed'); },
+      getCustomerInfo: async () => {
+        throw new Error('network request failed');
+      },
     });
-    await assert.rejects(
-      fetchEntitlementStatus(deps),
-      (err: unknown) => {
-        assert.ok(err instanceof SubscriptionSourceError);
-        assert.equal(err.code, 'network');
-        return true;
-      }
-    );
+    await assert.rejects(fetchEntitlementStatus(deps), (err: unknown) => {
+      assert.ok(err instanceof SubscriptionSourceError);
+      assert.equal(err.code, 'network');
+      return true;
+    });
   });
 
   it('passes through SubscriptionSourceError thrown by SDK', async () => {
     const original = new SubscriptionSourceError('unauthenticated', 'auth failed');
     const deps = makeDeps({
-      getCustomerInfo: async () => { throw original; },
+      getCustomerInfo: async () => {
+        throw original;
+      },
     });
-    await assert.rejects(
-      fetchEntitlementStatus(deps),
-      (err: unknown) => {
-        assert.ok(err === original);
-        return true;
-      }
-    );
+    await assert.rejects(fetchEntitlementStatus(deps), (err: unknown) => {
+      assert.ok(err === original);
+      return true;
+    });
   });
 
   it('throws unknown for unrecognized error shapes', async () => {
     const deps = makeDeps({
-      getCustomerInfo: async () => { throw { weirdProp: true }; },
+      getCustomerInfo: async () => {
+        throw { weirdProp: true };
+      },
     });
-    await assert.rejects(
-      fetchEntitlementStatus(deps),
-      (err: unknown) => {
-        assert.ok(err instanceof SubscriptionSourceError);
-        assert.equal(err.code, 'unknown');
-        return true;
-      }
-    );
+    await assert.rejects(fetchEntitlementStatus(deps), (err: unknown) => {
+      assert.ok(err instanceof SubscriptionSourceError);
+      assert.equal(err.code, 'unknown');
+      return true;
+    });
   });
 });
 
@@ -637,44 +654,41 @@ describe('purchasePackage', () => {
 
   it('throws purchase_cancelled when user cancels', async () => {
     const deps = makeDeps({
-      purchasePackage: async () => { throw { userCancelled: true }; },
+      purchasePackage: async () => {
+        throw { userCancelled: true };
+      },
     });
-    await assert.rejects(
-      purchasePackage({}, deps),
-      (err: unknown) => {
-        assert.ok(err instanceof SubscriptionSourceError);
-        assert.equal(err.code, 'purchase_cancelled');
-        return true;
-      }
-    );
+    await assert.rejects(purchasePackage({}, deps), (err: unknown) => {
+      assert.ok(err instanceof SubscriptionSourceError);
+      assert.equal(err.code, 'purchase_cancelled');
+      return true;
+    });
   });
 
   it('throws store_problem on store error', async () => {
     const deps = makeDeps({
-      purchasePackage: async () => { throw { code: 'store_problem', message: 'store error' }; },
+      purchasePackage: async () => {
+        throw { code: 'store_problem', message: 'store error' };
+      },
     });
-    await assert.rejects(
-      purchasePackage({}, deps),
-      (err: unknown) => {
-        assert.ok(err instanceof SubscriptionSourceError);
-        assert.equal(err.code, 'store_problem');
-        return true;
-      }
-    );
+    await assert.rejects(purchasePackage({}, deps), (err: unknown) => {
+      assert.ok(err instanceof SubscriptionSourceError);
+      assert.equal(err.code, 'store_problem');
+      return true;
+    });
   });
 
   it('passes through SubscriptionSourceError directly', async () => {
     const original = new SubscriptionSourceError('network', 'purchase network fail');
     const deps = makeDeps({
-      purchasePackage: async () => { throw original; },
+      purchasePackage: async () => {
+        throw original;
+      },
     });
-    await assert.rejects(
-      purchasePackage({}, deps),
-      (err: unknown) => {
-        assert.ok(err === original);
-        return true;
-      }
-    );
+    await assert.rejects(purchasePackage({}, deps), (err: unknown) => {
+      assert.ok(err === original);
+      return true;
+    });
   });
 });
 
@@ -695,30 +709,28 @@ describe('restorePurchases', () => {
 
   it('throws network error on restore network failure', async () => {
     const deps = makeDeps({
-      restorePurchases: async () => { throw new Error('request timed out'); },
+      restorePurchases: async () => {
+        throw new Error('request timed out');
+      },
     });
-    await assert.rejects(
-      restorePurchases(deps),
-      (err: unknown) => {
-        assert.ok(err instanceof SubscriptionSourceError);
-        assert.equal(err.code, 'network');
-        return true;
-      }
-    );
+    await assert.rejects(restorePurchases(deps), (err: unknown) => {
+      assert.ok(err instanceof SubscriptionSourceError);
+      assert.equal(err.code, 'network');
+      return true;
+    });
   });
 
   it('passes through SubscriptionSourceError directly', async () => {
     const original = new SubscriptionSourceError('store_problem', 'store failure');
     const deps = makeDeps({
-      restorePurchases: async () => { throw original; },
+      restorePurchases: async () => {
+        throw original;
+      },
     });
-    await assert.rejects(
-      restorePurchases(deps),
-      (err: unknown) => {
-        assert.ok(err === original);
-        return true;
-      }
-    );
+    await assert.rejects(restorePurchases(deps), (err: unknown) => {
+      assert.ok(err === original);
+      return true;
+    });
   });
 });
 
@@ -786,7 +798,10 @@ describe('presentAiPaywall', () => {
   it('calls deps.presentPaywall with AI_OFFERING_ID (default_student) offering identifier', async () => {
     let calledWith: string | undefined;
     const deps = makeDeps({
-      presentPaywall: async (id) => { calledWith = id; return 'CANCELLED'; },
+      presentPaywall: async (id) => {
+        calledWith = id;
+        return 'CANCELLED';
+      },
     });
     const result = await presentAiPaywall(deps);
     assert.equal(calledWith, AI_OFFERING_ID);
@@ -796,7 +811,10 @@ describe('presentAiPaywall', () => {
   it('presents the guarded temporary student offering when explicitly supplied', async () => {
     let calledWith: string | undefined;
     const deps = makeDeps({
-      presentPaywall: async (id) => { calledWith = id; return 'NOT_PRESENTED'; },
+      presentPaywall: async (id) => {
+        calledWith = id;
+        return 'NOT_PRESENTED';
+      },
     });
 
     const result = await presentAiPaywall(deps, AI_TEST_OFFERING_ID);
@@ -807,29 +825,27 @@ describe('presentAiPaywall', () => {
 
   it('propagates network-like errors as SubscriptionSourceError', async () => {
     const deps = makeDeps({
-      presentPaywall: async () => { throw new Error('network failure'); },
+      presentPaywall: async () => {
+        throw new Error('network failure');
+      },
     });
-    await assert.rejects(
-      presentAiPaywall(deps),
-      (err: unknown) => {
-        assert.ok(err instanceof SubscriptionSourceError);
-        return true;
-      }
-    );
+    await assert.rejects(presentAiPaywall(deps), (err: unknown) => {
+      assert.ok(err instanceof SubscriptionSourceError);
+      return true;
+    });
   });
 
   it('passes through SubscriptionSourceError directly', async () => {
     const original = new SubscriptionSourceError('store_problem', 'store failure');
     const deps = makeDeps({
-      presentPaywall: async () => { throw original; },
+      presentPaywall: async () => {
+        throw original;
+      },
     });
-    await assert.rejects(
-      presentAiPaywall(deps),
-      (err: unknown) => {
-        assert.ok(err === original);
-        return true;
-      }
-    );
+    await assert.rejects(presentAiPaywall(deps), (err: unknown) => {
+      assert.ok(err === original);
+      return true;
+    });
   });
 });
 
@@ -847,7 +863,7 @@ describe('resolveStudentOfferingId', () => {
         revenueCatStudentOfferingId: 'default_student',
         revenueCatTestStoreEnabled: false,
       }),
-      AI_OFFERING_ID
+      AI_OFFERING_ID,
     );
   });
 
@@ -858,7 +874,7 @@ describe('resolveStudentOfferingId', () => {
         revenueCatStudentOfferingId: 'test_student',
         revenueCatTestStoreEnabled: true,
       }),
-      AI_TEST_OFFERING_ID
+      AI_TEST_OFFERING_ID,
     );
   });
 
@@ -870,16 +886,14 @@ describe('resolveStudentOfferingId', () => {
           revenueCatStudentOfferingId: 'test_student',
           revenueCatTestStoreEnabled: true,
         }),
-      (err: unknown) =>
-        err instanceof SubscriptionSourceError && err.code === 'configuration'
+      (err: unknown) => err instanceof SubscriptionSourceError && err.code === 'configuration',
     );
   });
 
   it('rejects malformed offering configuration', () => {
     assert.throws(
       () => resolveStudentOfferingId({ revenueCatStudentOfferingId: 'student_preview' }),
-      (err: unknown) =>
-        err instanceof SubscriptionSourceError && err.code === 'configuration'
+      (err: unknown) => err instanceof SubscriptionSourceError && err.code === 'configuration',
     );
   });
 });
@@ -896,7 +910,7 @@ describe('resolveProfessionalOfferingId', () => {
         revenueCatProfessionalOfferingId: 'default_professional',
         revenueCatTestStoreEnabled: false,
       }),
-      PRO_OFFERING_ID
+      PRO_OFFERING_ID,
     );
   });
 
@@ -907,7 +921,7 @@ describe('resolveProfessionalOfferingId', () => {
         revenueCatProfessionalOfferingId: 'test_professional',
         revenueCatTestStoreEnabled: true,
       }),
-      PRO_TEST_OFFERING_ID
+      PRO_TEST_OFFERING_ID,
     );
   });
 
@@ -919,8 +933,7 @@ describe('resolveProfessionalOfferingId', () => {
           revenueCatProfessionalOfferingId: 'test_professional',
           revenueCatTestStoreEnabled: true,
         }),
-      (err: unknown) =>
-        err instanceof SubscriptionSourceError && err.code === 'configuration'
+      (err: unknown) => err instanceof SubscriptionSourceError && err.code === 'configuration',
     );
   });
 
@@ -930,8 +943,7 @@ describe('resolveProfessionalOfferingId', () => {
         resolveProfessionalOfferingId({
           revenueCatProfessionalOfferingId: 'professional_preview',
         }),
-      (err: unknown) =>
-        err instanceof SubscriptionSourceError && err.code === 'configuration'
+      (err: unknown) => err instanceof SubscriptionSourceError && err.code === 'configuration',
     );
   });
 });
@@ -940,7 +952,7 @@ describe('resolveAiUpgradeOfferingId', () => {
   it('routes students to the resolved student offering', () => {
     assert.equal(
       resolveAiUpgradeOfferingId('student', () => AI_TEST_OFFERING_ID),
-      AI_TEST_OFFERING_ID
+      AI_TEST_OFFERING_ID,
     );
   });
 
@@ -951,16 +963,19 @@ describe('resolveAiUpgradeOfferingId', () => {
         studentResolutionCount += 1;
         throw new Error('malformed student configuration');
       }),
-      PRO_OFFERING_ID
+      PRO_OFFERING_ID,
     );
     assert.equal(studentResolutionCount, 0);
   });
 
   it('fails closed for missing or malformed roles', () => {
-    assert.equal(resolveAiUpgradeOfferingId(null, () => AI_OFFERING_ID), null);
+    assert.equal(
+      resolveAiUpgradeOfferingId(null, () => AI_OFFERING_ID),
+      null,
+    );
     assert.equal(
       resolveAiUpgradeOfferingId('coach' as never, () => AI_OFFERING_ID),
-      null
+      null,
     );
   });
 });
@@ -975,9 +990,9 @@ describe('resolveRequiredRevenueCatOffering', () => {
           [AI_OFFERING_ID]: studentOffering,
           [PRO_OFFERING_ID]: { identifier: PRO_OFFERING_ID },
         },
-        AI_OFFERING_ID
+        AI_OFFERING_ID,
       ),
-      studentOffering
+      studentOffering,
     );
   });
 
@@ -988,12 +1003,12 @@ describe('resolveRequiredRevenueCatOffering', () => {
           {
             [PRO_OFFERING_ID]: { identifier: PRO_OFFERING_ID },
           },
-          AI_OFFERING_ID
+          AI_OFFERING_ID,
         ),
       (err: unknown) =>
         err instanceof SubscriptionSourceError &&
         err.code === 'configuration' &&
-        err.message.includes(AI_OFFERING_ID)
+        err.message.includes(AI_OFFERING_ID),
     );
   });
 });
@@ -1009,7 +1024,10 @@ describe('presentProPaywall', () => {
   it('calls deps.presentPaywall with PRO_OFFERING_ID (default_professional) offering identifier', async () => {
     let calledWith: string | undefined | 'NOT_CALLED' = 'NOT_CALLED';
     const deps = makeDeps({
-      presentPaywall: async (id) => { calledWith = id; return 'ERROR'; },
+      presentPaywall: async (id) => {
+        calledWith = id;
+        return 'ERROR';
+      },
     });
     const result = await presentProPaywall(deps);
     assert.equal(calledWith, PRO_OFFERING_ID);
@@ -1019,7 +1037,10 @@ describe('presentProPaywall', () => {
   it('calls deps.presentPaywall with the explicit Test Store offering when supplied', async () => {
     let calledWith: string | undefined | 'NOT_CALLED' = 'NOT_CALLED';
     const deps = makeDeps({
-      presentPaywall: async (id) => { calledWith = id; return 'CANCELLED'; },
+      presentPaywall: async (id) => {
+        calledWith = id;
+        return 'CANCELLED';
+      },
     });
     const result = await presentProPaywall(deps, PRO_TEST_OFFERING_ID);
     assert.equal(calledWith, PRO_TEST_OFFERING_ID);
@@ -1028,28 +1049,26 @@ describe('presentProPaywall', () => {
 
   it('propagates network-like errors as SubscriptionSourceError', async () => {
     const deps = makeDeps({
-      presentPaywall: async () => { throw new Error('network failure'); },
+      presentPaywall: async () => {
+        throw new Error('network failure');
+      },
     });
-    await assert.rejects(
-      presentProPaywall(deps),
-      (err: unknown) => {
-        assert.ok(err instanceof SubscriptionSourceError);
-        return true;
-      }
-    );
+    await assert.rejects(presentProPaywall(deps), (err: unknown) => {
+      assert.ok(err instanceof SubscriptionSourceError);
+      return true;
+    });
   });
 
   it('passes through SubscriptionSourceError directly', async () => {
     const original = new SubscriptionSourceError('store_problem', 'store failure');
     const deps = makeDeps({
-      presentPaywall: async () => { throw original; },
+      presentPaywall: async () => {
+        throw original;
+      },
     });
-    await assert.rejects(
-      presentProPaywall(deps),
-      (err: unknown) => {
-        assert.ok(err === original);
-        return true;
-      }
-    );
+    await assert.rejects(presentProPaywall(deps), (err: unknown) => {
+      assert.ok(err === original);
+      return true;
+    });
   });
 });

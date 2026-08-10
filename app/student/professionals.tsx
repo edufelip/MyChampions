@@ -122,7 +122,7 @@ export default function StudentProfessionalsScreen() {
       const messageKey = mapInviteSubmitReasonToMessageKey(errorReason);
       setSubmitError(t(messageKey as Parameters<typeof t>[0]));
     },
-    [emitEvent, submitCode, t]
+    [emitEvent, submitCode, t],
   );
 
   const onScanQr = useCallback(async () => {
@@ -145,7 +145,7 @@ export default function StudentProfessionalsScreen() {
       setIsQrModalOpen(false);
       void onSubmitCode(code, 'qr');
     },
-    [onSubmitCode]
+    [onSubmitCode],
   );
 
   const onUnbind = (connectionId: string) => {
@@ -177,7 +177,12 @@ export default function StudentProfessionalsScreen() {
 
   return (
     <>
-      <DsScreen scheme={scheme} contentWidth="content" testID="student.professionals.screen" contentContainerStyle={styles.content}>
+      <DsScreen
+        scheme={scheme}
+        contentWidth="content"
+        testID="student.professionals.screen"
+        contentContainerStyle={styles.content}
+      >
         <Stack.Screen options={{ title: t('relationship.title'), headerShown: false }} />
 
         <DsBackButton
@@ -195,7 +200,9 @@ export default function StudentProfessionalsScreen() {
           testID="student.professionals.backButton"
         />
 
-        <Text style={[styles.intro, { color: theme.color.textPrimary }]}>{t('relationship.intro')}</Text>
+        <Text style={[styles.intro, { color: theme.color.textPrimary }]}>
+          {t('relationship.intro')}
+        </Text>
         <Text style={[styles.helper, { color: theme.color.textSecondary }]}>
           {t('relationship.helper_self_guided')}
         </Text>
@@ -250,13 +257,19 @@ export default function StudentProfessionalsScreen() {
           onPress={() => {
             void onScanQr();
           }}
-          testID="student.professionals.scanQrButton">
-          <Text style={[styles.link, { color: theme.color.accentPrimary }]}>{t('relationship.cta_scan_qr')}</Text>
+          testID="student.professionals.scanQrButton"
+        >
+          <Text style={[styles.link, { color: theme.color.accentPrimary }]}>
+            {t('relationship.cta_scan_qr')}
+          </Text>
         </Pressable>
 
         <View accessibilityLiveRegion="polite">
           {submitError ? (
-            <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="student.professionals.submitError">
+            <Text
+              style={[styles.inlineError, { color: theme.color.danger }]}
+              testID="student.professionals.submitError"
+            >
               {submitError}
             </Text>
           ) : null}
@@ -274,8 +287,14 @@ export default function StudentProfessionalsScreen() {
             <Text style={[styles.errorText, { color: theme.color.textPrimary }]}>
               {t('common.error.generic')}
             </Text>
-            <Pressable accessibilityRole="button" onPress={reload} testID="student.professionals.retryButton">
-              <Text style={[styles.link, { color: theme.color.accentPrimary }]}>{t('common.error.retry')}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={reload}
+              testID="student.professionals.retryButton"
+            >
+              <Text style={[styles.link, { color: theme.color.accentPrimary }]}>
+                {t('common.error.retry')}
+              </Text>
             </Pressable>
           </View>
         ) : state.kind === 'ready' ? (
@@ -380,7 +399,7 @@ function QrScannerModal({
         scannedRef.current = false;
       }
     },
-    [onCodeScanned, t]
+    [onCodeScanned, t],
   );
 
   useEffect(() => {
@@ -401,7 +420,8 @@ function QrScannerModal({
       onRequestClose={handleClose}
       transparent={false}
       visible
-      testID="student.professionals.qrModal">
+      testID="student.professionals.qrModal"
+    >
       <SafeAreaView style={styles.qrContainer}>
         {e2eQrInvitePayload ? null : (
           <CameraView
@@ -425,10 +445,12 @@ function QrScannerModal({
               accessibilityLabel={t('relationship.cta_scan_qr') as string}
               onPress={() => handleBarCodeScanned({ data: e2eQrInvitePayload })}
               style={[styles.qrE2EButton, { backgroundColor: theme.color.accentPrimary }]}
-              testID="student.professionals.qrE2EScanButton">
+              testID="student.professionals.qrE2EScanButton"
+            >
               <Text
                 style={[styles.qrE2EText, { color: theme.color.surface }]}
-                testID="student.professionals.qrE2EScanButton.label">
+                testID="student.professionals.qrE2EScanButton.label"
+              >
                 {t('relationship.cta_scan_qr')}
               </Text>
             </Pressable>
@@ -440,7 +462,8 @@ function QrScannerModal({
             accessibilityRole="button"
             onPress={handleClose}
             style={[styles.qrCloseButton, { backgroundColor: theme.color.surface }]}
-            testID="student.professionals.qrCloseButton">
+            testID="student.professionals.qrCloseButton"
+          >
             <Text style={[styles.qrCloseText, { color: theme.color.textPrimary }]}>
               {t('relationship.qr.close')}
             </Text>
@@ -486,7 +509,8 @@ function UnbindConfirmationPanel({
     <DsCard
       scheme={scheme}
       style={[styles.unbindPanel, { borderColor: theme.color.danger }]}
-      testID="student.professionals.unbindConfirm">
+      testID="student.professionals.unbindConfirm"
+    >
       <Text style={[styles.cardSpecialty, { color: theme.color.textPrimary }]}>
         {t('relationship.unbind.confirm_title')}
       </Text>
@@ -503,8 +527,12 @@ function UnbindConfirmationPanel({
           accessibilityRole="button"
           disabled={isSubmitting}
           onPress={onCancel}
-          style={[styles.unbindSecondaryButton, { borderColor: theme.color.border, opacity: isSubmitting ? 0.5 : 1 }]}
-          testID="student.professionals.unbindConfirm.cancel">
+          style={[
+            styles.unbindSecondaryButton,
+            { borderColor: theme.color.border, opacity: isSubmitting ? 0.5 : 1 },
+          ]}
+          testID="student.professionals.unbindConfirm.cancel"
+        >
           <Text style={[styles.unbindSecondaryText, { color: theme.color.textPrimary }]}>
             {t('relationship.unbind.confirm_no')}
           </Text>
@@ -513,8 +541,12 @@ function UnbindConfirmationPanel({
           accessibilityRole="button"
           disabled={isSubmitting}
           onPress={onConfirm}
-          style={[styles.unbindDangerButton, { backgroundColor: theme.color.danger, opacity: isSubmitting ? 0.5 : 1 }]}
-          testID="student.professionals.unbindConfirm.confirm">
+          style={[
+            styles.unbindDangerButton,
+            { backgroundColor: theme.color.danger, opacity: isSubmitting ? 0.5 : 1 },
+          ]}
+          testID="student.professionals.unbindConfirm.confirm"
+        >
           {isSubmitting ? (
             <ActivityIndicator color={theme.color.surface} />
           ) : (
@@ -546,40 +578,46 @@ function ConnectionCard({
     displayState.kind === 'active'
       ? theme.color.accentPrimary
       : displayState.kind === 'pending'
-      ? theme.color.textSecondary
-      : theme.color.danger;
+        ? theme.color.textSecondary
+        : theme.color.danger;
 
   return (
     <DsCard
       scheme={scheme}
       style={[styles.connectionCard, { borderColor, borderLeftColor: borderColor }]}
-      testID={`student.professionals.connectionCard.${testIndex}`}>
-      <Text style={[styles.cardSpecialty, { color: theme.color.textPrimary }]}> 
+      testID={`student.professionals.connectionCard.${testIndex}`}
+    >
+      <Text style={[styles.cardSpecialty, { color: theme.color.textPrimary }]}>
         {displayState.specialty === 'nutritionist' ? 'Nutritionist' : 'Fitness Coach'}
       </Text>
 
       {displayState.kind === 'pending' ? (
         <Text
           style={[styles.cardStatus, { color: theme.color.textSecondary }]}
-          testID={`student.professionals.connectionPending.${displayState.connectionId}`}>
+          testID={`student.professionals.connectionPending.${displayState.connectionId}`}
+        >
           {t('relationship.pending.helper')}
         </Text>
       ) : displayState.kind === 'canceled_code_rotated' ? (
-        <Text accessibilityRole="alert" style={[styles.cardStatus, { color: theme.color.danger }]}> 
+        <Text accessibilityRole="alert" style={[styles.cardStatus, { color: theme.color.danger }]}>
           {t('relationship.pending.canceled_code_rotated')}
         </Text>
       ) : displayState.kind === 'active' ? (
         <Pressable
           accessibilityRole="button"
           onPress={() => onUnbind(displayState.connectionId)}
-          testID={`student.professionals.unbindButton.${testIndex}`}>
-          <Text style={[styles.link, { color: theme.color.danger }]}>{t('relationship.unbind.cta')}</Text>
+          testID={`student.professionals.unbindButton.${testIndex}`}
+        >
+          <Text style={[styles.link, { color: theme.color.danger }]}>
+            {t('relationship.unbind.cta')}
+          </Text>
         </Pressable>
       ) : displayState.kind === 'ended' ? (
         <Text
           accessibilityRole="text"
           style={[styles.cardStatus, { color: theme.color.textSecondary }]}
-          testID={`student.professionals.connectionEnded.${testIndex}`}>
+          testID={`student.professionals.connectionEnded.${testIndex}`}
+        >
           {t('relationship.unbind.ended')}
         </Text>
       ) : null}

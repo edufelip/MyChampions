@@ -1,7 +1,4 @@
-export type SubscriptionPurchaseCapability =
-  | 'native_purchase'
-  | 'mobile_handoff'
-  | 'unavailable';
+export type SubscriptionPurchaseCapability = 'native_purchase' | 'mobile_handoff' | 'unavailable';
 
 export type SubscriptionRuntime = {
   purchaseCapability: SubscriptionPurchaseCapability;

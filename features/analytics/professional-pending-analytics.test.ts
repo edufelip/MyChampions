@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const pendingScreenSource = readFileSync(
   join(__dirname, '../../app/professional/pending.tsx'),
-  'utf8'
+  'utf8',
 );
 
 test('professional pending queue imports analytics builders and hook', () => {
@@ -18,17 +18,11 @@ test('professional pending queue imports analytics builders and hook', () => {
 test('professional pending queue emits analytics after successful accept and deny actions', () => {
   assert.match(
     pendingScreenSource,
-    /if \(!err\) \{\s*emitEvent\(buildInvitePendingConfirmed\(\)\);/s
+    /if \(!err\) \{\s*emitEvent\(buildInvitePendingConfirmed\(\)\);/s,
   );
-  assert.match(
-    pendingScreenSource,
-    /if \(!err\) \{\s*emitEvent\(buildInvitePendingDenied\(\)\);/s
-  );
+  assert.match(pendingScreenSource, /if \(!err\) \{\s*emitEvent\(buildInvitePendingDenied\(\)\);/s);
 });
 
 test('professional pending queue emits bulk deny analytics with selected count after successful bulk action', () => {
-  assert.match(
-    pendingScreenSource,
-    /emitEvent\(buildInvitePendingBulkDenied\(ids\.length\)\);/s
-  );
+  assert.match(pendingScreenSource, /emitEvent\(buildInvitePendingBulkDenied\(ids\.length\)\);/s);
 });

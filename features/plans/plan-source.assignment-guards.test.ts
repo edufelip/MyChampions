@@ -85,7 +85,7 @@ test('E2E auth source can load predefined plans and bulk assign through provider
           name: 'Strength Training Template',
           planType: 'training',
         },
-      ]
+      ],
     );
 
     assert.deepEqual(
@@ -94,7 +94,7 @@ test('E2E auth source can load predefined plans and bulk assign through provider
         'e2e-active-student',
         'e2e-dual-student',
       ]),
-      { assignedCount: 2 }
+      { assignedCount: 2 },
     );
   } finally {
     if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
@@ -106,7 +106,8 @@ test('E2E auth source can load predefined plans and bulk assign through provider
     if (previousPlansFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE = previousPlansFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -134,7 +135,8 @@ test('E2E auth source treats an omitted professional-plan fixture as an empty li
     if (previousPlansFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE = previousPlansFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -151,7 +153,10 @@ test('E2E auth source can create a draft assigned plan through provider-free pat
   (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
 
   try {
-    const result = await createDraftAssignedPlan('e2e-nutrition-predefined-plan', 'e2e-dual-student');
+    const result = await createDraftAssignedPlan(
+      'e2e-nutrition-predefined-plan',
+      'e2e-dual-student',
+    );
     assert.match(result.id, /^e2e-nutrition-predefined-plan-draft-\d+$/);
 
     const plans = await getMyPlans();
@@ -176,7 +181,7 @@ test('E2E auth source can create a draft assigned plan through provider-free pat
         studentUid: 'e2e-dual-student',
         isArchived: false,
         isDraft: true,
-      }
+      },
     );
     assert.deepEqual(
       {
@@ -194,12 +199,12 @@ test('E2E auth source can create a draft assigned plan through provider-free pat
         studentAuthUid: 'e2e-dual-student',
         isDraft: true,
         meals: [],
-      }
+      },
     );
 
     const trainingResult = await createDraftAssignedPlan(
       'e2e-training-predefined-plan',
-      'e2e-dual-student'
+      'e2e-dual-student',
     );
     assert.match(trainingResult.id, /^e2e-training-predefined-plan-draft-\d+$/);
 
@@ -220,12 +225,12 @@ test('E2E auth source can create a draft assigned plan through provider-free pat
         studentAuthUid: 'e2e-dual-student',
         isDraft: true,
         sessions: [],
-      }
+      },
     );
 
     await assert.rejects(
       () => getNutritionPlanDetail('e2e-unknown-assigned-plan'),
-      /Nutrition plan not found/
+      /Nutrition plan not found/,
     );
   } finally {
     if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
@@ -237,7 +242,8 @@ test('E2E auth source can create a draft assigned plan through provider-free pat
     if (previousPlansFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE = previousPlansFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -268,12 +274,12 @@ test('E2E auth source can review a deterministic plan change request through pro
           status: 'pending',
           requestText: 'Please add one more high-protein breakfast option.',
         },
-      ]
+      ],
     );
 
     assert.deepEqual(
       await reviewPlanChangeRequest('e2e-plan-change-request-nutrition', 'reviewed'),
-      { id: 'e2e-plan-change-request-nutrition', status: 'reviewed' }
+      { id: 'e2e-plan-change-request-nutrition', status: 'reviewed' },
     );
   } finally {
     if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
@@ -282,7 +288,8 @@ test('E2E auth source can review a deterministic plan change request through pro
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -301,7 +308,9 @@ test('E2E assigned nutrition fixture exposes an assigned plan and change request
   (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
 
   try {
-    const assignedPlan = (await getMyPlans()).find((plan) => plan.id === 'e2e-assigned-nutrition-plan');
+    const assignedPlan = (await getMyPlans()).find(
+      (plan) => plan.id === 'e2e-assigned-nutrition-plan',
+    );
     assert.deepEqual(
       assignedPlan && {
         id: assignedPlan.id,
@@ -316,13 +325,13 @@ test('E2E assigned nutrition fixture exposes an assigned plan and change request
         sourceKind: 'assigned',
         studentUid: 'e2e-auth-session-user',
         isDraft: false,
-      }
+      },
     );
 
     const request = await submitPlanChangeRequest(
       'e2e-assigned-nutrition-plan',
       'nutrition',
-      'Please add more breakfast variety this week.'
+      'Please add more breakfast variety this week.',
     );
     assert.deepEqual(
       {
@@ -338,7 +347,7 @@ test('E2E assigned nutrition fixture exposes an assigned plan and change request
         studentUid: 'e2e-auth-session-user',
         status: 'pending',
         requestText: 'Please add more breakfast variety this week.',
-      }
+      },
     );
   } finally {
     if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
@@ -350,10 +359,12 @@ test('E2E assigned nutrition fixture exposes an assigned plan and change request
     if (previousPlansFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE = previousPlansFixture;
 
-    if (previousStudentNutritionFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
+    if (previousStudentNutritionFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE = previousStudentNutritionFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
@@ -372,7 +383,9 @@ test('E2E assigned training fixture exposes an assigned plan and change request 
   (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
 
   try {
-    const assignedPlan = (await getMyPlans()).find((plan) => plan.id === 'e2e-assigned-training-plan');
+    const assignedPlan = (await getMyPlans()).find(
+      (plan) => plan.id === 'e2e-assigned-training-plan',
+    );
     assert.deepEqual(
       assignedPlan && {
         id: assignedPlan.id,
@@ -387,13 +400,13 @@ test('E2E assigned training fixture exposes an assigned plan and change request 
         sourceKind: 'assigned',
         studentUid: 'e2e-auth-session-user',
         isDraft: false,
-      }
+      },
     );
 
     const request = await submitPlanChangeRequest(
       'e2e-assigned-training-plan',
       'training',
-      'Please adjust leg day volume this week.'
+      'Please adjust leg day volume this week.',
     );
     assert.deepEqual(
       {
@@ -409,7 +422,7 @@ test('E2E assigned training fixture exposes an assigned plan and change request 
         studentUid: 'e2e-auth-session-user',
         status: 'pending',
         requestText: 'Please adjust leg day volume this week.',
-      }
+      },
     );
   } finally {
     if (previousAppVariant === undefined) delete process.env.APP_VARIANT;
@@ -421,17 +434,17 @@ test('E2E assigned training fixture exposes an assigned plan and change request 
     if (previousPlansFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE = previousPlansFixture;
 
-    if (previousStudentTrainingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
+    if (previousStudentTrainingFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE = previousStudentTrainingFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });
 
-function makeServerPlanSourceDeps(
-  fetchImpl: PlanSourceDeps['fetchFn']
-): PlanSourceDeps {
+function makeServerPlanSourceDeps(fetchImpl: PlanSourceDeps['fetchFn']): PlanSourceDeps {
   return {
     getServerBaseUrl: () => 'http://server.test/',
     getCurrentAccessToken: async () => 'server-token',
@@ -439,16 +452,13 @@ function makeServerPlanSourceDeps(
   };
 }
 
-async function assertRejectsWithConfiguration(
-  operation: Promise<unknown>,
-  messageSnippet: string
-) {
+async function assertRejectsWithConfiguration(operation: Promise<unknown>, messageSnippet: string) {
   await assert.rejects(
     operation,
     (error: unknown) =>
       error instanceof PlanSourceError &&
       error.code === 'configuration' &&
-      error.message.includes(messageSnippet)
+      error.message.includes(messageSnippet),
   );
 }
 
@@ -481,13 +491,16 @@ test('submitPlanChangeRequest uses the MyChampions server', async () => {
     'nutrition-plan-1',
     'nutrition',
     'Please add more breakfast variety.',
-    deps
+    deps,
   );
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'http://server.test/plans/change-requests');
   assert.equal(calls[0].init?.method, 'POST');
-  assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, 'Bearer server-token');
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>).Authorization,
+    'Bearer server-token',
+  );
   assert.deepEqual(JSON.parse(String(calls[0].init?.body)), {
     planId: 'nutrition-plan-1',
     planType: 'nutrition',
@@ -526,9 +539,18 @@ test('getStudentPlanChangeRequests uses the MyChampions server', async () => {
   const requests = await getStudentPlanChangeRequests('student-1', deps);
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, 'http://server.test/professional/students/student-1/plan-change-requests');
-  assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, 'Bearer server-token');
-  assert.deepEqual(requests.map((request) => request.id), ['request-1']);
+  assert.equal(
+    calls[0].url,
+    'http://server.test/professional/students/student-1/plan-change-requests',
+  );
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>).Authorization,
+    'Bearer server-token',
+  );
+  assert.deepEqual(
+    requests.map((request) => request.id),
+    ['request-1'],
+  );
 });
 
 test('getProfessionalPlanChangeRequests uses the MyChampions server pending request endpoint', async () => {
@@ -554,8 +576,14 @@ test('getProfessionalPlanChangeRequests uses the MyChampions server pending requ
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'http://server.test/professional/plan-change-requests?status=pending');
-  assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, 'Bearer server-token');
-  assert.deepEqual(requests.map((request) => request.id), ['request-1']);
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>).Authorization,
+    'Bearer server-token',
+  );
+  assert.deepEqual(
+    requests.map((request) => request.id),
+    ['request-1'],
+  );
 });
 
 test('reviewPlanChangeRequest uses the MyChampions server', async () => {
@@ -570,7 +598,10 @@ test('reviewPlanChangeRequest uses the MyChampions server', async () => {
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'http://server.test/plans/change-requests/request-1/review');
   assert.equal(calls[0].init?.method, 'PATCH');
-  assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, 'Bearer server-token');
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>).Authorization,
+    'Bearer server-token',
+  );
   assert.deepEqual(JSON.parse(String(calls[0].init?.body)), { status: 'dismissed' });
   assert.deepEqual(result, { id: 'request-1', status: 'dismissed' });
 });
@@ -618,11 +649,17 @@ test('getMyPlans uses the MyChampions server', async () => {
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'http://server.test/plans/my');
-  assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, 'Bearer server-token');
-  assert.deepEqual(plans.map((plan) => ({ id: plan.id, planType: plan.planType, name: plan.name })), [
-    { id: 'nutrition-plan-1', planType: 'nutrition', name: 'High Protein Plan' },
-    { id: 'training-plan-1', planType: 'training', name: 'Upper Strength' },
-  ]);
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>).Authorization,
+    'Bearer server-token',
+  );
+  assert.deepEqual(
+    plans.map((plan) => ({ id: plan.id, planType: plan.planType, name: plan.name })),
+    [
+      { id: 'nutrition-plan-1', planType: 'nutrition', name: 'High Protein Plan' },
+      { id: 'training-plan-1', planType: 'training', name: 'Upper Strength' },
+    ],
+  );
 });
 
 test('getMyPredefinedPlans uses the MyChampions server', async () => {
@@ -655,7 +692,10 @@ test('getMyPredefinedPlans uses the MyChampions server', async () => {
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'http://server.test/plans/predefined');
-  assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, 'Bearer server-token');
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>).Authorization,
+    'Bearer server-token',
+  );
   assert.deepEqual(plans, [
     {
       id: 'training-template-1',
@@ -688,9 +728,17 @@ test('bulkAssignPredefinedPlan uses the MyChampions server', async () => {
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'http://server.test/plans/predefined/template-1/bulk-assign');
   assert.equal(calls[0].init?.method, 'POST');
-  assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, 'Bearer server-token');
-  assert.equal((calls[0].init?.headers as Record<string, string>)['Content-Type'], 'application/json');
-  assert.deepEqual(JSON.parse(String(calls[0].init?.body)), { studentUids: ['student-1', 'student-2'] });
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>).Authorization,
+    'Bearer server-token',
+  );
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>)['Content-Type'],
+    'application/json',
+  );
+  assert.deepEqual(JSON.parse(String(calls[0].init?.body)), {
+    studentUids: ['student-1', 'student-2'],
+  });
   assert.deepEqual(result, { assignedCount: 2 });
 });
 
@@ -701,7 +749,7 @@ test('bulkAssignPredefinedPlan maps subscription-required server responses to a 
         code: 'professional_subscription_required',
         message: 'Professional subscription required.',
       },
-    })
+    }),
   );
 
   await assert.rejects(
@@ -709,7 +757,7 @@ test('bulkAssignPredefinedPlan maps subscription-required server responses to a 
     (error: unknown) =>
       error instanceof PlanSourceError &&
       error.code === 'graphql' &&
-      error.message === 'Professional subscription required.'
+      error.message === 'Professional subscription required.',
   );
 });
 
@@ -743,8 +791,14 @@ test('createDraftAssignedPlan uses the MyChampions server', async () => {
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'http://server.test/plans/predefined/template-1/draft-assignments');
   assert.equal(calls[0].init?.method, 'POST');
-  assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, 'Bearer server-token');
-  assert.equal((calls[0].init?.headers as Record<string, string>)['Content-Type'], 'application/json');
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>).Authorization,
+    'Bearer server-token',
+  );
+  assert.equal(
+    (calls[0].init?.headers as Record<string, string>)['Content-Type'],
+    'application/json',
+  );
   assert.deepEqual(JSON.parse(String(calls[0].init?.body)), { studentUid: 'student-1' });
   assert.deepEqual(result, { id: 'nutrition-draft-1' });
 });
@@ -762,26 +816,26 @@ test('plan source operations fail closed without local server auth outside E2E f
   await assertRejectsWithConfiguration(getMyPredefinedPlans(deps), 'Predefined plan reads');
   await assertRejectsWithConfiguration(
     bulkAssignPredefinedPlan('template-1', ['student-1'], deps),
-    'Predefined bulk assignment'
+    'Predefined bulk assignment',
   );
   await assertRejectsWithConfiguration(
     createDraftAssignedPlan('template-1', 'student-1', deps),
-    'Predefined draft assignment'
+    'Predefined draft assignment',
   );
   await assertRejectsWithConfiguration(
     submitPlanChangeRequest('plan-1', 'nutrition', 'Please adjust this plan.', deps),
-    'Plan change request submission'
+    'Plan change request submission',
   );
   await assertRejectsWithConfiguration(
     getStudentPlanChangeRequests('student-1', deps),
-    'Plan change request reads'
+    'Plan change request reads',
   );
   await assertRejectsWithConfiguration(
     getProfessionalPlanChangeRequests(deps),
-    'Professional plan change request reads'
+    'Professional plan change request reads',
   );
   await assertRejectsWithConfiguration(
     reviewPlanChangeRequest('request-1', 'dismissed', deps),
-    'Plan change request review'
+    'Plan change request review',
   );
 });

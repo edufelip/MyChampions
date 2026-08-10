@@ -23,15 +23,12 @@ const workflowNames = readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/.test(name))
   .sort();
 const workflows = new Map(
-  workflowNames.map((name) => [
-    name,
-    readFileSync(join(workflowDirectory, name), 'utf8'),
-  ])
+  workflowNames.map((name) => [name, readFileSync(join(workflowDirectory, name), 'utf8')]),
 );
 const detoxConfigSource = readFileSync(join(root, '.detoxrc.js'), 'utf8');
-const packageManifest = JSON.parse(
-  readFileSync(join(root, 'package.json'), 'utf8')
-) as { packageManager?: unknown };
+const packageManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+  packageManager?: unknown;
+};
 
 function workflow(name: string): string {
   const source = workflows.get(name);
@@ -98,10 +95,7 @@ function shellFunctionSource(source: string, name: string): string {
     .join('\n');
 }
 
-async function waitUntil(
-  predicate: () => boolean,
-  timeoutMs: number
-): Promise<void> {
+async function waitUntil(predicate: () => boolean, timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (!predicate()) {
     if (Date.now() >= deadline) throw new Error('Timed out waiting for fixture');
@@ -111,7 +105,7 @@ async function waitUntil(
 
 async function waitForExit(
   child: ReturnType<typeof spawn>,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
   return await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -168,12 +162,8 @@ function actionStepBlocks(source: string, action: string): string[] {
   return blocks;
 }
 
-function eventFingerprintPythonSource(
-  source: string,
-  endMarker: string
-): string {
-  const startMarker =
-    '          def event_fingerprint(event: object) -> str:\n';
+function eventFingerprintPythonSource(source: string, endMarker: string): string {
+  const startMarker = '          def event_fingerprint(event: object) -> str:\n';
   const start = source.indexOf(startMarker);
   assert.notEqual(start, -1, 'Workflow is missing its event fingerprint function');
   const end = source.indexOf(endMarker, start);
@@ -189,7 +179,7 @@ function eventFingerprintPythonSource(
 function fingerprintEvents(events: unknown[]): string[] {
   const preflight = eventFingerprintPythonSource(
     workflow('pr-selective-tests.yml'),
-    '\n\n          try:'
+    '\n\n          try:',
   );
   const result = spawnSync(
     'python3',
@@ -207,12 +197,12 @@ print(json.dumps([event_fingerprint(event) for event in events]))
       cwd: root,
       encoding: 'utf8',
       input: JSON.stringify(events),
-    }
+    },
   );
   assert.equal(
     result.status,
     0,
-    `Event fingerprint fixture failed:\n${result.stderr || result.stdout}`
+    `Event fingerprint fixture failed:\n${result.stderr || result.stdout}`,
   );
   return JSON.parse(result.stdout) as string[];
 }
@@ -224,12 +214,12 @@ test('candidate preflight is hosted-only and cannot receive secrets or a write t
   assert.match(source, /^name: Selective feature CI preflight$/m);
   assert.match(
     triggers,
-    /pull_request:[\s\S]*?branches:[\s\S]*?- main[\s\S]*?- release\/\*\*[\s\S]*?- hotfix\/\*\*/
+    /pull_request:[\s\S]*?branches:[\s\S]*?- main[\s\S]*?- release\/\*\*[\s\S]*?- hotfix\/\*\*/,
   );
   assert.match(triggers, /^  merge_group:$/m);
   assert.doesNotMatch(
     triggers,
-    /^  (?:pull_request_target|workflow_run|push|schedule|workflow_dispatch):/m
+    /^  (?:pull_request_target|workflow_run|push|schedule|workflow_dispatch):/m,
   );
   assert.match(triggers, /^permissions: \{\}$/m);
   assert.doesNotMatch(source, /runs-on: \[self-hosted,/);
@@ -238,25 +228,19 @@ test('candidate preflight is hosted-only and cannot receive secrets or a write t
   assert.doesNotMatch(source, /\bactions\/checkout@/);
   assert.doesNotMatch(source, /^    name: Selective CI gate$/m);
   assert.match(triggers, /^      - edited$/m);
+  assert.match(jobBlock(source, 'hosted-preflight'), /^    runs-on: ubuntu-latest$/m);
+  assert.match(jobBlock(source, 'hosted-preflight'), /^      statuses: read$/m);
   assert.match(
     jobBlock(source, 'hosted-preflight'),
-    /^    runs-on: ubuntu-latest$/m
+    /Await trusted stale-status invalidation[\s\S]*?latest\.get\("state"\) == "pending"/,
   );
   assert.match(
     jobBlock(source, 'hosted-preflight'),
-    /^      statuses: read$/m
-  );
-  assert.match(
-    jobBlock(source, 'hosted-preflight'),
-    /Await trusted stale-status invalidation[\s\S]*?latest\.get\("state"\) == "pending"/
-  );
-  assert.match(
-    jobBlock(source, 'hosted-preflight'),
-    /latest\.get\("description"\) == expected_description/
+    /latest\.get\("description"\) == expected_description/,
   );
   assert.doesNotMatch(
     jobBlock(source, 'hosted-preflight'),
-    /allowed_descriptions|Trusted selective validation is in progress/
+    /allowed_descriptions|Trusted selective validation is in progress/,
   );
 });
 
@@ -268,7 +252,7 @@ test('default-branch freshness invalidates stale PR-head success without candida
   assert.match(source, /^name: Trusted selective CI freshness$/m);
   assert.match(
     triggers,
-    /pull_request_target:[\s\S]*?branches:[\s\S]*?- main[\s\S]*?- release\/\*\*[\s\S]*?- hotfix\/\*\*/
+    /pull_request_target:[\s\S]*?branches:[\s\S]*?- main[\s\S]*?- release\/\*\*[\s\S]*?- hotfix\/\*\*/,
   );
   for (const action of [
     'opened',
@@ -285,12 +269,12 @@ test('default-branch freshness invalidates stale PR-head success without candida
   assert.match(triggers, /^permissions: \{\}$/m);
   assert.match(
     triggers,
-    /group: trusted-selective-freshness-\$\{\{ github\.event\.pull_request\.number \}\}[\s\S]*?cancel-in-progress: true/
+    /group: trusted-selective-freshness-\$\{\{ github\.event\.pull_request\.number \}\}[\s\S]*?cancel-in-progress: true/,
   );
   assert.match(invalidator, /^    runs-on: ubuntu-latest$/m);
   assert.match(
     invalidator,
-    /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m
+    /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m,
   );
   assert.match(invalidator, /^      pull-requests: read$/m);
   assert.match(invalidator, /^      statuses: write$/m);
@@ -299,19 +283,19 @@ test('default-branch freshness invalidates stale PR-head success without candida
   assert.doesNotMatch(source, /\bactions\/checkout@/);
   assert.match(
     invalidator,
-    /WORKFLOW_REF[\s\S]*?TRUSTED_REF[\s\S]*?WORKFLOW_SHA[\s\S]*?GITHUB_SHA/
+    /WORKFLOW_REF[\s\S]*?TRUSTED_REF[\s\S]*?WORKFLOW_SHA[\s\S]*?GITHUB_SHA/,
   );
   assert.match(
     invalidator,
-    /"state": "pending"[\s\S]*?"context": STATUS_CONTEXT[\s\S]*?Freshness event \{fingerprint\} awaits trusted validation/
+    /"state": "pending"[\s\S]*?"context": STATUS_CONTEXT[\s\S]*?Freshness event \{fingerprint\} awaits trusted validation/,
   );
   assert.match(
     invalidator,
-    /event\.pull_request\.user[\s\S]*?pull_request\.user[\s\S]*?is not the trusted repository owner/
+    /event\.pull_request\.user[\s\S]*?pull_request\.user[\s\S]*?is not the trusted repository owner/,
   );
   assert.match(
     invalidator,
-    /upstream_repository\(event_head\.get\("repo"\)[\s\S]*?upstream_repository\(live_head\.get\("repo"\)/
+    /upstream_repository\(event_head\.get\("repo"\)[\s\S]*?upstream_repository\(live_head\.get\("repo"\)/,
   );
 });
 
@@ -320,10 +304,7 @@ test('freshness and preflight bind pending status to one exact PR event', () => 
   const freshness = workflow('trusted-selective-freshness.yml');
   assert.equal(
     eventFingerprintPythonSource(preflight, '\n\n          try:'),
-    eventFingerprintPythonSource(
-      freshness,
-      '\n\n\n          def post_pending'
-    )
+    eventFingerprintPythonSource(freshness, '\n\n\n          def post_pending'),
   );
 
   const base = {
@@ -378,7 +359,7 @@ test('freshness and preflight bind pending status to one exact PR event', () => 
   const rapidUnlabel = structuredClone(base);
   rapidUnlabel.action = 'unlabeled';
   rapidUnlabel.pull_request.labels = rapidUnlabel.pull_request.labels.filter(
-    (label) => label.name !== 'ci:full'
+    (label) => label.name !== 'ci:full',
   );
   type FingerprintFixtureEvent = typeof base & {
     before?: string;
@@ -410,14 +391,7 @@ test('freshness and preflight bind pending status to one exact PR event', () => 
     synchronizeFingerprint,
     reversalFingerprint,
     editedFingerprint,
-  ] = fingerprintEvents([
-    base,
-    reordered,
-    rapidUnlabel,
-    synchronize,
-    synchronizeReversal,
-    edited,
-  ]);
+  ] = fingerprintEvents([base, reordered, rapidUnlabel, synchronize, synchronizeReversal, edited]);
   assert.match(originalFingerprint, /^[0-9a-f]{24}$/);
   assert.equal(originalFingerprint, reorderedFingerprint);
   assert.notEqual(originalFingerprint, unlabelFingerprint);
@@ -433,21 +407,12 @@ test('trusted workflow is default-branch sourced and authorizes exact candidates
   assert.match(source, /^name: Trusted selective feature CI$/m);
   assert.match(
     triggers,
-    /workflow_run:[\s\S]*?workflows:[\s\S]*?- Selective feature CI preflight[\s\S]*?types:[\s\S]*?- completed/
+    /workflow_run:[\s\S]*?workflows:[\s\S]*?- Selective feature CI preflight[\s\S]*?types:[\s\S]*?- completed/,
   );
-  assert.match(
-    triggers,
-    /push:[\s\S]*?branches:[\s\S]*?- main/
-  );
+  assert.match(triggers, /push:[\s\S]*?branches:[\s\S]*?- main/);
   assert.match(triggers, /^  workflow_dispatch:$/m);
-  assert.match(
-    triggers,
-    /pull_request_number:[\s\S]*?required: true[\s\S]*?type: number/
-  );
-  assert.doesNotMatch(
-    triggers,
-    /^  (?:pull_request|pull_request_target|merge_group|schedule):/m
-  );
+  assert.match(triggers, /pull_request_number:[\s\S]*?required: true[\s\S]*?type: number/);
+  assert.doesNotMatch(triggers, /^  (?:pull_request|pull_request_target|merge_group|schedule):/m);
   assert.match(triggers, /^permissions: \{\}$/m);
 
   assert.match(authorization, /^    runs-on: ubuntu-latest$/m);
@@ -457,88 +422,63 @@ test('trusted workflow is default-branch sourced and authorizes exact candidates
   assert.match(authorization, /^      statuses: write$/m);
   assert.match(
     authorization,
-    /TRUSTED_REF = f"\{REPOSITORY\}\/\{TRUSTED_PATH\}@refs\/heads\/main"/
+    /TRUSTED_REF = f"\{REPOSITORY\}\/\{TRUSTED_PATH\}@refs\/heads\/main"/,
   );
-  assert.match(
-    authorization,
-    /env\("ACTOR"\) != OWNER or env\("TRIGGERING_ACTOR"\) != OWNER/
-  );
-  assert.match(
-    authorization,
-    /env\("EVENT_SENDER"\) != OWNER/
-  );
-  assert.match(
-    authorization,
-    /env\("GITHUB_REF_VALUE"\) != "refs\/heads\/main"/
-  );
+  assert.match(authorization, /env\("ACTOR"\) != OWNER or env\("TRIGGERING_ACTOR"\) != OWNER/);
+  assert.match(authorization, /env\("EVENT_SENDER"\) != OWNER/);
+  assert.match(authorization, /env\("GITHUB_REF_VALUE"\) != "refs\/heads\/main"/);
   assert.match(authorization, /env\("WORKFLOW_REF"\) != TRUSTED_REF/);
   assert.match(
     authorization,
-    /sha\(env\("WORKFLOW_SHA"\), "WORKFLOW_SHA"\) != sha\([\s\S]*?env\("GITHUB_SHA_VALUE"\)/
+    /sha\(env\("WORKFLOW_SHA"\), "WORKFLOW_SHA"\) != sha\([\s\S]*?env\("GITHUB_SHA_VALUE"\)/,
+  );
+  assert.match(authorization, /api\(f"\/repos\/\{REPOSITORY\}\/actions\/runs\/\{run_id\}"\)/);
+  assert.match(
+    authorization,
+    /run\.get\("status"\) != "completed"[\s\S]*?preflight_conclusion = text\(run\.get\("conclusion"\)/,
   );
   assert.match(
     authorization,
-    /api\(f"\/repos\/\{REPOSITORY\}\/actions\/runs\/\{run_id\}"\)/
+    /api\([\s\S]*?f"\/repos\/\{REPOSITORY\}\/actions\/workflows\/\{workflow_id\}"/,
+  );
+  assert.match(authorization, /api\(f"\/repos\/\{REPOSITORY\}\/pulls\/\{number\}"\)/);
+  assert.match(
+    authorization,
+    /repository_identity\(head\.get\("repo"\), "pull_request\.head\.repo"\)/,
+  );
+  assert.match(authorization, /actor_identity\(pull\.get\("user"\), "pull_request\.user"\)/);
+  assert.match(authorization, /live pull-request head no longer matches the triggering run/);
+  assert.match(
+    authorization,
+    /MERGE_QUEUE_QUERY = """[\s\S]*?mergeQueueEntry[\s\S]*?entries\(first: 100\)[\s\S]*?pageInfo[\s\S]*?hasNextPage/,
   );
   assert.match(
     authorization,
-    /run\.get\("status"\) != "completed"[\s\S]*?preflight_conclusion = text\(run\.get\("conclusion"\)/
+    /graphql\([\s\S]*?MERGE_QUEUE_QUERY[\s\S]*?"number": queue_pull_number/,
+  );
+  assert.doesNotMatch(authorization, /commits\/\{head_sha\}\/pulls/);
+  assert.match(
+    authorization,
+    /max\(matching_run_ids\) != run_id[\s\S]*?triggering preflight is stale/,
   );
   assert.match(
     authorization,
-    /api\([\s\S]*?f"\/repos\/\{REPOSITORY\}\/actions\/workflows\/\{workflow_id\}"/
+    /preflight_conclusion != "success"[\s\S]*?post_status\([\s\S]*?"failure"/,
   );
   assert.match(
     authorization,
-    /api\(f"\/repos\/\{REPOSITORY\}\/pulls\/\{number\}"\)/
+    /event_name == "workflow_dispatch"[\s\S]*?validate_live_pr\(int\(input_value\)\)[\s\S]*?force_full = True/,
   );
   assert.match(
     authorization,
-    /repository_identity\(head\.get\("repo"\), "pull_request\.head\.repo"\)/
-  );
-  assert.match(
-    authorization,
-    /actor_identity\(pull\.get\("user"\), "pull_request\.user"\)/
-  );
-  assert.match(
-    authorization,
-    /live pull-request head no longer matches the triggering run/
-  );
-  assert.match(
-    authorization,
-    /MERGE_QUEUE_QUERY = """[\s\S]*?mergeQueueEntry[\s\S]*?entries\(first: 100\)[\s\S]*?pageInfo[\s\S]*?hasNextPage/
-  );
-  assert.match(
-    authorization,
-    /graphql\([\s\S]*?MERGE_QUEUE_QUERY[\s\S]*?"number": queue_pull_number/
-  );
-  assert.doesNotMatch(
-    authorization,
-    /commits\/\{head_sha\}\/pulls/
-  );
-  assert.match(
-    authorization,
-    /max\(matching_run_ids\) != run_id[\s\S]*?triggering preflight is stale/
-  );
-  assert.match(
-    authorization,
-    /preflight_conclusion != "success"[\s\S]*?post_status\([\s\S]*?"failure"/
-  );
-  assert.match(
-    authorization,
-    /event_name == "workflow_dispatch"[\s\S]*?validate_live_pr\(int\(input_value\)\)[\s\S]*?force_full = True/
-  );
-  assert.match(
-    authorization,
-    /output\.write\(f"base_sha=\{base_sha\}\\n"\)[\s\S]*?output\.write\(f"head_sha=\{head_sha\}\\n"\)[\s\S]*?output\.write\(f"force_full=/
+    /output\.write\(f"base_sha=\{base_sha\}\\n"\)[\s\S]*?output\.write\(f"head_sha=\{head_sha\}\\n"\)[\s\S]*?output\.write\(f"force_full=/,
   );
 
   const impact = jobBlock(source, 'impact');
   assert.match(impact, /^    needs: authorize-candidate$/m);
   assert.ok(
-    source.indexOf('\n  authorize-candidate:\n') <
-      source.indexOf('uses: actions/checkout@'),
-    'candidate authorization must precede every checkout'
+    source.indexOf('\n  authorize-candidate:\n') < source.indexOf('uses: actions/checkout@'),
+    'candidate authorization must precede every checkout',
   );
 
   const checkoutSteps = actionStepBlocks(source, 'actions/checkout');
@@ -546,82 +486,70 @@ test('trusted workflow is default-branch sourced and authorizes exact candidates
   for (const checkout of checkoutSteps) {
     assert.match(checkout, /persist-credentials: false/);
     if (checkout.includes('repository: edufelip/mychampions-api')) {
-      assert.match(
-        checkout,
-        /ref: \$\{\{ steps\.backend-contract-ref\.outputs\.sha \}\}/
-      );
+      assert.match(checkout, /ref: \$\{\{ steps\.backend-contract-ref\.outputs\.sha \}\}/);
       continue;
     }
 
     assert.match(
       checkout,
       /ref: \$\{\{ (?:needs\.authorize-candidate|needs\.impact)\.outputs\.head_sha \}\}/,
-      `Repository checkout must use the resolved exact head:\n${checkout}`
+      `Repository checkout must use the resolved exact head:\n${checkout}`,
     );
   }
 });
 
 test('merge-group authorization proves one complete owner-controlled queue chain', () => {
-  const authorization = jobBlock(
-    workflow('trusted-selective-tests.yml'),
-    'authorize-candidate'
-  );
+  const authorization = jobBlock(workflow('trusted-selective-tests.yml'), 'authorize-candidate');
 
   assert.match(
     authorization,
-    /re\.fullmatch\([\s\S]*?gh-readonly-queue\/\(\?P<base>\.\+\)\/[\s\S]*?pr-\(\?P<number>\[1-9\]\[0-9\]\*\)-[\s\S]*?\(\?P<base_sha>\[0-9a-f\]\{40\}\)/
+    /re\.fullmatch\([\s\S]*?gh-readonly-queue\/\(\?P<base>\.\+\)\/[\s\S]*?pr-\(\?P<number>\[1-9\]\[0-9\]\*\)-[\s\S]*?\(\?P<base_sha>\[0-9a-f\]\{40\}\)/,
+  );
+  assert.match(authorization, /has_next_page is not False:[\s\S]*?entry list may be truncated/);
+  assert.match(
+    authorization,
+    /len\(set\(positions\)\) != len\(positions\):[\s\S]*?duplicate entry positions/,
   );
   assert.match(
     authorization,
-    /has_next_page is not False:[\s\S]*?entry list may be truncated/
+    /len\(set\(entry_heads\)\) != len\(entry_heads\):[\s\S]*?ambiguous candidate heads/,
   );
   assert.match(
     authorization,
-    /len\(set\(positions\)\) != len\(positions\):[\s\S]*?duplicate entry positions/
+    /target\["head_sha"\] != expected_head_sha[\s\S]*?target\["base_sha"\] != expected_queue_base_sha/,
   );
   assert.match(
     authorization,
-    /len\(set\(entry_heads\)\) != len\(entry_heads\):[\s\S]*?ambiguous candidate heads/
+    /merge_parent_sha != target\["base_sha"\]:[\s\S]*?commit parent does not match its queue entry/,
+  );
+  assert.match(authorization, /current\["head_sha"\] in seen_chain_heads:[\s\S]*?candidate cycle/);
+  assert.match(
+    authorization,
+    /current\["position"\] != minimum_position:[\s\S]*?candidate chain is incomplete/,
   );
   assert.match(
     authorization,
-    /target\["head_sha"\] != expected_head_sha[\s\S]*?target\["base_sha"\] != expected_queue_base_sha/
+    /predecessor\["position"\] != current\["position"\] - 1:[\s\S]*?candidate chain is not consecutive/,
   );
   assert.match(
     authorization,
-    /merge_parent_sha != target\["base_sha"\]:[\s\S]*?commit parent does not match its queue entry/
+    /len\(chain\) != target\["position"\] - minimum_position \+ 1:[\s\S]*?candidate chain is incomplete/,
   );
   assert.match(
     authorization,
-    /current\["head_sha"\] in seen_chain_heads:[\s\S]*?candidate cycle/
+    /root_base_sha != expected_protected_base_sha:[\s\S]*?does not start at the live protected base/,
   );
   assert.match(
     authorization,
-    /current\["position"\] != minimum_position:[\s\S]*?candidate chain is incomplete/
+    /entry\["state"\] == "UNMERGEABLE"[\s\S]*?entry\["enqueuer"\] != OWNER[\s\S]*?graphql_pull_request\([\s\S]*?validate_live_pr\(number\)/,
   );
   assert.match(
     authorization,
-    /predecessor\["position"\] != current\["position"\] - 1:[\s\S]*?candidate chain is not consecutive/
+    /queued_pull\["head_sha"\] != live_head_sha[\s\S]*?live pull request disagrees with its merge-queue entry/,
   );
   assert.match(
     authorization,
-    /len\(chain\) != target\["position"\] - minimum_position \+ 1:[\s\S]*?candidate chain is incomplete/
-  );
-  assert.match(
-    authorization,
-    /root_base_sha != expected_protected_base_sha:[\s\S]*?does not start at the live protected base/
-  );
-  assert.match(
-    authorization,
-    /entry\["state"\] == "UNMERGEABLE"[\s\S]*?entry\["enqueuer"\] != OWNER[\s\S]*?graphql_pull_request\([\s\S]*?validate_live_pr\(number\)/
-  );
-  assert.match(
-    authorization,
-    /queued_pull\["head_sha"\] != live_head_sha[\s\S]*?live pull request disagrees with its merge-queue entry/
-  );
-  assert.match(
-    authorization,
-    /run_numbers\.issubset\(seen_numbers\)[\s\S]*?outside the merge queue chain/
+    /run_numbers\.issubset\(seen_numbers\)[\s\S]*?outside the merge queue chain/,
   );
 });
 
@@ -771,7 +699,7 @@ print("queue resolver hostile fixtures passed")
   assert.equal(
     result.status,
     0,
-    `Queue resolver fixture harness failed:\n${result.stdout}\n${result.stderr}`
+    `Queue resolver fixture harness failed:\n${result.stdout}\n${result.stderr}`,
   );
   assert.match(result.stdout, /queue resolver hostile fixtures passed/);
 });
@@ -890,7 +818,7 @@ print("unique-head collision fixtures passed")
   assert.equal(
     result.status,
     0,
-    `Unique-head fixture harness failed:\n${result.stdout}\n${result.stderr}`
+    `Unique-head fixture harness failed:\n${result.stdout}\n${result.stderr}`,
   );
   assert.match(result.stdout, /unique-head collision fixtures passed/);
 });
@@ -898,33 +826,24 @@ print("unique-head collision fixtures passed")
 test('coordinated backend checkout resolves, records, and verifies one exact commit', () => {
   const webLane = jobBlock(workflow('trusted-selective-tests.yml'), 'web-selected');
 
+  assert.match(webLane, /git ls-remote[\s\S]*?--heads[\s\S]*?"refs\/heads\/\$\{backend_ref\}"/);
   assert.match(
     webLane,
-    /git ls-remote[\s\S]*?--heads[\s\S]*?"refs\/heads\/\$\{backend_ref\}"/
-  );
-  assert.match(
-    webLane,
-    /if \[\[ -z "\$remote_line" \|\| "\$remote_line" == \*\$'\\n'\* \]\]; then/
+    /if \[\[ -z "\$remote_line" \|\| "\$remote_line" == \*\$'\\n'\* \]\]; then/,
   );
   assert.match(webLane, /"\$backend_sha" =~ \^\[0-9a-f\]\{40\}\$/);
-  assert.match(
-    webLane,
-    /"\$resolved_ref" != "refs\/heads\/\$\{backend_ref\}"/
-  );
+  assert.match(webLane, /"\$resolved_ref" != "refs\/heads\/\$\{backend_ref\}"/);
   assert.match(webLane, /echo "sha=\$backend_sha" >> "\$GITHUB_OUTPUT"/);
   assert.match(webLane, /- SHA: \\`\$backend_sha\\`/);
   assert.match(
     webLane,
-    /EXPECTED_BACKEND_SHA: \$\{\{ steps\.backend-contract-ref\.outputs\.sha \}\}/
+    /EXPECTED_BACKEND_SHA: \$\{\{ steps\.backend-contract-ref\.outputs\.sha \}\}/,
   );
   assert.match(
     webLane,
-    /checked_out_sha="\$\(git -C "\$MYCHAMPIONS_SERVER_ROOT" rev-parse HEAD\)"/
+    /checked_out_sha="\$\(git -C "\$MYCHAMPIONS_SERVER_ROOT" rev-parse HEAD\)"/,
   );
-  assert.match(
-    webLane,
-    /if \[\[ "\$checked_out_sha" != "\$EXPECTED_BACKEND_SHA" \]\]; then/
-  );
+  assert.match(webLane, /if \[\[ "\$checked_out_sha" != "\$EXPECTED_BACKEND_SHA" \]\]; then/);
   assert.match(webLane, /- Checked out SHA: \\`\$checked_out_sha\\`/);
 });
 
@@ -949,11 +868,11 @@ test('selective workflow keeps universal checks and conservative full fallbacks'
   assert.match(impact, /args\+=\(--all\)/);
   assert.match(
     source,
-    /group: trusted-selective-feature-ci-\$\{\{ github\.event\.workflow_run\.pull_requests\[0\]\.number \|\| inputs\.pull_request_number \|\| github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}/
+    /group: trusted-selective-feature-ci-\$\{\{ github\.event\.workflow_run\.pull_requests\[0\]\.number \|\| inputs\.pull_request_number \|\| github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}/,
   );
   assert.match(
     source,
-    /cancel-in-progress: \$\{\{ github\.event_name == 'workflow_run' \|\| github\.event_name == 'workflow_dispatch' \|\| github\.event_name == 'push' \}\}/
+    /cancel-in-progress: \$\{\{ github\.event_name == 'workflow_run' \|\| github\.event_name == 'workflow_dispatch' \|\| github\.event_name == 'push' \}\}/,
   );
 });
 
@@ -966,51 +885,47 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   const iosLane = jobBlock(trusted, 'detox-ios-selected');
   const gate = jobBlock(trusted, 'publish-selective-status');
   const release = workflow('ios-release.yml');
+  const protectedFull = workflow('detox-protected-full.yml');
+  const protectedResolver = jobBlock(protectedFull, 'resolve-ios-tests');
+  const protectedIosLane = jobBlock(protectedFull, 'detox-ios-full');
+  const provider = workflow('provider-validation.yml');
+  const providerResolver = jobBlock(provider, 'resolve-ios-tests');
+  const providerIosLane = jobBlock(provider, 'ios-test-store');
 
-  assert.match(
-    legacyToggle,
-    /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/
-  );
-  assert.match(
-    legacyToggle,
-    /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/
-  );
+  assert.match(legacyToggle, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
+  assert.match(legacyToggle, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
   assert.match(legacyBuild, /^    needs: resolve-ios-tests$/m);
   assert.match(
     legacyBuild,
-    /^    if: \$\{\{ needs\.resolve-ios-tests\.outputs\.enabled == 'true' \}\}$/m
+    /^    if: \$\{\{ needs\.resolve-ios-tests\.outputs\.enabled == 'true' \}\}$/m,
   );
+  assert.match(authorization, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
+  assert.match(authorization, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
+  assert.match(authorization, /ios_tests_enabled=\{'true' if ios_tests_enabled else 'false'\}/);
+  assert.match(iosLane, /needs\.authorize-candidate\.outputs\.ios_tests_enabled == 'true'/);
+  for (const resolver of [protectedResolver, providerResolver]) {
+    assert.match(resolver, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
+    assert.match(resolver, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
+    assert.match(resolver, /enabled=\{'true' if enabled else 'false'\}/);
+  }
+  assert.match(protectedIosLane, /^    needs: resolve-ios-tests$/m);
+  assert.match(protectedIosLane, /needs\.resolve-ios-tests\.outputs\.enabled == 'true'/);
+  assert.match(protectedIosLane, /github\.event_name == 'release'/);
+  assert.match(providerIosLane, /^    needs: resolve-ios-tests$/m);
+  assert.match(providerIosLane, /needs\.resolve-ios-tests\.outputs\.enabled == 'true'/);
+  assert.match(providerIosLane, /github\.ref == 'refs\/heads\/main'/);
   assert.match(
-    authorization,
-    /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/
-  );
-  assert.match(
-    authorization,
-    /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/
-  );
-  assert.match(
-    authorization,
-    /ios_tests_enabled=\{'true' if ios_tests_enabled else 'false'\}/
-  );
-  assert.match(
-    iosLane,
-    /needs\.authorize-candidate\.outputs\.ios_tests_enabled == 'true'/
+    gate,
+    /IOS_TESTS_ENABLED: \$\{\{ needs\.authorize-candidate\.outputs\.ios_tests_enabled \}\}/,
   );
   assert.match(
     gate,
-    /IOS_TESTS_ENABLED: \$\{\{ needs\.authorize-candidate\.outputs\.ios_tests_enabled \}\}/
+    /def selected_lane\(\n\s+name: str,\n\s+selected: str,\n\s+result: str,\n\s+enabled: str = "true",\n\s+\) -> None:/,
   );
+  assert.match(gate, /if name == "ios" and enabled == "false":\s+expected = "skipped"/);
   assert.match(
     gate,
-    /def selected_lane\(\n\s+name: str,\n\s+selected: str,\n\s+result: str,\n\s+enabled: str = "true",\n\s+\) -> None:/
-  );
-  assert.match(
-    gate,
-    /if name == "ios" and enabled == "false":\s+expected = "skipped"/
-  );
-  assert.match(
-    gate,
-    /selected_lane\(\n\s+"ios",[\s\S]*?os\.environ\["IOS_TESTS_ENABLED"\],\n\s+\)/
+    /selected_lane\(\n\s+"ios",[\s\S]*?os\.environ\["IOS_TESTS_ENABLED"\],\n\s+\)/,
   );
 
   assert.equal(iOSTestsEnabled(undefined), true);
@@ -1024,7 +939,7 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   const expectedIosResult = (
     selected: boolean,
     result: 'success' | 'skipped',
-    repositoryVariable: string | undefined
+    repositoryVariable: string | undefined,
   ): boolean => {
     const expected = iOSTestsEnabled(repositoryVariable)
       ? selected
@@ -1044,16 +959,13 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   assert.match(gate, /selected_lane\("web"/);
   assert.match(gate, /selected_lane\(\n\s+"android"/);
   assert.doesNotMatch(release, /MYCHAMPIONS_ENABLE_IOS_TESTS/);
+  assert.doesNotMatch(protectedFull, /ios-release\.yml/);
 });
 
 test('self-hosted selected lanes require authorization and selected skips fail publication', () => {
   const source = workflow('trusted-selective-tests.yml');
 
-  for (const name of [
-    'web-selected',
-    'detox-ios-selected',
-    'detox-android-selected',
-  ]) {
+  for (const name of ['web-selected', 'detox-ios-selected', 'detox-android-selected']) {
     const lane = jobBlock(source, name);
     assert.match(lane, /^      - authorize-candidate$/m);
     assert.match(lane, /needs\.authorize-candidate\.result == 'success'/);
@@ -1067,75 +979,63 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   const androidLane = jobBlock(source, 'detox-android-selected');
   assert.match(
     iosLane,
-    /for candidate in \/Applications\/Xcode_"\$\{XCODE_REQUIRED_MAJOR\}"\*\.app/
+    /for candidate in \/Applications\/Xcode_"\$\{XCODE_REQUIRED_MAJOR\}"\*\.app/,
   );
   assert.doesNotMatch(iosLane, /find \/Applications -maxdepth/);
   assert.match(androidLane, /emulator_serial=emulator-5554/);
+  assert.match(androidLane, /android_state_file="\$recovery_root\/android-emulator-5554\.state"/);
+  assert.match(androidLane, /MYCHAMPIONS_NATIVE_STATE_ROOT must name an absolute real directory/);
   assert.match(
     androidLane,
-    /android_state_file="\$recovery_root\/android-emulator-5554\.state"/
+    /actual_mode="\$\(stat -c '%a' "\$recovery_root"\)"[\s\S]*?"\$actual_mode" != "700"/,
   );
   assert.match(
     androidLane,
-    /MYCHAMPIONS_NATIVE_STATE_ROOT must name an absolute real directory/
+    /expected_launcher_parent="\$BASHPID"[\s\S]*?os\.getppid\(\) != expected_parent[\s\S]*?libc\.prctl\(1, signal\.SIGKILL\)[\s\S]*?os\.getppid\(\) != expected_parent/,
   );
   assert.match(
     androidLane,
-    /actual_mode="\$\(stat -c '%a' "\$recovery_root"\)"[\s\S]*?"\$actual_mode" != "700"/
-  );
-  assert.match(
-    androidLane,
-    /expected_launcher_parent="\$BASHPID"[\s\S]*?os\.getppid\(\) != expected_parent[\s\S]*?libc\.prctl\(1, signal\.SIGKILL\)[\s\S]*?os\.getppid\(\) != expected_parent/
-  );
-  assert.match(
-    androidLane,
-    /values = \{[\s\S]*?"pid": str\(pid\)[\s\S]*?"uid": str\(os\.getuid\(\)\)[\s\S]*?"start": stat_fields\[19\][\s\S]*?"avd": avd[\s\S]*?"port": port[\s\S]*?"serial": serial[\s\S]*?"executable": emulator_path[\s\S]*?"flags": flags/
+    /values = \{[\s\S]*?"pid": str\(pid\)[\s\S]*?"uid": str\(os\.getuid\(\)\)[\s\S]*?"start": stat_fields\[19\][\s\S]*?"avd": avd[\s\S]*?"port": port[\s\S]*?"serial": serial[\s\S]*?"executable": emulator_path[\s\S]*?"flags": flags/,
   );
   assert.ok(
     androidLane.indexOf('os.fsync(directory_fd)') <
       androidLane.indexOf('os.execv(emulator_path, arguments)'),
-    'Android ownership state must be durable before emulator exec'
+    'Android ownership state must be durable before emulator exec',
   );
   assert.match(
     androidLane,
-    /closing = text\.rfind\("\)"\)[\s\S]*?fields = text\[closing \+ 2:\]\.split\(\)[\s\S]*?fields\[19\]/
+    /closing = text\.rfind\("\)"\)[\s\S]*?fields = text\[closing \+ 2:\]\.split\(\)[\s\S]*?fields\[19\]/,
   );
   assert.match(
     androidLane,
-    /load_android_state\(\)[\s\S]*?os\.O_NOFOLLOW[\s\S]*?stat\.S_IMODE\(metadata\.st_mode\) != 0o600/
+    /load_android_state\(\)[\s\S]*?os\.O_NOFOLLOW[\s\S]*?stat\.S_IMODE\(metadata\.st_mode\) != 0o600/,
   );
   assert.match(
     androidLane,
-    /if emulator_pid_matches; then[\s\S]*?kill -TERM "\$emulator_pid"[\s\S]*?if emulator_pid_matches; then[\s\S]*?kill -KILL "\$emulator_pid"/
+    /if emulator_pid_matches; then[\s\S]*?kill -TERM "\$emulator_pid"[\s\S]*?if emulator_pid_matches; then[\s\S]*?kill -KILL "\$emulator_pid"/,
   );
   assert.match(
     androidLane,
-    /remove_android_state_if_absent\(\) \{[\s\S]*?emulator_cleanup_complete \|\| return 1[\s\S]*?os\.unlink\(state_path\.name, dir_fd=directory_fd\)[\s\S]*?os\.fsync\(directory_fd\)/
+    /remove_android_state_if_absent\(\) \{[\s\S]*?emulator_cleanup_complete \|\| return 1[\s\S]*?os\.unlink\(state_path\.name, dir_fd=directory_fd\)[\s\S]*?os\.fsync\(directory_fd\)/,
   );
   assert.match(
     androidLane,
-    /boot_deadline=\$\(\(SECONDS \+ 120\)\)[\s\S]*?"\$attached_emulator" == "\$emulator_serial"/
+    /boot_deadline=\$\(\(SECONDS \+ 120\)\)[\s\S]*?"\$attached_emulator" == "\$emulator_serial"/,
   );
   assert.match(
     androidLane,
-    /run_supervised timeout 5s adb -s "\$emulator_serial"[\s\S]*?settings put global window_animation_scale/
+    /run_supervised timeout 5s adb -s "\$emulator_serial"[\s\S]*?settings put global window_animation_scale/,
   );
-  assert.match(
-    androidLane,
-    /Signal cleanup intentionally retains the durable ledger/
-  );
+  assert.match(androidLane, /Signal cleanup intentionally retains the durable ledger/);
   assert.doesNotMatch(
     androidLane,
-    /owner_(?:prefix|pid_file|uid_file|start_file)|adb kill-server|pgrep -af/
+    /owner_(?:prefix|pid_file|uid_file|start_file)|adb kill-server|pgrep -af/,
   );
-  assert.doesNotMatch(
-    androidLane,
-    /grep -Eq '\^emulator-\[0-9\]\+\[\[:space:\]\]'/
-  );
+  assert.doesNotMatch(androidLane, /grep -Eq '\^emulator-\[0-9\]\+\[\[:space:\]\]'/);
   assert.ok(
     androidLane.indexOf('os.execv(emulator_path, arguments)') <
       androidLane.indexOf('yarn test:impact:execute --platform android'),
-    'Android lane must preboot the supported-port emulator before Detox'
+    'Android lane must preboot the supported-port emulator before Detox',
   );
 
   assert.match(gate, /^    if: \$\{\{ always\(\) && !cancelled\(\) \}\}$/m);
@@ -1154,12 +1054,12 @@ test('web and Android use separate services with shared WSL load containment', (
 
   assert.match(
     webLane,
-    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-web-only\]$/m
+    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-web-only\]$/m,
   );
   assert.match(webLane, /^      group: mychampions-wsl-ui$/m);
   assert.match(
     webLane,
-    /uses: actions\/setup-node@[a-f0-9]+[\s\S]*?- name: Enable repository Yarn\n        run: corepack enable\n      - run: yarn install --frozen-lockfile --no-progress/
+    /uses: actions\/setup-node@[a-f0-9]+[\s\S]*?- name: Enable repository Yarn\n        run: corepack enable\n      - run: yarn install --frozen-lockfile --no-progress/,
   );
   assert.equal(packageManifest.packageManager, 'yarn@1.22.22');
   assert.match(androidLane, /^      group: mychampions-wsl-ui$/m);
@@ -1167,10 +1067,7 @@ test('web and Android use separate services with shared WSL load containment', (
   assert.doesNotMatch(source, /group: mychampions-android-detox/);
 
   for (const lane of [webLane, iosLane, androidLane]) {
-    assert.match(
-      lane,
-      /^      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'$/m
-    );
+    assert.match(lane, /^      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'$/m);
   }
   assert.match(iosLane, /^    timeout-minutes: 75$/m);
   assert.match(androidLane, /^    timeout-minutes: 75$/m);
@@ -1180,12 +1077,12 @@ test('only hosted freshness, authorization, and final publication can write the 
   const source = workflow('trusted-selective-tests.yml');
   const freshness = jobBlock(
     workflow('trusted-selective-freshness.yml'),
-    'invalidate-stale-status'
+    'invalidate-stale-status',
   );
   const authorization = jobBlock(source, 'authorize-candidate');
   const publisher = jobBlock(source, 'publish-selective-status');
   const statusWriteOccurrences = [...workflows.values()].flatMap(
-    (workflowSource) => workflowSource.match(/statuses:\s*write/g) ?? []
+    (workflowSource) => workflowSource.match(/statuses:\s*write/g) ?? [],
   );
 
   assert.equal(statusWriteOccurrences.length, 3);
@@ -1194,80 +1091,57 @@ test('only hosted freshness, authorization, and final publication can write the 
   assert.match(authorization, /^    runs-on: ubuntu-latest$/m);
   assert.match(
     authorization,
-    /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m
+    /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m,
   );
   assert.match(authorization, /^      statuses: write$/m);
   assert.match(publisher, /^    runs-on: ubuntu-latest$/m);
   assert.match(
     publisher,
-    /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m
+    /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m,
   );
   assert.match(publisher, /^      statuses: write$/m);
   assert.match(publisher, /CONTEXT = "Selective CI gate"/);
   assert.match(
     authorization,
-    /post_status\(\s+head_sha,\s+"pending",\s+"Trusted selective validation is in progress\.",/
+    /post_status\(\s+head_sha,\s+"pending",\s+"Trusted selective validation is in progress\.",/,
+  );
+  assert.match(publisher, /post_status\("failure", "Trusted selective validation failed\."\)/);
+  assert.match(
+    publisher,
+    /post_status\("success", "Every selected trusted validation lane passed\."\)/,
   );
   assert.match(
     publisher,
-    /post_status\("failure", "Trusted selective validation failed\."\)/
+    /CANDIDATE_SHA: \$\{\{ needs\.authorize-candidate\.outputs\.head_sha \}\}/,
+  );
+  assert.match(publisher, /revalidate_pull_request\(\)/);
+  assert.match(authorization, /require_unique_open_pull_request\(head_sha, number\)/);
+  assert.match(authorization, /Candidate head is shared by multiple eligible pull requests/);
+  assert.match(publisher, /candidate head is not bound to exactly one eligible open pull request/);
+  assert.match(publisher, /require_owned_pending_status\(\)/);
+  assert.match(publisher, /current Selective CI status belongs to another validation run/);
+  assert.match(
+    publisher,
+    /publish_required_status = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"pull_request"[\s\S]*?"workflow_dispatch"[\s\S]*?"merge_group"[\s\S]*?"push"/,
   );
   assert.match(
     publisher,
-    /post_status\("success", "Every selected trusted validation lane passed\."\)/
+    /status_requires_pull_request_ownership = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"pull_request"[\s\S]*?"workflow_dispatch"[\s\S]*?"merge_group"[\s\S]*?\}/,
   );
-  assert.match(
+  assert.doesNotMatch(
     publisher,
-    /CANDIDATE_SHA: \$\{\{ needs\.authorize-candidate\.outputs\.head_sha \}\}/
+    /status_requires_pull_request_ownership = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"push"/,
   );
-  assert.match(
-    publisher,
-    /revalidate_pull_request\(\)/
-  );
-  assert.match(
-    authorization,
-    /require_unique_open_pull_request\(head_sha, number\)/
-  );
-  assert.match(
-    authorization,
-    /Candidate head is shared by multiple eligible pull requests/
-  );
-  assert.match(
-    publisher,
-    /candidate head is not bound to exactly one eligible open pull request/
-  );
-  assert.match(
-    publisher,
-    /require_owned_pending_status\(\)/
-  );
-  assert.match(
-    publisher,
-    /current Selective CI status belongs to another validation run/
-  );
-  assert.match(
-    publisher,
-    /publish_required_status = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"pull_request"[\s\S]*?"workflow_dispatch"[\s\S]*?"merge_group"/
-  );
-  assert.match(
-    publisher,
-    /base\.get\("sha"\) != os\.environ\["CANDIDATE_BASE_SHA"\]/
-  );
-  assert.match(
-    publisher,
-    /or base_ref != "main"/
-  );
+  assert.match(publisher, /base\.get\("sha"\) != os\.environ\["CANDIDATE_BASE_SHA"\]/);
+  assert.match(publisher, /or base_ref != "main"/);
   assert.doesNotMatch(source, /^    name: Selective CI gate$/m);
 
   for (const [name, workflowSource] of workflows) {
     for (const runner of workflowSource.matchAll(
-      /\n  ([a-zA-Z0-9_-]+):\n([\s\S]*?)(?=\n  [a-zA-Z0-9_-]+:\n|$)/g
+      /\n  ([a-zA-Z0-9_-]+):\n([\s\S]*?)(?=\n  [a-zA-Z0-9_-]+:\n|$)/g,
     )) {
       if (/runs-on: \[self-hosted,/.test(runner[2])) {
-        assert.doesNotMatch(
-          runner[2],
-          /statuses:\s*write/,
-          `${name}:${runner[1]}`
-        );
+        assert.doesNotMatch(runner[2], /statuses:\s*write/, `${name}:${runner[1]}`);
       }
     }
   }
@@ -1284,59 +1158,37 @@ test('unsafe workflow-controlled persistent-runner hook candidates stay removed'
 });
 
 test('selected iOS lane persists exact intent and only recovers the same simulator identity', () => {
-  const iosLane = jobBlock(
-    workflow('trusted-selective-tests.yml'),
-    'detox-ios-selected'
-  );
-  const step = namedStepBlock(
-    iosLane,
-    'Build and run selected iOS suites with trapped resources'
-  );
+  const iosLane = jobBlock(workflow('trusted-selective-tests.yml'), 'detox-ios-selected');
+  const step = namedStepBlock(iosLane, 'Build and run selected iOS suites with trapped resources');
 
+  assert.match(step, /expected_identifier = "com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-17"/);
+  assert.match(step, /runtime\.get\("version", ""\)\.split\("\.", 1\)\[0\] == "26"/);
+  assert.match(step, /ios_state_file="\$recovery_root\/ios-simulator\.state"/);
   assert.match(
     step,
-    /expected_identifier = "com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-17"/
-  );
-  assert.match(
-    step,
-    /runtime\.get\("version", ""\)\.split\("\.", 1\)\[0\] == "26"/
-  );
-  assert.match(
-    step,
-    /ios_state_file="\$recovery_root\/ios-simulator\.state"/
-  );
-  assert.match(
-    step,
-    /"phase": "intent"[\s\S]*?"name": sys\.argv\[2\][\s\S]*?"device_type": sys\.argv\[3\][\s\S]*?"runtime": sys\.argv\[4\][\s\S]*?"udid": ""/
+    /"phase": "intent"[\s\S]*?"name": sys\.argv\[2\][\s\S]*?"device_type": sys\.argv\[3\][\s\S]*?"runtime": sys\.argv\[4\][\s\S]*?"udid": ""/,
   );
   assert.ok(
-    step.indexOf('persist_ios_intent') <
-      step.indexOf('run_supervised xcrun simctl create'),
-    'the exact create intent must be durable before simctl create'
+    step.indexOf('persist_ios_intent') < step.indexOf('run_supervised xcrun simctl create'),
+    'the exact create intent must be durable before simctl create',
+  );
+  assert.match(step, /same_name = devices\(\)|matching, same_uuid, same_name = devices\(\)/);
+  assert.match(
+    step,
+    /same_name and not matching[\s\S]*?Recovered iOS intent changed runtime or device type/,
   );
   assert.match(
     step,
-    /same_name = devices\(\)|matching, same_uuid, same_name = devices\(\)/
+    /os\.unlink\(state_path\.name, dir_fd=directory_fd\)[\s\S]*?os\.fsync\(directory_fd\)/,
   );
   assert.match(
     step,
-    /same_name and not matching[\s\S]*?Recovered iOS intent changed runtime or device type/
+    /trap cleanup_ios_resources EXIT[\s\S]*?trap 'cleanup_ios_signal 130' INT[\s\S]*?trap 'cleanup_ios_signal 143' TERM/,
   );
-  assert.match(
-    step,
-    /os\.unlink\(state_path\.name, dir_fd=directory_fd\)[\s\S]*?os\.fsync\(directory_fd\)/
-  );
-  assert.match(
-    step,
-    /trap cleanup_ios_resources EXIT[\s\S]*?trap 'cleanup_ios_signal 130' INT[\s\S]*?trap 'cleanup_ios_signal 143' TERM/
-  );
-  assert.match(
-    step,
-    /export DETOX_IOS_SIMULATOR_UDID="\$simulator_udid"/
-  );
+  assert.match(step, /export DETOX_IOS_SIMULATOR_UDID="\$simulator_udid"/);
   assert.match(
     detoxConfigSource,
-    /process\.env\.DETOX_IOS_SIMULATOR_UDID[\s\S]*?\{ id: process\.env\.DETOX_IOS_SIMULATOR_UDID \}/
+    /process\.env\.DETOX_IOS_SIMULATOR_UDID[\s\S]*?\{ id: process\.env\.DETOX_IOS_SIMULATOR_UDID \}/,
   );
   assert.doesNotMatch(iosLane, /simctl shutdown all|simctl delete (?:all|unavailable)/);
 });
@@ -1345,49 +1197,29 @@ test('native recovery roots canonically remain outside workspace and runner temp
   const source = workflow('trusted-selective-tests.yml');
   const iosStep = namedStepBlock(
     jobBlock(source, 'detox-ios-selected'),
-    'Build and run selected iOS suites with trapped resources'
+    'Build and run selected iOS suites with trapped resources',
   );
   const androidLane = jobBlock(source, 'detox-android-selected');
   const androidStep = namedStepBlock(
     androidLane,
-    'Run selected Android suites on a supported emulator port'
+    'Run selected Android suites on a supported emulator port',
   );
-  const androidVerifier = namedStepBlock(
-    androidLane,
-    'Verify Android emulator cleanup'
-  );
+  const androidVerifier = namedStepBlock(androidLane, 'Verify Android emulator cleanup');
   const validators = [
     ['ios', shellFunctionSource(iosStep, 'validate_recovery_root')],
     ['android', shellFunctionSource(androidStep, 'validate_recovery_root')],
-    [
-      'android-verifier',
-      shellFunctionSource(androidVerifier, 'validate_recovery_root'),
-    ],
+    ['android-verifier', shellFunctionSource(androidVerifier, 'validate_recovery_root')],
   ] as const;
 
   for (const [name, validator] of validators) {
-    assert.match(
-      validator,
-      /canonical_workspace="\$\(cd "\$GITHUB_WORKSPACE" && pwd -P\)"/,
-      name
-    );
-    assert.match(
-      validator,
-      /canonical_runner_temp="\$\(cd "\$RUNNER_TEMP" && pwd -P\)"/,
-      name
-    );
+    assert.match(validator, /canonical_workspace="\$\(cd "\$GITHUB_WORKSPACE" && pwd -P\)"/, name);
+    assert.match(validator, /canonical_runner_temp="\$\(cd "\$RUNNER_TEMP" && pwd -P\)"/, name);
     assert.match(validator, /"\$canonical_workspace"\/\*/, name);
     assert.match(validator, /"\$canonical_runner_temp"\/\*/, name);
-    assert.match(
-      validator,
-      /must remain outside GITHUB_WORKSPACE and RUNNER_TEMP/,
-      name
-    );
+    assert.match(validator, /must remain outside GITHUB_WORKSPACE and RUNNER_TEMP/, name);
   }
 
-  const fixtureRoot = realpathSync(
-    mkdtempSync(join(tmpdir(), 'mychampions-native-root-'))
-  );
+  const fixtureRoot = realpathSync(mkdtempSync(join(tmpdir(), 'mychampions-native-root-')));
   const workspace = join(fixtureRoot, 'workspace-real');
   const runnerTemp = join(fixtureRoot, 'runner-temp-real');
   const externalRoot = join(fixtureRoot, 'persistent-state');
@@ -1428,7 +1260,7 @@ elif sys.argv[2] in {"%a", "%Lp"}:
     print(format(stat.S_IMODE(metadata.st_mode), "o"))
 else:
     raise SystemExit("unsupported stat format")
-`
+`,
     );
     chmodSync(fakeStat, 0o700);
 
@@ -1462,24 +1294,20 @@ validate_recovery_root
               RUNNER_TEMP: runnerTempAlias,
             },
             timeout: 3_000,
-          }
+          },
         );
         if (allowed) {
-          assert.equal(
-            result.status,
-            0,
-            `${validatorName}:${caseName}\n${result.stderr}`
-          );
+          assert.equal(result.status, 0, `${validatorName}:${caseName}\n${result.stderr}`);
         } else {
           assert.notEqual(
             result.status,
             0,
-            `${validatorName}:${caseName} was unexpectedly accepted`
+            `${validatorName}:${caseName} was unexpectedly accepted`,
           );
           assert.match(
             result.stderr,
             /must remain outside GITHUB_WORKSPACE and RUNNER_TEMP/,
-            `${validatorName}:${caseName}`
+            `${validatorName}:${caseName}`,
           );
         }
       }
@@ -1494,18 +1322,9 @@ test('native secrets use per-step mode-0600 targets and workspace symlinks', () 
   const iosLane = jobBlock(source, 'detox-ios-selected');
   const androidLane = jobBlock(source, 'detox-android-selected');
   const steps = [
-    namedStepBlock(
-      iosLane,
-      'Build and run selected iOS suites with trapped resources'
-    ),
-    namedStepBlock(
-      androidLane,
-      'Run native checks and build the debug APKs once'
-    ),
-    namedStepBlock(
-      androidLane,
-      'Run selected Android suites on a supported emulator port'
-    ),
+    namedStepBlock(iosLane, 'Build and run selected iOS suites with trapped resources'),
+    namedStepBlock(androidLane, 'Run native checks and build the debug APKs once'),
+    namedStepBlock(androidLane, 'Run selected Android suites on a supported emulator port'),
   ];
   const trapNames = [
     'trap cleanup_ios_resources EXIT',
@@ -1520,57 +1339,43 @@ test('native secrets use per-step mode-0600 targets and workspace symlinks', () 
     assert.match(step, /descriptor = os\.open\(path, flags, 0o600\)/);
     assert.match(
       step,
-      /finally:\n\s+os\.close\(descriptor\)\n\s+PY\n\s+unset ENV_FILE_CONTENT\n\s+actual_mode=/
+      /finally:\n\s+os\.close\(descriptor\)\n\s+PY\n\s+unset ENV_FILE_CONTENT\n\s+actual_mode=/,
     );
     assert.match(step, /ln -s "\$secret_file" "\$env_file"/);
     assert.match(step, /rm -f "\$secret_file"/);
     assert.match(
       step,
-      /remove_secret_material\(\) \{[\s\S]{0,160}?unset ENV_FILE_CONTENT[\s\S]{0,80}?rm -f "\$secret_file"/
+      /remove_secret_material\(\) \{[\s\S]{0,160}?unset ENV_FILE_CONTENT[\s\S]{0,80}?rm -f "\$secret_file"/,
     );
     assert.ok(
       step.indexOf(trapNames[index]) < step.lastIndexOf('create_secret_link'),
-      'cleanup traps must precede owned secret creation'
+      'cleanup traps must precede owned secret creation',
     );
-    assert.doesNotMatch(
-      step,
-      /printf '%s\\n' "\$ENV_FILE_CONTENT" > "\$env_file"/
-    );
+    assert.doesNotMatch(step, /printf '%s\\n' "\$ENV_FILE_CONTENT" > "\$env_file"/);
   }
 
-  const androidVerifier = namedStepBlock(
-    androidLane,
-    'Verify Android emulator cleanup'
-  );
+  const androidVerifier = namedStepBlock(androidLane, 'Verify Android emulator cleanup');
   assert.match(
     steps[1],
-    /run_supervised \.\/gradlew \\\n\s+--no-daemon \\\n[\s\S]*?app:assembleDevDebugAndroidTest/
+    /run_supervised \.\/gradlew \\\n\s+--no-daemon \\\n[\s\S]*?app:assembleDevDebugAndroidTest/,
   );
   assert.doesNotMatch(androidVerifier, /ENV_FILE_CONTENT|secrets\.ENV_FILE|\.env/);
 });
 
 test('native secret bytes are absent from all post-write subprocess environments', () => {
   const androidBuildStep = namedStepBlock(
-    jobBlock(
-      workflow('trusted-selective-tests.yml'),
-      'detox-android-selected'
-    ),
-    'Run native checks and build the debug APKs once'
+    jobBlock(workflow('trusted-selective-tests.yml'), 'detox-android-selected'),
+    'Run native checks and build the debug APKs once',
   );
-  const fixtureRoot = mkdtempSync(
-    join(tmpdir(), 'mychampions-native-secret-')
-  );
+  const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-native-secret-'));
   const secretFile = join(fixtureRoot, 'runner-temp', 'native.env');
   const envLink = join(fixtureRoot, 'workspace.env');
   mkdirSync(join(fixtureRoot, 'runner-temp'), { mode: 0o700 });
   const fixtureSecret = 'native-secret-must-not-reach-subprocesses';
-  const createSecretSource = shellFunctionSource(
-    androidBuildStep,
-    'create_secret_link'
-  );
+  const createSecretSource = shellFunctionSource(androidBuildStep, 'create_secret_link');
   const portableCreateSecretSource = createSecretSource.replace(
     `actual_mode="$(stat -c '%a' "$secret_file")" || return 1`,
-    `actual_mode="$(SECRET_FILE="$secret_file" /usr/bin/python3 -c 'import os, stat; print(format(stat.S_IMODE(os.stat(os.environ["SECRET_FILE"], follow_symlinks=False).st_mode), "o"))')" || return 1`
+    `actual_mode="$(SECRET_FILE="$secret_file" /usr/bin/python3 -c 'import os, stat; print(format(stat.S_IMODE(os.stat(os.environ["SECRET_FILE"], follow_symlinks=False).st_mode), "o"))')" || return 1`,
   );
   assert.notEqual(portableCreateSecretSource, createSecretSource);
   const harness = String.raw`
@@ -1621,33 +1426,27 @@ test('all native supervisors protect the pre-$! handoff and bound signal cleanup
   const iosLane = jobBlock(source, 'detox-ios-selected');
   const androidLane = jobBlock(source, 'detox-android-selected');
   const steps = [
-    namedStepBlock(
-      iosLane,
-      'Build and run selected iOS suites with trapped resources'
-    ),
-    namedStepBlock(
-      androidLane,
-      'Run native checks and build the debug APKs once'
-    ),
-    namedStepBlock(
-      androidLane,
-      'Run selected Android suites on a supported emulator port'
-    ),
+    namedStepBlock(iosLane, 'Build and run selected iOS suites with trapped resources'),
+    namedStepBlock(androidLane, 'Run native checks and build the debug APKs once'),
+    namedStepBlock(androidLane, 'Run selected Android suites on a supported emulator port'),
   ];
 
   for (const step of steps) {
-    assert.match(step, /capture_last_background_pid\(\) \{[\s\S]*?set \+u[\s\S]*?captured_background_pid=\$![\s\S]*?set -u/);
     assert.match(
       step,
-      /supervisor_launching=true[\s\S]*?\/usr\/bin\/python3 -c[\s\S]*?' "\$@" <&0 &[\s\S]*?supervised_pid=\$![\s\S]*?supervisor_launching=false/
+      /capture_last_background_pid\(\) \{[\s\S]*?set \+u[\s\S]*?captured_background_pid=\$![\s\S]*?set -u/,
     );
     assert.match(
       step,
-      /"\$supervisor_launching" == "true"[\s\S]*?launch_candidate="\$captured_background_pid"[\s\S]*?supervised_pgid="\$launch_candidate"/
+      /supervisor_launching=true[\s\S]*?\/usr\/bin\/python3 -c[\s\S]*?' "\$@" <&0 &[\s\S]*?supervised_pid=\$![\s\S]*?supervisor_launching=false/,
     );
     assert.match(
       step,
-      /sleep 0\.02[\s\S]*?kill -TERM -- "-\$supervised_pgid"[\s\S]*?for _ in \$\(seq 1 15\); do[\s\S]*?sleep 0\.1[\s\S]*?kill -KILL -- "-\$supervised_pgid"/
+      /"\$supervisor_launching" == "true"[\s\S]*?launch_candidate="\$captured_background_pid"[\s\S]*?supervised_pgid="\$launch_candidate"/,
+    );
+    assert.match(
+      step,
+      /sleep 0\.02[\s\S]*?kill -TERM -- "-\$supervised_pgid"[\s\S]*?for _ in \$\(seq 1 15\); do[\s\S]*?sleep 0\.1[\s\S]*?kill -KILL -- "-\$supervised_pgid"/,
     );
     assert.match(step, /terminate_supervised_child fast/);
   }
@@ -1660,35 +1459,18 @@ test(
   async () => {
     const iosStep = namedStepBlock(
       jobBlock(workflow('trusted-selective-tests.yml'), 'detox-ios-selected'),
-      'Build and run selected iOS suites with trapped resources'
+      'Build and run selected iOS suites with trapped resources',
     );
-    const processGroupSource = shellFunctionSource(
-      iosStep,
-      'supervised_process_group_exists'
-    );
-    const captureSource = shellFunctionSource(
-      iosStep,
-      'capture_last_background_pid'
-    );
-    const terminateSource = shellFunctionSource(
-      iosStep,
-      'terminate_supervised_child'
-    );
+    const processGroupSource = shellFunctionSource(iosStep, 'supervised_process_group_exists');
+    const captureSource = shellFunctionSource(iosStep, 'capture_last_background_pid');
+    const terminateSource = shellFunctionSource(iosStep, 'terminate_supervised_child');
     const runSource = shellFunctionSource(iosStep, 'run_supervised');
-    const supervisorSource = [
-      processGroupSource,
-      captureSource,
-      terminateSource,
-      runSource,
-    ].join('\n');
-    const fixtureRoot = mkdtempSync(
-      join(tmpdir(), 'mychampions-native-cancel-')
+    const supervisorSource = [processGroupSource, captureSource, terminateSource, runSource].join(
+      '\n',
     );
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-native-cancel-'));
     const fixtureProgram = join(fixtureRoot, 'owned-process.py');
-    const detachedFixtureProgram = join(
-      fixtureRoot,
-      'detached-owned-process.py'
-    );
+    const detachedFixtureProgram = join(fixtureRoot, 'detached-owned-process.py');
     const unrelatedServer = createServer();
     await new Promise<void>((resolve, reject) => {
       unrelatedServer.once('error', reject);
@@ -1705,7 +1487,7 @@ test(
     assert.ok(address && typeof address === 'object');
     const ownedPort = address.port;
     await new Promise<void>((resolve, reject) =>
-      portProbe.close((error) => (error ? reject(error) : resolve()))
+      portProbe.close((error) => (error ? reject(error) : resolve())),
     );
 
     try {
@@ -1739,7 +1521,7 @@ while True:
 subprocess.Popen([sys.executable, "-c", child, sys.argv[1], sys.argv[2]])
 while True:
     time.sleep(1)
-`.trimStart()
+`.trimStart(),
       );
       writeFileSync(
         detachedFixtureProgram,
@@ -1785,7 +1567,7 @@ def terminate(_signum, _frame):
 signal.signal(signal.SIGTERM, terminate)
 while True:
     time.sleep(1)
-`.trimStart()
+`.trimStart(),
       );
 
       for (const [signal, expectedCode] of [
@@ -1839,10 +1621,7 @@ run_supervised /usr/bin/python3 "$FIXTURE_PROGRAM" "$READY_FILE" "$OWNED_PORT"
         child.stderr?.on('data', (chunk) => {
           stderr += chunk;
         });
-        await waitUntil(
-          () => existsSync(readyFile) && existsSync(secretFile),
-          3_000
-        );
+        await waitUntil(() => existsSync(readyFile) && existsSync(secretFile), 3_000);
         assert.equal((await import('node:fs')).lstatSync(secretFile).mode & 0o777, 0o600);
         assert.equal(await portIsOpen(ownedPort), true);
         const grandchildPid = Number(readFileSync(readyFile, 'utf8'));
@@ -1900,19 +1679,13 @@ run_supervised /usr/bin/python3 \
       detachedHarnessProcess.stderr?.on('data', (chunk) => {
         detachedStderr += chunk;
       });
-      await waitUntil(
-        () => existsSync(detachedReadyFile),
-        3_000
-      );
+      await waitUntil(() => existsSync(detachedReadyFile), 3_000);
       const detachedPid = Number(readFileSync(detachedReadyFile, 'utf8'));
       detachedPidForCleanup = detachedPid;
       assert.equal(await portIsOpen(ownedPort), true);
       const detachedStartedAt = Date.now();
       assert.equal(detachedHarnessProcess.kill('SIGTERM'), true);
-      const detachedResult = await waitForExit(
-        detachedHarnessProcess,
-        3_000
-      );
+      const detachedResult = await waitForExit(detachedHarnessProcess, 3_000);
       detachedHarnessForCleanup = undefined;
       assert.equal(detachedResult.code, 143, detachedStderr);
       assert.ok(Date.now() - detachedStartedAt < 3_000);
@@ -1930,7 +1703,7 @@ run_supervised /usr/bin/python3 \
 
       const injectedRunSource = runSource.replace(
         `' "$@" <&0 &\n  supervised_pid=$!`,
-        () => `' "$@" <&0 &\n  kill -TERM "$$"\n  supervised_pid=$!`
+        () => `' "$@" <&0 &\n  kill -TERM "$$"\n  supervised_pid=$!`,
       );
       assert.notEqual(injectedRunSource, runSource);
       const immediateHarness = String.raw`
@@ -1958,11 +1731,7 @@ run_supervised /usr/bin/python3 -c 'import time; time.sleep(5)'
         encoding: 'utf8',
         timeout: 4_000,
       });
-      assert.equal(
-        immediate.status,
-        143,
-        `pre-$! cancellation failed:\n${immediate.stderr}`
-      );
+      assert.equal(immediate.status, 143, `pre-$! cancellation failed:\n${immediate.stderr}`);
 
       for (const exitCode of [0, 7]) {
         const result = spawnSync(
@@ -1981,7 +1750,7 @@ run_supervised /usr/bin/python3 -c \
   "import sys,time; time.sleep(0.1); sys.exit(${exitCode})"
 `,
           ],
-          { encoding: 'utf8', timeout: 5_000 }
+          { encoding: 'utf8', timeout: 5_000 },
         );
         assert.equal(result.status, exitCode, result.stderr);
       }
@@ -1997,7 +1766,7 @@ run_supervised /usr/bin/python3 -c \
       await new Promise<void>((resolve) => unrelatedServer.close(() => resolve()));
       rmSync(fixtureRoot, { force: true, recursive: true });
     }
-  }
+  },
 );
 
 test(
@@ -2006,7 +1775,7 @@ test(
   () => {
     const iosStep = namedStepBlock(
       jobBlock(workflow('trusted-selective-tests.yml'), 'detox-ios-selected'),
-      'Build and run selected iOS suites with trapped resources'
+      'Build and run selected iOS suites with trapped resources',
     );
     const supervisorSource = [
       shellFunctionSource(iosStep, 'supervised_process_group_exists'),
@@ -2014,13 +1783,8 @@ test(
       shellFunctionSource(iosStep, 'terminate_supervised_child'),
       shellFunctionSource(iosStep, 'run_supervised'),
     ].join('\n');
-    const recoveryStart = iosStep.indexOf(
-      '          recover_ios_ledger() {\n'
-    );
-    const recoveryEnd = iosStep.indexOf(
-      '\n          cleanup_ios_resources() {',
-      recoveryStart
-    );
+    const recoveryStart = iosStep.indexOf('          recover_ios_ledger() {\n');
+    const recoveryEnd = iosStep.indexOf('\n          cleanup_ios_resources() {', recoveryStart);
     assert.notEqual(recoveryStart, -1);
     assert.notEqual(recoveryEnd, -1);
     const recoverySource = iosStep
@@ -2028,22 +1792,18 @@ test(
       .split('\n')
       .map((line) => line.replace(/^ {10}/, ''))
       .join('\n');
-    const fixtureRoot = mkdtempSync(
-      join(tmpdir(), 'mychampions-ios-recovery-')
-    );
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-ios-recovery-'));
     const fakeBin = join(fixtureRoot, 'bin');
     const fakeXcrun = join(fakeBin, 'xcrun');
     const simulatorState = join(fixtureRoot, 'simulators.json');
     const ledger = join(fixtureRoot, 'ios-simulator.state');
     const allowDelete = join(fixtureRoot, 'allow-delete');
     const log = join(fixtureRoot, 'simctl.log');
-    const runtime =
-      'com.apple.CoreSimulator.SimRuntime.iOS-26-0';
+    const runtime = 'com.apple.CoreSimulator.SimRuntime.iOS-26-0';
     const name = 'mychampions-ci-42-1';
     const ownedUdid = 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE';
     const unrelatedUdid = '11111111-2222-3333-4444-555555555555';
-    const deviceType =
-      'com.apple.CoreSimulator.SimDeviceType.iPhone-17';
+    const deviceType = 'com.apple.CoreSimulator.SimDeviceType.iPhone-17';
 
     mkdirSync(fakeBin);
     writeFileSync(
@@ -2074,7 +1834,7 @@ if args[:2] == ["simctl", "delete"]:
             json.dump(payload, state)
     raise SystemExit(0)
 raise SystemExit("unexpected xcrun invocation")
-`
+`,
     );
     chmodSync(fakeXcrun, 0o755);
     const writeLedger = (phase: 'intent' | 'created', udid: string) => {
@@ -2089,7 +1849,7 @@ raise SystemExit("unexpected xcrun invocation")
           `udid=${udid}`,
           '',
         ].join('\n'),
-        { mode: 0o600 }
+        { mode: 0o600 },
       );
       chmodSync(ledger, 0o600);
     };
@@ -2123,14 +1883,11 @@ recover_ios_ledger "$RECOVERY_MODE"
             SIMULATOR_STATE: simulatorState,
           },
           timeout: 8_000,
-        }
+        },
       );
 
     try {
-      writeFileSync(
-        simulatorState,
-        JSON.stringify({ devices: { [runtime]: [] } })
-      );
+      writeFileSync(simulatorState, JSON.stringify({ devices: { [runtime]: [] } }));
       writeLedger('intent', '');
       const interrupted = runRecovery('fast');
       assert.notEqual(interrupted.status, 0);
@@ -2155,7 +1912,7 @@ recover_ios_ledger "$RECOVERY_MODE"
               },
             ],
           },
-        })
+        }),
       );
       const failed = runRecovery();
       assert.notEqual(
@@ -2165,7 +1922,7 @@ recover_ios_ledger "$RECOVERY_MODE"
           existsSync(log) ? readFileSync(log, 'utf8') : 'no simctl log'
         }\nstate=${readFileSync(simulatorState, 'utf8')}\nledger=${
           existsSync(ledger) ? readFileSync(ledger, 'utf8') : 'missing'
-        }`
+        }`,
       );
       assert.equal(existsSync(ledger), true);
 
@@ -2176,7 +1933,7 @@ recover_ios_ledger "$RECOVERY_MODE"
       const remaining = JSON.parse(readFileSync(simulatorState, 'utf8'));
       assert.deepEqual(
         remaining.devices[runtime].map((device: { udid: string }) => device.udid),
-        [unrelatedUdid]
+        [unrelatedUdid],
       );
 
       rmSync(allowDelete);
@@ -2194,7 +1951,7 @@ recover_ios_ledger "$RECOVERY_MODE"
               },
             ],
           },
-        })
+        }),
       );
       const mismatch = runRecovery();
       assert.notEqual(mismatch.status, 0);
@@ -2202,32 +1959,24 @@ recover_ios_ledger "$RECOVERY_MODE"
     } finally {
       rmSync(fixtureRoot, { force: true, recursive: true });
     }
-  }
+  },
 );
 
 test('Android delayed-ledger cancellation retains state for exact next-run recovery', () => {
   const androidStep = namedStepBlock(
     jobBlock(workflow('trusted-selective-tests.yml'), 'detox-android-selected'),
-    'Run selected Android suites on a supported emulator port'
+    'Run selected Android suites on a supported emulator port',
   );
-  const fastCleanup = shellFunctionSource(
-    androidStep,
-    'cleanup_emulator_fast'
-  );
+  const fastCleanup = shellFunctionSource(androidStep, 'cleanup_emulator_fast');
   const normalCleanup = shellFunctionSource(androidStep, 'cleanup_emulator');
-  const fixtureRoot = mkdtempSync(
-    join(tmpdir(), 'mychampions-android-recovery-')
-  );
+  const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-android-recovery-'));
   const fakeBin = join(fixtureRoot, 'bin');
   const ledger = join(fixtureRoot, 'android.state');
   mkdirSync(fakeBin);
-  writeFileSync(
-    join(fakeBin, 'timeout'),
-    '#!/usr/bin/env bash\nshift\nexec "$@"\n'
-  );
+  writeFileSync(join(fakeBin, 'timeout'), '#!/usr/bin/env bash\nshift\nexec "$@"\n');
   writeFileSync(
     join(fakeBin, 'adb'),
-    '#!/usr/bin/env bash\nkill -TERM "$OWNED_PID" 2>/dev/null || true\n'
+    '#!/usr/bin/env bash\nkill -TERM "$OWNED_PID" 2>/dev/null || true\n',
   );
   chmodSync(join(fakeBin, 'timeout'), 0o755);
   chmodSync(join(fakeBin, 'adb'), 0o755);
@@ -2289,7 +2038,7 @@ cleanup_emulator
           STATE_FILE: ledger,
         },
         timeout: 6_000,
-      }
+      },
     );
     assert.equal(result.status, 0, result.stderr);
     assert.equal(existsSync(ledger), false);
@@ -2302,21 +2051,13 @@ test(
   'Android ledger loader and verifier fail closed while preserving unrelated PID reuse',
   { timeout: 20_000 },
   () => {
-    const androidLane = jobBlock(
-      workflow('trusted-selective-tests.yml'),
-      'detox-android-selected'
-    );
+    const androidLane = jobBlock(workflow('trusted-selective-tests.yml'), 'detox-android-selected');
     const androidStep = namedStepBlock(
       androidLane,
-      'Run selected Android suites on a supported emulator port'
+      'Run selected Android suites on a supported emulator port',
     );
-    const loaderStart = androidStep.indexOf(
-      '          load_android_state() {\n'
-    );
-    const loaderEnd = androidStep.indexOf(
-      '\n          proc_identity() {',
-      loaderStart
-    );
+    const loaderStart = androidStep.indexOf('          load_android_state() {\n');
+    const loaderEnd = androidStep.indexOf('\n          proc_identity() {', loaderStart);
     assert.notEqual(loaderStart, -1);
     assert.notEqual(loaderEnd, -1);
     const loaderSource = androidStep
@@ -2325,18 +2066,12 @@ test(
       .map((line) => line.replace(/^ {10}/, ''))
       .join('\n');
 
-    const verifierStep = namedStepBlock(
-      androidLane,
-      'Verify Android emulator cleanup'
-    );
+    const verifierStep = namedStepBlock(androidLane, 'Verify Android emulator cleanup');
     const verifierMarker =
       '          /usr/bin/python3 - "$recovery_root/android-emulator-5554.state" <<\'PY\'\n';
     const verifierStart = verifierStep.indexOf(verifierMarker);
     const verifierBodyStart = verifierStart + verifierMarker.length;
-    const verifierEnd = verifierStep.indexOf(
-      '\n          PY',
-      verifierBodyStart
-    );
+    const verifierEnd = verifierStep.indexOf('\n          PY', verifierBodyStart);
     assert.notEqual(verifierStart, -1);
     assert.notEqual(verifierEnd, -1);
     const verifierPython = verifierStep
@@ -2346,23 +2081,23 @@ test(
       .join('\n')
       .replace(
         'path = pathlib.Path("/proc", pid)',
-        'path = pathlib.Path(os.environ["PROC_ROOT"], pid)'
+        'path = pathlib.Path(os.environ["PROC_ROOT"], pid)',
       )
       .replace(
         'os.path.realpath(f"/proc/{values[\'pid\']}/exe")',
-        'os.path.realpath(pathlib.Path(os.environ["PROC_ROOT"], values["pid"], "exe"))'
+        'os.path.realpath(pathlib.Path(os.environ["PROC_ROOT"], values["pid"], "exe"))',
       )
       .replace(
         'for directory in pathlib.Path("/proc").glob("[0-9]*"):',
-        'for directory in pathlib.Path(os.environ["PROC_ROOT"]).glob("[0-9]*"):'
+        'for directory in pathlib.Path(os.environ["PROC_ROOT"]).glob("[0-9]*"):',
       )
       .replace(
         'os.kill(int(values["pid"]), signal.SIGTERM)',
-        'pathlib.Path(os.environ["SIGNAL_LOG"]).write_text("TERM", encoding="utf-8")'
+        'pathlib.Path(os.environ["SIGNAL_LOG"]).write_text("TERM", encoding="utf-8")',
       )
       .replace(
         'os.kill(int(values["pid"]), signal.SIGKILL)',
-        'pathlib.Path(os.environ["SIGNAL_LOG"]).write_text("KILL", encoding="utf-8")'
+        'pathlib.Path(os.environ["SIGNAL_LOG"]).write_text("KILL", encoding="utf-8")',
       )
       .replace('for _ in range(30):', 'for _ in range(1):')
       .replace('for _ in range(20):', 'for _ in range(1):')
@@ -2370,9 +2105,7 @@ test(
       .replaceAll('time.sleep(0.5)', 'time.sleep(0.01)')
       .replaceAll('time.sleep(0.25)', 'time.sleep(0.01)');
 
-    const fixtureRoot = mkdtempSync(
-      join(tmpdir(), 'mychampions-android-verifier-')
-    );
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-android-verifier-'));
     const fakeBin = join(fixtureRoot, 'bin');
     const procRoot = join(fixtureRoot, 'proc');
     const stateFile = join(fixtureRoot, 'android-emulator-5554.state');
@@ -2393,24 +2126,18 @@ test(
     const sleepExecutable = spawnSync(
       'python3',
       ['-c', 'import os; print(os.path.realpath("/bin/sleep"))'],
-      { encoding: 'utf8' }
+      { encoding: 'utf8' },
     ).stdout.trim();
     const procFields = Array(20).fill('0');
     procFields[0] = 'S';
     procFields[19] = '999';
     writeFileSync(
       join(pidDirectory, 'stat'),
-      `123 (fixture process with spaces) ${procFields.join(' ')}\n`
+      `123 (fixture process with spaces) ${procFields.join(' ')}\n`,
     );
-    writeFileSync(
-      join(pidDirectory, 'cmdline'),
-      Buffer.from('fixture\0--unrelated\0')
-    );
+    writeFileSync(join(pidDirectory, 'cmdline'), Buffer.from('fixture\0--unrelated\0'));
     symlinkSync(sleepExecutable, join(pidDirectory, 'exe'));
-    writeFileSync(
-      join(unrelatedDirectory, 'cmdline'),
-      Buffer.from('unrelated\0--listener\0')
-    );
+    writeFileSync(join(unrelatedDirectory, 'cmdline'), Buffer.from('unrelated\0--listener\0'));
 
     const flags =
       '-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect';
@@ -2431,7 +2158,7 @@ test(
           `flags=${flags}`,
           '',
         ].join('\n'),
-        { mode: 0o600 }
+        { mode: 0o600 },
       );
       chmodSync(stateFile, 0o600);
     };
@@ -2461,7 +2188,7 @@ printf '%s\n' "$emulator_pid:$emulator_avd:$emulator_port:$emulator_serial"
         {
           encoding: 'utf8',
           env: { ...process.env, STATE_FILE: stateFile },
-        }
+        },
       );
     const runVerifier = () =>
       spawnSync('python3', [verifierProgram, stateFile], {
@@ -2531,8 +2258,8 @@ printf '%s\n' "$emulator_pid:$emulator_avd:$emulator_port:$emulator_serial"
             '-gpu',
             'swiftshader_indirect',
             '',
-          ].join('\0')
-        )
+          ].join('\0'),
+        ),
       );
       writeAndroidState('999');
       const failedCleanup = runVerifier();
@@ -2551,30 +2278,24 @@ printf '%s\n' "$emulator_pid:$emulator_avd:$emulator_port:$emulator_serial"
       }
       rmSync(fixtureRoot, { force: true, recursive: true });
     }
-  }
+  },
 );
 
 test('selected web browsers use an isolated cache and preserve user-local libraries', () => {
-  const webLane = jobBlock(
-    workflow('trusted-selective-tests.yml'),
-    'web-selected'
-  );
+  const webLane = jobBlock(workflow('trusted-selective-tests.yml'), 'web-selected');
 
   assert.match(
     webLane,
-    /^      PLAYWRIGHT_BROWSERS_PATH: \/home\/eduardo\/\.cache\/ms-playwright-mychampions$/m
+    /^      PLAYWRIGHT_BROWSERS_PATH: \/home\/eduardo\/\.cache\/ms-playwright-mychampions$/m,
   );
-  assert.match(
-    webLane,
-    /^      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'$/m
-  );
+  assert.match(webLane, /^      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'$/m);
   assert.match(webLane, /find "\$PLAYWRIGHT_BROWSERS_PATH"/);
   assert.match(webLane, /-name minibrowser-wpe -o -name minibrowser-gtk/);
   assert.match(webLane, /wrapper="\$directory\/MiniBrowser"/);
   assert.ok(
     webLane.includes(
-      'export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"'
-    )
+      'export LD_LIBRARY_PATH="${MYDIR}/lib:${MYDIR}/sys/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"',
+    ),
   );
   assert.doesNotMatch(webLane, /\/home\/eduardo\/\.cache\/ms-playwright\/webkit-/);
 });
@@ -2587,7 +2308,7 @@ test('legacy platform workflows are manual-only and have no PR-event job guards'
     assert.match(triggers, /^  workflow_dispatch:$/m);
     assert.doesNotMatch(
       triggers,
-      /^  (?:pull_request|pull_request_target|push|merge_group|schedule):/m
+      /^  (?:pull_request|pull_request_target|push|merge_group|schedule):/m,
     );
     assert.doesNotMatch(source, /github\.event\.pull_request/);
     assert.match(source, /^jobs:$/m);
@@ -2609,40 +2330,20 @@ test('all workflows avoid GitHub Actions-backed dependency caches', () => {
 
 test('all third-party workflow actions use the reviewed immutable release pins', () => {
   const expectedPins = new Map([
-    [
-      'actions/checkout',
-      ['11d5960a326750d5838078e36cf38b85af677262', 'v4.4.0'],
-    ],
-    [
-      'actions/setup-node',
-      ['49933ea5288caeca8642d1e84afbd3f7d6820020', 'v4.4.0'],
-    ],
-    [
-      'actions/setup-java',
-      ['c1e323688fd81a25caa38c78aa6df2d33d3e20d9', 'v4.8.0'],
-    ],
-    [
-      'actions/upload-artifact',
-      ['ea165f8d65b6e75b540449e92b4886f43607fa02', 'v4.6.2'],
-    ],
-    [
-      'oven-sh/setup-bun',
-      ['0c5077e51419868618aeaa5fe8019c62421857d6', 'v2.2.0'],
-    ],
-    [
-      'r0adkll/upload-google-play',
-      ['e738b9dd8f2476ea806d921b64aacd24f34515a5', 'v1.1.5'],
-    ],
+    ['actions/checkout', ['11d5960a326750d5838078e36cf38b85af677262', 'v4.4.0']],
+    ['actions/setup-node', ['49933ea5288caeca8642d1e84afbd3f7d6820020', 'v4.4.0']],
+    ['actions/setup-java', ['c1e323688fd81a25caa38c78aa6df2d33d3e20d9', 'v4.8.0']],
+    ['actions/upload-artifact', ['ea165f8d65b6e75b540449e92b4886f43607fa02', 'v4.6.2']],
+    ['oven-sh/setup-bun', ['0c5077e51419868618aeaa5fe8019c62421857d6', 'v2.2.0']],
+    ['r0adkll/upload-google-play', ['e738b9dd8f2476ea806d921b64aacd24f34515a5', 'v1.1.5']],
   ]);
   const observedActions = new Set<string>();
 
   for (const [name, source] of workflows) {
-    const usesLines = source
-      .split('\n')
-      .filter((line) => /^\s+(?:-\s+)?uses:\s+/.test(line));
+    const usesLines = source.split('\n').filter((line) => /^\s+(?:-\s+)?uses:\s+/.test(line));
     for (const line of usesLines) {
       const match = line.match(
-        /^\s+(?:-\s+)?uses:\s+([^@\s]+)@([0-9a-f]{40})\s+#\s+(v\d+\.\d+\.\d+)\s*$/
+        /^\s+(?:-\s+)?uses:\s+([^@\s]+)@([0-9a-f]{40})\s+#\s+(v\d+\.\d+\.\d+)\s*$/,
       );
       assert.ok(match, `${name}: action must use a full SHA and version comment: ${line}`);
 
@@ -2657,7 +2358,7 @@ test('all third-party workflow actions use the reviewed immutable release pins',
       assert.match(
         checkout,
         /persist-credentials: false/,
-        `${name}: checkout must not persist the workflow token`
+        `${name}: checkout must not persist the workflow token`,
       );
     }
   }
@@ -2695,10 +2396,7 @@ test('every other artifact is either bounded failure evidence or a one-day relea
   ]);
 
   for (const [name, expectedPaths] of expectedFailurePaths) {
-    const uploads = actionStepBlocks(
-      workflow(name),
-      'actions/upload-artifact'
-    );
+    const uploads = actionStepBlocks(workflow(name), 'actions/upload-artifact');
     assert.equal(uploads.length, expectedPaths.size, name);
 
     for (const upload of uploads) {
@@ -2710,11 +2408,31 @@ test('every other artifact is either bounded failure evidence or a one-day relea
   }
 
   for (const name of ['android-release.yml', 'ios-release.yml']) {
-    const uploads = actionStepBlocks(
-      workflow(name),
-      'actions/upload-artifact'
-    );
+    const uploads = actionStepBlocks(workflow(name), 'actions/upload-artifact');
     assert.equal(uploads.length, 1, name);
     assert.match(uploads[0], /^\s+retention-days: 1$/m, name);
   }
+});
+
+test('protected native full validation is manual/release-only and builds once per platform', () => {
+  const workflow = readFileSync(
+    join(root, '.github', 'workflows', 'detox-protected-full.yml'),
+    'utf8',
+  );
+
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /release:\s*\n\s+types: \[published\]/);
+  assert.doesNotMatch(workflow, /schedule:/);
+  assert.match(workflow, /mychampions-ios/);
+  assert.match(workflow, /mychampions-android/);
+  assert.match(workflow, /yarn test:e2e:build:ios:debug/);
+  assert.match(workflow, /app:assembleDevDebugAndroidTest/);
+  assert.equal((workflow.match(/DETOX_SKIP_BUILD=true yarn test:impact:execute/g) ?? []).length, 2);
+  assert.equal((workflow.match(/MYCHAMPIONS_NATIVE_STATE_ROOT/g) ?? []).length >= 4, true);
+  assert.equal((workflow.match(/mychampions-native-host\.lock/g) ?? []).length >= 4, true);
+  assert.equal((workflow.match(/fcntl\.flock/g) ?? []).length, 2);
+  assert.match(workflow, /SELECTED_SUITES_JSON:/);
+  assert.match(workflow, /if: failure\(\)/);
+  assert.match(workflow, /retention-days: 1/);
+  assert.doesNotMatch(workflow, /detox:revenuecat-live/);
 });

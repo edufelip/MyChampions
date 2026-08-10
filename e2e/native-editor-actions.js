@@ -38,29 +38,35 @@ async function waitForElementAttributes(testId, predicate, timeoutMs, expectatio
     await sleep(100);
   } while (Date.now() < deadline);
 
-  const observed = lastError instanceof Error
-    ? lastError.message
-    : JSON.stringify(lastAttributes);
+  const observed = lastError instanceof Error ? lastError.message : JSON.stringify(lastAttributes);
   throw new Error(`Timed out waiting for ${testId} ${expectation}: ${observed}`);
 }
 
 async function submitFocusedEditor(testId) {
-  await waitFor(element(by.id(testId))).toBeFocused().withTimeout(2000);
+  await waitFor(element(by.id(testId)))
+    .toBeFocused()
+    .withTimeout(2000);
   if (device.getPlatform() === 'android') {
     await device.getUiDevice().pressEnter();
   } else {
     await element(by.id(testId)).tapReturnKey();
-    await waitFor(element(by.id(testId))).not.toBeFocused().withTimeout(2000);
+    await waitFor(element(by.id(testId)))
+      .not.toBeFocused()
+      .withTimeout(2000);
   }
 }
 
 async function dismissFocusedEditor(testId) {
-  await waitFor(element(by.id(testId))).toBeFocused().withTimeout(2000);
+  await waitFor(element(by.id(testId)))
+    .toBeFocused()
+    .withTimeout(2000);
   if (device.getPlatform() === 'android') {
     await device.pressBack();
   } else {
     await element(by.id(testId)).tapReturnKey();
-    await waitFor(element(by.id(testId))).not.toBeFocused().withTimeout(2000);
+    await waitFor(element(by.id(testId)))
+      .not.toBeFocused()
+      .withTimeout(2000);
   }
 }
 
@@ -84,7 +90,7 @@ async function waitForElementEnabled(testId, timeoutMs = 5000) {
     testId,
     (attributes) => attributes?.enabled === true,
     timeoutMs,
-    'to become enabled'
+    'to become enabled',
   );
 }
 
@@ -104,7 +110,7 @@ async function waitForElementActionable(testId, timeoutMs = 5000) {
         (attributes) =>
           attributes?.enabled === true &&
           attributes?.visible === true &&
-          (!requireHittable || attributes?.hittable === true)
+          (!requireHittable || attributes?.hittable === true),
       );
       if (candidate) {
         const frame = JSON.stringify(candidate.frame ?? candidate.elementFrame);
@@ -125,14 +131,17 @@ async function waitForElementActionable(testId, timeoutMs = 5000) {
     await sleep(100);
   } while (Date.now() < deadline);
 
-  const observed = lastError instanceof Error
-    ? lastError.message
-    : JSON.stringify(lastAttributes);
+  const observed = lastError instanceof Error ? lastError.message : JSON.stringify(lastAttributes);
   throw new Error(`Timed out waiting for ${testId} to become actionable: ${observed}`);
 }
 
 async function waitForElementPresent(testId, timeoutMs = 5000) {
-  await waitForElementAttributes(testId, (attributes) => Boolean(attributes), timeoutMs, 'to exist');
+  await waitForElementAttributes(
+    testId,
+    (attributes) => Boolean(attributes),
+    timeoutMs,
+    'to exist',
+  );
 }
 
 async function waitForElementAbsent(testId, timeoutMs = 5000) {
@@ -158,7 +167,7 @@ async function waitForElementAbsent(testId, timeoutMs = 5000) {
   } while (Date.now() < deadline);
 
   throw new Error(
-    `Timed out waiting for ${testId} to remain absent: ${JSON.stringify(lastAttributes)}`
+    `Timed out waiting for ${testId} to remain absent: ${JSON.stringify(lastAttributes)}`,
   );
 }
 
@@ -170,7 +179,7 @@ async function waitForElementText(testId, expectedText, timeoutMs = 5000) {
       attributes?.label === expectedText ||
       attributes?.value === expectedText,
     timeoutMs,
-    `to display ${JSON.stringify(expectedText)}`
+    `to display ${JSON.stringify(expectedText)}`,
   );
 }
 

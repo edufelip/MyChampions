@@ -35,7 +35,9 @@ export function useExerciseThumbnail(exerciseId: string | undefined): string | n
           setThumbnailUrl(exercise.thumbnailUrl);
           return;
         }
-        logNetworkDebug('useExerciseThumbnail', 'Thumbnail unavailable; using placeholder.', { exerciseId });
+        logNetworkDebug('useExerciseThumbnail', 'Thumbnail unavailable; using placeholder.', {
+          exerciseId,
+        });
       })
       .catch((error) => {
         console.error('[useExerciseThumbnail] Thumbnail fetch failed:', {

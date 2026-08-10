@@ -6,7 +6,7 @@ import { flowAtlasManifest, flowAtlasPlatforms } from './flow-atlas-manifest.mjs
 
 if (!process.env.WEB_E2E_ARTIFACT_ROOT) {
   throw new Error(
-    'WEB_E2E_ARTIFACT_ROOT is required; run yarn test:e2e:web:flow-atlas to verify a fresh capture'
+    'WEB_E2E_ARTIFACT_ROOT is required; run yarn test:e2e:web:flow-atlas to verify a fresh capture',
   );
 }
 
@@ -45,7 +45,7 @@ for (const flow of flowAtlasManifest) {
     });
     if (missingScreenshots.length > 0 || unexpectedScreenshots.length > 0) {
       failures.push(
-        `${flow.id}/${platform}: missing [${missingScreenshots.join(', ')}], unexpected [${unexpectedScreenshots.join(', ')}]`
+        `${flow.id}/${platform}: missing [${missingScreenshots.join(', ')}], unexpected [${unexpectedScreenshots.join(', ')}]`,
       );
     }
   }
@@ -53,7 +53,7 @@ for (const flow of flowAtlasManifest) {
 
 const expectedTotal = flowAtlasManifest.reduce(
   (total, flow) => total + flow.checkpointCount * flowAtlasPlatforms.length,
-  0
+  0,
 );
 const actualTotal = inventory.reduce((total, row) => total + row.actual, 0);
 const summary = {
@@ -72,13 +72,11 @@ await mkdir(artifactRoot, { recursive: true });
 await writeFile(
   path.join(artifactRoot, 'flow-coverage.json'),
   `${JSON.stringify(summary, null, 2)}\n`,
-  'utf8'
+  'utf8',
 );
 
 const rows = inventory
-  .map((row) =>
-    `| ${row.flow} | ${row.platform} | ${row.actual}/${row.expected} | Pending | |`
-  )
+  .map((row) => `| ${row.flow} | ${row.platform} | ${row.actual}/${row.expected} | Pending | |`)
   .join('\n');
 const checklist = `# Complete flow atlas manual validation
 

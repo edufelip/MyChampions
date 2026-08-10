@@ -25,7 +25,7 @@ test('logWorkoutSession posts to the MyChampions server when a local bearer toke
             createdAt: '2026-06-28T10:00:00.000Z',
           },
         }),
-        { status: 201, headers: { 'content-type': 'application/json' } }
+        { status: 201, headers: { 'content-type': 'application/json' } },
       );
     },
   });
@@ -50,7 +50,7 @@ test('logWorkoutSession fails closed when local server auth is missing', async (
           throw new Error('fetch should not be called without a token');
         },
       }),
-    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'permission'
+    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'permission',
   );
 });
 
@@ -64,7 +64,7 @@ test('logWorkoutSession fails closed when local server URL is missing', async ()
           throw new Error('fetch should not be called without a server URL');
         },
       }),
-    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'configuration'
+    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'configuration',
   );
 });
 
@@ -88,7 +88,7 @@ test('getTodayWorkoutLogs reads from the MyChampions server when a local bearer 
             },
           ],
         }),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
     },
   });
@@ -103,7 +103,10 @@ test('getTodayWorkoutLogs reads from the MyChampions server when a local bearer 
     },
   ]);
   assert.ok(captured);
-  assert.equal((captured as Request).url.startsWith('http://server.test/training/workout-logs?from='), true);
+  assert.equal(
+    (captured as Request).url.startsWith('http://server.test/training/workout-logs?from='),
+    true,
+  );
   assert.equal((captured as Request).method, 'GET');
   assert.equal((captured as Request).headers.get('authorization'), 'Bearer server-token');
 });
@@ -118,7 +121,7 @@ test('getTodayWorkoutLogs fails closed when local server auth is missing', async
           throw new Error('fetch should not be called without a token');
         },
       }),
-    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'permission'
+    (error: unknown) => error instanceof WorkoutLogSourceError && error.code === 'permission',
   );
 });
 
@@ -154,10 +157,12 @@ test('assigned training E2E fixture logs today workout sessions without server a
     if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
     else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-    if (previousStudentTrainingFixture === undefined) delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
+    if (previousStudentTrainingFixture === undefined)
+      delete process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE;
     else process.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE = previousStudentTrainingFixture;
 
-    if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    if (previousDev === undefined)
+      delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
     else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
   }
 });

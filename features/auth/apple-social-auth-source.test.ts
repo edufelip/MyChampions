@@ -63,7 +63,7 @@ describe('apple-social-auth-source', () => {
             throw new Error('server sign-in should not run');
           },
         }),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'configuration',
     );
   });
 
@@ -86,7 +86,7 @@ describe('apple-social-auth-source', () => {
             throw new Error('server sign-in should not run after availability failure');
           },
         }),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'network'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'network',
     );
   });
 
@@ -107,7 +107,8 @@ describe('apple-social-auth-source', () => {
             throw new Error('server sign-in should not run');
           },
         }),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'invalid_credentials'
+      (error: unknown) =>
+        error instanceof SocialAuthSourceError && error.code === 'invalid_credentials',
     );
   });
 
@@ -128,7 +129,7 @@ describe('apple-social-auth-source', () => {
             throw new Error('server sign-in should not run after native failure');
           },
         }),
-      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'network'
+      (error: unknown) => error instanceof SocialAuthSourceError && error.code === 'network',
     );
   });
 
@@ -154,7 +155,7 @@ describe('apple-social-auth-source', () => {
       (error: unknown) =>
         error instanceof Error &&
         typeof (error as { code?: unknown }).code === 'string' &&
-        String((error as { code?: unknown }).code).includes('ERR_REQUEST_CANCELED')
+        String((error as { code?: unknown }).code).includes('ERR_REQUEST_CANCELED'),
     );
   });
 });

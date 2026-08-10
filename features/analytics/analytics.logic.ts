@@ -9,18 +9,10 @@
 
 export type AnalyticsResult = 'success' | 'failure';
 
-export type AnalyticsChannel =
-  | 'email_password'
-  | 'google'
-  | 'apple'
-  | 'manual'
-  | 'qr';
+export type AnalyticsChannel = 'email_password' | 'google' | 'apple' | 'manual' | 'qr';
 
 export type AnalyticsSurface =
-  | 'auth_sign_in'
-  | 'auth_create_account'
-  | 'role_selection'
-  | 'relationship_management';
+  'auth_sign_in' | 'auth_create_account' | 'role_selection' | 'relationship_management';
 
 export type AnalyticsEventName =
   | 'auth.entry.viewed'
@@ -71,7 +63,13 @@ export function buildSignInSubmitted(channel: AnalyticsChannel): AnalyticsEvent 
 export function buildSignInFailed(channel: AnalyticsChannel, reasonCode: string): AnalyticsEvent {
   return {
     name: 'auth.sign_in.failed',
-    properties: { surface: 'auth_sign_in', step: 'submit', channel, result: 'failure', reason_code: reasonCode },
+    properties: {
+      surface: 'auth_sign_in',
+      step: 'submit',
+      channel,
+      result: 'failure',
+      reason_code: reasonCode,
+    },
   };
 }
 
@@ -85,21 +83,37 @@ export function buildSignUpSubmitted(channel: AnalyticsChannel): AnalyticsEvent 
 export function buildSignUpFailed(channel: AnalyticsChannel, reasonCode: string): AnalyticsEvent {
   return {
     name: 'auth.sign_up.failed',
-    properties: { surface: 'auth_create_account', step: 'submit', channel, result: 'failure', reason_code: reasonCode },
+    properties: {
+      surface: 'auth_create_account',
+      step: 'submit',
+      channel,
+      result: 'failure',
+      reason_code: reasonCode,
+    },
   };
 }
 
 export function buildRoleSelected(role: 'student' | 'professional'): AnalyticsEvent {
   return {
     name: 'onboarding.role.selected',
-    properties: { surface: 'role_selection', step: 'select', result: 'success', role_context: role },
+    properties: {
+      surface: 'role_selection',
+      step: 'select',
+      result: 'success',
+      role_context: role,
+    },
   };
 }
 
 export function buildSelfGuidedStartClicked(): AnalyticsEvent {
   return {
     name: 'onboarding.self_guided_start.clicked',
-    properties: { surface: 'role_selection', step: 'shortcut', result: 'success', role_context: 'student' },
+    properties: {
+      surface: 'role_selection',
+      step: 'shortcut',
+      result: 'success',
+      role_context: 'student',
+    },
   };
 }
 
@@ -110,10 +124,19 @@ export function buildInviteSubmitRequested(channel: AnalyticsChannel): Analytics
   };
 }
 
-export function buildInviteSubmitFailed(channel: AnalyticsChannel, reasonCode: string): AnalyticsEvent {
+export function buildInviteSubmitFailed(
+  channel: AnalyticsChannel,
+  reasonCode: string,
+): AnalyticsEvent {
   return {
     name: 'invite.submit.failed',
-    properties: { surface: 'relationship_management', step: 'submit', channel, result: 'failure', reason_code: reasonCode },
+    properties: {
+      surface: 'relationship_management',
+      step: 'submit',
+      channel,
+      result: 'failure',
+      reason_code: reasonCode,
+    },
   };
 }
 
@@ -127,21 +150,36 @@ export function buildInvitePendingCreated(channel: AnalyticsChannel): AnalyticsE
 export function buildInvitePendingCanceled(): AnalyticsEvent {
   return {
     name: 'invite.pending.canceled',
-    properties: { surface: 'relationship_management', step: 'canceled', result: 'success', reason_code: 'code_rotated_canceled' },
+    properties: {
+      surface: 'relationship_management',
+      step: 'canceled',
+      result: 'success',
+      reason_code: 'code_rotated_canceled',
+    },
   };
 }
 
 export function buildInvitePendingConfirmed(): AnalyticsEvent {
   return {
     name: 'invite.pending.confirmed',
-    properties: { surface: 'relationship_management', step: 'confirm', result: 'success', role_context: 'professional' },
+    properties: {
+      surface: 'relationship_management',
+      step: 'confirm',
+      result: 'success',
+      role_context: 'professional',
+    },
   };
 }
 
 export function buildInvitePendingDenied(): AnalyticsEvent {
   return {
     name: 'invite.pending.denied',
-    properties: { surface: 'relationship_management', step: 'deny', result: 'success', role_context: 'professional' },
+    properties: {
+      surface: 'relationship_management',
+      step: 'deny',
+      result: 'success',
+      role_context: 'professional',
+    },
   };
 }
 
@@ -166,11 +204,18 @@ export function buildInvitePendingBulkDenied(pendingCount: number): AnalyticsEve
  * Refs: FR-208, BR-266
  */
 export function redactEventProperties(
-  props: AnalyticsEventProperties | Record<string, unknown>
+  props: AnalyticsEventProperties | Record<string, unknown>,
 ): Record<string, unknown> {
   const FORBIDDEN_KEYS = new Set([
-    'password', 'token', 'id_token', 'access_token', 'refresh_token',
-    'invite_code', 'code', 'email', 'secret',
+    'password',
+    'token',
+    'id_token',
+    'access_token',
+    'refresh_token',
+    'invite_code',
+    'code',
+    'email',
+    'secret',
   ]);
 
   const result: Record<string, unknown> = {};

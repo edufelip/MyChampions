@@ -76,7 +76,7 @@ test('BL-004 Filter: no criteria returns all pending', () => {
   assert.equal(result.length, 3);
   assert.deepEqual(
     result.map((c) => c.id),
-    ['student-alice-123', 'student-bob-456', 'student-charlie-789']
+    ['student-alice-123', 'student-bob-456', 'student-charlie-789'],
   );
 });
 
@@ -188,9 +188,7 @@ test('BL-004 Bulk deny: validateBulkDeny returns error when empty', () => {
 
 test('BL-004 Confirmation: builds message for single nutrition request', () => {
   const selected = new Set(['student-alice-123']);
-  const pending = mockConnections.filter(
-    (c) => c.status === 'pending_confirmation'
-  );
+  const pending = mockConnections.filter((c) => c.status === 'pending_confirmation');
 
   const msg = buildBulkDenyConfirmationMessage(1, pending, selected);
 
@@ -200,14 +198,8 @@ test('BL-004 Confirmation: builds message for single nutrition request', () => {
 });
 
 test('BL-004 Confirmation: builds message for multiple mixed requests', () => {
-  const selected = new Set([
-    'student-alice-123',
-    'student-bob-456',
-    'student-charlie-789',
-  ]);
-  const pending = mockConnections.filter(
-    (c) => c.status === 'pending_confirmation'
-  );
+  const selected = new Set(['student-alice-123', 'student-bob-456', 'student-charlie-789']);
+  const pending = mockConnections.filter((c) => c.status === 'pending_confirmation');
 
   const msg = buildBulkDenyConfirmationMessage(3, pending, selected);
 
@@ -219,9 +211,7 @@ test('BL-004 Confirmation: builds message for multiple mixed requests', () => {
 
 test('BL-004 Confirmation: message for all same specialty', () => {
   const selected = new Set(['student-alice-123', 'student-charlie-789']);
-  const pending = mockConnections.filter(
-    (c) => c.status === 'pending_confirmation'
-  );
+  const pending = mockConnections.filter((c) => c.status === 'pending_confirmation');
 
   const msg = buildBulkDenyConfirmationMessage(2, pending, selected);
 
@@ -232,9 +222,7 @@ test('BL-004 Confirmation: message for all same specialty', () => {
 
 test('BL-004 Confirmation: message includes singularization for 1 request', () => {
   const selected = new Set(['student-bob-456']);
-  const pending = mockConnections.filter(
-    (c) => c.status === 'pending_confirmation'
-  );
+  const pending = mockConnections.filter((c) => c.status === 'pending_confirmation');
 
   const msg = buildBulkDenyConfirmationMessage(1, pending, selected);
 
@@ -245,9 +233,7 @@ test('BL-004 Confirmation: message includes singularization for 1 request', () =
 // ─── Search Results Summary ────────────────────────────────────────────────────
 
 test('BL-004 Summary: shows total pending count when no filter', () => {
-  const all = mockConnections.filter(
-    (c) => c.status === 'pending_confirmation'
-  );
+  const all = mockConnections.filter((c) => c.status === 'pending_confirmation');
   const criteria: QueueFilterCriteria = { searchQuery: '' };
 
   const summary = formatSearchResultsSummary(all, all, criteria);
@@ -256,9 +242,7 @@ test('BL-004 Summary: shows total pending count when no filter', () => {
 });
 
 test('BL-004 Summary: shows filtered count when criteria applied', () => {
-  const all = mockConnections.filter(
-    (c) => c.status === 'pending_confirmation'
-  );
+  const all = mockConnections.filter((c) => c.status === 'pending_confirmation');
   const filtered = filterPendingQueue(mockConnections, {
     searchQuery: 'alice',
   });
@@ -271,9 +255,7 @@ test('BL-004 Summary: shows filtered count when criteria applied', () => {
 });
 
 test('BL-004 Summary: singularizes result count', () => {
-  const all = mockConnections.filter(
-    (c) => c.status === 'pending_confirmation'
-  );
+  const all = mockConnections.filter((c) => c.status === 'pending_confirmation');
   const filtered = [all[0]!];
   const criteria: QueueFilterCriteria = { searchQuery: 'alice' };
 
@@ -293,9 +275,7 @@ test('BL-004 Edge case: empty pending list', () => {
 });
 
 test('BL-004 Edge case: all connections are non-pending', () => {
-  const nonPending = mockConnections.filter(
-    (c) => c.status !== 'pending_confirmation'
-  );
+  const nonPending = mockConnections.filter((c) => c.status !== 'pending_confirmation');
   const criteria: QueueFilterCriteria = { searchQuery: '' };
   const result = filterPendingQueue(nonPending, criteria);
 
@@ -333,7 +313,7 @@ test('BL-004 Edge case: numeric search in ID', () => {
 
 test('BL-004 Optimized: returns same results as standard filter', () => {
   const criteria: QueueFilterCriteria = { searchQuery: 'alice', specialty: 'nutritionist' };
-  
+
   const standardResult = filterPendingQueue(mockConnections, criteria);
   const optimizedResult = filterPendingQueueOptimized(mockConnections, criteria);
 
