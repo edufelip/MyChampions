@@ -2228,13 +2228,15 @@ jobs:
           distribution: temurin
           java-version: 17
       - run: yarn install --frozen-lockfile --no-progress
-      - name: Validate isolated Android runner slot
+      - id: android-slot
+        name: Validate isolated Android runner slot
         shell: bash
         run: yarn tsx scripts/ci/android-runner-slot.ts
       - name: Run native checks and build the debug APKs once
         working-directory: android
         shell: bash
         env:
+          DETOX_METRO_PORT: ${{ steps.android-slot.outputs.DETOX_METRO_PORT }}
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
         run: |
           set -euo pipefail
@@ -2488,8 +2490,32 @@ jobs:
             -DtestBuildType=debug
       - name: Run selected Android suites on a supported emulator port
         env:
+          ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ADB_SERVER_PORT }}
+          ANDROID_ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ANDROID_ADB_SERVER_PORT }}
+          ANDROID_AVD_HOME: ${{ steps.android-slot.outputs.ANDROID_AVD_HOME }}
+          ANDROID_EMULATOR_HOME: ${{ steps.android-slot.outputs.ANDROID_EMULATOR_HOME }}
+          ANDROID_SERIAL: ${{ steps.android-slot.outputs.ANDROID_SERIAL }}
+          ANDROID_TMPDIR: ${{ steps.android-slot.outputs.ANDROID_TMPDIR }}
+          ANDROID_USER_HOME: ${{ steps.android-slot.outputs.ANDROID_USER_HOME }}
+          DETOX_ANDROID_AVD: ${{ steps.android-slot.outputs.DETOX_ANDROID_AVD }}
+          DETOX_ANDROID_DEVICE: ${{ steps.android-slot.outputs.DETOX_ANDROID_DEVICE }}
+          DETOX_METRO_PORT: ${{ steps.android-slot.outputs.DETOX_METRO_PORT }}
           DETOX_SKIP_BUILD: 'true'
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          MYCHAMPIONS_ANDROID_ADB_SERVER_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_ADB_SERVER_PORT }}
+          MYCHAMPIONS_ANDROID_AVD: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD }}
+          MYCHAMPIONS_ANDROID_AVD_HOME: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD_HOME }}
+          MYCHAMPIONS_ANDROID_EMULATOR_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_PORT }}
+          MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_SERIAL }}
+          MYCHAMPIONS_ANDROID_LOCK_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOCK_ROOT }}
+          MYCHAMPIONS_ANDROID_LOG_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOG_ROOT }}
+          MYCHAMPIONS_ANDROID_METRO_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_METRO_PORT }}
+          MYCHAMPIONS_ANDROID_RECOVERY_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_RECOVERY_ROOT }}
+          MYCHAMPIONS_ANDROID_SLOT_ID: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_SLOT_ID }}
+          MYCHAMPIONS_ANDROID_TEMP_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_TEMP_ROOT }}
+          MYCHAMPIONS_ANDROID_USER_HOME: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_USER_HOME }}
+          MYCHAMPIONS_NATIVE_STATE_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_NATIVE_STATE_ROOT }}
+          TMPDIR: ${{ steps.android-slot.outputs.TMPDIR }}
         run: |
           set -euo pipefail
           env_file="$GITHUB_WORKSPACE/.env"
@@ -3464,6 +3490,31 @@ jobs:
       - name: Verify Android emulator cleanup
         if: always()
         shell: bash
+        env:
+          ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ADB_SERVER_PORT }}
+          ANDROID_ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ANDROID_ADB_SERVER_PORT }}
+          ANDROID_AVD_HOME: ${{ steps.android-slot.outputs.ANDROID_AVD_HOME }}
+          ANDROID_EMULATOR_HOME: ${{ steps.android-slot.outputs.ANDROID_EMULATOR_HOME }}
+          ANDROID_SERIAL: ${{ steps.android-slot.outputs.ANDROID_SERIAL }}
+          ANDROID_TMPDIR: ${{ steps.android-slot.outputs.ANDROID_TMPDIR }}
+          ANDROID_USER_HOME: ${{ steps.android-slot.outputs.ANDROID_USER_HOME }}
+          DETOX_ANDROID_AVD: ${{ steps.android-slot.outputs.DETOX_ANDROID_AVD }}
+          DETOX_ANDROID_DEVICE: ${{ steps.android-slot.outputs.DETOX_ANDROID_DEVICE }}
+          DETOX_METRO_PORT: ${{ steps.android-slot.outputs.DETOX_METRO_PORT }}
+          MYCHAMPIONS_ANDROID_ADB_SERVER_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_ADB_SERVER_PORT }}
+          MYCHAMPIONS_ANDROID_AVD: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD }}
+          MYCHAMPIONS_ANDROID_AVD_HOME: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD_HOME }}
+          MYCHAMPIONS_ANDROID_EMULATOR_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_PORT }}
+          MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_SERIAL }}
+          MYCHAMPIONS_ANDROID_LOCK_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOCK_ROOT }}
+          MYCHAMPIONS_ANDROID_LOG_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOG_ROOT }}
+          MYCHAMPIONS_ANDROID_METRO_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_METRO_PORT }}
+          MYCHAMPIONS_ANDROID_RECOVERY_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_RECOVERY_ROOT }}
+          MYCHAMPIONS_ANDROID_SLOT_ID: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_SLOT_ID }}
+          MYCHAMPIONS_ANDROID_TEMP_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_TEMP_ROOT }}
+          MYCHAMPIONS_ANDROID_USER_HOME: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_USER_HOME }}
+          MYCHAMPIONS_NATIVE_STATE_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_NATIVE_STATE_ROOT }}
+          TMPDIR: ${{ steps.android-slot.outputs.TMPDIR }}
         run: |
           set -euo pipefail
           recovery_root="${MYCHAMPIONS_ANDROID_RECOVERY_ROOT:?MYCHAMPIONS_ANDROID_RECOVERY_ROOT is required}"
@@ -3778,6 +3829,9 @@ jobs:
       - name: Collect bounded Android slot diagnostics
         if: always()
         shell: bash
+        env:
+          MYCHAMPIONS_ANDROID_EMULATOR_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_PORT }}
+          MYCHAMPIONS_ANDROID_LOG_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOG_ROOT }}
         run: |
           set -euo pipefail
           log_root="${MYCHAMPIONS_ANDROID_LOG_ROOT:-}"
@@ -3789,7 +3843,7 @@ jobs:
           target_log=".artifacts/ci-diagnostics/android/emulator-${emulator_port}.log"
           if [[ -f "$source_log" && ! -L "$source_log" ]]; then
             mkdir -p "$(dirname "$target_log")"
-            cp -- "$source_log" "$target_log"
+            tail -c 5242880 -- "$source_log" > "$target_log"
           fi
       - name: Upload bounded Android failure diagnostics
         if: failure()

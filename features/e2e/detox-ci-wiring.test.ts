@@ -86,7 +86,7 @@ test('Android Detox targets the committed dev and production flavors on an avail
   );
   assert.match(
     detoxConfig,
-    /-PCI_VERSION_CODE="\$\{CI_VERSION_CODE:\?CI_VERSION_CODE_required\}"/,
+    /-PCI_VERSION_CODE="\\?\$\{CI_VERSION_CODE:\?CI_VERSION_CODE_required\}"/,
     'signed Android Detox builds must require and forward the release version code',
   );
   assert.match(
@@ -132,14 +132,12 @@ test('Android Detox targets the committed dev and production flavors on an avail
     'signed productionRelease tests must remain an explicit opt-in command',
   );
   assert.match(detoxConfig, /DETOX_ANDROID_AVD \|\| 'Pixel_10'/);
-  assert.match(
-    detoxConfig,
-    /const androidMetroPort = Number\(process\.env\.DETOX_METRO_PORT \|\| '8081'\)/,
-  );
+  assert.match(detoxConfig, /const rawMetroPort = process\.env\.DETOX_METRO_PORT \|\| '8081'/);
   assert.doesNotMatch(detoxConfig, /outputs\/apk\/debug\/app-debug\.apk/);
   assert.doesNotMatch(detoxConfig, /\bassembleDebug\b/);
   assert.doesNotMatch(detoxConfig, /Pixel_9/);
-  assert.deepEqual(detoxConfiguration.apps['android.debug']?.reversePorts, [8081]);
+  const expectedMetroPort = Number(process.env.DETOX_METRO_PORT || '8081');
+  assert.deepEqual(detoxConfiguration.apps['android.debug']?.reversePorts, [expectedMetroPort]);
   assert.match(instrumentation, /REACT_NATIVE_DEBUG_SERVER_HOST = "debug_http_host"/);
   assert.match(instrumentation, /DETOX_METRO_HOST = BuildConfig\.DETOX_METRO_HOST/);
   assert.match(instrumentation, /\.putString\(REACT_NATIVE_DEBUG_SERVER_HOST, DETOX_METRO_HOST\)/);

@@ -301,16 +301,17 @@ started from that same service manager completed `emulator -accel-check` with
 availability, while the promotion PR remains the required exact-head Detox
 proof after D-195's trusted-workflow and repository controls are verified.
 
-The installed Android Emulator `36.6.11` booted `Pixel_10` successfully at
-console port `5554`, and pinned Detox `20.47.0` reused that running AVD across
-sequential specs. The selected workflow therefore restarts ADB only under the
-existing job-hook lease, fails closed on stale emulator/QEMU or `5554/5555`
-state, preboots the exact AVD with snapshots disabled and read-only state, and
-bounds readiness to 120 seconds. Teardown targets `emulator-5554` and only a
-saved PID whose runner UID, Linux start time, and command line still match the
-captured owner and expected AVD/port, verifies all QEMU processes, emulator
-devices, and owned ports disappear, and stops ADB; the workflow does not create
-a second shell-level host lock.
+The installed Android Emulator `36.6.11` booted `Pixel_10` successfully in the
+Meer slot at console port `5554`, and pinned Detox `20.47.0` reused that running
+AVD across sequential specs. The MyChampions selected workflow uses its isolated
+slot at console `5556`, ADB `5038`, and Metro `18082`; it restarts only that ADB
+namespace under the existing job-hook lease, fails closed on stale
+emulator/QEMU or `5556/5557` state, preboots the exact AVD with snapshots
+disabled and read-only state, and bounds readiness to 120 seconds. Teardown
+targets `emulator-5556` and only a saved PID whose runner UID, Linux start time,
+and command line still match the captured owner and expected AVD/port, verifies
+all QEMU processes, emulator devices, and owned ports disappear, and stops that
+ADB server; the workflow does not create a second shell-level host lock.
 
 ## Shared Host Lock Operational Record
 

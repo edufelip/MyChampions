@@ -65,7 +65,7 @@ test('production Android releases fail closed onto CI versioning and private rel
   const detoxConfig = readFileSync(join(root, '.detoxrc.js'), 'utf8');
   assert.match(
     detoxConfig,
-    /-PCI_VERSION_CODE="\$\{CI_VERSION_CODE:\?CI_VERSION_CODE_required\}"/,
+    /-PCI_VERSION_CODE="\\?\$\{CI_VERSION_CODE:\?CI_VERSION_CODE_required\}"/,
     'the explicit signed Detox build must forward an explicit version code to Gradle',
   );
   assert.match(gitignore, /^android\/keystore\.properties$/m);

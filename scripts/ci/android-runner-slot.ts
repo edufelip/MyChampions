@@ -184,6 +184,7 @@ export function androidRunnerSlotEnvironment(
     MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: slot.emulatorSerial,
     MYCHAMPIONS_ANDROID_LOG_ROOT: slot.logRoot,
     MYCHAMPIONS_ANDROID_LOCK_ROOT: slot.lockRoot,
+    MYCHAMPIONS_ANDROID_METRO_PORT: String(slot.metroPort),
     MYCHAMPIONS_ANDROID_RECOVERY_ROOT: slot.recoveryRoot,
     MYCHAMPIONS_ANDROID_SLOT_ID: slot.slotId,
     MYCHAMPIONS_ANDROID_TEMP_ROOT: slot.tempRoot,
@@ -248,6 +249,14 @@ function commandOutput(command: string, args: string[], environment: NodeJS.Proc
 function validateHost(slot: AndroidRunnerSlot, environment: NodeJS.ProcessEnv): void {
   const workspace = requiredAbsolutePath(environment, 'GITHUB_WORKSPACE');
   const runnerTemp = requiredAbsolutePath(environment, 'RUNNER_TEMP');
+  let canonicalWorkspace: string;
+  let canonicalRunnerTemp: string;
+  try {
+    canonicalWorkspace = realpathSync(workspace);
+    canonicalRunnerTemp = realpathSync(runnerTemp);
+  } catch {
+    fail('GITHUB_WORKSPACE and RUNNER_TEMP must be existing real directories');
+  }
   for (const [name, value] of [
     ['MYCHAMPIONS_ANDROID_AVD_HOME', slot.avdHome],
     ['MYCHAMPIONS_ANDROID_USER_HOME', slot.userHome],
@@ -256,7 +265,7 @@ function validateHost(slot: AndroidRunnerSlot, environment: NodeJS.ProcessEnv): 
     ['MYCHAMPIONS_ANDROID_TEMP_ROOT', slot.tempRoot],
     ['MYCHAMPIONS_ANDROID_LOCK_ROOT', slot.lockRoot],
   ] as const) {
-    validatePrivateDirectory(name, value, workspace, runnerTemp);
+    validatePrivateDirectory(name, value, canonicalWorkspace, canonicalRunnerTemp);
   }
 
   if (process.platform !== 'linux') fail('the Android slot must run on Linux');
@@ -317,8 +326,8 @@ export function writeAndroidRunnerSlotEnvironment(
 }
 
 function main(): void {
-  const githubEnv = requiredAbsolutePath(process.env, 'GITHUB_ENV');
-  const slot = writeAndroidRunnerSlotEnvironment(process.env, githubEnv);
+  const githubOutput = requiredAbsolutePath(process.env, 'GITHUB_OUTPUT');
+  const slot = writeAndroidRunnerSlotEnvironment(process.env, githubOutput);
   console.log(
     `Validated ${slot.slotId}: AVD ${slot.avd}, emulator ${slot.emulatorSerial}, ADB ${slot.adbServerPort}, Metro ${slot.metroPort}`,
   );

@@ -26,6 +26,10 @@ const workflows = new Map(
   workflowNames.map((name) => [name, readFileSync(join(workflowDirectory, name), 'utf8')]),
 );
 const detoxConfigSource = readFileSync(join(root, '.detoxrc.js'), 'utf8');
+const androidRunnerSlotSource = readFileSync(
+  join(root, 'scripts', 'ci', 'android-runner-slot.ts'),
+  'utf8',
+);
 const androidGradleSource = readFileSync(join(root, 'android', 'app', 'build.gradle'), 'utf8');
 const androidDetoxTestSource = readFileSync(
   join(
@@ -1065,6 +1069,39 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   assert.match(androidLane, /MYCHAMPIONS_ANDROID_EMULATOR_PORT/);
   assert.match(androidLane, /MYCHAMPIONS_ANDROID_LOG_ROOT/);
   assert.match(androidLane, /MYCHAMPIONS_ANDROID_RECOVERY_ROOT/);
+  assert.match(
+    androidLane,
+    /- id: android-slot[\s\S]*?yarn tsx scripts\/ci\/android-runner-slot\.ts/,
+  );
+  assert.doesNotMatch(androidLane, /GITHUB_ENV/);
+  for (const outputName of [
+    'ADB_SERVER_PORT',
+    'ANDROID_ADB_SERVER_PORT',
+    'ANDROID_AVD_HOME',
+    'ANDROID_EMULATOR_HOME',
+    'ANDROID_SERIAL',
+    'ANDROID_TMPDIR',
+    'ANDROID_USER_HOME',
+    'DETOX_ANDROID_AVD',
+    'DETOX_ANDROID_DEVICE',
+    'DETOX_METRO_PORT',
+    'MYCHAMPIONS_ANDROID_ADB_SERVER_PORT',
+    'MYCHAMPIONS_ANDROID_AVD',
+    'MYCHAMPIONS_ANDROID_AVD_HOME',
+    'MYCHAMPIONS_ANDROID_EMULATOR_PORT',
+    'MYCHAMPIONS_ANDROID_EMULATOR_SERIAL',
+    'MYCHAMPIONS_ANDROID_LOCK_ROOT',
+    'MYCHAMPIONS_ANDROID_LOG_ROOT',
+    'MYCHAMPIONS_ANDROID_METRO_PORT',
+    'MYCHAMPIONS_ANDROID_RECOVERY_ROOT',
+    'MYCHAMPIONS_ANDROID_SLOT_ID',
+    'MYCHAMPIONS_ANDROID_TEMP_ROOT',
+    'MYCHAMPIONS_ANDROID_USER_HOME',
+    'MYCHAMPIONS_NATIVE_STATE_ROOT',
+    'TMPDIR',
+  ]) {
+    assert.match(androidLane, new RegExp(`steps\\.android-slot\\.outputs\\.${outputName}`));
+  }
   assert.doesNotMatch(androidLane, /5554|5555|emulator-5554/);
   assert.match(androidLane, /Signal cleanup intentionally retains the durable ledger/);
   assert.doesNotMatch(
@@ -1081,10 +1118,11 @@ test('self-hosted selected lanes require authorization and selected skips fail p
     androidLane,
     /Validate isolated Android runner slot[\s\S]*?yarn tsx scripts\/ci\/android-runner-slot\.ts/,
   );
+  assert.match(androidRunnerSlotSource, /requiredAbsolutePath\(process\.env, 'GITHUB_OUTPUT'\)/);
   assert.doesNotMatch(androidLane, /^      DETOX_ANDROID_AVD: Pixel_10$/m);
   assert.match(
     detoxConfigSource,
-    /const androidMetroPort = Number\(process\.env\.DETOX_METRO_PORT \|\| '8081'\)/,
+    /const rawMetroPort = process\.env\.DETOX_METRO_PORT \|\| '8081'/,
   );
   assert.match(detoxConfigSource, /reversePorts: \[androidMetroPort\]/);
   assert.match(androidGradleSource, /DETOX_METRO_HOST/);

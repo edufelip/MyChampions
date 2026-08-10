@@ -65,10 +65,10 @@ Define non-functional architecture constraints and technology options for the mo
   required by the Expo video playback service, and places
   `windowSplashScreenBehavior` in `values-v33` so the API-33 attribute does not
   violate the API-24 minimum. The lane rejects stale emulator/QEMU/console
-  state, preboots `Pixel_10` on `emulator-5554`, bounds exact AVD readiness to
-  120 seconds while revalidating PID/UID/Linux start time plus AVD/port command
-  identity, lets Detox reuse that instance, and verifies that no QEMU process,
-  emulator device, or owned port survives teardown.
+  state, preboots `Pixel_10` on the MyChampions slot's `emulator-5556`, bounds
+  exact AVD readiness to 120 seconds while revalidating PID/UID/Linux start time
+  plus AVD/port command identity, lets Detox reuse that instance, and verifies
+  that no QEMU process, emulator device, or owned port survives teardown.
 
 ## Constraints From Platform Docs
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.
