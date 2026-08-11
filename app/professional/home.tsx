@@ -354,7 +354,12 @@ export default function ProfessionalHomeScreen() {
                 style={({ pressed }) => [styles.retryLink, pressed ? styles.pressed : null]}
                 testID="pro.home.attentionRetry"
               >
-                <MaterialIcons name="refresh" size={16} color={theme.color.accentPrimary} />
+                <MaterialIcons
+                  name="refresh"
+                  size={16}
+                  color={theme.color.accentPrimary}
+                  aria-hidden
+                />
                 <Text style={[styles.retryLinkText, { color: theme.color.accentPrimary }]}>
                   {t('common.error.retry')}
                 </Text>
@@ -617,7 +622,12 @@ export default function ProfessionalHomeScreen() {
             <View
               style={[styles.subscriptionIcon, { backgroundColor: theme.color.accentPrimarySoft }]}
             >
-              <MaterialIcons name="workspace-premium" size={22} color={theme.color.accentPrimary} />
+              <MaterialIcons
+                name="workspace-premium"
+                size={22}
+                color={theme.color.accentPrimary}
+                aria-hidden
+              />
             </View>
             <View style={styles.subscriptionContent}>
               <Text style={[styles.subscriptionTitle, { color: theme.color.textPrimary }]}>
@@ -631,7 +641,12 @@ export default function ProfessionalHomeScreen() {
                   : t('pro.home.subscription_status_unknown')}
               </Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={theme.color.textTertiary} />
+            <MaterialIcons
+              name="chevron-right"
+              size={24}
+              color={theme.color.textTertiary}
+              aria-hidden
+            />
           </Pressable>
         </View>
       </View>
@@ -732,7 +747,7 @@ function TaskCard({
       testID={testID}
     >
       <View style={[styles.taskIcon, { backgroundColor: theme.color.accentPrimary }]}>
-        <MaterialIcons name={iconName} size={20} color={theme.color.onAccent} />
+        <MaterialIcons name={iconName} size={20} color={theme.color.onAccent} aria-hidden />
       </View>
       <View style={styles.taskCopy}>
         <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{title}</Text>
@@ -740,7 +755,12 @@ function TaskCard({
       </View>
       <View style={styles.taskCta}>
         <Text style={[styles.taskCtaText, { color: theme.color.accentPrimary }]}>{cta}</Text>
-        <MaterialIcons name="chevron-right" size={20} color={theme.color.accentPrimary} />
+        <MaterialIcons
+          name="chevron-right"
+          size={20}
+          color={theme.color.accentPrimary}
+          aria-hidden
+        />
       </View>
     </Pressable>
   );
@@ -776,10 +796,10 @@ function QuickActionCard({
       testID={testID}
     >
       <View style={[styles.quickActionIcon, { backgroundColor: theme.color.accentPrimarySoft }]}>
-        <MaterialIcons name={iconName} size={20} color={theme.color.accentPrimary} />
+        <MaterialIcons name={iconName} size={20} color={theme.color.accentPrimary} aria-hidden />
       </View>
       <Text style={[styles.quickActionLabel, { color: theme.color.textPrimary }]}>{label}</Text>
-      <MaterialIcons name="chevron-right" size={20} color={theme.color.textTertiary} />
+      <MaterialIcons name="chevron-right" size={20} color={theme.color.textTertiary} aria-hidden />
     </Pressable>
   );
 }

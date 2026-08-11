@@ -750,6 +750,7 @@ function SettingsRow({
             size={18}
             color={theme.color.textTertiary}
             style={styles.chevronIcon}
+            aria-hidden
           />
         ) : null}
       </View>

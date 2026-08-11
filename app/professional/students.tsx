@@ -342,6 +342,7 @@ export default function ProfessionalStudentsScreen() {
                 size={20}
                 color={theme.color.textPrimary}
                 style={styles.emptySecondaryIcon}
+                aria-hidden
               />
               <Text style={[styles.emptySecondaryCtaText, { color: theme.color.textPrimary }]}>
                 {t('pro.students.empty.cta_share_link')}
