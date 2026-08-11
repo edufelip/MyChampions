@@ -9,8 +9,9 @@
  *  - CTAs to student roster and subscription (card)
  *  - Offline read-only banner + write-lock feedback
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,8 +21,6 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -30,21 +29,6 @@ import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
-import { shareAdapter } from '@/features/platform/share-adapter';
-import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
-import { resolveProfessionalHomeAttention } from '@/features/professional/professional-home.logic';
-import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
-import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
-import {
-  buildProfessionalPlanChangeNotificationSummary,
-  type ProfessionalPlanChangeNotificationSummary,
-} from '@/features/plans/plan-change-request.logic';
-import { getProfessionalPlanChangeRequests } from '@/features/plans/plan-source';
-import {
-  resolveSubscriptionState,
-  isPlanUpdateLocked,
-} from '@/features/subscription/subscription.logic';
-import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -52,6 +36,21 @@ import {
 } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import {
+  buildProfessionalPlanChangeNotificationSummary,
+  type ProfessionalPlanChangeNotificationSummary,
+} from '@/features/plans/plan-change-request.logic';
+import { getProfessionalPlanChangeRequests } from '@/features/plans/plan-source';
+import { shareAdapter } from '@/features/platform/share-adapter';
+import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
+import { resolveProfessionalHomeAttention } from '@/features/professional/professional-home.logic';
+import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
+import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
+import {
+  resolveSubscriptionState,
+  isPlanUpdateLocked,
+} from '@/features/subscription/subscription.logic';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -156,20 +155,20 @@ export default function ProfessionalHomeScreen() {
 
   function confirmRotate() {
     Alert.alert(
-      t('pro.home.invite_code.rotate_confirm_title') as string,
-      t('pro.home.invite_code.rotate_confirm_body') as string,
+      t('pro.home.invite_code.rotate_confirm_title'),
+      t('pro.home.invite_code.rotate_confirm_body'),
       [
         {
-          text: t('pro.home.invite_code.rotate_confirm_no') as string,
+          text: t('pro.home.invite_code.rotate_confirm_no'),
           style: 'cancel',
         },
         {
-          text: t('pro.home.invite_code.rotate_confirm_yes') as string,
+          text: t('pro.home.invite_code.rotate_confirm_yes'),
           onPress: async () => {
             setRotateError(null);
             const err = await rotate();
             if (err) {
-              setRotateError(t('pro.home.invite_code.rotate_error') as string);
+              setRotateError(t('pro.home.invite_code.rotate_error'));
             }
           },
         },
@@ -296,7 +295,7 @@ export default function ProfessionalHomeScreen() {
           </Text>
           <DsPillButton
             scheme={scheme}
-            label={t('pro.home.subscription.cta_renew') as string}
+            label={t('pro.home.subscription.cta_renew')}
             variant="outline"
             size="sm"
             onPress={() => router.push('/professional/subscription')}
@@ -327,7 +326,7 @@ export default function ProfessionalHomeScreen() {
           </Text>
           <View style={styles.statsRow}>
             <SummaryLinkCard
-              label={t('pro.home.active_students') as string}
+              label={t('pro.home.active_students')}
               value={activeStudentLabel}
               scheme={scheme}
               iconName="groups"
@@ -335,7 +334,7 @@ export default function ProfessionalHomeScreen() {
               testID="pro.home.activeStudents"
             />
             <SummaryLinkCard
-              label={t('pro.home.connection_requests') as string}
+              label={t('pro.home.connection_requests')}
               value={pendingConnectionLabel}
               scheme={scheme}
               iconName="person-add-alt-1"
@@ -367,12 +366,12 @@ export default function ProfessionalHomeScreen() {
             <TaskCard
               scheme={scheme}
               iconName="person-add-alt-1"
-              title={t('pro.home.connection_requests') as string}
-              body={(t('pro.home.connection_requests_body') as string).replace(
+              title={t('pro.home.connection_requests')}
+              body={t('pro.home.connection_requests_body').replace(
                 '{count}',
                 String(pendingConnections.length),
               )}
-              cta={t('pro.home.cta_pending') as string}
+              cta={t('pro.home.cta_pending')}
               onPress={() => router.push('/professional/pending')}
               testID="pro.home.connectionRequestTask"
             />
@@ -382,11 +381,11 @@ export default function ProfessionalHomeScreen() {
             <TaskCard
               scheme={scheme}
               iconName="notifications-active"
-              title={t('pro.home.plan_change_notification.title') as string}
-              body={(t('pro.home.plan_change_notification.body') as string)
+              title={t('pro.home.plan_change_notification.title')}
+              body={t('pro.home.plan_change_notification.body')
                 .replace('{count}', String(planChangeNotification.pendingCount))
                 .replace('{studentUid}', planChangeNotification.latestRequest.studentUid)}
-              cta={t('pro.home.plan_change_notification.cta') as string}
+              cta={t('pro.home.plan_change_notification.cta')}
               onPress={() => {
                 router.push(
                   `/professional/student-profile?studentId=${encodeURIComponent(
@@ -467,7 +466,7 @@ export default function ProfessionalHomeScreen() {
             <QuickActionCard
               scheme={scheme}
               iconName="groups"
-              label={t('pro.home.cta_roster') as string}
+              label={t('pro.home.cta_roster')}
               onPress={() => router.push('/(tabs)/students')}
               usesGridLayout={usesDesktopLayout}
               testID="pro.home.rosterCta"
@@ -476,7 +475,7 @@ export default function ProfessionalHomeScreen() {
               <QuickActionCard
                 scheme={scheme}
                 iconName="restaurant-menu"
-                label={t('pro.home.cta_nutrition') as string}
+                label={t('pro.home.cta_nutrition')}
                 onPress={() => router.push('/professional/nutrition')}
                 usesGridLayout={usesDesktopLayout}
                 testID="pro.home.nutritionCta"
@@ -485,7 +484,7 @@ export default function ProfessionalHomeScreen() {
             <QuickActionCard
               scheme={scheme}
               iconName="fitness-center"
-              label={t('pro.home.cta_training') as string}
+              label={t('pro.home.cta_training')}
               onPress={() => router.push('/professional/training')}
               usesGridLayout={usesDesktopLayout}
               testID="pro.home.trainingCta"
@@ -528,7 +527,7 @@ export default function ProfessionalHomeScreen() {
             {codeState.kind === 'loading' ? (
               <ActivityIndicator
                 testID="pro.home.inviteCodeLoading"
-                accessibilityLabel={t('a11y.loading.invite_code') as string}
+                accessibilityLabel={t('a11y.loading.invite_code')}
                 color={theme.color.accentPrimary}
               />
             ) : codeState.kind === 'ready' ? (
@@ -559,7 +558,7 @@ export default function ProfessionalHomeScreen() {
                       scheme={scheme}
                       variant="primary"
                       size="xs"
-                      label={t('pro.home.invite_code.share') as string}
+                      label={t('pro.home.invite_code.share')}
                       onPress={() => {
                         void handleShareCode(codeValue);
                       }}
@@ -573,7 +572,7 @@ export default function ProfessionalHomeScreen() {
                     scheme={scheme}
                     variant="primary"
                     size="xs"
-                    label={t('pro.home.invite_code.rotate') as string}
+                    label={t('pro.home.invite_code.rotate')}
                     onPress={confirmRotate}
                     fullWidth={false}
                     style={styles.outlineButtonCompact}
@@ -596,7 +595,7 @@ export default function ProfessionalHomeScreen() {
                   scheme={scheme}
                   variant="outline"
                   size="xs"
-                  label={t('pro.home.invite_code.add_specialty') as string}
+                  label={t('pro.home.invite_code.add_specialty')}
                   onPress={() => router.push('/professional/specialty')}
                   fullWidth={false}
                   testID="pro.home.inviteSpecialtyCta"
@@ -645,15 +644,15 @@ function buildOfflineText(
   t: ReturnType<typeof useTranslation>['t'],
 ): string {
   if (!staleElapsed) {
-    return t('offline.banner') as string;
+    return t('offline.banner');
   }
 
   const stalePart =
     staleElapsed.unit === 'minutes'
-      ? (t('offline.stale_minutes') as string).replace('{value}', String(staleElapsed.value))
+      ? t('offline.stale_minutes').replace('{value}', String(staleElapsed.value))
       : staleElapsed.unit === 'hours'
-        ? (t('offline.stale_hours') as string).replace('{value}', String(staleElapsed.value))
-        : (t('offline.stale_days') as string).replace('{value}', String(staleElapsed.value));
+        ? t('offline.stale_hours').replace('{value}', String(staleElapsed.value))
+        : t('offline.stale_days').replace('{value}', String(staleElapsed.value));
 
   return `${t('offline.banner')} • ${stalePart}`;
 }

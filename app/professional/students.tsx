@@ -14,8 +14,9 @@
  * Refs: D-100, D-134, FR-105, FR-122, FR-210, FR-224, FR-225
  *       BR-206, BR-214, BR-268, BR-283
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -27,8 +28,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-
+import { PlanPickerModal } from '@/components/ds/patterns/PlanPickerModal';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
@@ -42,29 +42,28 @@ import {
   type DsTheme,
 } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import { useAuthSession } from '@/features/auth/auth-session';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
-import { useAuthSession } from '@/features/auth/auth-session';
+import { usePlans } from '@/features/plans/use-plans';
 import { shareAdapter } from '@/features/platform/share-adapter';
+import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
+import {
+  getProfessionalStudentRoster,
+  type ProfessionalStudentRosterItem,
+} from '@/features/professional/professional-source';
 import {
   filterStudentRosterRows,
   filterBulkAssignmentStudentsByPlanType,
   resolveStudentRosterViewState,
 } from '@/features/professional/students-screen.logic';
-import {
-  getProfessionalStudentRoster,
-  type ProfessionalStudentRosterItem,
-} from '@/features/professional/professional-source';
-import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
 import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
-import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
-import { PlanPickerModal } from '@/components/ds/patterns/PlanPickerModal';
 
 type StudentRow = ProfessionalStudentRosterItem;
 
@@ -193,9 +192,9 @@ export default function ProfessionalStudentsScreen() {
     setIsAssigning(false);
 
     if ('error' in result) {
-      Alert.alert(t('pro.plan.assign.error') as string);
+      Alert.alert(t('pro.plan.assign.error'));
     } else {
-      Alert.alert(t('pro.plan.assign.success') as string);
+      Alert.alert(t('pro.plan.assign.success'));
       setIsSelectionMode(false);
       setSelectedStudentUids([]);
       void loadRoster();
@@ -223,7 +222,7 @@ export default function ProfessionalStudentsScreen() {
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
           scheme={scheme}
-          text={t('offline.banner') as string}
+          text={t('offline.banner')}
           testID="pro.students.offlineBanner"
         />
       ) : null}
@@ -249,7 +248,7 @@ export default function ProfessionalStudentsScreen() {
             </Text>
             <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
               {isSelectionMode
-                ? (t('pro.plan.assign.student_count') as string).replace(
+                ? t('pro.plan.assign.student_count').replace(
                     '{count}',
                     String(selectedStudentUids.length),
                   )
@@ -263,8 +262,8 @@ export default function ProfessionalStudentsScreen() {
               size="xs"
               label={
                 isSelectionMode
-                  ? (t('pro.students.bulk_assign.cancel') as string)
-                  : (t('pro.students.bulk_assign.cta') as string)
+                  ? t('pro.students.bulk_assign.cancel')
+                  : t('pro.students.bulk_assign.cta')
               }
               onPress={() => {
                 setIsSelectionMode(!isSelectionMode);
@@ -376,12 +375,12 @@ export default function ProfessionalStudentsScreen() {
                       color: theme.color.textPrimary,
                     },
                   ]}
-                  placeholder={t('pro.students.search.placeholder') as string}
+                  placeholder={t('pro.students.search.placeholder')}
                   placeholderTextColor={theme.color.textSecondary}
                   value={search}
                   onChangeText={setSearch}
                   testID="pro.students.search"
-                  accessibilityLabel={t('pro.students.search.placeholder') as string}
+                  accessibilityLabel={t('pro.students.search.placeholder')}
                 />
               </View>
 
@@ -394,7 +393,7 @@ export default function ProfessionalStudentsScreen() {
               <ActivityIndicator
                 style={styles.centered}
                 testID="pro.students.loading"
-                accessibilityLabel={t('a11y.loading.default') as string}
+                accessibilityLabel={t('a11y.loading.default')}
                 color={theme.color.accentPrimary}
               />
             ) : (
@@ -429,7 +428,7 @@ export default function ProfessionalStudentsScreen() {
                       style={[styles.emptyText, { color: theme.color.danger }]}
                       testID="pro.students.error"
                     >
-                      {loadErrorKey ? (t(loadErrorKey) as string) : ''}
+                      {loadErrorKey ? t(loadErrorKey) : ''}
                     </Text>
                   ) : (
                     <Text
@@ -459,7 +458,7 @@ export default function ProfessionalStudentsScreen() {
                   scheme={scheme}
                   variant={bulkPlanType === 'nutrition' ? 'primary' : 'outline'}
                   size="xs"
-                  label={t('pro.students.specialty.nutritionist') as string}
+                  label={t('pro.students.specialty.nutritionist')}
                   onPress={() => setBulkPlanType('nutrition')}
                   fullWidth={false}
                   testID="pro.students.bulk.planType.nutrition"
@@ -468,7 +467,7 @@ export default function ProfessionalStudentsScreen() {
                   scheme={scheme}
                   variant={bulkPlanType === 'training' ? 'primary' : 'outline'}
                   size="xs"
-                  label={t('pro.students.specialty.fitness_coach') as string}
+                  label={t('pro.students.specialty.fitness_coach')}
                   onPress={() => setBulkPlanType('training')}
                   fullWidth={false}
                   testID="pro.students.bulk.planType.training"
@@ -477,7 +476,7 @@ export default function ProfessionalStudentsScreen() {
               {selectedStudentUids.length > 0 ? (
                 <DsPillButton
                   scheme={scheme}
-                  label={(t('pro.students.bulk_assign.cta_confirm') as string).replace(
+                  label={t('pro.students.bulk_assign.cta_confirm').replace(
                     '{count}',
                     String(selectedStudentUids.length),
                   )}
@@ -515,9 +514,9 @@ function FilterChips({
   t: TFn;
 }) {
   const chips: { kind: FilterKind; label: string }[] = [
-    { kind: 'all', label: t('pro.students.filter.all') as string },
-    { kind: 'active', label: t('pro.students.filter.active') as string },
-    { kind: 'pending', label: t('pro.students.filter.pending') as string },
+    { kind: 'all', label: t('pro.students.filter.all') },
+    { kind: 'active', label: t('pro.students.filter.active') },
+    { kind: 'pending', label: t('pro.students.filter.pending') },
   ];
 
   return (
@@ -589,10 +588,10 @@ function StudentRowItem({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={(t('a11y.student_row') as string)
+      accessibilityLabel={t('a11y.student_row')
         .replace('{name}', student.displayName)
-        .replace('{specialty}', specialtyLabel as string)
-        .replace('{status}', statusLabel as string)}
+        .replace('{specialty}', specialtyLabel)
+        .replace('{status}', statusLabel)}
       onPress={onPress}
       style={[
         styles.row,
