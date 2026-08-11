@@ -6,6 +6,7 @@
  * within the app using react-native-webview.
  */
 import { useLocalSearchParams, Stack } from 'expo-router';
+import { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -16,9 +17,11 @@ import {
   Linking,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useState } from 'react';
-
 import { getDsTheme, DsRadius, DsSpace } from '@/constants/design-system';
+import {
+  allowInsecureLocalhostForDevelopment,
+  resolveSafeExternalUrl,
+} from '@/features/platform/external-url';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -30,7 +33,15 @@ export default function WebViewScreen() {
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0); // For retry
 
-  if (!url) {
+  // Validate the route param before it ever reaches WebView/Linking. This screen is a
+  // file-based expo-router route and is reachable via the app's own deep-link scheme
+  // (mychampions://shared/webview?url=...), so `url` must not be trusted as-is — the
+  // WebView's `originWhitelist` prop below is not a substitute for this app-level check.
+  const safeUrl = resolveSafeExternalUrl(url, {
+    allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),
+  });
+
+  if (!safeUrl) {
     return null;
   }
 
@@ -49,7 +60,7 @@ export default function WebViewScreen() {
           {t('auth.terms.offline_hint')}
         </Text>
         <Pressable
-          onPress={() => Linking.openURL(url)}
+          onPress={() => Linking.openURL(safeUrl)}
           style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary }]}
         >
           <Text style={[styles.retryText, { color: theme.color.onAccent }]}>
@@ -100,7 +111,7 @@ export default function WebViewScreen() {
         <WebView
           testID="shared.webview.webview"
           key={key}
-          source={{ uri: url }}
+          source={{ uri: safeUrl }}
           style={styles.webview}
           startInLoadingState
           originWhitelist={['https://portfolio.eduwaldo.com', 'https://*.eduwaldo.com']}
