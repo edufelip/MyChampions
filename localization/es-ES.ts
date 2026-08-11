@@ -21,8 +21,7 @@ export const esES: Record<TranslationKey, string> = {
   'auth.validation.name_required': 'El nombre es obligatorio.',
   'auth.validation.email_required': 'El correo es obligatorio.',
   'auth.validation.password_required': 'La contraseña es obligatoria.',
-  'auth.validation.password_confirmation_required':
-    'La confirmación de contraseña es obligatoria.',
+  'auth.validation.password_confirmation_required': 'La confirmación de contraseña es obligatoria.',
   'auth.validation.password_policy':
     'Usa al menos 8 caracteres con mayúscula, número y símbolo ASCII (ej.: ! @ #). No se permiten emojis.',
   'auth.validation.password_confirmation_mismatch':
@@ -65,8 +64,8 @@ export const esES: Record<TranslationKey, string> = {
   'auth.signup.or_continue': 'o continuar con',
   'auth.signup.password_helper':
     'Usa al menos 8 caracteres, incluyendo mayúscula, número y símbolo (ej.: ! @ #).',
-  'auth.signup.error.duplicate_email':
-    'Este correo ya está en uso. Inicia sesión para continuar.',
+  'auth.signup.error.requires_sign_in':
+    'No pudimos iniciar tu sesión automáticamente. Ingresa tu correo y contraseña en la pantalla de inicio de sesión para continuar.',
   'auth.signup.error.network':
     'No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo.',
   'auth.signup.error.provider_conflict':
@@ -78,14 +77,18 @@ export const esES: Record<TranslationKey, string> = {
   'auth.signup.already_have': '¿Ya tienes una cuenta?',
   'auth.signup.cta_back_signin': 'Volver a iniciar sesión',
   'auth.role.title': 'Elige tu camino',
-  'auth.role.intro': '¿Estás aquí para seguir tu propio recorrido fitness o para guiar a otros como profesional?',
+  'auth.role.intro':
+    '¿Estás aquí para seguir tu propio recorrido fitness o para guiar a otros como profesional?',
   'auth.role.option_self.title': 'Quiero seguir mi propio progreso',
   'auth.role.option_self.subtitle': 'Cuenta de alumno',
-  'auth.role.option_self.description': 'Registra comidas, haz seguimiento de tus entrenamientos y alcanza tus metas — solo o con un profesional.',
+  'auth.role.option_self.description':
+    'Registra comidas, haz seguimiento de tus entrenamientos y alcanza tus metas — solo o con un profesional.',
   'auth.role.option_pro.title': 'Soy nutricionista o entrenador físico',
   'auth.role.option_pro.subtitle': 'Cuenta profesional',
-  'auth.role.option_pro.description': 'Crea planes, gestiona a tus alumnos y sigue su progreso en un solo lugar.',
-  'auth.role.lock_note': 'Esto no se puede cambiar después — cada perfil tiene una cuenta separada.',
+  'auth.role.option_pro.description':
+    'Crea planes, gestiona a tus alumnos y sigue su progreso en un solo lugar.',
+  'auth.role.lock_note':
+    'Esto no se puede cambiar después — cada perfil tiene una cuenta separada.',
   'auth.role.cta_continue': 'Continuar',
   'auth.role.cta_back': 'Volver',
   'auth.role.validation.required': 'Elige cómo quieres usar la app para continuar.',
@@ -108,7 +111,8 @@ export const esES: Record<TranslationKey, string> = {
   'student.home.offline.write_lock': 'Conéctate a internet para guardar los cambios.',
   'relationship.title': 'Conectar con profesionales',
   'relationship.intro': '¿Tienes un profesional? Introduce su código de invitación.',
-  'relationship.helper_self_guided': '¿Aún no tienes uno? Puedes seguir usando la app por tu cuenta.',
+  'relationship.helper_self_guided':
+    '¿Aún no tienes uno? Puedes seguir usando la app por tu cuenta.',
   'relationship.input.invite_code': 'Introduce el código de invitación',
   'relationship.cta_scan_qr': 'Escanear código QR',
   'relationship.qr.permission_denied':
@@ -125,9 +129,11 @@ export const esES: Record<TranslationKey, string> = {
     'Ya estás conectado a un profesional en esta especialidad.',
   'relationship.error.pending_cap':
     'Este profesional tiene demasiadas solicitudes pendientes ahora. Inténtalo más tarde.',
-  'relationship.error.network': 'No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo.',
+  'relationship.error.network':
+    'No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo.',
   'relationship.error.unknown': 'Algo salió mal. Inténtalo de nuevo.',
-  'relationship.pending.helper': 'Esperando confirmación del profesional para activar esta conexión.',
+  'relationship.pending.helper':
+    'Esperando confirmación del profesional para activar esta conexión.',
   'relationship.pending.canceled_code_rotated':
     'Esta solicitud fue cancelada porque el profesional regeneró su código de invitación. Pide el nuevo código para volver a conectarte.',
   'relationship.empty.cta_continue_self': 'Continuar por mi cuenta',
@@ -144,7 +150,8 @@ export const esES: Record<TranslationKey, string> = {
   'relationship.credential.country': 'País',
   'pro.pending.search.placeholder': 'Buscar solicitudes pendientes',
   'pro.pending.title': 'Solicitudes de conexión',
-  'pro.pending.description': 'Revisa a los estudiantes que quieren trabajar contigo. Acepta solicitudes individualmente o selecciona varias para rechazarlas.',
+  'pro.pending.description':
+    'Revisa a los estudiantes que quieren trabajar contigo. Acepta solicitudes individualmente o selecciona varias para rechazarlas.',
   'pro.pending.count': '{count} pendientes',
   'pro.pending.filter.label': 'Filtrar solicitudes',
   'pro.pending.bulk_deny.cta': 'Rechazar seleccionadas',
@@ -168,7 +175,8 @@ export const esES: Record<TranslationKey, string> = {
   'common.cta.done': 'Hecho',
   'common.cta.delete': 'Eliminar',
   'pro.plan.food_search.error': 'Búsqueda de alimentos no disponible. Inténtalo de nuevo.',
-  'pro.plan.food_search.error.quota': 'La búsqueda de alimentos está temporalmente limitada. Inténtalo de nuevo en breve.',
+  'pro.plan.food_search.error.quota':
+    'La búsqueda de alimentos está temporalmente limitada. Inténtalo de nuevo en breve.',
   'pro.plan.food_search.per_100g': '(por 100g)',
   'pro.plan.error.reason': 'Motivo: {reason}',
   'pro.plan.meal.not_found': 'Comida no encontrada',
@@ -223,7 +231,8 @@ export const esES: Record<TranslationKey, string> = {
   'student.home.hydration.streak': 'Racha: {days} días',
   'student.home.hydration.goal_student': 'Usando tu objetivo personal de agua',
   'student.home.hydration.goal_nutritionist': 'Meta definida por el nutricionista',
-  'student.home.hydration.no_goal': 'Crea un plan de nutrición para definir tu objetivo diario de agua',
+  'student.home.hydration.no_goal':
+    'Crea un plan de nutrición para definir tu objetivo diario de agua',
   'student.home.nutrition.section': 'Plan de Nutrición',
   'student.home.training.section': 'Entrenamiento del Día',
   'student.home.pending_connection': 'Conexión Pendiente',
@@ -237,7 +246,8 @@ export const esES: Record<TranslationKey, string> = {
   'student.home.offline.mode': 'Modo Sin Conexión',
   'student.home.offline.read_only_badge': 'Sin conexión: Solo lectura',
   'student.home.loading.stale_title': 'Datos Desactualizados',
-  'student.home.loading.stale_body': 'Última sincronización > 24h. Desliza hacia abajo para actualizar.',
+  'student.home.loading.stale_body':
+    'Última sincronización > 24h. Desliza hacia abajo para actualizar.',
   'student.nutrition.title': 'Nutrición',
   'student.nutrition.empty.title': 'Plan alimentario no disponible',
   'student.nutrition.empty.body':
@@ -252,7 +262,8 @@ export const esES: Record<TranslationKey, string> = {
   'student.nutrition.water.personal_goal': 'Objetivo Personal',
   'student.nutrition.water.nutritionist_goal': 'Objetivo definido por tu Nutricionista',
   'student.nutrition.water.cta_log': 'Registrar Consumo',
-  'student.nutrition.water.goal_defined_in_plan': 'El objetivo de agua se define en tu plan de nutrición.',
+  'student.nutrition.water.goal_defined_in_plan':
+    'El objetivo de agua se define en tu plan de nutrición.',
   'student.nutrition.water.log.label': 'Cantidad (ml)',
   'student.nutrition.water.log.placeholder': 'Cantidad (ml)',
   'student.nutrition.water.log.validation.required': 'La cantidad es obligatoria.',
@@ -262,13 +273,17 @@ export const esES: Record<TranslationKey, string> = {
   'student.nutrition.plan_change.label': '¿Qué te gustaría cambiar?',
   'student.nutrition.plan_change.placeholder': 'Describe lo que te gustaría ajustar...',
   'student.nutrition.plan_change.validation.required': 'La descripción es obligatoria.',
-  'student.nutrition.plan_change.validation.too_short': 'Por favor, describe tu solicitud con más detalle.',
-  'student.nutrition.plan_change.error.plan_not_found': 'Plan no encontrado. Actualiza la pantalla.',
+  'student.nutrition.plan_change.validation.too_short':
+    'Por favor, describe tu solicitud con más detalle.',
+  'student.nutrition.plan_change.error.plan_not_found':
+    'Plan no encontrado. Actualiza la pantalla.',
   'student.nutrition.plan_change.error.no_active_assignment': 'No tienes un plan asignado activo.',
-  'student.nutrition.plan_change.error.network': 'Sin conexión. Comprueba tu red e inténtalo de nuevo.',
+  'student.nutrition.plan_change.error.network':
+    'Sin conexión. Comprueba tu red e inténtalo de nuevo.',
   'student.nutrition.plan_change.error.unknown': 'Algo salió mal. Inténtalo de nuevo.',
   'student.nutrition.plan_change.success': 'Solicitud de cambio enviada.',
-  'student.nutrition.assigned_plan.read_only_notice': 'Tu plan de nutrición fue asignado por un profesional. Contacta a tu nutricionista para solicitar cambios.',
+  'student.nutrition.assigned_plan.read_only_notice':
+    'Tu plan de nutrición fue asignado por un profesional. Contacta a tu nutricionista para solicitar cambios.',
   'student.nutrition.target_dashboard.title': 'Metas Diarias',
   'student.nutrition.meals.title': 'Comidas Asignadas',
   'student.nutrition.meal.logged_badge': 'Registrado',
@@ -293,13 +308,16 @@ export const esES: Record<TranslationKey, string> = {
   'student.training.plan_change.label': '¿Qué te gustaría cambiar?',
   'student.training.plan_change.placeholder': 'Describe lo que te gustaría ajustar...',
   'student.training.plan_change.validation.required': 'La descripción es obligatoria.',
-  'student.training.plan_change.validation.too_short': 'Por favor, describe tu solicitud con más detalle.',
+  'student.training.plan_change.validation.too_short':
+    'Por favor, describe tu solicitud con más detalle.',
   'student.training.plan_change.error.plan_not_found': 'Plan no encontrado. Actualiza la pantalla.',
   'student.training.plan_change.error.no_active_assignment': 'No tienes un plan asignado activo.',
-  'student.training.plan_change.error.network': 'Sin conexión. Comprueba tu red e inténtalo de nuevo.',
+  'student.training.plan_change.error.network':
+    'Sin conexión. Comprueba tu red e inténtalo de nuevo.',
   'student.training.plan_change.error.unknown': 'Algo salió mal. Inténtalo de nuevo.',
   'student.training.plan_change.success': 'Solicitud de cambio enviada.',
-  'student.training.assigned_plan.read_only_notice': 'Tu plan de entrenamiento fue asignado por un profesional. Contacta a tu entrenador para solicitar cambios.',
+  'student.training.assigned_plan.read_only_notice':
+    'Tu plan de entrenamiento fue asignado por un profesional. Contacta a tu entrenador para solicitar cambios.',
   'student.training.cta_log': 'Registrar Entrenamiento',
   'student.training.cta_logged': 'Completado',
   'student.training.exercise_count': '{count} Ejercicios',
@@ -316,45 +334,57 @@ export const esES: Record<TranslationKey, string> = {
   'pro.home.all_caught_up_title': 'Todo está al día',
   'pro.home.all_caught_up_body': 'Ninguna solicitud de alumno necesita tu revisión ahora.',
   'pro.home.attention_loading': 'Comprobando nuevas solicitudes de alumnos…',
-  'pro.home.attention_error': 'No se pudieron comprobar algunas solicitudes. Los datos disponibles siguen visibles.',
+  'pro.home.attention_error':
+    'No se pudieron comprobar algunas solicitudes. Los datos disponibles siguen visibles.',
   'pro.home.manage': 'Gestiona tu trabajo',
-  'pro.home.subscription_status_unknown': 'Datos de capacidad no disponibles. Abre para actualizar.',
+  'pro.home.subscription_status_unknown':
+    'Datos de capacidad no disponibles. Abre para actualizar.',
   'pro.home.plan_change_notification.title': 'Solicitud de cambio de plan',
   'pro.home.plan_change_notification.body': '{count} solicitud pendiente de {studentUid}.',
   'pro.home.plan_change_notification.cta': 'Revisar',
   'pro.home.invite_code.title': 'Tu código de invitación',
-  'pro.home.invite_code.careful_sharing': 'Comparte solo con alumnos de confianza para mantener tu lista organizada.',
+  'pro.home.invite_code.careful_sharing':
+    'Comparte solo con alumnos de confianza para mantener tu lista organizada.',
   'pro.home.invite_code.share': 'Compartir código',
   'pro.home.invite_code.rotate': 'Regenerar código',
   'pro.home.invite_code.rotate_confirm_title': '¿Regenerar código de invitación?',
-  'pro.home.invite_code.rotate_confirm_body': 'Tu código actual quedará invalidado y todas las solicitudes pendientes vinculadas a él se cancelarán automáticamente.',
+  'pro.home.invite_code.rotate_confirm_body':
+    'Tu código actual quedará invalidado y todas las solicitudes pendientes vinculadas a él se cancelarán automáticamente.',
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerar',
   'pro.home.invite_code.rotate_confirm_no': 'Cancelar',
   'pro.home.invite_code.rotate_error': 'No se pudo regenerar el código. Inténtalo de nuevo.',
   'pro.home.invite_code.empty': 'No hay código de invitación activo.',
-  'pro.home.invite_code.specialty_required': 'Añade una especialidad antes de crear un código de invitación.',
+  'pro.home.invite_code.specialty_required':
+    'Añade una especialidad antes de crear un código de invitación.',
   'pro.home.invite_code.add_specialty': 'Gestionar especialidades',
   'pro.home.cta_roster': 'Ver lista de alumnos',
   'pro.home.cta_pending': 'Gestionar solicitudes pendientes',
   'pro.home.cta_nutrition': 'Planes de nutrición',
   'pro.home.cta_training': 'Planes de entrenamiento',
-  'pro.home.subscription.warning': 'Tu suscripción está a punto de expirar. Renuévala para seguir gestionando a todos tus alumnos.',
+  'pro.home.subscription.warning':
+    'Tu suscripción está a punto de expirar. Renuévala para seguir gestionando a todos tus alumnos.',
   'pro.home.subscription.cta_renew': 'Renovar suscripción',
-  'pro.home.entitlement_lock': 'Las acciones de plan de alumno están bloqueadas. Restaura tu suscripción para desbloquear.',
+  'pro.home.entitlement_lock':
+    'Las acciones de plan de alumno están bloqueadas. Restaura tu suscripción para desbloquear.',
   'pro.home.error': 'No se pudieron cargar los datos del panel. Inténtalo de nuevo.',
   'pro.specialty.title': 'Tus especialidades',
-  'pro.specialty.subtitle': 'Define las áreas en las que trabajas como profesional. Los alumnos se conectarán contigo en función de estas especialidades.',
+  'pro.specialty.subtitle':
+    'Define las áreas en las que trabajas como profesional. Los alumnos se conectarán contigo en función de estas especialidades.',
   'pro.specialty.section.active': 'Especialidades activas',
   'pro.specialty.section.add': 'Añadir una especialidad',
-  'pro.specialty.credential.intro': 'Agregar tu número de registro profesional es opcional y ayuda a generar confianza con tus alumnos. No se verifica ni se muestra públicamente.',
+  'pro.specialty.credential.intro':
+    'Agregar tu número de registro profesional es opcional y ayuda a generar confianza con tus alumnos. No se verifica ni se muestra públicamente.',
   'pro.specialty.nutritionist': 'Nutricionista',
   'pro.specialty.fitness_coach': 'Entrenador físico',
   'pro.specialty.add_nutritionist': 'Añadir Nutricionista',
   'pro.specialty.add_fitness_coach': 'Añadir Entrenador físico',
   'pro.specialty.remove': 'Eliminar',
-  'pro.specialty.remove_blocked.active': 'No se puede eliminar: hay alumnos activos en esta especialidad.',
-  'pro.specialty.remove_blocked.pending': 'No se puede eliminar: hay alumnos pendientes en esta especialidad.',
-  'pro.specialty.remove_blocked.last': 'No se puede eliminar: se requiere al menos una especialidad.',
+  'pro.specialty.remove_blocked.active':
+    'No se puede eliminar: hay alumnos activos en esta especialidad.',
+  'pro.specialty.remove_blocked.pending':
+    'No se puede eliminar: hay alumnos pendientes en esta especialidad.',
+  'pro.specialty.remove_blocked.last':
+    'No se puede eliminar: se requiere al menos una especialidad.',
   'pro.specialty.remove_error': 'No se pudo eliminar la especialidad. Inténtalo de nuevo.',
   'pro.specialty.add_error': 'No se pudo añadir la especialidad. Inténtalo de nuevo.',
   'pro.specialty.credential.title': 'Credencial de registro (opcional)',
@@ -367,25 +397,33 @@ export const esES: Record<TranslationKey, string> = {
   'pro.specialty.credential.save': 'Guardar credencial',
   'pro.specialty.credential.skip': 'Omitir',
   'pro.specialty.credential.skip_add': 'Añadir sin credencial',
-  'pro.specialty.credential.incomplete_error': 'Completa todos los campos de la credencial u omítela por ahora.',
+  'pro.specialty.credential.incomplete_error':
+    'Completa todos los campos de la credencial u omítela por ahora.',
   'pro.specialty.credential.save_error': 'No se pudo guardar la credencial. Inténtalo de nuevo.',
   'pro.specialty.empty': 'Aún no hay especialidades añadidas.',
   'pro.specialty.removal_assist.view_active': 'Ver alumnos activos',
-  'pro.specialty.removal_assist.view_active_desc': 'Vea y gestione las asignaciones de alumnos activos',
+  'pro.specialty.removal_assist.view_active_desc':
+    'Vea y gestione las asignaciones de alumnos activos',
   'pro.specialty.removal_assist.view_pending': 'Ver solicitudes pendientes',
   'pro.specialty.removal_assist.view_pending_desc': 'Revise las solicitudes de conexión pendientes',
   'pro.specialty.removal_assist.bulk_deny': 'Rechazar solicitudes pendientes',
-  'pro.specialty.removal_assist.bulk_deny_desc': 'Rechace en masa las solicitudes pendientes para limpiar bloqueos',
+  'pro.specialty.removal_assist.bulk_deny_desc':
+    'Rechace en masa las solicitudes pendientes para limpiar bloqueos',
   'pro.specialty.removal_assist.add_specialty': 'Añadir otra especialidad',
-  'pro.specialty.removal_assist.add_specialty_desc': 'Añada Nutricionista o Entrenador Personal para permitir la eliminación',
+  'pro.specialty.removal_assist.add_specialty_desc':
+    'Añada Nutricionista o Entrenador Personal para permitir la eliminación',
   'pro.specialty.removal_blocked.title': 'No se puede eliminar la especialidad',
-  'pro.specialty.removal_blocked.active_students_body': 'Esta especialidad tiene {count} alumno{plural} activo. Desvincule o complete las asignaciones activas primero.',
-  'pro.specialty.removal_blocked.pending_students_body': 'Esta especialidad tiene {count} alumno{plural} pendiente. Acepte o rechace las solicitudes pendientes primero.',
-  'pro.specialty.removal_blocked.last_specialty_body': 'Debe tener al menos una especialidad. Añada una nueva especialidad antes de eliminar esta.',
+  'pro.specialty.removal_blocked.active_students_body':
+    'Esta especialidad tiene {count} alumno{plural} activo. Desvincule o complete las asignaciones activas primero.',
+  'pro.specialty.removal_blocked.pending_students_body':
+    'Esta especialidad tiene {count} alumno{plural} pendiente. Acepte o rechace las solicitudes pendientes primero.',
+  'pro.specialty.removal_blocked.last_specialty_body':
+    'Debe tener al menos una especialidad. Añada una nueva especialidad antes de eliminar esta.',
   'pro.specialty.remove_blocked.dismiss': 'Descartar',
   'pro.specialty.cta_continue': 'Ir al panel',
   'pro.specialty.cta_skip': 'Omitir por ahora',
-  'pro.specialty.cta_skip_hint': 'Puedes configurar tus especialidades más tarde desde la configuración de tu cuenta.',
+  'pro.specialty.cta_skip_hint':
+    'Puedes configurar tus especialidades más tarde desde la configuración de tu cuenta.',
   'pro.students.title': 'Mis alumnos',
   'pro.students.search.placeholder': 'Buscar alumnos',
   'pro.students.filter.active': 'Activos',
@@ -414,12 +452,15 @@ export const esES: Record<TranslationKey, string> = {
   'pro.student_profile.assignment.awaiting': 'Activo, esperando plan',
   'pro.student_profile.unbind.cta': 'Terminar asignación',
   'pro.student_profile.unbind.confirm_title': '¿Terminar esta asignación?',
-  'pro.student_profile.unbind.confirm_body': 'El alumno quedará desvinculado. El historial se conservará.',
+  'pro.student_profile.unbind.confirm_body':
+    'El alumno quedará desvinculado. El historial se conservará.',
   'pro.student_profile.unbind.confirm_yes': 'Terminar asignación',
   'pro.student_profile.unbind.confirm_no': 'Mantener asignación',
   'pro.student_profile.unbind.error': 'No se pudo terminar la asignación. Inténtalo de nuevo.',
-  'pro.student_profile.plan_change_requests.load_error': 'No se pudieron cargar las solicitudes. Inténtalo de nuevo.',
-  'pro.student_profile.plan_change_requests.action_error': 'No se pudo actualizar la solicitud. Inténtalo de nuevo.',
+  'pro.student_profile.plan_change_requests.load_error':
+    'No se pudieron cargar las solicitudes. Inténtalo de nuevo.',
+  'pro.student_profile.plan_change_requests.action_error':
+    'No se pudo actualizar la solicitud. Inténtalo de nuevo.',
   'pro.student_profile.plan_change_requests.title': 'Solicitudes de cambio de plan',
   'pro.student_profile.plan_change_requests.empty': 'No hay solicitudes de cambio pendientes.',
   'pro.student_profile.plan_change_requests.review': 'Marcar como revisado',
@@ -429,23 +470,30 @@ export const esES: Record<TranslationKey, string> = {
   'pro.student_profile.water_goal.placeholder': 'ej.: 2500',
   'pro.student_profile.water_goal.save': 'Establecer objetivo',
   'pro.student_profile.water_goal.validation.required': 'La cantidad del objetivo es obligatoria.',
-  'pro.student_profile.water_goal.validation.must_be_positive': 'El objetivo debe ser mayor que cero.',
-  'pro.student_profile.water_goal.error': 'No se pudo establecer el objetivo de agua. Inténtalo de nuevo.',
-  'pro.student_profile.entitlement_lock': 'Las acciones de plan están bloqueadas. Restaura tu suscripción para desbloquear.',
+  'pro.student_profile.water_goal.validation.must_be_positive':
+    'El objetivo debe ser mayor que cero.',
+  'pro.student_profile.water_goal.error':
+    'No se pudo establecer el objetivo de agua. Inténtalo de nuevo.',
+  'pro.student_profile.entitlement_lock':
+    'Las acciones de plan están bloqueadas. Restaura tu suscripción para desbloquear.',
   'pro.student_profile.error': 'No se pudo cargar el perfil del alumno. Inténtalo de nuevo.',
   'pro.student_profile.tracking_review.title': 'Revisión del seguimiento nutricional',
-  'pro.student_profile.tracking_review.read_only': 'Registros de seguimiento del alumno en modo de solo lectura.',
+  'pro.student_profile.tracking_review.read_only':
+    'Registros de seguimiento del alumno en modo de solo lectura.',
   'pro.student_profile.tracking_review.loading': 'Cargando revisión de seguimiento...',
-  'pro.student_profile.tracking_review.error': 'No se pudo cargar el seguimiento nutricional. Inténtalo de nuevo.',
+  'pro.student_profile.tracking_review.error':
+    'No se pudo cargar el seguimiento nutricional. Inténtalo de nuevo.',
   'pro.student_profile.tracking_review.water_today': 'Progreso de agua de hoy',
   'pro.student_profile.tracking_review.meals_today': 'Comidas marcadas hoy',
   'pro.student_profile.tracking_review.recent_portions': 'Registros de porciones recientes',
   'pro.student_profile.tracking_review.empty_meals': 'No hay comidas marcadas hoy.',
-  'pro.student_profile.tracking_review.empty_portions': 'No hay registros de porciones en los últimos siete días.',
+  'pro.student_profile.tracking_review.empty_portions':
+    'No hay registros de porciones en los últimos siete días.',
   'pro.student_profile.tracking_review.water_progress_value': '{total}/{goal} ml ({percent}%)',
   'pro.student_profile.tracking_review.water_total_value': '{total} ml',
   'pro.student_profile.tracking_review.meal_calories_value': '{mealId} · {calories} kcal',
-  'pro.student_profile.tracking_review.portion_macros_value': '{calories} kcal · {carbs} g carb. · {proteins} g prot. · {fats} g grasa',
+  'pro.student_profile.tracking_review.portion_macros_value':
+    '{calories} kcal · {carbs} g carb. · {proteins} g prot. · {fats} g grasa',
   'pro.subscription.title': 'Suscripción',
   'pro.subscription.subtitle': 'Gestiona el acceso profesional y la capacidad de alumnos.',
   'pro.subscription.current_status': 'Estado actual',
@@ -453,29 +501,41 @@ export const esES: Record<TranslationKey, string> = {
   'pro.subscription.status.inactive': 'Inactiva',
   'pro.subscription.status.unknown': 'Estado no disponible',
   'pro.subscription.status.checking': 'Comprobando el estado de tu suscripción…',
-  'pro.subscription.status.active_body': 'Las herramientas de tu suscripción profesional están disponibles.',
-  'pro.subscription.status.inactive_body': 'Los límites del plan gratuito se aplican hasta que se reactive la suscripción.',
-  'pro.subscription.status.unavailable_body': 'No pudimos verificar tu derecho de acceso. Las acciones restringidas siguen bloqueadas.',
+  'pro.subscription.status.active_body':
+    'Las herramientas de tu suscripción profesional están disponibles.',
+  'pro.subscription.status.inactive_body':
+    'Los límites del plan gratuito se aplican hasta que se reactive la suscripción.',
+  'pro.subscription.status.unavailable_body':
+    'No pudimos verificar tu derecho de acceso. Las acciones restringidas siguen bloqueadas.',
   'pro.subscription.capacity_title': 'Capacidad de alumnos',
   'pro.subscription.cap_usage': '{count} / {limit} alumnos activos',
   'pro.subscription.free_tier': 'Gratis para hasta 10 alumnos activos.',
-  'pro.subscription.warning': 'Tu suscripción está a punto de expirar. Renuévala para evitar interrupciones del servicio.',
+  'pro.subscription.warning':
+    'Tu suscripción está a punto de expirar. Renuévala para evitar interrupciones del servicio.',
   'pro.subscription.pre_lapse.title': 'Suscripción por vencer',
-  'pro.subscription.pre_lapse.body': 'Tu suscripción está a punto de caducar. Renuévala ahora para mantener tu plan activo y evitar interrupciones.',
+  'pro.subscription.pre_lapse.body':
+    'Tu suscripción está a punto de caducar. Renuévala ahora para mantener tu plan activo y evitar interrupciones.',
   'pro.subscription.pre_lapse.cta_renew': 'Renovar suscripción',
-  'pro.subscription.locked': 'Las acciones de plan de alumno están bloqueadas. Restaura o adquiere una suscripción para continuar.',
-  'pro.subscription.locked_unknown': 'Las acciones de plan de alumno están bloqueadas temporalmente hasta verificar el estado de la suscripción.',
+  'pro.subscription.locked':
+    'Las acciones de plan de alumno están bloqueadas. Restaura o adquiere una suscripción para continuar.',
+  'pro.subscription.locked_unknown':
+    'Las acciones de plan de alumno están bloqueadas temporalmente hasta verificar el estado de la suscripción.',
   'pro.subscription.cta_purchase': 'Mejorar plan',
   'pro.subscription.cta_restore': 'Restaurar compra',
   'pro.subscription.cta_refresh': 'Actualizar estado',
-  'pro.subscription.purchase_note': 'La suscripción se gestiona a través de la tienda de apps de tu dispositivo.',
-  'pro.subscription.handoff_note': 'Las compras en el navegador no están disponibles. Continúa en el móvil para gestionar tu suscripción.',
+  'pro.subscription.purchase_note':
+    'La suscripción se gestiona a través de la tienda de apps de tu dispositivo.',
+  'pro.subscription.handoff_note':
+    'Las compras en el navegador no están disponibles. Continúa en el móvil para gestionar tu suscripción.',
   'pro.subscription.cta_mobile_handoff': 'Continuar en el móvil',
-  'pro.subscription.unavailable_note': 'Los cambios de suscripción no están disponibles ahora en este navegador. Aún puedes actualizar el estado.',
+  'pro.subscription.unavailable_note':
+    'Los cambios de suscripción no están disponibles ahora en este navegador. Aún puedes actualizar el estado.',
   'pro.subscription.cta_unavailable': 'Suscripción no disponible',
-  'auth.terms.invalid_link': 'Este enlace no está disponible porque falta la dirección o no es segura.',
+  'auth.terms.invalid_link':
+    'Este enlace no está disponible porque falta la dirección o no es segura.',
   'pro.subscription.error': 'No se pudo cargar el estado de la suscripción. Inténtalo de nuevo.',
-  'offline.banner': 'Estás sin conexión. Mostrando datos en caché. Las actualizaciones están bloqueadas hasta reconectar.',
+  'offline.banner':
+    'Estás sin conexión. Mostrando datos en caché. Las actualizaciones están bloqueadas hasta reconectar.',
   'offline.write_lock': 'Conéctate a internet para guardar cambios.',
   'offline.stale_minutes': 'Última actualización hace {value} min',
   'offline.stale_hours': 'Última actualización hace {value}h',
@@ -516,8 +576,7 @@ export const esES: Record<TranslationKey, string> = {
   'shell.home.alert.share': 'Compartir pulsado',
   'shell.home.alert.delete': 'Eliminar pulsado',
   'shell.explore.title': 'Explorar',
-  'shell.explore.description':
-    'Esta app incluye código de ejemplo para ayudarte a empezar.',
+  'shell.explore.description': 'Esta app incluye código de ejemplo para ayudarte a empezar.',
   'shell.explore.section.routing.title': 'Enrutado basado en archivos',
   'shell.explore.section.routing.line1.part1': 'Esta app tiene dos pantallas:',
   'shell.explore.section.routing.line1.part2': 'y',
@@ -530,8 +589,7 @@ export const esES: Record<TranslationKey, string> = {
     'Puedes abrir este proyecto en Android, iOS y web. Para abrir la versión web, pulsa',
   'shell.explore.section.platform.body.part2': 'en el terminal que ejecuta este proyecto.',
   'shell.explore.section.images.title': 'Imágenes',
-  'shell.explore.section.images.body.part1':
-    'Para imágenes estáticas, puedes usar los sufijos',
+  'shell.explore.section.images.body.part1': 'Para imágenes estáticas, puedes usar los sufijos',
   'shell.explore.section.images.body.part2': 'y',
   'shell.explore.section.images.body.part3':
     'para proporcionar archivos para distintas densidades de pantalla',
@@ -546,8 +604,7 @@ export const esES: Record<TranslationKey, string> = {
   'shell.explore.section.animations.body.part1':
     'Esta plantilla incluye un ejemplo de componente animado. El componente',
   'shell.explore.section.animations.body.part2': 'usa la potente librería',
-  'shell.explore.section.animations.body.part3':
-    'para crear una animación de una mano saludando.',
+  'shell.explore.section.animations.body.part3': 'para crear una animación de una mano saludando.',
   'shell.explore.section.animations.ios_extra.part1': 'El componente',
   'shell.explore.section.animations.ios_extra.part2':
     'proporciona un efecto parallax para la imagen de cabecera.',
@@ -562,11 +619,14 @@ export const esES: Record<TranslationKey, string> = {
   'settings.account.email.label': 'Correo electrónico',
   'settings.account.change_password.label': 'Cambiar contraseña',
   'settings.account.change_password.confirm_title': '¿Restablecer contraseña?',
-  'settings.account.change_password.confirm_body': 'Te enviaremos un enlace para restablecer tu contraseña a {email}. Revisa tu bandeja de entrada tras confirmar.',
+  'settings.account.change_password.confirm_body':
+    'Te enviaremos un enlace para restablecer tu contraseña a {email}. Revisa tu bandeja de entrada tras confirmar.',
   'settings.account.change_password.confirm_yes': 'Enviar enlace',
   'settings.account.change_password.confirm_no': 'Cancelar',
-  'settings.account.change_password.success': 'Correo de restablecimiento enviado. Revisa tu bandeja de entrada.',
-  'settings.account.change_password.error': 'No se pudo enviar el correo de restablecimiento. Inténtalo de nuevo.',
+  'settings.account.change_password.success':
+    'Correo de restablecimiento enviado. Revisa tu bandeja de entrada.',
+  'settings.account.change_password.error':
+    'No se pudo enviar el correo de restablecimiento. Inténtalo de nuevo.',
   'settings.account.change_password.oauth_notice': 'Tu contraseña está gestionada por {provider}.',
   'settings.account.language.label': 'Idioma',
   'settings.account.language.en_us': 'English',
@@ -584,20 +644,26 @@ export const esES: Record<TranslationKey, string> = {
   'settings.account.sign_out.confirm_yes': 'Cerrar sesión',
   'settings.account.sign_out.confirm_no': 'Cancelar',
   'settings.account.delete.title': 'Eliminar cuenta',
-  'settings.account.delete.body': 'Eliminar tu cuenta elimina tus datos personales. Algunos registros anonimizados pueden conservarse según lo exija la política.',
+  'settings.account.delete.body':
+    'Eliminar tu cuenta elimina tus datos personales. Algunos registros anonimizados pueden conservarse según lo exija la política.',
   'settings.account.delete.cta': 'Solicitar eliminación de cuenta',
   'settings.account.delete.confirm_title': '¿Eliminar tu cuenta?',
-  'settings.account.delete.confirm_body': 'Esta acción es irreversible. Tu información personal será eliminada. El historial anonimizado puede conservarse por requisitos legales, financieros y de continuidad.',
+  'settings.account.delete.confirm_body':
+    'Esta acción es irreversible. Tu información personal será eliminada. El historial anonimizado puede conservarse por requisitos legales, financieros y de continuidad.',
   'settings.account.delete.confirm_yes': 'Eliminar cuenta',
   'settings.account.delete.confirm_no': 'Cancelar',
   'settings.account.delete.success': 'Tu solicitud de eliminación de cuenta ha sido enviada.',
-  'settings.account.delete.error.network': 'No se pudo conectar. Verifica tu conexión e intenta de nuevo.',
+  'settings.account.delete.error.network':
+    'No se pudo conectar. Verifica tu conexión e intenta de nuevo.',
   'settings.account.delete.error.unknown': 'Algo salió mal. Inténtalo de nuevo.',
-  'settings.account.delete.error.already_requested': 'Ya hay una solicitud de eliminación en curso.',
-  'settings.account.delete.error.unauthenticated': 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.',
+  'settings.account.delete.error.already_requested':
+    'Ya hay una solicitud de eliminación en curso.',
+  'settings.account.delete.error.unauthenticated':
+    'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.',
   'meal.builder.title.create': 'Crear alimento personalizado',
   'meal.builder.title.edit': 'Editar comida',
-  'meal.builder.helper': 'Indica el peso total de la comida y los nutrientes. Lo usamos para calcular cualquier porción que registres.',
+  'meal.builder.helper':
+    'Indica el peso total de la comida y los nutrientes. Lo usamos para calcular cualquier porción que registres.',
   'meal.builder.field.name.label': 'Nombre de la comida',
   'meal.builder.field.name.placeholder': 'ej.: Bowl de pollo a la plancha',
   'meal.builder.field.grams.label': 'Peso total (g)',
@@ -618,15 +684,19 @@ export const esES: Record<TranslationKey, string> = {
   'meal.builder.image.cta_change': 'Cambiar foto',
   'meal.builder.image.uploading': 'Subiendo... {percent}%',
   'meal.builder.image.upload_failed': 'Error al subir la foto. Toca para reintentar.',
-   'meal.builder.image.cta_retry': 'Reintentar subida',
-   // BL-007: custom meal image upload (SC-214)
-   'custom_meal.image.upload_progress': 'Subiendo imagen... {progress}%',
-   'custom_meal.image.upload_failed': 'No se pudo subir la imagen. Comprueba tu conexión e inténtalo de nuevo.',
-   'custom_meal.image.retry': 'Reintentar subida',
-   'custom_meal.image.file_too_large': 'La imagen es demasiado grande. Por favor, elige un archivo más pequeño.',
-   'custom_meal.image.permission_denied': 'Se necesita acceso a la cámara o a la fototeca. Concede el permiso en los ajustes del dispositivo e inténtalo de nuevo.',
-   'custom_meal.image.unauthorized': 'Error al subir. Por favor, cierra sesión y vuelve a iniciarla.',
-   'meal.builder.validation.name_required': 'El nombre de la comida es obligatorio.',
+  'meal.builder.image.cta_retry': 'Reintentar subida',
+  // BL-007: custom meal image upload (SC-214)
+  'custom_meal.image.upload_progress': 'Subiendo imagen... {progress}%',
+  'custom_meal.image.upload_failed':
+    'No se pudo subir la imagen. Comprueba tu conexión e inténtalo de nuevo.',
+  'custom_meal.image.retry': 'Reintentar subida',
+  'custom_meal.image.file_too_large':
+    'La imagen es demasiado grande. Por favor, elige un archivo más pequeño.',
+  'custom_meal.image.permission_denied':
+    'Se necesita acceso a la cámara o a la fototeca. Concede el permiso en los ajustes del dispositivo e inténtalo de nuevo.',
+  'custom_meal.image.unauthorized':
+    'Error al subir. Por favor, cierra sesión y vuelve a iniciarla.',
+  'meal.builder.validation.name_required': 'El nombre de la comida es obligatorio.',
   'meal.builder.validation.grams_required': 'El peso total es obligatorio.',
   'meal.builder.validation.grams_positive': 'El peso total debe ser mayor que cero.',
   'meal.builder.validation.calories_required': 'Las calorías son obligatorias.',
@@ -641,18 +711,22 @@ export const esES: Record<TranslationKey, string> = {
   'meal.builder.error.save': 'No se pudo guardar la comida. Inténtalo de nuevo.',
   'meal.builder.error.load': 'No se pudo cargar la comida. Inténtalo de nuevo.',
   'meal.builder.share.error.needs_save': 'Guarda la comida primero para compartirla.',
-  'meal.builder.share.error.unknown': 'No se pudo generar el enlace para compartir. Inténtalo de nuevo.',
+  'meal.builder.share.error.unknown':
+    'No se pudo generar el enlace para compartir. Inténtalo de nuevo.',
   'meal.library.title': 'Mis comidas personalizadas',
   'meal.library.empty.title': 'Aún no hay comidas personalizadas',
-  'meal.library.empty.body': 'Crea tu primera comida personalizada para registrar porciones en segundos.',
+  'meal.library.empty.body':
+    'Crea tu primera comida personalizada para registrar porciones en segundos.',
   'meal.library.cta_create': 'Crear comida',
   'meal.library.error': 'No se pudieron cargar las comidas personalizadas. Inténtalo de nuevo.',
   'meal.library.quick_log.title': 'Registrar comida',
-  'meal.library.quick_log.helper': 'Indica los gramos consumidos. Calculamos las calorías y macros automáticamente.',
+  'meal.library.quick_log.helper':
+    'Indica los gramos consumidos. Calculamos las calorías y macros automáticamente.',
   'meal.library.quick_log.field.label': 'Gramos consumidos',
   'meal.library.quick_log.field.placeholder': 'ej.: 200',
   'meal.library.quick_log.preview.calories': '{calories} kcal',
-  'meal.library.quick_log.preview.macros': '{carbs}g carbohidratos · {proteins}g proteína · {fats}g grasa',
+  'meal.library.quick_log.preview.macros':
+    '{carbs}g carbohidratos · {proteins}g proteína · {fats}g grasa',
   'meal.library.quick_log.cta_log': 'Registrar comida',
   'meal.library.quick_log.cta_cancel': 'Cancelar',
   'meal.library.quick_log.validation.required': 'La cantidad es obligatoria.',
@@ -663,11 +737,13 @@ export const esES: Record<TranslationKey, string> = {
   'meal.library.cta_edit': 'Editar',
   'shared_recipe.title': 'Guardar receta compartida',
   'shared_recipe.helper': 'Guarda esta receta en tu cuenta para usarla en tu seguimiento diario.',
-  'shared_recipe.ownership_note': 'Después de guardar, esta copia es tuya aunque el creador original la elimine.',
+  'shared_recipe.ownership_note':
+    'Después de guardar, esta copia es tuya aunque el creador original la elimine.',
   'shared_recipe.cta_save': 'Guardar en mi cuenta',
   'shared_recipe.cta_cancel': 'Cancelar',
   'shared_recipe.existing_copy': 'Ya guardaste esta receta en tu cuenta.',
-  'shared_recipe.auth_required': 'Inicia sesión para guardar esta receta. Te redirigiremos aquí justo después.',
+  'shared_recipe.auth_required':
+    'Inicia sesión para guardar esta receta. Te redirigiremos aquí justo después.',
   'shared_recipe.nutrition.calories': '{calories} kcal',
   'shared_recipe.nutrition.macros': '{carbs}g carbohidratos · {proteins}g proteína · {fats}g grasa',
   'shared_recipe.nutrition.weight': '{grams}g total',
@@ -686,13 +762,20 @@ export const esES: Record<TranslationKey, string> = {
   'a11y.brand_logo': 'Logo de My Champions',
   'meal.photo_analysis.cta': 'Analizar con IA',
   'meal.photo_analysis.analyzing': 'Analizando tu comida…',
-  'meal.photo_analysis.disclaimer': 'Estos son valores estimados por IA. Verifícalos antes de guardar.',
-  'meal.photo_analysis.error.unrecognizable': 'No se pudo identificar una comida en esta foto. Inténtalo de nuevo o rellena manualmente.',
-  'meal.photo_analysis.error.permission_denied': 'Se necesita acceso a la cámara o a la fototeca. Concede el permiso en los ajustes del dispositivo e inténtalo de nuevo.',
-  'meal.photo_analysis.error.file_too_large': 'Esta foto sigue siendo demasiado grande después de comprimirla. Elige una imagen más simple o más pequeña e inténtalo de nuevo.',
-  'meal.photo_analysis.error.quota': 'El análisis de IA no está disponible temporalmente. Por favor, rellena manualmente.',
-  'meal.photo_analysis.error.network': 'Error de red durante el análisis. Comprueba tu conexión e inténtalo de nuevo.',
-  'meal.photo_analysis.error.generic': 'El análisis falló. Aún puedes rellenar los campos manualmente.',
+  'meal.photo_analysis.disclaimer':
+    'Estos son valores estimados por IA. Verifícalos antes de guardar.',
+  'meal.photo_analysis.error.unrecognizable':
+    'No se pudo identificar una comida en esta foto. Inténtalo de nuevo o rellena manualmente.',
+  'meal.photo_analysis.error.permission_denied':
+    'Se necesita acceso a la cámara o a la fototeca. Concede el permiso en los ajustes del dispositivo e inténtalo de nuevo.',
+  'meal.photo_analysis.error.file_too_large':
+    'Esta foto sigue siendo demasiado grande después de comprimirla. Elige una imagen más simple o más pequeña e inténtalo de nuevo.',
+  'meal.photo_analysis.error.quota':
+    'El análisis de IA no está disponible temporalmente. Por favor, rellena manualmente.',
+  'meal.photo_analysis.error.network':
+    'Error de red durante el análisis. Comprueba tu conexión e inténtalo de nuevo.',
+  'meal.photo_analysis.error.generic':
+    'El análisis falló. Aún puedes rellenar los campos manualmente.',
   'meal.photo_analysis.attach_photo.label': 'También adjuntar esta foto a la comida',
   'meal.photo_analysis.confidence.low': 'Baja confianza — revisa estos valores',
   'meal.photo_analysis.paywall.locked': 'El análisis con IA es una función premium',
@@ -732,18 +815,24 @@ export const esES: Record<TranslationKey, string> = {
   'student.plan.cta.add_session': 'Añadir sesión',
   'pro.plan.delete.title': '¿Eliminar plan?',
   'student.plan.delete.title': '¿Eliminar mi plan?',
-  'pro.plan.delete.body': 'Esta acción no se puede deshacer. Todas las comidas e ítems de este plan serán eliminados permanentemente.',
-  'student.plan.delete.body': 'Esta acción no se puede deshacer. Todas las comidas e ítems de tu plan serán eliminados permanentemente.',
+  'pro.plan.delete.body':
+    'Esta acción no se puede deshacer. Todas las comidas e ítems de este plan serán eliminados permanentemente.',
+  'student.plan.delete.body':
+    'Esta acción no se puede deshacer. Todas las comidas e ítems de tu plan serán eliminados permanentemente.',
   'pro.plan.error.delete': 'No se pudo eliminar el plan. Inténtalo de nuevo.',
   'student.plan.error.delete': 'No se pudo eliminar tu plan. Inténtalo de nuevo.',
   'pro.plan.builder.guidance.training.title': 'Cómo construir un plan',
-  'pro.plan.builder.guidance.training.body': 'Un Plan de Entrenamiento es una colección de sesiones. Añade sesiones como \"Tren Superior\" o \"Calentamiento\", luego añade ejercicios a cada sesión.',
+  'pro.plan.builder.guidance.training.body':
+    'Un Plan de Entrenamiento es una colección de sesiones. Añade sesiones como \"Tren Superior\" o \"Calentamiento\", luego añade ejercicios a cada sesión.',
   'pro.plan.builder.guidance.nutrition.title': 'Planificación Nutricional',
-  'pro.plan.builder.guidance.nutrition.body': 'Define metas de calorías y macros, luego lista las comidas y porciones. Un plan claro ayuda a tus alumnos a mantenerse constantes.',
+  'pro.plan.builder.guidance.nutrition.body':
+    'Define metas de calorías y macros, luego lista las comidas y porciones. Un plan claro ayuda a tus alumnos a mantenerse constantes.',
   'student.plan.builder.guidance.training.title': 'Consejos del constructor',
-  'student.plan.builder.guidance.training.body': 'Crea tu rutina añadiendo sesiones y ejercicios. Puedes asignarte este plan una vez guardado.',
+  'student.plan.builder.guidance.training.body':
+    'Crea tu rutina añadiendo sesiones y ejercicios. Puedes asignarte este plan una vez guardado.',
   'student.plan.builder.guidance.nutrition.title': 'Consejos de alimentación',
-  'student.plan.builder.guidance.nutrition.body': 'Establece tus metas diarias y lista tus comidas. Usa estas metas para seguir el camino de tus objetivos nutricionales.',
+  'student.plan.builder.guidance.nutrition.body':
+    'Establece tus metas diarias y lista tus comidas. Usa estas metas para seguir el camino de tus objetivos nutricionales.',
   'pro.plan.field.name.support': 'Dale a tu plan un nombre claro que identifique el objetivo.',
   'student.plan.field.name.placeholder': 'p.ej. Mi Plan de Entrenamiento',
   'student.plan.field.name.support': 'Nombra tu plan para seguir tu progreso.',
@@ -755,14 +844,17 @@ export const esES: Record<TranslationKey, string> = {
   'student.plan.field.hydration_goal.placeholder': 'p.ej. 2200',
   'pro.plan.section.sessions.support': 'Añade grupos de ejercicios para organizar tu rutina.',
   'student.plan.section.sessions.support': 'Organiza tu entrenamiento en sesiones separadas.',
-  'pro.plan.section.meals.support': 'Primero crea las comidas, luego define los alimentos en cada una.',
+  'pro.plan.section.meals.support':
+    'Primero crea las comidas, luego define los alimentos en cada una.',
   'student.plan.section.meals.support': 'Organiza tus comidas y porciones diarias.',
   'pro.plan.training.empty.title': 'Empezar a crear',
-  'pro.plan.training.empty.body': 'Toca en \"Añadir Sesión\" abajo para crear tu primer bloque de entrenamiento.',
+  'pro.plan.training.empty.body':
+    'Toca en \"Añadir Sesión\" abajo para crear tu primer bloque de entrenamiento.',
   'student.plan.training.empty.title': 'Aún no hay sesiones',
   'student.plan.training.empty.body': 'Toca el botón de abajo para empezar tu rutina.',
   'pro.plan.nutrition.empty.title': 'No hay comidas añadidas',
-  'pro.plan.nutrition.empty.body': 'Toca en \"Añadir Comida\" abajo para listar tu primer alimento.',
+  'pro.plan.nutrition.empty.body':
+    'Toca en \"Añadir Comida\" abajo para listar tu primer alimento.',
   'student.plan.nutrition.empty.title': 'Lista de comidas vacía',
   'student.plan.nutrition.empty.body': 'Empieza añadiendo tu primera comida.',
   'pro.plan.session.no_exercises': 'Aún no se han añadido ejercicios.',
@@ -770,7 +862,8 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.nutrition.no_items': 'No se han añadido ejercicios a esta sesión.',
   'student.plan.nutrition.no_items': 'Añade ejercicios a esta sesión.',
   'student.plan.validation.hydration_goal_required': 'El objetivo diario de agua es obligatorio.',
-  'student.plan.validation.hydration_goal_positive': 'El objetivo diario de agua debe ser mayor que cero.',
+  'student.plan.validation.hydration_goal_positive':
+    'El objetivo diario de agua debe ser mayor que cero.',
   'pro.plan.training.item.no_sets': 'Series/Reps no definidas',
   'student.plan.training.item.no_sets': 'Toca para editar series',
   'pro.plan.nutrition.item.no_sets': 'Sin series/reps aún',
@@ -778,8 +871,10 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.meal.name.placeholder': 'p.ej. Desayuno',
   'pro.plan.cta.add_item': 'Añadir ítem',
   'pro.plan.cta.assign_and_send': 'Asignar y Enviar',
-  'pro.plan.draft_banner.nutrition': 'Borrador de Asignación: Personaliza este plan de nutrición para el alumno antes de enviar.',
-  'pro.plan.draft_banner.training': 'Borrador de Asignación: Personaliza este entrenamiento para el alumno antes de enviar.',
+  'pro.plan.draft_banner.nutrition':
+    'Borrador de Asignación: Personaliza este plan de nutrición para el alumno antes de enviar.',
+  'pro.plan.draft_banner.training':
+    'Borrador de Asignación: Personaliza este entrenamiento para el alumno antes de enviar.',
   'pro.plan.cta.save': 'Guardar plan',
   'student.plan.cta.save': 'Guardar mi plan',
   'pro.plan.cta.move_up': 'Mover arriba',
@@ -791,14 +886,16 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.validation.name_required': 'El nombre del plan es obligatorio.',
   'pro.plan.validation.name_too_short': 'El nombre del plan debe tener al menos 2 caracteres.',
   'pro.plan.validation.hydration_goal_required': 'El objetivo diario de agua es obligatorio.',
-  'pro.plan.validation.hydration_goal_positive': 'El objetivo diario de agua debe ser mayor que cero.',
+  'pro.plan.validation.hydration_goal_positive':
+    'El objetivo diario de agua debe ser mayor que cero.',
   'pro.plan.validation.calories_non_negative': 'La meta de calorías debe ser cero o más.',
   'pro.plan.validation.macros_non_negative': 'Las metas de macronutrientes deben ser cero o más.',
   'pro.plan.error.save': 'No se pudo guardar el plan. Inténtalo de nuevo.',
   'pro.plan.error.load': 'No se pudo cargar el plan. Inténtalo de nuevo.',
   'pro.plan.error.assign': 'No se pudo asignar el plan. Inténtalo de nuevo.',
   'pro.plan.picker.title': 'Seleccionar un plan',
-  'pro.plan.picker.empty': 'No se encontraron planes predefinidos. Crea uno primero en tu biblioteca.',
+  'pro.plan.picker.empty':
+    'No se encontraron planes predefinidos. Crea uno primero en tu biblioteca.',
   'pro.plan.picker.cta_assign': 'Asignar',
   'pro.student_profile.assignment.cta_assign': 'Asignar plan',
   'pro.student_profile.assignment.cta_resume_draft': 'Retomar borrador',
@@ -809,7 +906,8 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.assign.title': 'Asignar plan',
   'pro.plan.assign.student_count': '{count} alumno(s) seleccionado(s)',
   'pro.plan.assign.confirm': 'Confirmar asignación',
-  'pro.plan.assign.fine_tune_notice': 'Cada alumno recibe una copia independiente que puedes ajustar antes de confirmar.',
+  'pro.plan.assign.fine_tune_notice':
+    'Cada alumno recibe una copia independiente que puedes ajustar antes de confirmar.',
   'pro.plan.discard.title': '¿Descartar cambios?',
   'pro.plan.discard.body': 'Tienes cambios sin guardar. ¿Seguro que quieres salir?',
   'pro.plan.discard.yes': 'Descartar',
@@ -870,7 +968,8 @@ export const esES: Record<TranslationKey, string> = {
 
   // Support
   'settings.account.support.dialog.title': 'Contactar soporte',
-  'settings.account.support.dialog.disclaimer': 'Esta pantalla es para enviar mensajes a nuestro equipo de soporte.',
+  'settings.account.support.dialog.disclaimer':
+    'Esta pantalla es para enviar mensajes a nuestro equipo de soporte.',
   'settings.account.support.field.subject.label': 'Asunto',
   'settings.account.support.field.subject.placeholder': 'p.ej. Problema con el inicio de sesión',
   'settings.account.support.field.body.label': 'Mensaje',

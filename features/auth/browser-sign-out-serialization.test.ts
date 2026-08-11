@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-
-import type { AuthSessionRuntime } from './auth-session-runtime';
 import {
   createAccountWithEmailPasswordFromSource,
   signInWithEmailPasswordFromSource,
 } from './email-auth-source';
-import { signInWithSocialProviderTokenFromSource } from './social-auth-source';
 import {
   clearPersistedServerAuthSession,
   clearServerAuthSession,
@@ -14,6 +11,8 @@ import {
   persistServerAuthSessionFromPayload,
   startLocalServerSession,
 } from './server-auth-source';
+import { signInWithSocialProviderTokenFromSource } from './social-auth-source';
+import type { AuthSessionRuntime } from './auth-session-runtime';
 
 const browserRuntime: AuthSessionRuntime = {
   sessionMode: 'cookie',
@@ -192,7 +191,13 @@ describe('browser auth sign-out serialization', () => {
     await clearPromise;
     await Promise.all([createPromise, socialPromise, localPromise]);
 
-    assert.deepEqual(started.sort(), ['create', 'local', 'social']);
+    // createAccountWithEmailPasswordFromSource now chains a follow-up sign-in call
+    // with the just-submitted credentials to establish the session (ET-75: the
+    // create-account route itself never returns one any more). Both requests share
+    // the single sign-out gate awaited at the top of that function, so they still
+    // only start once the barrier clears — hence two 'create' entries here instead
+    // of a second, independently-gated wait.
+    assert.deepEqual(started.sort(), ['create', 'create', 'local', 'social']);
     clearServerAuthSession();
   });
 });
