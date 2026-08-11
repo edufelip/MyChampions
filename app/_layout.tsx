@@ -6,15 +6,15 @@ import { ActivityIndicator, LogBox, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { getDsTheme } from '@/constants/design-system';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useTranslation } from '@/localization';
-import { LocaleProvider, useLocale } from '@/localization/locale-context';
 import {
   normalizeAuthReturnTo,
   normalizeGuardPathname,
   resolveAuthGuardRedirect,
 } from '@/features/auth/auth-route-guard.logic';
 import { AuthSessionProvider, useAuthSession } from '@/features/auth/auth-session';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTranslation } from '@/localization';
+import { LocaleProvider, useLocale } from '@/localization/locale-context';
 
 if (__DEV__ && process.env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX === 'true') {
   // Runner output still records warnings; only the in-app overlay is disabled.
@@ -157,6 +157,8 @@ function RootLayoutContent() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/forgot-password" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/password-reset" options={{ headerShown: false }} />
         <Stack.Screen name="auth/create-account" options={{ headerShown: false }} />
         <Stack.Screen name="auth/accept-terms" options={{ headerShown: false }} />
         <Stack.Screen name="auth/role-selection" options={{ headerShown: false }} />

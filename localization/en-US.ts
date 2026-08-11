@@ -40,8 +40,43 @@ export const enUS = {
     'This email is already linked to another sign-in method. Sign in with your existing method first.',
   'auth.signin.error.configuration':
     'Authentication is not configured yet. Set the MyChampions server URL and try again.',
+  'auth.signin.forgot_password': 'Forgot password?',
+  'auth.forgot_password.title': 'Reset your password',
+  'auth.forgot_password.subtitle':
+    "Enter your account email and we'll send reset instructions if it exists.",
+  'auth.forgot_password.cta_primary': 'Send reset instructions',
+  'auth.forgot_password.success.title': 'Check your email',
+  'auth.forgot_password.success.body':
+    "If an account exists for {email}, we've sent instructions to reset your password.",
+  'auth.forgot_password.success.retry': 'Send again',
+  'auth.forgot_password.cta_back_signin': 'Back to sign in',
+  'auth.forgot_password.error.generic': "Couldn't send reset instructions right now. Try again.",
+  'auth.reset_password.title': 'Set a new password',
+  'auth.reset_password.subtitle': 'Paste the reset code from your email and choose a new password.',
+  'auth.reset_password.field.email': 'Email',
+  'auth.reset_password.field.token': 'Reset code',
+  'auth.reset_password.placeholder.token': 'Paste the code from your reset email',
+  'auth.reset_password.field.new_password': 'New password',
+  'auth.reset_password.field.new_password_confirmation': 'Confirm new password',
+  'auth.reset_password.placeholder.new_password': 'New password',
+  'auth.reset_password.placeholder.new_password_confirmation': 'Confirm new password',
+  'auth.reset_password.cta_primary': 'Reset password',
+  'auth.reset_password.validation.token_required': 'Reset code is required.',
+  'auth.reset_password.success.title': 'Password updated',
+  'auth.reset_password.success.body':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.reset_password.cta_go_signin': 'Go to sign in',
+  'auth.reset_password.error.invalid_or_expired_token':
+    'This reset link is invalid or has expired. Request a new one.',
+  'auth.reset_password.error.invalid_email': 'Email is invalid.',
+  'auth.reset_password.error.account_not_found': 'No account was found for this email.',
+  'auth.reset_password.error.network':
+    "Couldn't connect right now. Check your connection and try again.",
+  'auth.reset_password.error.configuration':
+    'Authentication is not configured yet. Set the MyChampions server URL and try again.',
   'auth.terms.title': 'Terms and Privacy',
-  'auth.terms.description': 'Before continuing, review and accept the latest terms for My Champions.',
+  'auth.terms.description':
+    'Before continuing, review and accept the latest terms for My Champions.',
   'auth.terms.open_link': 'Open terms and privacy policy',
   'auth.terms.checkbox': 'I have read and agree with the terms and privacy policy.',
   'auth.terms.accept_button': 'Accept and continue',
@@ -70,13 +105,16 @@ export const enUS = {
   'auth.signup.already_have': 'Already have an account?',
   'auth.signup.cta_back_signin': 'Back to sign in',
   'auth.role.title': 'Choose your path',
-  'auth.role.intro': 'Are you here to track your own fitness journey, or to guide others as a professional?',
+  'auth.role.intro':
+    'Are you here to track your own fitness journey, or to guide others as a professional?',
   'auth.role.option_self.title': 'I want to track my own progress',
   'auth.role.option_self.subtitle': 'Student account',
-  'auth.role.option_self.description': 'Log meals, track workouts, and hit your goals — on your own or with a coach.',
+  'auth.role.option_self.description':
+    'Log meals, track workouts, and hit your goals — on your own or with a coach.',
   'auth.role.option_pro.title': "I'm a nutritionist or fitness coach",
   'auth.role.option_pro.subtitle': 'Professional account',
-  'auth.role.option_pro.description': 'Create plans, manage your students, and track their progress in one place.',
+  'auth.role.option_pro.description':
+    'Create plans, manage your students, and track their progress in one place.',
   'auth.role.lock_note': "This can't be changed later — each role has a separate account.",
   'auth.role.cta_continue': 'Continue',
   'auth.role.cta_back': 'Back',
@@ -104,7 +142,7 @@ export const enUS = {
   'relationship.input.invite_code': 'Enter invite code',
   'relationship.cta_scan_qr': 'Scan QR code',
   'relationship.qr.permission_denied':
-    "Camera access is required to scan a QR code. Grant permission in your device settings, or type the code manually.",
+    'Camera access is required to scan a QR code. Grant permission in your device settings, or type the code manually.',
   'relationship.qr.camera_unavailable':
     "This device doesn't have an available camera. Enter the invite code manually.",
   'relationship.qr.invalid_payload':
@@ -119,7 +157,8 @@ export const enUS = {
     'This professional has too many pending requests right now. Try again later.',
   'relationship.error.network': "Couldn't connect right now. Check your connection and try again.",
   'relationship.error.unknown': 'Something went wrong. Try again.',
-  'relationship.pending.helper': 'Waiting for professional confirmation to activate this connection.',
+  'relationship.pending.helper':
+    'Waiting for professional confirmation to activate this connection.',
   'relationship.pending.canceled_code_rotated':
     'This request was canceled because the professional regenerated their invite code. Ask for the new code to reconnect.',
   'relationship.empty.cta_continue_self': 'Continue self-guided',
@@ -136,7 +175,8 @@ export const enUS = {
   'relationship.credential.country': 'Country',
   'pro.pending.search.placeholder': 'Search pending requests',
   'pro.pending.title': 'Connection requests',
-  'pro.pending.description': 'Review students who want to work with you. Accept requests individually or select several to decline.',
+  'pro.pending.description':
+    'Review students who want to work with you. Accept requests individually or select several to decline.',
   'pro.pending.count': '{count} pending',
   'pro.pending.filter.label': 'Filter requests',
   'pro.pending.bulk_deny.cta': 'Deny selected',
@@ -253,13 +293,17 @@ export const enUS = {
   'student.nutrition.plan_change.label': 'What would you like to change?',
   'student.nutrition.plan_change.placeholder': 'Describe what you would like adjusted...',
   'student.nutrition.plan_change.validation.required': 'Request description is required.',
-  'student.nutrition.plan_change.validation.too_short': 'Please describe your request in more detail.',
+  'student.nutrition.plan_change.validation.too_short':
+    'Please describe your request in more detail.',
   'student.nutrition.plan_change.error.plan_not_found': 'Plan not found. Pull to refresh.',
-  'student.nutrition.plan_change.error.no_active_assignment': 'You do not have an active assigned plan.',
-  'student.nutrition.plan_change.error.network': "Couldn't connect. Check your connection and try again.",
+  'student.nutrition.plan_change.error.no_active_assignment':
+    'You do not have an active assigned plan.',
+  'student.nutrition.plan_change.error.network':
+    "Couldn't connect. Check your connection and try again.",
   'student.nutrition.plan_change.error.unknown': 'Something went wrong. Try again.',
   'student.nutrition.plan_change.success': 'Change request sent.',
-  'student.nutrition.assigned_plan.read_only_notice': 'Your nutrition plan is professionally assigned. Contact your nutritionist to request changes.',
+  'student.nutrition.assigned_plan.read_only_notice':
+    'Your nutrition plan is professionally assigned. Contact your nutritionist to request changes.',
   'student.nutrition.target_dashboard.title': 'Daily Targets',
   'student.nutrition.meals.title': 'Assigned Meals',
   'student.nutrition.meal.logged_badge': 'Logged',
@@ -284,13 +328,17 @@ export const enUS = {
   'student.training.plan_change.label': 'What would you like to change?',
   'student.training.plan_change.placeholder': 'Describe what you would like adjusted...',
   'student.training.plan_change.validation.required': 'Request description is required.',
-  'student.training.plan_change.validation.too_short': 'Please describe your request in more detail.',
+  'student.training.plan_change.validation.too_short':
+    'Please describe your request in more detail.',
   'student.training.plan_change.error.plan_not_found': 'Plan not found. Pull to refresh.',
-  'student.training.plan_change.error.no_active_assignment': 'You do not have an active assigned plan.',
-  'student.training.plan_change.error.network': "Couldn't connect. Check your connection and try again.",
+  'student.training.plan_change.error.no_active_assignment':
+    'You do not have an active assigned plan.',
+  'student.training.plan_change.error.network':
+    "Couldn't connect. Check your connection and try again.",
   'student.training.plan_change.error.unknown': 'Something went wrong. Try again.',
   'student.training.plan_change.success': 'Change request sent.',
-  'student.training.assigned_plan.read_only_notice': 'Your training plan is professionally assigned. Contact your coach to request changes.',
+  'student.training.assigned_plan.read_only_notice':
+    'Your training plan is professionally assigned. Contact your coach to request changes.',
   'student.training.cta_log': 'Log Workout',
   'student.training.cta_logged': 'Completed',
   'student.training.exercise_count': '{count} Exercises',
@@ -307,18 +355,21 @@ export const enUS = {
   'pro.home.all_caught_up_title': "You're all caught up",
   'pro.home.all_caught_up_body': 'No student requests need your review right now.',
   'pro.home.attention_loading': 'Checking for new student requests…',
-  'pro.home.attention_error': 'Some requests could not be checked. Available dashboard data is still shown.',
+  'pro.home.attention_error':
+    'Some requests could not be checked. Available dashboard data is still shown.',
   'pro.home.manage': 'Manage your work',
   'pro.home.subscription_status_unknown': 'Capacity data unavailable. Open to refresh.',
   'pro.home.plan_change_notification.title': 'Plan change request',
   'pro.home.plan_change_notification.body': '{count} pending request from {studentUid}.',
   'pro.home.plan_change_notification.cta': 'Review',
   'pro.home.invite_code.title': 'Your invite code',
-  'pro.home.invite_code.careful_sharing': 'Share only with trusted students to keep your roster organized.',
+  'pro.home.invite_code.careful_sharing':
+    'Share only with trusted students to keep your roster organized.',
   'pro.home.invite_code.share': 'Share code',
   'pro.home.invite_code.rotate': 'Regenerate code',
   'pro.home.invite_code.rotate_confirm_title': 'Regenerate invite code?',
-  'pro.home.invite_code.rotate_confirm_body': 'Your current code will be invalidated and all pending requests from it will be automatically canceled.',
+  'pro.home.invite_code.rotate_confirm_body':
+    'Your current code will be invalidated and all pending requests from it will be automatically canceled.',
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerate',
   'pro.home.invite_code.rotate_confirm_no': 'Cancel',
   'pro.home.invite_code.rotate_error': 'Could not regenerate code. Try again.',
@@ -329,15 +380,19 @@ export const enUS = {
   'pro.home.cta_pending': 'Manage pending requests',
   'pro.home.cta_nutrition': 'Nutrition plans',
   'pro.home.cta_training': 'Training plans',
-  'pro.home.subscription.warning': 'Your subscription is expiring soon. Renew to keep managing all your students.',
+  'pro.home.subscription.warning':
+    'Your subscription is expiring soon. Renew to keep managing all your students.',
   'pro.home.subscription.cta_renew': 'Renew subscription',
-  'pro.home.entitlement_lock': 'Student-plan actions are locked. Restore your subscription to unlock.',
+  'pro.home.entitlement_lock':
+    'Student-plan actions are locked. Restore your subscription to unlock.',
   'pro.home.error': 'Could not load dashboard data. Try again.',
   'pro.specialty.title': 'Your specialties',
-  'pro.specialty.subtitle': 'Set up the areas you work in as a professional. Students will be matched to you based on these specialties.',
+  'pro.specialty.subtitle':
+    'Set up the areas you work in as a professional. Students will be matched to you based on these specialties.',
   'pro.specialty.section.active': 'Active specialties',
   'pro.specialty.section.add': 'Add a specialty',
-  'pro.specialty.credential.intro': 'Adding your professional registry number is optional and helps build trust with students. It is not verified or displayed publicly.',
+  'pro.specialty.credential.intro':
+    'Adding your professional registry number is optional and helps build trust with students. It is not verified or displayed publicly.',
   'pro.specialty.nutritionist': 'Nutritionist',
   'pro.specialty.fitness_coach': 'Fitness Coach',
   'pro.specialty.add_nutritionist': 'Add Nutritionist',
@@ -368,15 +423,20 @@ export const enUS = {
   'pro.specialty.removal_assist.bulk_deny': 'Deny pending requests',
   'pro.specialty.removal_assist.bulk_deny_desc': 'Bulk deny pending requests to clear blockers',
   'pro.specialty.removal_assist.add_specialty': 'Add another specialty',
-  'pro.specialty.removal_assist.add_specialty_desc': 'Add Nutritionist or Fitness Coach to enable removal',
+  'pro.specialty.removal_assist.add_specialty_desc':
+    'Add Nutritionist or Fitness Coach to enable removal',
   'pro.specialty.removal_blocked.title': 'Cannot remove specialty',
-  'pro.specialty.removal_blocked.active_students_body': 'This specialty has {count} active student{plural}. Unbind or complete active assignments first.',
-  'pro.specialty.removal_blocked.pending_students_body': 'This specialty has {count} pending student{plural}. Accept or deny pending requests first.',
-  'pro.specialty.removal_blocked.last_specialty_body': 'You must have at least one specialty. Add a new specialty before removing this one.',
+  'pro.specialty.removal_blocked.active_students_body':
+    'This specialty has {count} active student{plural}. Unbind or complete active assignments first.',
+  'pro.specialty.removal_blocked.pending_students_body':
+    'This specialty has {count} pending student{plural}. Accept or deny pending requests first.',
+  'pro.specialty.removal_blocked.last_specialty_body':
+    'You must have at least one specialty. Add a new specialty before removing this one.',
   'pro.specialty.remove_blocked.dismiss': 'Dismiss',
   'pro.specialty.cta_continue': 'Continue to dashboard',
   'pro.specialty.cta_skip': 'Skip for now',
-  'pro.specialty.cta_skip_hint': 'You can set up your specialties later from your account settings.',
+  'pro.specialty.cta_skip_hint':
+    'You can set up your specialties later from your account settings.',
   'pro.students.title': 'My students',
   'pro.students.search.placeholder': 'Search students',
   'pro.students.filter.active': 'Active',
@@ -413,7 +473,8 @@ export const enUS = {
   'pro.student_profile.plan_change_requests.empty': 'No pending change requests.',
   'pro.student_profile.plan_change_requests.review': 'Mark reviewed',
   'pro.student_profile.plan_change_requests.dismiss': 'Dismiss',
-  'pro.student_profile.plan_change_requests.load_error': 'Could not load change requests. Try again.',
+  'pro.student_profile.plan_change_requests.load_error':
+    'Could not load change requests. Try again.',
   'pro.student_profile.plan_change_requests.action_error': 'Could not update request. Try again.',
   'pro.student_profile.water_goal.title': 'Student water goal',
   'pro.student_profile.water_goal.label': 'Daily goal (ml)',
@@ -422,7 +483,8 @@ export const enUS = {
   'pro.student_profile.water_goal.validation.required': 'Goal amount is required.',
   'pro.student_profile.water_goal.validation.must_be_positive': 'Goal must be greater than zero.',
   'pro.student_profile.water_goal.error': 'Could not set water goal. Try again.',
-  'pro.student_profile.entitlement_lock': 'Plan actions are locked. Restore your subscription to unlock.',
+  'pro.student_profile.entitlement_lock':
+    'Plan actions are locked. Restore your subscription to unlock.',
   'pro.student_profile.error': 'Could not load student profile. Try again.',
   'pro.student_profile.tracking_review.title': 'Nutrition tracking review',
   'pro.student_profile.tracking_review.read_only': 'Read-only student-owned tracking logs.',
@@ -436,7 +498,8 @@ export const enUS = {
   'pro.student_profile.tracking_review.water_progress_value': '{total}/{goal} ml ({percent}%)',
   'pro.student_profile.tracking_review.water_total_value': '{total} ml',
   'pro.student_profile.tracking_review.meal_calories_value': '{mealId} · {calories} kcal',
-  'pro.student_profile.tracking_review.portion_macros_value': '{calories} kcal · {carbs} g carbs · {proteins} g protein · {fats} g fat',
+  'pro.student_profile.tracking_review.portion_macros_value':
+    '{calories} kcal · {carbs} g carbs · {proteins} g protein · {fats} g fat',
   'pro.subscription.title': 'Subscription',
   'pro.subscription.subtitle': 'Manage professional access and student capacity.',
   'pro.subscription.current_status': 'Current status',
@@ -445,24 +508,32 @@ export const enUS = {
   'pro.subscription.status.unknown': 'Status unavailable',
   'pro.subscription.status.checking': 'Checking your subscription status…',
   'pro.subscription.status.active_body': 'Your professional subscription tools are available.',
-  'pro.subscription.status.inactive_body': 'Free-tier limits apply until the subscription is reactivated.',
-  'pro.subscription.status.unavailable_body': 'We could not verify your entitlement. Restricted actions remain locked.',
+  'pro.subscription.status.inactive_body':
+    'Free-tier limits apply until the subscription is reactivated.',
+  'pro.subscription.status.unavailable_body':
+    'We could not verify your entitlement. Restricted actions remain locked.',
   'pro.subscription.capacity_title': 'Student capacity',
   'pro.subscription.cap_usage': '{count} / {limit} active students',
   'pro.subscription.free_tier': 'Free for up to 10 active students.',
-  'pro.subscription.warning': 'Your subscription is expiring soon. Renew to avoid service interruption.',
+  'pro.subscription.warning':
+    'Your subscription is expiring soon. Renew to avoid service interruption.',
   'pro.subscription.pre_lapse.title': 'Subscription expiring soon',
-  'pro.subscription.pre_lapse.body': 'Your subscription is about to expire. Renew now to keep your plan active and avoid interruptions.',
+  'pro.subscription.pre_lapse.body':
+    'Your subscription is about to expire. Renew now to keep your plan active and avoid interruptions.',
   'pro.subscription.pre_lapse.cta_renew': 'Renew subscription',
-  'pro.subscription.locked': 'Student-plan actions are locked. Restore or purchase a subscription to continue.',
-  'pro.subscription.locked_unknown': 'Student-plan actions are temporarily locked until subscription status can be verified.',
+  'pro.subscription.locked':
+    'Student-plan actions are locked. Restore or purchase a subscription to continue.',
+  'pro.subscription.locked_unknown':
+    'Student-plan actions are temporarily locked until subscription status can be verified.',
   'pro.subscription.cta_purchase': 'Upgrade plan',
   'pro.subscription.cta_restore': 'Restore purchase',
   'pro.subscription.cta_refresh': 'Refresh status',
   'pro.subscription.purchase_note': 'Subscription is managed through your device app store.',
-  'pro.subscription.handoff_note': 'Browser purchases are unavailable. Continue on mobile to manage your subscription.',
+  'pro.subscription.handoff_note':
+    'Browser purchases are unavailable. Continue on mobile to manage your subscription.',
   'pro.subscription.cta_mobile_handoff': 'Continue on mobile',
-  'pro.subscription.unavailable_note': 'Subscription changes are not available in this browser right now. You can still refresh your status.',
+  'pro.subscription.unavailable_note':
+    'Subscription changes are not available in this browser right now. You can still refresh your status.',
   'pro.subscription.cta_unavailable': 'Subscription unavailable',
   'auth.terms.invalid_link': 'This link is unavailable because its address is missing or unsafe.',
   'pro.subscription.error': 'Could not load subscription status. Try again.',
@@ -482,7 +553,8 @@ export const enUS = {
   'settings.account.email.label': 'Email',
   'settings.account.change_password.label': 'Change password',
   'settings.account.change_password.confirm_title': 'Reset password?',
-  'settings.account.change_password.confirm_body': "We'll send a password reset link to {email}. Check your inbox after confirming.",
+  'settings.account.change_password.confirm_body':
+    "We'll send a password reset link to {email}. Check your inbox after confirming.",
   'settings.account.change_password.confirm_yes': 'Send reset link',
   'settings.account.change_password.confirm_no': 'Cancel',
   'settings.account.change_password.success': 'Password reset email sent. Check your inbox.',
@@ -504,10 +576,12 @@ export const enUS = {
   'settings.account.sign_out.confirm_yes': 'Sign out',
   'settings.account.sign_out.confirm_no': 'Cancel',
   'settings.account.delete.title': 'Delete account',
-  'settings.account.delete.body': 'Deleting your account removes your personal data. Some anonymized records may be retained as required by policy.',
+  'settings.account.delete.body':
+    'Deleting your account removes your personal data. Some anonymized records may be retained as required by policy.',
   'settings.account.delete.cta': 'Request account deletion',
   'settings.account.delete.confirm_title': 'Delete your account?',
-  'settings.account.delete.confirm_body': 'This action is irreversible. Your personal information will be removed. Anonymized history may be retained for legal, billing, and continuity requirements.',
+  'settings.account.delete.confirm_body':
+    'This action is irreversible. Your personal information will be removed. Anonymized history may be retained for legal, billing, and continuity requirements.',
   'settings.account.delete.confirm_yes': 'Delete account',
   'settings.account.delete.confirm_no': 'Cancel',
   'settings.account.delete.success': 'Your account deletion request has been submitted.',
@@ -517,7 +591,8 @@ export const enUS = {
   'settings.account.delete.error.unauthenticated': 'Your session expired. Please sign in again.',
   'meal.builder.title.create': 'Create custom meal',
   'meal.builder.title.edit': 'Edit meal',
-  'meal.builder.helper': 'Add total meal weight and nutrients. We use this to calculate any portion you log.',
+  'meal.builder.helper':
+    'Add total meal weight and nutrients. We use this to calculate any portion you log.',
   'meal.builder.field.name.label': 'Meal name',
   'meal.builder.field.name.placeholder': 'e.g. Grilled chicken bowl',
   'meal.builder.field.grams.label': 'Total weight (g)',
@@ -538,15 +613,17 @@ export const enUS = {
   'meal.builder.image.cta_change': 'Change photo',
   'meal.builder.image.uploading': 'Uploading... {percent}%',
   'meal.builder.image.upload_failed': 'Photo upload failed. Tap to retry.',
-   'meal.builder.image.cta_retry': 'Retry upload',
-   // BL-007: custom meal image upload (SC-214)
-   'custom_meal.image.upload_progress': 'Uploading image... {progress}%',
-   'custom_meal.image.upload_failed': "We couldn't upload the image. Check your connection and try again.",
-   'custom_meal.image.retry': 'Retry upload',
-   'custom_meal.image.file_too_large': 'The image is too large. Please choose a smaller file.',
-   'custom_meal.image.permission_denied': 'Camera or photo library access is required. Grant permission in your device settings and try again.',
-   'custom_meal.image.unauthorized': 'Upload failed. Please sign out and sign in again.',
-   'meal.builder.validation.name_required': 'Meal name is required.',
+  'meal.builder.image.cta_retry': 'Retry upload',
+  // BL-007: custom meal image upload (SC-214)
+  'custom_meal.image.upload_progress': 'Uploading image... {progress}%',
+  'custom_meal.image.upload_failed':
+    "We couldn't upload the image. Check your connection and try again.",
+  'custom_meal.image.retry': 'Retry upload',
+  'custom_meal.image.file_too_large': 'The image is too large. Please choose a smaller file.',
+  'custom_meal.image.permission_denied':
+    'Camera or photo library access is required. Grant permission in your device settings and try again.',
+  'custom_meal.image.unauthorized': 'Upload failed. Please sign out and sign in again.',
+  'meal.builder.validation.name_required': 'Meal name is required.',
   'meal.builder.validation.grams_required': 'Total weight is required.',
   'meal.builder.validation.grams_positive': 'Total weight must be greater than zero.',
   'meal.builder.validation.calories_required': 'Calories are required.',
@@ -568,7 +645,8 @@ export const enUS = {
   'meal.library.cta_create': 'Create meal',
   'meal.library.error': 'Could not load custom meals. Try again.',
   'meal.library.quick_log.title': 'Log meal',
-  'meal.library.quick_log.helper': 'Enter grams consumed. We calculate calories and macros automatically.',
+  'meal.library.quick_log.helper':
+    'Enter grams consumed. We calculate calories and macros automatically.',
   'meal.library.quick_log.field.label': 'Grams consumed',
   'meal.library.quick_log.field.placeholder': 'e.g. 200',
   'meal.library.quick_log.preview.calories': '{calories} kcal',
@@ -583,11 +661,13 @@ export const enUS = {
   'meal.library.cta_edit': 'Edit',
   'shared_recipe.title': 'Save shared recipe',
   'shared_recipe.helper': 'Save this recipe to your account to use it in your daily tracking.',
-  'shared_recipe.ownership_note': 'After saving, this copy is yours even if the original creator deletes theirs.',
+  'shared_recipe.ownership_note':
+    'After saving, this copy is yours even if the original creator deletes theirs.',
   'shared_recipe.cta_save': 'Save to my account',
   'shared_recipe.cta_cancel': 'Cancel',
   'shared_recipe.existing_copy': 'You already saved this recipe in your account.',
-  'shared_recipe.auth_required': "Sign in to save this recipe. We'll bring you back here right after login.",
+  'shared_recipe.auth_required':
+    "Sign in to save this recipe. We'll bring you back here right after login.",
   'shared_recipe.nutrition.calories': '{calories} kcal',
   'shared_recipe.nutrition.macros': '{carbs}g carbs · {proteins}g protein · {fats}g fat',
   'shared_recipe.nutrition.weight': '{grams}g total',
@@ -607,12 +687,18 @@ export const enUS = {
   'meal.photo_analysis.cta': 'Analyze with AI',
   'meal.photo_analysis.analyzing': 'Analyzing your meal…',
   'meal.photo_analysis.disclaimer': 'These are AI estimates. Please verify before saving.',
-  'meal.photo_analysis.error.unrecognizable': "Couldn't identify a meal in this photo. Try again or fill in manually.",
-  'meal.photo_analysis.error.permission_denied': 'Camera or photo library access is required. Grant permission in your device settings and try again.',
-  'meal.photo_analysis.error.file_too_large': 'This photo is still too large after compression. Choose a simpler or smaller image and try again.',
-  'meal.photo_analysis.error.quota': 'AI analysis is temporarily unavailable. Please fill in manually.',
-  'meal.photo_analysis.error.network': 'Network error during analysis. Check your connection and try again.',
-  'meal.photo_analysis.error.generic': 'Analysis failed. You can still fill in the fields manually.',
+  'meal.photo_analysis.error.unrecognizable':
+    "Couldn't identify a meal in this photo. Try again or fill in manually.",
+  'meal.photo_analysis.error.permission_denied':
+    'Camera or photo library access is required. Grant permission in your device settings and try again.',
+  'meal.photo_analysis.error.file_too_large':
+    'This photo is still too large after compression. Choose a simpler or smaller image and try again.',
+  'meal.photo_analysis.error.quota':
+    'AI analysis is temporarily unavailable. Please fill in manually.',
+  'meal.photo_analysis.error.network':
+    'Network error during analysis. Check your connection and try again.',
+  'meal.photo_analysis.error.generic':
+    'Analysis failed. You can still fill in the fields manually.',
   'meal.photo_analysis.attach_photo.label': 'Also attach this photo to the meal',
   'meal.photo_analysis.confidence.low': 'Low confidence — double-check these estimates',
   'meal.photo_analysis.paywall.locked': 'AI analysis is a premium feature',
@@ -650,13 +736,16 @@ export const enUS = {
   'pro.plan.cta.add_session': 'Add session',
   'student.plan.cta.add_session': 'Add session',
   'pro.plan.delete.title': 'Delete plan?',
-  'pro.plan.delete.body': 'This action cannot be undone. All meals and items in this plan will be permanently removed.',
+  'pro.plan.delete.body':
+    'This action cannot be undone. All meals and items in this plan will be permanently removed.',
   'pro.plan.error.delete': 'Could not delete plan. Try again.',
   'pro.plan.meal.name.placeholder': 'e.g. Breakfast',
   'pro.plan.cta.add_item': 'Add item',
   'pro.plan.cta.assign_and_send': 'Assign & Send',
-  'pro.plan.draft_banner.nutrition': 'Draft Assignment: Customize this nutrition plan for the student before sending.',
-  'pro.plan.draft_banner.training': 'Draft Assignment: Customize this workout routine for the student before sending.',
+  'pro.plan.draft_banner.nutrition':
+    'Draft Assignment: Customize this nutrition plan for the student before sending.',
+  'pro.plan.draft_banner.training':
+    'Draft Assignment: Customize this workout routine for the student before sending.',
   'pro.plan.cta.save': 'Save plan',
   'student.plan.cta.save': 'Save my plan',
   'pro.plan.cta.sort': 'Sort',
@@ -688,15 +777,20 @@ export const enUS = {
   'pro.plan.assign.title': 'Assign plan',
   'pro.plan.assign.student_count': '{count} student(s) selected',
   'pro.plan.assign.confirm': 'Confirm assignment',
-  'pro.plan.assign.fine_tune_notice': 'Each student receives an independent copy you can fine-tune before confirming.',
+  'pro.plan.assign.fine_tune_notice':
+    'Each student receives an independent copy you can fine-tune before confirming.',
   'pro.plan.builder.guidance.training.title': 'How to Build a Plan',
-  'pro.plan.builder.guidance.training.body': 'A Training Plan is a collection of workout sessions. Add sessions like "Upper Body" or "Warm-up", then add exercises to each session.',
+  'pro.plan.builder.guidance.training.body':
+    'A Training Plan is a collection of workout sessions. Add sessions like "Upper Body" or "Warm-up", then add exercises to each session.',
   'pro.plan.builder.guidance.nutrition.title': 'Nutrition Planning',
-  'pro.plan.builder.guidance.nutrition.body': 'Define calorie and macro targets, then list the meals and portions. A clear plan helps your students stay consistent.',
+  'pro.plan.builder.guidance.nutrition.body':
+    'Define calorie and macro targets, then list the meals and portions. A clear plan helps your students stay consistent.',
   'student.plan.builder.guidance.training.title': 'Plan Builder Tips',
-  'student.plan.builder.guidance.training.body': 'Create your routine by adding sessions and exercises. You can assign this plan to yourself once saved.',
+  'student.plan.builder.guidance.training.body':
+    'Create your routine by adding sessions and exercises. You can assign this plan to yourself once saved.',
   'student.plan.builder.guidance.nutrition.title': 'Meal Plan Tips',
-  'student.plan.builder.guidance.nutrition.body': 'Set your daily targets and list your meals. Use these targets to stay on track with your nutritional goals.',
+  'student.plan.builder.guidance.nutrition.body':
+    'Set your daily targets and list your meals. Use these targets to stay on track with your nutritional goals.',
   'pro.plan.field.name.support': 'Give your plan a clear name that identifies the training goal.',
   'student.plan.field.name.placeholder': 'e.g. My Training Plan',
   'student.plan.field.name.support': 'Name your plan to keep track of your progress.',
@@ -785,7 +879,8 @@ export const enUS = {
   'student.plan.section.meal_items': 'Meal Items',
   'student.plan.cta.add_meal': 'Add meal',
   'student.plan.delete.title': 'Delete my plan?',
-  'student.plan.delete.body': 'This action cannot be undone. All meals and items in your plan will be permanently removed.',
+  'student.plan.delete.body':
+    'This action cannot be undone. All meals and items in your plan will be permanently removed.',
   'student.plan.error.delete': 'Could not delete your plan. Try again.',
   'student.plan.field.name.label': 'My plan name',
   'student.plan.training.empty_sessions': 'No sessions yet. Add one to begin your plan.',
@@ -813,7 +908,7 @@ export const enUS = {
   'shell.home.step2.description':
     "Tap the Explore tab to learn more about what's included in this starter app.",
   'shell.home.step3.title': 'Step 3: Get a fresh start',
-  'shell.home.step3.part1': 'When you\'re ready, run',
+  'shell.home.step3.part1': "When you're ready, run",
   'shell.home.step3.part2': 'to get a fresh',
   'shell.home.step3.part3': 'directory. This will move the current',
   'shell.home.step3.part4': 'to',
@@ -849,7 +944,8 @@ export const enUS = {
     "lets you inspect what the user's current color scheme is, and so you can adjust UI colors accordingly.",
   'shell.explore.section.theme.learn_more': 'Learn more',
   'shell.explore.section.animations.title': 'Animations',
-  'shell.explore.section.animations.body.part1': 'This template includes an example of an animated component. The',
+  'shell.explore.section.animations.body.part1':
+    'This template includes an example of an animated component. The',
   'shell.explore.section.animations.body.part2': 'component uses the powerful',
   'shell.explore.section.animations.body.part3': 'library to create a waving hand animation.',
   'shell.explore.section.animations.ios_extra.part1': 'The',
