@@ -46,7 +46,9 @@ test.describe('@server-auth @critical @feature:auth create-account enumeration (
     await captureEvidence(page, testInfo, 'et75-01-new-signup-filled');
     await page.getByTestId('auth.createAccount.submitButton').click();
 
-    await expect(page.getByTestId('auth.terms.screen')).toBeVisible();
+    // Same two-hop latency as auth-session.spec.ts: create-account (202, no
+    // session) then a chained real sign-in call before this screen appears.
+    await expect(page.getByTestId('auth.terms.screen')).toBeVisible({ timeout: 15_000 });
     await captureEvidence(page, testInfo, 'et75-02-new-signup-success-reaches-terms');
     await page.getByTestId('auth.terms.checkbox').click();
     await page.getByTestId('auth.terms.acceptButton').click();
