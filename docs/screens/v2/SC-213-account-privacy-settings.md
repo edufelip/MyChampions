@@ -117,7 +117,7 @@ in-app support access.
   - `requestPasswordResetFromSource()`: password reset request.
   - `router.push('/settings/language-select')`: navigates to SC-222 for language selection.
 - `router.push('/shared/webview')`: opens legal URLs in the shared in-app WebView screen.
-- Account legal links pass an `account` intent so a direct-entry invalid-link state can return to Account settings when browser history is unavailable.
+- Account legal links pass an `account` intent so a direct-entry invalid-link state returns to Account settings on web and when native browser history is unavailable.
 
 ## Edge Cases
 

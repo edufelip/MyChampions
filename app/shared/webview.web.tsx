@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DsSpace, getDsTheme } from '@/constants/design-system';
 import { resolveTermsConfigFromExpo } from '@/features/auth/terms-config';
 import {
@@ -33,6 +33,11 @@ export default function WebExternalLinkScreen() {
   });
 
   const goBack = () => {
+    if (Platform.OS === 'web') {
+      router.replace(fallbackPath);
+      return;
+    }
+
     if (router.canGoBack()) {
       router.back();
       return;

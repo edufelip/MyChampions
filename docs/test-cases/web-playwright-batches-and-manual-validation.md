@@ -27,10 +27,11 @@ flow-atlas batches.
 Run both local lanes with `yarn test:e2e:web:all-local`. They intentionally use separate Expo ports and clear Metro state so fixture configuration cannot leak into the real-server bundle or vice versa.
 
 Run the manual mobile recovery proof with
-`yarn test:e2e:web:manual-webview-recovery`. It uses true Playwright mobile
-emulation (`Pixel 5`, mobile context, touch input) and an isolated Expo port;
-the generated screenshot and HTML report remain under the ignored `.artifacts/`
-directory.
+`yarn test:e2e:web:manual-webview-recovery`. It uses the shared evidence runner,
+true Playwright mobile emulation (`Pixel 5`, mobile context, touch input), an
+isolated Expo port, and the same timestamped artifact contract as the other
+batches; the generated screenshot, HTML/JSON/JUnit reports, metadata, and
+manual checklist remain under the ignored `.artifacts/` directory.
 
 The runner accepts extra Playwright arguments after the batch name. For example, `node scripts/run-web-e2e-batch.mjs evidence --headed` runs the evidence batch visibly.
 

@@ -26,7 +26,7 @@
     "test:e2e:web:critical-paths": "node scripts/run-web-e2e-batch.mjs critical-paths",
     "test:e2e:web:evidence": "node scripts/run-web-e2e-batch.mjs evidence",
     "test:e2e:web:flow-atlas": "node scripts/run-flow-atlas.mjs",
-    "test:e2e:web:manual-webview-recovery": "playwright test --config=playwright.webview-recovery.config.ts --project=mobile",
+    "test:e2e:web:manual-webview-recovery": "node scripts/run-web-e2e-batch.mjs manual-webview-recovery",
     "test:e2e:web:server": "node scripts/run-web-e2e-batch.mjs server",
     "test:e2e:web:all-local": "yarn test:e2e:web && yarn test:e2e:web:server",
     "lint": "eslint app components features scripts tests e2e --cache --cache-location .expo/cache/eslint/",

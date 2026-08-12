@@ -28,7 +28,7 @@
 
 - Accept button remains disabled until checkbox is checked and uses the shared explicit disabled-control tokens.
 - The consent checkbox exposes its localized accessible name and checked state in native and mobile-web accessibility trees (`aria-checked` on web).
-- The consent checkbox is activatable by touch, Enter, and Space; keyboard activation keeps `aria-checked` and the accept CTA synchronized.
+- The consent checkbox is activatable by touch, Enter, and Space; keyboard activation keeps `aria-checked` and the accept CTA synchronized, and repeated Space keydown events do not toggle it more than once.
 - Route guard forces authenticated users with pending acceptance to `/auth/accept-terms`.
 - Route guard redirects away from `/auth/accept-terms` once required version is accepted.
 - Terms URL and required version are read from expo `extra.terms` config with documented fallback values.

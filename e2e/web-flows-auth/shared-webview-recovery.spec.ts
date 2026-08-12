@@ -33,7 +33,7 @@ test.describe('@manual-runtime @feature:auth shared WebView recovery', () => {
 
     await backButton.click();
     await expect(page).not.toHaveURL(/\/shared\/webview/);
-    await expect(page.getByTestId('pro.home.screen')).toBeVisible();
+    await expect(page.getByTestId('settings.account.screen')).toBeVisible();
   });
 
   test('opens the exact configured legal URL on a custom trusted host', async ({

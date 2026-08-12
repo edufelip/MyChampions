@@ -19,6 +19,7 @@ export default defineConfig({
     ['list'],
     ['html', { outputFolder: path.join(artifactRoot, 'html-report'), open: 'never' }],
     ['json', { outputFile: path.join(artifactRoot, 'results.json') }],
+    ['junit', { outputFile: path.join(artifactRoot, 'results.xml') }],
   ],
   use: {
     baseURL: 'http://127.0.0.1:8106',

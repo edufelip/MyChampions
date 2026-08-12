@@ -44,6 +44,14 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
     await page.getByRole('checkbox').focus();
     await page.keyboard.press('Space');
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
+    await page.getByTestId('auth.terms.checkbox').dispatchEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      code: 'Space',
+      key: ' ',
+      repeat: true,
+    });
+    await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
     await page.keyboard.press('Space');
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
     await page.keyboard.press('Enter');

@@ -9,7 +9,7 @@ import { useAuthSession } from '@/features/auth/auth-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
 
-type WebKeyboardEvent = { key?: string; preventDefault?: () => void };
+type WebKeyboardEvent = { key?: string; repeat?: boolean; preventDefault?: () => void };
 type KeyboardPressableProps = ComponentProps<typeof Pressable> & {
   onKeyDown?: (event: WebKeyboardEvent) => void;
 };
@@ -28,12 +28,15 @@ export default function AcceptTermsScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null);
 
-  const onCheckboxKeyDown = (event: { key?: string; preventDefault?: () => void }) => {
+  const onCheckboxKeyDown = (event: WebKeyboardEvent) => {
     if (event.key !== ' ' && event.key !== 'Spacebar') {
       return;
     }
 
     event.preventDefault?.();
+    if (event.repeat) {
+      return;
+    }
     setIsChecked((prev) => !prev);
   };
 
