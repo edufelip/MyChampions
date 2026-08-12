@@ -414,6 +414,14 @@
       "tier": "feature",
       "ci": true
     },
+    "web:specialty-removal-assist": {
+      "runner": "playwright",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/specialty-removal-assist.spec.ts"],
+      "grep": "@feature:professional-specialty-removal-assist",
+      "tier": "evidence",
+      "ci": false
+    },
     "web:subscription": {
       "runner": "playwright",
       "projects": ["chromium", "firefox", "webkit"],
