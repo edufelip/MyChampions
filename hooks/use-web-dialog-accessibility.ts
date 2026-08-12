@@ -44,8 +44,9 @@ export function useWebDialogAccessibility(input: {
       title && !previousTitleId
         ? `${input.testID.replace(/[^a-zA-Z0-9_-]/g, '-')}-title`
         : previousTitleId;
+    const canApplyDialogSemantics = Boolean(root && title);
 
-    if (root) {
+    if (root && canApplyDialogSemantics) {
       root.setAttribute('role', 'dialog');
       root.setAttribute('aria-modal', 'true');
       if (generatedTitleId) {
@@ -84,7 +85,7 @@ export function useWebDialogAccessibility(input: {
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', onKeyDown);
-      if (root && previousAttributes) {
+      if (root && canApplyDialogSemantics && previousAttributes) {
         if (previousAttributes.role === null) root.removeAttribute('role');
         else root.setAttribute('role', previousAttributes.role);
         if (previousAttributes.ariaModal === null) root.removeAttribute('aria-modal');
@@ -94,7 +95,7 @@ export function useWebDialogAccessibility(input: {
         if (previousAttributes.ariaLabelledBy === null) root.removeAttribute('aria-labelledby');
         else root.setAttribute('aria-labelledby', previousAttributes.ariaLabelledBy);
       }
-      if (title) {
+      if (title && canApplyDialogSemantics) {
         if (previousTitleId === null) title.removeAttribute('id');
         else title.setAttribute('id', previousTitleId);
       }
