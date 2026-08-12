@@ -277,7 +277,15 @@ test('guard allows the controlled legal webview while terms are pending', () => 
     pathname: '/shared/webview',
   });
 
+  const nearMatchRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview/other',
+  });
+
   assert.equal(redirect, null);
+  assert.equal(nearMatchRedirect, '/auth/accept-terms');
 });
 
 test('guard allows accept-terms route with trailing slash while terms are pending', () => {
