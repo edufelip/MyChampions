@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DsSpace, getDsTheme } from '@/constants/design-system';
 import {
@@ -12,6 +12,7 @@ import { useTranslation } from '@/localization';
 
 export default function WebExternalLinkScreen() {
   const { url, title } = useLocalSearchParams<{ url?: string; title?: string }>();
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const { t } = useTranslation();
@@ -38,7 +39,17 @@ export default function WebExternalLinkScreen() {
         >
           <Text style={{ color: theme.color.onAccent }}>{t('auth.terms.open_link')}</Text>
         </Pressable>
-      ) : null}
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+          onPress={() => router.back()}
+          style={[styles.button, { backgroundColor: theme.color.accentPrimary }]}
+          testID="shared.webview.invalidLink.backButton"
+        >
+          <Text style={{ color: theme.color.onAccent }}>{t('common.back')}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

@@ -9,11 +9,10 @@
  * (see `@/features/platform/external-url`) — only `https://eduwaldo.com` and
  * its subdomains are accepted, plus `http://localhost`/`127.0.0.1`/`[::1]`
  * when running in development. On an invalid `url`, this native screen
- * renders no UI at all (returns null); the web platform variant
- * (`webview.web.tsx`) instead renders its own localized invalid-link state,
- * since it has no separate "screen didn't load" case to fall back to.
+ * renders a localized invalid-link state with a back action; the web platform
+ * variant (`webview.web.tsx`) renders its own equivalent state.
  */
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   StyleSheet,
@@ -37,6 +36,7 @@ import { useTranslation } from '@/localization';
 
 export default function WebViewScreen() {
   const { url, title } = useLocalSearchParams<{ url: string; title: string }>();
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const { t } = useTranslation();
@@ -53,7 +53,29 @@ export default function WebViewScreen() {
   });
 
   if (!safeUrl) {
-    return null;
+    return (
+      <View
+        style={[styles.container, styles.centered, { backgroundColor: theme.color.canvas }]}
+        collapsable={false}
+        testID="shared.webview.screen"
+      >
+        <Stack.Screen options={{ title: title ?? '', headerShown: true }} />
+        <Text style={[styles.errorText, { color: theme.color.textPrimary }]}>
+          {t('auth.terms.invalid_link')}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+          onPress={() => router.back()}
+          style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary }]}
+          testID="shared.webview.invalidLink.backButton"
+        >
+          <Text style={[styles.retryText, { color: theme.color.onAccent }]}>
+            {t('common.back')}
+          </Text>
+        </Pressable>
+      </View>
+    );
   }
 
   // react-native-webview doesn't support Web. Fallback to external link.

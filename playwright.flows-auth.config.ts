@@ -18,6 +18,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: 'http://127.0.0.1:8084',
+    locale: 'en-US',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
@@ -36,7 +37,7 @@ export default defineConfig({
     timeout: 120_000,
   },
   projects: [
-    { name: 'mobile', use: { ...devices['Pixel 5'] } },
+    { name: 'mobile', use: { ...devices['Pixel 5'], locale: 'en-US' } },
     { name: 'tablet', use: { browserName: 'chromium', viewport: { width: 820, height: 1000 } } },
     { name: 'web', use: { browserName: 'chromium', viewport: { width: 1440, height: 1000 } } },
   ],

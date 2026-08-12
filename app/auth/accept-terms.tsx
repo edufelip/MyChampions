@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ComponentProps, type ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsRadius, DsShadow, DsSpace, getDsTheme } from '@/constants/design-system';
@@ -8,6 +8,12 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
+
+type WebKeyboardEvent = { key?: string; preventDefault?: () => void };
+type KeyboardPressableProps = ComponentProps<typeof Pressable> & {
+  onKeyDown?: (event: WebKeyboardEvent) => void;
+};
+const KeyboardPressable = Pressable as ComponentType<KeyboardPressableProps>;
 
 export default function AcceptTermsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -21,6 +27,15 @@ export default function AcceptTermsScreen() {
   const [isChecked, setIsChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null);
+
+  const onCheckboxKeyDown = (event: { key?: string; preventDefault?: () => void }) => {
+    if (event.key !== ' ' && event.key !== 'Spacebar') {
+      return;
+    }
+
+    event.preventDefault?.();
+    setIsChecked((prev) => !prev);
+  };
 
   const onOpenTerms = () => {
     setErrorKey(null);
@@ -106,11 +121,12 @@ export default function AcceptTermsScreen() {
             </Text>
           </Pressable>
 
-          <Pressable
+          <KeyboardPressable
             accessibilityLabel={t('auth.terms.checkbox')}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: isChecked }}
             aria-checked={isChecked}
+            onKeyDown={onCheckboxKeyDown}
             onPress={() => setIsChecked((prev) => !prev)}
             style={styles.checkboxRow}
             testID="auth.terms.checkbox"
@@ -137,7 +153,7 @@ export default function AcceptTermsScreen() {
               {' '}
               {t('auth.terms.checkbox')}
             </Text>
-          </Pressable>
+          </KeyboardPressable>
 
           <Text style={[styles.versionText, { color: palette.icon }]} testID="auth.terms.version">
             {t('auth.terms.version', { version: termsRequiredVersion })}

@@ -41,6 +41,11 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
     await page.goBack();
     await expect(page.getByTestId('auth.terms.screen')).toBeVisible();
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
+    await page.getByRole('checkbox').focus();
+    await page.keyboard.press('Space');
+    await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Space');
+    await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
     await page.getByTestId('auth.terms.checkbox').click();
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
     await capture(page, testInfo, '04-terms-ready-to-accept', 'auth.terms.acceptButton');
@@ -59,6 +64,10 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
       'auth.createAccount.error.nameRequired',
     );
     await capture(page, testInfo, '07-google-and-apple-entry', 'auth.createAccount.googleButton');
+    await page.getByTestId('auth.createAccount.backToSignInButton').scrollIntoViewIfNeeded();
+    await expect(page.getByTestId('auth.createAccount.backToSignInButton')).toBeInViewport();
+    await page.getByTestId('auth.createAccount.backToSignInButton').click();
+    await expect(page.getByTestId('auth.signIn.title')).toBeVisible();
   });
 
   test('Google social authentication reaches terms', async ({ page }, testInfo) => {
