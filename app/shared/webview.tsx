@@ -4,6 +4,14 @@
  *
  * Generic screen to display web content (e.g., Privacy Policy, Terms of Use)
  * within the app using react-native-webview.
+ *
+ * URL contract: `url` is validated by `resolveSafeExternalUrl` before use
+ * (see `@/features/platform/external-url`) — only `https://eduwaldo.com` and
+ * its subdomains are accepted, plus `http://localhost`/`127.0.0.1`/`[::1]`
+ * when running in development. On an invalid `url`, this native screen
+ * renders no UI at all (returns null); the web platform variant
+ * (`webview.web.tsx`) instead renders its own localized invalid-link state,
+ * since it has no separate "screen didn't load" case to fall back to.
  */
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useState } from 'react';
@@ -20,6 +28,7 @@ import { WebView } from 'react-native-webview';
 import { getDsTheme, DsRadius, DsSpace } from '@/constants/design-system';
 import {
   allowInsecureLocalhostForDevelopment,
+  EDUWALDO_HTTPS_HOSTNAME,
   resolveSafeExternalUrl,
 } from '@/features/platform/external-url';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -39,6 +48,7 @@ export default function WebViewScreen() {
   // WebView's `originWhitelist` prop below is not a substitute for this app-level check.
   const safeUrl = resolveSafeExternalUrl(url, {
     allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),
+    approvedHttpsHostname: EDUWALDO_HTTPS_HOSTNAME,
   });
 
   if (!safeUrl) {

@@ -39,4 +39,25 @@ test('native webview screen never feeds the raw route url straight into WebView 
     /Linking\.openURL\(url\)/,
     'Linking.openURL must use the sanitized url, not the raw route param `url`',
   );
+
+  // Asserting only the absence of the raw `url` at each sink leaves room for a
+  // future alias or fallback (e.g. `safeUrl ?? url`) to reintroduce it without
+  // failing either check above. Pin the exact validated expression at both
+  // sinks, and the early return that keeps them from running at all on an
+  // invalid url.
+  assert.match(
+    webviewSource,
+    /if\s*\(!safeUrl\)\s*\{\s*return null;\s*\}/s,
+    'expected an early return when resolveSafeExternalUrl(url) produces an invalid result',
+  );
+  assert.match(
+    webviewSource,
+    /Linking\.openURL\(safeUrl\)/,
+    'Linking.openURL must call the sanitized safeUrl exactly, not an alias or fallback',
+  );
+  assert.match(
+    webviewSource,
+    /source=\{\{\s*uri:\s*safeUrl\s*\}\}/,
+    'WebView source must use the sanitized safeUrl exactly, not an alias or fallback',
+  );
 });
