@@ -80,7 +80,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | State | Trigger | UI |
 |---|---|---|
 | Idle | Initial mount | Empty form or loading gated |
-| Search opened | User taps Add exercise | Viewport-bounded search dialog with focused input; web opens without an off-screen transition |
+| Search opened | User taps Add exercise | One named, viewport-bounded `role="dialog"` with `aria-modal="true"`, localized initial helper state, and focused input; web opens without an off-screen transition |
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
 | Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
@@ -180,7 +180,9 @@ Plan library reads, predefined assignment/draft operations, and builder mutation
 | `pro.predefined_plan.field_name` | Predefined plan name label |
 | `pro.predefined_plan.cta_create` | Save predefined plan CTA |
 | `pro.predefined_plan.bulk_assign.*` | Bulk assign flow keys |
+| `pro.plan.item.search.dialog_title` | Accessible name for the single exercise-search dialog root |
 | `pro.plan.item.search.placeholder` | Exercise search input placeholder |
+| `pro.plan.item.search.initial` | Initial helper state before a query is entered |
 | `pro.plan.item.search.empty` | No results state |
 | `pro.plan.item.search.error` | Search error state |
 | `pro.plan.item.search.back` | "Back to search" link in exercise detail form |

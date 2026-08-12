@@ -815,6 +815,8 @@ export const enUS = {
   'pro.plan.item.field.nutrition_notes.placeholder': 'e.g. No salt',
   'pro.plan.item.delete.body': 'Remove {name} from this meal?',
   'pro.plan.item.search.placeholder': 'Search for an exercise...',
+  'pro.plan.item.search.dialog_title': 'Exercise search',
+  'pro.plan.item.search.initial': 'Search the exercise library to add one to this session.',
   'pro.plan.item.search.empty': 'No exercises found.',
   'pro.plan.item.search.error': 'Error searching for exercises.',
   'pro.plan.item.search.back': 'Back to search',

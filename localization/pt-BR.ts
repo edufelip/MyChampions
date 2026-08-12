@@ -927,6 +927,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.item.field.nutrition_notes.placeholder': 'ex.: Sem sal',
   'pro.plan.item.delete.body': 'Remover {name} desta refeição?',
   'pro.plan.item.search.placeholder': 'Buscar por um exercício...',
+  'pro.plan.item.search.dialog_title': 'Busca de exercícios',
+  'pro.plan.item.search.initial': 'Busque na biblioteca de exercícios para adicionar um à sessão.',
   'pro.plan.item.search.empty': 'Nenhum exercício encontrado.',
   'pro.plan.item.search.error': 'Erro ao buscar exercícios.',
   'pro.plan.item.search.back': 'Voltar para a busca',

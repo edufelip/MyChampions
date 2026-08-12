@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -19,10 +19,9 @@ import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
-import { type TranslationKey    } from '@/localization';
 import type { ExerciseItem } from '@/features/plans/exercise-service-source';
 import type { useExerciseSearch } from '@/features/plans/use-exercise-search';
-import type { useTranslation } from '@/localization';
+import type { TranslationKey, useTranslation } from '@/localization';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -123,27 +122,25 @@ export function ExerciseSearchModal({
     onConfirm(selectedExercise, quantity.trim(), notes.trim());
   };
 
+  const dialogTitle = t('pro.plan.item.search.dialog_title');
+
   return (
     <Modal
       visible={isVisible}
       animationType={Platform.OS === 'web' ? 'none' : 'slide'}
       onRequestClose={onClose}
+      accessibilityLabel={dialogTitle}
+      testID="exerciseSearch.modal"
       transparent
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}
       >
-        <View
-          role="dialog"
-          style={[styles.modalContent, { backgroundColor: theme.color.surface }]}
-          testID="exerciseSearch.modal"
-        >
+        <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
-              {view === 'detail'
-                ? t('pro.plan.item.field.name.label')
-                : t('pro.plan.item.search.placeholder')}
+              {view === 'detail' ? t('pro.plan.item.field.name.label') : dialogTitle}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -204,6 +201,21 @@ export function ExerciseSearchModal({
               >
                 {searchState.kind === 'loading' && (
                   <ActivityIndicator color={theme.color.accentPrimary} style={{ marginTop: 40 }} />
+                )}
+
+                {searchState.kind === 'idle' && (
+                  <View style={styles.initialState} testID="exerciseSearch.initialState">
+                    <MaterialIcons
+                      name="fitness-center"
+                      size={32}
+                      color={theme.color.textSecondary}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                    />
+                    <Text style={[styles.emptyText, { color: theme.color.textSecondary }]}>
+                      {t('pro.plan.item.search.initial')}
+                    </Text>
+                  </View>
                 )}
 
                 {searchState.kind === 'error' && (
@@ -529,6 +541,10 @@ const styles = StyleSheet.create({
     ...DsTypography.body,
     padding: DsSpace.xxl,
     textAlign: 'center',
+  },
+  initialState: {
+    alignItems: 'center',
+    paddingTop: DsSpace.xxl,
   },
   // Details View Styles
   detailsContainer: {

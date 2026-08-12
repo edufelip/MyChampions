@@ -528,6 +528,8 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.item.field.quantity.placeholder` | SC-208 | Item quantity placeholder | e.g. 3 sets × 10 reps | ex.: 3 séries × 10 reps | p.ej. 3 series × 10 reps | |
 | `pro.plan.item.field.notes.label` | SC-208 | Item notes label | Notes (optional) | Observações (opcional) | Notas (opcional) | |
 | `pro.plan.item.search.placeholder` | SC-208 | Exercise search placeholder | Search for an exercise... | Buscar por um exercício... | Buscar un ejercicio... | |
+| `pro.plan.item.search.dialog_title` | SC-208 | Exercise search dialog name | Exercise search | Busca de exercícios | Búsqueda de ejercicios | |
+| `pro.plan.item.search.initial` | SC-208 | Exercise search initial state | Search the exercise library to add one to this session. | Busque na biblioteca de exercícios para adicionar um à sessão. | Busca en la biblioteca de ejercicios para añadir uno a la sesión. | |
 | `pro.plan.item.search.empty` | SC-208 | Exercise search empty state | No exercises found. | Nenhum exercício encontrado. | No se encontraron ejercicios. | |
 | `pro.plan.item.search.error` | SC-208 | Exercise search error | Error searching for exercises. | Erro ao buscar exercícios. | Error al buscar ejercicios. | |
 | `pro.plan.item.search.back` | SC-208 | Exercise detail back link | Back to search | Voltar para a busca | Volver a la búsqueda | |
