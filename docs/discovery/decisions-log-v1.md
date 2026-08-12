@@ -807,6 +807,8 @@
     required monthly. This change records the first report and keeps local,
     hosted, native, provider, and store-live evidence as separate states.
 
+- `D-204`: Browser bulk-deny actions use a stateful, web-compatible confirmation dialog instead of relying on `Alert.alert`, which is a no-op in the React Native web adapter. The dialog uses the shared web focus/Escape contract, preserves selection on cancel, reports loading/error/success states, and retains the native alert path.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.

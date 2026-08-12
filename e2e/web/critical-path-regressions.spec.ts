@@ -1,5 +1,19 @@
 import { expect, test } from '@playwright/test';
 
+async function chooseProfessional(page: import('@playwright/test').Page) {
+  await page.goto('/auth/role-selection');
+  await expect(page.getByTestId('auth.roleSelection.screen')).toBeVisible();
+  await page.getByTestId('auth.roleSelection.professionalCard').click();
+  await page.getByTestId('auth.roleSelection.continueButton').click();
+  await expect(page.getByTestId('pro.specialty.screen')).toBeVisible();
+  await page.getByTestId('pro.specialty.add.nutritionist').click();
+  await page.getByTestId('pro.specialty.credential.skip').click();
+  await page.getByTestId('pro.specialty.add.fitness_coach').click();
+  await page.getByTestId('pro.specialty.credential.skip').click();
+  await page.getByTestId('pro.specialty.cta_continue').click();
+  await expect(page.getByTestId('pro.home.screen').last()).toBeVisible();
+}
+
 const responsiveViewports = [
   { name: 'mobile', width: 390, height: 844 },
   { name: 'tablet', width: 820, height: 1000 },
@@ -54,4 +68,80 @@ test.describe('@critical @feature:auth @feature:connections @feature:subscriptio
     await expect(page.getByTestId('pro.subscription.restoreCta')).toHaveCount(0);
     await expect(page.getByTestId('pro.subscription.refreshCta')).toBeEnabled();
   });
+});
+
+const compactMobileViewports = [
+  { name: 'mobile-390', width: 390, height: 844 },
+  { name: 'mobile-320', width: 320, height: 720 },
+] as const;
+
+test.describe('@critical @feature:connections browser bulk deny confirmation', () => {
+  for (const viewport of compactMobileViewports) {
+    test(`${viewport.name} pending bulk deny confirms, cancels, and reports the result`, async ({
+      browser,
+    }, testInfo) => {
+      test.setTimeout(120_000);
+      test.skip(testInfo.project.name !== 'chromium', 'Mobile browser proof is Chromium-only');
+
+      const context = await browser.newContext({
+        deviceScaleFactor: 1,
+        hasTouch: true,
+        isMobile: true,
+        viewport: { width: viewport.width, height: viewport.height },
+      });
+      const page = await context.newPage();
+
+      try {
+        await chooseProfessional(page);
+        await page.goto('/professional/pending');
+        await expect(page.getByTestId('pro.pending.screen')).toBeVisible();
+        await expect(page.getByTestId('pro.pending.hero')).toContainText('1 pending');
+
+        await page.getByTestId('pro.pending.row.0').click({ position: { x: 20, y: 20 } });
+        await expect(page.getByTestId('pro.pending.bulkDenyButton')).toBeVisible();
+        await page.getByTestId('pro.pending.bulkDenyButton').click();
+
+        const dialog = page.getByTestId('pro.pending.bulkDenyConfirm');
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toHaveAttribute('role', 'dialog');
+        await expect(dialog).toHaveAttribute('aria-modal', 'true');
+        await expect(dialog).toHaveAttribute('aria-labelledby', /.+/);
+        await expect(dialog).toContainText('1 selected');
+        await expect
+          .poll(() =>
+            page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset.testid),
+          )
+          .toBe('pro.pending.bulkDenyConfirm.cancel');
+        await page.screenshot({
+          fullPage: true,
+          path: testInfo.outputPath(`bulk-deny-confirmation-${viewport.name}.png`),
+        });
+
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+        await expect(page.getByText('1 selected')).toBeVisible();
+
+        await page.getByTestId('pro.pending.bulkDenyButton').click();
+        await expect(dialog).toBeVisible();
+        await page.getByTestId('pro.pending.bulkDenyConfirm.cancel').click();
+        await expect(dialog).toBeHidden();
+        await expect(page.getByText('1 selected')).toBeVisible();
+
+        await page.getByTestId('pro.pending.bulkDenyButton').click();
+        await page.getByTestId('pro.pending.bulkDenyConfirm.confirm').click();
+        await expect(dialog).toBeHidden();
+        await expect(page.getByTestId('pro.pending.bulkDenyResult')).toContainText(
+          'Requests denied successfully.',
+        );
+        await expect(page.getByTestId('pro.pending.hero')).toContainText('0 pending');
+        await expect(page.getByTestId('pro.pending.row.0')).toHaveCount(0);
+        await page.screenshot({
+          fullPage: true,
+          path: testInfo.outputPath(`bulk-deny-success-${viewport.name}.png`),
+        });
+      } finally {
+        await context.close();
+      }
+    });
+  }
 });

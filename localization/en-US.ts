@@ -151,6 +151,7 @@ export const enUS = {
   'pro.pending.bulk_deny.confirm_body':
     'Selected students can request again later with your invite code.',
   'pro.pending.bulk_deny.success': 'Requests denied successfully.',
+  'pro.pending.bulk_deny.error': 'Some requests could not be denied. Try again.',
   'pro.pending.confirm.cta': 'Accept',
   'pro.pending.deny.cta': 'Deny',
   'pro.pending.empty': 'No pending connection requests.',

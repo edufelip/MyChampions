@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -41,6 +42,7 @@ import {
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import { useTranslation, type TranslationKey } from '@/localization';
 
 export default function ProfessionalPendingScreen() {
@@ -68,6 +70,8 @@ export default function ProfessionalPendingScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkDenying, setIsBulkDenying] = useState(false);
+  const [isBulkDenyConfirmVisible, setIsBulkDenyConfirmVisible] = useState(false);
+  const [bulkDenyFeedback, setBulkDenyFeedback] = useState<'success' | 'error' | null>(null);
 
   const pendingConnections = useMemo<ConnectionRecord[]>(() => {
     if (state.kind !== 'ready') return [];
@@ -81,6 +85,7 @@ export default function ProfessionalPendingScreen() {
   }, [pendingConnections, searchQuery]);
 
   const toggleSelect = (id: string) => {
+    setBulkDenyFeedback(null);
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -118,29 +123,77 @@ export default function ProfessionalPendingScreen() {
     [emitEvent, t, unbindConnection],
   );
 
+  const closeBulkDenyConfirmation = useCallback(() => {
+    if (isBulkDenying) return;
+    setIsBulkDenyConfirmVisible(false);
+  }, [isBulkDenying]);
+
+  useWebDialogAccessibility({
+    dialogTitleTestID: 'pro.pending.bulkDenyConfirm.title',
+    isVisible: Platform.OS === 'web' && isBulkDenyConfirmVisible,
+    onClose: closeBulkDenyConfirmation,
+    testID: 'pro.pending.bulkDenyConfirm',
+  });
+
+  const executeBulkDeny = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) {
+      closeBulkDenyConfirmation();
+      return;
+    }
+
+    setIsBulkDenying(true);
+    setBulkDenyFeedback(null);
+
+    const results = await Promise.all(
+      ids.map(async (id) => {
+        try {
+          return await unbindConnection(id);
+        } catch {
+          return 'unknown';
+        }
+      }),
+    );
+    const hasError = results.some((err) => Boolean(err));
+
+    if (hasError) {
+      setIsBulkDenying(false);
+      if (Platform.OS === 'web') {
+        setBulkDenyFeedback('error');
+      } else {
+        Alert.alert(t('common.error.generic'), t('common.error.retry'));
+      }
+      return;
+    }
+
+    emitEvent(buildInvitePendingBulkDenied(ids.length));
+    setSelectedIds(new Set());
+    setIsBulkDenying(false);
+    reload();
+
+    if (Platform.OS === 'web') {
+      setIsBulkDenyConfirmVisible(false);
+      setBulkDenyFeedback('success');
+    } else {
+      Alert.alert(t('pro.pending.bulk_deny.success'));
+    }
+  }, [closeBulkDenyConfirmation, emitEvent, reload, selectedIds, t, unbindConnection]);
+
   const onBulkDeny = () => {
     if (selectedIds.size === 0) return;
+
+    setBulkDenyFeedback(null);
+    if (Platform.OS === 'web') {
+      setIsBulkDenyConfirmVisible(true);
+      return;
+    }
 
     Alert.alert(t('pro.pending.bulk_deny.confirm_title'), t('pro.pending.bulk_deny.confirm_body'), [
       { text: t('relationship.unbind.confirm_no'), style: 'cancel' },
       {
         text: t('pro.pending.bulk_deny.cta'),
         style: 'destructive',
-        onPress: async () => {
-          setIsBulkDenying(true);
-          const ids = Array.from(selectedIds);
-
-          const results = await Promise.all(ids.map((id) => unbindConnection(id)));
-          if (results.every((err) => !err)) {
-            emitEvent(buildInvitePendingBulkDenied(ids.length));
-          }
-
-          setSelectedIds(new Set());
-          setIsBulkDenying(false);
-          reload();
-
-          Alert.alert(t('pro.pending.bulk_deny.success'));
-        },
+        onPress: () => void executeBulkDeny(),
       },
     ]);
   };
@@ -242,6 +295,39 @@ export default function ProfessionalPendingScreen() {
         ) : null}
       </DsCard>
 
+      {Platform.OS === 'web' && bulkDenyFeedback ? (
+        <View
+          accessibilityLiveRegion="polite"
+          accessibilityRole={bulkDenyFeedback === 'error' ? 'alert' : undefined}
+          style={[
+            styles.bulkDenyFeedback,
+            {
+              backgroundColor:
+                bulkDenyFeedback === 'success' ? theme.color.successSoft : theme.color.dangerSoft,
+              borderColor:
+                bulkDenyFeedback === 'success' ? theme.color.success : theme.color.danger,
+            },
+          ]}
+          testID="pro.pending.bulkDenyResult"
+        >
+          <MaterialIcons
+            color={bulkDenyFeedback === 'success' ? theme.color.success : theme.color.danger}
+            name={bulkDenyFeedback === 'success' ? 'check-circle' : 'error-outline'}
+            size={20}
+          />
+          <Text
+            style={[
+              styles.bulkDenyFeedbackText,
+              { color: bulkDenyFeedback === 'success' ? theme.color.success : theme.color.danger },
+            ]}
+          >
+            {bulkDenyFeedback === 'success'
+              ? t('pro.pending.bulk_deny.success')
+              : t('pro.pending.bulk_deny.error')}
+          </Text>
+        </View>
+      ) : null}
+
       <DsCard scheme={scheme} style={styles.listCard}>
         {state.kind === 'loading' ? (
           <ActivityIndicator
@@ -284,6 +370,65 @@ export default function ProfessionalPendingScreen() {
           ))
         )}
       </DsCard>
+
+      {Platform.OS === 'web' && isBulkDenyConfirmVisible ? (
+        <View style={[styles.bulkDenyOverlay, { backgroundColor: theme.color.overlaySoft }]}>
+          <View
+            accessibilityLabel={t('pro.pending.bulk_deny.confirm_title') as string}
+            accessibilityViewIsModal
+            style={[styles.bulkDenyModal, { backgroundColor: theme.color.surface }]}
+            testID="pro.pending.bulkDenyConfirm"
+          >
+            <Text
+              accessibilityRole="header"
+              style={[styles.bulkDenyModalTitle, { color: theme.color.textPrimary }]}
+              testID="pro.pending.bulkDenyConfirm.title"
+            >
+              {t('pro.pending.bulk_deny.confirm_title')}
+            </Text>
+            <Text style={[styles.bulkDenyModalBody, { color: theme.color.textSecondary }]}>
+              {t('pro.pending.bulk_deny.confirm_body')}
+            </Text>
+            <Text style={[styles.bulkDenyModalCount, { color: theme.color.textPrimary }]}>
+              {(t('a11y.selected_count') as string).replace('{count}', String(selectedIds.size))}
+            </Text>
+            {bulkDenyFeedback === 'error' ? (
+              <Text
+                accessibilityRole="alert"
+                style={[styles.bulkDenyModalError, { color: theme.color.danger }]}
+                testID="pro.pending.bulkDenyConfirm.error"
+              >
+                {t('pro.pending.bulk_deny.error')}
+              </Text>
+            ) : null}
+            <View style={styles.bulkDenyModalActions}>
+              <DsPillButton
+                disabled={isBulkDenying}
+                fullWidth={false}
+                label={t('relationship.unbind.confirm_no') as string}
+                onPress={closeBulkDenyConfirmation}
+                scheme={scheme}
+                testID="pro.pending.bulkDenyConfirm.cancel"
+                variant="outline"
+              />
+              <DsPillButton
+                contentColor={theme.color.surface}
+                disabled={isBulkDenying}
+                fullWidth={false}
+                label={t('pro.pending.bulk_deny.cta') as string}
+                loading={isBulkDenying}
+                onPress={() => void executeBulkDeny()}
+                scheme={scheme}
+                style={{
+                  backgroundColor: theme.color.danger,
+                  borderColor: theme.color.danger,
+                }}
+                testID="pro.pending.bulkDenyConfirm.confirm"
+              />
+            </View>
+          </View>
+        </View>
+      ) : null}
     </DsScreen>
   );
 }
@@ -442,6 +587,57 @@ const styles = StyleSheet.create({
   },
   bulkButton: {
     minHeight: 42,
+  },
+  bulkDenyFeedback: {
+    alignItems: 'center',
+    borderRadius: DsRadius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: DsSpace.sm,
+    paddingHorizontal: DsSpace.md,
+    paddingVertical: DsSpace.sm,
+  },
+  bulkDenyFeedbackText: {
+    ...DsTypography.body,
+    flex: 1,
+    fontWeight: '700',
+  },
+  bulkDenyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: DsSpace.lg,
+    zIndex: 100,
+  },
+  bulkDenyModal: {
+    borderRadius: DsRadius.xl,
+    gap: DsSpace.md,
+    maxWidth: 520,
+    padding: DsSpace.lg,
+    width: '100%',
+  },
+  bulkDenyModalTitle: {
+    ...DsTypography.cardTitle,
+    fontFamily: Fonts?.rounded ?? 'normal',
+  },
+  bulkDenyModalBody: {
+    ...DsTypography.body,
+  },
+  bulkDenyModalCount: {
+    ...DsTypography.body,
+    fontWeight: '700',
+  },
+  bulkDenyModalError: {
+    ...DsTypography.body,
+    fontWeight: '700',
+  },
+  bulkDenyModalActions: {
+    alignItems: 'stretch',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: DsSpace.sm,
+    justifyContent: 'flex-end',
   },
   listCard: {
     gap: DsSpace.sm,

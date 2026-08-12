@@ -157,6 +157,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.pending.bulk_deny.confirm_body':
     'Alunos selecionados podem solicitar novamente depois com seu código de convite.',
   'pro.pending.bulk_deny.success': 'Solicitações negadas com sucesso.',
+  'pro.pending.bulk_deny.error': 'Não foi possível negar algumas solicitações. Tente novamente.',
   'pro.pending.confirm.cta': 'Aceitar',
   'pro.pending.deny.cta': 'Negar',
   'pro.pending.empty': 'Nenhuma solicitação de conexão pendente.',

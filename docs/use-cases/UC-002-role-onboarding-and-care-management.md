@@ -177,7 +177,7 @@
 - Main flow:
   1. Professional opens pending queue view.
   2. Professional filters/searches pending entries.
-  3. Professional selects multiple requests and executes bulk deny.
+  3. Professional selects multiple requests and opens the bulk-deny confirmation; cancel preserves selection, while confirm executes the denial and reports loading, success, or recoverable error feedback.
   4. System updates request states and refreshes pending counters.
 - Expected result: Professional can operationally manage queue volume efficiently.
 

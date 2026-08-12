@@ -18,6 +18,7 @@
 - `/professional/pending` queue follows the same shell, card, and pill-action structure for search, selection, and bulk deny flows.
 - Selection mode uses an inset elevated action tray with horizontal and bottom clearance around the plan-type chips and assignment CTA.
 - The pending queue begins with an informative summary card that explains the decision, exposes the pending count, and keeps search and request actions in separate task groups.
+- Browser bulk deny uses an accessible stateful confirmation dialog with a selected-count summary, cancel/confirm actions, focus containment, Escape dismissal, loading feedback, and localized success/error result feedback. Native continues to use the platform confirmation alert.
 
 ## User Actions
 - Primary:
@@ -43,6 +44,7 @@
 - Ended relationships remain in history view but not in active roster default filter.
 - Pending-queue filtering/search cannot expose records outside professional scope.
 - Bulk deny can operate only on `pending_confirmation` requests and must preserve lifecycle audit metadata.
+- Bulk deny confirmation cancel must preserve the current selection; confirmation must show progress, refresh counters after success, and keep an actionable error state when any selected request fails.
 - Bulk assignment target list must include only active students eligible for selected plan domain.
 - Each plan-picker row exposes a stable semantic assignment control for native
   interaction. Native automation waits for the modal's presentation-complete
@@ -68,7 +70,7 @@
 ## Links
 - Functional requirement: FR-105, FR-122, FR-210, FR-224, FR-225
 - Use case: UC-002.2, UC-002.5, UC-002.12, UC-002.20
-- Acceptance criteria: AC-206, AC-215, AC-254, AC-265
+- Acceptance criteria: AC-206, AC-215, AC-254, AC-265, AC-268
 - Business rules: BR-206, BR-214, BR-268, BR-283
-- Test cases: TC-206, TC-215, TC-257, TC-258, TC-269, TC-269A, TC-301, TC-302
+- Test cases: TC-206, TC-215, TC-257, TC-258, TC-258A, TC-269, TC-269A, TC-301, TC-302
 - Diagram: docs/diagrams/domain-relationships.md

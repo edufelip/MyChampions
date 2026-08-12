@@ -159,6 +159,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.pending.bulk_deny.confirm_body':
     'Los alumnos seleccionados pueden volver a solicitar más tarde con tu código de invitación.',
   'pro.pending.bulk_deny.success': 'Solicitudes rechazadas correctamente.',
+  'pro.pending.bulk_deny.error': 'No se pudieron rechazar algunas solicitudes. Inténtalo de nuevo.',
   'pro.pending.confirm.cta': 'Aceptar',
   'pro.pending.deny.cta': 'Rechazar',
   'pro.pending.empty': 'No hay solicitudes de conexión pendientes.',

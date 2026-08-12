@@ -191,7 +191,10 @@ function getE2EConnectionFixtures(): ConnectionRecord[] | null {
     });
   }
 
-  if (process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE === 'basic') {
+  if (
+    process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE === 'basic' &&
+    !e2eEndedConnectionIds.has('e2e-professional-pending-connection')
+  ) {
     connections.push({
       id: 'e2e-professional-pending-connection',
       status: 'pending_confirmation',
