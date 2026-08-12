@@ -420,7 +420,7 @@ export default function ProfessionalPendingScreen() {
             ) : null}
             <View style={styles.bulkDenyModalActions}>
               <DsPillButton
-                disabled={isBulkDenying || isWriteLocked}
+                disabled={isBulkDenying}
                 fullWidth={false}
                 label={t('relationship.unbind.confirm_no') as string}
                 onPress={closeBulkDenyConfirmation}
@@ -430,15 +430,21 @@ export default function ProfessionalPendingScreen() {
               />
               <DsPillButton
                 contentColor={theme.color.surface}
-                disabled={isBulkDenying}
+                disabled={isBulkDenying || isWriteLocked}
                 fullWidth={false}
                 label={t('pro.pending.bulk_deny.cta') as string}
                 loading={isBulkDenying}
                 onPress={() => void executeBulkDeny()}
                 scheme={scheme}
                 style={{
-                  backgroundColor: theme.color.danger,
-                  borderColor: theme.color.danger,
+                  backgroundColor:
+                    isWriteLocked && !isBulkDenying
+                      ? theme.color.disabledSurface
+                      : theme.color.danger,
+                  borderColor:
+                    isWriteLocked && !isBulkDenying
+                      ? theme.color.disabledBorder
+                      : theme.color.danger,
                 }}
                 testID="pro.pending.bulkDenyConfirm.confirm"
               />

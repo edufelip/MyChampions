@@ -257,3 +257,50 @@ test.describe('@critical @feature:connections browser bulk deny states and local
     });
   }
 });
+
+test('@critical @feature:connections keeps dialog recovery available after going offline', async ({
+  browser,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  test.skip(testInfo.project.name !== 'chromium', 'Mobile browser proof is Chromium-only');
+
+  const context = await browser.newContext({
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+    viewport: { width: 390, height: 844 },
+  });
+  const page = await context.newPage();
+
+  try {
+    await chooseProfessional(page);
+    await page.goto('/professional/pending');
+    await page.getByTestId('pro.pending.row.0').click({ position: { x: 20, y: 20 } });
+    await page.getByTestId('pro.pending.bulkDenyButton').click();
+
+    await page.evaluate(() => {
+      sessionStorage.setItem('mychampions.e2e.network-status', 'offline');
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'mychampions.e2e.network-status',
+          newValue: 'offline',
+        }),
+      );
+    });
+    await page.getByTestId('pro.pending.searchInput').fill('offline', { force: true });
+
+    const dialog = page.getByTestId('pro.pending.bulkDenyConfirm');
+    await expect(page.getByTestId('pro.pending.offlineBanner')).toBeVisible();
+    await expect(dialog.getByTestId('pro.pending.bulkDenyConfirm.confirm')).toBeDisabled();
+    await expect(dialog.getByTestId('pro.pending.bulkDenyConfirm.cancel')).toBeEnabled();
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath('bulk-deny-offline-recovery-mobile-390.png'),
+    });
+
+    await dialog.getByTestId('pro.pending.bulkDenyConfirm.cancel').click();
+    await expect(dialog).toBeHidden();
+  } finally {
+    await context.close();
+  }
+});

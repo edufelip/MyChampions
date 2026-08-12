@@ -32,9 +32,31 @@ export function useNetworkStatus(): NetworkStatus {
   const [status, setStatus] = useState<NetworkStatus>(e2eNetworkStatusOverride ?? 'unknown');
 
   useEffect(() => {
+    const onE2ENetworkStatusStorage = (event: StorageEvent) => {
+      if (event.key !== 'mychampions.e2e.network-status') return;
+
+      setStatus(
+        resolveE2ENetworkStatusOverride({
+          appVariant: process.env.APP_VARIANT,
+          isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+          status: event.newValue ?? undefined,
+        }) ?? 'unknown',
+      );
+    };
+    const supportsE2ENetworkStatusEvents =
+      process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' && typeof window !== 'undefined';
+
+    if (supportsE2ENetworkStatusEvents) {
+      window.addEventListener('storage', onE2ENetworkStatusStorage);
+    }
+
     if (e2eNetworkStatusOverride) {
       setStatus(e2eNetworkStatusOverride);
-      return;
+      return () => {
+        if (supportsE2ENetworkStatusEvents) {
+          window.removeEventListener('storage', onE2ENetworkStatusStorage);
+        }
+      };
     }
 
     // Fetch current state immediately
@@ -47,7 +69,12 @@ export function useNetworkStatus(): NetworkStatus {
       setStatus(toNetworkStatus(state.isConnected));
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (supportsE2ENetworkStatusEvents) {
+        window.removeEventListener('storage', onE2ENetworkStatusStorage);
+      }
+    };
   }, [e2eNetworkStatusOverride]);
 
   return status;
