@@ -123,6 +123,13 @@ export function useWebDialogAccessibility(input: WebDialogAccessibilityInput) {
           `[data-testid="${input.focusRestoreTestID}"]`,
         );
         if (!fallback) return;
+        const previousTabIndex = fallback.getAttribute('tabindex');
+        const restoreFallbackTabIndex = () => {
+          if (!fallback.isConnected) return;
+          if (previousTabIndex === null) fallback.removeAttribute('tabindex');
+          else fallback.setAttribute('tabindex', previousTabIndex);
+        };
+        fallback.addEventListener('blur', restoreFallbackTabIndex, { once: true });
         fallback.setAttribute('tabindex', '-1');
         fallback.focus();
       }, 0);

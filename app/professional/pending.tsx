@@ -7,7 +7,7 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -74,7 +74,7 @@ export default function ProfessionalPendingScreen() {
   const [bulkDenyFeedback, setBulkDenyFeedback] = useState<'success' | 'error' | null>(null);
   const isWriteLockedRef = useRef(isWriteLocked);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     isWriteLockedRef.current = isWriteLocked;
   }, [isWriteLocked]);
 
