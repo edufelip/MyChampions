@@ -137,6 +137,20 @@ function getE2EConnectionSourceOverride() {
 const e2eEndedConnectionIds = new Set<string>();
 const e2eSubmittedInviteConnections = new Map<string, ConnectionRecord>();
 
+type E2EPendingMutationMode = 'delay' | 'failure';
+
+function getE2EPendingMutationMode(): E2EPendingMutationMode | null {
+  if (typeof window !== 'undefined') {
+    try {
+      const value = window.localStorage.getItem('mychampions.e2e.pending-mutation');
+      if (value === 'delay' || value === 'failure') return value;
+    } catch {
+      // Browser storage is optional in native and privacy-restricted contexts.
+    }
+  }
+  return null;
+}
+
 function getE2EInviteSubmitFixture() {
   const override = getE2EConnectionSourceOverride();
   if (!override) return null;
@@ -546,6 +560,13 @@ export async function endConnection(
       const connection = e2eConnections.find((candidate) => candidate.id === connectionId);
       if (!connection) {
         throw new ConnectionSourceError('graphql', 'Connection not found.');
+      }
+      const mutationMode = getE2EPendingMutationMode();
+      if (mutationMode === 'delay') {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+      if (mutationMode === 'failure') {
+        throw new ConnectionSourceError('network', 'Deterministic E2E mutation failure.');
       }
       e2eEndedConnectionIds.add(connectionId);
       return;

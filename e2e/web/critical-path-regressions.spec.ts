@@ -14,6 +14,37 @@ async function chooseProfessional(page: import('@playwright/test').Page) {
   await expect(page.getByTestId('pro.home.screen').last()).toBeVisible();
 }
 
+async function chooseLocale(
+  page: import('@playwright/test').Page,
+  locale: 'en-US' | 'pt-BR' | 'es-ES',
+) {
+  if (locale === 'en-US') {
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    return;
+  }
+
+  await page.goto('/settings/account');
+  await page.getByTestId('settings.account.languageRow').click();
+  await page.getByTestId(`settings.languageSelect.option.${locale}`).click();
+  await page.getByTestId('settings.languageSelect.saveButton').click();
+  await expect(page.locator('html')).toHaveAttribute('lang', locale);
+}
+
+async function setBulkDenyMutationMode(
+  page: import('@playwright/test').Page,
+  mode: 'delay' | 'failure',
+) {
+  await page.evaluate((mutationMode) => {
+    window.localStorage.setItem('mychampions.e2e.pending-mutation', mutationMode);
+  }, mode);
+}
+
+async function clearBulkDenyMutationMode(page: import('@playwright/test').Page) {
+  await page.evaluate(() => {
+    window.localStorage.removeItem('mychampions.e2e.pending-mutation');
+  });
+}
+
 const responsiveViewports = [
   { name: 'mobile', width: 390, height: 844 },
   { name: 'tablet', width: 820, height: 1000 },
@@ -119,13 +150,19 @@ test.describe('@critical @feature:connections browser bulk deny confirmation', (
 
         await page.keyboard.press('Escape');
         await expect(dialog).toBeHidden();
-        await expect(page.getByText('1 selected')).toBeVisible();
+        await expect(page.getByTestId('pro.pending.bulkDenyButton')).toBeFocused();
+        await expect(page.getByTestId('pro.pending.bulkDenySelectionCount')).toContainText(
+          '1 selected',
+        );
 
         await page.getByTestId('pro.pending.bulkDenyButton').click();
         await expect(dialog).toBeVisible();
         await page.getByTestId('pro.pending.bulkDenyConfirm.cancel').click();
         await expect(dialog).toBeHidden();
-        await expect(page.getByText('1 selected')).toBeVisible();
+        await expect(page.getByTestId('pro.pending.bulkDenyButton')).toBeFocused();
+        await expect(page.getByTestId('pro.pending.bulkDenySelectionCount')).toContainText(
+          '1 selected',
+        );
 
         await page.getByTestId('pro.pending.bulkDenyButton').click();
         await page.getByTestId('pro.pending.bulkDenyConfirm.confirm').click();
@@ -133,12 +170,87 @@ test.describe('@critical @feature:connections browser bulk deny confirmation', (
         await expect(page.getByTestId('pro.pending.bulkDenyResult')).toContainText(
           'Requests denied successfully.',
         );
+        await expect(page.getByTestId('pro.pending.bulkDenyResult')).toBeFocused();
         await expect(page.getByTestId('pro.pending.hero')).toContainText('0 pending');
         await expect(page.getByTestId('pro.pending.row.0')).toHaveCount(0);
         await page.screenshot({
           fullPage: true,
           path: testInfo.outputPath(`bulk-deny-success-${viewport.name}.png`),
         });
+      } finally {
+        await context.close();
+      }
+    });
+  }
+});
+
+const bulkDenyLocaleCases = [
+  {
+    error: 'Some requests could not be denied. Try again.',
+    locale: 'en-US',
+    selected: '1 selected',
+    success: 'Requests denied successfully.',
+  },
+  {
+    error: 'Não foi possível negar algumas solicitações. Tente novamente.',
+    locale: 'pt-BR',
+    selected: '1 selecionado(s)',
+    success: 'Solicitações negadas com sucesso.',
+  },
+  {
+    error: 'No se pudieron rechazar algunas solicitudes. Inténtalo de nuevo.',
+    locale: 'es-ES',
+    selected: '1 seleccionado(s)',
+    success: 'Solicitudes rechazadas correctamente.',
+  },
+] as const;
+
+test.describe('@critical @feature:connections browser bulk deny states and locales', () => {
+  for (const { error, locale, selected, success } of bulkDenyLocaleCases) {
+    test(`${locale} covers loading, success, and recoverable failure`, async ({
+      browser,
+    }, testInfo) => {
+      test.setTimeout(120_000);
+      test.skip(testInfo.project.name !== 'chromium', 'Mobile browser proof is Chromium-only');
+
+      const context = await browser.newContext({
+        deviceScaleFactor: 1,
+        hasTouch: true,
+        isMobile: true,
+        viewport: { width: 390, height: 844 },
+      });
+      const page = await context.newPage();
+
+      try {
+        await chooseProfessional(page);
+        await chooseLocale(page, locale);
+        await page.goto('/professional/pending');
+        await expect(page.getByTestId('pro.pending.hero')).toContainText(
+          locale === 'en-US' ? '1 pending' : locale === 'pt-BR' ? '1 pendente' : '1 pendiente',
+        );
+        await page.getByTestId('pro.pending.row.0').click({ position: { x: 20, y: 20 } });
+        await page.getByTestId('pro.pending.bulkDenyButton').click();
+
+        const dialog = page.getByTestId('pro.pending.bulkDenyConfirm');
+        const confirmButton = page.getByTestId('pro.pending.bulkDenyConfirm.confirm');
+        await expect(dialog).toBeVisible();
+
+        await setBulkDenyMutationMode(page, 'failure');
+        await confirmButton.click();
+        await expect(page.getByTestId('pro.pending.bulkDenyConfirm.error')).toContainText(error);
+        await expect(page.getByTestId('pro.pending.bulkDenySelectionCount')).toContainText(
+          selected,
+        );
+        await clearBulkDenyMutationMode(page);
+
+        await setBulkDenyMutationMode(page, 'delay');
+        await confirmButton.click();
+        await expect(confirmButton).toBeDisabled();
+        await expect(page.getByTestId('pro.pending.bulkDenyResult')).toContainText(success);
+        await expect(page.getByTestId('pro.pending.hero')).toContainText(
+          locale === 'en-US' ? '0 pending' : locale === 'pt-BR' ? '0 pendentes' : '0 pendientes',
+        );
+        await expect(page.getByTestId('pro.pending.row.0')).toHaveCount(0);
       } finally {
         await context.close();
       }

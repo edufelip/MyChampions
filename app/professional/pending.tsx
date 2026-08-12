@@ -130,12 +130,15 @@ export default function ProfessionalPendingScreen() {
 
   useWebDialogAccessibility({
     dialogTitleTestID: 'pro.pending.bulkDenyConfirm.title',
+    focusRestoreTestID: 'pro.pending.bulkDenyResult',
     isVisible: Platform.OS === 'web' && isBulkDenyConfirmVisible,
     onClose: closeBulkDenyConfirmation,
     testID: 'pro.pending.bulkDenyConfirm',
   });
 
   const executeBulkDeny = useCallback(async () => {
+    if (isWriteLocked) return;
+
     const ids = Array.from(selectedIds);
     if (ids.length === 0) {
       closeBulkDenyConfirmation();
@@ -154,9 +157,12 @@ export default function ProfessionalPendingScreen() {
         }
       }),
     );
-    const hasError = results.some((err) => Boolean(err));
+    const failedIds = ids.filter((_, index) => Boolean(results[index]));
+    const hasError = failedIds.length > 0;
 
     if (hasError) {
+      setSelectedIds(new Set(failedIds));
+      if (failedIds.length < ids.length) reload();
       setIsBulkDenying(false);
       if (Platform.OS === 'web') {
         setBulkDenyFeedback('error');
@@ -177,7 +183,15 @@ export default function ProfessionalPendingScreen() {
     } else {
       Alert.alert(t('pro.pending.bulk_deny.success'));
     }
-  }, [closeBulkDenyConfirmation, emitEvent, reload, selectedIds, t, unbindConnection]);
+  }, [
+    closeBulkDenyConfirmation,
+    emitEvent,
+    isWriteLocked,
+    reload,
+    selectedIds,
+    t,
+    unbindConnection,
+  ]);
 
   const onBulkDeny = () => {
     if (selectedIds.size === 0) return;
@@ -277,7 +291,10 @@ export default function ProfessionalPendingScreen() {
 
         {selectedIds.size > 0 ? (
           <View style={styles.bulkBar}>
-            <Text style={[styles.bulkCount, { color: theme.color.textPrimary }]}>
+            <Text
+              style={[styles.bulkCount, { color: theme.color.textPrimary }]}
+              testID="pro.pending.bulkDenySelectionCount"
+            >
               {(t('a11y.selected_count') as string).replace('{count}', String(selectedIds.size))}
             </Text>
             <DsPillButton
@@ -403,7 +420,7 @@ export default function ProfessionalPendingScreen() {
             ) : null}
             <View style={styles.bulkDenyModalActions}>
               <DsPillButton
-                disabled={isBulkDenying}
+                disabled={isBulkDenying || isWriteLocked}
                 fullWidth={false}
                 label={t('relationship.unbind.confirm_no') as string}
                 onPress={closeBulkDenyConfirmation}
