@@ -1,23 +1,44 @@
-import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect, useState, useRef } from 'react';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-
+import { useEffect, useState, useRef } from 'react';
+import {
+  ActivityIndicator,
+  Keyboard,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
-import type { useExerciseSearch } from '@/features/plans/use-exercise-search';
-import type { ExerciseItem } from '@/features/plans/exercise-service-source';
-import { useTranslation, type TranslationKey } from '@/localization';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
+import type { useTranslation} from '@/localization';
+import { type TranslationKey } from '@/localization';
+import type { ExerciseItem } from '@/features/plans/exercise-service-source';
+import type { useExerciseSearch } from '@/features/plans/use-exercise-search';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
 const EXERCISE_MUSCLE_GROUP_KEYS = new Set([
-  'chest', 'back', 'shoulders', 'biceps', 'triceps',
-  'forearms', 'quads', 'hamstrings', 'glutes', 'calves',
-  'core', 'full_body',
+  'chest',
+  'back',
+  'shoulders',
+  'biceps',
+  'triceps',
+  'forearms',
+  'quads',
+  'hamstrings',
+  'glutes',
+  'calves',
+  'core',
+  'full_body',
 ]);
 
 function translateMuscleGroup(slug: string, t: TFn): string {
@@ -54,10 +75,19 @@ export function ExerciseSearchModal({
   const notesRef = useRef<TextInput>(null);
   useWebDialogAccessibility({ isVisible, onClose, testID: 'exerciseSearch.modal' });
 
+  useEffect(() => {
+    if (!isVisible || view !== 'search' || Platform.OS !== 'web') return;
+
+    const focusTimeout = setTimeout(() => {
+      document.querySelector<HTMLElement>('[data-testid="exerciseSearch.input"]')?.focus();
+    }, 10);
+    return () => clearTimeout(focusTimeout);
+  }, [isVisible, view]);
+
   // Debounce search
   useEffect(() => {
     if (!isVisible || view === 'detail') return;
-    
+
     const timeoutId = setTimeout(() => {
       onSearch(query);
     }, 400);
@@ -94,14 +124,26 @@ export function ExerciseSearchModal({
   };
 
   return (
-    <Modal visible={isVisible} animationType="slide" onRequestClose={onClose} transparent>
+    <Modal
+      visible={isVisible}
+      animationType={Platform.OS === 'web' ? 'none' : 'slide'}
+      onRequestClose={onClose}
+      transparent
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>
-        <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]} testID="exerciseSearch.modal">
+        style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}
+      >
+        <View
+          role="dialog"
+          style={[styles.modalContent, { backgroundColor: theme.color.surface }]}
+          testID="exerciseSearch.modal"
+        >
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
-              {view === 'detail' ? t('pro.plan.item.field.name.label') : t('pro.plan.item.search.placeholder')}
+              {view === 'detail'
+                ? t('pro.plan.item.field.name.label')
+                : t('pro.plan.item.search.placeholder')}
             </Text>
             <Pressable onPress={onClose} hitSlop={12}>
               <Text style={{ color: theme.color.accentPrimary, fontWeight: '600' }}>
@@ -120,7 +162,8 @@ export function ExerciseSearchModal({
                     borderColor: theme.color.border,
                     backgroundColor: theme.color.surfaceMuted,
                   },
-                ]}>
+                ]}
+              >
                 <MaterialIcons
                   name="search"
                   size={18}
@@ -128,11 +171,8 @@ export function ExerciseSearchModal({
                   style={styles.searchIcon}
                 />
                 <TextInput
-                  style={[
-                    styles.searchInput,
-                    { color: theme.color.textPrimary },
-                  ]}
-                  placeholder={t('pro.plan.item.search.placeholder') as string}
+                  style={[styles.searchInput, { color: theme.color.textPrimary }]}
+                  placeholder={t('pro.plan.item.search.placeholder')}
                   placeholderTextColor={theme.color.textSecondary}
                   value={query}
                   onChangeText={setQuery}
@@ -142,7 +182,7 @@ export function ExerciseSearchModal({
                   }}
                   returnKeyType="search"
                   autoFocus
-                  accessibilityLabel={t('pro.plan.item.search.placeholder') as string}
+                  accessibilityLabel={t('pro.plan.item.search.placeholder')}
                   testID="exerciseSearch.input"
                 />
                 {query.length > 0 && (
@@ -152,7 +192,11 @@ export function ExerciseSearchModal({
                 )}
               </View>
 
-              <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
+              <ScrollView
+                style={styles.searchScroll}
+                contentContainerStyle={styles.modalScroll}
+                keyboardShouldPersistTaps="handled"
+              >
                 {searchState.kind === 'loading' && (
                   <ActivityIndicator color={theme.color.accentPrimary} style={{ marginTop: 40 }} />
                 )}
@@ -164,7 +208,9 @@ export function ExerciseSearchModal({
                 )}
 
                 {searchState.kind === 'done' && searchState.results.length === 0 && (
-                  <Text style={[styles.emptyText, { color: theme.color.textSecondary, marginTop: 40 }]}>
+                  <Text
+                    style={[styles.emptyText, { color: theme.color.textSecondary, marginTop: 40 }]}
+                  >
                     {t('pro.plan.item.search.empty')}
                   </Text>
                 )}
@@ -177,13 +223,26 @@ export function ExerciseSearchModal({
                       onPress={() => handleSelectExercise(exercise)}
                       accessibilityRole="button"
                       accessibilityLabel={exercise.title}
-                      testID={`exerciseSearch.result.${exercise.id}`}>
-                      
+                      testID={`exerciseSearch.result.${exercise.id}`}
+                    >
                       {exercise.thumbnailUrl ? (
-                        <Image source={{ uri: exercise.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
+                        <Image
+                          source={{ uri: exercise.thumbnailUrl }}
+                          style={styles.thumbnail}
+                          contentFit="cover"
+                        />
                       ) : (
-                        <View style={[styles.thumbnailPlaceholder, { backgroundColor: theme.color.surfaceMuted }]}>
-                          <MaterialIcons name="fitness-center" size={24} color={theme.color.textSecondary} />
+                        <View
+                          style={[
+                            styles.thumbnailPlaceholder,
+                            { backgroundColor: theme.color.surfaceMuted },
+                          ]}
+                        >
+                          <MaterialIcons
+                            name="fitness-center"
+                            size={24}
+                            color={theme.color.textSecondary}
+                          />
                         </View>
                       )}
 
@@ -197,10 +256,13 @@ export function ExerciseSearchModal({
                           </Text>
                         )}
                       </View>
-                      <MaterialIcons name="chevron-right" size={24} color={theme.color.textSecondary} />
+                      <MaterialIcons
+                        name="chevron-right"
+                        size={24}
+                        color={theme.color.textSecondary}
+                      />
                     </Pressable>
                   ))}
-
               </ScrollView>
             </>
           ) : (
@@ -213,18 +275,28 @@ export function ExerciseSearchModal({
             >
               <Pressable onPress={handleBackToSearch} hitSlop={12} style={styles.backButton}>
                 <MaterialIcons name="arrow-back" size={20} color={theme.color.accentPrimary} />
-                <Text style={{ color: theme.color.accentPrimary, fontSize: 14, fontWeight: '600', marginLeft: 4 }}>
+                <Text
+                  style={{
+                    color: theme.color.accentPrimary,
+                    fontSize: 14,
+                    fontWeight: '600',
+                    marginLeft: 4,
+                  }}
+                >
                   {t('pro.plan.item.search.back')}
                 </Text>
               </Pressable>
 
-              <Text style={[styles.detailTitle, { color: theme.color.textPrimary }]} testID="exerciseSearch.detail">
+              <Text
+                style={[styles.detailTitle, { color: theme.color.textPrimary }]}
+                testID="exerciseSearch.detail"
+              >
                 {selectedExercise?.title}
               </Text>
 
-              <ExerciseVideoPlayer 
-                videoUrl={selectedExercise?.videoUrl} 
-                thumbnailUrl={selectedExercise?.thumbnailUrl} 
+              <ExerciseVideoPlayer
+                videoUrl={selectedExercise?.videoUrl}
+                thumbnailUrl={selectedExercise?.thumbnailUrl}
                 theme={theme}
               />
 
@@ -247,7 +319,9 @@ export function ExerciseSearchModal({
 
               {selectedExercise?.description && (
                 <View style={styles.detailSection}>
-                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>{t('pro.plan.item.detail.description')}</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+                    {t('pro.plan.item.detail.description')}
+                  </Text>
                   <Text style={[styles.sectionBody, { color: theme.color.textSecondary }]}>
                     {selectedExercise.description}
                   </Text>
@@ -256,11 +330,15 @@ export function ExerciseSearchModal({
 
               {selectedExercise?.instructions && selectedExercise.instructions.length > 0 && (
                 <View style={styles.detailSection}>
-                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>{t('pro.plan.item.detail.instructions')}</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+                    {t('pro.plan.item.detail.instructions')}
+                  </Text>
                   {selectedExercise.instructions.map((step, i) => (
                     <View key={i} style={styles.bulletRow}>
                       <Text style={[styles.bullet, { color: theme.color.textSecondary }]}>•</Text>
-                      <Text style={[styles.bulletText, { color: theme.color.textSecondary }]}>{step}</Text>
+                      <Text style={[styles.bulletText, { color: theme.color.textSecondary }]}>
+                        {step}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -268,11 +346,15 @@ export function ExerciseSearchModal({
 
               {selectedExercise?.importantPoints && selectedExercise.importantPoints.length > 0 && (
                 <View style={styles.detailSection}>
-                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>{t('pro.plan.item.detail.important_points')}</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+                    {t('pro.plan.item.detail.important_points')}
+                  </Text>
                   {selectedExercise.importantPoints.map((point, i) => (
                     <View key={i} style={styles.bulletRow}>
                       <Text style={[styles.bullet, { color: theme.color.textSecondary }]}>•</Text>
-                      <Text style={[styles.bulletText, { color: theme.color.textSecondary }]}>{point}</Text>
+                      <Text style={[styles.bulletText, { color: theme.color.textSecondary }]}>
+                        {point}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -287,13 +369,13 @@ export function ExerciseSearchModal({
                     styles.textInput,
                     { color: theme.color.textPrimary, borderColor: theme.color.border },
                   ]}
-                  placeholder={t('pro.plan.item.field.quantity.placeholder') as string}
+                  placeholder={t('pro.plan.item.field.quantity.placeholder')}
                   placeholderTextColor={theme.color.textSecondary}
                   value={quantity}
                   onChangeText={setQuantity}
                   returnKeyType="done"
                   onSubmitEditing={() => Keyboard.dismiss()}
-                  accessibilityLabel={t('pro.plan.item.field.quantity.label') as string}
+                  accessibilityLabel={t('pro.plan.item.field.quantity.label')}
                   testID="exerciseSearch.quantity"
                 />
 
@@ -306,20 +388,20 @@ export function ExerciseSearchModal({
                     styles.textInput,
                     { color: theme.color.textPrimary, borderColor: theme.color.border },
                   ]}
-                  placeholder={t('pro.plan.item.field.notes.placeholder') as string}
+                  placeholder={t('pro.plan.item.field.notes.placeholder')}
                   placeholderTextColor={theme.color.textSecondary}
                   value={notes}
                   onChangeText={setNotes}
                   returnKeyType="done"
                   onSubmitEditing={handleConfirm}
-                  accessibilityLabel={t('pro.plan.item.field.notes.label') as string}
+                  accessibilityLabel={t('pro.plan.item.field.notes.label')}
                   testID="exerciseSearch.notes"
                 />
 
                 <View style={styles.actionsFooter}>
                   <DsPillButton
                     scheme={scheme}
-                    label={t('pro.plan.cta.add_item') as string}
+                    label={t('pro.plan.cta.add_item')}
                     onPress={handleConfirm}
                     testID="exerciseSearch.confirm"
                   />
@@ -333,7 +415,15 @@ export function ExerciseSearchModal({
   );
 }
 
-function ExerciseVideoPlayer({ videoUrl, thumbnailUrl, theme }: { videoUrl?: string | null, thumbnailUrl?: string | null, theme: DsTheme }) {
+function ExerciseVideoPlayer({
+  videoUrl,
+  thumbnailUrl,
+  theme,
+}: {
+  videoUrl?: string | null;
+  thumbnailUrl?: string | null;
+  theme: DsTheme;
+}) {
   const player = useVideoPlayer(videoUrl ?? '', (player) => {
     player.loop = true;
     player.play();
@@ -343,7 +433,11 @@ function ExerciseVideoPlayer({ videoUrl, thumbnailUrl, theme }: { videoUrl?: str
     return (
       <View style={[styles.videoPlaceholder, { backgroundColor: theme.color.surfaceMuted }]}>
         {thumbnailUrl ? (
-          <Image source={{ uri: thumbnailUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          <Image
+            source={{ uri: thumbnailUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+          />
         ) : (
           <MaterialIcons name="videocam-off" size={48} color={theme.color.textSecondary} />
         )}
@@ -352,12 +446,7 @@ function ExerciseVideoPlayer({ videoUrl, thumbnailUrl, theme }: { videoUrl?: str
   }
 
   return (
-    <VideoView
-      style={styles.videoPlayer}
-      player={player}
-      allowsFullscreen
-      allowsPictureInPicture
-    />
+    <VideoView style={styles.videoPlayer} player={player} allowsFullscreen allowsPictureInPicture />
   );
 }
 
@@ -365,6 +454,8 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
+    minHeight: '100%',
+    width: '100%',
   },
   modalContent: {
     borderTopLeftRadius: DsRadius.xl,
@@ -402,6 +493,10 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 0,
     paddingVertical: DsSpace.sm,
+  },
+  searchScroll: {
+    flex: 1,
+    minHeight: 0,
   },
   modalScroll: { gap: DsSpace.md, paddingBottom: 40 },
   exerciseRow: {

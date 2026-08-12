@@ -407,7 +407,7 @@
     "web:training": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts"],
+      "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/exercise-search-modal.spec.ts"],
       "grep": "@feature:training",
       "tier": "feature",
       "ci": true

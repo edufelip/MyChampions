@@ -54,6 +54,8 @@ Exercise items are added via the `ExerciseSearchModal` component, which:
 3. On item selection, shows a detail/confirmation form for `quantity` and `notes`.
 4. On confirm, calls `handleConfirmExercise` which adds the item to the local draft; the MyChampions server plan update is sent only when the user presses `Save`.
 
+On web, the search sheet does not use the native slide-in animation: it is viewport-bounded as soon as it opens so the title, Back action, and focused search field are usable on compact mobile emulation. The results region owns its scroll so long result sets do not push the modal outside the viewport.
+
 ### Catalog Service Contract
 - Base URL: `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL`
 - Search endpoint: `POST /integrations/exercise/search`
@@ -78,6 +80,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | State | Trigger | UI |
 |---|---|---|
 | Idle | Initial mount | Empty form or loading gated |
+| Search opened | User taps Add exercise | Viewport-bounded search dialog with focused input; web opens without an off-screen transition |
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
 | Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
