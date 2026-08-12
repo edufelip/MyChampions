@@ -19,7 +19,7 @@
 ## States
 - Loading: account creation or provider auth in progress.
 - Empty: idle form state.
-- Error: validation failure, duplicate email, provider/network error.
+- Error: validation failure, automatic sign-in failure (`requires_sign_in`), provider/network error.
 - Success: account created and routed into role-selection flow.
 
 ## Validation Rules

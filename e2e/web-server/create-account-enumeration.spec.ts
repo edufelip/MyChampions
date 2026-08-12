@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Response } from '@playwright/test';
 import { captureEvidence } from '../web/support/evidence';
 
 async function expectReadyStudentHome(page: Page) {
@@ -22,15 +22,13 @@ test.describe('@server-auth @critical @feature:auth create-account enumeration (
     const realPassword = 'RealPassword1!';
     const guessedPassword = 'GuessedPassword2!';
 
-    const createAccountResponses: { url: string; status: number; body: unknown }[] = [];
+    // Capture the Response objects synchronously as they arrive; body parsing
+    // is async, so it stays deferred until right before the assertions that
+    // need it rather than racing against the rest of the flow below.
+    const createAccountResponses: Response[] = [];
     page.on('response', (response) => {
       if (response.url().endsWith('/auth/email/create-account')) {
-        void response
-          .json()
-          .catch(() => null)
-          .then((body) => {
-            createAccountResponses.push({ url: response.url(), status: response.status(), body });
-          });
+        createAccountResponses.push(response);
       }
     });
 
@@ -89,12 +87,18 @@ test.describe('@server-auth @critical @feature:auth create-account enumeration (
 
     // Network-level proof: both create-account calls returned the identical
     // status/body pair, regardless of which one was the "real" new signup.
+    // Body parsing is awaited here, right before it's needed, rather than in
+    // the response listener above, so there's no race with the assertions.
     expect(createAccountResponses).toHaveLength(2);
-    expect(createAccountResponses[0]?.status).toBe(202);
-    expect(createAccountResponses[1]?.status).toBe(202);
-    expect(createAccountResponses[0]?.status).toBe(createAccountResponses[1]?.status);
-    expect(createAccountResponses[0]?.body).toEqual({ status: 'accepted' });
-    expect(createAccountResponses[1]?.body).toEqual(createAccountResponses[0]?.body);
+    const [firstResponse, secondResponse] = createAccountResponses;
+    expect(firstResponse.status()).toBe(202);
+    expect(secondResponse.status()).toBe(202);
+    const [firstBody, secondBody] = await Promise.all([
+      firstResponse.json(),
+      secondResponse.json(),
+    ]);
+    expect(firstBody).toEqual({ status: 'accepted' });
+    expect(secondBody).toEqual(firstBody);
 
     // Step 3: the original account is untouched — it still signs in with its
     // real password, proving the duplicate attempt did not overwrite it.
