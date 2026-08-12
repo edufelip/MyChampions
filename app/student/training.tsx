@@ -259,9 +259,19 @@ export default function StudentTrainingScreen() {
                               testID={`student.training.logBtn-${session.id}`}
                             />
                             <Pressable
+                              accessibilityLabel={
+                                t(
+                                  isExpanded
+                                    ? 'student.training.session.collapse'
+                                    : 'student.training.session.expand'
+                                ) as string
+                              }
                               accessibilityRole="button"
+                              accessibilityState={{ expanded: isExpanded }}
+                              aria-expanded={isExpanded}
                               hitSlop={10}
                               onPress={() => toggleSessionExpand(session.id)}
+                              style={styles.expandButton}
                               testID={`student.training.expandBtn-${session.id}`}
                             >
                               <MaterialIcons
@@ -678,6 +688,12 @@ const styles = StyleSheet.create({
   logButton: {
     minHeight: 36,
     paddingHorizontal: 12,
+  },
+  expandButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
   },
   exerciseList: {
     marginTop: DsSpace.md,

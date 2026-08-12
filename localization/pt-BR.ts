@@ -281,6 +281,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'student.training.session.title': 'Plano guiado de hoje',
   'student.training.session.body':
     'Seu treinador atribuiu uma estrutura de treino. Registre sua execução e solicite ajustes abaixo.',
+  'student.training.session.expand': 'Expandir detalhes do treino',
+  'student.training.session.collapse': 'Recolher detalhes do treino',
   'student.training.empty.title': 'Nenhum treino encontrado',
   'student.training.empty.body':
     'Você ainda não possui um plano de treino personalizado. Contrate um personal trainer para receber uma rotina feita sob medida para seus objetivos.',

@@ -10,6 +10,7 @@
 - Primary:
   - Open current session plan.
   - Mark session/task completion.
+  - Expand or collapse each workout session's details; the control exposes a localized label and expanded state to assistive technology.
   - Submit training plan-change request for assigned plans.
 - Secondary:
   - Review prior session history and adherence trend.

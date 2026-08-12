@@ -245,7 +245,7 @@
   1. User enables larger text and opens core screens.
   2. UI scales without clipping critical controls/content.
   3. User navigates interactive elements in logical focus order.
-  4. Screen reader announces meaningful labels for key controls and status text.
+  4. Screen reader announces meaningful labels and current state for key controls, including expandable workout-session details.
 - Expected result: Core flows remain usable with baseline accessibility support.
 
 ## UC-002.19 Water Goal And Intake Tracking

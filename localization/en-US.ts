@@ -270,6 +270,8 @@ export const enUS = {
   'student.training.session.title': "Today's guided plan",
   'student.training.session.body':
     'Your coach assigned a training structure. Track completion and request adjustments below.',
+  'student.training.session.expand': 'Expand workout details',
+  'student.training.session.collapse': 'Collapse workout details',
   'student.training.empty.title': 'No workouts found',
   'student.training.empty.body':
     "You don't have a personalized workout plan yet. Hire a personal trainer to receive a routine tailored to your goals.",
