@@ -1,5 +1,6 @@
+import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,9 +14,18 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
+import {
+  buildAuthEntryViewed,
+  buildSignUpFailed,
+  buildSignUpSubmitted,
+} from '@/features/analytics/analytics.logic';
+import { useAnalytics } from '@/features/analytics/use-analytics';
+import { signInWithAppleProviderTokenFromSource } from '@/features/auth/apple-social-auth-source';
+import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
+import { useAuthSession } from '@/features/auth/auth-session';
 import {
   CreateAccountFailure,
   mapCreateAccountReasonToMessageKey,
@@ -25,20 +35,10 @@ import {
   validateCreateAccountInput,
   type CreateAccountValidationErrors,
 } from '@/features/auth/create-account.logic';
-import { signInWithAppleProviderTokenFromSource } from '@/features/auth/apple-social-auth-source';
 import { createAccountWithEmailPasswordFromSource } from '@/features/auth/email-auth-source';
 import { signInWithGoogleProviderTokenFromSource } from '@/features/auth/google-social-auth-source';
-import { useAuthSession } from '@/features/auth/auth-session';
-import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
-import {
-  buildAuthEntryViewed,
-  buildSignUpFailed,
-  buildSignUpSubmitted,
-} from '@/features/analytics/analytics.logic';
-import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CreateAccountScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -69,6 +69,9 @@ export default function CreateAccountScreen() {
   const [errors, setErrors] = useState<CreateAccountValidationErrors>({});
   const [submitError, setSubmitError] = useState<CreateAccountErrorMessageKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [focusedField, setFocusedField] = useState<
+    'name' | 'email' | 'password' | 'passwordConfirmation' | null
+  >(null);
 
   const buildAuthRoute = (pathname: '/auth/sign-in') => {
     if (!returnTo) {
@@ -204,15 +207,6 @@ export default function CreateAccountScreen() {
     >
       <Stack.Screen options={{ title: t('auth.signup.title'), headerShown: false }} />
 
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
-      />
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
-      />
-
       <ScrollView
         style={styles.content}
         contentContainerStyle={[
@@ -238,28 +232,28 @@ export default function CreateAccountScreen() {
 
               router.replace(buildAuthRoute('/auth/sign-in') as never);
             }}
-            style={[styles.backButton, { backgroundColor: theme.color.surface }]}
+            style={[
+              styles.backButton,
+              { backgroundColor: theme.color.surface, borderColor: theme.color.textTertiary },
+            ]}
             testID="auth.createAccount.backButton"
           >
             <MaterialIcons color={palette.text} name="arrow-back" size={22} />
           </Pressable>
+          <View
+            style={[styles.headerBrandMark, { backgroundColor: theme.color.accentPrimarySoft }]}
+          >
+            <Image
+              accessibilityLabel={t('a11y.brand_logo')}
+              contentFit="contain"
+              source={require('../../assets/images/logo.svg')}
+              style={styles.headerBrandLogo}
+            />
+          </View>
           <View style={styles.headerSpacer} />
         </View>
 
         <View style={[styles.titleArea, usesCompactMobileLayout && styles.titleAreaCompact]}>
-          <View
-            style={[
-              styles.brandBadge,
-              usesCompactMobileLayout && styles.brandBadgeCompact,
-              { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft },
-            ]}
-          >
-            <MaterialIcons
-              color={theme.color.accentPrimary}
-              name="fitness-center"
-              size={usesCompactMobileLayout ? 25 : 32}
-            />
-          </View>
           <Text
             style={[
               styles.title,
@@ -270,6 +264,9 @@ export default function CreateAccountScreen() {
           >
             {t('auth.signup.title')}
           </Text>
+          <Text style={[styles.subtitle, { color: palette.icon }]}>
+            {t('auth.signup.subtitle')}
+          </Text>
         </View>
 
         <View style={[styles.formWrapper, usesCompactMobileLayout && styles.formWrapperCompact]}>
@@ -279,14 +276,20 @@ export default function CreateAccountScreen() {
               accessibilityLabel={t('auth.field.name')}
               autoCapitalize="words"
               autoComplete="name"
+              onBlur={() => setFocusedField(null)}
               onChangeText={setName}
+              onFocus={() => setFocusedField('name')}
               placeholder={t('auth.placeholder.name')}
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
                 {
                   backgroundColor: theme.color.surface,
-                  borderColor: 'transparent',
+                  borderColor: errors.name
+                    ? theme.color.danger
+                    : focusedField === 'name'
+                      ? theme.color.accentPrimary
+                      : theme.color.textTertiary,
                   color: palette.text,
                 },
               ]}
@@ -314,14 +317,20 @@ export default function CreateAccountScreen() {
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
+              onBlur={() => setFocusedField(null)}
               onChangeText={setEmail}
+              onFocus={() => setFocusedField('email')}
               placeholder={t('auth.placeholder.email')}
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
                 {
                   backgroundColor: theme.color.surface,
-                  borderColor: 'transparent',
+                  borderColor: errors.email
+                    ? theme.color.danger
+                    : focusedField === 'email'
+                      ? theme.color.accentPrimary
+                      : theme.color.textTertiary,
                   color: palette.text,
                 },
               ]}
@@ -349,7 +358,9 @@ export default function CreateAccountScreen() {
                 accessibilityLabel={t('auth.field.password')}
                 autoCapitalize="none"
                 autoComplete="password-new"
+                onBlur={() => setFocusedField(null)}
                 onChangeText={setPassword}
+                onFocus={() => setFocusedField('password')}
                 placeholder={t('auth.placeholder.password')}
                 placeholderTextColor={palette.icon}
                 secureTextEntry={!showPassword}
@@ -358,7 +369,11 @@ export default function CreateAccountScreen() {
                   styles.passwordInput,
                   {
                     backgroundColor: theme.color.surface,
-                    borderColor: 'transparent',
+                    borderColor: errors.password
+                      ? theme.color.danger
+                      : focusedField === 'password'
+                        ? theme.color.accentPrimary
+                        : theme.color.textTertiary,
                     color: palette.text,
                   },
                 ]}
@@ -372,13 +387,19 @@ export default function CreateAccountScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPassword((current) => !current)}
                 testID="auth.createAccount.passwordToggle"
-                style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}
+                style={[
+                  styles.passwordToggle,
+                  {
+                    backgroundColor: theme.color.surfaceMuted,
+                    borderColor: theme.color.textTertiary,
+                  },
+                ]}
               >
-                <Text style={[styles.passwordToggleText, { color: palette.text }]}>
-                  {showPassword
-                    ? t('auth.password.toggle_hide_short')
-                    : t('auth.password.toggle_show_short')}
-                </Text>
+                <MaterialIcons
+                  color={palette.text}
+                  name={showPassword ? 'visibility-off' : 'visibility'}
+                  size={20}
+                />
               </Pressable>
             </View>
             <Text style={[styles.helperText, { color: palette.icon }]}>
@@ -406,7 +427,9 @@ export default function CreateAccountScreen() {
                 autoCapitalize="none"
                 autoComplete="password-new"
                 blurOnSubmit
+                onBlur={() => setFocusedField(null)}
                 onChangeText={onPasswordConfirmationChange}
+                onFocus={() => setFocusedField('passwordConfirmation')}
                 onSubmitEditing={({ nativeEvent }) => {
                   void onCreateAccount(nativeEvent.text);
                 }}
@@ -419,7 +442,11 @@ export default function CreateAccountScreen() {
                   styles.passwordInput,
                   {
                     backgroundColor: theme.color.surface,
-                    borderColor: 'transparent',
+                    borderColor: errors.passwordConfirmation
+                      ? theme.color.danger
+                      : focusedField === 'passwordConfirmation'
+                        ? theme.color.accentPrimary
+                        : theme.color.textTertiary,
                     color: palette.text,
                   },
                 ]}
@@ -435,13 +462,19 @@ export default function CreateAccountScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPasswordConfirmation((current) => !current)}
                 testID="auth.createAccount.passwordConfirmationToggle"
-                style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}
+                style={[
+                  styles.passwordToggle,
+                  {
+                    backgroundColor: theme.color.surfaceMuted,
+                    borderColor: theme.color.textTertiary,
+                  },
+                ]}
               >
-                <Text style={[styles.passwordToggleText, { color: palette.text }]}>
-                  {showPasswordConfirmation
-                    ? t('auth.password.toggle_hide_short')
-                    : t('auth.password.toggle_show_short')}
-                </Text>
+                <MaterialIcons
+                  color={palette.text}
+                  name={showPasswordConfirmation ? 'visibility-off' : 'visibility'}
+                  size={20}
+                />
               </Pressable>
             </View>
             <View accessibilityLiveRegion="polite">
@@ -476,9 +509,10 @@ export default function CreateAccountScreen() {
             style={({ pressed }) => [
               styles.primaryButton,
               {
-                backgroundColor: theme.color.accentPrimary,
-                opacity: submitting ? 0.7 : 1,
-                transform: [{ scale: pressed ? 0.96 : 1 }],
+                backgroundColor: submitting
+                  ? theme.color.disabledSurface
+                  : theme.color.accentPrimary,
+                transform: [{ scale: pressed ? 0.99 : 1 }],
               },
             ]}
             testID="auth.createAccount.submitButton"
@@ -486,7 +520,7 @@ export default function CreateAccountScreen() {
             {submitting ? (
               <ActivityIndicator
                 accessibilityLabel={t('a11y.loading.submitting')}
-                color={theme.color.onAccent}
+                color={submitting ? theme.color.disabledText : theme.color.onAccent}
               />
             ) : (
               <>
@@ -498,9 +532,13 @@ export default function CreateAccountScreen() {
             )}
           </Pressable>
 
-          <Text style={[styles.dividerText, { color: palette.icon }]}>
-            {t('auth.signup.or_continue')}
-          </Text>
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: theme.color.border }]} />
+            <Text style={[styles.dividerText, { color: palette.icon }]}>
+              {t('auth.signup.or_continue')}
+            </Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.color.border }]} />
+          </View>
 
           <View style={styles.socialRow}>
             <Pressable
@@ -510,13 +548,23 @@ export default function CreateAccountScreen() {
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: theme.color.surface,
-                  opacity: submitting ? 0.5 : 1,
+                  backgroundColor: submitting ? theme.color.disabledSurface : theme.color.surface,
+                  borderColor: submitting ? theme.color.disabledBorder : theme.color.textTertiary,
                 },
               ]}
               testID="auth.createAccount.googleButton"
             >
-              <Text style={[styles.socialButtonText, { color: theme.color.accentPrimary }]}>
+              <AntDesign
+                name="google"
+                size={20}
+                color={submitting ? theme.color.disabledText : theme.color.accentPrimary}
+              />
+              <Text
+                style={[
+                  styles.socialButtonText,
+                  { color: submitting ? theme.color.disabledText : palette.text },
+                ]}
+              >
                 {t('auth.social.google')}
               </Text>
             </Pressable>
@@ -527,13 +575,23 @@ export default function CreateAccountScreen() {
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: theme.color.surface,
-                  opacity: submitting ? 0.5 : 1,
+                  backgroundColor: submitting ? theme.color.disabledSurface : theme.color.surface,
+                  borderColor: submitting ? theme.color.disabledBorder : theme.color.textTertiary,
                 },
               ]}
               testID="auth.createAccount.appleButton"
             >
-              <Text style={[styles.socialButtonText, { color: palette.text }]}>
+              <Ionicons
+                name="logo-apple"
+                size={20}
+                color={submitting ? theme.color.disabledText : palette.text}
+              />
+              <Text
+                style={[
+                  styles.socialButtonText,
+                  { color: submitting ? theme.color.disabledText : palette.text },
+                ]}
+              >
                 {t('auth.social.apple')}
               </Text>
             </Pressable>
@@ -562,24 +620,6 @@ export default function CreateAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    overflow: 'hidden',
-  },
-  blob: {
-    borderRadius: 999,
-    opacity: 0.6,
-    position: 'absolute',
-  },
-  blobTopLeft: {
-    height: 300,
-    left: -110,
-    top: -80,
-    width: 300,
-  },
-  blobBottomRight: {
-    bottom: -100,
-    height: 340,
-    right: -130,
-    width: 340,
   },
   content: {
     flex: 1,
@@ -598,80 +638,83 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    minHeight: 44,
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 24,
-    elevation: 1,
-    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 44,
     justifyContent: 'center',
-    width: 48,
+    width: 44,
+  },
+  headerBrandMark: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  headerBrandLogo: {
+    height: 30,
+    width: 30,
   },
   headerSpacer: {
-    width: 48,
+    width: 44,
   },
   titleArea: {
-    alignItems: 'center',
-    marginBottom: 18,
+    alignItems: 'flex-start',
+    marginBottom: 24,
     marginTop: 20,
   },
   titleAreaCompact: {
-    marginBottom: 10,
-    marginTop: 8,
-  },
-  brandBadge: {
-    alignItems: 'center',
-    borderRadius: 44,
-    borderWidth: 4,
-    elevation: 2,
-    height: 88,
-    justifyContent: 'center',
-    marginBottom: 12,
-    width: 88,
-  },
-  brandBadgeCompact: {
-    borderRadius: 32,
-    borderWidth: 3,
-    height: 64,
-    marginBottom: 6,
-    width: 64,
+    marginBottom: 18,
+    marginTop: 16,
   },
   formWrapper: {
-    gap: 12,
+    gap: 16,
   },
   formWrapperCompact: {
-    gap: 8,
+    gap: 12,
   },
   title: {
     fontFamily: Fonts.rounded,
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: '700',
-    textAlign: 'center',
+    lineHeight: 34,
+    maxWidth: 330,
+    textAlign: 'left',
   },
   titleCompact: {
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 26,
+    lineHeight: 32,
+  },
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 8,
+    maxWidth: 330,
   },
   formSection: {
     gap: 8,
   },
   fieldLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    marginLeft: 12,
+    letterSpacing: 0.1,
   },
   input: {
-    borderRadius: 28,
-    borderWidth: 2,
+    borderRadius: 12,
+    borderWidth: 1,
     fontSize: 16,
     minHeight: 52,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   passwordRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   passwordInput: {
     flex: 1,
@@ -679,50 +722,56 @@ const styles = StyleSheet.create({
   },
   passwordToggle: {
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 44,
     justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 68,
-    paddingHorizontal: 14,
-  },
-  passwordToggleText: {
-    fontSize: 14,
-    fontWeight: '600',
+    width: 44,
   },
   helperText: {
     fontSize: 12,
     lineHeight: 16,
     marginTop: -2,
-    paddingHorizontal: 12,
+    paddingHorizontal: 0,
   },
   inlineError: {
-    fontSize: 13,
-    paddingHorizontal: 12,
+    fontSize: 12,
+    lineHeight: 17,
+    paddingHorizontal: 0,
   },
   submitError: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     lineHeight: 20,
-    paddingHorizontal: 12,
+    paddingHorizontal: 0,
   },
   primaryButton: {
     alignItems: 'center',
-    borderRadius: 28,
+    borderRadius: 12,
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    minHeight: 56,
-    marginTop: 2,
+    minHeight: 52,
+    marginTop: 4,
     paddingHorizontal: 16,
   },
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '700',
   },
-  dividerText: {
-    alignSelf: 'center',
-    fontSize: 14,
+  dividerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
     marginTop: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   socialRow: {
     flexDirection: 'row',
@@ -731,10 +780,14 @@ const styles = StyleSheet.create({
   },
   socialButton: {
     alignItems: 'center',
-    borderRadius: 28,
+    borderRadius: 12,
+    borderWidth: 1,
     flex: 1,
+    flexDirection: 'row',
+    gap: 10,
     justifyContent: 'center',
-    minHeight: 56,
+    minHeight: 52,
+    paddingHorizontal: 16,
   },
   socialButtonText: {
     fontSize: 15,
@@ -745,7 +798,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 26,
     paddingBottom: 8,
     paddingTop: 8,
   },

@@ -828,6 +828,15 @@
     was already a correct no-op (web relies on the server's HttpOnly cookie
     refresh session, not client-JS-readable storage).
 
+### D-203: Shared restrained mobile auth entry shell
+
+- Date: 2026-08-12
+- Status: Accepted
+- Scope: SC-217 sign-in and SC-218 create-account entry screens.
+- Decision: Use one restrained mobile auth visual language for returning and first-time users: design-system canvas, compact brand mark, left-aligned title/subtitle hierarchy, labeled 52dp controls, token-based border/focus/error states, icon-based password visibility actions, outlined social providers, and safe-area-aware scroll padding.
+- Rationale: The previous screens used oversized centered hero treatments, decorative blobs, pill controls, and inconsistent provider/password affordances. The visual weight obscured the primary task on narrow mobile viewports and made the two entry flows feel unrelated. The replacement improves hierarchy and consistency while preserving routes, test IDs, localized behavior, analytics, provider actions, validation, and scrollability.
+- Constraints: Do not introduce raw colors, gradients, decorative imagery, or a new auth-specific design system. All new copy must be localized in `en-US`, `pt-BR`, and `es-ES`. The 320×720 Playwright regression is the minimum narrow viewport gate; the existing Pixel 5 mobile project remains the primary evidence surface.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.

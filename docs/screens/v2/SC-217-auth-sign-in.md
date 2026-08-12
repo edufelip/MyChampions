@@ -60,7 +60,7 @@
 - Invalid credentials error: `Email or password is incorrect. Try again or reset your password.`
 - Network error: `Couldn't connect right now. Check your connection and try again.`
 
-## Implementation Snapshot (2026-02-28)
+## Implementation Snapshot (2026-08-12)
 - Implemented in code with route and UI scaffold:
   - `app/auth/sign-in.tsx`
 - Current implemented behavior:
@@ -78,8 +78,11 @@
   - Durable device session persistence is owned by the MyChampions server auth bridge instead of native provider config.
   - Successful sign-in routes to `/auth/accept-terms`; global guard then routes to role-selection or role home depending on terms + role state.
   - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes after terms acceptance.
-  - Visual treatment follows a playful rounded layout with decorative background blobs, rounded brand logo badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.
-  - The brand logo in the title area is an `expo-image` `<Image>` rendering `assets/images/logo.svg` (`contentFit="contain"`, `borderRadius: 20`, `overflow: hidden`, 100×100, `marginBottom: 16`). No wrapper `View` — styles are applied directly on the image. The previous `MaterialIcons fitness-center` icon and its `brandBadge` container are removed. Accessibility label uses key `a11y.brand_logo`.
+  - Visual treatment follows the shared mobile auth shell: a calm design-system canvas, compact branded mark, left-aligned title/subtitle hierarchy, labeled 52dp fields with token-based borders, and consistent 52dp primary/social actions. Decorative blobs and oversized pill controls are not used on the auth entry surfaces.
+  - The brand logo is an `expo-image` `<Image>` rendering `assets/images/logo.svg` (`contentFit="contain"`) inside a compact `accentPrimarySoft` brand mark. Accessibility label uses key `a11y.brand_logo`.
+  - Text inputs expose a visible design-system border, accent focus state, and danger state for field validation. The password reveal action is an icon-only 40dp control with the existing localized accessible show/hide label.
+  - Social actions use explicit surface/border/disabled tokens, Google/Apple provider icons, and a rule divider so the provider choices remain visually secondary to email/password.
+  - The mobile layout includes safe-area padding and a narrow-viewport regression check at 320×720 to prevent horizontal overflow or clipped auth hierarchy.
   - Primary email sign-in pill button uses light foreground (label, icon, and loading spinner) for contrast against the accent background.
   - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
 

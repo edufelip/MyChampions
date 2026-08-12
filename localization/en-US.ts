@@ -56,6 +56,7 @@ export const enUS = {
   'auth.password.toggle_show_short': 'Show',
   'auth.password.toggle_hide_short': 'Hide',
   'auth.signup.title': 'Create your account',
+  'auth.signup.subtitle': 'Start with a plan that fits your routine.',
   'auth.signup.cta_primary': 'Create account',
   'auth.signup.or_continue': 'or continue with',
   'auth.signup.password_helper':

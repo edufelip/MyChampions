@@ -37,7 +37,7 @@ image count is insufficient.
 
 | Flow folder | Checkpoints per platform | Primary surfaces |
 |---|---:|---|
-| `00-authentication-and-terms` | 10 | Sign in, create account, validation, Google, Apple, terms |
+| `00-authentication-and-terms` | 14 | Sign in, create account, validation, Google, Apple, terms, narrow mobile auth layout |
 | `01-role-onboarding` | 2 | Role selection and student first value |
 | `02-professional-onboarding` | 4 | Specialty selection, optional credential, professional home |
 | `03-student-daily-care` | 10 | Home, nutrition, hydration, plan-change request, meals, training |

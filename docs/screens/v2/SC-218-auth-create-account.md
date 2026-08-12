@@ -59,12 +59,13 @@
 
 ## Copy Draft (Initial)
 - Title: `Create your account`
+- Subtitle: `Start with a plan that fits your routine.`
 - CTA create account: `Create account`
 - CTA back sign-in: `Back to sign in`
 - Password helper: `Use at least 8 characters, including uppercase, number, and a symbol (e.g., ! @ #).`
 - Requires-sign-in error (ET-75: no longer reveals whether the email was a duplicate): `We couldn't sign you in automatically. Enter your email and password on the sign-in screen to continue.`
 
-## Implementation Snapshot (2026-03-04)
+## Implementation Snapshot (2026-08-12)
 - Implemented in code:
   - `app/auth/create-account.tsx`
   - `features/auth/create-account.logic.ts`
@@ -79,10 +80,12 @@
   - Google social auth shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
   - Apple social auth shows the approved E2E fixture path in test mode, then tries native Apple identity-token capture and posts the token plus nonce to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer, audience, and nonce claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.
   - Successful sign-up routes to `/auth/accept-terms`; the MyChampions server auth session + guard then continue to role-selection or role home when terms are accepted.
-  - Visual layout is aligned with Stitch reference `Playful Sign In Variant 1` using the same playful auth system used by SC-217:
-    - Soft peach background with decorative blobs.
-    - Rounded hero badge and rounded-full field/button controls.
-    - Footer helper + CTA pair (`Already have an account?` + `Back to sign in`).
+  - Visual layout uses the shared mobile auth shell used by SC-217:
+    - Calm design-system canvas with a compact centered brand mark in the header and a bordered back affordance.
+    - Left-aligned title/subtitle hierarchy and labeled 52dp fields with token-based border, focus, and validation states.
+    - Icon-only password visibility controls, outlined provider actions with Google/Apple icons, and a rule divider.
+    - Footer helper + CTA pair (`Already have an account?` + `Back to sign in`) remains the secondary route.
+  - The 320×720 mobile regression confirms the sign-up heading, back affordance, and complete horizontal layout remain usable without overflow; the form remains scrollable for validation messages and text scaling.
 
 ## Design Reference Assets
 - `docs/design-assets/stitch/13906080126528974652/da61e892eaf34516b83086d64e163b23.html`

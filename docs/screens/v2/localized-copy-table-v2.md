@@ -58,6 +58,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.terms.error.link_unavailable` | SC-221 | Terms link error | Could not open the terms link right now. Try again. | Não foi possível abrir o link dos termos agora. Tente novamente. | No se pudo abrir el enlace de términos ahora. Inténtalo de nuevo. | |
 | `auth.terms.invalid_link` | SC-221 | Missing or unsafe legal URL | This link is unavailable because its address is missing or unsafe. | Este link está indisponível porque o endereço está ausente ou não é seguro. | Este enlace no está disponible porque falta la dirección o no es segura. | Web safe-link guard |
 | `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | Crea tu cuenta | |
+| `auth.signup.subtitle` | SC-218 | Create-account helper | Start with a plan that fits your routine. | Comece com um plano que cabe na sua rotina. | Empieza con un plan que se adapte a tu rutina. | |
 | `auth.field.name` | SC-218 | Name label | Name | Nome | Nombre | Shared auth field label |
 | `auth.field.email` | SC-218 | Email label | Email | E-mail | Correo electrónico | Shared create-account field label |
 | `auth.field.password` | SC-217/SC-218 | Password label | Password | Senha | Contraseña | Shared auth field label |
@@ -435,7 +436,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `a11y.selected_count` | SC-pending | SR bulk selection count | {count} selected | {count} selecionado(s) | {count} seleccionado(s) | Replaces hardcoded string in pending.tsx |
 | `a11y.student_row` | SC-205 | SR student row label | {name}, {specialty}, {status} | {name}, {specialty}, {status} | {name}, {specialty}, {status} | Combines name+specialty+status for SR |
 | `a11y.stat_card` | SC-204 | SR stat card label | {value} {label} | {value} {label} | {value} {label} | Combines value+label for stat cards |
-| `a11y.brand_logo` | SC-217 | SR label for brand logo image | My Champions logo | Logo My Champions | Logo de My Champions | Used on sign-in screen brand badge |
+| `a11y.brand_logo` | SC-217/SC-218 | SR label for shared auth brand logo image | My Champions logo | Logo My Champions | Logo de My Champions | Used by the shared sign-in and create-account auth shell |
 | `meal.photo_analysis.cta` | SC-214/SC-215 | Camera/AI entry CTA | Analyze with AI | Analisar com IA | Analizar con IA | BL-108 |
 | `meal.photo_analysis.analyzing` | SC-219 | In-progress loading text | Analyzing your meal… | Analisando sua refeição… | Analizando tu comida… | BL-108 |
 | `meal.photo_analysis.disclaimer` | SC-219 | Estimate disclaimer | These are AI estimates. Please verify before saving. | Estes são valores estimados pela IA. Verifique antes de salvar. | Estos son valores estimados por IA. Verifícalos antes de guardar. | BR-290; always shown with results |

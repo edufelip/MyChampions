@@ -60,6 +60,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.password.toggle_show_short': 'Mostrar',
   'auth.password.toggle_hide_short': 'Ocultar',
   'auth.signup.title': 'Crie sua conta',
+  'auth.signup.subtitle': 'Comece com um plano que cabe na sua rotina.',
   'auth.signup.cta_primary': 'Criar conta',
   'auth.signup.or_continue': 'ou continue com',
   'auth.signup.password_helper':

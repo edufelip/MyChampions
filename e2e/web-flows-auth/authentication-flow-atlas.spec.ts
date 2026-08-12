@@ -105,4 +105,65 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
     await page.getByTestId('auth.createAccount.submitButton').click();
     await capture(page, testInfo, '10-create-account-terms', 'auth.terms.screen');
   });
+
+  test('auth entry screens fit a narrow mobile viewport', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'The narrow viewport check is mobile-only.');
+    for (const viewport of [
+      { width: 320, height: 720, suffix: 'narrow' },
+      { width: 390, height: 844, suffix: '390' },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+
+      await page.goto('/auth/sign-in');
+      await capture(page, testInfo, `11-${viewport.suffix}-sign-in`, 'auth.signIn.title');
+      await expect(page.getByTestId('auth.signIn.title')).toBeVisible();
+      const signInPasswordToggle = page.getByTestId('auth.signIn.passwordToggle');
+      await expect(signInPasswordToggle).toHaveAccessibleName('Show password');
+      await expect
+        .poll(() =>
+          signInPasswordToggle.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return { height: rect.height, width: rect.width };
+          }),
+        )
+        .toEqual({ height: 44, width: 44 });
+      await signInPasswordToggle.click();
+      await expect(signInPasswordToggle).toHaveAccessibleName('Hide password');
+      await expect(page.getByTestId('auth.signIn.passwordInput')).toHaveJSProperty('type', 'text');
+
+      await page.goto('/auth/create-account');
+      await capture(
+        page,
+        testInfo,
+        `12-${viewport.suffix}-create-account`,
+        'auth.createAccount.title',
+      );
+      await expect(page.getByTestId('auth.createAccount.title')).toBeVisible();
+      await expect(page.getByTestId('auth.createAccount.backButton')).toBeInViewport();
+      for (const [testId, inputTestId] of [
+        ['auth.createAccount.passwordToggle', 'auth.createAccount.passwordInput'],
+        [
+          'auth.createAccount.passwordConfirmationToggle',
+          'auth.createAccount.passwordConfirmationInput',
+        ],
+      ] as const) {
+        const passwordToggle = page.getByTestId(testId);
+        await expect(passwordToggle).toHaveAccessibleName('Show password');
+        await expect
+          .poll(() =>
+            passwordToggle.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              return { height: rect.height, width: rect.width };
+            }),
+          )
+          .toEqual({ height: 44, width: 44 });
+        await passwordToggle.click();
+        await expect(passwordToggle).toHaveAccessibleName('Hide password');
+        await expect(page.getByTestId(inputTestId)).toHaveJSProperty('type', 'text');
+      }
+      if (viewport.width === 390) {
+        await expect(page.getByTestId('auth.createAccount.backToSignInButton')).toBeInViewport();
+      }
+    }
+  });
 });
