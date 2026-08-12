@@ -6,11 +6,12 @@
  * within the app using react-native-webview.
  *
  * URL contract: `url` is validated by `resolveSafeExternalUrl` before use
- * (see `@/features/platform/external-url`) — only `https://eduwaldo.com` and
- * its subdomains are accepted, plus `http://localhost`/`127.0.0.1`/`[::1]`
- * when running in development. On an invalid `url`, this native screen
- * renders a localized invalid-link state with a back action; the web platform
- * variant (`webview.web.tsx`) renders its own equivalent state.
+ * (see `@/features/platform/external-url`) — arbitrary deep-link URLs must
+ * use the fixed `eduwaldo.com` origin, while exact configured legal URLs may
+ * use their operator-approved host. Development loopback URLs are also
+ * supported. On an invalid `url`, this native screen renders a localized
+ * invalid-link state with a back action; the web platform variant
+ * (`webview.web.tsx`) renders its own equivalent state.
  */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -25,9 +26,10 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { getDsTheme, DsRadius, DsSpace } from '@/constants/design-system';
+import { resolveTermsConfigFromExpo } from '@/features/auth/terms-config';
 import {
   allowInsecureLocalhostForDevelopment,
-  buildOriginWhitelist,
+  buildOriginWhitelistForUrl,
   EDUWALDO_HTTPS_HOSTNAME,
   resolveSafeExternalUrl,
 } from '@/features/platform/external-url';
@@ -44,6 +46,8 @@ export default function WebViewScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const { t } = useTranslation();
+  const { termsUrl, privacyPolicyUrl } = resolveTermsConfigFromExpo();
+  const configuredLegalUrls = [termsUrl, privacyPolicyUrl];
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0); // For retry
   const screenTitle = typeof title === 'string' ? title : '';
@@ -66,6 +70,7 @@ export default function WebViewScreen() {
   const safeUrl = resolveSafeExternalUrl(url, {
     allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),
     approvedHttpsHostname: EDUWALDO_HTTPS_HOSTNAME,
+    approvedHttpsUrls: configuredLegalUrls,
   });
 
   if (!safeUrl) {
@@ -163,7 +168,7 @@ export default function WebViewScreen() {
           source={{ uri: safeUrl }}
           style={styles.webview}
           startInLoadingState
-          originWhitelist={buildOriginWhitelist(EDUWALDO_HTTPS_HOSTNAME)}
+          originWhitelist={buildOriginWhitelistForUrl(safeUrl)}
           onError={() => setError(true)}
           onHttpError={() => setError(true)}
           renderLoading={() => (

@@ -335,7 +335,7 @@
   5. Route guard continues user to role-selection (if role unlocked) or role home (if role locked).
 - Alternate flow:
   - If required terms version changes, user is re-routed to terms gate until new version is accepted.
-  - The legal handoff is intent-scoped to the configured terms URL; missing, repeated, unsafe, or arbitrary WebView parameters are blocked. If an invalid legal route is opened directly without history, Back returns to the appropriate app screen.
+  - The legal handoff is intent-scoped to the configured terms URL; an exact configured legal URL may use its trusted HTTPS host, while missing, repeated, unsafe, or arbitrary WebView parameters are blocked. If an invalid legal route is opened directly without history, Back returns to the appropriate app screen.
 - Expected result: Onboarding and role journeys only continue after required terms version acceptance.
 
 ## UC-002.23 Browser Sign-Out Before Account Switch

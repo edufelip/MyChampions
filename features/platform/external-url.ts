@@ -9,6 +9,11 @@ export type SafeExternalUrlOptions = {
   // still get the protocol/credential/format checks below, just not a fixed
   // origin allowlist that would need updating per deployment.
   approvedHttpsHostname?: string;
+  // Exact HTTPS URLs trusted by app configuration (for example, a legal
+  // destination hosted outside the default application origin). This does
+  // not broaden arbitrary deep-link input; only an exact configured value is
+  // accepted.
+  approvedHttpsUrls?: readonly string[];
 };
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
@@ -29,6 +34,17 @@ function isApprovedHttpsHost(hostname: string, approvedHostname: string): boolea
  */
 export function buildOriginWhitelist(hostname: string): string[] {
   return [`https://${hostname}`, `https://*.${hostname}`];
+}
+
+export function buildOriginWhitelistForUrl(value: string): string[] {
+  const parsed = new URL(value);
+  if (parsed.protocol === 'https:') {
+    return buildOriginWhitelist(parsed.hostname);
+  }
+  if (parsed.protocol === 'http:') {
+    return [`http://${parsed.hostname}`, `http://*.${parsed.hostname}`];
+  }
+  return [];
 }
 
 /**
@@ -67,6 +83,9 @@ export function resolveSafeExternalUrl(
 
   if (parsed.username || parsed.password) return null;
   if (parsed.protocol === 'https:') {
+    if (options.approvedHttpsUrls?.some((approvedUrl) => approvedUrl === candidate)) {
+      return candidate;
+    }
     if (
       options.approvedHttpsHostname &&
       !isApprovedHttpsHost(parsed.hostname, options.approvedHttpsHostname)

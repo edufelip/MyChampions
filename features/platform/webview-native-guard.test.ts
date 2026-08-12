@@ -23,6 +23,11 @@ test('native webview screen validates the route url with resolveSafeExternalUrl 
     /resolveSafeExternalUrl\(\s*url/,
     'expected the raw `url` route param to be passed through resolveSafeExternalUrl before use',
   );
+  assert.match(
+    webviewSource,
+    /approvedHttpsUrls:\s*configuredLegalUrls/,
+    'expected operator-configured legal URLs to remain safe when hosted outside the default origin',
+  );
 });
 
 test('native webview screen never feeds the raw route url straight into WebView or Linking', () => {
@@ -61,6 +66,11 @@ test('native webview screen never feeds the raw route url straight into WebView 
     /source=\{\{\s*uri:\s*safeUrl\s*\}\}/,
     'WebView source must use the sanitized safeUrl exactly, not an alias or fallback',
   );
+  assert.match(
+    webviewSource,
+    /buildOriginWhitelistForUrl\(safeUrl\)/,
+    'expected the native WebView origin whitelist to follow the validated legal URL host',
+  );
 });
 
 test('web webview screen offers recovery when the legal url is invalid', () => {
@@ -68,6 +78,11 @@ test('web webview screen offers recovery when the legal url is invalid', () => {
     webviewWebSource,
     /resolveSafeExternalUrl\(\s*url/,
     'expected the web screen to validate the raw `url` route param before rendering link actions',
+  );
+  assert.match(
+    webviewWebSource,
+    /approvedHttpsUrls:\s*configuredLegalUrls/,
+    'expected the web screen to accept only exact configured legal URLs outside the default origin',
   );
   assert.match(
     webviewWebSource,

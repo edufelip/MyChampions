@@ -100,6 +100,7 @@ in-app support access.
 ## Validation Rules
 
 - Privacy policy URL and terms URL must be replaced with production URLs before release (D-103).
+- Configured privacy and terms URLs are trusted only as exact values; the native WebView origin whitelist follows the validated configured legal host, while arbitrary route URLs remain restricted to the default approved origin.
 - Account deletion must be available for accounts created in-app (AC-306).
 - Deletion flow communicates retention timeline (BR-231, AC-310).
 - Change-password flow is only triggered for `password` provider accounts; OAuth accounts receive an informational message.

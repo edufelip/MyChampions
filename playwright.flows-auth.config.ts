@@ -7,6 +7,7 @@ const artifactRoot = path.resolve(
 
 export default defineConfig({
   testDir: './e2e/web-flows-auth',
+  testMatch: '**/authentication-flow-atlas.spec.ts',
   fullyParallel: false,
   workers: 1,
   retries: 0,

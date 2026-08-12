@@ -1,8 +1,11 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
+const runId =
+  process.env.WEB_E2E_RUN_ID ??
+  `${new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-')}-${process.pid}`;
 const artifactRoot = path.resolve(
-  process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/manual-webview-recovery',
+  process.env.WEB_E2E_ARTIFACT_ROOT ?? `.artifacts/web-e2e/manual-webview-recovery/${runId}`,
 );
 
 export default defineConfig({
@@ -30,6 +33,7 @@ export default defineConfig({
       'APP_VARIANT=dev',
       'EXPO_PUBLIC_E2E_AUTH_SESSION=true',
       'EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION=v1',
+      'EXPO_PUBLIC_TERMS_URL=https://legal.example.test/terms',
       'yarn web:dev --port 8106 --clear',
     ].join(' '),
     url: 'http://127.0.0.1:8106',

@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DsSpace, getDsTheme } from '@/constants/design-system';
+import { resolveTermsConfigFromExpo } from '@/features/auth/terms-config';
 import {
   allowInsecureLocalhostForDevelopment,
   EDUWALDO_HTTPS_HOSTNAME,
@@ -20,12 +21,15 @@ export default function WebExternalLinkScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const { t } = useTranslation();
+  const { termsUrl, privacyPolicyUrl } = resolveTermsConfigFromExpo();
+  const configuredLegalUrls = [termsUrl, privacyPolicyUrl];
   const screenTitle = typeof title === 'string' ? title : '';
   const fallbackPath =
     intent === 'terms' ? '/auth/accept-terms' : intent === 'account' ? '/settings/account' : '/';
   const safeUrl = resolveSafeExternalUrl(url, {
     allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),
     approvedHttpsHostname: EDUWALDO_HTTPS_HOSTNAME,
+    approvedHttpsUrls: configuredLegalUrls,
   });
 
   const goBack = () => {

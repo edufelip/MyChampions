@@ -32,6 +32,7 @@
 - Route guard forces authenticated users with pending acceptance to `/auth/accept-terms`.
 - Route guard redirects away from `/auth/accept-terms` once required version is accepted.
 - Terms URL and required version are read from expo `extra.terms` config with documented fallback values.
+- The configured terms URL is accepted as an exact trusted legal destination even when its host differs from the default `eduwaldo.com` origin; arbitrary deep-link URLs remain restricted to the default origin.
 - The legal WebView handoff carries a `terms` intent and the configured terms URL; the pending-terms guard allows only that exact combination.
 - Structural surfaces use the shared radius vocabulary: 16px card, 12px link control, compact checkbox radius, and pill treatment only for the primary CTA.
 - The terms block is centered and capped at 520px on larger screens.

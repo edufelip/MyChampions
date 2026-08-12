@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { buildOriginWhitelist, resolveSafeExternalUrl } from './external-url';
+import {
+  buildOriginWhitelist,
+  buildOriginWhitelistForUrl,
+  resolveSafeExternalUrl,
+} from './external-url';
 
 describe('resolveSafeExternalUrl', () => {
   it('accepts HTTPS URLs without rewriting them when no origin is enforced', () => {
@@ -59,6 +63,24 @@ describe('resolveSafeExternalUrl', () => {
         );
       }
     });
+
+    it('accepts an exact configured legal URL outside the default origin', () => {
+      const configuredUrl = 'https://legal.example.test/terms';
+      assert.equal(
+        resolveSafeExternalUrl(configuredUrl, {
+          approvedHttpsHostname: 'eduwaldo.com',
+          approvedHttpsUrls: [configuredUrl],
+        }),
+        configuredUrl,
+      );
+      assert.equal(
+        resolveSafeExternalUrl('https://legal.example.test/other', {
+          approvedHttpsHostname: 'eduwaldo.com',
+          approvedHttpsUrls: [configuredUrl],
+        }),
+        null,
+      );
+    });
   });
 
   it('allows plain HTTP only for explicit local development hosts', () => {
@@ -90,6 +112,13 @@ describe('buildOriginWhitelist', () => {
     assert.deepEqual(buildOriginWhitelist('eduwaldo.com'), [
       'https://eduwaldo.com',
       'https://*.eduwaldo.com',
+    ]);
+  });
+
+  it('builds an origin whitelist from a safe configured HTTP URL in development', () => {
+    assert.deepEqual(buildOriginWhitelistForUrl('http://localhost:8081'), [
+      'http://localhost',
+      'http://*.localhost',
     ]);
   });
 });
