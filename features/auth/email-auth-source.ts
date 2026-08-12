@@ -162,7 +162,32 @@ export async function createAccountWithEmailPasswordFromSource(
   }
 
   const session = await persistServerAuthSessionFromPayload(payload, deps);
-  if (!session) {
-    throw new CreateAccountFailure('unknown');
+  if (session) {
+    return;
+  }
+
+  // The server intentionally returns a session-less 202 for both successful and
+  // duplicate account creation so the create endpoint cannot be used to enumerate
+  // registered emails. Complete the authenticated flow through the existing email
+  // sign-in route instead of treating that privacy-preserving acknowledgement as
+  // an invalid session.
+  try {
+    await signInWithEmailPasswordFromSource(
+      { email: input.email, password: input.password },
+      deps
+    );
+  } catch (error) {
+    if (error instanceof SignInFailure) {
+      const reason =
+        error.reason === 'network'
+          ? 'network'
+          : error.reason === 'configuration'
+            ? 'configuration'
+            : error.reason === 'provider_conflict'
+              ? 'provider_conflict'
+              : 'unknown';
+      throw new CreateAccountFailure(reason);
+    }
+    throw error;
   }
 }

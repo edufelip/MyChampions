@@ -38,7 +38,7 @@
 - `BR-230B`: During the local MyChampions server migration, student/professional unbind requires the MyChampions server bearer-auth endpoint for the connection-row transition to `ended` outside E2E fixtures; missing local server auth fails closed.
 - `BR-231`: Account deletion workflows must remove direct personal identifiers from retained historical relationship/plan records and keep only anonymized or pseudonymized data required for legal, billing, security, and continuity constraints.
 - `BR-232`: Supported MVP auth methods are email/password, Google, and Apple.
-- `BR-232A`: During the local MyChampions server migration, email/password sign-in and account creation establish a MyChampions server bearer session through local Postgres `local_email_auth_credentials` by default; non-dev app variants must not use the deterministic local dev-session endpoint.
+- `BR-232A`: During the local MyChampions server migration, email/password sign-in and account creation establish a MyChampions server bearer session through local Postgres `local_email_auth_credentials` by default. Because the create-account endpoint may return a privacy-preserving session-less acknowledgement, the client completes the session through the email/password sign-in boundary before the terms gate; non-dev app variants must not use the deterministic local dev-session endpoint.
 - `BR-233`: Password policy requires minimum 8 characters, at least one uppercase letter, one number, one special character, and no emojis.
 - `BR-234`: Email uniqueness is global per account; same email cannot create multiple accounts.
 - `BR-235`: Social login with matching email links provider identity into existing account.

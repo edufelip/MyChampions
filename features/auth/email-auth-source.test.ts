@@ -116,6 +116,52 @@ describe('email-auth-source', () => {
     assert.equal(getCurrentServerAccessToken(), 'server-create-token');
   });
 
+  it('signs in after a privacy-safe session-less create-account acknowledgement', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+    const requests: Request[] = [];
+    const responses = [
+      response({ status: 'accepted' }, { status: 202 }),
+      response(serverSessionPayload('server-signin-token'), { status: 201 }),
+    ];
+
+    const deps: EmailAuthSourceDeps = {
+      fetch: async (input, init) => {
+        const request = new Request(input, init);
+        requests.push(request);
+        const next = responses.shift();
+        assert.ok(next);
+        return next;
+      },
+      getServerBaseUrl: () => 'http://server.test',
+      storage,
+    };
+
+    await createAccountWithEmailPasswordFromSource(
+      {
+        name: ' Provider User ',
+        email: ' USER@Example.test ',
+        password: 'Password1!',
+        passwordConfirmation: 'Password1!',
+      },
+      deps
+    );
+
+    assert.equal(requests.length, 2);
+    assert.equal(requests[0]?.url, 'http://server.test/auth/email/create-account');
+    assert.deepEqual(await requests[0]?.json(), {
+      displayName: 'Provider User',
+      email: 'user@example.test',
+      password: 'Password1!',
+    });
+    assert.equal(requests[1]?.url, 'http://server.test/auth/email/sign-in');
+    assert.deepEqual(await requests[1]?.json(), {
+      email: 'user@example.test',
+      password: 'Password1!',
+    });
+    assert.equal(getCurrentServerAccessToken(), 'server-signin-token');
+  });
+
   it('fails closed for sign-in when E2E and server auth did not establish a session', async () => {
     clearServerAuthSession();
     await assert.rejects(

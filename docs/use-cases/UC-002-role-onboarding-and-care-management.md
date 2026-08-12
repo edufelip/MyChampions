@@ -9,7 +9,8 @@
   2. User authenticates with email/password, Google, or Apple; email/password submission uses the latest entered credentials whether triggered from the password Done/Return key or the primary CTA.
   3. If create-account via email/password, user provides name, email, password, and password confirmation.
   4. System validates password policy and the latest entered confirmation value when the user submits from either the confirmation Done/Return key or the primary CTA.
-  5. If social email matches existing account, system links provider to existing account.
+  5. If the server acknowledges email account creation without issuing a session, the app signs in with the submitted credentials through the email/password path before entering the post-auth gate.
+  6. If social email matches existing account, system links provider to existing account.
 - Expected result: Authenticated session is created without duplicate-account creation for same email.
 
 ## UC-002.1 Select Role During Onboarding
