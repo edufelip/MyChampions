@@ -15,6 +15,7 @@
 - Secondary:
   - Reveal/hide password and password-confirmation values.
   - Navigate back to sign-in screen.
+  - The back control exposes the localized generic `Back` accessibility label.
 
 ## States
 - Loading: account creation or provider auth in progress.

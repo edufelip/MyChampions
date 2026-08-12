@@ -37,7 +37,7 @@ image count is insufficient.
 
 | Flow folder | Checkpoints per platform | Primary surfaces |
 |---|---:|---|
-| `00-authentication-and-terms` | 14 | Sign in, create account, validation, Google, Apple, terms, narrow mobile auth layout |
+| `00-authentication-and-terms` | 14 mobile / 10 tablet / 10 web | Sign in, create account, validation, Google, Apple, terms, narrow mobile auth layout |
 | `01-role-onboarding` | 2 | Role selection and student first value |
 | `02-professional-onboarding` | 4 | Specialty selection, optional credential, professional home |
 | `03-student-daily-care` | 10 | Home, nutrition, hydration, plan-change request, meals, training |
@@ -51,7 +51,7 @@ image count is insufficient.
 | `11-offline-read-only` | 2 | Offline home and nutrition write lock |
 | `12-app-shell-modal` | 2 | Modal open and role-home return |
 
-Total: 13 flow folders, 65 checkpoints per platform, 195 screenshots.
+Total: 13 flow folders, 65 base checkpoints per platform plus 4 mobile-only auth checkpoints, 199 screenshots.
 
 ## Documented use-case mapping
 

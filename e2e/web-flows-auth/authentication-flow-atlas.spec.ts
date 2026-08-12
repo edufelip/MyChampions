@@ -115,8 +115,39 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
 
       await page.goto('/auth/sign-in');
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          ),
+        )
+        .toBeLessThanOrEqual(1);
       await capture(page, testInfo, `11-${viewport.suffix}-sign-in`, 'auth.signIn.title');
       await expect(page.getByTestId('auth.signIn.title')).toBeVisible();
+      for (const testId of [
+        'auth.signIn.submitButton',
+        'auth.signIn.googleButton',
+        'auth.signIn.appleButton',
+      ]) {
+        await expect
+          .poll(() =>
+            page.getByTestId(testId).evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              return rect.left >= -1 && rect.right <= window.innerWidth + 1 && rect.width > 0;
+            }),
+          )
+          .toBe(true);
+      }
+      const signInEmail = page.getByTestId('auth.signIn.emailInput');
+      const restingEmailBorder = await signInEmail.evaluate(
+        (element) => getComputedStyle(element).borderTopColor,
+      );
+      await signInEmail.focus();
+      await expect
+        .poll(() => signInEmail.evaluate((element) => getComputedStyle(element).borderTopColor))
+        .not.toBe(restingEmailBorder);
+      await page.getByTestId('auth.signIn.submitButton').click();
+      await expect(page.getByTestId('auth.signIn.error.emailRequired')).toBeVisible();
       const signInPasswordToggle = page.getByTestId('auth.signIn.passwordToggle');
       await expect(signInPasswordToggle).toHaveAccessibleName('Show password');
       await expect
@@ -132,6 +163,13 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
       await expect(page.getByTestId('auth.signIn.passwordInput')).toHaveJSProperty('type', 'text');
 
       await page.goto('/auth/create-account');
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          ),
+        )
+        .toBeLessThanOrEqual(1);
       await capture(
         page,
         testInfo,
@@ -139,7 +177,34 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
         'auth.createAccount.title',
       );
       await expect(page.getByTestId('auth.createAccount.title')).toBeVisible();
-      await expect(page.getByTestId('auth.createAccount.backButton')).toBeInViewport();
+      await expect(page.getByTestId('auth.createAccount.backButton')).toHaveAccessibleName('Back');
+      for (const testId of [
+        'auth.createAccount.backButton',
+        'auth.createAccount.submitButton',
+        'auth.createAccount.googleButton',
+        'auth.createAccount.appleButton',
+      ]) {
+        await expect
+          .poll(() =>
+            page.getByTestId(testId).evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              return rect.left >= -1 && rect.right <= window.innerWidth + 1 && rect.width > 0;
+            }),
+          )
+          .toBe(true);
+      }
+      const createAccountName = page.getByTestId('auth.createAccount.nameInput');
+      const restingNameBorder = await createAccountName.evaluate(
+        (element) => getComputedStyle(element).borderTopColor,
+      );
+      await createAccountName.focus();
+      await expect
+        .poll(() =>
+          createAccountName.evaluate((element) => getComputedStyle(element).borderTopColor),
+        )
+        .not.toBe(restingNameBorder);
+      await page.getByTestId('auth.createAccount.submitButton').click();
+      await expect(page.getByTestId('auth.createAccount.error.nameRequired')).toBeVisible();
       for (const [testId, inputTestId] of [
         ['auth.createAccount.passwordToggle', 'auth.createAccount.passwordInput'],
         [

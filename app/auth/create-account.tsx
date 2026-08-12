@@ -223,6 +223,7 @@ export default function CreateAccountScreen() {
       >
         <View style={styles.header}>
           <Pressable
+            accessibilityLabel={t('auth.role.cta_back')}
             accessibilityRole="button"
             onPress={() => {
               if (router.canGoBack()) {
