@@ -49,7 +49,7 @@ import type { AuthProviderId } from '@/features/auth/auth-user';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const APP_VERSION: string = (Constants.expoConfig?.version) ?? '—';
+const APP_VERSION: string = Constants.expoConfig?.version ?? '—';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -258,10 +258,10 @@ export default function AccountSettingsScreen() {
   // from the Language Select screen (SC-222) without needing an AsyncStorage read.
   const languageLabel =
     activeLocale === 'pt-BR'
-      ? (t('settings.account.language.pt_br'))
+      ? t('settings.account.language.pt_br')
       : activeLocale === 'es-ES'
-        ? (t('settings.account.language.es_es'))
-        : (t('settings.account.language.en_us'));
+        ? t('settings.account.language.es_es')
+        : t('settings.account.language.en_us');
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -274,9 +274,7 @@ export default function AccountSettingsScreen() {
       contentContainerStyle={[styles.content, { paddingTop: topInsetPadding + DsSpace.sm }]}
       testID="settings.account.screen"
     >
-      <Stack.Screen
-        options={{ title: t('settings.account.title'), headerShown: false }}
-      />
+      <Stack.Screen options={{ title: t('settings.account.title'), headerShown: false }} />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
