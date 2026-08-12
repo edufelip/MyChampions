@@ -52,7 +52,12 @@ export function ExerciseSearchModal({
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const notesRef = useRef<TextInput>(null);
-  useWebDialogAccessibility({ isVisible, onClose, testID: 'exerciseSearch.modal' });
+  useWebDialogAccessibility({
+    dialogTitleTestID: 'exerciseSearch.title',
+    isVisible,
+    onClose,
+    testID: 'exerciseSearch.modal',
+  });
 
   // Debounce search
   useEffect(() => {
@@ -100,7 +105,7 @@ export function ExerciseSearchModal({
         style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>
         <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]} testID="exerciseSearch.modal">
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
+            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]} testID="exerciseSearch.title">
               {view === 'detail' ? t('pro.plan.item.field.name.label') : t('pro.plan.item.search.placeholder')}
             </Text>
             <Pressable onPress={onClose} hitSlop={12}>

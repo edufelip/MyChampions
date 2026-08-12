@@ -265,9 +265,11 @@ Feature: Role-based onboarding and care assignments
     When the professional searches/filters the queue and executes bulk deny
     Then an accessible browser confirmation dialog shows the selected count
     And cancel or Escape preserves the current selection
+    And the confirmation dialog exposes an accessible name to assistive technology
     And confirmation exposes a loading state while mutations are in flight
     And successful denial refreshes the pending counter and shows localized success feedback
     And a failed mutation leaves an actionable localized error state for retry
+    And native confirmation rechecks connectivity before mutating and shows the localized write-lock helper when offline
 
   Scenario: Student plan change request on assigned plan
     Given a student has a professionally assigned plan

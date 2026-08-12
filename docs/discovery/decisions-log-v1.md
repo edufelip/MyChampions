@@ -807,7 +807,7 @@
     required monthly. This change records the first report and keeps local,
     hosted, native, provider, and store-live evidence as separate states.
 
-- `D-204`: Browser bulk-deny actions use a stateful, web-compatible confirmation dialog instead of relying on `Alert.alert`, which is a no-op in the React Native web adapter. The dialog uses the shared web focus/Escape contract, preserves selection on cancel, reports loading/error/success states, and retains the native alert path.
+- `D-204`: Browser bulk-deny actions use a stateful, web-compatible confirmation dialog instead of relying on `Alert.alert`, which is a no-op in the React Native web adapter. The dialog uses the shared web focus/Escape contract, exposes an accessible name, preserves selection on cancel, reports loading/error/success states, and retains the native alert path. Native confirmation rechecks the latest write lock before mutation and reports the localized offline helper when connectivity is lost.
 - `D-202`: Supersedes the AsyncStorage half of `D-151`. Native (iOS/Android)
   server-auth session persistence (`features/auth/server-auth-storage.ts`)
   splits the persisted record across two backing stores instead of writing

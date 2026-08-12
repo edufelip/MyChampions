@@ -124,7 +124,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-207`: Milestone A analytics events shall include structured context properties (`surface`, `step`, `result`, optional `reason_code`) for funnel and failure analysis.
 - `FR-208`: Analytics/observability for auth and invite flows shall redact sensitive inputs and never log raw passwords, full invite codes, auth tokens, or full email values.
 - `FR-209`: When pending invite requests are auto-canceled due to code regeneration, affected students shall see an explicit cancellation reason and reconnect CTA.
-- `FR-210`: Professional pending-request management shall support queue filtering/search and bulk deny actions; browser bulk deny shall require explicit confirmation and expose loading, localized success, and recoverable localized error states.
+- `FR-210`: Professional pending-request management shall support queue filtering/search and bulk deny actions; browser bulk deny shall require explicit confirmation, an accessible dialog name, and loading, localized success, and recoverable localized error states. Native confirmation shall recheck the current offline write lock before mutating.
 - `FR-211`: Students with professionally assigned plans shall be able to submit plan-change requests without editing assigned plans directly.
 - `FR-212`: Professional plan builders shall provide starter templates (nutrition and training) that can be cloned and customized before assignment.
 - `FR-213`: Media upload flows shall provide visible upload progress, failure reason, and retry action on recoverable failures.

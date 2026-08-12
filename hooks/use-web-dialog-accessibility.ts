@@ -12,13 +12,23 @@ function isVisibleFocusable(element: HTMLElement): boolean {
   );
 }
 
-export function useWebDialogAccessibility(input: {
+type WebDialogAccessibilityInput = {
   isVisible: boolean;
   onClose: () => void;
   testID: string;
-  dialogTitleTestID?: string;
   focusRestoreTestID?: string;
-}) {
+} & (
+  | {
+      dialogTitleTestID: string;
+      dialogLabel?: string;
+    }
+  | {
+      dialogTitleTestID?: never;
+      dialogLabel: string;
+    }
+);
+
+export function useWebDialogAccessibility(input: WebDialogAccessibilityInput) {
   const onCloseRef = useRef(input.onClose);
   useEffect(() => {
     onCloseRef.current = input.onClose;
@@ -53,6 +63,8 @@ export function useWebDialogAccessibility(input: {
       if (title && generatedTitleId) {
         if (!previousTitleId) title?.setAttribute('id', generatedTitleId);
         root.setAttribute('aria-labelledby', generatedTitleId);
+      } else if (input.dialogLabel) {
+        root.setAttribute('aria-label', input.dialogLabel);
       }
     }
     const focusable = () =>
@@ -115,5 +127,11 @@ export function useWebDialogAccessibility(input: {
         fallback.focus();
       }, 0);
     };
-  }, [input.dialogTitleTestID, input.focusRestoreTestID, input.isVisible, input.testID]);
+  }, [
+    input.dialogLabel,
+    input.dialogTitleTestID,
+    input.focusRestoreTestID,
+    input.isVisible,
+    input.testID,
+  ]);
 }

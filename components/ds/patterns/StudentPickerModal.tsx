@@ -28,13 +28,18 @@ export function StudentPickerModal({
   theme: DsTheme;
   t: TFn;
 }) {
-  useWebDialogAccessibility({ isVisible, onClose, testID: 'studentPicker.modal' });
+  useWebDialogAccessibility({
+    dialogTitleTestID: 'studentPicker.title',
+    isVisible,
+    onClose,
+    testID: 'studentPicker.modal',
+  });
   return (
     <Modal visible={isVisible} animationType="slide" onRequestClose={onClose} transparent>
       <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]} testID="studentPicker.modal">
         <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
+            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]} testID="studentPicker.title">
               {t('pro.plan.assign.title')}
             </Text>
             <Pressable onPress={onClose} hitSlop={12}>

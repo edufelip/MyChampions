@@ -20,13 +20,18 @@ import { resolveE2ENetworkStatusOverride } from './network-status-override.logic
  * Returns `'online'`, `'offline'`, or `'unknown'`.
  */
 export function useNetworkStatus(): NetworkStatus {
+  const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
+  const appVariant = process.env.APP_VARIANT;
+  const isDevVariant =
+    appVariant === undefined || appVariant === '' || appVariant === 'dev';
+  const supportsE2ENetworkStatusOverride = isDev && isDevVariant;
   const storedE2EStatus =
     process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' && typeof sessionStorage !== 'undefined'
       ? (sessionStorage.getItem('mychampions.e2e.network-status') ?? undefined)
       : undefined;
   const e2eNetworkStatusOverride = resolveE2ENetworkStatusOverride({
-    appVariant: process.env.APP_VARIANT,
-    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+    appVariant,
+    isDev,
     status: storedE2EStatus ?? process.env.EXPO_PUBLIC_E2E_NETWORK_STATUS,
   });
   const [status, setStatus] = useState<NetworkStatus>(e2eNetworkStatusOverride ?? 'unknown');
@@ -35,16 +40,17 @@ export function useNetworkStatus(): NetworkStatus {
     const onE2ENetworkStatusStorage = (event: StorageEvent) => {
       if (event.key !== 'mychampions.e2e.network-status') return;
 
-      setStatus(
-        resolveE2ENetworkStatusOverride({
-          appVariant: process.env.APP_VARIANT,
-          isDev: typeof __DEV__ !== 'undefined' && __DEV__,
-          status: event.newValue ?? undefined,
-        }) ?? 'unknown',
-      );
+      const override = resolveE2ENetworkStatusOverride({
+        appVariant,
+        isDev,
+        status: event.newValue ?? undefined,
+      });
+      if (override) setStatus(override);
     };
     const supportsE2ENetworkStatusEvents =
-      process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' && typeof window !== 'undefined';
+      process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' &&
+      supportsE2ENetworkStatusOverride &&
+      typeof window !== 'undefined';
 
     if (supportsE2ENetworkStatusEvents) {
       window.addEventListener('storage', onE2ENetworkStatusStorage);

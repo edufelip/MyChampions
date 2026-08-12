@@ -101,11 +101,11 @@
 - `BR-265`: Milestone A analytics taxonomy must use canonical event naming with deterministic properties (`surface`, `step`, `result`, optional `reason_code`).
 - `BR-266`: Milestone A analytics payloads for auth and invite flows must redact sensitive fields and exclude raw credentials/codes/tokens from telemetry.
 - `BR-267`: Pending-request cancellation caused by invite-code regeneration must be visible to impacted students with explicit reason and reconnect guidance.
-- `BR-268`: Professional pending queue management supports search/filter and bulk-deny operations without bypassing pending-cap or lifecycle constraints. Browser bulk deny must use an explicit confirmation and report the mutation result.
+- `BR-268`: Professional pending queue management supports search/filter and bulk-deny operations without bypassing pending-cap or lifecycle constraints. Browser bulk deny must use an explicitly named confirmation dialog and report the mutation result; native confirmation must recheck the current offline write lock before mutation.
 - `BR-269`: Plan-change requests are advisory artifacts linked to assigned plans; they do not grant student edit rights on assigned plan structures.
 - `BR-270`: Starter templates are system-provided baselines that professionals can clone/customize; original starter definitions remain immutable.
 - `BR-271`: Recoverable media upload failures must expose retry path and preserve local draft state.
-- `BR-272`: Offline state must be clearly signaled with persistent banner and write-lock reason whenever write actions are blocked.
+- `BR-272`: Offline state must be clearly signaled with persistent banner and write-lock reason whenever write actions are blocked; a stale confirmation callback must not bypass that lock.
 - `BR-273`: Entitlement pre-lapse warning must be shown before write-lock enforcement for professionals at risk of cap lock.
 - `BR-274`: Specialty-removal blocked state must include direct navigation/actions to resolve active/pending blockers.
 - `BR-275`: Accessibility baseline requires support for dynamic text scaling, screen-reader semantics, logical focus order, and sufficient contrast on core screens.

@@ -7,7 +7,7 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -72,6 +72,11 @@ export default function ProfessionalPendingScreen() {
   const [isBulkDenying, setIsBulkDenying] = useState(false);
   const [isBulkDenyConfirmVisible, setIsBulkDenyConfirmVisible] = useState(false);
   const [bulkDenyFeedback, setBulkDenyFeedback] = useState<'success' | 'error' | null>(null);
+  const isWriteLockedRef = useRef(isWriteLocked);
+
+  useEffect(() => {
+    isWriteLockedRef.current = isWriteLocked;
+  }, [isWriteLocked]);
 
   const pendingConnections = useMemo<ConnectionRecord[]>(() => {
     if (state.kind !== 'ready') return [];
@@ -137,7 +142,14 @@ export default function ProfessionalPendingScreen() {
   });
 
   const executeBulkDeny = useCallback(async () => {
-    if (isWriteLocked) return;
+    if (isWriteLockedRef.current) {
+      if (Platform.OS === 'web') {
+        setBulkDenyFeedback('error');
+      } else {
+        Alert.alert(t('common.error.generic'), t('offline.write_lock'));
+      }
+      return;
+    }
 
     const ids = Array.from(selectedIds);
     if (ids.length === 0) {
@@ -186,7 +198,6 @@ export default function ProfessionalPendingScreen() {
   }, [
     closeBulkDenyConfirmation,
     emitEvent,
-    isWriteLocked,
     reload,
     selectedIds,
     t,

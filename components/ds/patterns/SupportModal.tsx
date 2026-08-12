@@ -54,6 +54,7 @@ export function SupportModal({
   const isError = state.kind === 'error';
   const isSubmitLocked = isSubmitting || isOffline;
   useWebDialogAccessibility({
+    dialogTitleTestID: 'settings.account.support.dialog.title',
     isVisible,
     onClose: handleClose,
     testID: 'settings.account.support.modal',
@@ -105,7 +106,8 @@ export function SupportModal({
                 <View style={styles.modalHeader}>
                   <Text
                     style={[styles.modalTitle, { color: theme.color.textPrimary }]}
-                    accessibilityRole="header">
+                    accessibilityRole="header"
+                    testID="settings.account.support.dialog.title">
                     {t('settings.account.support.dialog.title')}
                   </Text>
                   <Pressable
