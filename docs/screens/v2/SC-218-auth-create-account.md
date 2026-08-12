@@ -95,7 +95,7 @@
   - Visual layout uses the shared mobile auth shell used by SC-217:
     - Calm design-system canvas with a compact centered brand mark in the header and a bordered back affordance.
     - Left-aligned title/subtitle hierarchy and labeled 52dp fields with token-based border, focus, and validation states.
-    - Icon-only password visibility controls, outlined provider actions with Google/Apple icons, and a rule divider.
+    - Icon-only password visibility controls, outlined provider actions with Google/Apple icons and explicit localized provider accessible names, and a rule divider.
     - Footer helper + CTA pair (`Already have an account?` + `Back to sign in`) remains the secondary route.
   - The 320×720 mobile regression confirms the sign-up heading, back affordance, and complete horizontal layout remain usable without overflow; the form remains scrollable for validation messages and text scaling.
 

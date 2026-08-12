@@ -17,6 +17,8 @@ function authAccessibleCopy(testInfo: TestInfo) {
     termsCheckbox: bundle['auth.terms.checkbox'],
     showPassword: bundle['auth.password.toggle_show'],
     hidePassword: bundle['auth.password.toggle_hide'],
+    google: bundle['auth.social.google'],
+    apple: bundle['auth.social.apple'],
   };
 }
 
@@ -32,11 +34,24 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
   test('email sign-in validation and terms continuation', async ({ page }, testInfo) => {
     const copy = authAccessibleCopy(testInfo);
     await page.goto('/auth/sign-in');
+    await expect(page.getByTestId('auth.signIn.googleButton')).toHaveAccessibleName(copy.google);
+    await expect(page.getByTestId('auth.signIn.appleButton')).toHaveAccessibleName(copy.apple);
     await capture(page, testInfo, '01-sign-in', 'auth.signIn.title');
     await page.getByTestId('auth.signIn.submitButton').click();
     await capture(page, testInfo, '02-sign-in-validation', 'auth.signIn.error.emailRequired');
 
     await page.getByTestId('auth.signIn.emailInput').fill('e2e-auth-session@example.test');
+    await page.getByTestId('auth.signIn.submitButton').click();
+    await expect(page.getByTestId('auth.signIn.error.passwordRequired')).toBeVisible();
+    const passwordErrorBox = await page
+      .getByTestId('auth.signIn.error.passwordRequired')
+      .boundingBox();
+    const passwordSubmitBox = await page.getByTestId('auth.signIn.submitButton').boundingBox();
+    expect(passwordErrorBox).not.toBeNull();
+    expect(passwordSubmitBox).not.toBeNull();
+    expect(passwordErrorBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(
+      passwordSubmitBox?.y ?? Number.NEGATIVE_INFINITY,
+    );
     await page.getByTestId('auth.signIn.passwordInput').fill('E2E-password-123!');
     await page.getByTestId('auth.signIn.submitButton').click();
     const termsRadii = await page.evaluate(() => {
@@ -55,6 +70,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
     await expect(page.getByRole('checkbox')).toHaveAccessibleName(copy.termsCheckbox);
     await page.getByTestId('auth.terms.openLinkButton').click();
+    await expect(page).toHaveURL(/\/shared\/webview/);
     await expect(page.getByTestId('shared.webview.screen')).toBeVisible();
     await page.goBack();
     await expect(page.getByTestId('auth.terms.screen')).toBeVisible();
@@ -82,7 +98,14 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
   });
 
   test('create-account validation and social provider entry', async ({ page }, testInfo) => {
+    const copy = authAccessibleCopy(testInfo);
     await page.goto('/auth/create-account');
+    await expect(page.getByTestId('auth.createAccount.googleButton')).toHaveAccessibleName(
+      copy.google,
+    );
+    await expect(page.getByTestId('auth.createAccount.appleButton')).toHaveAccessibleName(
+      copy.apple,
+    );
     await expect(page.getByTestId('auth.createAccount.backButton')).toBeInViewport();
     await expect(page.getByTestId('auth.createAccount.backToSignInButton')).toBeVisible();
     await capture(page, testInfo, '05-create-account', 'auth.createAccount.screen');

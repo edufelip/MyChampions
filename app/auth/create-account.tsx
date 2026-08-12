@@ -561,6 +561,7 @@ export default function CreateAccountScreen() {
 
           <View style={styles.socialRow}>
             <Pressable
+              accessibilityLabel={t('auth.social.google')}
               accessibilityRole="button"
               disabled={submitting}
               onPress={onGoogleCreateAccount}
@@ -588,6 +589,7 @@ export default function CreateAccountScreen() {
               </Text>
             </Pressable>
             <Pressable
+              accessibilityLabel={t('auth.social.apple')}
               accessibilityRole="button"
               disabled={submitting}
               onPress={onAppleCreateAccount}

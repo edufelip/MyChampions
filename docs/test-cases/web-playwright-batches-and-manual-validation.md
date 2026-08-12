@@ -34,6 +34,9 @@ regression signal while preserving the larger screenshot package for manual
 review. The atlas is also mapped to the `auth` feature so every auth-impact
 change selects all three localized mobile projects even when the atlas spec
 itself is unchanged.
+The atlas also verifies localized Google/Apple accessible names and confirms
+sign-in password validation renders between the password field and the primary
+CTA.
 
 Run both local lanes with `yarn test:e2e:web:all-local`. They intentionally use separate Expo ports and clear Metro state so fixture configuration cannot leak into the real-server bundle or vice versa.
 

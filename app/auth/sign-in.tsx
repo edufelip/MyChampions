@@ -369,6 +369,16 @@ export default function SignInScreen() {
                 />
               </Pressable>
             </View>
+            <View accessibilityLiveRegion="polite">
+              {errors.password ? (
+                <Text
+                  style={[styles.inlineError, { color: theme.color.danger }]}
+                  testID="auth.signIn.error.passwordRequired"
+                >
+                  {t(errors.password)}
+                </Text>
+              ) : null}
+            </View>
             <Pressable
               accessibilityRole="button"
               onPress={() => {
@@ -401,17 +411,6 @@ export default function SignInScreen() {
               )}
             </Pressable>
 
-            <View accessibilityLiveRegion="polite">
-              {errors.password ? (
-                <Text
-                  style={[styles.inlineError, { color: theme.color.danger }]}
-                  testID="auth.signIn.error.passwordRequired"
-                >
-                  {t(errors.password)}
-                </Text>
-              ) : null}
-            </View>
-
             <View accessibilityRole="alert">
               {submitError ? (
                 <Text
@@ -434,6 +433,7 @@ export default function SignInScreen() {
 
           <View style={styles.socialRow}>
             <Pressable
+              accessibilityLabel={t('auth.social.google')}
               accessibilityRole="button"
               disabled={submitting}
               onPress={onGoogleSignIn}
@@ -461,6 +461,7 @@ export default function SignInScreen() {
               </Text>
             </Pressable>
             <Pressable
+              accessibilityLabel={t('auth.social.apple')}
               accessibilityRole="button"
               disabled={submitting}
               onPress={onAppleSignIn}
