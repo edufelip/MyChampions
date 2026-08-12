@@ -461,12 +461,13 @@
       "ci": true
     },
     "web:flow-atlas-auth": {
-      "runner": "playwright-evidence",
-      "projects": ["chromium"],
+      "runner": "playwright",
+      "playwrightConfig": "playwright.flows-auth.config.ts",
+      "projects": ["mobile-auth", "mobile-auth-pt", "mobile-auth-es"],
       "specs": ["e2e/web-flows-auth/authentication-flow-atlas.spec.ts"],
       "grep": "@feature:auth",
-      "tier": "evidence",
-      "ci": false
+      "tier": "critical",
+      "ci": true
     },
     "web:manual-webview-recovery": {
       "runner": "playwright-evidence",

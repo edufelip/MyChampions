@@ -1,12 +1,15 @@
 # SC-217 Auth Sign-In (V2)
 
 ## Route
+
 - `/auth/sign-in`
 
 ## Objective
+
 - Authenticate returning users with email/password, Google, or Apple, and continue to role-aware routing.
 
 ## User Actions
+
 - Primary:
   - Sign in with email and password.
   - Submit the completed form from the password field's Done/Return key or the primary sign-in CTA.
@@ -17,12 +20,14 @@
   - Reveal/hide password field value.
 
 ## States
+
 - Loading: auth providers initialize and sign-in request is processing.
 - Empty: idle form state.
 - Error: auth provider failure, invalid credentials, or network error.
 - Success: authenticated session created and routing continues.
 
 ## Validation Rules
+
 - Email/password path requires non-empty email and password.
 - Done/Return-key and primary-CTA submission must validate and submit the latest displayed credential values, even when submission immediately follows text replacement.
 - Password field supports reveal/hide toggle.
@@ -32,6 +37,7 @@
 - Browser auth uses cookie session mode: the access token stays in memory and the rotating refresh token is HttpOnly. Reload restoration never reads browser storage.
 
 ## Data Contract
+
 - Inputs:
   - Email/password credentials.
   - Google/Apple identity tokens.
@@ -41,6 +47,7 @@
   - Redirect to terms acceptance gate (`/auth/accept-terms`) before role selection/role home.
 
 ## Edge Cases
+
 - Existing email/password account + social login with same email links provider into existing account.
 - Immediate submission after editing an email/password credential must not validate a stale rendered value or surface a false required-field error.
 - Locked-role account routes directly to role home after sign-in.
@@ -48,6 +55,7 @@
 - On web, a dismissed Google Identity Services prompt returns the screen to a settled cancellation state; skipped or undisplayable prompts fail closed through the configured fallback/error path rather than leaving the action pending.
 
 ## Copy Draft (Initial)
+
 - Title: `Welcome, Champion`
 - Subtitle: `Ready to crush your goals today?`
 - Email label: `Email Address`
@@ -61,6 +69,7 @@
 - Network error: `Couldn't connect right now. Check your connection and try again.`
 
 ## Implementation Snapshot (2026-08-12)
+
 - Implemented in code with route and UI scaffold:
   - `app/auth/sign-in.tsx`
 - Current implemented behavior:
@@ -81,12 +90,14 @@
   - Visual treatment follows the shared mobile auth shell: a calm design-system canvas, compact branded mark, left-aligned title/subtitle hierarchy, labeled 52dp fields with token-based borders, and consistent 52dp primary/social actions. Decorative blobs and oversized pill controls are not used on the auth entry surfaces.
   - The brand logo is an `expo-image` `<Image>` rendering `assets/images/logo.svg` (`contentFit="contain"`) inside a compact `accentPrimarySoft` brand mark. Accessibility label uses key `a11y.brand_logo`.
   - Text inputs expose a visible design-system border, accent focus state, and danger state for field validation. The password reveal action is an icon-only 44dp control with the existing localized accessible show/hide label.
+  - Email/password Return, primary CTA, and Google/Apple provider actions share one serialized submission gate; a second auth request is ignored until the active request settles.
   - Social actions use explicit surface/border/disabled tokens, Google/Apple provider icons, and a rule divider so the provider choices remain visually secondary to email/password.
   - The mobile layout includes safe-area padding and a narrow-viewport regression check at 320×720 to prevent horizontal overflow or clipped auth hierarchy.
-  - Primary email sign-in pill button uses light foreground (label, icon, and loading spinner) for contrast against the accent background.
+  - Primary email sign-in button uses light foreground (label, icon, and loading spinner) for contrast against the accent background.
   - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
 
 ## Links
+
 - Functional requirement: FR-101, FR-163, FR-164, FR-164A, FR-169, FR-171, FR-172, FR-173, FR-182, FR-205, FR-206, FR-207, FR-208, FR-217, FR-249
 - Use case: UC-002.0, UC-002.1, UC-002.10, UC-002.11, UC-002.18, UC-002.21
 - Acceptance criteria: AC-227, AC-227A, AC-231, AC-232, AC-233, AC-239, AC-244, AC-250, AC-251, AC-252, AC-266, AC-512

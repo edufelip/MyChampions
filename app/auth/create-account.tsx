@@ -26,6 +26,7 @@ import { useAnalytics } from '@/features/analytics/use-analytics';
 import { signInWithAppleProviderTokenFromSource } from '@/features/auth/apple-social-auth-source';
 import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { createAuthSubmissionGate } from '@/features/auth/auth-submission-gate';
 import {
   CreateAccountFailure,
   mapCreateAccountReasonToMessageKey,
@@ -69,6 +70,7 @@ export default function CreateAccountScreen() {
   const [errors, setErrors] = useState<CreateAccountValidationErrors>({});
   const [submitError, setSubmitError] = useState<CreateAccountErrorMessageKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submissionGateRef = useRef(createAuthSubmissionGate());
   const [focusedField, setFocusedField] = useState<
     'name' | 'email' | 'password' | 'passwordConfirmation' | null
   >(null);
@@ -91,6 +93,17 @@ export default function CreateAccountScreen() {
     setPasswordConfirmation(value);
   };
 
+  const beginSubmission = () => {
+    if (!submissionGateRef.current.tryAcquire()) return false;
+    setSubmitting(true);
+    return true;
+  };
+
+  const endSubmission = () => {
+    submissionGateRef.current.release();
+    setSubmitting(false);
+  };
+
   const onCreateAccount = async (submittedPasswordConfirmation?: string) => {
     const submissionInput = {
       name,
@@ -110,8 +123,9 @@ export default function CreateAccountScreen() {
       return;
     }
 
+    if (!beginSubmission()) return;
+
     emitEvent(buildSignUpSubmitted('email_password'));
-    setSubmitting(true);
     try {
       if (await createAccountWithE2EEmailPassword(submissionInput)) {
         return;
@@ -123,15 +137,14 @@ export default function CreateAccountScreen() {
       emitEvent(buildSignUpFailed('email_password', reason));
       setSubmitError(mapCreateAccountReasonToMessageKey(reason));
     } finally {
-      setSubmitting(false);
+      endSubmission();
     }
   };
 
   const onGoogleCreateAccount = async () => {
-    if (submitting) return;
+    if (!beginSubmission()) return;
     setSubmitError(null);
     emitEvent(buildSignUpSubmitted('google'));
-    setSubmitting(true);
 
     try {
       if (await signInWithE2ESocialAuth('google')) {
@@ -162,15 +175,14 @@ export default function CreateAccountScreen() {
       emitEvent(buildSignUpFailed('google', reason));
       setSubmitError(mapCreateAccountReasonToMessageKey(reason));
     } finally {
-      setSubmitting(false);
+      endSubmission();
     }
   };
 
   const onAppleCreateAccount = async () => {
-    if (submitting) return;
+    if (!beginSubmission()) return;
     setSubmitError(null);
     emitEvent(buildSignUpSubmitted('apple'));
-    setSubmitting(true);
 
     try {
       if (await signInWithE2ESocialAuth('apple')) {
@@ -201,7 +213,7 @@ export default function CreateAccountScreen() {
       emitEvent(buildSignUpFailed('apple', reason));
       setSubmitError(mapCreateAccountReasonToMessageKey(reason));
     } finally {
-      setSubmitting(false);
+      endSubmission();
     }
   };
 

@@ -26,6 +26,7 @@ import { useAnalytics } from '@/features/analytics/use-analytics';
 import { signInWithAppleProviderTokenFromSource } from '@/features/auth/apple-social-auth-source';
 import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { createAuthSubmissionGate } from '@/features/auth/auth-submission-gate';
 import { signInWithEmailPasswordFromSource } from '@/features/auth/email-auth-source';
 import { signInWithGoogleProviderTokenFromSource } from '@/features/auth/google-social-auth-source';
 import {
@@ -65,6 +66,7 @@ export default function SignInScreen() {
   const [errors, setErrors] = useState<SignInValidationErrors>({});
   const [submitError, setSubmitError] = useState<SignInErrorMessageKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submissionGateRef = useRef(createAuthSubmissionGate());
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
   const insets = useSafeAreaInsets();
@@ -104,6 +106,17 @@ export default function SignInScreen() {
     setPassword(value);
   };
 
+  const beginSubmission = () => {
+    if (!submissionGateRef.current.tryAcquire()) return false;
+    setSubmitting(true);
+    return true;
+  };
+
+  const endSubmission = () => {
+    submissionGateRef.current.release();
+    setSubmitting(false);
+  };
+
   const onEmailPasswordSignIn = async (submittedPassword?: string) => {
     const submissionInput = {
       email: emailRef.current,
@@ -121,8 +134,9 @@ export default function SignInScreen() {
       return;
     }
 
+    if (!beginSubmission()) return;
+
     emitEvent(buildSignInSubmitted('email_password'));
-    setSubmitting(true);
     try {
       if (await signInWithE2EEmailPassword(submissionInput.email, submissionInput.password)) {
         return;
@@ -134,15 +148,14 @@ export default function SignInScreen() {
       emitEvent(buildSignInFailed('email_password', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
     } finally {
-      setSubmitting(false);
+      endSubmission();
     }
   };
 
   const onGoogleSignIn = async () => {
-    if (submitting) return;
+    if (!beginSubmission()) return;
     setSubmitError(null);
     emitEvent(buildSignInSubmitted('google'));
-    setSubmitting(true);
 
     try {
       if (await signInWithE2ESocialAuth('google')) {
@@ -173,15 +186,14 @@ export default function SignInScreen() {
       emitEvent(buildSignInFailed('google', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
     } finally {
-      setSubmitting(false);
+      endSubmission();
     }
   };
 
   const onAppleSignIn = async () => {
-    if (submitting) return;
+    if (!beginSubmission()) return;
     setSubmitError(null);
     emitEvent(buildSignInSubmitted('apple'));
-    setSubmitting(true);
 
     try {
       if (await signInWithE2ESocialAuth('apple')) {
@@ -212,7 +224,7 @@ export default function SignInScreen() {
       emitEvent(buildSignInFailed('apple', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
     } finally {
-      setSubmitting(false);
+      endSubmission();
     }
   };
 

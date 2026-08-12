@@ -14,6 +14,7 @@ function authAccessibleCopy(testInfo: TestInfo) {
 
   return {
     back: bundle['auth.role.cta_back'],
+    termsCheckbox: bundle['auth.terms.checkbox'],
     showPassword: bundle['auth.password.toggle_show'],
     hidePassword: bundle['auth.password.toggle_hide'],
   };
@@ -29,6 +30,7 @@ async function capture(page: Page, testInfo: TestInfo, checkpoint: string, testI
 
 test.describe('@flow-atlas @feature:auth authentication and terms', () => {
   test('email sign-in validation and terms continuation', async ({ page }, testInfo) => {
+    const copy = authAccessibleCopy(testInfo);
     await page.goto('/auth/sign-in');
     await capture(page, testInfo, '01-sign-in', 'auth.signIn.title');
     await page.getByTestId('auth.signIn.submitButton').click();
@@ -51,9 +53,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
     expect(termsRadii).toEqual({ card: 16, link: 12, checkbox: 6 });
     await capture(page, testInfo, '03-required-terms', 'auth.terms.screen');
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
-    await expect(page.getByRole('checkbox')).toHaveAccessibleName(
-      'I have read and agree with the terms and privacy policy.',
-    );
+    await expect(page.getByRole('checkbox')).toHaveAccessibleName(copy.termsCheckbox);
     await page.getByTestId('auth.terms.openLinkButton').click();
     await expect(page.getByTestId('shared.webview.screen')).toBeVisible();
     await page.goBack();
@@ -125,7 +125,10 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
   });
 
   test('auth entry screens fit a narrow mobile viewport', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile', 'The narrow viewport check is mobile-only.');
+    test.skip(
+      !testInfo.project.name.startsWith('mobile-auth'),
+      'The narrow viewport check is mobile-only.',
+    );
     const copy = authAccessibleCopy(testInfo);
     for (const viewport of [
       { width: 320, height: 720, suffix: 'narrow' },

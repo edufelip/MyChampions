@@ -38,7 +38,9 @@ export default defineConfig({
     timeout: 120_000,
   },
   projects: [
-    { name: 'mobile', use: { ...devices['Pixel 5'], locale: 'en-US' } },
+    { name: 'mobile-auth', use: { ...devices['Pixel 5'], locale: 'en-US' } },
+    { name: 'mobile-auth-pt', use: { ...devices['Pixel 5'], locale: 'pt-BR' } },
+    { name: 'mobile-auth-es', use: { ...devices['Pixel 5'], locale: 'es-ES' } },
     { name: 'tablet', use: { browserName: 'chromium', viewport: { width: 820, height: 1000 } } },
     { name: 'web', use: { browserName: 'chromium', viewport: { width: 1440, height: 1000 } } },
   ],

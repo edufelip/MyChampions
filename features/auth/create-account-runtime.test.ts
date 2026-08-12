@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
+import { createAuthSubmissionGate } from './auth-submission-gate';
 
 const createAccountSource = readFileSync(
   join(process.cwd(), 'app/auth/create-account.tsx'),
@@ -21,8 +22,8 @@ function pressableOpeningTag(source: string, testId: string): string {
   return source.slice(pressableIndex, testIdIndex);
 }
 
-function providerHandlerBody(source: string, handler: string, nextHandler: string): string {
-  const start = source.indexOf(`const ${handler} = async () => {`);
+function handlerBody(source: string, handler: string, nextHandler: string): string {
+  const start = source.indexOf(`const ${handler} = async`);
   assert.notEqual(start, -1);
   const endMarker = nextHandler === 'return (' ? '\n\n  return (' : `\n\n  const ${nextHandler}`;
   const end = source.indexOf(endMarker, start);
@@ -30,20 +31,39 @@ function providerHandlerBody(source: string, handler: string, nextHandler: strin
   return source.slice(start, end);
 }
 
-test('social auth handlers acquire and release the shared submitting lock', () => {
+test('all auth submission handlers use the shared submission gate', () => {
   const handlers = [
+    [signInSource, 'onEmailPasswordSignIn', 'onGoogleSignIn'],
     [signInSource, 'onGoogleSignIn', 'onAppleSignIn'],
     [signInSource, 'onAppleSignIn', 'return ('],
+    [createAccountSource, 'onCreateAccount', 'onGoogleCreateAccount'],
     [createAccountSource, 'onGoogleCreateAccount', 'onAppleCreateAccount'],
     [createAccountSource, 'onAppleCreateAccount', 'return ('],
   ] as const;
 
   for (const [source, handler, nextHandler] of handlers) {
-    const body = providerHandlerBody(source, handler, nextHandler);
-    assert.match(body, /if \(submitting\) return;/);
-    assert.match(body, /setSubmitting\(true\);/);
-    assert.match(body, /finally \{[\s\S]*setSubmitting\(false\);/);
+    const body = handlerBody(source, handler, nextHandler);
+    assert.match(body, /if \(!beginSubmission\(\)\) return;/);
+    assert.match(body, /finally \{[\s\S]*endSubmission\(\);/);
   }
+});
+
+test('the shared submission gate rejects overlap and releases after the owner finishes', async () => {
+  const gate = createAuthSubmissionGate();
+  let resolveFirst!: () => void;
+  const firstRequest = new Promise<void>((resolve) => {
+    resolveFirst = resolve;
+  });
+
+  assert.equal(gate.tryAcquire(), true);
+  assert.equal(gate.tryAcquire(), false);
+
+  const releaseAfterFirst = firstRequest.finally(() => gate.release());
+  resolveFirst();
+  await releaseAfterFirst;
+
+  assert.equal(gate.tryAcquire(), true);
+  gate.release();
 });
 
 test('create-account submission snapshots the latest confirmation value', () => {
