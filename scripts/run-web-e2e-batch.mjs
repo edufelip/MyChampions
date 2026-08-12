@@ -9,6 +9,7 @@ const batches = {
   accessibility: ['--grep', '@accessibility'],
   'critical-paths': ['--grep', '@critical'],
   evidence: ['--grep', '@evidence', '--project=chromium'],
+  'manual-webview-recovery': ['--config=playwright.webview-recovery.config.ts', '--project=mobile'],
   server: ['--config=playwright.server.config.ts'],
   full: [],
 };

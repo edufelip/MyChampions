@@ -161,6 +161,7 @@ export default function AccountSettingsScreen() {
     router.push({
       pathname: '/shared/webview',
       params: {
+        intent: 'account',
         url: privacyPolicyUrl,
         title: t('settings.account.privacy_policy.label'),
       },
@@ -171,6 +172,7 @@ export default function AccountSettingsScreen() {
     router.push({
       pathname: '/shared/webview',
       params: {
+        intent: 'account',
         url: termsUrl,
         title: t('settings.account.terms.label'),
       },
