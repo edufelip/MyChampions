@@ -128,8 +128,10 @@ export default function CreateAccountScreen() {
   };
 
   const onGoogleCreateAccount = async () => {
+    if (submitting) return;
     setSubmitError(null);
     emitEvent(buildSignUpSubmitted('google'));
+    setSubmitting(true);
 
     try {
       if (await signInWithE2ESocialAuth('google')) {
@@ -159,12 +161,16 @@ export default function CreateAccountScreen() {
       const reason = normalizeCreateAccountReason(error);
       emitEvent(buildSignUpFailed('google', reason));
       setSubmitError(mapCreateAccountReasonToMessageKey(reason));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const onAppleCreateAccount = async () => {
+    if (submitting) return;
     setSubmitError(null);
     emitEvent(buildSignUpSubmitted('apple'));
+    setSubmitting(true);
 
     try {
       if (await signInWithE2ESocialAuth('apple')) {

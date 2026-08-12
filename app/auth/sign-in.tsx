@@ -139,8 +139,10 @@ export default function SignInScreen() {
   };
 
   const onGoogleSignIn = async () => {
+    if (submitting) return;
     setSubmitError(null);
     emitEvent(buildSignInSubmitted('google'));
+    setSubmitting(true);
 
     try {
       if (await signInWithE2ESocialAuth('google')) {
@@ -170,12 +172,16 @@ export default function SignInScreen() {
       const reason = normalizeSignInReason(error);
       emitEvent(buildSignInFailed('google', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const onAppleSignIn = async () => {
+    if (submitting) return;
     setSubmitError(null);
     emitEvent(buildSignInSubmitted('apple'));
+    setSubmitting(true);
 
     try {
       if (await signInWithE2ESocialAuth('apple')) {

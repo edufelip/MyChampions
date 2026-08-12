@@ -7,6 +7,7 @@ const createAccountSource = readFileSync(
   join(process.cwd(), 'app/auth/create-account.tsx'),
   'utf8',
 );
+const signInSource = readFileSync(join(process.cwd(), 'app/auth/sign-in.tsx'), 'utf8');
 const authSignInE2ESource = readFileSync(
   join(process.cwd(), 'e2e/auth-sign-in.e2e.test.js'),
   'utf8',
@@ -19,6 +20,31 @@ function pressableOpeningTag(source: string, testId: string): string {
   assert.notEqual(pressableIndex, -1);
   return source.slice(pressableIndex, testIdIndex);
 }
+
+function providerHandlerBody(source: string, handler: string, nextHandler: string): string {
+  const start = source.indexOf(`const ${handler} = async () => {`);
+  assert.notEqual(start, -1);
+  const endMarker = nextHandler === 'return (' ? '\n\n  return (' : `\n\n  const ${nextHandler}`;
+  const end = source.indexOf(endMarker, start);
+  assert.notEqual(end, -1);
+  return source.slice(start, end);
+}
+
+test('social auth handlers acquire and release the shared submitting lock', () => {
+  const handlers = [
+    [signInSource, 'onGoogleSignIn', 'onAppleSignIn'],
+    [signInSource, 'onAppleSignIn', 'return ('],
+    [createAccountSource, 'onGoogleCreateAccount', 'onAppleCreateAccount'],
+    [createAccountSource, 'onAppleCreateAccount', 'return ('],
+  ] as const;
+
+  for (const [source, handler, nextHandler] of handlers) {
+    const body = providerHandlerBody(source, handler, nextHandler);
+    assert.match(body, /if \(submitting\) return;/);
+    assert.match(body, /setSubmitting\(true\);/);
+    assert.match(body, /finally \{[\s\S]*setSubmitting\(false\);/);
+  }
+});
 
 test('create-account submission snapshots the latest confirmation value', () => {
   assert.match(

@@ -1,5 +1,23 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { enUS } from '../../localization/en-US';
+import { esES } from '../../localization/es-ES';
+import { ptBR } from '../../localization/pt-BR';
 import { captureFlowEvidence } from '../web/support/evidence';
+
+function authAccessibleCopy(testInfo: TestInfo) {
+  const bundle =
+    testInfo.project.use.locale === 'pt-BR'
+      ? ptBR
+      : testInfo.project.use.locale === 'es-ES'
+        ? esES
+        : enUS;
+
+  return {
+    back: bundle['auth.role.cta_back'],
+    showPassword: bundle['auth.password.toggle_show'],
+    hidePassword: bundle['auth.password.toggle_hide'],
+  };
+}
 
 async function capture(page: Page, testInfo: TestInfo, checkpoint: string, testId: string) {
   await expect(page.getByTestId(testId).last()).toBeVisible();
@@ -108,6 +126,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
 
   test('auth entry screens fit a narrow mobile viewport', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'The narrow viewport check is mobile-only.');
+    const copy = authAccessibleCopy(testInfo);
     for (const viewport of [
       { width: 320, height: 720, suffix: 'narrow' },
       { width: 390, height: 844, suffix: '390' },
@@ -149,7 +168,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
       await page.getByTestId('auth.signIn.submitButton').click();
       await expect(page.getByTestId('auth.signIn.error.emailRequired')).toBeVisible();
       const signInPasswordToggle = page.getByTestId('auth.signIn.passwordToggle');
-      await expect(signInPasswordToggle).toHaveAccessibleName('Show password');
+      await expect(signInPasswordToggle).toHaveAccessibleName(copy.showPassword);
       await expect
         .poll(() =>
           signInPasswordToggle.evaluate((element) => {
@@ -159,7 +178,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
         )
         .toEqual({ height: 44, width: 44 });
       await signInPasswordToggle.click();
-      await expect(signInPasswordToggle).toHaveAccessibleName('Hide password');
+      await expect(signInPasswordToggle).toHaveAccessibleName(copy.hidePassword);
       await expect(page.getByTestId('auth.signIn.passwordInput')).toHaveJSProperty('type', 'text');
 
       await page.goto('/auth/create-account');
@@ -177,7 +196,9 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
         'auth.createAccount.title',
       );
       await expect(page.getByTestId('auth.createAccount.title')).toBeVisible();
-      await expect(page.getByTestId('auth.createAccount.backButton')).toHaveAccessibleName('Back');
+      await expect(page.getByTestId('auth.createAccount.backButton')).toHaveAccessibleName(
+        copy.back,
+      );
       for (const testId of [
         'auth.createAccount.backButton',
         'auth.createAccount.submitButton',
@@ -213,7 +234,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
         ],
       ] as const) {
         const passwordToggle = page.getByTestId(testId);
-        await expect(passwordToggle).toHaveAccessibleName('Show password');
+        await expect(passwordToggle).toHaveAccessibleName(copy.showPassword);
         await expect
           .poll(() =>
             passwordToggle.evaluate((element) => {
@@ -223,7 +244,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
           )
           .toEqual({ height: 44, width: 44 });
         await passwordToggle.click();
-        await expect(passwordToggle).toHaveAccessibleName('Hide password');
+        await expect(passwordToggle).toHaveAccessibleName(copy.hidePassword);
         await expect(page.getByTestId(inputTestId)).toHaveJSProperty('type', 'text');
       }
       if (viewport.width === 390) {

@@ -80,7 +80,7 @@
   - Locked-role users are auto-bypassed from auth routes by global guard to role home placeholder routes after terms acceptance.
   - Visual treatment follows the shared mobile auth shell: a calm design-system canvas, compact branded mark, left-aligned title/subtitle hierarchy, labeled 52dp fields with token-based borders, and consistent 52dp primary/social actions. Decorative blobs and oversized pill controls are not used on the auth entry surfaces.
   - The brand logo is an `expo-image` `<Image>` rendering `assets/images/logo.svg` (`contentFit="contain"`) inside a compact `accentPrimarySoft` brand mark. Accessibility label uses key `a11y.brand_logo`.
-  - Text inputs expose a visible design-system border, accent focus state, and danger state for field validation. The password reveal action is an icon-only 40dp control with the existing localized accessible show/hide label.
+  - Text inputs expose a visible design-system border, accent focus state, and danger state for field validation. The password reveal action is an icon-only 44dp control with the existing localized accessible show/hide label.
   - Social actions use explicit surface/border/disabled tokens, Google/Apple provider icons, and a rule divider so the provider choices remain visually secondary to email/password.
   - The mobile layout includes safe-area padding and a narrow-viewport regression check at 320×720 to prevent horizontal overflow or clipped auth hierarchy.
   - Primary email sign-in pill button uses light foreground (label, icon, and loading spinner) for contrast against the accent background.
