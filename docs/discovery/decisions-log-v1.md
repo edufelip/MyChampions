@@ -838,6 +838,7 @@
   - The professional dashboard disables regeneration while offline and surfaces the standard `offline.write_lock` reason alongside the persistent read-only banner.
   - After successful regeneration, the dashboard reloads connection data so auto-canceled old-code requests cannot leave pending or attention counts stale.
   - Rotation analytics record requested, canceled, succeeded, or failed outcomes with redacted properties only; full invite-code values are never included.
+  - The browser-only E2E network-status event bridge is feature-detected before subscription so native runtimes with a non-DOM `window` remain on the NetInfo path.
 
 ## Native iOS Build Compatibility
 

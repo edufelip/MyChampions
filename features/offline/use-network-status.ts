@@ -32,6 +32,13 @@ export function useNetworkStatus(): NetworkStatus {
   const [status, setStatus] = useState<NetworkStatus>(e2eNetworkStatusOverride ?? 'unknown');
 
   useEffect(() => {
+    const e2eEventTarget =
+      isE2EAuthSession &&
+      typeof window !== 'undefined' &&
+      typeof window.addEventListener === 'function' &&
+      typeof window.removeEventListener === 'function'
+        ? window
+        : null;
     const onE2ENetworkStatusChange = () => {
       if (!isE2EAuthSession || typeof sessionStorage === 'undefined') return;
 
@@ -43,15 +50,18 @@ export function useNetworkStatus(): NetworkStatus {
       if (nextOverride) setStatus(nextOverride);
     };
 
-    if (isE2EAuthSession && typeof window !== 'undefined') {
-      window.addEventListener('mychampions.e2e.network-status-change', onE2ENetworkStatusChange);
+    if (e2eEventTarget) {
+      e2eEventTarget.addEventListener(
+        'mychampions.e2e.network-status-change',
+        onE2ENetworkStatusChange,
+      );
     }
 
     if (e2eNetworkStatusOverride) {
       setStatus(e2eNetworkStatusOverride);
       return () => {
-        if (typeof window !== 'undefined') {
-          window.removeEventListener(
+        if (e2eEventTarget) {
+          e2eEventTarget.removeEventListener(
             'mychampions.e2e.network-status-change',
             onE2ENetworkStatusChange,
           );
@@ -71,8 +81,8 @@ export function useNetworkStatus(): NetworkStatus {
 
     return () => {
       unsubscribe();
-      if (typeof window !== 'undefined') {
-        window.removeEventListener(
+      if (e2eEventTarget) {
+        e2eEventTarget.removeEventListener(
           'mychampions.e2e.network-status-change',
           onE2ENetworkStatusChange,
         );
