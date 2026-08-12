@@ -28,6 +28,7 @@ import { WebView } from 'react-native-webview';
 import { getDsTheme, DsRadius, DsSpace } from '@/constants/design-system';
 import {
   allowInsecureLocalhostForDevelopment,
+  buildOriginWhitelist,
   EDUWALDO_HTTPS_HOSTNAME,
   resolveSafeExternalUrl,
 } from '@/features/platform/external-url';
@@ -124,7 +125,7 @@ export default function WebViewScreen() {
           source={{ uri: safeUrl }}
           style={styles.webview}
           startInLoadingState
-          originWhitelist={['https://portfolio.eduwaldo.com', 'https://*.eduwaldo.com']}
+          originWhitelist={buildOriginWhitelist(EDUWALDO_HTTPS_HOSTNAME)}
           onError={() => setError(true)}
           onHttpError={() => setError(true)}
           renderLoading={() => (

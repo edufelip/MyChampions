@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { resolveSafeExternalUrl } from './external-url';
+import { buildOriginWhitelist, resolveSafeExternalUrl } from './external-url';
 
 describe('resolveSafeExternalUrl', () => {
   it('accepts HTTPS URLs without rewriting them when no origin is enforced', () => {
@@ -71,5 +71,18 @@ describe('resolveSafeExternalUrl', () => {
       'http://127.0.0.1:8081',
     );
     assert.equal(resolveSafeExternalUrl('http://localhost:8081'), null);
+  });
+});
+
+describe('buildOriginWhitelist', () => {
+  it('includes both the apex domain and a subdomain wildcard', () => {
+    // A bare `https://*.example.com` wildcard pattern never matches the apex
+    // origin `https://example.com` in react-native-webview — both entries
+    // are required, or the resolver and the WebView's own originWhitelist
+    // prop would silently disagree on the apex domain.
+    assert.deepEqual(buildOriginWhitelist('eduwaldo.com'), [
+      'https://eduwaldo.com',
+      'https://*.eduwaldo.com',
+    ]);
   });
 });
