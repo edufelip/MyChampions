@@ -162,6 +162,36 @@ describe('email-auth-source', () => {
     assert.equal(getCurrentServerAccessToken(), 'server-signin-token');
   });
 
+  it('fails closed for a session-less non-202 create-account response', async () => {
+    clearServerAuthSession();
+    const requests: Request[] = [];
+    const deps: EmailAuthSourceDeps = {
+      fetch: async (input, init) => {
+        requests.push(new Request(input, init));
+        return response({ status: 'accepted' }, { status: 201 });
+      },
+      getServerBaseUrl: () => 'http://server.test',
+      storage: createMemoryStorage(),
+    };
+
+    await assert.rejects(
+      () =>
+        createAccountWithEmailPasswordFromSource(
+          {
+            name: 'Provider User',
+            email: 'user@example.test',
+            password: 'Password1!',
+            passwordConfirmation: 'Password1!',
+          },
+          deps,
+        ),
+      (error: unknown) => error instanceof CreateAccountFailure && error.reason === 'unknown',
+    );
+
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0]?.url, 'http://server.test/auth/email/create-account');
+  });
+
   it('fails closed for sign-in when E2E and server auth did not establish a session', async () => {
     clearServerAuthSession();
     await assert.rejects(

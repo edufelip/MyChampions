@@ -77,7 +77,7 @@
   - Confirmation changes are mirrored synchronously for CTA submission, while Done/Return submission also supplies the native field snapshot; validation and the server request consume one immutable submission input.
   - Contextual submit error mapping is implemented for `duplicate_email`, `network`, `provider_conflict`, and `configuration`.
   - Email/password sign-up is wired to the MyChampions server auth boundary for native and browser runtimes.
-  - Session-less create-account acknowledgements are completed by a follow-up MyChampions server email/password sign-in before the authenticated terms gate; failed follow-up authentication remains a localized, recoverable error.
+  - The documented session-less HTTP 202 create-account acknowledgement is completed by a follow-up MyChampions server email/password sign-in before the authenticated terms gate; any other session-less success response fails closed without a second auth request, and failed 202 follow-up authentication remains a localized, recoverable error.
   - Google social auth shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
   - Apple social auth shows the approved E2E fixture path in test mode, then tries native Apple identity-token capture and posts the token plus nonce to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer, audience, and nonce claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.
   - Successful sign-up routes to `/auth/accept-terms`; the MyChampions server auth session + guard then continue to role-selection or role home when terms are accepted.
@@ -91,7 +91,7 @@
 - `docs/design-assets/stitch/13906080126528974652/da61e892eaf34516b83086d64e163b23.png`
 
 ## Links
-- Functional requirement: FR-101, FR-163, FR-164, FR-165, FR-166, FR-167, FR-168, FR-169, FR-171, FR-172, FR-182, FR-190, FR-205, FR-206, FR-207, FR-208, FR-217, FR-249
+- Functional requirement: FR-101, FR-163, FR-164, FR-165, FR-166, FR-167, FR-168, FR-169, FR-171, FR-172, FR-182, FR-190, FR-205, FR-206, FR-207, FR-208, FR-217, FR-249, FR-249A
 - Use case: UC-002.0, UC-002.10, UC-002.11, UC-002.18, UC-002.21
 - Acceptance criteria: AC-227, AC-228, AC-229, AC-230, AC-231, AC-232, AC-239, AC-244, AC-246, AC-250, AC-251, AC-252, AC-266, AC-512
 - Business rules: BR-232, BR-233, BR-234, BR-235, BR-244, BR-251, BR-264, BR-265, BR-266, BR-275, BR-297

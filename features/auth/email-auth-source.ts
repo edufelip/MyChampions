@@ -166,6 +166,10 @@ export async function createAccountWithEmailPasswordFromSource(
     return;
   }
 
+  if (response.status !== 202) {
+    throw new CreateAccountFailure('unknown');
+  }
+
   // The server intentionally returns a session-less 202 for both successful and
   // duplicate account creation so the create endpoint cannot be used to enumerate
   // registered emails. Complete the authenticated flow through the existing email
