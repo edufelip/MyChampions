@@ -31,7 +31,9 @@ emulation with touch input and the corresponding locale. The local auth-flow
 config retains the same three mobile lanes plus tablet and desktop review
 lanes. This keeps the first-run auth redesign covered by a required mobile
 regression signal while preserving the larger screenshot package for manual
-review.
+review. The atlas is also mapped to the `auth` feature so every auth-impact
+change selects all three localized mobile projects even when the atlas spec
+itself is unchanged.
 
 Run both local lanes with `yarn test:e2e:web:all-local`. They intentionally use separate Expo ports and clear Metro state so fixture configuration cannot leak into the real-server bundle or vice versa.
 

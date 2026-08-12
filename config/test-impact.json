@@ -99,7 +99,8 @@
         "web:server-auth",
         "web:shell",
         "web:critical-paths",
-        "web:manual-webview-recovery"
+        "web:manual-webview-recovery",
+        "web:flow-atlas-auth"
       ],
       "detoxSuites": ["detox:auth"],
       "owners": ["@edufelip"]

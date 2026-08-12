@@ -26,6 +26,7 @@ test('documented critical browser paths remain selected for auth-impact changes'
   ]);
 
   assert.ok(result.webSuites.includes('web:critical-paths'));
+  assert.ok(result.webSuites.includes('web:flow-atlas-auth'));
 });
 
 function syntheticManifest(): TestImpactManifest {
