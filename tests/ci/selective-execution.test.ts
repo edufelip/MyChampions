@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import test from 'node:test';
 import { buildChildEnvironment } from '../../scripts/ci/execute-selected-tests';
-import { loadManifest } from '../../scripts/ci/test-impact';
 import {
   createSelectiveExecutionPlan,
   parseNativeMetroPort,
@@ -11,6 +10,7 @@ import {
   parseSelectedSuitesJson,
   validateSelectiveExecutionManifest,
 } from '../../scripts/ci/selective-execution';
+import { loadManifest } from '../../scripts/ci/test-impact';
 
 const root = process.cwd();
 const manifest = loadManifest(root);
@@ -24,7 +24,7 @@ test('web suites are grouped by runner and project with argv-safe filters', () =
 
   assert.equal(plan.nativeBuild, undefined);
   assert.equal(plan.invocations.length, 1);
-  const invocation = plan.invocations[0]!;
+  const invocation = plan.invocations[0];
   assert.equal(invocation.command, 'yarn');
   assert.equal(invocation.args[0], 'playwright');
   assert.ok(invocation.args.includes('--config=playwright.config.ts'));
@@ -35,8 +35,27 @@ test('web suites are grouped by runner and project with argv-safe filters', () =
   );
   const grepIndex = invocation.args.indexOf('--grep');
   assert.ok(grepIndex >= 0);
-  assert.match(invocation.args[grepIndex + 1]!, /@feature:auth/);
-  assert.match(invocation.args[grepIndex + 1]!, /@feature:shell/);
+  assert.match(invocation.args[grepIndex + 1], /@feature:auth/);
+  assert.match(invocation.args[grepIndex + 1], /@feature:shell/);
+});
+
+test('web suites can select an explicit Playwright config per project', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:professional-home']);
+
+  assert.deepEqual(
+    plan.invocations.map((invocation) =>
+      invocation.args.filter((value) => value.startsWith('--project=')),
+    ),
+    [
+      ['--project=mobile-professional'],
+      ['--project=mobile-professional-es'],
+      ['--project=mobile-professional-pt'],
+    ],
+  );
+  for (const invocation of plan.invocations) {
+    assert.ok(invocation.args.includes('--config=playwright.professional-home.config.ts'));
+    assert.ok(invocation.args.includes('e2e/web/professional-home-responsive.spec.ts'));
+  }
 });
 
 test('server Playwright suites declare their coordinated backend requirement', () => {
@@ -236,7 +255,7 @@ test('student empty-state profile actively clears incompatible assigned fixtures
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:student'], {
     skipNativeBuild: true,
   });
-  const invocation = plan.invocations[0]!;
+  const invocation = plan.invocations[0];
 
   assert.equal(invocation.env.EXPO_PUBLIC_E2E_AUTH_SESSION, 'true');
   assert.equal(invocation.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE, '');
@@ -289,10 +308,10 @@ test('nutrition profile isolates scenario-specific native fixtures', () => {
     imageUploadInvocations.map((invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO),
     ['sheet', 'success', 'permission-denied'],
   );
-  assert.equal(imageUploadInvocations[0]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
-  assert.equal(imageUploadInvocations[1]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, 'success');
+  assert.equal(imageUploadInvocations[0].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
+  assert.equal(imageUploadInvocations[1].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, 'success');
   assert.equal(
-    imageUploadInvocations[2]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
+    imageUploadInvocations[2].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
     'permission-denied',
   );
   assert.ok(
@@ -304,10 +323,10 @@ test('nutrition profile isolates scenario-specific native fixtures', () => {
     aiAnalysisInvocations.map((invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO),
     ['paywall', 'success'],
   );
-  assert.equal(aiAnalysisInvocations[0]!.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'lapsed');
-  assert.equal(aiAnalysisInvocations[0]!.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'lapsed');
-  assert.equal(aiAnalysisInvocations[1]!.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'active');
-  assert.equal(aiAnalysisInvocations[1]!.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'active');
+  assert.equal(aiAnalysisInvocations[0].env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'lapsed');
+  assert.equal(aiAnalysisInvocations[0].env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'lapsed');
+  assert.equal(aiAnalysisInvocations[1].env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'active');
+  assert.equal(aiAnalysisInvocations[1].env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'active');
   assert.ok(
     regularNutritionInvocations.every(
       (invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO === '',

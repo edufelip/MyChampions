@@ -39,6 +39,7 @@
 - Offline and lock warnings follow DS semantic alert structure while preserving existing gating logic.
 - Invite-code actions and navigation CTAs remain behavior-equivalent; presentation is standardized for cleaner visual rhythm.
 - On compact native viewports, native validation scrolls the dashboard until the invite-code value and share/regenerate controls are visible before interacting with them.
+- In the mobile browser layout, viewports below 400 CSS px stack the active-student and pending-request summary cards at full content width, and wrap the `Needs attention` action onto its own row so labels and the trailing affordance remain readable. Viewports from 400 to 1023 CSS px retain the two-column summary layout.
 
 ## Validation Rules
 - Any operation that would exceed 10 active students must trigger subscription gate if no entitlement.

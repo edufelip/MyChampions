@@ -161,7 +161,7 @@
       "sourcePaths": ["features/professional/**", "app/professional/**", "app/(tabs)/students.tsx"],
       "dependsOn": ["auth", "connections", "nutrition", "offline", "plans", "platform"],
       "unitTests": ["features/professional/**/*.test.ts"],
-      "webSuites": ["web:professional", "web:shell"],
+      "webSuites": ["web:professional", "web:professional-home", "web:shell"],
       "detoxSuites": ["detox:professional"],
       "owners": ["@edufelip"]
     },
@@ -416,6 +416,15 @@
       "runner": "playwright",
       "projects": ["chromium"],
       "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/visual-evidence.spec.ts"],
+      "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:professional-home": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.professional-home.config.ts",
+      "projects": ["mobile-professional", "mobile-professional-pt", "mobile-professional-es"],
+      "specs": ["e2e/web/professional-home-responsive.spec.ts"],
       "grep": "@feature:professional",
       "tier": "feature",
       "ci": true

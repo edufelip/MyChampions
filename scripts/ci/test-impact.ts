@@ -1,6 +1,6 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { extname, join, posix, relative, resolve } from 'node:path';
-import { execFileSync } from 'node:child_process';
 import ts from 'typescript';
 
 export type ChangeStatus = 'A' | 'C' | 'D' | 'M' | 'R' | 'T' | 'U' | 'X' | 'B';
@@ -27,6 +27,7 @@ export type SuiteConfig = {
   ci: boolean;
   platforms?: string[];
   projects?: string[];
+  playwrightConfig?: string;
   fixtureProfile?: string;
   grep?: string;
 };
