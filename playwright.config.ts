@@ -1,5 +1,5 @@
-import { defineConfig, devices } from '@playwright/test';
 import path from 'node:path';
+import { defineConfig, devices } from '@playwright/test';
 
 const artifactRoot = path.resolve(
   process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/current',
@@ -24,7 +24,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      'CI=1 APP_VARIANT=dev EXPO_PUBLIC_E2E_AUTH_SESSION=true EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT=2 yarn web:dev --port 8081 --clear',
+      'CI=1 EXPO_OFFLINE=1 APP_VARIANT=dev EXPO_PUBLIC_E2E_AUTH_SESSION=true EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT=2 yarn web:dev --port 8081 --clear',
     url: 'http://127.0.0.1:8081',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

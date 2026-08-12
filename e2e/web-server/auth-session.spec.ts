@@ -1,5 +1,4 @@
 import { expect, test, type Page } from '@playwright/test';
-
 import { captureEvidence } from '../web/support/evidence';
 
 async function expectReadyStudentHome(page: Page) {
@@ -26,7 +25,13 @@ test.describe('@server-auth @critical @feature:auth browser cookie session', () 
     await page.getByTestId('auth.createAccount.passwordConfirmationInput').fill(password);
     await page.getByTestId('auth.createAccount.submitButton').click();
 
-    await expect(page.getByTestId('auth.terms.screen')).toBeVisible();
+    // create-account (ET-75) no longer returns a session in one hop: it always
+    // responds 202 with no session, then the client chains a real sign-in call
+    // to establish one. That's two sequential real requests (each hashing a
+    // password with Argon2id) before the app can navigate past this screen, so
+    // the default 5s assertion timeout is too tight under CI load — widen it
+    // rather than assert on a stale one-hop latency budget.
+    await expect(page.getByTestId('auth.terms.screen')).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('auth.terms.checkbox').click();
     await page.getByTestId('auth.terms.acceptButton').click();
     await expect(page.getByTestId('auth.roleSelection.screen')).toBeVisible();

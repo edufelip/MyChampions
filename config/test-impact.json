@@ -374,7 +374,10 @@
     "web:server-auth": {
       "runner": "playwright-server",
       "projects": ["chromium", "firefox", "webkit"],
-      "specs": ["e2e/web-server/auth-session.spec.ts"],
+      "specs": [
+        "e2e/web-server/auth-session.spec.ts",
+        "e2e/web-server/create-account-enumeration.spec.ts"
+      ],
       "grep": "@feature:auth|@critical",
       "tier": "critical",
       "ci": true
