@@ -59,6 +59,7 @@ in-app support access.
   - **Message**: Multi-line input (max 500 chars).
   - **Submit Button**: Sends the message to the MyChampions server support endpoint.
   - **Cancel Button**: Dismisses the dialog without submitting.
+  - **Accessibility**: On web, the visible sheet exposes one named `role="dialog"` with `aria-modal="true"` and `aria-labelledby` pointing to the localized title. The icon close control uses the localized `settings.account.support.dialog.close` label, distinct from the form Cancel action.
   - **Success/Error states**: Inline feedback within the dialog.
 
 ### 5. Sign Out
@@ -77,6 +78,7 @@ in-app support access.
 ## States
 - Idle: all sections visible.
 - Offline: `DsOfflineBanner` shown; account deletion CTA disabled.
+- Support dialog semantics: the web support sheet is a named modal dialog; focus is contained while open, Escape/back is submission-aware, and the trigger regains focus after dismissal.
 - Password reset pending: row shows loading state.
 - Password reset success: inline success banner replaces the row.
 - Password reset error: inline error text below the row.

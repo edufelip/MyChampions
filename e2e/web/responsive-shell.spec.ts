@@ -296,6 +296,11 @@ test.describe('@accessibility @critical @feature:shell keyboard and dialog behav
     const modal = page.getByTestId('settings.account.support.modal');
     const close = page.getByTestId('settings.account.support.closeButton');
     await expect(modal).toBeVisible();
+    await expect(modal).toHaveAttribute('role', 'dialog');
+    await expect(modal).toHaveAttribute('aria-modal', 'true');
+    await expect(modal).toHaveAccessibleName('Talk to support');
+    await expect(close).toHaveAccessibleName('Close support dialog');
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(1);
     await expect(close).toBeFocused();
 
     await page.keyboard.press('Shift+Tab');

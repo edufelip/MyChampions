@@ -966,6 +966,7 @@ export const ptBR: Record<TranslationKey, string> = {
 
   // Support
   'settings.account.support.dialog.title': 'Falar com o suporte',
+  'settings.account.support.dialog.close': 'Fechar diálogo de suporte',
   'settings.account.support.dialog.disclaimer':
     'Esta tela é para enviar mensagens para nossa equipe de suporte.',
   'settings.account.support.field.subject.label': 'Assunto',

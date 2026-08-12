@@ -807,6 +807,18 @@
     required monthly. This change records the first report and keeps local,
     hosted, native, provider, and store-live evidence as separate states.
 
+- `D-202`: SC-213 support dialog accessibility uses a web-only semantic bridge
+  over the existing React Native modal.
+  - The visible support sheet receives `role="dialog"`, `aria-modal="true"`,
+    and `aria-labelledby` pointing to the localized title only on web; native
+    modal behavior remains owned by React Native `Modal` and `onRequestClose`.
+  - The icon close control has a dedicated localized label, while the form
+    Cancel action retains its own visible label. This prevents duplicate
+    accessible names without changing the support submission contract.
+  - Mobile Playwright regression coverage verifies the semantic tree, focus
+    containment, Escape dismissal, and trigger focus restoration at 390x844 and
+    320x720.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.

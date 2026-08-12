@@ -2,12 +2,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
-
 import { requestSupportModalDismissal } from './support.logic';
 
 const root = join(__dirname, '..', '..');
 const modalSource = readFileSync(
   join(root, 'components', 'ds', 'patterns', 'SupportModal.tsx'),
+  'utf8',
+);
+const dialogHookSource = readFileSync(
+  join(root, 'hooks', 'use-web-dialog-accessibility.ts'),
   'utf8',
 );
 
@@ -27,6 +30,19 @@ test('support modal web Escape callback uses the submission-aware dismissal guar
     modalSource,
     /useWebDialogAccessibility\(\{[\s\S]*?isVisible,[\s\S]*?onClose: handleClose,[\s\S]*?testID: 'settings\.account\.support\.modal'/,
   );
+  assert.match(modalSource, /dialogTitleTestID: 'settings\.account\.support\.dialog\.title'/);
+  assert.match(modalSource, /testID="settings\.account\.support\.dialog\.title"/);
+  assert.match(
+    modalSource,
+    /accessibilityLabel=\{t\('settings\.account\.support\.dialog\.close'\) as string\}/,
+  );
+});
+
+test('web dialog accessibility hook applies named modal semantics and restores attributes', () => {
+  assert.match(dialogHookSource, /root\.setAttribute\('role', 'dialog'\)/);
+  assert.match(dialogHookSource, /root\.setAttribute\('aria-modal', 'true'\)/);
+  assert.match(dialogHookSource, /root\.setAttribute\('aria-labelledby', generatedTitleId\)/);
+  assert.match(dialogHookSource, /previousAttributes\.ariaLabelledBy/);
 });
 
 test('support modal native back callback uses the submission-aware dismissal guard', () => {

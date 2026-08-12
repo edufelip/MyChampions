@@ -385,6 +385,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `settings.account.terms.label` | SC-213 | Row label | Terms of Service | Termos de Uso | Términos de servicio | |
 | `settings.account.contact.label` | SC-213 | Row label | Contact support | Falar com o suporte | Contactar soporte | Opens support message dialog |
 | `settings.account.support.dialog.title` | SC-213 | Modal title | Talk to support | Falar com o suporte | Contactar soporte | |
+| `settings.account.support.dialog.close` | SC-213 | Dialog close button label | Close support dialog | Fechar diálogo de suporte | Cerrar diálogo de soporte | Distinct from the form Cancel action for assistive technology |
 | `settings.account.support.dialog.disclaimer` | SC-213 | Modal disclaimer | This screen is for messaging our support team. | Esta tela é para enviar mensagens para nossa equipe de suporte. | Esta pantalla es para enviar mensajes a nuestro equipo de soporte. | |
 | `settings.account.support.field.subject.label` | SC-213 | Field label | Subject | Assunto | Asunto | |
 | `settings.account.support.field.subject.placeholder` | SC-213 | Field placeholder | e.g. Login issue | Ex: Dificuldade com login | p.ej. Problema con el inicio de sesión | |
