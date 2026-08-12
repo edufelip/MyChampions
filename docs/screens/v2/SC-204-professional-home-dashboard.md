@@ -39,7 +39,7 @@
 - Offline and lock warnings follow DS semantic alert structure while preserving existing gating logic.
 - Invite-code actions and navigation CTAs remain behavior-equivalent; presentation is standardized for cleaner visual rhythm.
 - On compact native viewports, native validation scrolls the dashboard until the invite-code value and share/regenerate controls are visible before interacting with them.
-- Regenerate code opens a cross-platform confirmation sheet with cancel/confirm actions, a disabled loading state while rotation is in flight, and inline success/error feedback. Web uses the same modal contract as native so the action is never dependent on `Alert.alert`.
+- Regenerate code opens a cross-platform confirmation sheet with cancel/confirm actions, a disabled loading state while rotation is in flight, and inline success/error feedback. Web uses the same modal contract as native so the action is never dependent on `Alert.alert`. When offline, the regenerate action is disabled and the standard connectivity write-lock reason is shown in the invite-code card.
 
 ## Validation Rules
 - Any operation that would exceed 10 active students must trigger subscription gate if no entitlement.

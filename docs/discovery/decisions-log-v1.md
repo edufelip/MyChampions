@@ -835,6 +835,7 @@
 - `D-210`: Invite-code regeneration confirmation is rendered through a shared React Native `Modal` contract on all platforms.
   - The confirmation explains invalidation and pending-request cancellation before a professional confirms.
   - Web must not depend on `Alert.alert`; it uses the shared modal's Escape/focus behavior, visible loading state, and inline success/error feedback.
+  - The professional dashboard disables regeneration while offline and surfaces the standard `offline.write_lock` reason alongside the persistent read-only banner.
   - Rotation analytics record requested, canceled, succeeded, or failed outcomes with redacted properties only; full invite-code values are never included.
 
 ## Native iOS Build Compatibility

@@ -33,7 +33,13 @@ export function InviteCodeRotationModal({
   });
 
   return (
-    <Modal visible={isVisible} animationType="fade" onRequestClose={onClose} transparent>
+    <Modal
+      accessibilityLabel={t('pro.home.invite_code.rotate_confirm_title')}
+      visible={isVisible}
+      animationType="fade"
+      onRequestClose={onClose}
+      transparent
+    >
       <View
         style={[styles.overlay, { backgroundColor: theme.color.overlaySoft }]}
         testID="pro.home.rotateCodeModal"

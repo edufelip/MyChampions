@@ -9,8 +9,9 @@
  *  - CTAs to student roster and subscription (card)
  *  - Offline read-only banner + write-lock feedback
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -19,13 +20,11 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-
+import { InviteCodeRotationModal } from '@/components/ds/patterns/InviteCodeRotationModal';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import { InviteCodeRotationModal } from '@/components/ds/patterns/InviteCodeRotationModal';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import {
@@ -37,21 +36,6 @@ import {
 import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
-import { shareAdapter } from '@/features/platform/share-adapter';
-import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
-import { resolveProfessionalHomeAttention } from '@/features/professional/professional-home.logic';
-import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
-import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
-import {
-  buildProfessionalPlanChangeNotificationSummary,
-  type ProfessionalPlanChangeNotificationSummary,
-} from '@/features/plans/plan-change-request.logic';
-import { getProfessionalPlanChangeRequests } from '@/features/plans/plan-source';
-import {
-  resolveSubscriptionState,
-  isPlanUpdateLocked,
-} from '@/features/subscription/subscription.logic';
-import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -59,6 +43,21 @@ import {
 } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import {
+  buildProfessionalPlanChangeNotificationSummary,
+  type ProfessionalPlanChangeNotificationSummary,
+} from '@/features/plans/plan-change-request.logic';
+import { getProfessionalPlanChangeRequests } from '@/features/plans/plan-source';
+import { shareAdapter } from '@/features/platform/share-adapter';
+import { resolvePrimaryInviteCodeSpecialty } from '@/features/professional/connection-invite.logic';
+import { resolveProfessionalHomeAttention } from '@/features/professional/professional-home.logic';
+import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
+import { useInviteCode, useSpecialties } from '@/features/professional/use-professional';
+import {
+  resolveSubscriptionState,
+  isPlanUpdateLocked,
+} from '@/features/subscription/subscription.logic';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -117,6 +116,7 @@ export default function ProfessionalHomeScreen() {
     isExpiringSoon: professionalEntitlementRenewalRisk,
   });
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
+  const isInviteCodeWriteLocked = offlineDisplay.showOfflineBanner;
 
   const [rotateError, setRotateError] = useState<string | null>(null);
   const [rotateSuccess, setRotateSuccess] = useState(false);
@@ -167,6 +167,8 @@ export default function ProfessionalHomeScreen() {
   useEffect(() => loadPlanChangeNotifications(), [loadPlanChangeNotifications]);
 
   function openRotateConfirmation() {
+    if (isInviteCodeWriteLocked) return;
+
     setRotateError(null);
     setRotateSuccess(false);
     setIsRotateConfirmVisible(true);
@@ -181,7 +183,7 @@ export default function ProfessionalHomeScreen() {
   }
 
   async function confirmRotate() {
-    if (rotateInFlightRef.current) return;
+    if (rotateInFlightRef.current || isInviteCodeWriteLocked) return;
 
     rotateInFlightRef.current = true;
     setIsRotating(true);
@@ -193,7 +195,7 @@ export default function ProfessionalHomeScreen() {
     setIsRotating(false);
 
     if (err) {
-      setRotateError(t('pro.home.invite_code.rotate_error') as string);
+      setRotateError(t('pro.home.invite_code.rotate_error'));
       emitEvent(buildInviteCodeRotationFailed(err));
       return;
     }
@@ -253,427 +255,451 @@ export default function ProfessionalHomeScreen() {
         testID="pro.home.screen"
         contentContainerStyle={styles.content}
       >
-      <Stack.Screen options={{ title: t('pro.home.title'), headerShown: false }} />
+        <Stack.Screen options={{ title: t('pro.home.title'), headerShown: false }} />
 
-      <View style={styles.heroWrap}>
-        <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
-          {t('pro.home.title')}
-        </Text>
-        <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
-          {t('pro.home.subtitle')}
-        </Text>
-        {subState.isPreLapseWarningVisible || isActiveStudentCountKnown ? (
-          <View
-            style={[
-              styles.contextPill,
-              {
-                backgroundColor: subState.isPreLapseWarningVisible
-                  ? theme.color.warningSoft
-                  : theme.color.accentPrimarySoft,
-                borderColor: subState.isPreLapseWarningVisible
-                  ? theme.color.warning
-                  : theme.color.accentPrimary,
-              },
-            ]}
-          >
-            <MaterialIcons
-              name={subState.isPreLapseWarningVisible ? 'warning-amber' : 'verified-user'}
-              size={16}
-              color={
-                subState.isPreLapseWarningVisible ? theme.color.warning : theme.color.accentPrimary
-              }
-            />
-            <Text
+        <View style={styles.heroWrap}>
+          <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
+            {t('pro.home.title')}
+          </Text>
+          <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
+            {t('pro.home.subtitle')}
+          </Text>
+          {subState.isPreLapseWarningVisible || isActiveStudentCountKnown ? (
+            <View
               style={[
-                styles.contextPillText,
+                styles.contextPill,
                 {
-                  color: subState.isPreLapseWarningVisible
+                  backgroundColor: subState.isPreLapseWarningVisible
+                    ? theme.color.warningSoft
+                    : theme.color.accentPrimarySoft,
+                  borderColor: subState.isPreLapseWarningVisible
                     ? theme.color.warning
                     : theme.color.accentPrimary,
                 },
               ]}
             >
-              {subState.isPreLapseWarningVisible
-                ? t('pro.subscription.pre_lapse.title')
-                : t('pro.subscription.cap_usage')
-                    .replace('{count}', activeStudentLabel)
-                    .replace('{limit}', '10')}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-
-      {offlineDisplay.showOfflineBanner ? (
-        <DsOfflineBanner
-          scheme={scheme}
-          text={buildOfflineText(offlineDisplay.staleElapsed, t)}
-          testID="pro.home.offlineBanner"
-        />
-      ) : null}
-
-      {subState.isPreLapseWarningVisible ? (
-        <DsCard
-          scheme={scheme}
-          variant="warning"
-          testID="pro.home.subscriptionWarning"
-          style={styles.warningBanner}
-        >
-          <Text style={[styles.warningText, { color: theme.color.textPrimary }]}>
-            {t('pro.home.subscription.warning')}
-          </Text>
-          <DsPillButton
-            scheme={scheme}
-            label={t('pro.home.subscription.cta_renew') as string}
-            variant="outline"
-            size="sm"
-            onPress={() => router.push('/professional/subscription')}
-            fullWidth={false}
-            style={styles.warningCta}
-            testID="pro.home.subscriptionRenewCta"
-          />
-        </DsCard>
-      ) : null}
-
-      {isWriteLocked && !offlineDisplay.showOfflineBanner ? (
-        <DsCard scheme={scheme} testID="pro.home.entitlementLock">
-          <Text style={[styles.errorText, { color: theme.color.danger }]}>
-            {t('pro.home.entitlement_lock')}
-          </Text>
-        </DsCard>
-      ) : null}
-
-      <View
-        style={[styles.dashboardColumns, usesDesktopLayout ? styles.dashboardColumnsDesktop : null]}
-      >
-        <View
-          style={[styles.primaryColumn, usesDesktopLayout ? styles.primaryColumnDesktop : null]}
-          testID="pro.home.primaryColumn"
-        >
-          <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
-            {t('pro.home.overview')}
-          </Text>
-          <View style={styles.statsRow}>
-            <SummaryLinkCard
-              label={t('pro.home.active_students') as string}
-              value={activeStudentLabel}
-              scheme={scheme}
-              iconName="groups"
-              onPress={() => router.push('/(tabs)/students')}
-              testID="pro.home.activeStudents"
-            />
-            <SummaryLinkCard
-              label={t('pro.home.connection_requests') as string}
-              value={pendingConnectionLabel}
-              scheme={scheme}
-              iconName="person-add-alt-1"
-              onPress={() => router.push('/professional/pending')}
-              testID="pro.home.pendingConnections"
-            />
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
-              {t('pro.home.needs_attention')}
-            </Text>
-            {attentionState.hasLoadError ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={reloadAttention}
-                style={({ pressed }) => [styles.retryLink, pressed ? styles.pressed : null]}
-                testID="pro.home.attentionRetry"
-              >
-                <MaterialIcons name="refresh" size={16} color={theme.color.accentPrimary} />
-                <Text style={[styles.retryLinkText, { color: theme.color.accentPrimary }]}>
-                  {t('common.error.retry')}
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-
-          {attentionState.hasConnectionRequests ? (
-            <TaskCard
-              scheme={scheme}
-              iconName="person-add-alt-1"
-              title={t('pro.home.connection_requests') as string}
-              body={(t('pro.home.connection_requests_body') as string).replace(
-                '{count}',
-                String(pendingConnections.length),
-              )}
-              cta={t('pro.home.cta_pending') as string}
-              onPress={() => router.push('/professional/pending')}
-              testID="pro.home.connectionRequestTask"
-            />
-          ) : null}
-
-          {attentionState.hasPlanChangeRequests && planChangeNotification.latestRequest ? (
-            <TaskCard
-              scheme={scheme}
-              iconName="notifications-active"
-              title={t('pro.home.plan_change_notification.title') as string}
-              body={(t('pro.home.plan_change_notification.body') as string)
-                .replace('{count}', String(planChangeNotification.pendingCount))
-                .replace('{studentUid}', planChangeNotification.latestRequest.studentUid)}
-              cta={t('pro.home.plan_change_notification.cta') as string}
-              onPress={() => {
-                router.push(
-                  `/professional/student-profile?studentId=${encodeURIComponent(
-                    planChangeNotification.latestRequest?.studentUid ?? '',
-                  )}`,
-                );
-              }}
-              testID="pro.home.planChangeNotification"
-            />
-          ) : null}
-
-          {attentionState.showAllCaughtUp ? (
-            <DsCard
-              scheme={scheme}
-              variant="muted"
-              style={styles.clearCard}
-              testID="pro.home.allCaughtUp"
-            >
-              <View style={[styles.clearIcon, { backgroundColor: theme.color.successSoft }]}>
-                <MaterialIcons name="done-all" size={20} color={theme.color.success} />
-              </View>
-              <View style={styles.clearCopy}>
-                <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
-                  {t('pro.home.all_caught_up_title')}
-                </Text>
-                <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
-                  {t('pro.home.all_caught_up_body')}
-                </Text>
-              </View>
-            </DsCard>
-          ) : null}
-
-          {attentionState.isLoading && !attentionState.hasAnyAttention ? (
-            <DsCard
-              scheme={scheme}
-              variant="muted"
-              style={styles.loadingCard}
-              testID="pro.home.attentionLoading"
-            >
-              <ActivityIndicator color={theme.color.accentPrimary} />
-              <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
-                {t('pro.home.attention_loading')}
-              </Text>
-            </DsCard>
-          ) : null}
-
-          {attentionState.hasLoadError ? (
-            <DsCard
-              scheme={scheme}
-              variant="warning"
-              style={styles.inlineIssue}
-              testID="pro.home.attentionError"
-            >
-              <MaterialIcons name="info-outline" size={18} color={theme.color.warning} />
+              <MaterialIcons
+                name={subState.isPreLapseWarningVisible ? 'warning-amber' : 'verified-user'}
+                size={16}
+                color={
+                  subState.isPreLapseWarningVisible
+                    ? theme.color.warning
+                    : theme.color.accentPrimary
+                }
+              />
               <Text
                 style={[
-                  styles.cardSubtitle,
-                  styles.inlineIssueText,
-                  { color: theme.color.textPrimary },
-                ]}
-              >
-                {t('pro.home.attention_error')}
-              </Text>
-            </DsCard>
-          ) : null}
-
-          <Text
-            style={[styles.sectionTitle, styles.manageTitle, { color: theme.color.textPrimary }]}
-          >
-            {t('pro.home.manage')}
-          </Text>
-          <View
-            style={[
-              styles.quickActionsGrid,
-              usesDesktopLayout ? styles.quickActionsGridDesktop : null,
-            ]}
-          >
-            <QuickActionCard
-              scheme={scheme}
-              iconName="groups"
-              label={t('pro.home.cta_roster') as string}
-              onPress={() => router.push('/(tabs)/students')}
-              usesGridLayout={usesDesktopLayout}
-              testID="pro.home.rosterCta"
-            />
-            {canUseNutrition ? (
-              <QuickActionCard
-                scheme={scheme}
-                iconName="restaurant-menu"
-                label={t('pro.home.cta_nutrition') as string}
-                onPress={() => router.push('/professional/nutrition')}
-                usesGridLayout={usesDesktopLayout}
-                testID="pro.home.nutritionCta"
-              />
-            ) : null}
-            <QuickActionCard
-              scheme={scheme}
-              iconName="fitness-center"
-              label={t('pro.home.cta_training') as string}
-              onPress={() => router.push('/professional/training')}
-              usesGridLayout={usesDesktopLayout}
-              testID="pro.home.trainingCta"
-            />
-          </View>
-        </View>
-
-        <View
-          style={[styles.secondaryColumn, usesDesktopLayout ? styles.secondaryColumnDesktop : null]}
-          testID="pro.home.secondaryColumn"
-        >
-          <DsCard
-            scheme={scheme}
-            testID="pro.home.inviteCodeCard"
-            style={styles.inviteCard}
-            variant="muted"
-          >
-            <View style={styles.cardHeader}>
-              <View
-                style={[
-                  styles.cardHeaderIconWrap,
+                  styles.contextPillText,
                   {
-                    backgroundColor: theme.color.accentPrimarySoft,
-                    borderColor: theme.color.accentPrimary,
+                    color: subState.isPreLapseWarningVisible
+                      ? theme.color.warning
+                      : theme.color.accentPrimary,
                   },
                 ]}
               >
-                <MaterialIcons name="group-add" size={18} color={theme.color.accentPrimary} />
-              </View>
-              <View style={styles.cardHeaderCopy}>
-                <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
-                  {t('pro.home.invite_code.title')}
-                </Text>
-                <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
-                  {t('pro.home.invite_code.careful_sharing')}
-                </Text>
-              </View>
+                {subState.isPreLapseWarningVisible
+                  ? t('pro.subscription.pre_lapse.title')
+                  : t('pro.subscription.cap_usage')
+                      .replace('{count}', activeStudentLabel)
+                      .replace('{limit}', '10')}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {offlineDisplay.showOfflineBanner ? (
+          <DsOfflineBanner
+            scheme={scheme}
+            text={buildOfflineText(offlineDisplay.staleElapsed, t)}
+            testID="pro.home.offlineBanner"
+          />
+        ) : null}
+
+        {subState.isPreLapseWarningVisible ? (
+          <DsCard
+            scheme={scheme}
+            variant="warning"
+            testID="pro.home.subscriptionWarning"
+            style={styles.warningBanner}
+          >
+            <Text style={[styles.warningText, { color: theme.color.textPrimary }]}>
+              {t('pro.home.subscription.warning')}
+            </Text>
+            <DsPillButton
+              scheme={scheme}
+              label={t('pro.home.subscription.cta_renew')}
+              variant="outline"
+              size="sm"
+              onPress={() => router.push('/professional/subscription')}
+              fullWidth={false}
+              style={styles.warningCta}
+              testID="pro.home.subscriptionRenewCta"
+            />
+          </DsCard>
+        ) : null}
+
+        {isWriteLocked && !offlineDisplay.showOfflineBanner ? (
+          <DsCard scheme={scheme} testID="pro.home.entitlementLock">
+            <Text style={[styles.errorText, { color: theme.color.danger }]}>
+              {t('pro.home.entitlement_lock')}
+            </Text>
+          </DsCard>
+        ) : null}
+
+        <View
+          style={[
+            styles.dashboardColumns,
+            usesDesktopLayout ? styles.dashboardColumnsDesktop : null,
+          ]}
+        >
+          <View
+            style={[styles.primaryColumn, usesDesktopLayout ? styles.primaryColumnDesktop : null]}
+            testID="pro.home.primaryColumn"
+          >
+            <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+              {t('pro.home.overview')}
+            </Text>
+            <View style={styles.statsRow}>
+              <SummaryLinkCard
+                label={t('pro.home.active_students')}
+                value={activeStudentLabel}
+                scheme={scheme}
+                iconName="groups"
+                onPress={() => router.push('/(tabs)/students')}
+                testID="pro.home.activeStudents"
+              />
+              <SummaryLinkCard
+                label={t('pro.home.connection_requests')}
+                value={pendingConnectionLabel}
+                scheme={scheme}
+                iconName="person-add-alt-1"
+                onPress={() => router.push('/professional/pending')}
+                testID="pro.home.pendingConnections"
+              />
             </View>
 
-            {codeState.kind === 'loading' ? (
-              <ActivityIndicator
-                testID="pro.home.inviteCodeLoading"
-                accessibilityLabel={t('a11y.loading.invite_code') as string}
-                color={theme.color.accentPrimary}
-              />
-            ) : codeState.kind === 'ready' ? (
-              <>
-                {codeValue ? (
-                  <Text
-                    style={[styles.inviteCode, { color: theme.color.accentPrimary }]}
-                    testID="pro.home.inviteCodeValue"
-                    accessibilityLabel={`${t('pro.home.invite_code.title')}: ${codeValue}`}
-                  >
-                    {codeValue}
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
+                {t('pro.home.needs_attention')}
+              </Text>
+              {attentionState.hasLoadError ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={reloadAttention}
+                  style={({ pressed }) => [styles.retryLink, pressed ? styles.pressed : null]}
+                  testID="pro.home.attentionRetry"
+                >
+                  <MaterialIcons name="refresh" size={16} color={theme.color.accentPrimary} />
+                  <Text style={[styles.retryLinkText, { color: theme.color.accentPrimary }]}>
+                    {t('common.error.retry')}
                   </Text>
-                ) : (
-                  <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
-                    {t('pro.home.invite_code.empty')}
-                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {attentionState.hasConnectionRequests ? (
+              <TaskCard
+                scheme={scheme}
+                iconName="person-add-alt-1"
+                title={t('pro.home.connection_requests')}
+                body={(t('pro.home.connection_requests_body')).replace(
+                  '{count}',
+                  String(pendingConnections.length),
                 )}
+                cta={t('pro.home.cta_pending')}
+                onPress={() => router.push('/professional/pending')}
+                testID="pro.home.connectionRequestTask"
+              />
+            ) : null}
 
-                {rotateSuccess ? (
-                  <Text
-                    accessibilityLiveRegion="polite"
-                    style={[styles.successText, { color: theme.color.success }]}
-                    testID="pro.home.rotateCodeSuccess"
-                  >
-                    {t('pro.home.invite_code.rotate_success')}
+            {attentionState.hasPlanChangeRequests && planChangeNotification.latestRequest ? (
+              <TaskCard
+                scheme={scheme}
+                iconName="notifications-active"
+                title={t('pro.home.plan_change_notification.title')}
+                body={(t('pro.home.plan_change_notification.body'))
+                  .replace('{count}', String(planChangeNotification.pendingCount))
+                  .replace('{studentUid}', planChangeNotification.latestRequest.studentUid)}
+                cta={t('pro.home.plan_change_notification.cta')}
+                onPress={() => {
+                  router.push(
+                    `/professional/student-profile?studentId=${encodeURIComponent(
+                      planChangeNotification.latestRequest?.studentUid ?? '',
+                    )}`,
+                  );
+                }}
+                testID="pro.home.planChangeNotification"
+              />
+            ) : null}
+
+            {attentionState.showAllCaughtUp ? (
+              <DsCard
+                scheme={scheme}
+                variant="muted"
+                style={styles.clearCard}
+                testID="pro.home.allCaughtUp"
+              >
+                <View style={[styles.clearIcon, { backgroundColor: theme.color.successSoft }]}>
+                  <MaterialIcons name="done-all" size={20} color={theme.color.success} />
+                </View>
+                <View style={styles.clearCopy}>
+                  <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
+                    {t('pro.home.all_caught_up_title')}
                   </Text>
-                ) : null}
-
-                {rotateError ? (
-                  <Text style={[styles.errorText, { color: theme.color.danger }]}>
-                    {rotateError}
+                  <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
+                    {t('pro.home.all_caught_up_body')}
                   </Text>
-                ) : null}
+                </View>
+              </DsCard>
+            ) : null}
 
-                <View style={styles.codeActionsRow}>
+            {attentionState.isLoading && !attentionState.hasAnyAttention ? (
+              <DsCard
+                scheme={scheme}
+                variant="muted"
+                style={styles.loadingCard}
+                testID="pro.home.attentionLoading"
+              >
+                <ActivityIndicator color={theme.color.accentPrimary} />
+                <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
+                  {t('pro.home.attention_loading')}
+                </Text>
+              </DsCard>
+            ) : null}
+
+            {attentionState.hasLoadError ? (
+              <DsCard
+                scheme={scheme}
+                variant="warning"
+                style={styles.inlineIssue}
+                testID="pro.home.attentionError"
+              >
+                <MaterialIcons name="info-outline" size={18} color={theme.color.warning} />
+                <Text
+                  style={[
+                    styles.cardSubtitle,
+                    styles.inlineIssueText,
+                    { color: theme.color.textPrimary },
+                  ]}
+                >
+                  {t('pro.home.attention_error')}
+                </Text>
+              </DsCard>
+            ) : null}
+
+            <Text
+              style={[styles.sectionTitle, styles.manageTitle, { color: theme.color.textPrimary }]}
+            >
+              {t('pro.home.manage')}
+            </Text>
+            <View
+              style={[
+                styles.quickActionsGrid,
+                usesDesktopLayout ? styles.quickActionsGridDesktop : null,
+              ]}
+            >
+              <QuickActionCard
+                scheme={scheme}
+                iconName="groups"
+                label={t('pro.home.cta_roster')}
+                onPress={() => router.push('/(tabs)/students')}
+                usesGridLayout={usesDesktopLayout}
+                testID="pro.home.rosterCta"
+              />
+              {canUseNutrition ? (
+                <QuickActionCard
+                  scheme={scheme}
+                  iconName="restaurant-menu"
+                  label={t('pro.home.cta_nutrition')}
+                  onPress={() => router.push('/professional/nutrition')}
+                  usesGridLayout={usesDesktopLayout}
+                  testID="pro.home.nutritionCta"
+                />
+              ) : null}
+              <QuickActionCard
+                scheme={scheme}
+                iconName="fitness-center"
+                label={t('pro.home.cta_training')}
+                onPress={() => router.push('/professional/training')}
+                usesGridLayout={usesDesktopLayout}
+                testID="pro.home.trainingCta"
+              />
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.secondaryColumn,
+              usesDesktopLayout ? styles.secondaryColumnDesktop : null,
+            ]}
+            testID="pro.home.secondaryColumn"
+          >
+            <DsCard
+              scheme={scheme}
+              testID="pro.home.inviteCodeCard"
+              style={styles.inviteCard}
+              variant="muted"
+            >
+              <View style={styles.cardHeader}>
+                <View
+                  style={[
+                    styles.cardHeaderIconWrap,
+                    {
+                      backgroundColor: theme.color.accentPrimarySoft,
+                      borderColor: theme.color.accentPrimary,
+                    },
+                  ]}
+                >
+                  <MaterialIcons name="group-add" size={18} color={theme.color.accentPrimary} />
+                </View>
+                <View style={styles.cardHeaderCopy}>
+                  <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>
+                    {t('pro.home.invite_code.title')}
+                  </Text>
+                  <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>
+                    {t('pro.home.invite_code.careful_sharing')}
+                  </Text>
+                </View>
+              </View>
+
+              {codeState.kind === 'loading' ? (
+                <ActivityIndicator
+                  testID="pro.home.inviteCodeLoading"
+                  accessibilityLabel={t('a11y.loading.invite_code')}
+                  color={theme.color.accentPrimary}
+                />
+              ) : codeState.kind === 'ready' ? (
+                <>
                   {codeValue ? (
+                    <Text
+                      style={[styles.inviteCode, { color: theme.color.accentPrimary }]}
+                      testID="pro.home.inviteCodeValue"
+                      accessibilityLabel={`${t('pro.home.invite_code.title')}: ${codeValue}`}
+                    >
+                      {codeValue}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
+                      {t('pro.home.invite_code.empty')}
+                    </Text>
+                  )}
+
+                  {rotateSuccess ? (
+                    <Text
+                      accessibilityLiveRegion="polite"
+                      style={[styles.successText, { color: theme.color.success }]}
+                      testID="pro.home.rotateCodeSuccess"
+                    >
+                      {t('pro.home.invite_code.rotate_success')}
+                    </Text>
+                  ) : null}
+
+                  {rotateError ? (
+                    <Text style={[styles.errorText, { color: theme.color.danger }]}>
+                      {rotateError}
+                    </Text>
+                  ) : null}
+
+                  {isInviteCodeWriteLocked ? (
+                    <Text
+                      style={[styles.meta, { color: theme.color.textSecondary }]}
+                      testID="pro.home.rotateCodeOfflineLock"
+                    >
+                      {t('offline.write_lock')}
+                    </Text>
+                  ) : null}
+
+                  <View style={styles.codeActionsRow}>
+                    {codeValue ? (
+                      <DsPillButton
+                        scheme={scheme}
+                        variant="primary"
+                        size="xs"
+                        label={t('pro.home.invite_code.share')}
+                        onPress={() => {
+                          void handleShareCode(codeValue);
+                        }}
+                        fullWidth={false}
+                        style={styles.outlineButtonCompact}
+                        testID="pro.home.shareCodeCta"
+                      />
+                    ) : null}
+
                     <DsPillButton
                       scheme={scheme}
                       variant="primary"
                       size="xs"
-                      label={t('pro.home.invite_code.share') as string}
-                      onPress={() => {
-                        void handleShareCode(codeValue);
-                      }}
+                      label={t('pro.home.invite_code.rotate')}
+                      onPress={openRotateConfirmation}
+                      disabled={isRotating || isInviteCodeWriteLocked}
                       fullWidth={false}
                       style={styles.outlineButtonCompact}
-                      testID="pro.home.shareCodeCta"
+                      testID="pro.home.rotateCodeCta"
                     />
-                  ) : null}
-
+                  </View>
+                </>
+              ) : codeState.kind === 'error' ? (
+                <Text style={[styles.errorText, { color: theme.color.danger }]}>
+                  {t('pro.home.error')}
+                </Text>
+              ) : specialtiesState.kind === 'loading' ? (
+                <ActivityIndicator color={theme.color.accentPrimary} />
+              ) : (
+                <View style={styles.inviteSetup} testID="pro.home.inviteSpecialtyRequired">
+                  <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
+                    {t('pro.home.invite_code.specialty_required')}
+                  </Text>
                   <DsPillButton
                     scheme={scheme}
-                    variant="primary"
+                    variant="outline"
                     size="xs"
-                    label={t('pro.home.invite_code.rotate') as string}
-                    onPress={openRotateConfirmation}
-                    disabled={isRotating}
+                    label={t('pro.home.invite_code.add_specialty')}
+                    onPress={() => router.push('/professional/specialty')}
                     fullWidth={false}
-                    style={styles.outlineButtonCompact}
-                    testID="pro.home.rotateCodeCta"
+                    testID="pro.home.inviteSpecialtyCta"
                   />
                 </View>
-              </>
-            ) : codeState.kind === 'error' ? (
-              <Text style={[styles.errorText, { color: theme.color.danger }]}>
-                {t('pro.home.error')}
-              </Text>
-            ) : specialtiesState.kind === 'loading' ? (
-              <ActivityIndicator color={theme.color.accentPrimary} />
-            ) : (
-              <View style={styles.inviteSetup} testID="pro.home.inviteSpecialtyRequired">
-                <Text style={[styles.meta, { color: theme.color.textSecondary }]}>
-                  {t('pro.home.invite_code.specialty_required')}
-                </Text>
-                <DsPillButton
-                  scheme={scheme}
-                  variant="outline"
-                  size="xs"
-                  label={t('pro.home.invite_code.add_specialty') as string}
-                  onPress={() => router.push('/professional/specialty')}
-                  fullWidth={false}
-                  testID="pro.home.inviteSpecialtyCta"
+              )}
+            </DsCard>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/professional/subscription')}
+              style={({ pressed }) => [
+                styles.subscriptionCard,
+                { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+                pressed ? styles.pressed : null,
+              ]}
+              testID="pro.home.subscriptionCta"
+            >
+              <View
+                style={[
+                  styles.subscriptionIcon,
+                  { backgroundColor: theme.color.accentPrimarySoft },
+                ]}
+              >
+                <MaterialIcons
+                  name="workspace-premium"
+                  size={22}
+                  color={theme.color.accentPrimary}
                 />
               </View>
-            )}
-          </DsCard>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/professional/subscription')}
-            style={({ pressed }) => [
-              styles.subscriptionCard,
-              { backgroundColor: theme.color.surface, borderColor: theme.color.border },
-              pressed ? styles.pressed : null,
-            ]}
-            testID="pro.home.subscriptionCta"
-          >
-            <View
-              style={[styles.subscriptionIcon, { backgroundColor: theme.color.accentPrimarySoft }]}
-            >
-              <MaterialIcons name="workspace-premium" size={22} color={theme.color.accentPrimary} />
-            </View>
-            <View style={styles.subscriptionContent}>
-              <Text style={[styles.subscriptionTitle, { color: theme.color.textPrimary }]}>
-                {t('pro.subscription.title')}
-              </Text>
-              <Text style={[styles.subscriptionSubtitle, { color: theme.color.textSecondary }]}>
-                {isActiveStudentCountKnown
-                  ? t('pro.subscription.cap_usage')
-                      .replace('{count}', activeStudentLabel)
-                      .replace('{limit}', '10')
-                  : t('pro.home.subscription_status_unknown')}
-              </Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color={theme.color.textTertiary} />
-          </Pressable>
+              <View style={styles.subscriptionContent}>
+                <Text style={[styles.subscriptionTitle, { color: theme.color.textPrimary }]}>
+                  {t('pro.subscription.title')}
+                </Text>
+                <Text style={[styles.subscriptionSubtitle, { color: theme.color.textSecondary }]}>
+                  {isActiveStudentCountKnown
+                    ? t('pro.subscription.cap_usage')
+                        .replace('{count}', activeStudentLabel)
+                        .replace('{limit}', '10')
+                    : t('pro.home.subscription_status_unknown')}
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={theme.color.textTertiary} />
+            </Pressable>
+          </View>
         </View>
-      </View>
       </DsScreen>
       <InviteCodeRotationModal
         errorMessage={rotateError}
@@ -696,15 +722,15 @@ function buildOfflineText(
   t: ReturnType<typeof useTranslation>['t'],
 ): string {
   if (!staleElapsed) {
-    return t('offline.banner') as string;
+    return t('offline.banner');
   }
 
   const stalePart =
     staleElapsed.unit === 'minutes'
-      ? (t('offline.stale_minutes') as string).replace('{value}', String(staleElapsed.value))
+      ? (t('offline.stale_minutes')).replace('{value}', String(staleElapsed.value))
       : staleElapsed.unit === 'hours'
-        ? (t('offline.stale_hours') as string).replace('{value}', String(staleElapsed.value))
-        : (t('offline.stale_days') as string).replace('{value}', String(staleElapsed.value));
+        ? (t('offline.stale_hours')).replace('{value}', String(staleElapsed.value))
+        : (t('offline.stale_days')).replace('{value}', String(staleElapsed.value));
 
   return `${t('offline.banner')} • ${stalePart}`;
 }

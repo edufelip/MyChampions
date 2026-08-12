@@ -20,7 +20,7 @@ test.describe('@critical @feature:professional invite-code rotation', () => {
     page,
   }, testInfo) => {
     const analyticsEvents: { name?: string; properties?: Record<string, unknown> }[] = [];
-    await page.route('http://127.0.0.1:8101/analytics/events', async (route) => {
+    await page.route('**/analytics/events', async (route) => {
       analyticsEvents.push(route.request().postDataJSON() as (typeof analyticsEvents)[number]);
       await route.fulfill({ status: 202, body: JSON.stringify({ accepted: true }) });
     });
@@ -34,6 +34,7 @@ test.describe('@critical @feature:professional invite-code rotation', () => {
     await page.getByTestId('pro.home.rotateCodeCta').click();
     const modal = page.getByTestId('pro.home.rotateCodeModal');
     await expect(modal).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Regenerate invite code?' })).toBeVisible();
     await expect(modal).toContainText('Your current code will be invalidated');
     await expect
       .poll(() =>
@@ -65,25 +66,54 @@ test.describe('@critical @feature:professional invite-code rotation', () => {
       path: testInfo.outputPath('invite-code-rotation-success-mobile-412.png'),
     });
 
-    if (process.env.ET97_EXPECT_ANALYTICS === '1') {
-      await expect
-        .poll(() => analyticsEvents.map((event) => event.name))
-        .toEqual(
-          expect.arrayContaining([
-            'invite.rotation.requested',
-            'invite.rotation.canceled',
-            'invite.rotation.succeeded',
-          ]),
-        );
-      expect(JSON.stringify(analyticsEvents)).not.toContain(oldCode as string);
-      const rotationRequests = analyticsEvents.filter(
-        (event) => event.name === 'invite.rotation.requested',
+    await expect
+      .poll(() => analyticsEvents.map((event) => event.name))
+      .toEqual(
+        expect.arrayContaining([
+          'invite.rotation.requested',
+          'invite.rotation.canceled',
+          'invite.rotation.succeeded',
+        ]),
       );
-      const rotationSuccesses = analyticsEvents.filter(
-        (event) => event.name === 'invite.rotation.succeeded',
-      );
-      expect(rotationRequests).toHaveLength(2);
-      expect(rotationSuccesses).toHaveLength(1);
-    }
+    expect(JSON.stringify(analyticsEvents)).not.toContain(oldCode as string);
+    const rotationRequests = analyticsEvents.filter(
+      (event) => event.name === 'invite.rotation.requested',
+    );
+    const rotationSuccesses = analyticsEvents.filter(
+      (event) => event.name === 'invite.rotation.succeeded',
+    );
+    expect(rotationRequests).toHaveLength(2);
+    expect(rotationSuccesses).toHaveLength(1);
+  });
+
+  test('blocks invite-code rotation while offline with explicit write-lock feedback', async ({
+    page,
+  }, testInfo) => {
+    const analyticsEvents: { name?: string; properties?: Record<string, unknown> }[] = [];
+    await page.route('**/analytics/events', async (route) => {
+      analyticsEvents.push(route.request().postDataJSON() as (typeof analyticsEvents)[number]);
+      await route.fulfill({ status: 202, body: JSON.stringify({ accepted: true }) });
+    });
+
+    await setUpProfessionalHome(page);
+    await page.evaluate(() => {
+      sessionStorage.setItem('mychampions.e2e.network-status', 'offline');
+      window.dispatchEvent(new Event('mychampions.e2e.network-status-change'));
+    });
+
+    await expect(page.getByTestId('pro.home.screen').last()).toBeVisible();
+    await expect(page.locator('[data-testid="pro.home.offlineBanner"]:visible')).toBeVisible();
+    await expect(page.locator('[data-testid="pro.home.rotateCodeOfflineLock"]:visible')).toHaveText(
+      'Connect to the internet to save changes.',
+    );
+    const rotate = page.locator('[data-testid="pro.home.rotateCodeCta"]:visible');
+    await expect(rotate).toBeDisabled();
+    await expect(page.getByTestId('pro.home.rotateCodeModal')).toHaveCount(0);
+    expect(analyticsEvents.some((event) => event.name === 'invite.rotation.requested')).toBe(false);
+
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath('invite-code-rotation-offline-lock-mobile-390.png'),
+    });
   });
 });

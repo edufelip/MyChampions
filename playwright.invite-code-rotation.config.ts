@@ -1,8 +1,6 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
-process.env.ET97_EXPECT_ANALYTICS = '1';
-
 const artifactRoot = path.resolve('.artifacts/qa-invite-code-rotation');
 
 export default defineConfig({
