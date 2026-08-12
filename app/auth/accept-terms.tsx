@@ -1,10 +1,9 @@
-import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { DsRadius, DsShadow, DsSpace, getDsTheme } from '@/constants/design-system';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { DsRadius, DsShadow, DsSpace, getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -108,8 +107,10 @@ export default function AcceptTermsScreen() {
           </Pressable>
 
           <Pressable
+            accessibilityLabel={t('auth.terms.checkbox')}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: isChecked }}
+            aria-checked={isChecked}
             onPress={() => setIsChecked((prev) => !prev)}
             style={styles.checkboxRow}
             testID="auth.terms.checkbox"
@@ -157,7 +158,7 @@ export default function AcceptTermsScreen() {
             scheme={isDark ? 'dark' : 'light'}
             disabled={!isChecked || submitting}
             loading={submitting}
-            label={t('auth.terms.accept_button') as string}
+            label={t('auth.terms.accept_button')}
             onPress={onAccept}
             style={styles.acceptButton}
             testID={isChecked ? 'auth.terms.acceptButton' : 'auth.terms.acceptButton.disabled'}

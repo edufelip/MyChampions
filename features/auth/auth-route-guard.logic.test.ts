@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   normalizeAuthReturnTo,
   normalizeGuardPathname,
@@ -265,6 +264,17 @@ test('guard allows accept-terms route while terms are pending', () => {
     lockedRole: 'student',
     needsTermsAcceptance: true,
     pathname: '/auth/accept-terms',
+  });
+
+  assert.equal(redirect, null);
+});
+
+test('guard allows the controlled legal webview while terms are pending', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview',
   });
 
   assert.equal(redirect, null);

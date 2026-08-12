@@ -22,6 +22,7 @@
 
 ## Validation Rules
 - Accept button remains disabled until checkbox is checked and uses the shared explicit disabled-control tokens.
+- The consent checkbox exposes its localized accessible name and checked state in native and mobile-web accessibility trees (`aria-checked` on web).
 - Route guard forces authenticated users with pending acceptance to `/auth/accept-terms`.
 - Route guard redirects away from `/auth/accept-terms` once required version is accepted.
 - Terms URL and required version are read from expo `extra.terms` config with documented fallback values.
@@ -39,6 +40,7 @@
 
 ## Edge Cases
 - If legal URL cannot be opened, user sees recoverable link error and can retry.
+- The controlled `/shared/webview` legal handoff remains reachable while the terms gate is pending; returning from it preserves the consent screen state.
 - If profile hydration fails, session keeps terms gate locked (safe default) until retry/refresh succeeds.
 - If accepted version differs from newly required version, gate is shown again.
 
@@ -57,6 +59,8 @@
   - Terms acceptance persistence is MyChampions server-backed (`acceptedTermsVersion` in profile source).
   - Route guard enforces terms gate globally for authenticated sessions.
   - Primary accept action uses `DsPillButton`; foreground and disabled colors are scheme-aware and covered by contrast tests.
+  - Consent checkbox keeps native `accessibilityState` behavior and explicitly serializes its localized label and checked state for React Native Web.
+  - The auth guard allows only the controlled legal webview route during pending acceptance; role-selection and role-home routes remain blocked.
   - Native E2E launches a fresh app instance with Detox synchronization disabled in the launch arguments before each terms case; it does not use `reloadReactNative` across the idling-registry boundary because that corrupts the Android Detox/Espresso registry, and startup analytics cannot block a later synchronization transition.
 
 ## Links

@@ -37,6 +37,10 @@ function isSharedRecipePath(pathname: string): boolean {
   return /^\/shared\/recipes\/[^/?#]+$/.test(pathname);
 }
 
+function isSharedWebviewPath(pathname: string): boolean {
+  return pathname === '/shared/webview';
+}
+
 function encodeReturnTo(pathname: string): string {
   return encodeURIComponent(pathname);
 }
@@ -94,6 +98,10 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   }
 
   if (input.needsTermsAcceptance) {
+    if (isSharedWebviewPath(path)) {
+      return null;
+    }
+
     if (path !== '/auth/accept-terms') {
       const termsReturnTo = currentSharedRecipeReturnTo ?? safeReturnTo;
       return termsReturnTo
