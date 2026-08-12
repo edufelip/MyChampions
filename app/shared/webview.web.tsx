@@ -1,12 +1,12 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
 import { DsSpace, getDsTheme } from '@/constants/design-system';
-import { shareAdapter } from '@/features/platform/share-adapter';
 import {
   allowInsecureLocalhostForDevelopment,
+  EDUWALDO_HTTPS_HOSTNAME,
   resolveSafeExternalUrl,
 } from '@/features/platform/external-url';
+import { shareAdapter } from '@/features/platform/share-adapter';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -17,6 +17,7 @@ export default function WebExternalLinkScreen() {
   const { t } = useTranslation();
   const safeUrl = resolveSafeExternalUrl(url, {
     allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),
+    approvedHttpsHostname: EDUWALDO_HTTPS_HOSTNAME,
   });
 
   return (

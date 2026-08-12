@@ -4,8 +4,17 @@
  *
  * Generic screen to display web content (e.g., Privacy Policy, Terms of Use)
  * within the app using react-native-webview.
+ *
+ * URL contract: `url` is validated by `resolveSafeExternalUrl` before use
+ * (see `@/features/platform/external-url`) — only `https://eduwaldo.com` and
+ * its subdomains are accepted, plus `http://localhost`/`127.0.0.1`/`[::1]`
+ * when running in development. On an invalid `url`, this native screen
+ * renders no UI at all (returns null); the web platform variant
+ * (`webview.web.tsx`) instead renders its own localized invalid-link state,
+ * since it has no separate "screen didn't load" case to fall back to.
  */
 import { useLocalSearchParams, Stack } from 'expo-router';
+import { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -16,9 +25,13 @@ import {
   Linking,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useState } from 'react';
-
 import { getDsTheme, DsRadius, DsSpace } from '@/constants/design-system';
+import {
+  allowInsecureLocalhostForDevelopment,
+  buildOriginWhitelist,
+  EDUWALDO_HTTPS_HOSTNAME,
+  resolveSafeExternalUrl,
+} from '@/features/platform/external-url';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -30,7 +43,16 @@ export default function WebViewScreen() {
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0); // For retry
 
-  if (!url) {
+  // Validate the route param before it ever reaches WebView/Linking. This screen is a
+  // file-based expo-router route and is reachable via the app's own deep-link scheme
+  // (mychampions://shared/webview?url=...), so `url` must not be trusted as-is — the
+  // WebView's `originWhitelist` prop below is not a substitute for this app-level check.
+  const safeUrl = resolveSafeExternalUrl(url, {
+    allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),
+    approvedHttpsHostname: EDUWALDO_HTTPS_HOSTNAME,
+  });
+
+  if (!safeUrl) {
     return null;
   }
 
@@ -49,7 +71,7 @@ export default function WebViewScreen() {
           {t('auth.terms.offline_hint')}
         </Text>
         <Pressable
-          onPress={() => Linking.openURL(url)}
+          onPress={() => Linking.openURL(safeUrl)}
           style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary }]}
         >
           <Text style={[styles.retryText, { color: theme.color.onAccent }]}>
@@ -100,10 +122,10 @@ export default function WebViewScreen() {
         <WebView
           testID="shared.webview.webview"
           key={key}
-          source={{ uri: url }}
+          source={{ uri: safeUrl }}
           style={styles.webview}
           startInLoadingState
-          originWhitelist={['https://portfolio.eduwaldo.com', 'https://*.eduwaldo.com']}
+          originWhitelist={buildOriginWhitelist(EDUWALDO_HTTPS_HOSTNAME)}
           onError={() => setError(true)}
           onHttpError={() => setError(true)}
           renderLoading={() => (
