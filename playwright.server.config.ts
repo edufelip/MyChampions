@@ -1,5 +1,5 @@
-import { defineConfig, devices } from '@playwright/test';
 import path from 'node:path';
+import { defineConfig, devices } from '@playwright/test';
 
 const artifactRoot = path.resolve(
   process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/server-current',
@@ -34,7 +34,7 @@ export default defineConfig({
     },
     {
       command:
-        'CI=1 APP_VARIANT=dev EXPO_PUBLIC_E2E_AUTH_SESSION=false EXPO_PUBLIC_E2E_CREATE_ACCOUNT=false EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN=false EXPO_PUBLIC_E2E_SOCIAL_AUTH=false EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=http://127.0.0.1:3401 yarn web:dev --port 8082 --clear',
+        'CI=1 EXPO_OFFLINE=1 APP_VARIANT=dev EXPO_PUBLIC_E2E_AUTH_SESSION=false EXPO_PUBLIC_E2E_CREATE_ACCOUNT=false EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN=false EXPO_PUBLIC_E2E_SOCIAL_AUTH=false EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=http://127.0.0.1:3401 yarn web:dev --port 8082 --clear',
       url: 'http://127.0.0.1:8082',
       reuseExistingServer: false,
       timeout: 120_000,
