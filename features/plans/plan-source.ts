@@ -3,6 +3,7 @@
  * and plan-change request operations.
  */
 
+import { readE2EPlanFixtureList, writeE2EPlanFixtureList } from './e2e-plan-fixture-storage';
 import {
   normalizePlanChangeRequestStatus,
   normalizePlanType,
@@ -210,6 +211,25 @@ let e2eAssignedPlanSequence = 0;
 let e2ePlanChangeRequestStatus: PlanChangeRequestStatus = 'pending';
 const e2eAssignedPlans: Plan[] = [];
 const e2ePredefinedPlanFixtures: PredefinedPlan[] = [];
+let hydratedE2EPlanSourceScope: string | null = null;
+
+function hydrateE2EPlanSourceFixtures(scope: string): void {
+  if (hydratedE2EPlanSourceScope === scope) return;
+
+  e2eAssignedPlans.length = 0;
+  e2ePredefinedPlanFixtures.length = 0;
+
+  e2eAssignedPlans.push(...readE2EPlanFixtureList<Plan>(scope, 'assigned-plans'));
+  e2ePredefinedPlanFixtures.push(
+    ...readE2EPlanFixtureList<PredefinedPlan>(scope, 'predefined-plans'),
+  );
+  hydratedE2EPlanSourceScope = scope;
+}
+
+function persistE2EPlanSourceFixtures(scope: string): void {
+  writeE2EPlanFixtureList(scope, 'assigned-plans', e2eAssignedPlans);
+  writeE2EPlanFixtureList(scope, 'predefined-plans', e2ePredefinedPlanFixtures);
+}
 const E2E_ASSIGNED_NUTRITION_PLAN: Plan = {
   id: 'e2e-assigned-nutrition-plan',
   planType: 'nutrition',
@@ -247,6 +267,7 @@ function getE2EPredefinedPlans(): PredefinedPlan[] | null {
   const override = getE2EPlanSourceOverride();
   if (!override) return null;
   if (process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE !== 'basic') return [];
+  hydrateE2EPlanSourceFixtures(override.uid);
 
   return [
     {
@@ -272,6 +293,9 @@ function getE2EPredefinedPlans(): PredefinedPlan[] | null {
 function getE2EAssignedPlanFixtures(): Plan[] | null {
   const override = getE2EPlanSourceOverride();
   if (!override) return null;
+  if (process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE === 'basic') {
+    hydrateE2EPlanSourceFixtures(override.uid);
+  }
   const assignedPlans =
     process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE === 'basic'
       ? e2eAssignedPlans.map(cloneE2EPlan)
@@ -351,6 +375,8 @@ export function updateE2EAssignedPlanFixture(
     ...(updates.isDraft !== undefined ? { isDraft: updates.isDraft } : {}),
     updatedAt: updates.updatedAt ?? nowIso(),
   };
+  const override = getE2EPlanSourceOverride();
+  if (override) persistE2EPlanSourceFixtures(override.uid);
   return true;
 }
 
@@ -365,6 +391,8 @@ export function removeE2EAssignedPlanFixture(
   if (planIndex < 0) return false;
 
   e2eAssignedPlans.splice(planIndex, 1);
+  const override = getE2EPlanSourceOverride();
+  if (override) persistE2EPlanSourceFixtures(override.uid);
   return true;
 }
 
@@ -378,6 +406,8 @@ export function upsertE2EPredefinedPlanFixture(plan: PredefinedPlan): boolean | 
   } else {
     e2ePredefinedPlanFixtures.push(cloneE2EPredefinedPlan(plan));
   }
+  const override = getE2EPlanSourceOverride();
+  if (override) persistE2EPlanSourceFixtures(override.uid);
   return true;
 }
 
@@ -391,6 +421,8 @@ export function removeE2EPredefinedPlanFixture(
   );
   if (existingIndex < 0) return false;
   e2ePredefinedPlanFixtures.splice(existingIndex, 1);
+  const override = getE2EPlanSourceOverride();
+  if (override) persistE2EPlanSourceFixtures(override.uid);
   return true;
 }
 
@@ -404,6 +436,8 @@ export function upsertE2EMyPlanFixture(plan: Plan): boolean | undefined {
   } else {
     e2eAssignedPlans.push(cloneE2EPlan(plan));
   }
+  const override = getE2EPlanSourceOverride();
+  if (override) persistE2EPlanSourceFixtures(override.uid);
   return true;
 }
 

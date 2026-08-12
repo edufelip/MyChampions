@@ -803,6 +803,7 @@ export const enUS = {
   'pro.plan.draft.no': 'No, start over',
   'pro.plan.session.field.name.placeholder': 'e.g. Day A — Upper Body',
   'pro.plan.session.field.notes.label': 'Session notes (optional)',
+  'pro.plan.session.validation.name_required': 'Session name is required.',
   'pro.plan.item.field.name.label': 'Exercise / item name',
   'pro.plan.item.field.name.placeholder': 'e.g. Bench Press',
   'pro.plan.item.field.quantity.label': 'Quantity (optional)',

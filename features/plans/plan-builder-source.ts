@@ -3,10 +3,25 @@
  * starter templates, and food search service integration.
  */
 
+import { readE2EPlanFixtureList, writeE2EPlanFixtureList } from './e2e-plan-fixture-storage';
+import {
+  deriveStarterTemplatePlanType,
+  coalesceTemplateDescription,
+  calculateTotalsFromMeals,
+  resolveNutritionPlanCreationMetadata,
+  resolveTrainingPlanCreationMetadata,
+} from './plan-builder.logic';
+import {
+  getE2EAssignedPlanFixture,
+  removeE2EPredefinedPlanFixture,
+  removeE2EAssignedPlanFixture,
+  updateE2EAssignedPlanFixture,
+  upsertE2EMyPlanFixture,
+  upsertE2EPredefinedPlanFixture,
+} from './plan-source';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { searchFoodsFromSource } from '../nutrition/food-search-source';
-
 import type {
   NutritionPlanInput,
   NutritionPlanCreationMode,
@@ -23,22 +38,7 @@ import type {
   StarterTemplate,
   FoodSearchResult,
 } from './plan-builder.logic';
-import {
-  deriveStarterTemplatePlanType,
-  coalesceTemplateDescription,
-  calculateTotalsFromMeals,
-  resolveNutritionPlanCreationMetadata,
-  resolveTrainingPlanCreationMetadata,
-} from './plan-builder.logic';
 import type { PlanType } from './plan-change-request.logic';
-import {
-  getE2EAssignedPlanFixture,
-  removeE2EPredefinedPlanFixture,
-  removeE2EAssignedPlanFixture,
-  updateE2EAssignedPlanFixture,
-  upsertE2EMyPlanFixture,
-  upsertE2EPredefinedPlanFixture,
-} from './plan-source';
 
 // ─── Error types ──────────────────────────────────────────────────────────────
 
@@ -208,7 +208,7 @@ function parseServerNutritionPlanDetail(raw: unknown): NutritionPlanDetail | nul
     carbsTarget: typeof value.carbsTarget === 'number' ? value.carbsTarget : 0,
     proteinsTarget: typeof value.proteinsTarget === 'number' ? value.proteinsTarget : 0,
     fatsTarget: typeof value.fatsTarget === 'number' ? value.fatsTarget : 0,
-    meals: value.meals as NutritionMeal[],
+    meals: value.meals,
     isDraft: value.isDraft || undefined,
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
@@ -239,7 +239,7 @@ function parseServerTrainingPlanDetail(raw: unknown): TrainingPlanDetail | null 
     ownerProfessionalUid:
       typeof value.ownerProfessionalUid === 'string' ? value.ownerProfessionalUid : null,
     studentAuthUid: value.studentAuthUid,
-    sessions: value.sessions as TrainingSession[],
+    sessions: value.sessions,
     isDraft: value.isDraft || undefined,
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
@@ -322,7 +322,7 @@ function parseServerNutritionMeal(raw: unknown): NutritionMeal | null {
   return {
     id: value.id,
     name: value.name,
-    items: value.items as NutritionMealItem[],
+    items: value.items,
   };
 }
 
@@ -368,7 +368,7 @@ function parseServerTrainingSession(raw: unknown): TrainingSession | null {
     id: value.id,
     name: value.name,
     notes: value.notes,
-    items: value.items as TrainingSessionItem[],
+    items: value.items,
   };
 }
 
@@ -1182,14 +1182,74 @@ let e2eNutritionItemSequence = 0;
 const e2eNutritionPlanDetails: NutritionPlanDetail[] = [];
 let e2eTrainingPlanSequence = 0;
 const e2eTrainingPlanDetails: TrainingPlanDetail[] = [];
+let hydratedE2EPlanBuilderScope: string | null = null;
+
+function hydrateE2EPlanBuilderFixtures(scope: string): void {
+  if (hydratedE2EPlanBuilderScope === scope) return;
+
+  e2eNutritionPlanDetails.length = 0;
+  e2eTrainingPlanDetails.length = 0;
+  e2eNutritionPlanSequence = 0;
+  e2eNutritionMealSequence = 0;
+  e2eNutritionItemSequence = 0;
+  e2eTrainingPlanSequence = 0;
+
+  e2eNutritionPlanDetails.push(
+    ...readE2EPlanFixtureList<NutritionPlanDetail>(scope, 'nutrition-details'),
+  );
+  e2eTrainingPlanDetails.push(
+    ...readE2EPlanFixtureList<TrainingPlanDetail>(scope, 'training-details'),
+  );
+
+  e2eNutritionPlanSequence = Math.max(
+    e2eNutritionPlanSequence,
+    ...e2eNutritionPlanDetails.map((plan) =>
+      extractE2ESequence(plan.id, 'e2e-nutrition-builder-plan-'),
+    ),
+  );
+  e2eNutritionMealSequence = Math.max(
+    e2eNutritionMealSequence,
+    ...e2eNutritionPlanDetails.flatMap((plan) =>
+      plan.meals.map((meal) => extractE2ESequence(meal.id, 'e2e-nutrition-meal-')),
+    ),
+  );
+  e2eNutritionItemSequence = Math.max(
+    e2eNutritionItemSequence,
+    ...e2eNutritionPlanDetails.flatMap((plan) =>
+      plan.meals.flatMap((meal) =>
+        meal.items.map((item) => extractE2ESequence(item.id, 'e2e-nutrition-item-')),
+      ),
+    ),
+  );
+  e2eTrainingPlanSequence = Math.max(
+    e2eTrainingPlanSequence,
+    ...e2eTrainingPlanDetails.map((plan) =>
+      extractE2ESequence(plan.id, 'e2e-training-builder-plan-'),
+    ),
+  );
+  hydratedE2EPlanBuilderScope = scope;
+}
+
+function extractE2ESequence(id: string, prefix: string): number {
+  if (!id.startsWith(prefix)) return 0;
+  const sequence = Number(id.slice(prefix.length));
+  return Number.isFinite(sequence) ? sequence : 0;
+}
+
+function persistE2EPlanBuilderFixtures(scope: string): void {
+  writeE2EPlanFixtureList(scope, 'nutrition-details', e2eNutritionPlanDetails);
+  writeE2EPlanFixtureList(scope, 'training-details', e2eTrainingPlanDetails);
+}
 
 function getE2EPlanBuilderOverride() {
   if (process.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE !== 'basic') return null;
-  return resolveE2EAuthSessionSourceOverride({
+  const override = resolveE2EAuthSessionSourceOverride({
     appVariant: process.env.APP_VARIANT,
     enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
     isDev: typeof __DEV__ !== 'undefined' && __DEV__,
   });
+  if (override) hydrateE2EPlanBuilderFixtures(override.uid);
+  return override;
 }
 
 function getE2EAssignedNutritionPlanBuilderOverride() {
@@ -1249,7 +1309,8 @@ function updateE2ENutritionPlanDetail(
   planId: string,
   updater: (plan: NutritionPlanDetail) => NutritionPlanDetail,
 ): NutritionPlanDetail | null | undefined {
-  if (!getE2EPlanBuilderOverride()) return undefined;
+  const override = getE2EPlanBuilderOverride();
+  if (!override) return undefined;
   const index = e2eNutritionPlanDetails.findIndex((candidate) => candidate.id === planId);
   if (index < 0) return null;
 
@@ -1288,6 +1349,8 @@ function updateE2ENutritionPlanDetail(
     });
   }
 
+  persistE2EPlanBuilderFixtures(override.uid);
+
   return cloneNutritionPlanDetail(e2eNutritionPlanDetails[index]);
 }
 
@@ -1295,7 +1358,8 @@ function updateE2ETrainingPlanDetail(
   planId: string,
   updater: (plan: TrainingPlanDetail) => TrainingPlanDetail,
 ): TrainingPlanDetail | null | undefined {
-  if (!getE2EPlanBuilderOverride()) return undefined;
+  const override = getE2EPlanBuilderOverride();
+  if (!override) return undefined;
   const index = e2eTrainingPlanDetails.findIndex((candidate) => candidate.id === planId);
   if (index < 0) return null;
 
@@ -1328,6 +1392,8 @@ function updateE2ETrainingPlanDetail(
       updatedAt: e2eTrainingPlanDetails[index].updatedAt,
     });
   }
+
+  persistE2EPlanBuilderFixtures(override.uid);
 
   return cloneTrainingPlanDetail(e2eTrainingPlanDetails[index]);
 }
@@ -1384,6 +1450,8 @@ function createE2ENutritionPlanDetail(
     });
   }
 
+  persistE2EPlanBuilderFixtures(override.uid);
+
   return cloneNutritionPlanDetail(plan);
 }
 
@@ -1431,6 +1499,8 @@ function createE2ETrainingPlanDetail(
       updatedAt: plan.updatedAt,
     });
   }
+
+  persistE2EPlanBuilderFixtures(override.uid);
 
   return cloneTrainingPlanDetail(plan);
 }
@@ -1894,11 +1964,13 @@ export async function deleteNutritionPlan(
   deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
+    const override = getE2EPlanBuilderOverride();
     const fixture = findE2ENutritionPlanDetail(planId);
     if (fixture) {
       const planIndex = e2eNutritionPlanDetails.findIndex((candidate) => candidate.id === planId);
       if (planIndex >= 0) e2eNutritionPlanDetails.splice(planIndex, 1);
       removeE2EPredefinedPlanFixture(planId, 'nutrition');
+      if (override) persistE2EPlanBuilderFixtures(override.uid);
       return;
     }
 
@@ -1922,6 +1994,7 @@ export async function deleteTrainingPlan(
   deps: PlanBuilderSourceDeps = defaultDeps,
 ): Promise<void> {
   if (deps === defaultDeps) {
+    const override = getE2EPlanBuilderOverride();
     const fixture = findE2ETrainingPlanDetail(planId);
     if (fixture) {
       const index = e2eTrainingPlanDetails.findIndex((candidate) => candidate.id === planId);
@@ -1929,6 +2002,7 @@ export async function deleteTrainingPlan(
         e2eTrainingPlanDetails.splice(index, 1);
       }
       removeE2EPredefinedPlanFixture(planId, 'training');
+      if (override) persistE2EPlanBuilderFixtures(override.uid);
       return;
     }
 

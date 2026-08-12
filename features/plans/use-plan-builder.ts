@@ -3,9 +3,17 @@
  * Store-backed adapters over the centralized Zustand plans store.
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useLayoutEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-
+import {
+  markNutritionBuilderMutating,
+  markTrainingBuilderMutating,
+  type FoodSearchState,
+  type NutritionBuilderState,
+  type TrainingBuilderState,
+} from './plan-builder-state';
+import { usePlansStore } from './plans-store';
+import type { TrainingPlanDetail, FoodSearchResult } from './plan-builder-source';
 import type {
   NutritionPlanInput,
   NutritionMealInput,
@@ -21,15 +29,6 @@ import type {
   PlanBuilderErrorReason,
   TrainingPlanCreationMode,
 } from './plan-builder.logic';
-import type { TrainingPlanDetail, FoodSearchResult } from './plan-builder-source';
-import { usePlansStore } from './plans-store';
-import {
-  markNutritionBuilderMutating,
-  markTrainingBuilderMutating,
-  type FoodSearchState,
-  type NutritionBuilderState,
-  type TrainingBuilderState,
-} from './plan-builder-state';
 
 export type { FoodSearchResult, FoodSearchState, NutritionBuilderState, TrainingBuilderState };
 export { markNutritionBuilderMutating, markTrainingBuilderMutating };
@@ -125,11 +124,11 @@ export function useNutritionPlanBuilder(
     })),
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     syncAuthContext(isAuthenticated);
   }, [isAuthenticated, syncAuthContext]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     resetNutritionBuilder();
     clearFoodSearch();
   }, [scopeKey, resetNutritionBuilder, clearFoodSearch]);
@@ -313,11 +312,11 @@ export function useTrainingPlanBuilder(
     })),
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     syncAuthContext(isAuthenticated);
   }, [isAuthenticated, syncAuthContext]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     resetTrainingBuilder();
   }, [scopeKey, resetTrainingBuilder]);
 

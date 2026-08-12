@@ -221,11 +221,13 @@ export default function NutritionPlanBuilderScreen() {
     }
 
     if (isNew) {
-      initNewPlan();
-    } else if (!isStarterClone && planId) {
+      if (state.kind === 'idle') {
+        initNewPlan();
+      }
+    } else if (!isStarterClone && planId && state.kind === 'idle') {
       loadPlan(planId);
     }
-  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan, nutritionGate]);
+  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan, nutritionGate, state.kind]);
 
   useEffect(() => {
     if (!shouldNavigateAfterDelete || isDeletingPlan) {
@@ -291,23 +293,19 @@ export default function NutritionPlanBuilderScreen() {
       const meal = state.plan.meals.find((m) => m.id === mealId);
       const mealName = meal?.name || t('pro.plan.section.meals');
 
-      Alert.alert(
-        t('common.cta.delete'),
-        (t('pro.plan.delete.body')).replace('{name}', mealName),
-        [
-          { text: t('common.cta.cancel'), style: 'cancel' },
-          {
-            text: t('common.cta.delete'),
-            style: 'destructive',
-            onPress: () => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              void removeMeal(state.plan.id, mealId);
-              setIsDirty(true);
-            },
+      Alert.alert(t('common.cta.delete'), t('pro.plan.delete.body').replace('{name}', mealName), [
+        { text: t('common.cta.cancel'), style: 'cancel' },
+        {
+          text: t('common.cta.delete'),
+          style: 'destructive',
+          onPress: () => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            void removeMeal(state.plan.id, mealId);
+            setIsDirty(true);
           },
-        ],
-      );
+        },
+      ]);
     },
     [isBusy, state, removeMeal, setIsDirty, t],
   );
@@ -437,6 +435,23 @@ export default function NutritionPlanBuilderScreen() {
           onPress={handleRetryLoad}
           fullWidth={false}
           testID="pro.nutrition_plan.retryButton"
+        />
+      </DsScreen>
+    );
+  }
+
+  if (state.kind !== 'ready') {
+    return (
+      <DsScreen
+        scheme={scheme}
+        contentWidth="content"
+        contentContainerStyle={[styles.content, styles.centeredContent]}
+        testID="pro.nutrition_plan.loadingState"
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator
+          accessibilityLabel={t('a11y.loading.default')}
+          color={theme.color.accentPrimary}
         />
       </DsScreen>
     );

@@ -5,7 +5,16 @@
 import { useNavigation } from '@react-navigation/native';
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
-import { Alert, LayoutAnimation, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  LayoutAnimation,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
 import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
@@ -19,7 +28,6 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-builder.logic';
 import { generateLocalId } from '@/features/id-source';
 import {
   createBuilderPalette,
@@ -30,6 +38,7 @@ import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBann
 import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
 import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
 import { SessionCard } from '@/features/plans/components/SessionCard';
+import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-builder.logic';
 import { useExerciseSearch } from '@/features/plans/use-exercise-search';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
 import { usePlanForm } from '@/features/plans/use-plan-form';
@@ -132,6 +141,7 @@ export default function TrainingPlanBuilderScreen() {
 
   // ── Local UI state ─────────────────────────────────────────────────────────
   const [addSessionForm, setAddSessionForm] = useState<AddSessionFormState>({ kind: 'closed' });
+  const [addSessionNameError, setAddSessionNameError] = useState(false);
   const [isSortMode, setIsSortMode] = useState(false);
   const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.training_builder');
 
@@ -173,11 +183,13 @@ export default function TrainingPlanBuilderScreen() {
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
     if (isNew) {
-      initNewPlan();
-    } else if (!isStarterClone && planId) {
+      if (state.kind === 'idle') {
+        initNewPlan();
+      }
+    } else if (!isStarterClone && planId && state.kind === 'idle') {
       loadPlan(planId);
     }
-  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan]);
+  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan, state.kind]);
 
   useEffect(() => {
     if (!shouldNavigateAfterDelete || isDeletingPlan) {
@@ -307,7 +319,11 @@ export default function TrainingPlanBuilderScreen() {
   const handleAddSession = useCallback(async () => {
     if (isBusy || addSessionForm.kind !== 'open' || state.kind !== 'ready') return;
     const { name: sessionName, notes } = addSessionForm;
-    if (!sessionName.trim()) return;
+    if (!sessionName.trim()) {
+      setAddSessionNameError(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
 
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -322,6 +338,7 @@ export default function TrainingPlanBuilderScreen() {
       },
     ]);
     setAddSessionForm({ kind: 'closed' });
+    setAddSessionNameError(false);
     setIsDirty(true);
   }, [isBusy, addSessionForm, state.kind, setIsDirty]);
 
@@ -334,7 +351,7 @@ export default function TrainingPlanBuilderScreen() {
 
       Alert.alert(
         t('common.cta.delete'),
-        (t('pro.plan.delete.body')).replace('{name}', sessionName),
+        t('pro.plan.delete.body').replace('{name}', sessionName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -361,34 +378,30 @@ export default function TrainingPlanBuilderScreen() {
       const item = session?.items.find((i) => i.id === itemId);
       const itemName = item?.name || t('pro.plan.section.sessions');
 
-      Alert.alert(
-        t('common.cta.delete'),
-        (t('pro.plan.delete.body')).replace('{name}', itemName),
-        [
-          { text: t('common.cta.cancel'), style: 'cancel' },
-          {
-            text: t('common.cta.delete'),
-            style: 'destructive',
-            onPress: async () => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setDraftSessions((prev) =>
-                prev.map((sessionDraft) => {
-                  if (sessionDraft.id !== sessionId) {
-                    return sessionDraft;
-                  }
+      Alert.alert(t('common.cta.delete'), t('pro.plan.delete.body').replace('{name}', itemName), [
+        { text: t('common.cta.cancel'), style: 'cancel' },
+        {
+          text: t('common.cta.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setDraftSessions((prev) =>
+              prev.map((sessionDraft) => {
+                if (sessionDraft.id !== sessionId) {
+                  return sessionDraft;
+                }
 
-                  return {
-                    ...sessionDraft,
-                    items: sessionDraft.items.filter((candidate) => candidate.id !== itemId),
-                  };
-                }),
-              );
-              setIsDirty(true);
-            },
+                return {
+                  ...sessionDraft,
+                  items: sessionDraft.items.filter((candidate) => candidate.id !== itemId),
+                };
+              }),
+            );
+            setIsDirty(true);
           },
-        ],
-      );
+        },
+      ]);
     },
     [draftSessions, isBusy, state.kind, setIsDirty, t],
   );
@@ -571,6 +584,23 @@ export default function TrainingPlanBuilderScreen() {
     );
   }
 
+  if (state.kind !== 'ready') {
+    return (
+      <DsScreen
+        scheme={scheme}
+        contentWidth="content"
+        contentContainerStyle={[styles.content, styles.errorContent]}
+        testID="pro.training_plan.loadingState"
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator
+          accessibilityLabel={t('a11y.loading.default')}
+          color={theme.color.accentPrimary}
+        />
+      </DsScreen>
+    );
+  }
+
   const sessions = state.kind === 'ready' ? draftSessions : [];
   const isEmptySessionsState = state.kind === 'ready' && sessions.length === 0;
   const addSessionDraft = addSessionForm.kind === 'open' ? addSessionForm : null;
@@ -734,11 +764,12 @@ export default function TrainingPlanBuilderScreen() {
                   )}
                   placeholderTextColor={palette.icon}
                   value={addSessionDraft?.name ?? ''}
-                  onChangeText={(v) =>
+                  onChangeText={(v) => {
+                    setAddSessionNameError(false);
                     setAddSessionForm((prev) =>
                       prev.kind === 'open' ? { ...prev, name: v } : prev,
-                    )
-                  }
+                    );
+                  }}
                   editable={!isBusy}
                   autoFocus
                   returnKeyType="next"
@@ -749,6 +780,11 @@ export default function TrainingPlanBuilderScreen() {
                   )}
                   testID="pro.training_plan.addSession.name"
                 />
+                {addSessionNameError && (
+                  <Text style={[styles.fieldError, { color: palette.danger }]}>
+                    {t('pro.plan.session.validation.name_required')}
+                  </Text>
+                )}
               </View>
               <TextInput
                 ref={sessionNotesRef}
@@ -783,6 +819,7 @@ export default function TrainingPlanBuilderScreen() {
                     if (isBusy) return;
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setAddSessionForm({ kind: 'closed' });
+                    setAddSessionNameError(false);
                   }}
                   disabled={isBusy}
                   style={{ flex: 1 }}
@@ -834,9 +871,10 @@ export default function TrainingPlanBuilderScreen() {
                 )}
                 placeholderTextColor={palette.icon}
                 value={addSessionForm.name}
-                onChangeText={(v) =>
-                  setAddSessionForm((prev) => (prev.kind === 'open' ? { ...prev, name: v } : prev))
-                }
+                onChangeText={(v) => {
+                  setAddSessionNameError(false);
+                  setAddSessionForm((prev) => (prev.kind === 'open' ? { ...prev, name: v } : prev));
+                }}
                 editable={!isBusy}
                 autoFocus
                 returnKeyType="next"
@@ -847,6 +885,11 @@ export default function TrainingPlanBuilderScreen() {
                 )}
                 testID="pro.training_plan.addSession.name"
               />
+              {addSessionNameError && (
+                <Text style={[styles.fieldError, { color: palette.danger }]}>
+                  {t('pro.plan.session.validation.name_required')}
+                </Text>
+              )}
             </View>
             <TextInput
               ref={sessionNotesRef}
@@ -881,6 +924,7 @@ export default function TrainingPlanBuilderScreen() {
                   if (isBusy) return;
                   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                   setAddSessionForm({ kind: 'closed' });
+                  setAddSessionNameError(false);
                 }}
                 disabled={isBusy}
                 style={{ flex: 1 }}
@@ -899,6 +943,7 @@ export default function TrainingPlanBuilderScreen() {
             if (isBusy) return;
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setAddSessionForm({ kind: 'open', name: '', notes: '' });
+            setAddSessionNameError(false);
           }}
           disabled={isBusy}
           leftIcon={<IconSymbol name="plus.circle.fill" size={18} color={theme.color.onAccent} />}

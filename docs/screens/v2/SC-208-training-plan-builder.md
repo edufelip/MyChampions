@@ -35,6 +35,7 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 ### Plan Builder (`/professional/training/plans/:planId`)
 - Enter or edit the plan name (required, min 2 chars).
 - In create mode (`planId = 'new'`), plan name, sessions, and exercises remain local draft edits until the user explicitly presses `Save`.
+- After `Save`, an existing plan reloads its persisted sessions and items from the active source; the provider-free browser fixture mirrors this contract with a scoped test-only storage namespace.
 - Add training sessions (name required, notes optional).
 - When no sessions exist yet, tapping `Add session` opens the creation form in the same empty-state region, layered above the empty-state helper copy instead of pushing it downward.
 - The main `Add session` CTA uses a solid accent-green pill treatment with light text so it reads as the primary creation action.
@@ -78,7 +79,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 
 | State | Trigger | UI |
 |---|---|---|
-| Idle | Initial mount | Empty form or loading gated |
+| Idle | Initial mount or auth-context synchronization | Loading state; editable builder content is not shown until initialization completes |
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
 | Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
@@ -86,7 +87,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 
 ## Validation Rules
 - Plan name is required and must be at least 2 characters (BR-293).
-- Session name is required when adding a session; session notes are optional.
+- Session name is required when adding a session; session notes are optional. Submitting the empty session form keeps the form open and shows the localized inline validation message.
 - Exercise item name is required (BR-294); quantity and notes are optional.
 - Single-student assignment creates an independent draft assigned copy before the plan is visible to the Student.
 - Draft assigned plans are completely invisible to the Student, including title, sessions, and exercise items; the Student may only see a generic waiting-for-plan state until publish.
@@ -160,6 +161,7 @@ Plan library reads, predefined assignment/draft operations, and builder mutation
 | `pro.plan.session.field.name.label` | Session name field label |
 | `pro.plan.session.field.name.placeholder` | Session name placeholder |
 | `pro.plan.session.field.notes.label` | Session notes label |
+| `pro.plan.session.validation.name_required` | Empty session-name validation message |
 | `pro.plan.item.field.name.label` | Item name field label |
 | `pro.plan.item.field.name.placeholder` | Item name placeholder |
 | `pro.plan.item.field.quantity.label` | Item quantity label |

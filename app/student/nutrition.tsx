@@ -521,8 +521,8 @@ export default function StudentNutritionScreen() {
                                   accessibilityRole="button"
                                   accessibilityLabel={
                                     isExpanded
-                                      ? (t('student.nutrition.meal.collapse'))
-                                      : (t('student.nutrition.meal.expand'))
+                                      ? t('student.nutrition.meal.collapse')
+                                      : t('student.nutrition.meal.expand')
                                   }
                                   hitSlop={10}
                                   onPress={() => toggleMealExpand(meal.id)}

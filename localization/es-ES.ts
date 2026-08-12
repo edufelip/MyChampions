@@ -922,6 +922,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.draft.no': 'No, empezar de nuevo',
   'pro.plan.session.field.name.placeholder': 'p.ej. Día A — Tren superior',
   'pro.plan.session.field.notes.label': 'Notas de la sesión (opcional)',
+  'pro.plan.session.validation.name_required': 'El nombre de la sesión es obligatorio.',
   'pro.plan.item.field.name.label': 'Nombre del ejercicio / ítem',
   'pro.plan.item.field.name.placeholder': 'p.ej. Press de banca',
   'pro.plan.item.field.quantity.label': 'Cantidad (opcional)',

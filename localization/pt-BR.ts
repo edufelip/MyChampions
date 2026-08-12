@@ -915,6 +915,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.discard.error': 'Não foi possível descartar o rascunho.',
   'pro.plan.session.field.name.placeholder': 'ex.: Dia A — Superior',
   'pro.plan.session.field.notes.label': 'Notas da sessão (opcional)',
+  'pro.plan.session.validation.name_required': 'O nome da sessão é obrigatório.',
   'pro.plan.item.field.name.label': 'Nome do exercício / item',
   'pro.plan.item.field.name.placeholder': 'ex.: Supino reto',
   'pro.plan.item.field.quantity.label': 'Quantidade (opcional)',

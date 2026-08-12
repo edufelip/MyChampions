@@ -524,6 +524,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.session.field.name.label` | SC-208 | Session name label | Session name | Nome da sessão | Nombre de la sesión | |
 | `pro.plan.session.field.name.placeholder` | SC-208 | Session name placeholder | e.g. Day A — Upper Body | ex.: Dia A — Superior | p.ej. Día A — Tren superior | |
 | `pro.plan.session.field.notes.label` | SC-208 | Session notes label | Session notes (optional) | Notas da sessão (opcional) | Notas de la sesión (opcional) | |
+| `pro.plan.session.validation.name_required` | SC-208 | Empty session-name validation | Session name is required. | O nome da sessão é obrigatório. | El nombre de la sesión es obligatorio. | |
 | `pro.plan.item.field.name.label` | SC-208 | Item name label | Exercise / item name | Nome do exercício / item | Nombre del ejercicio / ítem | BR-294 |
 | `pro.plan.item.field.name.placeholder` | SC-208 | Item name placeholder | e.g. Bench Press | ex.: Supino reto | p.ej. Press de banca | |
 | `pro.plan.item.field.quantity.label` | SC-208 | Item quantity label | Quantity (optional) | Quantidade (opcional) | Cantidad (opcional) | |
