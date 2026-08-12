@@ -21,6 +21,7 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 - Primary create/retry actions use DS pill buttons and localization-key copy only.
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
+- A fresh professional builder reaches the Ready state after route-scope reset and exposes the Add session action immediately after the plan name is entered, including at 390x844 and 320x720 compact web viewports.
 - On compact native viewports, native validation scrolls the builder until the current action (including a reopened plan's `Add session` CTA) is visible. After confirming an exercise it waits for the native modal transition to leave the hierarchy, then adds bottom-navigation clearance before tapping the footer save action below longer session/item content.
 - State orchestration uses centralized plans store (`features/plans/plans-store.ts`) through the existing `useTrainingPlanBuilder` adapter hook.
 
@@ -34,6 +35,7 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 ### Plan Builder (`/professional/training/plans/:planId`)
 - Enter or edit the plan name (required, min 2 chars).
 - In create mode (`planId = 'new'`), plan name, sessions, and exercises remain local draft edits until the user explicitly presses `Save`.
+- In a new plan with no sessions, use Add session to create the first session before adding exercises.
 - Add training sessions (name required, notes optional).
 - When no sessions exist yet, tapping `Add session` opens the creation form in the same empty-state region, layered above the empty-state helper copy instead of pushing it downward.
 - The main `Add session` CTA uses a solid accent-green pill treatment with light text so it reads as the primary creation action.
@@ -221,8 +223,8 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | Functional requirements | FR-244, FR-245, FR-246, FR-247, FR-248, FR-254, FR-255, FR-256, FR-223, FR-224, FR-225, FR-226 |
 | Use case | UC-002.14, UC-002.20 |
-| Acceptance criteria | AC-256, AC-264, AC-265 |
+| Acceptance criteria | AC-256, AC-264, AC-265, AC-267 |
 | Business rules | BR-281, BR-282, BR-283, BR-293, BR-294, BR-303, BR-304, BR-305, BR-306 |
-| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-277, TC-278, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
+| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-277, TC-278, TC-278A, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
 | Decisions | D-013, D-072, D-080, D-082, D-111, D-112, D-114, D-157, D-173 |
 | Backlog | BL-106 |

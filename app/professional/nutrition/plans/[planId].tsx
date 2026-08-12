@@ -2,7 +2,9 @@
  * SC-207 Nutrition Plan Builder
  * Route: /professional/nutrition/plans/:planId
  */
-import { useCallback, useEffect, useLayoutEffect, useState, useMemo } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,37 +16,33 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
-import * as Haptics from '@/features/platform/haptics-adapter';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-
+import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
-import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
-import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
-import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
-import { PlanMetadataForm } from '@/features/plans/components/PlanMetadataForm';
-
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
-import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
+import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
+import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
+import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
+import { PlanMetadataForm } from '@/features/plans/components/PlanMetadataForm';
 import { isStarterTemplate, calculateTotalsFromItems } from '@/features/plans/plan-builder.logic';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useTranslation } from '@/localization';
+import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import { usePlanForm } from '@/features/plans/use-plan-form';
+import * as Haptics from '@/features/platform/haptics-adapter';
+import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
+import { useTranslation } from '@/localization';
 
 enableBuilderLayoutAnimations();
 
@@ -128,7 +126,7 @@ export default function NutritionPlanBuilderScreen() {
       if (isNew || isStarterClone) {
         return createPlan(formValues, creationMode);
       }
-      return savePlan(planId!, formValues, isDraftAssignment);
+      return savePlan(planId, formValues, isDraftAssignment);
     },
     onSuccess: (id) => {
       Keyboard.dismiss();
@@ -192,7 +190,7 @@ export default function NutritionPlanBuilderScreen() {
   }, [isNew, planId]);
 
   // ── Load existing plan ─────────────────────────────────────────────────────
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (nutritionGate !== 'allow') {
       return;
     }
@@ -269,8 +267,8 @@ export default function NutritionPlanBuilderScreen() {
       const mealName = meal?.name || t('pro.plan.section.meals');
 
       Alert.alert(
-        t('common.cta.delete') as string,
-        (t('pro.plan.delete.body') as string).replace('{name}', mealName),
+        t('common.cta.delete'),
+        (t('pro.plan.delete.body')).replace('{name}', mealName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -397,7 +395,7 @@ export default function NutritionPlanBuilderScreen() {
         <DsBackButton
           scheme={scheme}
           onPress={handleBack}
-          accessibilityLabel={t('auth.role.cta_back') as string}
+          accessibilityLabel={t('auth.role.cta_back')}
           style={styles.backButton}
           testID="pro.nutrition_plan.backButton"
         />
@@ -424,7 +422,7 @@ export default function NutritionPlanBuilderScreen() {
               onPress={handleDeletePlan}
               hitSlop={12}
               accessibilityRole="button"
-              accessibilityLabel={t('common.cta.delete') as string}
+              accessibilityLabel={t('common.cta.delete')}
               style={styles.headerActionBtn}
             >
               <IconSymbol name="trash" size={20} color={palette.danger} />
@@ -521,7 +519,7 @@ export default function NutritionPlanBuilderScreen() {
               scheme={scheme}
               variant="ghost"
               size="sm"
-              label={t('common.cta.cancel') as string}
+              label={t('common.cta.cancel')}
               onPress={handleCloseAddMeal}
               disabled={isBusy}
               fullWidth={false}
@@ -531,7 +529,7 @@ export default function NutritionPlanBuilderScreen() {
               scheme={scheme}
               variant="ghost"
               size="sm"
-              label={t('common.cta.add') as string}
+              label={t('common.cta.add')}
               onPress={handleAddMeal}
               disabled={isBusy || !addMealForm.name.trim()}
               fullWidth={false}

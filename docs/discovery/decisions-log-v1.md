@@ -807,6 +807,11 @@
     required monthly. This change records the first report and keeps local,
     hosted, native, provider, and store-live evidence as separate states.
 
+`D-203`: New professional SC-207/SC-208 builder initialization must run after the route-scope reset effect.
+
+- The builder hooks clear stale route state in a passive effect keyed by scope. Route initialization therefore uses a passive effect declared after the hook so reset completes before `initNewNutritionPlan` / `initNewTrainingPlan` publishes the Ready state.
+- This preserves the first Add meal/Add session action for a fresh plan without changing persistence, validation, native modal behavior, or existing-plan loading. Mobile Playwright regression covers 390x844 and 320x720.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.

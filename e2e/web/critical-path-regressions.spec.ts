@@ -1,9 +1,22 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const responsiveViewports = [
   { name: 'mobile', width: 390, height: 844 },
   { name: 'tablet', width: 820, height: 1000 },
 ] as const;
+
+async function chooseProfessional(page: Page) {
+  await page.goto('/auth/role-selection');
+  await page.getByTestId('auth.roleSelection.professionalCard').click();
+  await page.getByTestId('auth.roleSelection.continueButton').click();
+  await expect(page.getByTestId('pro.specialty.screen')).toBeVisible();
+  await page.getByTestId('pro.specialty.add.nutritionist').click();
+  await page.getByTestId('pro.specialty.credential.skip').click();
+  await page.getByTestId('pro.specialty.add.fitness_coach').click();
+  await page.getByTestId('pro.specialty.credential.skip').click();
+  await page.getByTestId('pro.specialty.cta_continue').click();
+  await expect(page.getByTestId('pro.home.screen').last()).toBeVisible();
+}
 
 test.describe('@critical @feature:auth @feature:connections @feature:subscription critical product paths', () => {
   for (const viewport of responsiveViewports) {
@@ -53,5 +66,56 @@ test.describe('@critical @feature:auth @feature:connections @feature:subscriptio
     await expect(page.getByTestId('pro.subscription.purchaseCta')).toHaveCount(0);
     await expect(page.getByTestId('pro.subscription.restoreCta')).toHaveCount(0);
     await expect(page.getByTestId('pro.subscription.refreshCta')).toBeEnabled();
+  });
+
+  test('professional new plan builders expose first child actions on compact mobile viewports', async ({
+    browser,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium', 'Compact regression is Chromium-only');
+    test.setTimeout(120_000);
+
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 320, height: 720 },
+    ]) {
+      const runInFreshMobileContext = async (flow: (page: Page) => Promise<void>) => {
+        const context = await browser.newContext({
+          viewport,
+          isMobile: true,
+          hasTouch: true,
+          deviceScaleFactor: 1,
+        });
+        const page = await context.newPage();
+        try {
+          await flow(page);
+        } finally {
+          await context.close();
+        }
+      };
+
+      await runInFreshMobileContext(async (page) => {
+        await chooseProfessional(page);
+        await page.getByTestId('tabs.nutrition').last().click();
+        await page.getByTestId('pro.library.nutrition.create').click();
+        await expect(page.getByTestId('pro.nutrition_plan.screen')).toBeVisible();
+        const nutritionName = page.getByTestId('pro.plan.metadata.name');
+        await nutritionName.fill('Critical Nutrition Plan');
+        await nutritionName.press('Tab');
+        await page.waitForTimeout(500);
+        await expect(page.getByTestId('pro.nutrition_plan.addMeal')).toBeVisible();
+      });
+
+      await runInFreshMobileContext(async (page) => {
+        await chooseProfessional(page);
+        await page.getByTestId('tabs.training').last().click();
+        await page.getByTestId('pro.library.training.create').click();
+        await expect(page.getByTestId('pro.training_plan.screen')).toBeVisible();
+        const trainingName = page.getByTestId('pro.training_plan.name');
+        await trainingName.fill('Critical Training Plan');
+        await trainingName.press('Tab');
+        await page.waitForTimeout(500);
+        await expect(page.getByTestId('pro.training_plan.addSession')).toBeVisible();
+      });
+    }
   });
 });
