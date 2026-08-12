@@ -183,8 +183,10 @@ Plan library reads, predefined assignment/draft operations, and builder mutation
 | `pro.plan.item.search.dialog_title` | Accessible name for the single exercise-search dialog root |
 | `pro.plan.item.search.placeholder` | Exercise search input placeholder |
 | `pro.plan.item.search.initial` | Initial helper state before a query is entered |
+| `pro.plan.item.search.loading` | Accessible loading announcement while search is pending |
 | `pro.plan.item.search.empty` | No results state |
 | `pro.plan.item.search.error` | Search error state |
+| `pro.plan.item.search.retry` | Retry search CTA in the error state |
 | `pro.plan.item.search.back` | "Back to search" link in exercise detail form |
 | `exercise.muscle_group.chest` | Muscle group label: Chest |
 | `exercise.muscle_group.back` | Muscle group label: Back |

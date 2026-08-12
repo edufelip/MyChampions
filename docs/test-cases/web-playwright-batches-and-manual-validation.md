@@ -24,6 +24,12 @@ onboarding, camera-denied/manual invite fallback, and overflow safety. It does
 not replace the existing smoke, functional, accessibility, server-auth, or
 flow-atlas batches.
 
+The training search suite runs with an isolated Playwright configuration and
+Pixel 5 mobile emulation. It covers the initial, loading, empty, error with
+retry, and successful-result states, one named dialog root, compact keyboard-
+safe geometry, and expected error logging without exposing training fixtures to
+unrelated browser batches.
+
 Run both local lanes with `yarn test:e2e:web:all-local`. They intentionally use separate Expo ports and clear Metro state so fixture configuration cannot leak into the real-server bundle or vice versa.
 
 Run the manual mobile recovery proof with

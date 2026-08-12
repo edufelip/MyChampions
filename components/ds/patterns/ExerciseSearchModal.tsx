@@ -200,7 +200,18 @@ export function ExerciseSearchModal({
                 keyboardShouldPersistTaps="handled"
               >
                 {searchState.kind === 'loading' && (
-                  <ActivityIndicator color={theme.color.accentPrimary} style={{ marginTop: 40 }} />
+                  <View
+                    accessibilityRole="progressbar"
+                    accessibilityLabel={t('pro.plan.item.search.loading')}
+                    accessibilityLiveRegion="polite"
+                    style={styles.stateContainer}
+                    testID="exerciseSearch.loadingState"
+                  >
+                    <ActivityIndicator color={theme.color.accentPrimary} />
+                    <Text style={[styles.emptyText, { color: theme.color.textSecondary }]}>
+                      {t('pro.plan.item.search.loading')}
+                    </Text>
+                  </View>
                 )}
 
                 {searchState.kind === 'idle' && (
@@ -219,14 +230,32 @@ export function ExerciseSearchModal({
                 )}
 
                 {searchState.kind === 'error' && (
-                  <Text style={[styles.emptyText, { color: theme.color.danger, marginTop: 40 }]}>
-                    {t('pro.plan.item.search.error')}
-                  </Text>
+                  <View
+                    accessibilityRole="alert"
+                    accessibilityLiveRegion="assertive"
+                    style={styles.stateContainer}
+                    testID="exerciseSearch.errorState"
+                  >
+                    <Text style={[styles.emptyText, { color: theme.color.danger }]}>
+                      {t('pro.plan.item.search.error')}
+                    </Text>
+                    <DsPillButton
+                      scheme={scheme}
+                      label={t('pro.plan.item.search.retry')}
+                      onPress={() => onSearch(searchState.query)}
+                      variant="outline"
+                      size="sm"
+                      fullWidth={false}
+                      testID="exerciseSearch.retry"
+                    />
+                  </View>
                 )}
 
                 {searchState.kind === 'done' && searchState.results.length === 0 && (
                   <Text
                     style={[styles.emptyText, { color: theme.color.textSecondary, marginTop: 40 }]}
+                    accessibilityLiveRegion="polite"
+                    testID="exerciseSearch.emptyState"
                   >
                     {t('pro.plan.item.search.empty')}
                   </Text>
@@ -544,6 +573,11 @@ const styles = StyleSheet.create({
   },
   initialState: {
     alignItems: 'center',
+    paddingTop: DsSpace.xxl,
+  },
+  stateContainer: {
+    alignItems: 'center',
+    gap: DsSpace.sm,
     paddingTop: DsSpace.xxl,
   },
   // Details View Styles

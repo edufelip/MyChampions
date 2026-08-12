@@ -937,8 +937,10 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.item.search.dialog_title': 'Búsqueda de ejercicios',
   'pro.plan.item.search.initial':
     'Busca en la biblioteca de ejercicios para añadir uno a la sesión.',
+  'pro.plan.item.search.loading': 'Buscando ejercicios...',
   'pro.plan.item.search.empty': 'No se encontraron ejercicios.',
   'pro.plan.item.search.error': 'Error al buscar ejercicios.',
+  'pro.plan.item.search.retry': 'Intentar de nuevo',
   'pro.plan.item.search.back': 'Volver a la búsqueda',
   'pro.plan.item.detail.description': 'Descripción',
   'pro.plan.item.detail.instructions': 'Instrucciones',

@@ -406,6 +406,7 @@
     },
     "web:training": {
       "runner": "playwright",
+      "playwrightConfig": "playwright.training.config.ts",
       "projects": ["chromium"],
       "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/exercise-search-modal.spec.ts"],
       "grep": "@feature:training",

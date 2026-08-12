@@ -34,8 +34,8 @@ async function expectInsideViewport(page: Page, testId: string) {
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
 }
 
-async function expectNoBrowserErrors(errors: string[]) {
-  expect(errors).toEqual([]);
+async function expectNoBrowserErrors(pageErrors: string[]) {
+  expect(pageErrors).toEqual([]);
 }
 
 async function capture(page: Page, testInfo: TestInfo, name: string) {
@@ -49,11 +49,12 @@ test('@functional @feature:training exercise search opens with a useful initial 
   page,
 }, testInfo) => {
   test.setTimeout(120_000);
-  const browserErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
   page.on('console', (message) => {
-    if (message.type() === 'error') browserErrors.push(message.text());
+    if (message.type() === 'error') consoleErrors.push(message.text());
   });
-  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('pageerror', (error) => pageErrors.push(error.message));
 
   await openExerciseSearch(page);
 
@@ -68,6 +69,28 @@ test('@functional @feature:training exercise search opens with a useful initial 
   await expect(input).toBeFocused();
   await capture(page, testInfo, 'exercise-search-initial');
 
+  await input.fill('squat');
+  await input.press('Enter');
+  const loading = page.getByTestId('exerciseSearch.loadingState');
+  await expect(loading).toBeVisible();
+  await expect(loading).toHaveAttribute('aria-label', enUS['pro.plan.item.search.loading']);
+  await expect(page.getByTestId('exerciseSearch.emptyState')).toBeVisible();
+
+  await input.fill('error');
+  await input.press('Enter');
+  const errorState = page.getByTestId('exerciseSearch.errorState');
+  await expect(errorState).toBeVisible();
+  await expect(errorState).toHaveAttribute('role', 'alert');
+  await expect(errorState).toHaveAttribute('aria-live', 'assertive');
+  await expect(page.getByTestId('exerciseSearch.retry')).toBeVisible();
+  await capture(page, testInfo, 'exercise-search-error');
+  await page.getByTestId('exerciseSearch.retry').click();
+  await expect(page.getByTestId('exerciseSearch.errorState')).toBeVisible();
+  expect(
+    consoleErrors.some((message) => message.includes('[useExerciseSearch] Search failed:')),
+  ).toBe(true);
+  expect(pageErrors).toEqual([]);
+
   await input.fill('push');
   await input.press('Enter');
   await expect(page.getByTestId('exerciseSearch.result.e2e-exercise-push-up')).toBeVisible();
@@ -76,7 +99,7 @@ test('@functional @feature:training exercise search opens with a useful initial 
 
   await dialog.getByRole('button', { name: enUS['auth.role.cta_back'], exact: true }).click();
   await expect(dialog).toBeHidden();
-  await expectNoBrowserErrors(browserErrors);
+  await expectNoBrowserErrors(pageErrors);
 });
 
 test.describe('exercise search on a compact keyboard-safe viewport', () => {
@@ -86,11 +109,12 @@ test.describe('exercise search on a compact keyboard-safe viewport', () => {
     page,
   }, testInfo) => {
     test.setTimeout(120_000);
-    const browserErrors: string[] = [];
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
     page.on('console', (message) => {
-      if (message.type() === 'error') browserErrors.push(message.text());
+      if (message.type() === 'error') consoleErrors.push(message.text());
     });
-    page.on('pageerror', (error) => browserErrors.push(error.message));
+    page.on('pageerror', (error) => pageErrors.push(error.message));
 
     await openExerciseSearch(page);
     const dialog = page.getByRole('dialog', { name: dialogTitle });
@@ -115,6 +139,7 @@ test.describe('exercise search on a compact keyboard-safe viewport', () => {
     await capture(page, testInfo, 'exercise-search-compact-results');
     await dialog.getByRole('button', { name: enUS['auth.role.cta_back'], exact: true }).click();
     await expect(dialog).toBeHidden();
-    await expectNoBrowserErrors(browserErrors);
+    await expect(consoleErrors).toEqual([]);
+    await expectNoBrowserErrors(pageErrors);
   });
 });
