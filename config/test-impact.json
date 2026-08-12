@@ -94,7 +94,13 @@
       "sourcePaths": ["features/auth/**", "app/auth/**"],
       "dependsOn": ["platform"],
       "unitTests": ["features/auth/**/*.test.ts"],
-      "webSuites": ["web:auth", "web:server-auth", "web:shell", "web:critical-paths"],
+      "webSuites": [
+        "web:auth",
+        "web:server-auth",
+        "web:shell",
+        "web:critical-paths",
+        "web:manual-webview-recovery"
+      ],
       "detoxSuites": ["detox:auth"],
       "owners": ["@edufelip"]
     },
@@ -458,6 +464,14 @@
       "runner": "playwright-evidence",
       "projects": ["chromium"],
       "specs": ["e2e/web-flows-auth/authentication-flow-atlas.spec.ts"],
+      "grep": "@feature:auth",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:manual-webview-recovery": {
+      "runner": "playwright-evidence",
+      "projects": ["mobile"],
+      "specs": ["e2e/web-flows-auth/shared-webview-recovery.spec.ts"],
       "grep": "@feature:auth",
       "tier": "evidence",
       "ci": false

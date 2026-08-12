@@ -22,23 +22,20 @@
  * Refs: FR-133, FR-157, UC-002.5, AC-305–308, AC-310, BR-225, BR-231
  *       TC-304–307, TC-309
  */
-import { useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
+import { Stack, useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { SupportModal } from '@/components/ds/patterns/SupportModal';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
-import { useAuthSession } from '@/features/auth/auth-session';
-import type { AuthProviderId } from '@/features/auth/auth-user';
 import { requestPasswordResetFromSource } from '@/features/auth/account-auth-source';
+import { useAuthSession } from '@/features/auth/auth-session';
 import { E2E_AUTH_SESSION_UID } from '@/features/auth/e2e-auth-session';
 import { deleteAccountAndDataFromSource, ProfileSourceError } from '@/features/auth/profile-source';
-
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -48,10 +45,11 @@ import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import { useLocale } from '@/localization/locale-context';
+import type { AuthProviderId } from '@/features/auth/auth-user';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const APP_VERSION: string = (Constants.expoConfig?.version as string | undefined) ?? '—';
+const APP_VERSION: string = Constants.expoConfig?.version ?? '—';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -163,8 +161,9 @@ export default function AccountSettingsScreen() {
     router.push({
       pathname: '/shared/webview',
       params: {
+        intent: 'account',
         url: privacyPolicyUrl,
-        title: t('settings.account.privacy_policy.label') as string,
+        title: t('settings.account.privacy_policy.label'),
       },
     });
   }
@@ -173,8 +172,9 @@ export default function AccountSettingsScreen() {
     router.push({
       pathname: '/shared/webview',
       params: {
+        intent: 'account',
         url: termsUrl,
-        title: t('settings.account.terms.label') as string,
+        title: t('settings.account.terms.label'),
       },
     });
   }
@@ -187,7 +187,7 @@ export default function AccountSettingsScreen() {
     if (!isEmailUser) {
       Alert.alert(
         '',
-        t('settings.account.change_password.oauth_notice', { provider: oauthProvider }) as string,
+        t('settings.account.change_password.oauth_notice', { provider: oauthProvider }),
         [{ text: 'OK' }],
       );
       return;
@@ -258,10 +258,10 @@ export default function AccountSettingsScreen() {
   // from the Language Select screen (SC-222) without needing an AsyncStorage read.
   const languageLabel =
     activeLocale === 'pt-BR'
-      ? (t('settings.account.language.pt_br') as string)
+      ? t('settings.account.language.pt_br')
       : activeLocale === 'es-ES'
-        ? (t('settings.account.language.es_es') as string)
-        : (t('settings.account.language.en_us') as string);
+        ? t('settings.account.language.es_es')
+        : t('settings.account.language.en_us');
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -274,14 +274,12 @@ export default function AccountSettingsScreen() {
       contentContainerStyle={[styles.content, { paddingTop: topInsetPadding + DsSpace.sm }]}
       testID="settings.account.screen"
     >
-      <Stack.Screen
-        options={{ title: t('settings.account.title') as string, headerShown: false }}
-      />
+      <Stack.Screen options={{ title: t('settings.account.title'), headerShown: false }} />
 
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
           scheme={scheme}
-          text={t('offline.banner') as string}
+          text={t('offline.banner')}
           testID="settings.account.offlineBanner"
         />
       ) : null}
@@ -365,7 +363,7 @@ export default function AccountSettingsScreen() {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('settings.account.contact.label') as string}
+          accessibilityLabel={t('settings.account.contact.label')}
           onPress={handleContactSupport}
           hitSlop={8}
           style={[
@@ -379,7 +377,7 @@ export default function AccountSettingsScreen() {
       </View>
 
       {/* ── Account section ────────────────────────────────────────────── */}
-      <SectionHeader label={t('settings.account.section.account') as string} theme={theme} />
+      <SectionHeader label={t('settings.account.section.account')} theme={theme} />
       <View
         style={[
           styles.group,
@@ -387,7 +385,7 @@ export default function AccountSettingsScreen() {
         ]}
       >
         <SettingsRow
-          label={t('settings.account.email.label') as string}
+          label={t('settings.account.email.label')}
           value={email ?? '—'}
           theme={theme}
           testID="settings.account.emailRow"
@@ -409,7 +407,7 @@ export default function AccountSettingsScreen() {
           </View>
         ) : (
           <SettingsRow
-            label={t('settings.account.change_password.label') as string}
+            label={t('settings.account.change_password.label')}
             onPress={handleChangePassword}
             loading={isPasswordPending}
             theme={theme}
@@ -474,7 +472,7 @@ export default function AccountSettingsScreen() {
 
         <RowDivider color={theme.color.border} />
         <SettingsRow
-          label={t('settings.account.language.label') as string}
+          label={t('settings.account.language.label')}
           value={languageLabel}
           onPress={handleLanguagePicker}
           theme={theme}
@@ -537,7 +535,7 @@ export default function AccountSettingsScreen() {
       ) : null}
 
       {/* ── Legal & Privacy section ─────────────────────────────────────── */}
-      <SectionHeader label={t('settings.account.section.legal') as string} theme={theme} />
+      <SectionHeader label={t('settings.account.section.legal')} theme={theme} />
       <View
         style={[
           styles.group,
@@ -545,14 +543,14 @@ export default function AccountSettingsScreen() {
         ]}
       >
         <SettingsRow
-          label={t('settings.account.privacy_policy.label') as string}
+          label={t('settings.account.privacy_policy.label')}
           onPress={handleOpenPrivacyPolicy}
           theme={theme}
           testID="settings.account.privacyPolicyRow"
         />
         <RowDivider color={theme.color.border} />
         <SettingsRow
-          label={t('settings.account.terms.label') as string}
+          label={t('settings.account.terms.label')}
           onPress={handleOpenTerms}
           theme={theme}
           testID="settings.account.termsRow"
@@ -560,7 +558,7 @@ export default function AccountSettingsScreen() {
       </View>
 
       {/* ── Support section ────────────────────────────────────────────── */}
-      <SectionHeader label={t('settings.account.section.support') as string} theme={theme} />
+      <SectionHeader label={t('settings.account.section.support')} theme={theme} />
       <View
         style={[
           styles.group,
@@ -568,7 +566,7 @@ export default function AccountSettingsScreen() {
         ]}
       >
         <SettingsRow
-          label={t('settings.account.contact.label') as string}
+          label={t('settings.account.contact.label')}
           onPress={handleContactSupport}
           theme={theme}
           testID="settings.account.contactRow"
@@ -576,7 +574,7 @@ export default function AccountSettingsScreen() {
       </View>
 
       {/* ── Danger zone ────────────────────────────────────────────────── */}
-      <SectionHeader label={t('settings.account.section.danger') as string} theme={theme} danger />
+      <SectionHeader label={t('settings.account.section.danger')} theme={theme} danger />
       <View
         style={[
           styles.group,
@@ -656,7 +654,7 @@ export default function AccountSettingsScreen() {
             ) : null}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('settings.account.delete.cta') as string}
+              accessibilityLabel={t('settings.account.delete.cta')}
               onPress={handleRequestDeletion}
               disabled={isDeleteLocked}
               style={[
