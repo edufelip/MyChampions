@@ -46,6 +46,10 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
     await page.keyboard.press('Space');
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
     await page.getByTestId('auth.terms.checkbox').click();
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
     await capture(page, testInfo, '04-terms-ready-to-accept', 'auth.terms.acceptButton');

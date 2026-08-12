@@ -72,6 +72,13 @@ describe('resolveSafeExternalUrl', () => {
     );
     assert.equal(resolveSafeExternalUrl('http://localhost:8081'), null);
   });
+
+  it('fails closed for duplicate route parameters instead of throwing', () => {
+    assert.equal(
+      resolveSafeExternalUrl(['https://eduwaldo.com/terms', 'javascript:alert(1)']),
+      null,
+    );
+  });
 });
 
 describe('buildOriginWhitelist', () => {

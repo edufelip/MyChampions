@@ -6,6 +6,9 @@ export type AuthGuardInput = {
   needsTermsAcceptance: boolean;
   pathname: string;
   returnTo?: string | string[] | null;
+  sharedWebviewIntent?: string | string[] | null;
+  sharedWebviewUrl?: string | string[] | null;
+  termsUrl?: string | null;
   pendingRoleSelectionRole?: RoleIntent | null;
 };
 
@@ -37,12 +40,24 @@ function isSharedRecipePath(pathname: string): boolean {
   return /^\/shared\/recipes\/[^/?#]+$/.test(pathname);
 }
 
-function isSharedWebviewPath(pathname: string): boolean {
-  return pathname === '/shared/webview';
-}
-
 function encodeReturnTo(pathname: string): string {
   return encodeURIComponent(pathname);
+}
+
+function normalizeSingleRouteParam(value: string | string[] | null | undefined): string | null {
+  return typeof value === 'string' ? value.trim() || null : null;
+}
+
+function isControlledTermsWebview(input: AuthGuardInput, pathname: string): boolean {
+  if (pathname !== '/shared/webview') {
+    return false;
+  }
+
+  const intent = normalizeSingleRouteParam(input.sharedWebviewIntent);
+  const url = normalizeSingleRouteParam(input.sharedWebviewUrl);
+  const termsUrl = input.termsUrl?.trim() || null;
+
+  return intent === 'terms' && url !== null && termsUrl !== null && url === termsUrl;
 }
 
 function redirectWithReturnTo(
@@ -98,7 +113,7 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   }
 
   if (input.needsTermsAcceptance) {
-    if (isSharedWebviewPath(path)) {
+    if (isControlledTermsWebview(input, path)) {
       return null;
     }
 

@@ -35,13 +35,29 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
 export default function WebViewScreen() {
-  const { url, title } = useLocalSearchParams<{ url: string; title: string }>();
+  const { intent, url, title } = useLocalSearchParams<{
+    intent?: string | string[];
+    url?: string | string[];
+    title?: string | string[];
+  }>();
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const { t } = useTranslation();
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0); // For retry
+  const screenTitle = typeof title === 'string' ? title : '';
+  const fallbackPath =
+    intent === 'terms' ? '/auth/accept-terms' : intent === 'account' ? '/settings/account' : '/';
+
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace(fallbackPath);
+  };
 
   // Validate the route param before it ever reaches WebView/Linking. This screen is a
   // file-based expo-router route and is reachable via the app's own deep-link scheme
@@ -59,14 +75,14 @@ export default function WebViewScreen() {
         collapsable={false}
         testID="shared.webview.screen"
       >
-        <Stack.Screen options={{ title: title ?? '', headerShown: true }} />
+        <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
         <Text style={[styles.errorText, { color: theme.color.textPrimary }]}>
           {t('auth.terms.invalid_link')}
         </Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
-          onPress={() => router.back()}
+          onPress={goBack}
           style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary }]}
           testID="shared.webview.invalidLink.backButton"
         >
@@ -86,7 +102,7 @@ export default function WebViewScreen() {
         collapsable={false}
         testID="shared.webview.screen"
       >
-        <Stack.Screen options={{ title: title ?? '', headerShown: true }} />
+        <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
         <Text
           style={[styles.errorText, { color: theme.color.textPrimary, marginBottom: DsSpace.md }]}
         >
@@ -112,7 +128,7 @@ export default function WebViewScreen() {
     >
       <Stack.Screen
         options={{
-          title: title ?? '',
+          title: screenTitle,
           headerShown: true,
           headerStyle: {
             backgroundColor: theme.color.surface,

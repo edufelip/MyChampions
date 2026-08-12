@@ -115,7 +115,8 @@ in-app support access.
   - `deleteAccountAndDataFromSource()` + awaited `clearSession()`: account deletion and post-deletion session cleanup.
   - `requestPasswordResetFromSource()`: password reset request.
   - `router.push('/settings/language-select')`: navigates to SC-222 for language selection.
-  - `router.push('/shared/webview')`: opens legal URLs in the shared in-app WebView screen.
+- `router.push('/shared/webview')`: opens legal URLs in the shared in-app WebView screen.
+- Account legal links pass an `account` intent so a direct-entry invalid-link state can return to Account settings when browser history is unavailable.
 
 ## Edge Cases
 
@@ -124,7 +125,7 @@ in-app support access.
 - Offline → deletion CTA is disabled; all read-only rows remain accessible.
 - Repeated deletion request → `already_requested` error state.
 - Language change takes effect immediately in the current session via `LocaleContext`; no app restart required.
-- Missing or unsafe legal URL parameters → shared WebView shows a localized invalid-link state with a back action and does not load external content.
+- Missing, repeated, or unsafe legal URL parameters → shared WebView shows a localized invalid-link state with a back action, uses an account fallback on direct entry, and does not load external content.
 
 ## New Files Introduced
 

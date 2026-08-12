@@ -275,6 +275,9 @@ test('guard allows the controlled legal webview while terms are pending', () => 
     lockedRole: null,
     needsTermsAcceptance: true,
     pathname: '/shared/webview',
+    sharedWebviewIntent: 'terms',
+    sharedWebviewUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+    termsUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
   });
 
   const nearMatchRedirect = resolveAuthGuardRedirect({
@@ -286,6 +289,44 @@ test('guard allows the controlled legal webview while terms are pending', () => 
 
   assert.equal(redirect, null);
   assert.equal(nearMatchRedirect, '/auth/accept-terms');
+});
+
+test('guard blocks an approved-origin webview without the configured legal intent', () => {
+  const arbitraryUrlRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview',
+    sharedWebviewIntent: 'terms',
+    sharedWebviewUrl: 'https://portfolio.eduwaldo.com/other-page',
+    termsUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+  });
+
+  const missingIntentRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview',
+    sharedWebviewUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+    termsUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+  });
+
+  const repeatedUrlRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview',
+    sharedWebviewIntent: 'terms',
+    sharedWebviewUrl: [
+      'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+      'https://portfolio.eduwaldo.com/other-page',
+    ],
+    termsUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+  });
+
+  assert.equal(arbitraryUrlRedirect, '/auth/accept-terms');
+  assert.equal(missingIntentRedirect, '/auth/accept-terms');
+  assert.equal(repeatedUrlRedirect, '/auth/accept-terms');
 });
 
 test('guard allows accept-terms route with trailing slash while terms are pending', () => {

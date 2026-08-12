@@ -42,6 +42,7 @@ export default function AcceptTermsScreen() {
     router.push({
       pathname: '/shared/webview',
       params: {
+        intent: 'terms',
         url: termsUrl,
         title: t('auth.terms.title'),
       },

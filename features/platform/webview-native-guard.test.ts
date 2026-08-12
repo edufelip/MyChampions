@@ -43,8 +43,13 @@ test('native webview screen never feeds the raw route url straight into WebView 
   // sinks and require a visible back affordance when validation fails.
   assert.match(
     webviewSource,
-    /if\s*\(!safeUrl\)\s*\{[\s\S]*router\.back\(\)[\s\S]*testID="shared\.webview\.invalidLink\.backButton"/s,
-    'expected a recoverable invalid-link state with a back action',
+    /const\s+goBack\s*=\s*\(\)\s*=>\s*\{[\s\S]*router\.canGoBack\(\)[\s\S]*router\.replace\(fallbackPath\)/s,
+    'expected invalid-link recovery to handle both history and direct-entry navigation',
+  );
+  assert.match(
+    webviewSource,
+    /testID="shared\.webview\.invalidLink\.backButton"/,
+    'expected the native invalid-link state to expose a stable back control',
   );
   assert.match(
     webviewSource,
@@ -66,7 +71,12 @@ test('web webview screen offers recovery when the legal url is invalid', () => {
   );
   assert.match(
     webviewWebSource,
-    /router\.back\(\)[\s\S]*testID="shared\.webview\.invalidLink\.backButton"/s,
-    'expected the web invalid-link state to provide a recoverable back action',
+    /const\s+goBack\s*=\s*\(\)\s*=>\s*\{[\s\S]*router\.canGoBack\(\)[\s\S]*router\.replace\(fallbackPath\)/s,
+    'expected the web invalid-link state to handle both history and direct-entry navigation',
+  );
+  assert.match(
+    webviewWebSource,
+    /testID="shared\.webview\.invalidLink\.backButton"/,
+    'expected the web invalid-link state to expose a stable back control',
   );
 });

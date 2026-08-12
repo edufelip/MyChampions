@@ -48,10 +48,14 @@ export function buildOriginWhitelist(hostname: string): string[] {
  *   relative paths.
  */
 export function resolveSafeExternalUrl(
-  value: string | null | undefined,
+  value: string | string[] | null | undefined,
   options: SafeExternalUrlOptions = {},
 ): string | null {
-  const candidate = value?.trim();
+  if (Array.isArray(value) || typeof value !== 'string') {
+    return null;
+  }
+
+  const candidate = value.trim();
   if (!candidate) return null;
 
   let parsed: URL;
