@@ -61,6 +61,6 @@ test('@functional @feature:training exercise search opens within the Pixel 5 vie
     contentType: 'image/png',
   });
 
-  await dialog.getByText('Back', { exact: true }).click();
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(dialog).toBeHidden();
 });

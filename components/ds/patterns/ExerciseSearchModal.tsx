@@ -19,10 +19,10 @@ import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
-import type { useTranslation} from '@/localization';
-import { type TranslationKey } from '@/localization';
+import { type TranslationKey    } from '@/localization';
 import type { ExerciseItem } from '@/features/plans/exercise-service-source';
 import type { useExerciseSearch } from '@/features/plans/use-exercise-search';
+import type { useTranslation } from '@/localization';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -145,7 +145,12 @@ export function ExerciseSearchModal({
                 ? t('pro.plan.item.field.name.label')
                 : t('pro.plan.item.search.placeholder')}
             </Text>
-            <Pressable onPress={onClose} hitSlop={12}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.role.cta_back')}
+              onPress={onClose}
+              hitSlop={12}
+            >
               <Text style={{ color: theme.color.accentPrimary, fontWeight: '600' }}>
                 {t('auth.role.cta_back')}
               </Text>
