@@ -52,6 +52,7 @@
 - Pre-lapse entitlement warning must be visible before lock state when risk is detected.
 - When offline, dashboard must show persistent read-only banner and explicit write-lock reasons for blocked actions.
 - Accessibility baseline applies for text scaling, focus order, contrast, and screen-reader labels on dashboard controls.
+- The leading/trailing MaterialIcons glyphs inside the attention-retry button, the subscription row, task cards, and quick-action cards are decorative: they are marked `aria-hidden` and excluded from each control's accessible name, which is announced from its visible label text alone (ET-21).
 
 ## Data Contract
 - Inputs:

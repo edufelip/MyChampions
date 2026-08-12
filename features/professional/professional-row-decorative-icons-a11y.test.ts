@@ -29,11 +29,15 @@ function assertEveryMaterialIconIsAriaHidden(componentSource: string, componentN
   const iconTags = componentSource.match(/<MaterialIcons\b[\s\S]*?\/>/g) ?? [];
   assert.ok(iconTags.length > 0, `expected ${componentName} to render at least one MaterialIcons`);
   for (const tag of iconTags) {
+    // Match the bare JSX boolean shorthand (`aria-hidden`) or an explicit
+    // `true` value, not just the attribute name — `aria-hidden={false}` (or
+    // "false"/'false') must NOT satisfy this, or the test would pass while
+    // the icon stays exposed to the accessibility tree.
     assert.match(
       tag,
-      /aria-hidden/,
-      `decorative MaterialIcons in ${componentName} must be marked aria-hidden so it is excluded ` +
-        `from the accessible name, got: ${tag}`,
+      /\baria-hidden(?:\s*=\s*(?:\{true\}|"true"|'true'))?(?=\s|\/?>)/,
+      `decorative MaterialIcons in ${componentName} must be marked aria-hidden (true) so it is ` +
+        `excluded from the accessible name, got: ${tag}`,
     );
   }
 }
