@@ -163,7 +163,7 @@ export default function ProfessionalPendingScreen() {
     const results = await Promise.all(
       ids.map(async (id) => {
         try {
-          return await unbindConnection(id);
+          return await unbindConnection(id, { reload: false });
         } catch {
           return 'unknown';
         }

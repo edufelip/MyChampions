@@ -68,6 +68,11 @@ test.describe('@critical @feature:auth @feature:connections @feature:subscriptio
 
       await page.getByTestId('student.home.accountButton').last().click();
       await expect(page.getByTestId('student.professionals.screen')).toBeVisible();
+      await expect(page.getByTestId('student.professionals.connectionCard.0')).toHaveCount(0);
+      await page.screenshot({
+        fullPage: true,
+        path: testInfo.outputPath(`student-connection-empty-${viewport.name}.png`),
+      });
       await page.getByTestId('student.professionals.scanQrButton').click();
       await expect(page.getByTestId('student.professionals.submitError')).toBeVisible();
       await expect(page.getByTestId('student.professionals.codeInput')).toBeVisible();

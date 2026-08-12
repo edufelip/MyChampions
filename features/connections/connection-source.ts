@@ -207,6 +207,7 @@ function getE2EConnectionFixtures(): ConnectionRecord[] | null {
 
   if (
     process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE === 'basic' &&
+    isProfessionalE2EFixtureSession() &&
     !e2eEndedConnectionIds.has('e2e-professional-pending-connection')
   ) {
     connections.push({
@@ -223,6 +224,11 @@ function getE2EConnectionFixtures(): ConnectionRecord[] | null {
   }
 
   return connections;
+}
+
+function isProfessionalE2EFixtureSession(): boolean {
+  if (typeof sessionStorage === 'undefined') return true;
+  return sessionStorage.getItem('mychampions.e2e.locked-role') === 'professional';
 }
 
 function normalizeConnectionSourceError(error: unknown): ConnectionSourceError {

@@ -37,7 +37,10 @@ export type UseConnectionsResult = {
   reload: () => void;
   submitCode: (code: string) => Promise<InviteSubmitErrorReason | null>;
   confirmConnection: (connectionId: string) => Promise<ConnectionActionErrorReason | null>;
-  unbindConnection: (connectionId: string) => Promise<ConnectionActionErrorReason | null>;
+  unbindConnection: (
+    connectionId: string,
+    options?: { reload?: boolean },
+  ) => Promise<ConnectionActionErrorReason | null>;
 };
 
 /**
@@ -106,12 +109,15 @@ export function useConnections(isAuthenticated: boolean): UseConnectionsResult {
   );
 
   const unbindConnection = useCallback(
-    async (connectionId: string): Promise<ConnectionActionErrorReason | null> => {
+    async (
+      connectionId: string,
+      options?: { reload?: boolean },
+    ): Promise<ConnectionActionErrorReason | null> => {
       if (!isAuthenticated) return 'configuration';
 
       try {
         await endConnection(connectionId);
-        load();
+        if (options?.reload !== false) load();
         return null;
       } catch (err) {
         return normalizeConnectionActionError(err);

@@ -45,6 +45,7 @@
 - Pending-queue filtering/search cannot expose records outside professional scope.
 - Bulk deny can operate only on `pending_confirmation` requests and must preserve lifecycle audit metadata.
 - Bulk deny confirmation cancel must preserve the current selection; confirmation must show progress, refresh counters after success, and keep an actionable error state when any selected request fails.
+- Bulk deny batches the selected mutations without per-item reloads and performs one final queue refresh after all results settle, so a stale intermediate response cannot overwrite the final state.
 - Bulk deny confirmation must recheck the offline write lock at the moment of native confirmation; an offline confirmation must not mutate and must explain how to recover.
 - Bulk assignment target list must include only active students eligible for selected plan domain.
 - Each plan-picker row exposes a stable semantic assignment control for native
