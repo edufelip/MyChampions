@@ -160,6 +160,7 @@ export default function LanguageSelectScreen() {
                   ]}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: isSelected }}
+                  aria-checked={isSelected}
                   accessibilityLabel={LOCALE_DISPLAY_NAMES[locale]}
                   testID={`settings.languageSelect.option.${locale}`}>
                   <Text
