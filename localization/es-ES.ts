@@ -353,6 +353,8 @@ export const esES: Record<TranslationKey, string> = {
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerar',
   'pro.home.invite_code.rotate_confirm_no': 'Cancelar',
   'pro.home.invite_code.rotate_error': 'No se pudo regenerar el código. Inténtalo de nuevo.',
+  'pro.home.invite_code.rotate_success':
+    'Código de invitación regenerado. Comparte el nuevo código con los alumnos.',
   'pro.home.invite_code.empty': 'No hay código de invitación activo.',
   'pro.home.invite_code.specialty_required':
     'Añade una especialidad antes de crear un código de invitación.',

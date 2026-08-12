@@ -340,6 +340,8 @@ export const enUS = {
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerate',
   'pro.home.invite_code.rotate_confirm_no': 'Cancel',
   'pro.home.invite_code.rotate_error': 'Could not regenerate code. Try again.',
+  'pro.home.invite_code.rotate_success':
+    'Invite code regenerated. Share the new code with students.',
   'pro.home.invite_code.empty': 'No active invite code.',
   'pro.home.invite_code.specialty_required': 'Add a specialty before creating an invite code.',
   'pro.home.invite_code.add_specialty': 'Manage specialties',

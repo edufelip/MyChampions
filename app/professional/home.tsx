@@ -13,7 +13,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -26,8 +25,16 @@ import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { InviteCodeRotationModal } from '@/components/ds/patterns/InviteCodeRotationModal';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import {
+  buildInviteCodeRotationCanceled,
+  buildInviteCodeRotationFailed,
+  buildInviteCodeRotationRequested,
+  buildInviteCodeRotationSucceeded,
+} from '@/features/analytics/analytics.logic';
+import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import { shareAdapter } from '@/features/platform/share-adapter';
@@ -68,6 +75,7 @@ export default function ProfessionalHomeScreen() {
   const theme = getDsTheme(scheme);
   const { t } = useTranslation();
   const router = useRouter();
+  const { emitEvent } = useAnalytics();
   const { currentUser } = useAuthSession();
   const { width: viewportWidth } = useWindowDimensions();
   const usesDesktopLayout = viewportWidth >= 1024;
@@ -111,6 +119,10 @@ export default function ProfessionalHomeScreen() {
   const isWriteLocked = isPlanUpdateLocked(subState) || offlineDisplay.showOfflineBanner;
 
   const [rotateError, setRotateError] = useState<string | null>(null);
+  const [rotateSuccess, setRotateSuccess] = useState(false);
+  const [isRotateConfirmVisible, setIsRotateConfirmVisible] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
+  const rotateInFlightRef = useRef(false);
   const [planChangeNotification, setPlanChangeNotification] =
     useState<ProfessionalPlanChangeNotificationSummary>(emptyPlanChangeNotificationSummary);
   const [planChangeState, setPlanChangeState] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -154,27 +166,41 @@ export default function ProfessionalHomeScreen() {
 
   useEffect(() => loadPlanChangeNotifications(), [loadPlanChangeNotifications]);
 
-  function confirmRotate() {
-    Alert.alert(
-      t('pro.home.invite_code.rotate_confirm_title') as string,
-      t('pro.home.invite_code.rotate_confirm_body') as string,
-      [
-        {
-          text: t('pro.home.invite_code.rotate_confirm_no') as string,
-          style: 'cancel',
-        },
-        {
-          text: t('pro.home.invite_code.rotate_confirm_yes') as string,
-          onPress: async () => {
-            setRotateError(null);
-            const err = await rotate();
-            if (err) {
-              setRotateError(t('pro.home.invite_code.rotate_error') as string);
-            }
-          },
-        },
-      ],
-    );
+  function openRotateConfirmation() {
+    setRotateError(null);
+    setRotateSuccess(false);
+    setIsRotateConfirmVisible(true);
+    emitEvent(buildInviteCodeRotationRequested());
+  }
+
+  function closeRotateConfirmation() {
+    if (rotateInFlightRef.current) return;
+    setIsRotateConfirmVisible(false);
+    setRotateError(null);
+    emitEvent(buildInviteCodeRotationCanceled());
+  }
+
+  async function confirmRotate() {
+    if (rotateInFlightRef.current) return;
+
+    rotateInFlightRef.current = true;
+    setIsRotating(true);
+    setRotateError(null);
+    setRotateSuccess(false);
+
+    const err = await rotate();
+    rotateInFlightRef.current = false;
+    setIsRotating(false);
+
+    if (err) {
+      setRotateError(t('pro.home.invite_code.rotate_error') as string);
+      emitEvent(buildInviteCodeRotationFailed(err));
+      return;
+    }
+
+    setIsRotateConfirmVisible(false);
+    setRotateSuccess(true);
+    emitEvent(buildInviteCodeRotationSucceeded());
   }
 
   async function handleShareCode(code: string) {
@@ -219,13 +245,14 @@ export default function ProfessionalHomeScreen() {
   }
 
   return (
-    <DsScreen
-      scheme={scheme}
-      contentWidth="wide"
-      withBlobs={false}
-      testID="pro.home.screen"
-      contentContainerStyle={styles.content}
-    >
+    <>
+      <DsScreen
+        scheme={scheme}
+        contentWidth="wide"
+        withBlobs={false}
+        testID="pro.home.screen"
+        contentContainerStyle={styles.content}
+      >
       <Stack.Screen options={{ title: t('pro.home.title'), headerShown: false }} />
 
       <View style={styles.heroWrap}>
@@ -547,6 +574,16 @@ export default function ProfessionalHomeScreen() {
                   </Text>
                 )}
 
+                {rotateSuccess ? (
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    style={[styles.successText, { color: theme.color.success }]}
+                    testID="pro.home.rotateCodeSuccess"
+                  >
+                    {t('pro.home.invite_code.rotate_success')}
+                  </Text>
+                ) : null}
+
                 {rotateError ? (
                   <Text style={[styles.errorText, { color: theme.color.danger }]}>
                     {rotateError}
@@ -574,7 +611,8 @@ export default function ProfessionalHomeScreen() {
                     variant="primary"
                     size="xs"
                     label={t('pro.home.invite_code.rotate') as string}
-                    onPress={confirmRotate}
+                    onPress={openRotateConfirmation}
+                    disabled={isRotating}
                     fullWidth={false}
                     style={styles.outlineButtonCompact}
                     testID="pro.home.rotateCodeCta"
@@ -636,7 +674,20 @@ export default function ProfessionalHomeScreen() {
           </Pressable>
         </View>
       </View>
-    </DsScreen>
+      </DsScreen>
+      <InviteCodeRotationModal
+        errorMessage={rotateError}
+        isSubmitting={isRotating}
+        isVisible={isRotateConfirmVisible}
+        onClose={closeRotateConfirmation}
+        onConfirm={() => {
+          void confirmRotate();
+        }}
+        scheme={scheme}
+        t={t}
+        theme={theme}
+      />
+    </>
   );
 }
 
@@ -1048,6 +1099,7 @@ const styles = StyleSheet.create({
   },
   meta: { ...DsTypography.caption },
   errorText: { ...DsTypography.caption },
+  successText: { ...DsTypography.caption, fontWeight: '700' },
   subscriptionCard: {
     alignItems: 'center',
     borderRadius: DsRadius.xl,

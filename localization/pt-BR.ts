@@ -357,6 +357,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerar',
   'pro.home.invite_code.rotate_confirm_no': 'Cancelar',
   'pro.home.invite_code.rotate_error': 'Não foi possível regenerar o código. Tente novamente.',
+  'pro.home.invite_code.rotate_success':
+    'Código de convite regenerado. Compartilhe o novo código com os alunos.',
   'pro.home.invite_code.empty': 'Nenhum código de convite ativo.',
   'pro.home.invite_code.specialty_required':
     'Adicione uma especialidade antes de criar um código de convite.',

@@ -409,7 +409,11 @@
     "web:professional": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/visual-evidence.spec.ts"],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/visual-evidence.spec.ts",
+        "e2e/web/invite-code-rotation.spec.ts"
+      ],
       "grep": "@feature:professional",
       "tier": "feature",
       "ci": true
@@ -467,6 +471,14 @@
       "projects": ["chromium"],
       "specs": ["e2e/web-flows/complete-flow-atlas.spec.ts"],
       "grep": "@feature:shell",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:invite-code-rotation": {
+      "runner": "playwright",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/invite-code-rotation.spec.ts"],
+      "grep": "@feature:professional",
       "tier": "evidence",
       "ci": false
     }
