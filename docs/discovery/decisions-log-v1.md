@@ -808,6 +808,26 @@
     hosted, native, provider, and store-live evidence as separate states.
 
 - `D-204`: Browser bulk-deny actions use a stateful, web-compatible confirmation dialog instead of relying on `Alert.alert`, which is a no-op in the React Native web adapter. The dialog uses the shared web focus/Escape contract, preserves selection on cancel, reports loading/error/success states, and retains the native alert path.
+- `D-202`: Supersedes the AsyncStorage half of `D-151`. Native (iOS/Android)
+  server-auth session persistence (`features/auth/server-auth-storage.ts`)
+  splits the persisted record across two backing stores instead of writing
+  the whole JSON blob to plain `@react-native-async-storage/async-storage`:
+  - The bearer credentials (`accessToken`, `refreshToken` — the actual secret
+    that lets a device act as the user for the refresh token's 30-day
+    lifetime) are written to `expo-secure-store`, which is backed by the iOS
+    Keychain / Android Keystore.
+  - The remaining session fields (profile, `expiresAt`, `authProviderIds`,
+    `emailVerified`) are not authentication secrets on their own and stay in
+    plain AsyncStorage, keeping each SecureStore write comfortably under its
+    ~2048-byte platform limit even with this app's RS256-signed tokens.
+  - A record written by the pre-fix code (tokens embedded directly in the
+    AsyncStorage blob) is migrated in place the first time it is read: tokens
+    move into SecureStore and are stripped from the AsyncStorage copy, so an
+    already-logged-in device keeps its session across the upgrade instead of
+    being signed out.
+  - The web build is unaffected: `features/auth/server-auth-storage.web.ts`
+    was already a correct no-op (web relies on the server's HttpOnly cookie
+    refresh session, not client-JS-readable storage).
 
 ## Pending Decisions
 
