@@ -47,20 +47,24 @@ export function useNetworkStatus(): NetworkStatus {
       });
       if (override) setStatus(override);
     };
-    const supportsE2ENetworkStatusEvents =
+    const e2eNetworkStatusEventTarget =
       process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' &&
       supportsE2ENetworkStatusOverride &&
-      typeof window !== 'undefined';
+      typeof window !== 'undefined' &&
+      typeof window.addEventListener === 'function' &&
+      typeof window.removeEventListener === 'function'
+        ? window
+        : null;
 
-    if (supportsE2ENetworkStatusEvents) {
-      window.addEventListener('storage', onE2ENetworkStatusStorage);
+    if (e2eNetworkStatusEventTarget) {
+      e2eNetworkStatusEventTarget.addEventListener('storage', onE2ENetworkStatusStorage);
     }
 
     if (e2eNetworkStatusOverride) {
       setStatus(e2eNetworkStatusOverride);
       return () => {
-        if (supportsE2ENetworkStatusEvents) {
-          window.removeEventListener('storage', onE2ENetworkStatusStorage);
+        if (e2eNetworkStatusEventTarget) {
+          e2eNetworkStatusEventTarget.removeEventListener('storage', onE2ENetworkStatusStorage);
         }
       };
     }
@@ -77,8 +81,8 @@ export function useNetworkStatus(): NetworkStatus {
 
     return () => {
       unsubscribe();
-      if (supportsE2ENetworkStatusEvents) {
-        window.removeEventListener('storage', onE2ENetworkStatusStorage);
+      if (e2eNetworkStatusEventTarget) {
+        e2eNetworkStatusEventTarget.removeEventListener('storage', onE2ENetworkStatusStorage);
       }
     };
   }, [e2eNetworkStatusOverride]);
