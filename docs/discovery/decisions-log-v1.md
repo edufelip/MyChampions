@@ -1,6 +1,7 @@
 # Decisions Log V1
 
 ## Confirmed Decisions
+
 - `D-001`: Role is fixed per account; switching role requires creating a new account with a different email.
 - `D-002`: Professional credential capture is optional; no credential-verification workflow is included in MVP.
 - `D-003`: Professional-student connection uses invite code; invite submission is handled by the MyChampions server `POST /connections/invite-submissions` route so pending Connection creation, duplicate checks, and pending-cap checks are enforced server-side.
@@ -45,9 +46,9 @@
 - `D-042`: MVP error handling uses mixed strategy (inline + full-screen + toast).
 - `D-043`: If entitlement lapses while above cap, professional new activations and student-plan updates are locked until entitlement is restored.
 - `D-044`: Student home prioritizes nutrition above training and highlights pending connection status.
- - `D-045`: Bottom navigation model:
-   - Professional: dashboard, students, nutrition, training, account.
-   - Student: home, nutrition, exercise, recipes, profile.
+- `D-045`: Bottom navigation model:
+  - Professional: dashboard, students, nutrition, training, account.
+  - Student: home, nutrition, exercise, recipes, profile.
 - `D-046`: Password special-character policy uses ASCII punctuation symbols only; emoji and non-ASCII symbols do not satisfy the special-character requirement.
 - `D-047`: Offline cached content stale policy uses 24-hour TTL with stale indicator + last-sync timestamp while preserving read-only access.
 - `D-048`: Mobile client stack is React Native with Expo.
@@ -161,7 +162,7 @@
   2. **M2** — 401 HTTP response was incorrectly mapped to `'configuration'` error code; 401 and 403 now both map to `'unauthenticated'`. `PhotoAnalysisErrorReason` union extended with `'unauthenticated'` variant. `normalizePhotoAnalysisError` updated to handle `'unauthenticated'` code and message patterns.
   3. **M3** — Source layer had no injectable deps (no `MealPhotoAnalysisSourceDeps`), making it impossible to unit-test. `MealPhotoAnalysisSourceDeps` now uses provider-neutral server dependencies (`getServerBaseUrl`, `getCurrentAccessToken`, `fetchFn`), mirroring the current server-backed source pattern. The focused `meal-photo-analysis-source.test.ts` suite (TC-285) now runs without any network access.
   4. **M4** — Network-level fetch catch block was routing through `normalizePhotoAnalysisError` (fragile string matching); changed to unconditionally throw `'network'`, consistent with `food-search-source.ts` pattern.
-  Two should-fix issues also addressed: hook now reads `err.code` directly when `err instanceof PhotoAnalysisSourceError` (S1); 403 was not handled and fell through to `invalid_response` — now correctly mapped to `'unauthenticated'` (S4). The mobile meal-photo source maps HTTP 401/403 to `'unauthenticated'` before parsing response JSON, so empty or non-JSON auth failures cannot be swallowed as `invalid_response`. The local MyChampions server now trims meal-photo analysis image input, rejects blank or whitespace-only payloads with `400 invalid_image`, and rejects images above 6,000,000 base64 characters with `413 file_too_large` before analyzer execution. Analyzer prompt construction is server-owned in `server/src/nutrition/meal-photo-analysis-prompt.ts` so the mobile client no longer carries provider prompt text (S3). The server-owned provider request contract in `server/src/nutrition/meal-photo-analysis-request.ts` pins image detail to `high`, caps analyzer output at 500 tokens, and builds the JPEG data URL from the normalized base64 payload before any future provider adapter call.
+     Two should-fix issues also addressed: hook now reads `err.code` directly when `err instanceof PhotoAnalysisSourceError` (S1); 403 was not handled and fell through to `invalid_response` — now correctly mapped to `'unauthenticated'` (S4). The mobile meal-photo source maps HTTP 401/403 to `'unauthenticated'` before parsing response JSON, so empty or non-JSON auth failures cannot be swallowed as `invalid_response`. The local MyChampions server now trims meal-photo analysis image input, rejects blank or whitespace-only payloads with `400 invalid_image`, and rejects images above 6,000,000 base64 characters with `413 file_too_large` before analyzer execution. Analyzer prompt construction is server-owned in `server/src/nutrition/meal-photo-analysis-prompt.ts` so the mobile client no longer carries provider prompt text (S3). The server-owned provider request contract in `server/src/nutrition/meal-photo-analysis-request.ts` pins image detail to `high`, caps analyzer output at 500 tokens, and builds the JPEG data URL from the normalized base64 payload before any future provider adapter call.
 
 - `D-129`: BL-108 camera capture and client-side compression wired in `features/nutrition/use-meal-photo-analysis.ts`:
   - **Image picker**: `expo-image-picker@~16.0.6` (`launchCameraAsync` + `launchImageLibraryAsync`). `startCapture()` presents a localized native `Alert.alert` action sheet, then requests the applicable permission. User cancellation returns to `idle`; permission denial raises the typed `photo_permission_denied` adapter error and displays localized device-settings guidance while manual entry remains available.
@@ -752,12 +753,64 @@
 - `D-199`: On-demand manual QA uses a **global** Agent Skill (`~/.cursor/skills/qa-manual-run`) plus Linear, not a Cursor Automation trigger. Product specifics live in family adapters (`families/mychampions.md`, `families/guiabrecho.md`); repo-local `qa-*.md` files remain pack sources of truth.
   - Kickoff is chat-only. Scope defaults to the **surface** smoke pack (cwd or `surface=`), or explicit `UC-*` / `TC-*` / named packs. MyChampions surfaces: `mobile`/`web` (`mychampions`), `api` (`server`), `food` (`mychampionsapi-food`), `exercises` (`mychampionsapi-exercises`).
   - Execution is hybrid: automated signal for the surface, then a human-like pass (UI or backend contract/security/data-shape/concurrency checklist). Cross-surface only when scoped.
-  - Linear system of record is a parent **QA Run** issue (`qa-run` label) with auto-filed child issues using the workspace **Bug** label in the MyChampions project (team Edexample). Doc Gaps and Known Deferred stay on the QA Run (`doc-gap` / `known-deferred`) and are never filed as Bugs. Bug titles require id prefixes with strict open-issue dedupe.
+  - Linear system of record is a parent **QA Run** issue (`qa-run` label) with auto-filed child issues using the workspace **Bug** label in the MyChampions project (team Edulyta). Doc Gaps and Known Deferred stay on the QA Run (`doc-gap` / `known-deferred`) and are never filed as Bugs. Bug titles require id prefixes with strict open-issue dedupe.
   - Environment registry is `docs/test-cases/qa-env-registry.md` for the app: default `local`; `dev` refused until a dedicated VM development API/DB exists; `prod` confirm-gated (`confirm prod qa`). App `APP_VARIANT` is not the QA env id.
   - Before finalize, each run writes Skill self-improvement insights to `~/Documents/Default/Projects/MyChampions/QA-Skill-Insights/` for human triage. These are not Linear Bugs.
 
+- `D-200`: iOS test execution is controlled by the default-on repository variable
+  `MYCHAMPIONS_ENABLE_IOS_TESTS`.
+  - The exact string `false` skips new iOS test-only jobs, including the manual
+    iOS smoke path, selected iOS Detox suites, protected full iOS Detox
+    validation, and provider-backed iOS Test Store validation. An unset
+    variable or any other value, including `true`, keeps iOS testing enabled.
+    The protected full workflow remains test-only even when triggered by a
+    published release event, and this checkout has no scheduled or nightly iOS
+    test workflow.
+  - The variable does not cancel jobs that are already running and does not
+    gate credentialed release/distribution workflows.
+  - The final selective status publisher treats an intentional iOS skip as
+    allowed only while the variable is exactly `false`; JavaScript,
+    TypeScript, lint, unit, web, Android, backend, and all other enabled lanes
+    remain enforced.
+- `D-201`: The 2026-08-08 testing-strategy workstreams are implemented as
+  evidence-producing gates, but unavailable hosted, native-runner, provider,
+  and store-live sources remain explicitly unavailable rather than inferred.
+  - Selective CI publication now authorizes and publishes the exact-head
+    status on `push` as well as pull-request/dispatch/merge-group runs. Owned
+    pending-status protection remains limited to event types that have a pull
+    request context; a hosted rerun on the corrected revision is still needed
+    to prove the previous main-branch failure publication path.
+  - The app now has typed ESLint, typecheck, Prettier check, Husky/lint-staged,
+    browser critical paths, visual evidence metadata, protected deterministic
+    native profiles, and three targeted native gap scenarios. `noUncheckedIndexedAccess`
+    was evaluated but is not enabled in this change because the current app
+    baseline requires a separately budgeted migration; that debt is tracked as
+    an open follow-up, not silently waived.
+  - The root Bun server, food service, and exercise service each expose local
+    build/lint/test or consumer-contract gates. Their contracts keep the
+    MyChampions server as the domain backend baseline; no new cross-service
+    API shape is accepted without a documented consumer mismatch.
+  - Full Detox validation is protected manual/release-only, checks out the
+    exact SHA, builds once per platform, serializes the explicit recovery-root
+    host lock, and excludes live RevenueCat. No unattended nightly is enabled
+    until runner cleanup, duration, and reliability SLO evidence exists.
+  - RevenueCat validation is manual and Test Store-only with `test_*` keys,
+    isolated App User IDs, and read-only server reconciliation. Missing keys,
+    provider access, Android catalog/app configuration, or runner capacity are
+    blocked evidence; deterministic entitlement fixtures are not provider
+    proof. Production purchases and store mutations remain prohibited.
+  - The first recurring-persona browser-first run is Linear QA Run `ET-25` in
+    the Edulyta workspace. It records the three personas, twelve manifest
+    feature families, browser evidence, and unverified native/provider rows;
+    no Bug is filed without two reproductions plus a control.
+  - A dated cross-repo test-gap report and repeatable sweep procedure are
+    required monthly. This change records the first report and keeps local,
+    hosted, native, provider, and store-live evidence as separate states.
+
 ## Pending Decisions
+
 - See `docs/discovery/open-questions-v1.md`.
 
 ## Native iOS Build Compatibility
+
 - `D-173`: Local iOS builds on Xcode 26.5 keep React Native targets on C++20 but force only the `fmt` pod target to C++17 in `ios/Podfile` post-install, because `fmt 11.0.2` fails to compile its C++20 consteval `FMT_STRING` path under this toolchain.

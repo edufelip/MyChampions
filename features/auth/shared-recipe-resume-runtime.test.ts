@@ -35,5 +35,8 @@ test('role selection and shared recipe route no longer document deferred resume 
   const sharedRecipe = readProjectFile('app/shared/recipes/[shareToken].tsx');
 
   assert.match(roleSelection, /returnTo \?\? resolvePostRoleRoute\(role\)/);
-  assert.equal(sharedRecipe.includes('redirect-back mechanism (deep-link resume) is deferred'), false);
+  assert.equal(
+    sharedRecipe.includes('redirect-back mechanism (deep-link resume) is deferred'),
+    false,
+  );
 });

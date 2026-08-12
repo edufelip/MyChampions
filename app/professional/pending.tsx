@@ -23,12 +23,7 @@ import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import {
-  DsRadius,
-  DsSpace,
-  DsTypography,
-  getDsTheme,
-} from '@/constants/design-system';
+import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import {
   buildInvitePendingBulkDenied,
@@ -57,7 +52,9 @@ export default function ProfessionalPendingScreen() {
   const { currentUser } = useAuthSession();
   const { emitEvent } = useAnalytics();
 
-  const { state, reload, confirmConnection, unbindConnection } = useConnections(Boolean(currentUser));
+  const { state, reload, confirmConnection, unbindConnection } = useConnections(
+    Boolean(currentUser),
+  );
   const networkStatus = useNetworkStatus();
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
     state.kind === 'ready' ? state.lastSyncedAtIso : null,
@@ -105,7 +102,7 @@ export default function ProfessionalPendingScreen() {
         Alert.alert(t('common.error.generic'), t('common.error.retry'));
       });
     },
-    [confirmConnection, emitEvent, t]
+    [confirmConnection, emitEvent, t],
   );
 
   const onDeny = useCallback(
@@ -118,42 +115,43 @@ export default function ProfessionalPendingScreen() {
         Alert.alert(t('common.error.generic'), t('common.error.retry'));
       });
     },
-    [emitEvent, t, unbindConnection]
+    [emitEvent, t, unbindConnection],
   );
 
   const onBulkDeny = () => {
     if (selectedIds.size === 0) return;
 
-    Alert.alert(
-      t('pro.pending.bulk_deny.confirm_title'),
-      t('pro.pending.bulk_deny.confirm_body'),
-      [
-        { text: t('relationship.unbind.confirm_no'), style: 'cancel' },
-        {
-          text: t('pro.pending.bulk_deny.cta'),
-          style: 'destructive',
-          onPress: async () => {
-            setIsBulkDenying(true);
-            const ids = Array.from(selectedIds);
+    Alert.alert(t('pro.pending.bulk_deny.confirm_title'), t('pro.pending.bulk_deny.confirm_body'), [
+      { text: t('relationship.unbind.confirm_no'), style: 'cancel' },
+      {
+        text: t('pro.pending.bulk_deny.cta'),
+        style: 'destructive',
+        onPress: async () => {
+          setIsBulkDenying(true);
+          const ids = Array.from(selectedIds);
 
-            const results = await Promise.all(ids.map((id) => unbindConnection(id)));
-            if (results.every((err) => !err)) {
-              emitEvent(buildInvitePendingBulkDenied(ids.length));
-            }
+          const results = await Promise.all(ids.map((id) => unbindConnection(id)));
+          if (results.every((err) => !err)) {
+            emitEvent(buildInvitePendingBulkDenied(ids.length));
+          }
 
-            setSelectedIds(new Set());
-            setIsBulkDenying(false);
-            reload();
+          setSelectedIds(new Set());
+          setIsBulkDenying(false);
+          reload();
 
-            Alert.alert(t('pro.pending.bulk_deny.success'));
-          },
+          Alert.alert(t('pro.pending.bulk_deny.success'));
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
-    <DsScreen scheme={scheme} contentWidth="content" testID="pro.pending.screen" contentContainerStyle={styles.content}>
+    <DsScreen
+      scheme={scheme}
+      contentWidth="content"
+      testID="pro.pending.screen"
+      contentContainerStyle={styles.content}
+    >
       <Stack.Screen options={{ title: t('pro.pending.filter.label'), headerShown: false }} />
 
       <DsBackButton
@@ -192,9 +190,14 @@ export default function ProfessionalPendingScreen() {
           </Text>
         </View>
         {state.kind === 'ready' ? (
-          <View style={[styles.pendingCountPill, { backgroundColor: theme.color.accentPrimarySoft }]}>
+          <View
+            style={[styles.pendingCountPill, { backgroundColor: theme.color.accentPrimarySoft }]}
+          >
             <Text style={[styles.pendingCountText, { color: theme.color.accentPrimary }]}>
-              {(t('pro.pending.count') as string).replace('{count}', String(pendingConnections.length))}
+              {(t('pro.pending.count') as string).replace(
+                '{count}',
+                String(pendingConnections.length),
+              )}
             </Text>
           </View>
         ) : null}
@@ -249,14 +252,20 @@ export default function ProfessionalPendingScreen() {
           />
         ) : state.kind === 'error' ? (
           <View style={styles.centered}>
-            <Text style={[styles.bodyText, { color: theme.color.textPrimary }]}>{t('pro.pending.error')}</Text>
+            <Text style={[styles.bodyText, { color: theme.color.textPrimary }]}>
+              {t('pro.pending.error')}
+            </Text>
             <Pressable accessibilityRole="button" onPress={reload} testID="pro.pending.retryButton">
-              <Text style={[styles.link, { color: theme.color.accentPrimary }]}>{t('common.error.retry')}</Text>
+              <Text style={[styles.link, { color: theme.color.accentPrimary }]}>
+                {t('common.error.retry')}
+              </Text>
             </Pressable>
           </View>
         ) : filteredPending.length === 0 ? (
           <View style={styles.centered}>
-            <Text style={[styles.bodyText, { color: theme.color.textSecondary }]}>{t('pro.pending.empty')}</Text>
+            <Text style={[styles.bodyText, { color: theme.color.textSecondary }]}>
+              {t('pro.pending.empty')}
+            </Text>
           </View>
         ) : (
           filteredPending.map((conn, i) => (
@@ -313,15 +322,19 @@ function PendingRow({
           backgroundColor: isSelected ? theme.color.accentPrimarySoft : 'transparent',
         },
       ]}
-      testID={`pro.pending.row.${testIndex}`}>
+      testID={`pro.pending.row.${testIndex}`}
+    >
       <View
         style={[
           styles.checkbox,
           { borderColor: isSelected ? theme.color.accentPrimary : theme.color.textSecondary },
         ]}
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: isSelected }}>
-        {isSelected ? <View style={[styles.checkboxFill, { backgroundColor: theme.color.accentPrimary }]} /> : null}
+        accessibilityState={{ checked: isSelected }}
+      >
+        {isSelected ? (
+          <View style={[styles.checkboxFill, { backgroundColor: theme.color.accentPrimary }]} />
+        ) : null}
       </View>
 
       <View style={styles.rowInfo}>
@@ -356,8 +369,11 @@ function PendingRow({
               backgroundColor: isWriteLocked ? theme.color.surfaceMuted : theme.color.dangerSoft,
             },
           ]}
-          testID={`pro.pending.denyButton.${testIndex}`}>
-          <Text style={[styles.denyText, { color: theme.color.danger }]}>{t('pro.pending.deny.cta')}</Text>
+          testID={`pro.pending.denyButton.${testIndex}`}
+        >
+          <Text style={[styles.denyText, { color: theme.color.danger }]}>
+            {t('pro.pending.deny.cta')}
+          </Text>
         </Pressable>
       </View>
     </Pressable>

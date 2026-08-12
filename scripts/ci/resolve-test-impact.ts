@@ -62,7 +62,7 @@ if (githubOutput) {
     mode: result.mode,
     has_web: String(result.webSuites.length > 0),
     has_web_server: String(
-      result.webSuites.some((suite) => manifest.suites[suite]?.runner === 'playwright-server')
+      result.webSuites.some((suite) => manifest.suites[suite]?.runner === 'playwright-server'),
     ),
     has_detox_ios: String(result.detoxIosSuites.length > 0),
     has_detox_android: String(result.detoxAndroidSuites.length > 0),
@@ -89,7 +89,7 @@ if (githubOutput) {
     Object.entries(output)
       .map(([key, value]) => `${key}=${value}`)
       .join('\n') + '\n',
-    'utf8'
+    'utf8',
   );
 }
 

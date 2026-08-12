@@ -29,19 +29,14 @@ export type SpecialtyRecord = {
   credential: Credential | null;
 };
 
-export type SpecialtyRemovalBlockReason = 'has_active_students' | 'has_pending_students' | 'last_specialty';
+export type SpecialtyRemovalBlockReason =
+  'has_active_students' | 'has_pending_students' | 'last_specialty';
 
 export type SpecialtyRemovalResult =
-  | { allowed: true }
-  | { allowed: false; reason: SpecialtyRemovalBlockReason };
+  { allowed: true } | { allowed: false; reason: SpecialtyRemovalBlockReason };
 
 export type SpecialtyActionErrorReason =
-  | 'already_exists'
-  | 'removal_blocked'
-  | 'last_specialty'
-  | 'network'
-  | 'configuration'
-  | 'unknown';
+  'already_exists' | 'removal_blocked' | 'last_specialty' | 'network' | 'configuration' | 'unknown';
 
 export type NutritionSurfaceAccessInput = {
   role: RoleIntent | null;
@@ -80,15 +75,16 @@ export function canAccessNutritionSurface(input: NutritionSurfaceAccessInput): b
   if (input.role === 'student') return true;
   if (input.role !== 'professional') return false;
 
-  return input.specialties.some(
-    (record) => record.specialty === 'nutritionist' && record.isActive
-  );
+  return input.specialties.some((record) => record.specialty === 'nutritionist' && record.isActive);
 }
 
 export function resolveNutritionSurfaceGate(
-  input: NutritionSurfaceAccessInput & { specialtiesStatus: NutritionSurfaceGateStatus }
+  input: NutritionSurfaceAccessInput & { specialtiesStatus: NutritionSurfaceGateStatus },
 ): NutritionSurfaceGateDecision {
-  if (input.role === 'professional' && (input.specialtiesStatus === 'idle' || input.specialtiesStatus === 'loading')) {
+  if (
+    input.role === 'professional' &&
+    (input.specialtiesStatus === 'idle' || input.specialtiesStatus === 'loading')
+  ) {
     return 'loading';
   }
 
@@ -96,14 +92,12 @@ export function resolveNutritionSurfaceGate(
 }
 
 export function resolveProfessionalNutritionRouteGate(
-  input: NutritionSurfaceAccessInput & { specialtiesStatus: NutritionSurfaceGateStatus }
+  input: NutritionSurfaceAccessInput & { specialtiesStatus: NutritionSurfaceGateStatus },
 ): NutritionSurfaceGateDecision {
   if (input.role !== 'professional') return 'redirect';
   if (input.specialtiesStatus === 'idle' || input.specialtiesStatus === 'loading') return 'loading';
 
-  return input.specialties.some(
-    (record) => record.specialty === 'nutritionist' && record.isActive
-  )
+  return input.specialties.some((record) => record.specialty === 'nutritionist' && record.isActive)
     ? 'allow'
     : 'redirect';
 }
@@ -142,7 +136,7 @@ export function validateCredentialInput(input: CredentialInput): CredentialValid
 }
 
 export function resolveOptionalCredentialInput(
-  input: CredentialInput
+  input: CredentialInput,
 ): OptionalCredentialInputDecision {
   const hasAnyCredentialField =
     Boolean(input.registryId.trim()) ||
@@ -163,7 +157,8 @@ export function resolveOptionalCredentialInput(
 export function normalizeSpecialtyActionError(error: unknown): SpecialtyActionErrorReason {
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code: unknown }).code) : null;
-    const msg = 'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
+    const msg =
+      'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
 
     if (code === 'ALREADY_EXISTS' || msg?.includes('already exists')) return 'already_exists';
     if (code === 'REMOVAL_BLOCKED' || msg?.includes('removal blocked')) return 'removal_blocked';

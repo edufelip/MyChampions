@@ -4,7 +4,10 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 test('connection invite submission does not use provider-token function fallback', () => {
-  const source = readFileSync(join(process.cwd(), 'features/connections/connection-source.ts'), 'utf8');
+  const source = readFileSync(
+    join(process.cwd(), 'features/connections/connection-source.ts'),
+    'utf8',
+  );
   const legacyTokenProperty = ['get', 'Current', 'Id', 'Token'].join('');
   const legacyFunctionUrlProperty = ['get', 'Submit', 'Invite', 'Function', 'Url'].join('');
   const legacyEnvVar = ['EXPO_PUBLIC', 'SUBMIT_INVITE', 'FUNCTION_URL'].join('_');

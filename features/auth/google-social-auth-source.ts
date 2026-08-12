@@ -67,12 +67,12 @@ function readExpoExtra(): {
       default?: { expoConfig?: { extra?: unknown } };
       expoConfig?: { extra?: unknown };
     };
-    return (((Constants.default ?? Constants).expoConfig?.extra ?? {}) as {
+    return ((Constants.default ?? Constants).expoConfig?.extra ?? {}) as {
       googleAuth?: {
         iosClientId?: string;
         webClientId?: string;
       };
-    });
+    };
   } catch {
     return {};
   }
@@ -82,10 +82,10 @@ function resolveGoogleClientIds(): GoogleClientIds {
   const googleAuth = readExpoExtra().googleAuth ?? {};
   return {
     iosClientId: trimOptional(
-      googleAuth.iosClientId ?? process.env.EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID
+      googleAuth.iosClientId ?? process.env.EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID,
     ),
     webClientId: trimOptional(
-      googleAuth.webClientId ?? process.env.EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID
+      googleAuth.webClientId ?? process.env.EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID,
     ),
   };
 }
@@ -102,7 +102,8 @@ function resolvePlatform(): string | undefined {
 }
 
 function makeDeps(): GoogleSocialAuthSourceDeps {
-  const { GoogleSignin } = require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
+  const { GoogleSignin } =
+    require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
 
   return {
     configure: (input) => GoogleSignin.configure(input),
@@ -115,7 +116,7 @@ function makeDeps(): GoogleSocialAuthSourceDeps {
 }
 
 export async function signInWithGoogleProviderTokenFromSource(
-  deps: GoogleSocialAuthSourceDeps = makeDeps()
+  deps: GoogleSocialAuthSourceDeps = makeDeps(),
 ): Promise<void> {
   let clientIds: GoogleClientIds;
   let platform: string | undefined;
@@ -123,16 +124,25 @@ export async function signInWithGoogleProviderTokenFromSource(
     clientIds = deps.getClientIds();
     platform = deps.getPlatform();
   } catch {
-    throw new SocialAuthSourceError('configuration', 'Google OAuth client ids could not be resolved.');
+    throw new SocialAuthSourceError(
+      'configuration',
+      'Google OAuth client ids could not be resolved.',
+    );
   }
 
   const webClientId = trimOptional(clientIds.webClientId);
   const iosClientId = trimOptional(clientIds.iosClientId);
   if (!webClientId) {
-    throw new SocialAuthSourceError('configuration', 'Google web OAuth client id is not configured.');
+    throw new SocialAuthSourceError(
+      'configuration',
+      'Google web OAuth client id is not configured.',
+    );
   }
   if (platform === 'ios' && !iosClientId) {
-    throw new SocialAuthSourceError('configuration', 'Google iOS OAuth client id is not configured.');
+    throw new SocialAuthSourceError(
+      'configuration',
+      'Google iOS OAuth client id is not configured.',
+    );
   }
 
   try {
@@ -142,7 +152,10 @@ export async function signInWithGoogleProviderTokenFromSource(
       webClientId,
     });
   } catch {
-    throw new SocialAuthSourceError('configuration', 'Native Google Sign-In could not be configured.');
+    throw new SocialAuthSourceError(
+      'configuration',
+      'Native Google Sign-In could not be configured.',
+    );
   }
 
   if (platform === 'android') {

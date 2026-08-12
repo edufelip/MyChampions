@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import {
-  requestPasswordResetFromSource,
-  signOutFromSource,
-} from './account-auth-source';
+import { requestPasswordResetFromSource, signOutFromSource } from './account-auth-source';
 import {
   clearServerAuthSession,
   getCurrentServerAccessToken,
@@ -46,7 +43,7 @@ describe('account-auth-source', () => {
           },
           getServerBaseUrl: () => undefined,
         }),
-      /server URL is not configured/
+      /server URL is not configured/,
     );
   });
 
@@ -69,7 +66,7 @@ describe('account-auth-source', () => {
             },
           }),
         getServerBaseUrl: () => 'http://server.test',
-      }
+      },
     );
     assert.equal(getCurrentServerAccessToken(), 'token-1');
 

@@ -15,8 +15,7 @@
 const INVITE_CODE_RE = /^[A-Z0-9]{1,20}$/;
 
 export type QrParseResult =
-  | { kind: 'ok'; code: string }
-  | { kind: 'error'; reason: 'empty' | 'invalid_payload' };
+  { kind: 'ok'; code: string } | { kind: 'error'; reason: 'empty' | 'invalid_payload' };
 
 /**
  * Extracts and validates an invite code from a raw QR scan string.

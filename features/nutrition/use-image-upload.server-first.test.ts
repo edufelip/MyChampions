@@ -17,7 +17,7 @@ test('server-backed image upload hook does not load Firebase Storage at module i
     this: unknown,
     request: string,
     parent: NodeModule | null,
-    isMain: boolean
+    isMain: boolean,
   ) {
     if (request === 'firebase/storage') {
       blockedLoads.push(request);

@@ -53,7 +53,7 @@ export type NutritionPlanCreationMode = 'professional_library' | 'self_managed';
 
 export function resolveNutritionPlanCreationMetadata(
   authUid: string,
-  mode: NutritionPlanCreationMode
+  mode: NutritionPlanCreationMode,
 ): {
   ownerProfessionalUid: string | null;
   studentAuthUid: string;
@@ -126,7 +126,7 @@ export type TrainingPlanCreationMode = 'professional_library' | 'self_managed';
 
 export function resolveTrainingPlanCreationMetadata(
   authUid: string,
-  mode: TrainingPlanCreationMode
+  mode: TrainingPlanCreationMode,
 ): {
   ownerProfessionalUid: string | null;
   studentAuthUid: string;
@@ -192,7 +192,7 @@ export function deriveStarterTemplatePlanType(templateId: string): PlanType | nu
  * Refs: D-114
  */
 export function coalesceTemplateDescription(
-  description: string | null | undefined
+  description: string | null | undefined,
 ): string | undefined {
   return description ?? undefined;
 }
@@ -216,7 +216,7 @@ export type PlanBuilderErrorReason =
  * Refs: BR-291, BR-292, TC-276
  */
 export function validateNutritionPlanInput(
-  input: NutritionPlanInput
+  input: NutritionPlanInput,
 ): NutritionPlanValidationErrors {
   const errors: NutritionPlanValidationErrors = {};
 
@@ -247,9 +247,7 @@ export function validateNutritionPlanInput(
  * Returns an error object; empty object means valid.
  * Refs: BR-293, TC-279
  */
-export function validateTrainingPlanInput(
-  input: TrainingPlanInput
-): TrainingPlanValidationErrors {
+export function validateTrainingPlanInput(input: TrainingPlanInput): TrainingPlanValidationErrors {
   const errors: TrainingPlanValidationErrors = {};
 
   const name = input.name.trim();
@@ -262,9 +260,10 @@ export function validateTrainingPlanInput(
   return errors;
 }
 
-export function resolveTrainingDraftCreationInput(
-  input?: TrainingPlanInput
-): { input?: TrainingPlanInput; error?: 'validation' } {
+export function resolveTrainingDraftCreationInput(input?: TrainingPlanInput): {
+  input?: TrainingPlanInput;
+  error?: 'validation';
+} {
   if (!input) return { error: 'validation' };
   const errors = validateTrainingPlanInput(input);
   if (Object.keys(errors).length > 0) return { error: 'validation' };
@@ -276,7 +275,7 @@ export function resolveTrainingDraftCreationInput(
  * Name is required; quantity and notes are optional (BR-294).
  */
 export function validateTrainingSessionItemInput(
-  input: TrainingSessionItemInput
+  input: TrainingSessionItemInput,
 ): TrainingSessionItemValidationErrors {
   const errors: TrainingSessionItemValidationErrors = {};
 
@@ -300,7 +299,9 @@ export type NutritionTotals = {
  * Calculates totals from a list of meal items.
  * Refs: AC-207
  */
-export function calculateTotalsFromItems(items: (NutritionMealItem | NutritionMealItemInput)[]): NutritionTotals {
+export function calculateTotalsFromItems(
+  items: (NutritionMealItem | NutritionMealItemInput)[],
+): NutritionTotals {
   return items.reduce(
     (acc, item) => {
       const safeVal = (v: number | null | undefined) => {
@@ -314,7 +315,7 @@ export function calculateTotalsFromItems(items: (NutritionMealItem | NutritionMe
         fats: Math.round((acc.fats + safeVal(item.fats)) * 10) / 10,
       };
     },
-    { calories: 0, carbs: 0, proteins: 0, fats: 0 }
+    { calories: 0, carbs: 0, proteins: 0, fats: 0 },
   );
 }
 
@@ -332,7 +333,7 @@ export function calculateTotalsFromMeals(meals: NutritionMeal[]): NutritionTotal
         fats: Math.round((acc.fats + mealTotals.fats) * 10) / 10,
       };
     },
-    { calories: 0, carbs: 0, proteins: 0, fats: 0 }
+    { calories: 0, carbs: 0, proteins: 0, fats: 0 },
   );
 }
 
@@ -389,7 +390,7 @@ export function sanitizeNutritionMealItemInput(input: {
 }
 
 export function buildNutritionMealItemInputFromCustomMealSnapshot(
-  meal: CustomMeal
+  meal: CustomMeal,
 ): NutritionMealItemInput {
   const snapshot = buildCustomMealPlanSnapshot(meal);
   return {
@@ -426,18 +427,19 @@ export function normalizePlanBuilderError(error: unknown): PlanBuilderErrorReaso
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code: unknown }).code) : null;
     const msg =
-      'message' in error
-        ? String((error as { message: unknown }).message).toLowerCase()
-        : null;
+      'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
 
     if (code === 'PLAN_NOT_FOUND' || msg?.includes('plan not found')) return 'not_found';
-    if (
-      code === 'NO_ACTIVE_ASSIGNMENT' ||
-      msg?.includes('no active assignment')
-    )
+    if (code === 'NO_ACTIVE_ASSIGNMENT' || msg?.includes('no active assignment'))
       return 'no_active_assignment';
     if (code === 'VALIDATION' || msg?.includes('validation')) return 'validation';
-    if (code === 'quota' || code === 'QUOTA_EXCEEDED' || msg?.includes('quota') || msg?.includes('rate limit')) return 'quota_exceeded';
+    if (
+      code === 'quota' ||
+      code === 'QUOTA_EXCEEDED' ||
+      msg?.includes('quota') ||
+      msg?.includes('rate limit')
+    )
+      return 'quota_exceeded';
     if (code === 'NETWORK_ERROR' || msg?.includes('network')) return 'network';
     if (msg?.includes('endpoint') || msg?.includes('config')) return 'configuration';
   }

@@ -25,14 +25,14 @@ describe('default application fetch', () => {
     let observedReceiver: unknown;
     let observedInput: unknown;
 
-    globalThis.fetch = (async function (
+    globalThis.fetch = async function (
       this: unknown,
-      input: string | URL | Request
+      input: string | URL | Request,
     ): Promise<Response> {
       observedReceiver = this;
       observedInput = input;
       return new Response(null, { status: 204 });
-    }) as typeof globalThis.fetch;
+    } as typeof globalThis.fetch;
 
     try {
       const response = await defaultAppFetch('https://example.test/receiver');
@@ -52,17 +52,17 @@ describe('default application fetch', () => {
       assert.doesNotMatch(
         source,
         /\bfetchFn\s*:\s*(?:globalThis\.)?fetch\b/,
-        `${relativePath} must use the shared receiver-safe default`
+        `${relativePath} must use the shared receiver-safe default`,
       );
       assert.doesNotMatch(
         source,
         /\?\?\s*(?:globalThis\.)?fetch\b/,
-        `${relativePath} must not fall back to a detached global fetch`
+        `${relativePath} must not fall back to a detached global fetch`,
       );
       assert.doesNotMatch(
         source,
         /\bdeps\.fetchFn\s*\(/,
-        `${relativePath} must invoke injected fetch functions standalone`
+        `${relativePath} must invoke injected fetch functions standalone`,
       );
     }
   });

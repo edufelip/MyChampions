@@ -41,6 +41,7 @@ jobs:
       head_sha: ${{ steps.candidate.outputs.head_sha }}
       head_ref: ${{ steps.candidate.outputs.head_ref }}
       force_full: ${{ steps.candidate.outputs.force_full }}
+      ios_tests_enabled: ${{ steps.candidate.outputs.ios_tests_enabled }}
       pull_request_number: ${{ steps.candidate.outputs.pull_request_number }}
     steps:
       - id: candidate
@@ -53,6 +54,7 @@ jobs:
           EVENT_SENDER: ${{ github.event.sender.login }}
           GITHUB_REF_VALUE: ${{ github.ref }}
           GITHUB_SHA_VALUE: ${{ github.sha }}
+          IOS_TESTS_VALUE: ${{ vars.MYCHAMPIONS_ENABLE_IOS_TESTS }}
           PR_NUMBER_INPUT: ${{ inputs.pull_request_number }}
           REPOSITORY: ${{ github.repository }}
           REPOSITORY_ID: ${{ github.repository_id }}
@@ -1044,10 +1046,14 @@ jobs:
                   fail("exact candidate head SHA was not resolved")
               if base_sha and base_sha == head_sha:
                   fail("candidate base and head SHAs are identical")
+              ios_tests_enabled = (
+                  os.environ.get("IOS_TESTS_VALUE", "") != "false"
+              )
               publish_required_status = candidate_kind in {
                   "pull_request",
                   "workflow_dispatch",
                   "merge_group",
+                  "push",
               }
 
               if event_name == "workflow_run":
@@ -1087,6 +1093,9 @@ jobs:
                   output.write(f"head_sha={head_sha}\n")
                   output.write(f"head_ref={head_ref}\n")
                   output.write(f"force_full={'true' if force_full else 'false'}\n")
+                  output.write(
+                      f"ios_tests_enabled={'true' if ios_tests_enabled else 'false'}\n"
+                  )
                   output.write(f"pull_request_number={pull_request_number}\n")
               print(f"Authorized exact candidate {head_sha}.")
           except Exception as error:
@@ -1326,6 +1335,7 @@ jobs:
       - fast-quality
     if: >-
       needs.authorize-candidate.result == 'success' &&
+      needs.authorize-candidate.outputs.ios_tests_enabled == 'true' &&
       needs.fast-quality.result == 'success' &&
       needs.impact.outputs.has_detox_ios == 'true'
     runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
@@ -2200,7 +2210,6 @@ jobs:
       APP_VARIANT: dev
       CI: 'true'
       CI_REQUIRE_E2E_EXECUTION: 'true'
-      DETOX_ANDROID_AVD: Pixel_10
       DETOX_CONFIGURATION: android.emu.debug
       DETOX_REQUIRE_FRESH_METRO: 'true'
       EXPO_PUBLIC_ENV: dev
@@ -2219,10 +2228,15 @@ jobs:
           distribution: temurin
           java-version: 17
       - run: yarn install --frozen-lockfile --no-progress
+      - id: android-slot
+        name: Validate isolated Android runner slot
+        shell: bash
+        run: yarn tsx scripts/ci/android-runner-slot.ts
       - name: Run native checks and build the debug APKs once
         working-directory: android
         shell: bash
         env:
+          DETOX_METRO_PORT: ${{ steps.android-slot.outputs.DETOX_METRO_PORT }}
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
         run: |
           set -euo pipefail
@@ -2472,25 +2486,52 @@ jobs:
             testDevDebugUnitTest \
             app:assembleDevDebug \
             app:assembleDevDebugAndroidTest \
+            -PdetoxMetroPort="$DETOX_METRO_PORT" \
             -DtestBuildType=debug
       - name: Run selected Android suites on a supported emulator port
         env:
+          ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ADB_SERVER_PORT }}
+          ANDROID_ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ANDROID_ADB_SERVER_PORT }}
+          ANDROID_AVD_HOME: ${{ steps.android-slot.outputs.ANDROID_AVD_HOME }}
+          ANDROID_EMULATOR_HOME: ${{ steps.android-slot.outputs.ANDROID_EMULATOR_HOME }}
+          ANDROID_SERIAL: ${{ steps.android-slot.outputs.ANDROID_SERIAL }}
+          ANDROID_TMPDIR: ${{ steps.android-slot.outputs.ANDROID_TMPDIR }}
+          ANDROID_USER_HOME: ${{ steps.android-slot.outputs.ANDROID_USER_HOME }}
+          DETOX_ANDROID_AVD: ${{ steps.android-slot.outputs.DETOX_ANDROID_AVD }}
+          DETOX_ANDROID_DEVICE: ${{ steps.android-slot.outputs.DETOX_ANDROID_DEVICE }}
+          DETOX_METRO_PORT: ${{ steps.android-slot.outputs.DETOX_METRO_PORT }}
           DETOX_SKIP_BUILD: 'true'
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          MYCHAMPIONS_ANDROID_ADB_SERVER_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_ADB_SERVER_PORT }}
+          MYCHAMPIONS_ANDROID_AVD: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD }}
+          MYCHAMPIONS_ANDROID_AVD_HOME: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD_HOME }}
+          MYCHAMPIONS_ANDROID_EMULATOR_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_PORT }}
+          MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_SERIAL }}
+          MYCHAMPIONS_ANDROID_LOCK_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOCK_ROOT }}
+          MYCHAMPIONS_ANDROID_LOG_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOG_ROOT }}
+          MYCHAMPIONS_ANDROID_METRO_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_METRO_PORT }}
+          MYCHAMPIONS_ANDROID_RECOVERY_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_RECOVERY_ROOT }}
+          MYCHAMPIONS_ANDROID_SLOT_ID: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_SLOT_ID }}
+          MYCHAMPIONS_ANDROID_TEMP_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_TEMP_ROOT }}
+          MYCHAMPIONS_ANDROID_USER_HOME: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_USER_HOME }}
+          MYCHAMPIONS_NATIVE_STATE_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_NATIVE_STATE_ROOT }}
+          TMPDIR: ${{ steps.android-slot.outputs.TMPDIR }}
         run: |
           set -euo pipefail
           env_file="$GITHUB_WORKSPACE/.env"
           secret_file="$RUNNER_TEMP/mychampions-env-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-android-test.env"
-          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
-          android_state_file="$recovery_root/android-emulator-5554.state"
-          emulator_serial=emulator-5554
+          recovery_root="${MYCHAMPIONS_ANDROID_RECOVERY_ROOT:?MYCHAMPIONS_ANDROID_RECOVERY_ROOT is required}"
+          log_root="${MYCHAMPIONS_ANDROID_LOG_ROOT:?MYCHAMPIONS_ANDROID_LOG_ROOT is required}"
+          emulator_port="${MYCHAMPIONS_ANDROID_EMULATOR_PORT:?MYCHAMPIONS_ANDROID_EMULATOR_PORT is required}"
+          emulator_serial="${MYCHAMPIONS_ANDROID_EMULATOR_SERIAL:?MYCHAMPIONS_ANDROID_EMULATOR_SERIAL is required}"
+          adb_server_port="${ADB_SERVER_PORT:?ADB_SERVER_PORT is required}"
+          android_state_file="$recovery_root/android-emulator-${emulator_port}.state"
           diagnostics_dir=.artifacts/ci-diagnostics/android
-          emulator_log="$diagnostics_dir/emulator-5554.log"
+          emulator_log="$log_root/emulator-${emulator_port}.log"
           emulator_pid=
           emulator_uid="$(id -u)"
           emulator_start_time=
           emulator_avd="$DETOX_ANDROID_AVD"
-          emulator_port=5554
           emulator_executable=
           emulator_qemu_executable=
           emulator_flags="-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect"
@@ -2511,7 +2552,7 @@ jobs:
               ! -d "$recovery_root" ||
               -L "$recovery_root"
             ]]; then
-              echo "MYCHAMPIONS_NATIVE_STATE_ROOT must name an absolute real directory." >&2
+              echo "MYCHAMPIONS_ANDROID_RECOVERY_ROOT must name an absolute real directory." >&2
               return 1
             fi
             parent="$(dirname "$recovery_root")"
@@ -2547,7 +2588,7 @@ jobs:
             case "$canonical_root" in
               "$canonical_workspace"|"$canonical_workspace"/*|\
               "$canonical_runner_temp"|"$canonical_runner_temp"/*)
-                echo "MYCHAMPIONS_NATIVE_STATE_ROOT must remain outside GITHUB_WORKSPACE and RUNNER_TEMP." >&2
+                echo "MYCHAMPIONS_ANDROID_RECOVERY_ROOT must remain outside GITHUB_WORKSPACE and RUNNER_TEMP." >&2
                 return 1
                 ;;
             esac
@@ -2771,8 +2812,12 @@ jobs:
             emulator_uid=
             emulator_start_time=
             emulator_avd="$DETOX_ANDROID_AVD"
-            emulator_port=5554
+            emulator_port="$MYCHAMPIONS_ANDROID_EMULATOR_PORT"
+            emulator_serial="$MYCHAMPIONS_ANDROID_EMULATOR_SERIAL"
             if state_record="$(
+              ANDROID_EXPECTED_AVD="$emulator_avd" \
+              ANDROID_EXPECTED_PORT="$emulator_port" \
+              ANDROID_EXPECTED_SERIAL="$emulator_serial" \
               /usr/bin/python3 - "$android_state_file" <<'PY'
           import os
           import pathlib
@@ -2796,6 +2841,9 @@ jobs:
           finally:
               os.close(directory_fd)
           metadata = os.fstat(state_fd)
+          expected_avd = os.environ["ANDROID_EXPECTED_AVD"]
+          expected_port = os.environ["ANDROID_EXPECTED_PORT"]
+          expected_serial = os.environ["ANDROID_EXPECTED_SERIAL"]
           if (
               not stat.S_ISREG(metadata.st_mode)
               or stat.S_IMODE(metadata.st_mode) != 0o600
@@ -2830,9 +2878,9 @@ jobs:
               or re.fullmatch(r"[1-9][0-9]*", values["pid"]) is None
               or re.fullmatch(r"[0-9]+", values["uid"]) is None
               or re.fullmatch(r"[1-9][0-9]*", values["start"]) is None
-              or values["avd"] != "Pixel_10"
-              or values["port"] != "5554"
-              or values["serial"] != "emulator-5554"
+              or values["avd"] != expected_avd
+              or values["port"] != expected_port
+              or values["serial"] != expected_serial
               or not values["executable"].startswith("/")
               or not values["qemu_executable"].startswith("/")
               or values["flags"]
@@ -2996,12 +3044,12 @@ jobs:
           }
           emulator_device_present_or_unknown() {
             local devices
-            devices="$(timeout 5s adb devices 2>/dev/null)" || return 0
+            devices="$(timeout 5s adb -P "$adb_server_port" devices 2>/dev/null)" || return 0
             grep -Eq "^${emulator_serial}[[:space:]]" <<<"$devices"
           }
           emulator_ports_present_or_unknown() {
             local listeners
-            listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )' 2>/dev/null)" ||
+            listeners="$(timeout 5s ss -H -ltn "( sport = :$emulator_port or sport = :$((emulator_port + 1)) )" 2>/dev/null)" ||
               return 0
             [[ -n "$listeners" ]]
           }
@@ -3057,7 +3105,7 @@ jobs:
               return 1
             fi
             if emulator_pid_matches; then
-              timeout 10s adb -s "$emulator_serial" emu kill >/dev/null 2>&1 || true
+              timeout 10s adb -P "$adb_server_port" -s "$emulator_serial" emu kill >/dev/null 2>&1 || true
             elif emulator_pid_is_owned; then
               echo "Owned Android emulator PID $emulator_pid changed command identity; refusing to signal its serial" >&2
               cleanup_status=1
@@ -3106,7 +3154,7 @@ jobs:
               cleanup_status=1
             fi
             if emulator_ports_present_or_unknown; then
-              echo "Android emulator ports 5554/5555 survived cleanup or could not be inspected" >&2
+              echo "Android emulator ports ${emulator_port}/$((emulator_port + 1)) survived cleanup or could not be inspected" >&2
               cleanup_status=1
             fi
             if [[ "$cleanup_status" -eq 0 ]]; then
@@ -3133,7 +3181,7 @@ jobs:
               return 1
             fi
             if emulator_pid_matches; then
-              timeout 0.3s adb -s "$emulator_serial" emu kill >/dev/null 2>&1 || true
+              timeout 0.3s adb -P "$adb_server_port" -s "$emulator_serial" emu kill >/dev/null 2>&1 || true
               kill -TERM "$emulator_pid" 2>/dev/null || true
               sleep 0.1
               reap_emulator_if_zombie
@@ -3154,6 +3202,9 @@ jobs:
             # run performs bounded exact absence probes before unlinking it.
             return "$cleanup_status"
           }
+          stop_adb_server() {
+            timeout 5s adb -P "$adb_server_port" kill-server >/dev/null 2>&1
+          }
           on_exit() {
             local command_status=$?
             local cleanup_status=0
@@ -3169,6 +3220,7 @@ jobs:
             if [[ "$emulator_cleanup_status" -ne 0 ]]; then
               cleanup_status="$emulator_cleanup_status"
             fi
+            stop_adb_server || cleanup_status=1
             if [[ "$command_status" -ne 0 ]]; then
               exit "$command_status"
             fi
@@ -3185,6 +3237,7 @@ jobs:
             remove_secret_material || true
             terminate_supervised_child fast || true
             cleanup_emulator_fast || true
+            stop_adb_server || true
             exit "$signal_status"
           }
           validate_recovery_root
@@ -3194,7 +3247,7 @@ jobs:
 
           cleanup_emulator
 
-          preflight_devices="$(timeout 5s adb devices)" || {
+          preflight_devices="$(timeout 5s adb -P "$adb_server_port" devices)" || {
             echo "Android emulator preflight could not inspect ADB devices" >&2
             exit 1
           }
@@ -3207,13 +3260,13 @@ jobs:
             echo "Android emulator preflight found the exact stale AVD/port process or could not inspect it." >&2
             exit 1
           fi
-          preflight_listeners="$(timeout 5s ss -H -ltn '( sport = :5554 or sport = :5555 )')" || {
-            echo "Android emulator preflight could not inspect ports 5554/5555" >&2
+          preflight_listeners="$(timeout 5s ss -H -ltn "( sport = :$emulator_port or sport = :$((emulator_port + 1)) )")" || {
+            echo "Android emulator preflight could not inspect ports ${emulator_port}/${emulator_port}+1" >&2
             exit 1
           }
           if [[ -n "$preflight_listeners" ]]; then
-            echo "Android emulator preflight found occupied ports 5554/5555" >&2
-            timeout 5s ss -H -ltnp '( sport = :5554 or sport = :5555 )' >&2 || true
+            echo "Android emulator preflight found occupied ports ${emulator_port}/$((emulator_port + 1))" >&2
+            timeout 5s ss -H -ltnp "( sport = :$emulator_port or sport = :$((emulator_port + 1)) )" >&2 || true
             exit 1
           fi
 
@@ -3392,7 +3445,7 @@ jobs:
             echo "Android emulator PID did not match the expected owner and command identity" >&2
             exit 1
           fi
-          printf '%s\n' "$emulator_pid" > "$diagnostics_dir/emulator-5554.pid"
+          printf '%s\n' "$emulator_pid" > "$diagnostics_dir/emulator-${emulator_port}.pid"
 
           booted=false
           boot_deadline=$((SECONDS + 120))
@@ -3402,11 +3455,11 @@ jobs:
               tail -n 160 "$emulator_log" >&2
               exit 1
             fi
-            state="$(timeout 2s adb -s "$emulator_serial" get-state 2>/dev/null || true)"
-            complete="$(timeout 2s adb -s "$emulator_serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-            avd_name="$(timeout 2s adb -s "$emulator_serial" shell getprop ro.boot.qemu.avd_name 2>/dev/null | tr -d '\r' || true)"
+            state="$(timeout 2s adb -P "$adb_server_port" -s "$emulator_serial" get-state 2>/dev/null || true)"
+            complete="$(timeout 2s adb -P "$adb_server_port" -s "$emulator_serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            avd_name="$(timeout 2s adb -P "$adb_server_port" -s "$emulator_serial" shell getprop ro.boot.qemu.avd_name 2>/dev/null | tr -d '\r' || true)"
             attached_emulator="$(
-              timeout 2s adb devices 2>/dev/null |
+              timeout 2s adb -P "$adb_server_port" devices 2>/dev/null |
                 awk -v expected="$emulator_serial" \
                   '$1 == expected && $2 == "device" { print $1 }' || true
             )"
@@ -3422,24 +3475,51 @@ jobs:
             sleep 1
           done
           if [[ "$booted" != "true" ]]; then
-            echo "Android emulator did not become healthy on port 5554" >&2
+            echo "Android emulator did not become healthy on port ${emulator_port}" >&2
             tail -n 160 "$emulator_log" >&2
             exit 1
           fi
 
-          run_supervised timeout 5s adb -s "$emulator_serial" \
+          run_supervised timeout 5s adb -P "$adb_server_port" -s "$emulator_serial" \
             shell settings put global window_animation_scale 0
-          run_supervised timeout 5s adb -s "$emulator_serial" \
+          run_supervised timeout 5s adb -P "$adb_server_port" -s "$emulator_serial" \
             shell settings put global transition_animation_scale 0
-          run_supervised timeout 5s adb -s "$emulator_serial" \
+          run_supervised timeout 5s adb -P "$adb_server_port" -s "$emulator_serial" \
             shell settings put global animator_duration_scale 0
           run_supervised yarn test:impact:execute --platform android
       - name: Verify Android emulator cleanup
         if: always()
         shell: bash
+        env:
+          ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ADB_SERVER_PORT }}
+          ANDROID_ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ANDROID_ADB_SERVER_PORT }}
+          ANDROID_AVD_HOME: ${{ steps.android-slot.outputs.ANDROID_AVD_HOME }}
+          ANDROID_EMULATOR_HOME: ${{ steps.android-slot.outputs.ANDROID_EMULATOR_HOME }}
+          ANDROID_SERIAL: ${{ steps.android-slot.outputs.ANDROID_SERIAL }}
+          ANDROID_TMPDIR: ${{ steps.android-slot.outputs.ANDROID_TMPDIR }}
+          ANDROID_USER_HOME: ${{ steps.android-slot.outputs.ANDROID_USER_HOME }}
+          DETOX_ANDROID_AVD: ${{ steps.android-slot.outputs.DETOX_ANDROID_AVD }}
+          DETOX_ANDROID_DEVICE: ${{ steps.android-slot.outputs.DETOX_ANDROID_DEVICE }}
+          DETOX_METRO_PORT: ${{ steps.android-slot.outputs.DETOX_METRO_PORT }}
+          MYCHAMPIONS_ANDROID_ADB_SERVER_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_ADB_SERVER_PORT }}
+          MYCHAMPIONS_ANDROID_AVD: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD }}
+          MYCHAMPIONS_ANDROID_AVD_HOME: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD_HOME }}
+          MYCHAMPIONS_ANDROID_EMULATOR_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_PORT }}
+          MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_SERIAL }}
+          MYCHAMPIONS_ANDROID_LOCK_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOCK_ROOT }}
+          MYCHAMPIONS_ANDROID_LOG_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOG_ROOT }}
+          MYCHAMPIONS_ANDROID_METRO_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_METRO_PORT }}
+          MYCHAMPIONS_ANDROID_RECOVERY_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_RECOVERY_ROOT }}
+          MYCHAMPIONS_ANDROID_SLOT_ID: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_SLOT_ID }}
+          MYCHAMPIONS_ANDROID_TEMP_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_TEMP_ROOT }}
+          MYCHAMPIONS_ANDROID_USER_HOME: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_USER_HOME }}
+          MYCHAMPIONS_NATIVE_STATE_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_NATIVE_STATE_ROOT }}
+          TMPDIR: ${{ steps.android-slot.outputs.TMPDIR }}
         run: |
           set -euo pipefail
-          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          recovery_root="${MYCHAMPIONS_ANDROID_RECOVERY_ROOT:?MYCHAMPIONS_ANDROID_RECOVERY_ROOT is required}"
+          emulator_port="${MYCHAMPIONS_ANDROID_EMULATOR_PORT:?MYCHAMPIONS_ANDROID_EMULATOR_PORT is required}"
+          emulator_serial="${MYCHAMPIONS_ANDROID_EMULATOR_SERIAL:?MYCHAMPIONS_ANDROID_EMULATOR_SERIAL is required}"
           validate_recovery_root() {
             local actual_mode actual_uid canonical_parent canonical_root
             local canonical_runner_temp canonical_workspace expected_uid parent
@@ -3450,7 +3530,7 @@ jobs:
               ! -d "$recovery_root" ||
               -L "$recovery_root"
             ]]; then
-              echo "MYCHAMPIONS_NATIVE_STATE_ROOT must name an absolute real directory." >&2
+              echo "MYCHAMPIONS_ANDROID_RECOVERY_ROOT must name an absolute real directory." >&2
               return 1
             fi
             parent="$(dirname "$recovery_root")"
@@ -3486,7 +3566,7 @@ jobs:
             case "$canonical_root" in
               "$canonical_workspace"|"$canonical_workspace"/*|\
               "$canonical_runner_temp"|"$canonical_runner_temp"/*)
-                echo "MYCHAMPIONS_NATIVE_STATE_ROOT must remain outside GITHUB_WORKSPACE and RUNNER_TEMP." >&2
+                echo "MYCHAMPIONS_ANDROID_RECOVERY_ROOT must remain outside GITHUB_WORKSPACE and RUNNER_TEMP." >&2
                 return 1
                 ;;
             esac
@@ -3503,7 +3583,7 @@ jobs:
             fi
           }
           validate_recovery_root
-          /usr/bin/python3 - "$recovery_root/android-emulator-5554.state" <<'PY'
+          /usr/bin/python3 - "$recovery_root/android-emulator-${emulator_port}.state" <<'PY'
           import os
           import pathlib
           import re
@@ -3513,6 +3593,10 @@ jobs:
           import sys
           import time
 
+          expected_avd = os.environ["DETOX_ANDROID_AVD"]
+          expected_port = os.environ["MYCHAMPIONS_ANDROID_EMULATOR_PORT"]
+          expected_serial = os.environ["MYCHAMPIONS_ANDROID_EMULATOR_SERIAL"]
+          adb_server_port = os.environ["ADB_SERVER_PORT"]
           state_path = pathlib.Path(sys.argv[1])
           directory_fd = os.open(
               state_path.parent,
@@ -3563,9 +3647,9 @@ jobs:
                   or re.fullmatch(r"[1-9][0-9]*", values["pid"]) is None
                   or re.fullmatch(r"[0-9]+", values["uid"]) is None
                   or re.fullmatch(r"[1-9][0-9]*", values["start"]) is None
-                  or values["avd"] != "Pixel_10"
-                  or values["port"] != "5554"
-                  or values["serial"] != "emulator-5554"
+                  or values["avd"] != expected_avd
+                  or values["port"] != expected_port
+                  or values["serial"] != expected_serial
                   or not values["executable"].startswith("/")
                   or not values["qemu_executable"].startswith("/")
                   or values["flags"]
@@ -3573,9 +3657,12 @@ jobs:
               ):
                   raise SystemExit("Invalid Android recovery state values")
 
-          avd = "Pixel_10"
-          port = "5554"
-          serial = "emulator-5554"
+          avd = expected_avd
+          port = expected_port
+          serial = expected_serial
+
+          def adb_command(*args):
+              return ["adb", "-P", adb_server_port, *args]
 
           def proc_identity(pid):
               try:
@@ -3661,7 +3748,7 @@ jobs:
           def exact_device_present():
               try:
                   result = subprocess.run(
-                      ["adb", "devices"],
+                      adb_command("devices"),
                       check=True,
                       capture_output=True,
                       text=True,
@@ -3681,7 +3768,7 @@ jobs:
                           "ss",
                           "-H",
                           "-ltn",
-                          "( sport = :5554 or sport = :5555 )",
+                          f"( sport = :{port} or sport = :{int(port) + 1} )",
                       ],
                       check=True,
                       capture_output=True,
@@ -3695,7 +3782,7 @@ jobs:
           if values is not None and matches_saved_process():
               try:
                   subprocess.run(
-                      ["adb", "-s", serial, "emu", "kill"],
+                      adb_command("-s", serial, "emu", "kill"),
                       check=False,
                       stdout=subprocess.DEVNULL,
                       stderr=subprocess.DEVNULL,
@@ -3739,6 +3826,25 @@ jobs:
               os.fsync(directory_fd)
           os.close(directory_fd)
           PY
+      - name: Collect bounded Android slot diagnostics
+        if: always()
+        shell: bash
+        env:
+          MYCHAMPIONS_ANDROID_EMULATOR_PORT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_EMULATOR_PORT }}
+          MYCHAMPIONS_ANDROID_LOG_ROOT: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_LOG_ROOT }}
+        run: |
+          set -euo pipefail
+          log_root="${MYCHAMPIONS_ANDROID_LOG_ROOT:-}"
+          emulator_port="${MYCHAMPIONS_ANDROID_EMULATOR_PORT:-}"
+          if [[ -z "$log_root" || -z "$emulator_port" ]]; then
+            exit 0
+          fi
+          source_log="$log_root/emulator-${emulator_port}.log"
+          target_log=".artifacts/ci-diagnostics/android/emulator-${emulator_port}.log"
+          if [[ -f "$source_log" && ! -L "$source_log" ]]; then
+            mkdir -p "$(dirname "$target_log")"
+            tail -c 5242880 -- "$source_log" > "$target_log"
+          fi
       - name: Upload bounded Android failure diagnostics
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -3781,6 +3887,7 @@ jobs:
           FAST_RESULT: ${{ needs.fast-quality.result }}
           HAS_WEB: ${{ needs.impact.outputs.has_web }}
           HAS_IOS: ${{ needs.impact.outputs.has_detox_ios }}
+          IOS_TESTS_ENABLED: ${{ needs.authorize-candidate.outputs.ios_tests_enabled }}
           HAS_ANDROID: ${{ needs.impact.outputs.has_detox_android }}
           WEB_RESULT: ${{ needs.web-selected.result }}
           IOS_RESULT: ${{ needs.detox-ios-selected.result }}
@@ -3956,10 +4063,20 @@ jobs:
                   )
 
 
-          def selected_lane(name: str, selected: str, result: str) -> None:
+          def selected_lane(
+              name: str,
+              selected: str,
+              result: str,
+              enabled: str = "true",
+          ) -> None:
               if selected not in {"true", "false"}:
                   raise RuntimeError(f"{name} selection output is invalid")
-              expected = "success" if selected == "true" else "skipped"
+              if enabled not in {"true", "false"}:
+                  raise RuntimeError(f"{name} enablement input is invalid")
+              if name == "ios" and enabled == "false":
+                  expected = "skipped"
+              else:
+                  expected = "success" if selected == "true" else "skipped"
               if result != expected:
                   raise RuntimeError(
                       f"{name} lane finished as {result}; expected {expected}"
@@ -4102,7 +4219,12 @@ jobs:
               if os.environ["FAST_RESULT"] != "success":
                   raise RuntimeError("fast quality checks did not succeed")
               selected_lane("web", os.environ["HAS_WEB"], os.environ["WEB_RESULT"])
-              selected_lane("ios", os.environ["HAS_IOS"], os.environ["IOS_RESULT"])
+              selected_lane(
+                  "ios",
+                  os.environ["HAS_IOS"],
+                  os.environ["IOS_RESULT"],
+                  os.environ["IOS_TESTS_ENABLED"],
+              )
               selected_lane(
                   "android", os.environ["HAS_ANDROID"], os.environ["ANDROID_RESULT"]
               )
@@ -4114,8 +4236,14 @@ jobs:
               "pull_request",
               "workflow_dispatch",
               "merge_group",
+              "push",
           }
-          if publish_required_status:
+          status_requires_pull_request_ownership = os.environ["CANDIDATE_KIND"] in {
+              "pull_request",
+              "workflow_dispatch",
+              "merge_group",
+          }
+          if status_requires_pull_request_ownership:
               try:
                   require_owned_pending_status()
               except Exception as error:
@@ -4131,7 +4259,7 @@ jobs:
               post_status("success", "Every selected trusted validation lane passed.")
               print("Published successful exact-head Selective CI status.")
           else:
-              print("Trusted main validation passed without publishing the PR status.")
+              print("Trusted validation passed without publishing the exact-head status.")
           PY
       - name: Reject an unauthorized or unresolved candidate
         if: >-

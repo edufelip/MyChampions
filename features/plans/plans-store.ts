@@ -97,7 +97,7 @@ export type PlansLoadState =
 
 function buildNutritionMutationErrorState(
   previousState: NutritionBuilderState,
-  err: unknown
+  err: unknown,
 ): NutritionBuilderState {
   if (previousState.kind === 'ready') {
     return {
@@ -116,7 +116,7 @@ function buildNutritionMutationErrorState(
 
 function buildTrainingMutationErrorState(
   previousState: TrainingBuilderState,
-  err: unknown
+  err: unknown,
 ): TrainingBuilderState {
   if (previousState.kind === 'ready') {
     return {
@@ -156,26 +156,26 @@ export type PlansStoreState = {
     isAuthenticated: boolean,
     planId: string,
     planType: PlanType,
-    requestText: string
+    requestText: string,
   ) => Promise<{ data: PlanChangeRequest } | { error: PlanChangeRequestErrorReason }>;
   reviewChangeRequest: (
     isAuthenticated: boolean,
     requestId: string,
-    action: 'reviewed' | 'dismissed'
+    action: 'reviewed' | 'dismissed',
   ) => Promise<PlanChangeRequestErrorReason | null>;
   getChangeRequestsForStudent: (
     isAuthenticated: boolean,
-    studentUid: string
+    studentUid: string,
   ) => Promise<{ data: PlanChangeRequest[] } | { error: PlanChangeRequestErrorReason }>;
   bulkAssign: (
     isAuthenticated: boolean,
     predefinedPlanId: string,
-    studentUids: string[]
+    studentUids: string[],
   ) => Promise<{ assignedCount: number } | { error: PlanChangeRequestErrorReason }>;
   createDraftAssignedPlan: (
     isAuthenticated: boolean,
     predefinedPlanId: string,
-    studentUid: string
+    studentUid: string,
   ) => Promise<{ id: string } | { error: PlanChangeRequestErrorReason }>;
   clearFoodSearch: () => void;
   loadNutritionPlan: (isAuthenticated: boolean, planId: string) => Promise<void>;
@@ -183,30 +183,30 @@ export type PlansStoreState = {
   createNutritionPlanAction: (
     isAuthenticated: boolean,
     input: NutritionPlanInput,
-    mode?: NutritionPlanCreationMode
+    mode?: NutritionPlanCreationMode,
   ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   saveNutritionPlanAction: (
     isAuthenticated: boolean,
     planId: string,
     input: NutritionPlanInput,
-    publish?: boolean
+    publish?: boolean,
   ) => Promise<PlanBuilderErrorReason | null>;
   addNutritionMealAction: (
     isAuthenticated: boolean,
     planId: string,
     meal: NutritionMealInput,
     planInput?: NutritionPlanInput,
-    mode?: NutritionPlanCreationMode
+    mode?: NutritionPlanCreationMode,
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeNutritionMealAction: (
     isAuthenticated: boolean,
     planId: string,
-    mealId: string
+    mealId: string,
   ) => Promise<PlanBuilderErrorReason | null>;
   reorderNutritionMealsAction: (
     isAuthenticated: boolean,
     planId: string,
-    mealIds: string[]
+    mealIds: string[],
   ) => Promise<PlanBuilderErrorReason | null>;
   addNutritionItemAction: (
     isAuthenticated: boolean,
@@ -214,23 +214,23 @@ export type PlansStoreState = {
     mealId: string,
     item: NutritionMealItemInput,
     planInput?: NutritionPlanInput,
-    mode?: NutritionPlanCreationMode
+    mode?: NutritionPlanCreationMode,
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeNutritionItemAction: (
     isAuthenticated: boolean,
     planId: string,
     mealId: string,
-    itemId: string
+    itemId: string,
   ) => Promise<PlanBuilderErrorReason | null>;
   reorderNutritionItemsAction: (
     isAuthenticated: boolean,
     planId: string,
     mealId: string,
-    itemIds: string[]
+    itemIds: string[],
   ) => Promise<PlanBuilderErrorReason | null>;
   deleteNutritionPlanAction: (
     isAuthenticated: boolean,
-    planId: string
+    planId: string,
   ) => Promise<PlanBuilderErrorReason | null>;
   runFoodSearch: (isAuthenticated: boolean, query: string) => void;
   validateNutritionInput: (input: NutritionPlanInput) => NutritionPlanValidationErrors;
@@ -239,13 +239,13 @@ export type PlansStoreState = {
   createTrainingPlanAction: (
     isAuthenticated: boolean,
     input: TrainingPlanInput,
-    mode?: TrainingPlanCreationMode
+    mode?: TrainingPlanCreationMode,
   ) => Promise<{ id: string } | { error: PlanBuilderErrorReason }>;
   saveTrainingPlanAction: (
     isAuthenticated: boolean,
     planId: string,
     input: TrainingPlanInput,
-    publish?: boolean
+    publish?: boolean,
   ) => Promise<PlanBuilderErrorReason | null>;
   saveTrainingPlanWithSessionsAction: (
     isAuthenticated: boolean,
@@ -253,46 +253,46 @@ export type PlansStoreState = {
     input: TrainingPlanInput,
     sessions: TrainingSession[],
     publish?: boolean,
-    mode?: TrainingPlanCreationMode
+    mode?: TrainingPlanCreationMode,
   ) => Promise<{ id: string; plan: TrainingPlanDetail } | { error: PlanBuilderErrorReason }>;
   addTrainingSessionAction: (
     isAuthenticated: boolean,
     planId: string,
     session: TrainingSessionInput,
-    planInput?: TrainingPlanInput
+    planInput?: TrainingPlanInput,
   ) => Promise<{ planId: string; error: PlanBuilderErrorReason | null }>;
   removeTrainingSessionAction: (
     isAuthenticated: boolean,
     planId: string,
-    sessionId: string
+    sessionId: string,
   ) => Promise<PlanBuilderErrorReason | null>;
   reorderTrainingSessionsAction: (
     isAuthenticated: boolean,
     planId: string,
-    sessionIds: string[]
+    sessionIds: string[],
   ) => Promise<PlanBuilderErrorReason | null>;
   addTrainingSessionItemAction: (
     isAuthenticated: boolean,
     sessionId: string,
-    item: TrainingSessionItemInput
+    item: TrainingSessionItemInput,
   ) => Promise<PlanBuilderErrorReason | null>;
   removeTrainingSessionItemAction: (
     isAuthenticated: boolean,
     sessionId: string,
-    itemId: string
+    itemId: string,
   ) => Promise<PlanBuilderErrorReason | null>;
   reorderTrainingSessionItemsAction: (
     isAuthenticated: boolean,
     sessionId: string,
-    itemIds: string[]
+    itemIds: string[],
   ) => Promise<PlanBuilderErrorReason | null>;
   deleteTrainingPlanAction: (
     isAuthenticated: boolean,
-    planId: string
+    planId: string,
   ) => Promise<PlanBuilderErrorReason | null>;
   validateTrainingInput: (input: TrainingPlanInput) => TrainingPlanValidationErrors;
   validateTrainingSessionItem: (
-    item: TrainingSessionItemInput
+    item: TrainingSessionItemInput,
   ) => TrainingSessionItemValidationErrors;
 };
 
@@ -302,7 +302,14 @@ function buildInitialPlansState(): PlansLoadState {
   const predefinedPlans = getCachedPredefinedPlans();
   const cacheOwnerUid = getCachedPlansOwnerUid();
   const cacheSyncedAtIso = getCachedPlansSyncedAtIso();
-  if (uid && cacheOwnerUid && uid === cacheOwnerUid && plans && predefinedPlans && cacheSyncedAtIso) {
+  if (
+    uid &&
+    cacheOwnerUid &&
+    uid === cacheOwnerUid &&
+    plans &&
+    predefinedPlans &&
+    cacheSyncedAtIso
+  ) {
     return { kind: 'ready', plans, predefinedPlans, lastSyncedAtIso: cacheSyncedAtIso };
   }
   return { kind: 'idle' };
@@ -467,7 +474,9 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
   loadNutritionPlan: async (isAuthenticated, planId) => {
     get().syncAuthContext(isAuthenticated);
     if (!get().authUid) {
-      set({ nutritionBuilderState: { kind: 'error', reason: 'unknown', message: 'Not authenticated.' } });
+      set({
+        nutritionBuilderState: { kind: 'error', reason: 'unknown', message: 'Not authenticated.' },
+      });
       return;
     }
 
@@ -482,7 +491,9 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         const updated = await getNutritionPlanDetail(planId);
         if (get().nutritionLoadRequestId !== requestId) return;
         await setCachedNutritionPlan(updated);
-        set({ nutritionBuilderState: { kind: 'ready', plan: updated, isBackgroundUpdating: false } });
+        set({
+          nutritionBuilderState: { kind: 'ready', plan: updated, isBackgroundUpdating: false },
+        });
       } catch (err) {
         if (get().nutritionLoadRequestId !== requestId) return;
         set({
@@ -630,7 +641,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         const res = await get().createNutritionPlanAction(
           isAuthenticated,
           planInput ?? { name: 'Untitled', hydrationGoalMl: '' },
-          mode
+          mode,
         );
         if ('error' in res) {
           return { planId, error: res.error };
@@ -759,7 +770,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         const res = await get().createNutritionPlanAction(
           isAuthenticated,
           planInput ?? { name: 'Untitled', hydrationGoalMl: '' },
-          mode
+          mode,
         );
         if ('error' in res) return { planId, error: res.error };
         currentPlanId = res.id;
@@ -892,7 +903,9 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
   loadTrainingPlan: async (isAuthenticated, planId) => {
     get().syncAuthContext(isAuthenticated);
     if (!get().authUid) {
-      set({ trainingBuilderState: { kind: 'error', reason: 'unknown', message: 'Not authenticated.' } });
+      set({
+        trainingBuilderState: { kind: 'error', reason: 'unknown', message: 'Not authenticated.' },
+      });
       return;
     }
 
@@ -907,7 +920,9 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
         const updated = await getTrainingPlanDetail(planId);
         if (get().trainingLoadRequestId !== requestId) return;
         await setCachedTrainingPlan(updated);
-        set({ trainingBuilderState: { kind: 'ready', plan: updated, isBackgroundUpdating: false } });
+        set({
+          trainingBuilderState: { kind: 'ready', plan: updated, isBackgroundUpdating: false },
+        });
       } catch (err) {
         if (get().trainingLoadRequestId !== requestId) return;
         set({
@@ -1028,7 +1043,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     input,
     sessions,
     publish,
-    mode = 'professional_library'
+    mode = 'professional_library',
   ) => {
     if (!isAuthenticated) return { error: 'unknown' };
 

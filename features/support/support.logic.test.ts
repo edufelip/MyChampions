@@ -5,35 +5,62 @@ import { submitSupportMessage } from './support-source';
 
 describe('Support Logic', () => {
   it('should return subject_required for empty subject', () => {
-    assert.strictEqual(validateSupportInput({ subject: '', body: 'Valid body' }), 'subject_required');
-    assert.strictEqual(validateSupportInput({ subject: '   ', body: 'Valid body' }), 'subject_required');
+    assert.strictEqual(
+      validateSupportInput({ subject: '', body: 'Valid body' }),
+      'subject_required',
+    );
+    assert.strictEqual(
+      validateSupportInput({ subject: '   ', body: 'Valid body' }),
+      'subject_required',
+    );
   });
 
   it('should return subject_too_long for subjects > 50 chars', () => {
     const longSubject = 'a'.repeat(51);
-    assert.strictEqual(validateSupportInput({ subject: longSubject, body: 'Valid body' }), 'subject_too_long');
+    assert.strictEqual(
+      validateSupportInput({ subject: longSubject, body: 'Valid body' }),
+      'subject_too_long',
+    );
   });
 
   it('should return body_required for empty body', () => {
-    assert.strictEqual(validateSupportInput({ subject: 'Valid subject', body: '' }), 'body_required');
-    assert.strictEqual(validateSupportInput({ subject: 'Valid subject', body: '   ' }), 'body_required');
+    assert.strictEqual(
+      validateSupportInput({ subject: 'Valid subject', body: '' }),
+      'body_required',
+    );
+    assert.strictEqual(
+      validateSupportInput({ subject: 'Valid subject', body: '   ' }),
+      'body_required',
+    );
   });
 
   it('should return body_too_long for bodies > 500 chars', () => {
     const longBody = 'a'.repeat(501);
-    assert.strictEqual(validateSupportInput({ subject: 'Valid subject', body: longBody }), 'body_too_long');
+    assert.strictEqual(
+      validateSupportInput({ subject: 'Valid subject', body: longBody }),
+      'body_too_long',
+    );
   });
 
   it('should return null for valid input', () => {
-    assert.strictEqual(validateSupportInput({ subject: 'Issue with login', body: 'I cannot sign in with Google.' }), null);
+    assert.strictEqual(
+      validateSupportInput({ subject: 'Issue with login', body: 'I cannot sign in with Google.' }),
+      null,
+    );
   });
 
   it('should account for trimming in length checks', () => {
     const fiftyChars = 'a'.repeat(50);
-    assert.strictEqual(validateSupportInput({ subject: `  ${fiftyChars}  `, body: 'Valid body' }), null);
-    
+    assert.strictEqual(
+      validateSupportInput({ subject: `  ${fiftyChars}  `, body: 'Valid body' }),
+      null,
+    );
+
     const fiftyOneChars = 'a'.repeat(51);
-    assert.strictEqual(validateSupportInput({ subject: `  ${fiftyOneChars}  `, body: 'Valid body' }), 'subject_too_long');
+    assert.strictEqual(
+      validateSupportInput({ subject: `  ${fiftyOneChars}  `, body: 'Valid body' }),
+      'subject_too_long',
+    );
   });
 
   it('uses a dev E2E auth-session fixture for support submit success without provider writes', async () => {
@@ -56,7 +83,7 @@ describe('Support Logic', () => {
           getServerBaseUrl: () => undefined,
           getAppVersion: () => '1.0.0',
           getPlatform: () => 'ios',
-        }
+        },
       );
 
       assert.equal(id, 'support_e2e-auth-session-user');
@@ -67,7 +94,8 @@ describe('Support Logic', () => {
       if (previousE2EFlag === undefined) delete process.env.EXPO_PUBLIC_E2E_AUTH_SESSION;
       else process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = previousE2EFlag;
 
-      if (previousDev === undefined) delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+      if (previousDev === undefined)
+        delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
       else (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = previousDev;
     }
   });
@@ -89,7 +117,7 @@ describe('Support Logic', () => {
         getServerBaseUrl: () => 'http://server.test',
         getAppVersion: () => '1.0.0',
         getPlatform: () => 'ios',
-      }
+      },
     );
 
     assert.equal(id, 'support-1');

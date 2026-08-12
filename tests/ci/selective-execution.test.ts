@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import test from 'node:test';
+import { buildChildEnvironment } from '../../scripts/ci/execute-selected-tests';
 import { loadManifest } from '../../scripts/ci/test-impact';
 import {
   createSelectiveExecutionPlan,
@@ -19,10 +20,7 @@ test('checked-in suites have complete typed execution contracts', () => {
 });
 
 test('web suites are grouped by runner and project with argv-safe filters', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'web', [
-    'web:shell',
-    'web:auth',
-  ]);
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:shell', 'web:auth']);
 
   assert.equal(plan.nativeBuild, undefined);
   assert.equal(plan.invocations.length, 1);
@@ -33,7 +31,7 @@ test('web suites are grouped by runner and project with argv-safe filters', () =
   assert.ok(invocation.args.includes('--project=chromium'));
   assert.equal(
     invocation.args.filter((value) => value === 'e2e/web/responsive-shell.spec.ts').length,
-    1
+    1,
   );
   const grepIndex = invocation.args.indexOf('--grep');
   assert.ok(grepIndex >= 0);
@@ -53,26 +51,20 @@ test('server Playwright suites declare their coordinated backend requirement', (
 
 test('unknown and wrong-platform suite IDs fail before command construction', () => {
   assert.throws(
-    () =>
-      createSelectiveExecutionPlan(manifest, 'web', [
-        'web:auth; touch /tmp/should-not-exist',
-      ]),
-    /unknown selected suite/
+    () => createSelectiveExecutionPlan(manifest, 'web', ['web:auth; touch /tmp/should-not-exist']),
+    /unknown selected suite/,
   );
   assert.throws(
     () => createSelectiveExecutionPlan(manifest, 'ios', ['web:shell']),
-    /cannot run on ios/
+    /cannot run on ios/,
   );
-  assert.throws(
-    () => createSelectiveExecutionPlan(manifest, 'web', []),
-    /no suites selected/
-  );
+  assert.throws(() => createSelectiveExecutionPlan(manifest, 'web', []), /no suites selected/);
 });
 
 test('provider-live suites are refused by selective CI', () => {
   assert.throws(
     () => createSelectiveExecutionPlan(manifest, 'ios', ['detox:revenuecat-live']),
-    /not eligible for selective CI/
+    /not eligible for selective CI/,
   );
 });
 
@@ -81,26 +73,16 @@ test('Android uses one dev-debug build and never rebuilds per suite', () => {
     manifest,
     'android',
     ['detox:support', 'detox:student'],
-    { diagnosticsRoot: '.artifacts/test-contract' }
+    { diagnosticsRoot: '.artifacts/test-contract' },
   );
 
   assert.equal(plan.nativeBuild?.configuration, 'android.emu.debug');
   assert.equal(plan.nativeBuild?.owner, 'executor');
-  assert.deepEqual(plan.nativeBuild?.command.args, [
-    'detox',
-    'build',
-    '-c',
-    'android.emu.debug',
-  ]);
+  assert.deepEqual(plan.nativeBuild?.command.args, ['detox', 'build', '-c', 'android.emu.debug']);
   assert.equal(plan.nativeBuild?.command.env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX, '');
   assert.equal(plan.invocations.length, 2);
   for (const invocation of plan.invocations) {
-    assert.deepEqual(invocation.args.slice(0, 4), [
-      'detox',
-      'test',
-      '-c',
-      'android.emu.debug',
-    ]);
+    assert.deepEqual(invocation.args.slice(0, 4), ['detox', 'test', '-c', 'android.emu.debug']);
     assert.equal(invocation.args.includes('build'), false);
     // Bounded retry: native hardware invocations get exactly one Detox retry,
     // and Detox logs retried files so a flaky pass stays visible.
@@ -124,35 +106,30 @@ test('native E2E LogBox suppression is explicit and dev-only', () => {
 
   assert.match(
     rootLayout,
-    /if \(__DEV__ && process\.env\.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX === 'true'\)/
+    /if \(__DEV__ && process\.env\.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX === 'true'\)/,
   );
   assert.match(rootLayout, /LogBox\.ignoreAllLogs\(\)/);
 });
 
 test('DETOX_SKIP_BUILD transfers the single native build to the workflow', () => {
-  const plan = createSelectiveExecutionPlan(
-    manifest,
-    'ios',
-    ['detox:support', 'detox:student'],
-    { skipNativeBuild: true }
-  );
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:support', 'detox:student'], {
+    skipNativeBuild: true,
+  });
 
   assert.equal(plan.nativeBuild?.configuration, 'ios.sim.debug');
   assert.equal(plan.nativeBuild?.owner, 'workflow');
-  assert.deepEqual(plan.nativeBuild?.command.args, [
-    'detox',
-    'build',
-    '-c',
-    'ios.sim.debug',
-  ]);
-  assert.equal(plan.invocations.some((invocation) => invocation.args.includes('build')), false);
+  assert.deepEqual(plan.nativeBuild?.command.args, ['detox', 'build', '-c', 'ios.sim.debug']);
+  assert.equal(
+    plan.invocations.some((invocation) => invocation.args.includes('build')),
+    false,
+  );
   assert.ok(
     plan.invocations.every(
       (invocation) =>
         invocation.metro?.port === 8081 &&
         invocation.metro.platform === 'ios' &&
-        invocation.metro.appId === 'com.edufelip.mychampions.dev'
-    )
+        invocation.metro.appId === 'com.edufelip.mychampions.dev',
+    ),
   );
 });
 
@@ -166,27 +143,37 @@ test('iOS accepts a validated run-isolated Metro port and propagates it to every
   assert.ok(
     plan.invocations.every(
       (invocation) =>
-        invocation.metro?.port === 27828 &&
-        invocation.env.DETOX_METRO_PORT === '27828'
-    )
+        invocation.metro?.port === 27828 && invocation.env.DETOX_METRO_PORT === '27828',
+    ),
   );
 });
 
-test('native Metro port overrides fail closed outside the supported platform contract', () => {
+test('native Metro port overrides fail closed outside the supported port contract', () => {
   assert.equal(parseNativeMetroPort('ios', undefined), 8081);
-  assert.throws(
-    () => parseNativeMetroPort('ios', '8081x'),
-    /must contain only decimal digits/
-  );
+  assert.equal(parseNativeMetroPort('android', '27828'), 27828);
+  assert.throws(() => parseNativeMetroPort('ios', '8081x'), /must contain only decimal digits/);
   assert.throws(
     () => parseNativeMetroPort('ios', '65535'),
-    /must be an integer from 1024 to 49151/
+    /must be an integer from 1024 to 49151/,
   );
   assert.throws(
-    () => createSelectiveExecutionPlan(manifest, 'android', ['detox:support'], {
-      metroPort: 27828,
-    }),
-    /Android Metro port must remain 8081/
+    () => parseNativeMetroPort('android', '65535'),
+    /native Metro port must be an integer/,
+  );
+});
+
+test('Android accepts a run-isolated Metro port and propagates it to every command', () => {
+  const metroPort = parseNativeMetroPort('android', '27828');
+  const plan = createSelectiveExecutionPlan(manifest, 'android', ['detox:support'], {
+    metroPort,
+  });
+
+  assert.equal(plan.nativeBuild?.command.env.DETOX_METRO_PORT, '27828');
+  assert.ok(
+    plan.invocations.every(
+      (invocation) =>
+        invocation.metro?.port === 27828 && invocation.env.DETOX_METRO_PORT === '27828',
+    ),
   );
 });
 
@@ -197,13 +184,13 @@ test('auth profile isolates entry, authenticated, and outdated-terms phases', ()
 
   assert.equal(plan.invocations.length, 7);
   const signIn = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/auth-sign-in.e2e.test.js')
+    invocation.args.includes('e2e/auth-sign-in.e2e.test.js'),
   )!;
   const terms = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/auth-terms.e2e.test.js')
+    invocation.args.includes('e2e/auth-terms.e2e.test.js'),
   )!;
   const role = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/auth-role-selection.e2e.test.js')
+    invocation.args.includes('e2e/auth-role-selection.e2e.test.js'),
   )!;
 
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_AUTH_SESSION, '');
@@ -213,10 +200,7 @@ test('auth profile isolates entry, authenticated, and outdated-terms phases', ()
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, 'true');
   assert.equal(signIn.env.E2E_AUTH_SIGN_IN, 'true');
   assert.equal(terms.env.EXPO_PUBLIC_E2E_AUTH_SESSION, 'true');
-  assert.equal(
-    terms.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION,
-    'outdated-e2e-version'
-  );
+  assert.equal(terms.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION, 'outdated-e2e-version');
   assert.equal(terms.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT, '');
   assert.equal(terms.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN, '');
   assert.equal(terms.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, '');
@@ -225,6 +209,27 @@ test('auth profile isolates entry, authenticated, and outdated-terms phases', ()
   assert.equal(role.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT, '');
   assert.equal(role.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN, '');
   assert.equal(role.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, '');
+});
+
+test('cleared fixture variables are absent from each child process', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'android', ['detox:auth'], {
+    skipNativeBuild: true,
+  });
+  const authenticatedRole = plan.invocations.find((invocation) =>
+    invocation.args.includes('e2e/auth-role-selection.e2e.test.js'),
+  )!;
+  const previous = process.env.E2E_ROLE_PERSISTENCE_SCENARIO;
+
+  try {
+    process.env.E2E_ROLE_PERSISTENCE_SCENARIO = 'relaunch';
+    const environment = buildChildEnvironment(authenticatedRole);
+
+    assert.equal(environment.E2E_ROLE_PERSISTENCE_SCENARIO, undefined);
+    assert.equal(environment.E2E_AUTH_SESSION, 'true');
+  } finally {
+    if (previous === undefined) delete process.env.E2E_ROLE_PERSISTENCE_SCENARIO;
+    else process.env.E2E_ROLE_PERSISTENCE_SCENARIO = previous;
+  }
 });
 
 test('student empty-state profile actively clears incompatible assigned fixtures', () => {
@@ -243,10 +248,10 @@ test('self-managed plan building is isolated from assigned-plan fixtures', () =>
     skipNativeBuild: true,
   });
   const selfManaged = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/student-self-managed-builder.e2e.test.js')
+    invocation.args.includes('e2e/student-self-managed-builder.e2e.test.js'),
   )!;
   const bulkAssign = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/professional-bulk-assign.e2e.test.js')
+    invocation.args.includes('e2e/professional-bulk-assign.e2e.test.js'),
   )!;
 
   assert.equal(plan.invocations.length, 2);
@@ -263,96 +268,74 @@ test('nutrition profile isolates scenario-specific native fixtures', () => {
     skipNativeBuild: true,
   });
   const aiAnalysisInvocations = plan.invocations.filter((invocation) =>
-    invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js')
+    invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js'),
   );
   const imageUploadInvocations = plan.invocations.filter((invocation) =>
-    invocation.args.includes('e2e/custom-meal-image-upload.e2e.test.js')
+    invocation.args.includes('e2e/custom-meal-image-upload.e2e.test.js'),
   );
   const unrelatedNutritionInvocations = plan.invocations.filter(
     (invocation) =>
       !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js') &&
-      !invocation.args.includes('e2e/custom-meal-image-upload.e2e.test.js')
+      !invocation.args.includes('e2e/custom-meal-image-upload.e2e.test.js'),
   );
   const regularNutritionInvocations = plan.invocations.filter(
-    (invocation) =>
-      !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js')
+    (invocation) => !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js'),
   );
 
-  assert.equal(plan.invocations.length, 9);
+  assert.equal(plan.invocations.length, 10);
   assert.equal(aiAnalysisInvocations.length, 2);
-  assert.equal(imageUploadInvocations.length, 2);
+  assert.equal(imageUploadInvocations.length, 3);
   assert.deepEqual(
-    imageUploadInvocations.map(
-      (invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO
-    ),
-    ['sheet', 'success']
+    imageUploadInvocations.map((invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO),
+    ['sheet', 'success', 'permission-denied'],
   );
+  assert.equal(imageUploadInvocations[0]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
+  assert.equal(imageUploadInvocations[1]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, 'success');
   assert.equal(
-    imageUploadInvocations[0]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
-    ''
-  );
-  assert.equal(
-    imageUploadInvocations[1]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
-    'success'
+    imageUploadInvocations[2]!.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
+    'permission-denied',
   );
   assert.ok(
     unrelatedNutritionInvocations.every(
-      (invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO === ''
-    )
+      (invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO === '',
+    ),
   );
   assert.deepEqual(
-    aiAnalysisInvocations.map(
-      (invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO
-    ),
-    ['paywall', 'success']
+    aiAnalysisInvocations.map((invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO),
+    ['paywall', 'success'],
   );
-  assert.equal(
-    aiAnalysisInvocations[0]!.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS,
-    'lapsed'
-  );
-  assert.equal(
-    aiAnalysisInvocations[0]!.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS,
-    'lapsed'
-  );
-  assert.equal(
-    aiAnalysisInvocations[1]!.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS,
-    'active'
-  );
-  assert.equal(
-    aiAnalysisInvocations[1]!.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS,
-    'active'
-  );
+  assert.equal(aiAnalysisInvocations[0]!.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'lapsed');
+  assert.equal(aiAnalysisInvocations[0]!.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'lapsed');
+  assert.equal(aiAnalysisInvocations[1]!.env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'active');
+  assert.equal(aiAnalysisInvocations[1]!.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'active');
   assert.ok(
     regularNutritionInvocations.every(
-      (invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO === ''
-    )
+      (invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO === '',
+    ),
   );
 });
 
 test('subscription profile expands the existing seven deterministic scenarios', () => {
-  const plan = createSelectiveExecutionPlan(
-    manifest,
-    'ios',
-    ['detox:subscription'],
-    { skipNativeBuild: true }
-  );
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:subscription'], {
+    skipNativeBuild: true,
+  });
 
   assert.equal(plan.invocations.length, 7);
   assert.deepEqual(
     plan.invocations.map((invocation) => invocation.env.E2E_SUBSCRIPTION_SCENARIO),
-    ['actions', 'actions', 'actions', 'actions', 'warning', 'locked', 'unknown']
+    ['actions', 'actions', 'actions', 'actions', 'warning', 'locked', 'unknown'],
   );
   assert.equal(
     plan.invocations.filter((invocation) =>
-      invocation.args.includes('e2e/professional-subscription-actions.e2e.test.js')
+      invocation.args.includes('e2e/professional-subscription-actions.e2e.test.js'),
     ).length,
-    4
+    4,
   );
   assert.equal(
     plan.invocations.filter((invocation) =>
-      invocation.args.includes('e2e/professional-subscription-cap.e2e.test.js')
+      invocation.args.includes('e2e/professional-subscription-cap.e2e.test.js'),
     ).length,
-    3
+    3,
   );
 });
 
@@ -369,7 +352,7 @@ test('selective invocation timeout is optional locally and strict when configure
   for (const invalid of ['', '0', '-1', '1.5', ' 600000', '2147483648']) {
     assert.throws(
       () => parseSelectiveInvocationTimeoutMs(invalid),
-      /SELECTIVE_INVOCATION_TIMEOUT_MS/
+      /SELECTIVE_INVOCATION_TIMEOUT_MS/,
     );
   }
 });
@@ -378,7 +361,7 @@ test('CI reporter fails an all-skipped Detox invocation', () => {
   type Reporter = {
     onRunComplete: (
       contexts: unknown,
-      results: { numPassedTests: number; numFailedTests: number }
+      results: { numPassedTests: number; numFailedTests: number },
     ) => void;
     getLastError: () => Error | null;
   };

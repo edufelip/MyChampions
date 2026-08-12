@@ -40,10 +40,7 @@ import {
   createBuilderRoleTranslator,
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
-import {
-  isStarterTemplate,
-  calculateTotalsFromItems,
-} from '@/features/plans/plan-builder.logic';
+import { isStarterTemplate, calculateTotalsFromItems } from '@/features/plans/plan-builder.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import { usePlanForm } from '@/features/plans/use-plan-form';
@@ -57,7 +54,7 @@ export default function NutritionPlanBuilderScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const theme = getDsTheme(scheme);
-  
+
   const palette = useMemo(() => createBuilderPalette(theme), [theme]);
 
   const { t } = useTranslation();
@@ -69,7 +66,7 @@ export default function NutritionPlanBuilderScreen() {
   const isStudentBuilder = pathname.startsWith('/student/');
   const shouldGateProfessionalNutrition = !isStudentBuilder;
   const { state: specialtiesState } = useSpecialties(
-    Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional'
+    Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional',
   );
   const nutritionGate = shouldGateProfessionalNutrition
     ? resolveProfessionalNutritionRouteGate({
@@ -94,19 +91,26 @@ export default function NutritionPlanBuilderScreen() {
     validateInput,
   } = useNutritionPlanBuilder(
     Boolean(currentUser) && nutritionGate === 'allow',
-    `${pathname}:plan:${planId ?? 'new'}`
+    `${pathname}:plan:${planId ?? 'new'}`,
   );
 
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
-  const isDraftAssignment = state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
+  const isDraftAssignment =
+    state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
   const creationMode = isStudentBuilder ? 'self_managed' : 'professional_library';
 
-  const initialValues = useMemo(() => ({
-    name: state.kind === 'ready' ? state.plan.name : '',
-    hydrationGoalMl: state.kind === 'ready' && state.plan.hydrationGoalMl ? String(state.plan.hydrationGoalMl) : '',
-  }), [state]);
+  const initialValues = useMemo(
+    () => ({
+      name: state.kind === 'ready' ? state.plan.name : '',
+      hydrationGoalMl:
+        state.kind === 'ready' && state.plan.hydrationGoalMl
+          ? String(state.plan.hydrationGoalMl)
+          : '',
+    }),
+    [state],
+  );
 
   const {
     values,
@@ -131,11 +135,11 @@ export default function NutritionPlanBuilderScreen() {
       // After a successful save, we want to go back to the library.
       // We must clear the local dirty state first.
       setIsDirty(false);
-      
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Navigate to the tab route so the bottom nav bar is visible
       router.replace('/nutrition');
-    }
+    },
   });
 
   useEffect(() => {
@@ -145,21 +149,17 @@ export default function NutritionPlanBuilderScreen() {
       }
 
       event.preventDefault();
-      Alert.alert(
-        t('pro.plan.discard.title'),
-        t('pro.plan.discard.body'),
-        [
-          { text: t('pro.plan.discard.no'), style: 'cancel' },
-          {
-            text: t('pro.plan.discard.yes'),
-            style: 'destructive',
-            onPress: async () => {
-              setIsDirty(false);
-              navigation.dispatch(event.data.action);
-            },
+      Alert.alert(t('pro.plan.discard.title'), t('pro.plan.discard.body'), [
+        { text: t('pro.plan.discard.no'), style: 'cancel' },
+        {
+          text: t('pro.plan.discard.yes'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsDirty(false);
+            navigation.dispatch(event.data.action);
           },
-        ]
-      );
+        },
+      ]);
     });
 
     return unsubscribe;
@@ -174,7 +174,9 @@ export default function NutritionPlanBuilderScreen() {
   }, [router]);
 
   // ── Local UI state ─────────────────────────────────────────────────────────
-  const [addMealForm, setAddMealForm] = useState<{ kind: 'closed' } | { kind: 'open'; name: string }>({ kind: 'closed' });
+  const [addMealForm, setAddMealForm] = useState<
+    { kind: 'closed' } | { kind: 'open'; name: string }
+  >({ kind: 'closed' });
   const [isSortMode, setIsSortMode] = useState(false);
   const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.nutrition_builder');
   const [isDeletingPlan, setIsDeletingPlan] = useState(false);
@@ -227,9 +229,9 @@ export default function NutritionPlanBuilderScreen() {
       state.plan.id,
       { name: mealName },
       { name: values.name, hydrationGoalMl: values.hydrationGoalMl },
-      creationMode
+      creationMode,
     );
-    
+
     if (error) {
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
     } else {
@@ -239,16 +241,31 @@ export default function NutritionPlanBuilderScreen() {
 
       // If it was a new plan, update the URL to avoid 'new' ID
       if (isNew) {
-        router.replace(`${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${realId}` as any);
+        router.replace(
+          `${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${realId}` as any,
+        );
       }
     }
-  }, [isBusy, addMealForm, state, addMeal, values.name, values.hydrationGoalMl, creationMode, tr, setIsDirty, isNew, isStudentBuilder, router]);
+  }, [
+    isBusy,
+    addMealForm,
+    state,
+    addMeal,
+    values.name,
+    values.hydrationGoalMl,
+    creationMode,
+    tr,
+    setIsDirty,
+    isNew,
+    isStudentBuilder,
+    router,
+  ]);
 
   const handleRemoveMeal = useCallback(
     (mealId: string) => {
       if (isBusy || state.kind !== 'ready') return;
-      
-      const meal = state.plan.meals.find(m => m.id === mealId);
+
+      const meal = state.plan.meals.find((m) => m.id === mealId);
       const mealName = meal?.name || t('pro.plan.section.meals');
 
       Alert.alert(
@@ -266,32 +283,41 @@ export default function NutritionPlanBuilderScreen() {
               setIsDirty(true);
             },
           },
-        ]
+        ],
       );
     },
-    [isBusy, state, removeMeal, setIsDirty, t]
+    [isBusy, state, removeMeal, setIsDirty, t],
   );
 
-  const handleMoveMeal = useCallback(async (index: number, direction: 'up' | 'down') => {
-    if (isBusy || state.kind !== 'ready') return;
-    const newMeals = [...state.plan.meals];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newMeals.length) return;
+  const handleMoveMeal = useCallback(
+    async (index: number, direction: 'up' | 'down') => {
+      if (isBusy || state.kind !== 'ready') return;
+      const newMeals = [...state.plan.meals];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= newMeals.length) return;
 
-    const [moved] = newMeals.splice(index, 1);
-    newMeals.splice(targetIndex, 0, moved);
+      const [moved] = newMeals.splice(index, 1);
+      newMeals.splice(targetIndex, 0, moved);
 
-    // Immediate visual update with animation
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    // Call optimistic reorder
-    await reorderMeals(state.plan.id, newMeals.map(m => m.id));
-  }, [isBusy, state, reorderMeals]);
+      // Immediate visual update with animation
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-  const handleFieldChange = useCallback((field: keyof typeof values, v: string) => {
-    setFieldValue(field, v);
-  }, [setFieldValue]);
+      // Call optimistic reorder
+      await reorderMeals(
+        state.plan.id,
+        newMeals.map((m) => m.id),
+      );
+    },
+    [isBusy, state, reorderMeals],
+  );
+
+  const handleFieldChange = useCallback(
+    (field: keyof typeof values, v: string) => {
+      setFieldValue(field, v);
+    },
+    [setFieldValue],
+  );
 
   const handleCloseAddMeal = useCallback(() => {
     setAddMealForm({ kind: 'closed' });
@@ -301,9 +327,14 @@ export default function NutritionPlanBuilderScreen() {
     setAddMealForm({ kind: 'open', name: '' });
   }, []);
 
-  const handleNavigateToMeal = useCallback((mealId: string) => {
-    router.push(`${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${planId}/meals/${mealId}` as any);
-  }, [isStudentBuilder, planId, router]);
+  const handleNavigateToMeal = useCallback(
+    (mealId: string) => {
+      router.push(
+        `${isStudentBuilder ? '/student/nutrition/plans' : '/professional/nutrition/plans'}/${planId}/meals/${mealId}` as any,
+      );
+    },
+    [isStudentBuilder, planId, router],
+  );
 
   const handleDeletePlan = useCallback(() => {
     if (isBusy || isNew || !planId) return;
@@ -328,15 +359,22 @@ export default function NutritionPlanBuilderScreen() {
             }
           },
         },
-      ]
+      ],
     );
   }, [isBusy, isNew, planId, deletePlan, t, tr]);
 
   if (nutritionGate === 'loading') {
     return (
-      <DsScreen scheme={scheme} contentWidth="content" contentContainerStyle={[styles.content, styles.centeredContent]}>
+      <DsScreen
+        scheme={scheme}
+        contentWidth="content"
+        contentContainerStyle={[styles.content, styles.centeredContent]}
+      >
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator accessibilityLabel={t('a11y.loading.default')} color={theme.color.accentPrimary} />
+        <ActivityIndicator
+          accessibilityLabel={t('a11y.loading.default')}
+          color={theme.color.accentPrimary}
+        />
       </DsScreen>
     );
   }
@@ -370,7 +408,11 @@ export default function NutritionPlanBuilderScreen() {
             variant="primary"
             size="sm"
             fullWidth={false}
-            label={isDraftAssignment ? t('pro.plan.cta.assign_and_send') : tr('pro.plan.cta.save', 'student.plan.cta.save')}
+            label={
+              isDraftAssignment
+                ? t('pro.plan.cta.assign_and_send')
+                : tr('pro.plan.cta.save', 'student.plan.cta.save')
+            }
             onPress={handleSave}
             disabled={!isDirty || isSaving}
             loading={isSaving}
@@ -378,7 +420,7 @@ export default function NutritionPlanBuilderScreen() {
           />
 
           {!isNew && (
-            <Pressable 
+            <Pressable
               onPress={handleDeletePlan}
               hitSlop={12}
               accessibilityRole="button"
@@ -403,8 +445,14 @@ export default function NutritionPlanBuilderScreen() {
         theme={theme}
         visible={showGuidance}
         onDismiss={hideGuidance}
-        title={tr('pro.plan.builder.guidance.nutrition.title', 'student.plan.builder.guidance.nutrition.title')}
-        description={tr('pro.plan.builder.guidance.nutrition.body', 'student.plan.builder.guidance.nutrition.body')}
+        title={tr(
+          'pro.plan.builder.guidance.nutrition.title',
+          'student.plan.builder.guidance.nutrition.title',
+        )}
+        description={tr(
+          'pro.plan.builder.guidance.nutrition.body',
+          'student.plan.builder.guidance.nutrition.body',
+        )}
       />
 
       {/* ── Error state ───────────────────────────────────────────────────── */}
@@ -442,7 +490,6 @@ export default function NutritionPlanBuilderScreen() {
         testIDPrefix="pro.plan.metadata"
       />
 
-
       {/* ── Food items list ───────────────────────────────────────────────── */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionHeader, { color: palette.text }]}>
@@ -455,7 +502,7 @@ export default function NutritionPlanBuilderScreen() {
 
       {/* ── Add meal form ─────────────────────────────────────────────────── */}
       {!isSortMode && state.kind === 'ready' && addMealForm.kind === 'open' && (
-        <Animated.View 
+        <Animated.View
           entering={FadeIn.duration(300)}
           exiting={FadeOut.duration(200)}
           style={[styles.addMealInline, { backgroundColor: theme.color.surface }]}
@@ -504,7 +551,11 @@ export default function NutritionPlanBuilderScreen() {
             testID="pro.nutrition_plan.addMeal"
             style={({ pressed }) => [
               styles.addMealButton,
-              { borderColor: palette.tint, opacity: isBusy ? 0.6 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+              {
+                borderColor: palette.tint,
+                opacity: isBusy ? 0.6 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
             ]}
           >
             <IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />
@@ -600,28 +651,28 @@ export default function NutritionPlanBuilderScreen() {
   );
 }
 
-function MealRow({ 
-  meal, 
-  palette, 
-  theme, 
-  isLast, 
-  onRemove, 
+function MealRow({
+  meal,
+  palette,
+  theme,
+  isLast,
+  onRemove,
   onPress,
-  isSortMode, 
-  onMoveUp, 
+  isSortMode,
+  onMoveUp,
   onMoveDown,
   isFirstInList,
   isLastInList,
   testID,
-}: { 
-  meal: any; 
-  palette: any; 
-  theme: any; 
-  isLast: boolean; 
-  onRemove: () => void; 
+}: {
+  meal: any;
+  palette: any;
+  theme: any;
+  isLast: boolean;
+  onRemove: () => void;
   onPress: () => void;
-  isSortMode: boolean; 
-  onMoveUp: () => void; 
+  isSortMode: boolean;
+  onMoveUp: () => void;
   onMoveDown: () => void;
   isFirstInList: boolean;
   isLastInList: boolean;
@@ -630,43 +681,56 @@ function MealRow({
   const totals = calculateTotalsFromItems(meal.items);
 
   return (
-    <View style={[styles.itemRowContainer, !isLast && { borderBottomWidth: 1, borderBottomColor: theme.color.border }]}>
-      <Pressable 
+    <View
+      style={[
+        styles.itemRowContainer,
+        !isLast && { borderBottomWidth: 1, borderBottomColor: theme.color.border },
+      ]}
+    >
+      <Pressable
         onPress={isSortMode ? undefined : onPress}
-        style={({ pressed }) => [styles.itemRowPressable, pressed && !isSortMode && { backgroundColor: theme.color.surfaceMuted }]}
+        style={({ pressed }) => [
+          styles.itemRowPressable,
+          pressed && !isSortMode && { backgroundColor: theme.color.surfaceMuted },
+        ]}
         testID={testID}
       >
         <View style={styles.itemRowMain}>
           <View style={styles.itemRowInfo}>
             <Text style={[styles.itemName, { color: palette.text }]}>{meal.name}</Text>
             <Text style={[styles.itemDetail, { color: palette.icon }]}>
-              {meal.items.length} {meal.items.length === 1 ? 'food' : 'foods'} · {totals.calories} kcal
+              {meal.items.length} {meal.items.length === 1 ? 'food' : 'foods'} · {totals.calories}{' '}
+              kcal
             </Text>
           </View>
-          
+
           {isSortMode ? (
             <View style={styles.sortActions}>
-              <Pressable onPress={onMoveUp} disabled={isFirstInList} style={{ opacity: isFirstInList ? 0.2 : 1 }}>
+              <Pressable
+                onPress={onMoveUp}
+                disabled={isFirstInList}
+                style={{ opacity: isFirstInList ? 0.2 : 1 }}
+              >
                 <IconSymbol name="chevron.up" size={20} color={palette.icon} />
               </Pressable>
-              <Pressable onPress={onMoveDown} disabled={isLastInList} style={{ opacity: isLastInList ? 0.2 : 1 }}>
+              <Pressable
+                onPress={onMoveDown}
+                disabled={isLastInList}
+                style={{ opacity: isLastInList ? 0.2 : 1 }}
+              >
                 <IconSymbol name="chevron.down" size={20} color={palette.icon} />
               </Pressable>
             </View>
           ) : (
             <View style={styles.rowRight}>
-               <IconSymbol name="chevron.right" size={16} color={palette.icon} />
+              <IconSymbol name="chevron.right" size={16} color={palette.icon} />
             </View>
           )}
         </View>
       </Pressable>
 
       {!isSortMode && (
-        <Pressable 
-          onPress={onRemove}
-          hitSlop={8}
-          style={styles.removeBtn}
-        >
+        <Pressable onPress={onRemove} hitSlop={8} style={styles.removeBtn}>
           <IconSymbol name="minus.circle.fill" size={20} color={palette.danger} />
         </Pressable>
       )}
@@ -682,14 +746,46 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: DsSpace.md, gap: DsSpace.md, paddingBottom: 60 },
   centeredContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: DsSpace.xs },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: DsSpace.xs,
+  },
   backButton: { marginBottom: 0 },
-  itemsInsetWrapper: { borderRadius: DsRadius.lg, padding: 0, overflow: 'hidden', ...DsShadow.soft, backgroundColor: 'white' }, // Explicit fallback for surface
-  supportText: { ...DsTypography.micro, textTransform: 'none', opacity: 0.6, marginTop: DsSpace.xxs },
-  sectionHeaderRow: { marginTop: DsSpace.md, marginBottom: DsSpace.xs, paddingHorizontal: DsSpace.xs },
+  itemsInsetWrapper: {
+    borderRadius: DsRadius.lg,
+    padding: 0,
+    overflow: 'hidden',
+    ...DsShadow.soft,
+    backgroundColor: 'white',
+  }, // Explicit fallback for surface
+  supportText: {
+    ...DsTypography.micro,
+    textTransform: 'none',
+    opacity: 0.6,
+    marginTop: DsSpace.xxs,
+  },
+  sectionHeaderRow: {
+    marginTop: DsSpace.md,
+    marginBottom: DsSpace.xs,
+    paddingHorizontal: DsSpace.xs,
+  },
   sectionHeader: { ...DsTypography.screenTitle, fontFamily: Fonts?.rounded ?? 'normal' },
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: DsSpace.xxl, gap: DsSpace.xs },
-  emptyIconWrapper: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: DsSpace.xs },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: DsSpace.xxl,
+    gap: DsSpace.xs,
+  },
+  emptyIconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: DsSpace.xs,
+  },
   emptyTitle: { ...DsTypography.cardTitle, fontWeight: '700' },
   emptyText: { ...DsTypography.body, textAlign: 'center', opacity: 0.7 },
   footerActions: { marginTop: DsSpace.xl, paddingBottom: DsSpace.xl },
@@ -702,12 +798,44 @@ const styles = StyleSheet.create({
   rowRight: { paddingLeft: DsSpace.sm },
   removeBtn: { padding: DsSpace.md },
   sortActions: { flexDirection: 'row', gap: DsSpace.md, alignItems: 'center' },
-  addMealInline: { padding: DsSpace.md, borderRadius: DsRadius.lg, ...DsShadow.soft, gap: DsSpace.md, marginTop: 0, marginBottom: DsSpace.sm },
-  addMealInput: { ...DsTypography.body, paddingVertical: DsSpace.xs, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  addMealActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: DsSpace.md },
-  addMealButton: { minHeight: 46, flex: 1, borderWidth: 1.5, borderRadius: DsRadius.pill, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 18 },
+  addMealInline: {
+    padding: DsSpace.md,
+    borderRadius: DsRadius.lg,
+    ...DsShadow.soft,
+    gap: DsSpace.md,
+    marginTop: 0,
+    marginBottom: DsSpace.sm,
+  },
+  addMealInput: {
+    ...DsTypography.body,
+    paddingVertical: DsSpace.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  addMealActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: DsSpace.md,
+  },
+  addMealButton: {
+    minHeight: 46,
+    flex: 1,
+    borderWidth: 1.5,
+    borderRadius: DsRadius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 18,
+  },
   addMealButtonText: { ...DsTypography.button, fontSize: 15, textAlign: 'center' },
-  addMealCancel: { ...DsTypography.button, opacity: 0.6, paddingHorizontal: DsSpace.sm, paddingVertical: DsSpace.xs },
+  addMealCancel: {
+    ...DsTypography.button,
+    opacity: 0.6,
+    paddingHorizontal: DsSpace.sm,
+    paddingVertical: DsSpace.xs,
+  },
   headerActionBtn: { padding: DsSpace.xs, justifyContent: 'center', alignItems: 'center' },
   actionRow: { flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center', marginTop: 0 },
   sortBtn: { flex: 0 },

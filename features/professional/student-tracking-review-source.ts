@@ -4,11 +4,15 @@ import type { PortionLog } from '../nutrition/custom-meal-source';
 import type { WaterIntakeLog } from '../nutrition/water-tracking.logic';
 import { defaultAppFetch } from '../platform/default-app-fetch';
 
-import { buildStudentTrackingReview, type StudentTrackingReview } from './student-tracking-review.logic';
+import {
+  buildStudentTrackingReview,
+  type StudentTrackingReview,
+} from './student-tracking-review.logic';
 
 export type { StudentTrackingReview };
 
-export type StudentTrackingReviewSourceErrorCode = 'configuration' | 'network' | 'permission' | 'invalid_response';
+export type StudentTrackingReviewSourceErrorCode =
+  'configuration' | 'network' | 'permission' | 'invalid_response';
 
 export class StudentTrackingReviewSourceError extends Error {
   code: StudentTrackingReviewSourceErrorCode;
@@ -54,7 +58,7 @@ function resolveServerBaseUrl(): string | undefined {
 
 function getE2EStudentTrackingReviewFixture(
   studentUid: string,
-  input: { todayKey: string; waterGoalMl?: number | null }
+  input: { todayKey: string; waterGoalMl?: number | null },
 ): StudentTrackingReview | null {
   const override = resolveE2EAuthSessionSourceOverride({
     appVariant: process.env.APP_VARIANT,
@@ -76,8 +80,18 @@ function getE2EStudentTrackingReviewFixture(
   const previousDay = new Date(today.getTime() - 86_400_000).toISOString().slice(0, 10);
   const twoDaysAgo = new Date(today.getTime() - 2 * 86_400_000).toISOString().slice(0, 10);
   const waterLogs: WaterIntakeLog[] = [
-    { id: 'e2e-water-today', dateKey: input.todayKey, totalMl: 1500, loggedAt: `${input.todayKey}T12:00:00.000Z` },
-    { id: 'e2e-water-yesterday', dateKey: previousDay, totalMl: 2200, loggedAt: `${previousDay}T12:00:00.000Z` },
+    {
+      id: 'e2e-water-today',
+      dateKey: input.todayKey,
+      totalMl: 1500,
+      loggedAt: `${input.todayKey}T12:00:00.000Z`,
+    },
+    {
+      id: 'e2e-water-yesterday',
+      dateKey: previousDay,
+      totalMl: 2200,
+      loggedAt: `${previousDay}T12:00:00.000Z`,
+    },
   ];
   const portionLogs: PortionLog[] = [
     {
@@ -131,12 +145,14 @@ export function buildStudentTrackingReviewDateWindow(todayKey: string): {
   };
 }
 
-export function normalizeStudentTrackingReviewError(error: unknown): StudentTrackingReviewSourceError {
+export function normalizeStudentTrackingReviewError(
+  error: unknown,
+): StudentTrackingReviewSourceError {
   if (error instanceof StudentTrackingReviewSourceError) return error;
 
   return new StudentTrackingReviewSourceError(
     'invalid_response',
-    (error as Error)?.message ?? 'Unexpected student tracking review source error.'
+    (error as Error)?.message ?? 'Unexpected student tracking review source error.',
   );
 }
 
@@ -191,19 +207,29 @@ function normalizeServerPortionLog(input: ServerPortionLog): PortionLog | null {
       input.sourceKind === 'self_managed'
         ? input.sourceKind
         : null,
-    ownerProfessionalUid: typeof input.ownerProfessionalUid === 'string' ? input.ownerProfessionalUid : null,
+    ownerProfessionalUid:
+      typeof input.ownerProfessionalUid === 'string' ? input.ownerProfessionalUid : null,
     connectionId: typeof input.connectionId === 'string' ? input.connectionId : null,
   };
 }
 
 function normalizeServerStatus(status: number): StudentTrackingReviewSourceError {
   if (status === 401 || status === 403) {
-    return new StudentTrackingReviewSourceError('permission', 'Tracking review read is not authorized.');
+    return new StudentTrackingReviewSourceError(
+      'permission',
+      'Tracking review read is not authorized.',
+    );
   }
   if (status >= 500) {
-    return new StudentTrackingReviewSourceError('network', `Tracking review request failed with status ${status}.`);
+    return new StudentTrackingReviewSourceError(
+      'network',
+      `Tracking review request failed with status ${status}.`,
+    );
   }
-  return new StudentTrackingReviewSourceError('invalid_response', `Unexpected tracking review response: ${status}.`);
+  return new StudentTrackingReviewSourceError(
+    'invalid_response',
+    `Unexpected tracking review response: ${status}.`,
+  );
 }
 
 function requireServerBaseUrl(deps: StudentTrackingReviewSourceDeps): string {
@@ -211,7 +237,7 @@ function requireServerBaseUrl(deps: StudentTrackingReviewSourceDeps): string {
   if (!baseUrl) {
     throw new StudentTrackingReviewSourceError(
       'configuration',
-      'MyChampions server URL is not configured for student tracking review.'
+      'MyChampions server URL is not configured for student tracking review.',
     );
   }
   return baseUrl;
@@ -222,7 +248,7 @@ async function requireAccessToken(deps: StudentTrackingReviewSourceDeps): Promis
   if (!accessToken) {
     throw new StudentTrackingReviewSourceError(
       'permission',
-      'No authenticated server token found for student tracking review.'
+      'No authenticated server token found for student tracking review.',
     );
   }
   return accessToken;
@@ -231,7 +257,7 @@ async function requireAccessToken(deps: StudentTrackingReviewSourceDeps): Promis
 async function getStudentTrackingReviewFromServer(
   studentUid: string,
   input: { todayKey: string; waterGoalMl?: number | null },
-  deps: StudentTrackingReviewSourceDeps
+  deps: StudentTrackingReviewSourceDeps,
 ): Promise<{ waterGoalMl: number | null; waterLogs: WaterIntakeLog[]; portionLogs: PortionLog[] }> {
   const baseUrl = requireServerBaseUrl(deps);
   const accessToken = await requireAccessToken(deps);
@@ -244,10 +270,13 @@ async function getStudentTrackingReviewFromServer(
       `${baseUrl}/professional/students/${encodeURIComponent(studentUid)}/tracking-review?${params.toString()}`,
       {
         headers: { authorization: `Bearer ${accessToken}` },
-      }
+      },
     );
   } catch {
-    throw new StudentTrackingReviewSourceError('network', 'Network request to read tracking review failed.');
+    throw new StudentTrackingReviewSourceError(
+      'network',
+      'Network request to read tracking review failed.',
+    );
   }
 
   let payload: {
@@ -269,7 +298,10 @@ async function getStudentTrackingReviewFromServer(
     throw normalizeServerStatus(response.status);
   }
   if (!Array.isArray(payload?.waterLogs) || !Array.isArray(payload?.portionLogs)) {
-    throw new StudentTrackingReviewSourceError('invalid_response', 'Tracking review response is missing logs.');
+    throw new StudentTrackingReviewSourceError(
+      'invalid_response',
+      'Tracking review response is missing logs.',
+    );
   }
 
   return {
@@ -289,7 +321,7 @@ async function getStudentTrackingReviewFromServer(
 export async function getStudentTrackingReview(
   studentUid: string,
   input: { todayKey: string; waterGoalMl?: number | null },
-  deps = defaultDeps
+  deps = defaultDeps,
 ): Promise<StudentTrackingReview> {
   if (deps === defaultDeps) {
     const fixture = getE2EStudentTrackingReviewFixture(studentUid, input);

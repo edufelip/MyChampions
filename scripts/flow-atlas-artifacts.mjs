@@ -1,7 +1,11 @@
 import { rm, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-export const flowAtlasArtifactBase = path.join('.artifacts', 'web-e2e', 'complete-flow-atlas-verified');
+export const flowAtlasArtifactBase = path.join(
+  '.artifacts',
+  'web-e2e',
+  'complete-flow-atlas-verified',
+);
 
 export function resolveFlowAtlasArtifactRoot({
   cwd = process.cwd(),
@@ -11,7 +15,7 @@ export function resolveFlowAtlasArtifactRoot({
   const artifactBase = path.resolve(cwd, flowAtlasArtifactBase);
   const artifactRoot = path.resolve(
     cwd,
-    configuredRoot ?? path.join(flowAtlasArtifactBase, runId ?? '')
+    configuredRoot ?? path.join(flowAtlasArtifactBase, runId ?? ''),
   );
   const relativeRoot = path.relative(artifactBase, artifactRoot);
 
@@ -22,7 +26,7 @@ export function resolveFlowAtlasArtifactRoot({
     path.isAbsolute(relativeRoot)
   ) {
     throw new Error(
-      `Flow-atlas artifact root must be a per-run directory inside ${artifactBase}: ${artifactRoot}`
+      `Flow-atlas artifact root must be a per-run directory inside ${artifactBase}: ${artifactRoot}`,
     );
   }
 

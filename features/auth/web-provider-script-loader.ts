@@ -54,7 +54,9 @@ const browserDocument: ProviderScriptDocument | undefined =
           const element = document.getElementById(id);
           return element instanceof HTMLScriptElement ? element : null;
         },
-        head: { appendChild: (script) => void document.head.appendChild(script as HTMLScriptElement) },
+        head: {
+          appendChild: (script) => void document.head.appendChild(script as HTMLScriptElement),
+        },
       };
 const loadProviderScript = createWebProviderScriptLoader(browserDocument);
 

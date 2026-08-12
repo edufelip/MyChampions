@@ -55,14 +55,16 @@ async function signInWithApple(input: {
   redirectUri: string;
   nonce: string;
 }): Promise<string> {
-  const AppleID = (globalThis as typeof globalThis & {
-    AppleID?: {
-      auth?: {
-        init: (config: Record<string, unknown>) => void;
-        signIn: () => Promise<{ authorization?: { id_token?: string } }>;
+  const AppleID = (
+    globalThis as typeof globalThis & {
+      AppleID?: {
+        auth?: {
+          init: (config: Record<string, unknown>) => void;
+          signIn: () => Promise<{ authorization?: { id_token?: string } }>;
+        };
       };
-    };
-  }).AppleID;
+    }
+  ).AppleID;
   if (!AppleID?.auth) {
     throw new SocialAuthSourceError('configuration', 'Sign in with Apple JS is unavailable.');
   }
@@ -77,7 +79,10 @@ async function signInWithApple(input: {
     const result = await AppleID.auth.signIn();
     const idToken = result.authorization?.id_token?.trim();
     if (!idToken) {
-      throw new SocialAuthSourceError('invalid_credentials', 'Apple did not return an identity token.');
+      throw new SocialAuthSourceError(
+        'invalid_credentials',
+        'Apple did not return an identity token.',
+      );
     }
     return idToken;
   } catch (error) {
@@ -85,7 +90,9 @@ async function signInWithApple(input: {
       typeof error === 'object' &&
       error !== null &&
       'error' in error &&
-      String((error as { error?: unknown }).error).toLowerCase().includes('cancel')
+      String((error as { error?: unknown }).error)
+        .toLowerCase()
+        .includes('cancel')
     ) {
       throw createCanceledError();
     }
@@ -100,7 +107,7 @@ function makeDeps(): AppleWebSocialAuthSourceDeps {
     loadAppleId: () =>
       loadWebProviderScript(
         'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js',
-        'mychampions-appleid-auth'
+        'mychampions-appleid-auth',
       ),
     signIn: signInWithApple,
     signInWithSocialProviderToken: signInWithSocialProviderTokenFromSource,
@@ -108,7 +115,7 @@ function makeDeps(): AppleWebSocialAuthSourceDeps {
 }
 
 export async function signInWithAppleProviderTokenFromSource(
-  deps: AppleWebSocialAuthSourceDeps = makeDeps()
+  deps: AppleWebSocialAuthSourceDeps = makeDeps(),
 ): Promise<void> {
   const config = deps.getConfig();
   const clientId = config.clientId?.trim();
@@ -116,7 +123,7 @@ export async function signInWithAppleProviderTokenFromSource(
   if (!clientId || !redirectUri) {
     throw new SocialAuthSourceError(
       'configuration',
-      'Apple web client id and redirect URI must be configured.'
+      'Apple web client id and redirect URI must be configured.',
     );
   }
   const nonce = deps.createNonce();

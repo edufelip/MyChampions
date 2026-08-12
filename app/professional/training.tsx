@@ -52,11 +52,16 @@ export default function ProTrainingLibraryScreen() {
         testID={`pro.library.training.row.${item.id}`}
       />
     ),
-    [router, t, theme]
+    [router, t, theme],
   );
 
   return (
-    <DsScreen scheme={scheme} contentWidth="wide" scrollable={false} contentContainerStyle={styles.content}>
+    <DsScreen
+      scheme={scheme}
+      contentWidth="wide"
+      scrollable={false}
+      contentContainerStyle={styles.content}
+    >
       <Stack.Screen options={{ title: t('pro.library.training.title'), headerShown: false }} />
 
       <DsCard scheme={scheme} style={styles.heroCard}>
@@ -68,7 +73,8 @@ export default function ProTrainingLibraryScreen() {
                 backgroundColor: theme.color.accentPrimarySoft,
                 borderColor: theme.color.accentPrimary,
               },
-            ]}>
+            ]}
+          >
             <MaterialIcons name="fitness-center" size={20} color={theme.color.accentPrimary} />
           </View>
           <View style={styles.heroCopy}>
@@ -93,7 +99,9 @@ export default function ProTrainingLibraryScreen() {
       {state.kind === 'error' ? (
         <DsCard scheme={scheme} style={styles.centeredContent}>
           <View accessibilityRole="alert" accessibilityLiveRegion="polite">
-            <Text style={[styles.errorText, { color: theme.color.textSecondary }]}>{t('pro.library.error')}</Text>
+            <Text style={[styles.errorText, { color: theme.color.textSecondary }]}>
+              {t('pro.library.error')}
+            </Text>
           </View>
           <DsPillButton
             scheme={scheme}
@@ -145,7 +153,10 @@ function EmptyState({
         <View
           style={[
             styles.emptyHeroGlow,
-            { backgroundColor: theme.color.accentPrimarySoft, borderColor: theme.color.accentPrimarySoft },
+            {
+              backgroundColor: theme.color.accentPrimarySoft,
+              borderColor: theme.color.accentPrimarySoft,
+            },
           ]}
         />
         <View
@@ -155,12 +166,17 @@ function EmptyState({
               backgroundColor: theme.color.surface,
               borderColor: theme.color.border,
             },
-          ]}>
+          ]}
+        >
           <MaterialIcons name="fitness-center" size={34} color={theme.color.accentPrimary} />
           <View style={styles.emptyHeroDots}>
-            <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
+            <View
+              style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]}
+            />
             <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimary }]} />
-            <View style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]} />
+            <View
+              style={[styles.emptyHeroDot, { backgroundColor: theme.color.accentPrimarySoft }]}
+            />
           </View>
         </View>
       </View>
@@ -182,20 +198,28 @@ type PlanRowProps = {
 function PlanRow({ plan, theme, t, onPress, testID }: PlanRowProps) {
   return (
     <Pressable
-      style={[styles.planRow, { borderColor: theme.color.border, backgroundColor: theme.color.surface }]}
+      style={[
+        styles.planRow,
+        { borderColor: theme.color.border, backgroundColor: theme.color.surface },
+      ]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${plan.name}, ${t('pro.plan.predefined.label')}`}
-      testID={testID}>
+      testID={testID}
+    >
       <View style={[styles.rowIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
         <MaterialIcons name="fitness-center" size={18} color={theme.color.accentPrimary} />
       </View>
       <View style={styles.planInfo}>
         <Text style={[styles.planName, { color: theme.color.textPrimary }]}>{plan.name}</Text>
-        <Text style={[styles.planMeta, { color: theme.color.textSecondary }]}>{t('pro.plan.predefined.label')}</Text>
+        <Text style={[styles.planMeta, { color: theme.color.textSecondary }]}>
+          {t('pro.plan.predefined.label')}
+        </Text>
       </View>
       <View style={[styles.openPill, { backgroundColor: theme.color.accentPrimarySoft }]}>
-        <Text style={[styles.openCta, { color: theme.color.accentPrimary }]}>{t('pro.library.cta_open')}</Text>
+        <Text style={[styles.openCta, { color: theme.color.accentPrimary }]}>
+          {t('pro.library.cta_open')}
+        </Text>
       </View>
       <MaterialIcons name="chevron-right" size={20} color={theme.color.textSecondary} />
     </Pressable>

@@ -33,12 +33,7 @@ import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
-import {
-  DsRadius,
-  DsSpace,
-  DsTypography,
-  getDsTheme,
-} from '@/constants/design-system';
+import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import {
@@ -89,8 +84,14 @@ export default function ProfessionalSpecialtyScreen() {
   const { currentUser } = useAuthSession();
   const router = useRouter();
 
-  const { state, addSpecialty, removeSpecialty, checkRemoval, getRemovalBlockerCounts, upsertCredential } =
-    useSpecialties(Boolean(currentUser));
+  const {
+    state,
+    addSpecialty,
+    removeSpecialty,
+    checkRemoval,
+    getRemovalBlockerCounts,
+    upsertCredential,
+  } = useSpecialties(Boolean(currentUser));
   const networkStatus = useNetworkStatus();
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
     state.kind === 'ready' ? state.lastSyncedAtIso : null,
@@ -277,7 +278,12 @@ export default function ProfessionalSpecialtyScreen() {
   }
 
   return (
-    <DsScreen scheme={scheme} contentWidth="form" testID="pro.specialty.screen" contentContainerStyle={styles.content}>
+    <DsScreen
+      scheme={scheme}
+      contentWidth="form"
+      testID="pro.specialty.screen"
+      contentContainerStyle={styles.content}
+    >
       <Stack.Screen options={{ title: t('pro.specialty.title'), headerShown: false }} />
 
       <DsBackButton
@@ -299,7 +305,10 @@ export default function ProfessionalSpecialtyScreen() {
         <Text style={[styles.pageTitle, { color: palette.text }]} testID="pro.specialty.pageTitle">
           {t('pro.specialty.title')}
         </Text>
-        <Text style={[styles.pageSubtitle, { color: palette.icon }]} testID="pro.specialty.pageSubtitle">
+        <Text
+          style={[styles.pageSubtitle, { color: palette.icon }]}
+          testID="pro.specialty.pageSubtitle"
+        >
           {t('pro.specialty.subtitle')}
         </Text>
       </View>
@@ -322,14 +331,20 @@ export default function ProfessionalSpecialtyScreen() {
       ) : null}
 
       {state.kind === 'error' ? (
-        <Text style={[styles.errorText, { color: theme.color.danger }]} testID="pro.specialty.error">
+        <Text
+          style={[styles.errorText, { color: theme.color.danger }]}
+          testID="pro.specialty.error"
+        >
           {state.message}
         </Text>
       ) : null}
 
       {actionError ? (
         <View accessibilityLiveRegion="polite">
-          <Text style={[styles.errorText, { color: theme.color.danger }]} testID="pro.specialty.actionError">
+          <Text
+            style={[styles.errorText, { color: theme.color.danger }]}
+            testID="pro.specialty.actionError"
+          >
             {actionError}
           </Text>
         </View>
@@ -378,8 +393,7 @@ export default function ProfessionalSpecialtyScreen() {
       ) : null}
 
       {state.kind === 'ready' &&
-      (state.specialties.length === 0 ||
-        state.specialties.length < 2) ? (
+      (state.specialties.length === 0 || state.specialties.length < 2) ? (
         <Text style={[styles.sectionLabel, { color: palette.icon }]}>
           {t('pro.specialty.section.add')}
         </Text>
@@ -436,7 +450,8 @@ export default function ProfessionalSpecialtyScreen() {
                 accessibilityRole="button"
                 onPress={() => router.replace('/(tabs)')}
                 style={styles.skipButton}
-                testID="pro.specialty.cta_skip">
+                testID="pro.specialty.cta_skip"
+              >
                 <Text style={[styles.skipText, { color: palette.tint }]}>
                   {t('pro.specialty.cta_skip')}
                 </Text>
@@ -464,7 +479,14 @@ function RemovalAssistCard({
   specialty: Specialty;
   assistState: RemovalAssistState;
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string; surface: string };
+  palette: {
+    text: string;
+    icon: string;
+    tint: string;
+    danger: string;
+    onAccent: string;
+    surface: string;
+  };
   t: TFn;
   onAction: (navigationTarget: string | undefined) => void;
   onDismiss: () => void;
@@ -475,7 +497,12 @@ function RemovalAssistCard({
   const actions = assistState.availableActions.map((a) => buildActionMetadata(a, specialty));
 
   return (
-    <DsCard scheme={scheme} variant="warning" style={styles.removalAssistCard} testID="pro.specialty.removalAssist">
+    <DsCard
+      scheme={scheme}
+      variant="warning"
+      style={styles.removalAssistCard}
+      testID="pro.specialty.removalAssist"
+    >
       <Text style={[styles.assistTitle, { color: palette.danger }]}>{t(titleKey)}</Text>
       <Text style={[styles.assistBody, { color: palette.text }]}>{t(bodyKey)}</Text>
 
@@ -491,19 +518,22 @@ function RemovalAssistCard({
               ? { backgroundColor: palette.tint }
               : { borderColor: palette.tint, borderWidth: 1.5 },
           ]}
-          testID={`pro.specialty.removalAssist.${meta.action}`}>
+          testID={`pro.specialty.removalAssist.${meta.action}`}
+        >
           <Text
             style={[
               styles.assistActionText,
               meta.priority === 'primary' ? { color: palette.onAccent } : { color: palette.tint },
-            ]}>
+            ]}
+          >
             {t(meta.label)}
           </Text>
           <Text
             style={[
               styles.assistActionDesc,
               { color: meta.priority === 'primary' ? `${palette.onAccent}bb` : palette.icon },
-            ]}>
+            ]}
+          >
             {t(meta.description)}
           </Text>
         </Pressable>
@@ -513,7 +543,8 @@ function RemovalAssistCard({
         accessibilityRole="button"
         onPress={onDismiss}
         style={styles.assistDismiss}
-        testID="pro.specialty.removalAssist.dismiss">
+        testID="pro.specialty.removalAssist.dismiss"
+      >
         <Text style={[styles.link, { color: palette.icon }]}>
           {t('pro.specialty.remove_blocked.dismiss') as string}
         </Text>
@@ -534,7 +565,14 @@ function SpecialtyList({
 }: {
   specialties: SpecialtyRecord[];
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string; surface: string };
+  palette: {
+    text: string;
+    icon: string;
+    tint: string;
+    danger: string;
+    onAccent: string;
+    surface: string;
+  };
   t: TFn;
   onRemove: (s: Specialty) => void;
   onOpenCredential: (s: Specialty) => void;
@@ -544,7 +582,11 @@ function SpecialtyList({
   return (
     <>
       {specialties.map((record) => (
-        <DsCard scheme={scheme} key={record.specialty} testID={`pro.specialty.row.${record.specialty}`}>
+        <DsCard
+          scheme={scheme}
+          key={record.specialty}
+          testID={`pro.specialty.row.${record.specialty}`}
+        >
           <Text style={[styles.cardTitle, { color: palette.text }]}>
             {record.specialty === 'nutritionist'
               ? t('pro.specialty.nutritionist')
@@ -556,7 +598,8 @@ function SpecialtyList({
               accessibilityRole="button"
               onPress={() => onOpenCredential(record.specialty)}
               disabled={isWriteLocked}
-              testID={`pro.specialty.credential.${record.specialty}`}>
+              testID={`pro.specialty.credential.${record.specialty}`}
+            >
               <Text style={[styles.link, { color: isWriteLocked ? palette.icon : palette.tint }]}>
                 {t('pro.specialty.credential.title')}
               </Text>
@@ -566,7 +609,8 @@ function SpecialtyList({
               accessibilityRole="button"
               onPress={() => onRemove(record.specialty)}
               disabled={isWriteLocked || checkingRemovalSpecialty === record.specialty}
-              testID={`pro.specialty.remove.${record.specialty}`}>
+              testID={`pro.specialty.remove.${record.specialty}`}
+            >
               <Text style={[styles.link, { color: isWriteLocked ? palette.icon : palette.danger }]}>
                 {t('pro.specialty.remove')}
               </Text>
@@ -645,7 +689,14 @@ function CredentialForm({
   error: string | null;
   isSaving: boolean;
   scheme: 'light' | 'dark';
-  palette: { text: string; icon: string; tint: string; danger: string; onAccent: string; surface: string };
+  palette: {
+    text: string;
+    icon: string;
+    tint: string;
+    danger: string;
+    onAccent: string;
+    surface: string;
+  };
   t: TFn;
   onChange: (field: keyof CredentialFormData, value: string) => void;
   onSave: () => void;
@@ -653,7 +704,9 @@ function CredentialForm({
   isWriteLocked: boolean;
 }) {
   const specialtyLabel =
-    specialty === 'nutritionist' ? t('pro.specialty.nutritionist') : t('pro.specialty.fitness_coach');
+    specialty === 'nutritionist'
+      ? t('pro.specialty.nutritionist')
+      : t('pro.specialty.fitness_coach');
 
   const title =
     mode === 'add'
@@ -667,10 +720,11 @@ function CredentialForm({
 
   return (
     <DsCard scheme={scheme} testID="pro.specialty.credentialForm" style={styles.cardGap}>
-      <Text style={[styles.cardTitle, { color: palette.text }]}>
-        {title}
-      </Text>
-      <Text style={[styles.credentialIntro, { color: palette.icon }]} testID="pro.specialty.credentialForm.intro">
+      <Text style={[styles.cardTitle, { color: palette.text }]}>{title}</Text>
+      <Text
+        style={[styles.credentialIntro, { color: palette.icon }]}
+        testID="pro.specialty.credentialForm.intro"
+      >
         {t('pro.specialty.credential.intro')}
       </Text>
 
@@ -705,7 +759,8 @@ function CredentialForm({
         <View accessibilityLiveRegion="polite">
           <Text
             style={[styles.errorText, { color: palette.danger }]}
-            testID="pro.specialty.credential.error">
+            testID="pro.specialty.credential.error"
+          >
             {error}
           </Text>
         </View>
@@ -729,12 +784,19 @@ function CredentialForm({
           accessibilityRole="button"
           onPress={onSkip}
           disabled={mode === 'add' && (isWriteLocked || isSaving)}
-          testID="pro.specialty.credential.skip">
+          testID="pro.specialty.credential.skip"
+        >
           <Text
             style={[
               styles.link,
-              { color: mode === 'add' && (isWriteLocked || isSaving) ? `${palette.icon}88` : palette.icon },
-            ]}>
+              {
+                color:
+                  mode === 'add' && (isWriteLocked || isSaving)
+                    ? `${palette.icon}88`
+                    : palette.icon,
+              },
+            ]}
+          >
             {skipLabel}
           </Text>
         </Pressable>
@@ -747,7 +809,8 @@ function CredentialForm({
               accessibilityRole="button"
               onPress={Keyboard.dismiss}
               style={styles.keyboardDoneButton}
-              testID="pro.specialty.keyboard.done">
+              testID="pro.specialty.keyboard.done"
+            >
               <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
                 {t('common.cta.done')}
               </Text>

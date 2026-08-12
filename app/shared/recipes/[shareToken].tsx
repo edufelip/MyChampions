@@ -25,13 +25,7 @@
  *       TC-410–TC-425
  */
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
@@ -124,11 +118,7 @@ export default function SharedRecipeSaveScreen() {
       if (typeof result === 'string') {
         // MealActionErrorReason
         const reason =
-          result === 'not_found'
-            ? 'invalid_token'
-            : result === 'network'
-              ? 'network'
-              : 'unknown';
+          result === 'not_found' ? 'invalid_token' : result === 'network' ? 'network' : 'unknown';
         setScreenState({ kind: 'error', reason });
       } else {
         setScreenState({ kind: 'ready', snapshot: result });
@@ -164,10 +154,9 @@ export default function SharedRecipeSaveScreen() {
       scheme={scheme}
       contentWidth="content"
       contentContainerStyle={styles.content}
-      testID="shared_recipe.screen">
-      <Stack.Screen
-        options={{ title: t('shared_recipe.title'), headerShown: false }}
-      />
+      testID="shared_recipe.screen"
+    >
+      <Stack.Screen options={{ title: t('shared_recipe.title'), headerShown: false }} />
 
       <DsBackButton
         scheme={scheme}
@@ -271,7 +260,7 @@ function PreviewView({
 }) {
   const caloriesLabel = (t('shared_recipe.nutrition.calories') as string).replace(
     '{calories}',
-    String(snapshot.calories)
+    String(snapshot.calories),
   );
   const macrosLabel = (t('shared_recipe.nutrition.macros') as string)
     .replace('{carbs}', String(snapshot.carbs))
@@ -279,12 +268,11 @@ function PreviewView({
     .replace('{fats}', String(snapshot.fats));
   const weightLabel = (t('shared_recipe.nutrition.weight') as string).replace(
     '{grams}',
-    String(snapshot.totalGrams)
+    String(snapshot.totalGrams),
   );
 
   return (
     <View style={styles.previewContainer} testID="shared_recipe.preview">
-
       {/* Offline banner (BL-008) */}
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
@@ -297,17 +285,17 @@ function PreviewView({
       {/* Recipe name */}
       <Text
         style={[styles.recipeName, { color: palette.text }]}
-        testID="shared_recipe.preview.name">
+        testID="shared_recipe.preview.name"
+      >
         {snapshot.name}
       </Text>
 
       {/* Nutrition card */}
       <View
         style={[styles.nutritionCard, { borderColor: palette.icon + '33' }]}
-        testID="shared_recipe.preview.nutrition">
-        <Text style={[styles.nutritionCalories, { color: palette.text }]}>
-          {caloriesLabel}
-        </Text>
+        testID="shared_recipe.preview.nutrition"
+      >
+        <Text style={[styles.nutritionCalories, { color: palette.text }]}>{caloriesLabel}</Text>
         <Text style={[styles.nutritionMacros, { color: palette.icon }]}>{macrosLabel}</Text>
         <Text style={[styles.nutritionWeight, { color: palette.icon }]}>{weightLabel}</Text>
       </View>
@@ -323,7 +311,8 @@ function PreviewView({
         <View accessibilityLiveRegion="polite">
           <Text
             style={[styles.saveErrorText, { color: palette.danger }]}
-            testID="shared_recipe.saveError">
+            testID="shared_recipe.saveError"
+          >
             {saveError}
           </Text>
         </View>
@@ -340,9 +329,15 @@ function PreviewView({
           accessibilityRole="button"
           disabled={isWriteLocked}
           onPress={onSave}
-          style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
-          testID="shared_recipe.cta.save">
-          <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('shared_recipe.cta_save')}</Text>
+          style={[
+            styles.primaryButton,
+            { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+          ]}
+          testID="shared_recipe.cta.save"
+        >
+          <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>
+            {t('shared_recipe.cta_save')}
+          </Text>
         </Pressable>
       )}
 
@@ -350,7 +345,8 @@ function PreviewView({
         accessibilityRole="button"
         onPress={onCancel}
         style={styles.cancelButton}
-        testID="shared_recipe.cta.cancel">
+        testID="shared_recipe.cta.cancel"
+      >
         <Text style={[styles.cancelButtonText, { color: palette.icon }]}>
           {t('shared_recipe.cta_cancel')}
         </Text>
@@ -376,8 +372,12 @@ function SavedView({
     <View style={[styles.center, styles.savedContainer]} testID="shared_recipe.saved">
       {/* Success banner */}
       <View
-        style={[styles.successBanner, { borderColor: palette.success, backgroundColor: palette.successSoft }]}
-        accessibilityRole="alert">
+        style={[
+          styles.successBanner,
+          { borderColor: palette.success, backgroundColor: palette.successSoft },
+        ]}
+        accessibilityRole="alert"
+      >
         <Text style={[styles.successText, { color: palette.success }]}>
           {t('shared_recipe.success')}
         </Text>
@@ -394,8 +394,11 @@ function SavedView({
         accessibilityRole="button"
         onPress={onNavigateBack}
         style={[styles.primaryButton, { backgroundColor: palette.tint }]}
-        testID="shared_recipe.saved.cta">
-        <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('shared_recipe.cta_cancel')}</Text>
+        testID="shared_recipe.saved.cta"
+      >
+        <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>
+          {t('shared_recipe.cta_cancel')}
+        </Text>
       </Pressable>
     </View>
   );

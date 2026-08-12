@@ -17,11 +17,11 @@ import type { RoleIntent } from '@/features/auth/role-selection.logic';
 // ─── Error type ───────────────────────────────────────────────────────────────
 
 export type SubscriptionErrorReason =
-  | 'configuration'    // SDK not configured or API key missing
-  | 'network'          // Network failure during SDK call
+  | 'configuration' // SDK not configured or API key missing
+  | 'network' // Network failure during SDK call
   | 'purchase_cancelled' // User dismissed purchase sheet
-  | 'store_problem'    // App Store / Google Play returned an error
-  | 'unauthenticated'  // RevenueCat rejected the request (invalid key, etc.)
+  | 'store_problem' // App Store / Google Play returned an error
+  | 'unauthenticated' // RevenueCat rejected the request (invalid key, etc.)
   | 'unknown';
 
 export class SubscriptionSourceError extends Error {
@@ -43,13 +43,16 @@ export class SubscriptionSourceError extends Error {
  */
 export type RawCustomerInfo = {
   entitlements?: {
-    active?: Record<string, {
-      isActive?: boolean;
-      willRenew?: boolean;
-      expirationDate?: string | null;
-      unsubscribeDetectedAt?: string | null;
-      billingIssueDetectedAt?: string | null;
-    }>;
+    active?: Record<
+      string,
+      {
+        isActive?: boolean;
+        willRenew?: boolean;
+        expirationDate?: string | null;
+        unsubscribeDetectedAt?: string | null;
+        billingIssueDetectedAt?: string | null;
+      }
+    >;
   };
 };
 
@@ -68,12 +71,7 @@ export type RawPurchaseResult = {
   customerInfo?: RawCustomerInfo;
 };
 
-export type RawPaywallResult =
-  | 'NOT_PRESENTED'
-  | 'ERROR'
-  | 'CANCELLED'
-  | 'PURCHASED'
-  | 'RESTORED';
+export type RawPaywallResult = 'NOT_PRESENTED' | 'ERROR' | 'CANCELLED' | 'PURCHASED' | 'RESTORED';
 
 // ─── Injectable deps ──────────────────────────────────────────────────────────
 
@@ -135,9 +133,7 @@ export const PRO_OFFERING_ID = 'default_professional';
  */
 export const PRO_TEST_OFFERING_ID = 'test_professional';
 
-export type ProfessionalOfferingId =
-  | typeof PRO_OFFERING_ID
-  | typeof PRO_TEST_OFFERING_ID;
+export type ProfessionalOfferingId = typeof PRO_OFFERING_ID | typeof PRO_TEST_OFFERING_ID;
 
 /**
  * RevenueCat offering identifier for the student AI features paywall (D-132, D-152).
@@ -154,9 +150,7 @@ export const AI_OFFERING_ID = 'default_student';
 export const AI_TEST_OFFERING_ID = 'test_student';
 
 export type AiUpgradeOfferingId =
-  | typeof AI_OFFERING_ID
-  | typeof AI_TEST_OFFERING_ID
-  | typeof PRO_OFFERING_ID;
+  typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID | typeof PRO_OFFERING_ID;
 
 /**
  * Resolves the student offering exposed through Expo config. The temporary
@@ -164,19 +158,17 @@ export type AiUpgradeOfferingId =
  * guard are explicit. Missing config safely falls back to default_student.
  */
 export function resolveStudentOfferingId(
-  extra?: Record<string, unknown>
+  extra?: Record<string, unknown>,
 ): typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID {
   const source = extra ?? {};
   const configured = source['revenueCatStudentOfferingId'];
   const offeringId =
-    typeof configured === 'string' && configured.trim()
-      ? configured.trim()
-      : AI_OFFERING_ID;
+    typeof configured === 'string' && configured.trim() ? configured.trim() : AI_OFFERING_ID;
 
   if (offeringId !== AI_OFFERING_ID && offeringId !== AI_TEST_OFFERING_ID) {
     throw new SubscriptionSourceError(
       'configuration',
-      'RevenueCat student offering must be default_student or test_student.'
+      'RevenueCat student offering must be default_student or test_student.',
     );
   }
 
@@ -186,7 +178,7 @@ export function resolveStudentOfferingId(
   ) {
     throw new SubscriptionSourceError(
       'configuration',
-      'RevenueCat test_student offering is allowed only in an explicit development Test Store build.'
+      'RevenueCat test_student offering is allowed only in an explicit development Test Store build.',
     );
   }
 
@@ -199,19 +191,17 @@ export function resolveStudentOfferingId(
  * guard are explicit. Missing config safely falls back to default_professional.
  */
 export function resolveProfessionalOfferingId(
-  extra?: Record<string, unknown>
+  extra?: Record<string, unknown>,
 ): ProfessionalOfferingId {
   const source = extra ?? {};
   const configured = source['revenueCatProfessionalOfferingId'];
   const offeringId =
-    typeof configured === 'string' && configured.trim()
-      ? configured.trim()
-      : PRO_OFFERING_ID;
+    typeof configured === 'string' && configured.trim() ? configured.trim() : PRO_OFFERING_ID;
 
   if (offeringId !== PRO_OFFERING_ID && offeringId !== PRO_TEST_OFFERING_ID) {
     throw new SubscriptionSourceError(
       'configuration',
-      'RevenueCat professional offering must be default_professional or test_professional.'
+      'RevenueCat professional offering must be default_professional or test_professional.',
     );
   }
 
@@ -221,7 +211,7 @@ export function resolveProfessionalOfferingId(
   ) {
     throw new SubscriptionSourceError(
       'configuration',
-      'RevenueCat test_professional offering is allowed only in an explicit development Test Store build.'
+      'RevenueCat test_professional offering is allowed only in an explicit development Test Store build.',
     );
   }
 
@@ -234,7 +224,7 @@ export function resolveProfessionalOfferingId(
  */
 export function resolveAiUpgradeOfferingId(
   role: RoleIntent | null | undefined,
-  resolveStudentOffering: () => typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID
+  resolveStudentOffering: () => typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID,
 ): AiUpgradeOfferingId | null {
   if (role === 'professional') return PRO_OFFERING_ID;
   if (role === 'student') return resolveStudentOffering();
@@ -249,13 +239,13 @@ export function resolveAiUpgradeOfferingId(
  */
 export function resolveRequiredRevenueCatOffering<T>(
   offeringsById: Record<string, T | undefined>,
-  offeringId: string
+  offeringId: string,
 ): T {
   const offering = offeringsById[offeringId];
   if (!offering) {
     throw new SubscriptionSourceError(
       'configuration',
-      `RevenueCat offering ${offeringId} is not available for this app configuration.`
+      `RevenueCat offering ${offeringId} is not available for this app configuration.`,
     );
   }
   return offering;
@@ -271,7 +261,7 @@ export function resolveRequiredRevenueCatOffering<T>(
  */
 function resolvePlatformRevenueCatKey(
   source: Record<string, unknown>,
-  platform: RevenueCatPlatform
+  platform: RevenueCatPlatform,
 ): string {
   if (platform === 'ios') {
     const key = source['revenueCatApiKeyIos'];
@@ -288,7 +278,7 @@ function isSecretRevenueCatKey(key: string): boolean {
 function isValidPublicRevenueCatKey(
   key: string,
   platform: RevenueCatPlatform,
-  testStoreEnabled: boolean
+  testStoreEnabled: boolean,
 ): boolean {
   const normalized = key.toLowerCase();
   if (testStoreEnabled) return normalized.startsWith('test_');
@@ -298,23 +288,25 @@ function isValidPublicRevenueCatKey(
 
 export function resolveRevenueCatApiKey(
   platform: RevenueCatPlatform,
-  extra?: Record<string, unknown>
+  extra?: Record<string, unknown>,
 ): string {
-  const source = extra ?? (() => {
-    // Lazy import — only at runtime in RN context
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Constants = require('expo-constants').default as {
-      expoConfig?: { extra?: Record<string, unknown> };
-    };
-    return Constants.expoConfig?.extra ?? {};
-  })();
+  const source =
+    extra ??
+    (() => {
+      // Lazy import — only at runtime in RN context
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Constants = require('expo-constants').default as {
+        expoConfig?: { extra?: Record<string, unknown> };
+      };
+      return Constants.expoConfig?.extra ?? {};
+    })();
 
   const testStoreEnabled = source['revenueCatTestStoreEnabled'] === true;
   const appVariant = source['appVariant'];
   if (testStoreEnabled && appVariant !== 'dev') {
     throw new SubscriptionSourceError(
       'configuration',
-      'RevenueCat Test Store is allowed only for explicit development builds.'
+      'RevenueCat Test Store is allowed only for explicit development builds.',
     );
   }
 
@@ -322,24 +314,20 @@ export function resolveRevenueCatApiKey(
   if (!key) {
     throw new SubscriptionSourceError(
       'configuration',
-      `RevenueCat API key is not configured for ${platform}. Set EXPO_PUBLIC_REVENUECAT_API_KEY_${platform.toUpperCase()} in .env and expose via app.config.ts extra.revenueCatApiKey${platform === 'ios' ? 'Ios' : 'Android'}.`
+      `RevenueCat API key is not configured for ${platform}. Set EXPO_PUBLIC_REVENUECAT_API_KEY_${platform.toUpperCase()} in .env and expose via app.config.ts extra.revenueCatApiKey${platform === 'ios' ? 'Ios' : 'Android'}.`,
     );
   }
   if (isSecretRevenueCatKey(key)) {
     throw new SubscriptionSourceError(
       'configuration',
-      `RevenueCat secret key detected for ${platform}. Do not ship sk_* keys in mobile apps; use public SDK keys (appl_* for iOS, goog_* for Android).`
+      `RevenueCat secret key detected for ${platform}. Do not ship sk_* keys in mobile apps; use public SDK keys (appl_* for iOS, goog_* for Android).`,
     );
   }
   if (!isValidPublicRevenueCatKey(key, platform, testStoreEnabled)) {
-    const expectedPrefix = testStoreEnabled
-      ? 'test_*'
-      : platform === 'ios'
-        ? 'appl_*'
-        : 'goog_*';
+    const expectedPrefix = testStoreEnabled ? 'test_*' : platform === 'ios' ? 'appl_*' : 'goog_*';
     throw new SubscriptionSourceError(
       'configuration',
-      `RevenueCat API key for ${platform} has an invalid prefix. Expected ${expectedPrefix}.`
+      `RevenueCat API key for ${platform} has an invalid prefix. Expected ${expectedPrefix}.`,
     );
   }
   return key;
@@ -353,7 +341,7 @@ export function resolveRevenueCatApiKey(
  * Falls back to 'unknown' on any unexpected shape.
  */
 export function mapCustomerInfoToEntitlementStatus(
-  customerInfo: RawCustomerInfo
+  customerInfo: RawCustomerInfo,
 ): EntitlementStatus {
   try {
     const active = customerInfo.entitlements?.active ?? {};
@@ -376,7 +364,7 @@ export function mapCustomerInfoToEntitlementStatus(
  * billing issue. Missing or malformed provider data fails closed to no warning.
  */
 export function mapCustomerInfoToProfessionalEntitlementMetadata(
-  customerInfo: RawCustomerInfo
+  customerInfo: RawCustomerInfo,
 ): ProfessionalEntitlementMetadata {
   try {
     const entitlement = customerInfo.entitlements?.active?.[PRO_ENTITLEMENT_ID];
@@ -416,7 +404,7 @@ export function mapCustomerInfoToProfessionalEntitlementMetadata(
  * D-132: used alongside mapCustomerInfoToEntitlementStatus to derive hasAiAccess.
  */
 export function mapCustomerInfoToAiEntitlementStatus(
-  customerInfo: RawCustomerInfo
+  customerInfo: RawCustomerInfo,
 ): EntitlementStatus {
   try {
     if (customerInfo.entitlements == null) {
@@ -514,7 +502,7 @@ export function configureRevenueCat(deps: SubscriptionSourceDeps, appUserId: str
   if (!normalizedAppUserId) {
     throw new SubscriptionSourceError(
       'configuration',
-      'RevenueCat requires a nonblank self-managed auth UID before SDK configuration.'
+      'RevenueCat requires a nonblank self-managed auth UID before SDK configuration.',
     );
   }
 
@@ -523,11 +511,7 @@ export function configureRevenueCat(deps: SubscriptionSourceDeps, appUserId: str
 }
 
 type RevenueCatIdentityCoordinator = {
-  run<T>(
-    deps: SubscriptionSourceDeps,
-    appUserId: string,
-    operation: () => Promise<T>
-  ): Promise<T>;
+  run<T>(deps: SubscriptionSourceDeps, appUserId: string, operation: () => Promise<T>): Promise<T>;
 };
 
 /**
@@ -541,13 +525,17 @@ export function createRevenueCatIdentityCoordinator(): RevenueCatIdentityCoordin
   let tail: Promise<void> = Promise.resolve();
 
   return {
-    run<T>(deps: SubscriptionSourceDeps, appUserId: string, operation: () => Promise<T>): Promise<T> {
+    run<T>(
+      deps: SubscriptionSourceDeps,
+      appUserId: string,
+      operation: () => Promise<T>,
+    ): Promise<T> {
       const queuedOperation = tail.then(async () => {
         const normalizedAppUserId = appUserId.trim();
         if (!normalizedAppUserId) {
           throw new SubscriptionSourceError(
             'configuration',
-            'RevenueCat requires a nonblank self-managed auth UID before SDK operations.'
+            'RevenueCat requires a nonblank self-managed auth UID before SDK operations.',
           );
         }
 
@@ -572,7 +560,7 @@ export function createRevenueCatIdentityCoordinator(): RevenueCatIdentityCoordin
       // A failed operation must not permanently block later retry attempts.
       tail = queuedOperation.then(
         () => undefined,
-        () => undefined
+        () => undefined,
       );
       return queuedOperation;
     },
@@ -587,7 +575,7 @@ export function createRevenueCatIdentityCoordinator(): RevenueCatIdentityCoordin
  * Throws SubscriptionSourceError on all failure paths.
  */
 export async function fetchEntitlementStatus(
-  deps: SubscriptionSourceDeps
+  deps: SubscriptionSourceDeps,
 ): Promise<EntitlementStatus> {
   let customerInfo: RawCustomerInfo;
   try {
@@ -610,7 +598,7 @@ export async function fetchEntitlementStatus(
  */
 export async function purchasePackage(
   pkg: RawPurchasesPackage,
-  deps: SubscriptionSourceDeps
+  deps: SubscriptionSourceDeps,
 ): Promise<EntitlementStatus> {
   let result: RawPurchaseResult;
   try {
@@ -633,9 +621,7 @@ export async function purchasePackage(
  *
  * Throws SubscriptionSourceError on network or store failure.
  */
-export async function restorePurchases(
-  deps: SubscriptionSourceDeps
-): Promise<EntitlementStatus> {
+export async function restorePurchases(deps: SubscriptionSourceDeps): Promise<EntitlementStatus> {
   let customerInfo: RawCustomerInfo;
   try {
     customerInfo = await deps.restorePurchases();
@@ -659,7 +645,7 @@ export async function restorePurchases(
  */
 export async function presentAiPaywall(
   deps: SubscriptionSourceDeps,
-  offeringId: typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID = AI_OFFERING_ID
+  offeringId: typeof AI_OFFERING_ID | typeof AI_TEST_OFFERING_ID = AI_OFFERING_ID,
 ): Promise<RawPaywallResult | void> {
   try {
     return await deps.presentPaywall(offeringId);
@@ -681,13 +667,16 @@ export async function presentAiPaywall(
  */
 export async function presentProPaywall(
   deps: SubscriptionSourceDeps,
-  offeringId: ProfessionalOfferingId = PRO_OFFERING_ID
+  offeringId: ProfessionalOfferingId = PRO_OFFERING_ID,
 ): Promise<RawPaywallResult | void> {
   try {
     return await deps.presentPaywall(offeringId);
   } catch (err: unknown) {
     if (err instanceof SubscriptionSourceError) throw err;
     const reason = normalizeSubscriptionError(err);
-    throw new SubscriptionSourceError(reason, `RevenueCat presentProPaywall failed: ${String(err)}`);
+    throw new SubscriptionSourceError(
+      reason,
+      `RevenueCat presentProPaywall failed: ${String(err)}`,
+    );
   }
 }

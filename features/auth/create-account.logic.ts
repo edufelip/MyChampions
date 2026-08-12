@@ -4,11 +4,7 @@ const NUMBER_REGEX = /[0-9]/;
 const EMOJI_REGEX = /\p{Extended_Pictographic}/u;
 
 export type CreateAccountErrorReason =
-  | 'duplicate_email'
-  | 'network'
-  | 'provider_conflict'
-  | 'configuration'
-  | 'unknown';
+  'duplicate_email' | 'network' | 'provider_conflict' | 'configuration' | 'unknown';
 
 export type CreateAccountRequest = {
   name: string;
@@ -80,7 +76,7 @@ export function isPasswordPolicySatisfied(password: string): boolean {
 }
 
 export function validateCreateAccountInput(
-  input: CreateAccountRequest
+  input: CreateAccountRequest,
 ): CreateAccountValidationErrors {
   const errors: CreateAccountValidationErrors = {};
 
@@ -108,7 +104,7 @@ export function validateCreateAccountInput(
 }
 
 export function resolveCreateAccountValidationAnalyticsReason(
-  errors: CreateAccountValidationErrors
+  errors: CreateAccountValidationErrors,
 ): CreateAccountValidationAnalyticsReason | null {
   if (errors.name) {
     return 'validation_name_required';
@@ -193,7 +189,7 @@ export function normalizeCreateAccountReason(error: unknown): CreateAccountError
 }
 
 export function mapCreateAccountReasonToMessageKey(
-  reason: CreateAccountErrorReason
+  reason: CreateAccountErrorReason,
 ): CreateAccountErrorMessageKey {
   if (reason === 'duplicate_email') {
     return 'auth.signup.error.duplicate_email';

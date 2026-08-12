@@ -8,31 +8,31 @@ import { requestSupportModalDismissal } from './support.logic';
 const root = join(__dirname, '..', '..');
 const modalSource = readFileSync(
   join(root, 'components', 'ds', 'patterns', 'SupportModal.tsx'),
-  'utf8'
+  'utf8',
 );
 
 test('support modal close controls use the submission-aware dismissal guard', () => {
   assert.match(
     modalSource,
-    /<Pressable[\s\S]*?onPress=\{handleClose\}[\s\S]*?disabled=\{isSubmitting\}[\s\S]*?testID="settings\.account\.support\.closeButton"/
+    /<Pressable[\s\S]*?onPress=\{handleClose\}[\s\S]*?disabled=\{isSubmitting\}[\s\S]*?testID="settings\.account\.support\.closeButton"/,
   );
   assert.match(
     modalSource,
-    /<DsPillButton[\s\S]*?onPress=\{handleClose\}[\s\S]*?disabled=\{isSubmitting\}[\s\S]*?testID="settings\.account\.support\.cancelCta"/
+    /<DsPillButton[\s\S]*?onPress=\{handleClose\}[\s\S]*?disabled=\{isSubmitting\}[\s\S]*?testID="settings\.account\.support\.cancelCta"/,
   );
 });
 
 test('support modal web Escape callback uses the submission-aware dismissal guard', () => {
   assert.match(
     modalSource,
-    /useWebDialogAccessibility\(\{[\s\S]*?isVisible,[\s\S]*?onClose: handleClose,[\s\S]*?testID: 'settings\.account\.support\.modal'/
+    /useWebDialogAccessibility\(\{[\s\S]*?isVisible,[\s\S]*?onClose: handleClose,[\s\S]*?testID: 'settings\.account\.support\.modal'/,
   );
 });
 
 test('support modal native back callback uses the submission-aware dismissal guard', () => {
   assert.match(
     modalSource,
-    /<Modal visible=\{isVisible\} animationType="slide" onRequestClose=\{handleClose\} transparent>/
+    /<Modal visible=\{isVisible\} animationType="slide" onRequestClose=\{handleClose\} transparent>/,
   );
 });
 

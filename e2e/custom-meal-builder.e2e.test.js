@@ -1,8 +1,6 @@
-const describeWithE2EAuthSession = process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
-const {
-  waitForElementAbsent,
-  waitForElementActionable,
-} = require('./native-editor-actions');
+const describeWithE2EAuthSession =
+  process.env.E2E_AUTH_SESSION === 'true' ? describe : describe.skip;
+const { waitForElementAbsent, waitForElementActionable } = require('./native-editor-actions');
 
 const mealInput = {
   name: process.env.E2E_CUSTOM_MEAL_NAME || 'E2E Recovery Bowl',
@@ -14,15 +12,21 @@ const mealInput = {
 };
 
 async function selectStudentRole() {
-  await waitFor(element(by.id('auth.roleSelection.title'))).toBeVisible().withTimeout(15000);
+  await waitFor(element(by.id('auth.roleSelection.title')))
+    .toBeVisible()
+    .withTimeout(15000);
   await element(by.id('auth.roleSelection.studentCard')).tap();
   await element(by.id('auth.roleSelection.continueButton')).tap();
-  await waitFor(element(by.id('student.home.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('student.home.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
 }
 
 async function openCreateMealScreen() {
   await device.openURL({ url: 'mychampions://nutrition/custom-meals/new' });
-  await waitFor(element(by.id('meal.builder.screen'))).toBeVisible().withTimeout(10000);
+  await waitFor(element(by.id('meal.builder.screen')))
+    .toBeVisible()
+    .withTimeout(10000);
   await dismissKeyboardIfVisible();
   await scrollToTop();
 }
@@ -133,6 +137,8 @@ describeWithE2EAuthSession('Custom Meal Builder', () => {
     await waitForElementActionable('meal.builder.cta.save');
     await element(by.id('meal.builder.cta.save')).tap();
 
-    await waitFor(element(by.id('meal.library.screen'))).toBeVisible().withTimeout(10000);
+    await waitFor(element(by.id('meal.library.screen')))
+      .toBeVisible()
+      .withTimeout(10000);
   });
 });

@@ -39,11 +39,11 @@ test('validateCustomMealInput requires totalGrams', () => {
 test('validateCustomMealInput rejects non-positive totalGrams', () => {
   assert.equal(
     validateCustomMealInput({ ...validInput, totalGrams: '0' }).totalGrams,
-    'must_be_positive'
+    'must_be_positive',
   );
   assert.equal(
     validateCustomMealInput({ ...validInput, totalGrams: '-10' }).totalGrams,
-    'must_be_positive'
+    'must_be_positive',
   );
 });
 
@@ -59,7 +59,7 @@ test('validateCustomMealInput allows zero calories', () => {
 test('validateCustomMealInput rejects negative calories', () => {
   assert.equal(
     validateCustomMealInput({ ...validInput, calories: '-1' }).calories,
-    'must_be_non_negative'
+    'must_be_non_negative',
   );
 });
 
@@ -70,8 +70,14 @@ test('validateCustomMealInput requires carbs, proteins, fats', () => {
 });
 
 test('validateCustomMealInput rejects negative macro values', () => {
-  assert.equal(validateCustomMealInput({ ...validInput, carbs: '-0.1' }).carbs, 'must_be_non_negative');
-  assert.equal(validateCustomMealInput({ ...validInput, proteins: '-5' }).proteins, 'must_be_non_negative');
+  assert.equal(
+    validateCustomMealInput({ ...validInput, carbs: '-0.1' }).carbs,
+    'must_be_non_negative',
+  );
+  assert.equal(
+    validateCustomMealInput({ ...validInput, proteins: '-5' }).proteins,
+    'must_be_non_negative',
+  );
   assert.equal(validateCustomMealInput({ ...validInput, fats: '-2' }).fats, 'must_be_non_negative');
 });
 

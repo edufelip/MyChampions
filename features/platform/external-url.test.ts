@@ -7,7 +7,7 @@ describe('resolveSafeExternalUrl', () => {
   it('accepts HTTPS URLs without rewriting them', () => {
     assert.equal(
       resolveSafeExternalUrl('https://example.test/legal?language=en#terms'),
-      'https://example.test/legal?language=en#terms'
+      'https://example.test/legal?language=en#terms',
     );
   });
 
@@ -25,8 +25,14 @@ describe('resolveSafeExternalUrl', () => {
   });
 
   it('allows plain HTTP only for explicit local development hosts', () => {
-    assert.equal(resolveSafeExternalUrl('http://localhost:8081', { allowInsecureLocalhost: true }), 'http://localhost:8081');
-    assert.equal(resolveSafeExternalUrl('http://127.0.0.1:8081', { allowInsecureLocalhost: true }), 'http://127.0.0.1:8081');
+    assert.equal(
+      resolveSafeExternalUrl('http://localhost:8081', { allowInsecureLocalhost: true }),
+      'http://localhost:8081',
+    );
+    assert.equal(
+      resolveSafeExternalUrl('http://127.0.0.1:8081', { allowInsecureLocalhost: true }),
+      'http://127.0.0.1:8081',
+    );
     assert.equal(resolveSafeExternalUrl('http://localhost:8081'), null);
   });
 });

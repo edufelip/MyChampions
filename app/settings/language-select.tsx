@@ -21,14 +21,7 @@
  */
 import { useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -71,11 +64,7 @@ export default function LanguageSelectScreen() {
       router.back();
     } catch {
       setIsSaving(false);
-      Alert.alert(
-        '',
-        t('common.error.generic') as string,
-        [{ text: 'OK' }]
-      );
+      Alert.alert('', t('common.error.generic') as string, [{ text: 'OK' }]);
     }
   }
 
@@ -86,8 +75,8 @@ export default function LanguageSelectScreen() {
   return (
     <View
       style={[styles.root, { backgroundColor: theme.color.canvas }]}
-      testID="settings.languageSelect.screen">
-
+      testID="settings.languageSelect.screen"
+    >
       {/* ── Custom header ────────────────────────────────────────────────── */}
       <View
         style={[
@@ -96,13 +85,15 @@ export default function LanguageSelectScreen() {
             paddingTop: insets.top + DsSpace.sm,
             borderBottomColor: theme.color.border,
           },
-        ]}>
+        ]}
+      >
         <Pressable
           onPress={handleBack}
           style={({ pressed }) => [styles.headerAction, pressed && { opacity: 0.5 }]}
           accessibilityRole="button"
           accessibilityLabel={t('common.back') as string}
-          testID="settings.languageSelect.backButton">
+          testID="settings.languageSelect.backButton"
+        >
           <MaterialIcons name="arrow-back" size={22} color={theme.color.textPrimary} />
         </Pressable>
 
@@ -113,10 +104,14 @@ export default function LanguageSelectScreen() {
         <Pressable
           onPress={isDirty && !isSaving ? handleSave : undefined}
           disabled={!isDirty || isSaving}
-          style={({ pressed }) => [styles.headerAction, pressed && isDirty && !isSaving && { opacity: 0.5 }]}
+          style={({ pressed }) => [
+            styles.headerAction,
+            pressed && isDirty && !isSaving && { opacity: 0.5 },
+          ]}
           accessibilityRole="button"
           accessibilityLabel={t('settings.language_select.save') as string}
-          testID="settings.languageSelect.saveButton">
+          testID="settings.languageSelect.saveButton"
+        >
           <Text
             style={[
               styles.saveLabel,
@@ -124,7 +119,8 @@ export default function LanguageSelectScreen() {
                 color: isDirty && !isSaving ? theme.color.accentPrimary : theme.color.textTertiary,
                 fontWeight: isDirty && !isSaving ? '600' : '400',
               },
-            ]}>
+            ]}
+          >
             {isSaving ? '...' : t('settings.language_select.save')}
           </Text>
         </Pressable>
@@ -133,11 +129,12 @@ export default function LanguageSelectScreen() {
       {/* ── Body ─────────────────────────────────────────────────────────── */}
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + DsSpace.xl }]}
-        testID="settings.languageSelect.scrollView">
-
+        testID="settings.languageSelect.scrollView"
+      >
         <Text
           style={[styles.sectionHeader, { color: theme.color.textSecondary }]}
-          testID="settings.languageSelect.sectionHeader">
+          testID="settings.languageSelect.sectionHeader"
+        >
           {t('settings.language_select.section_header')}
         </Text>
 
@@ -146,7 +143,8 @@ export default function LanguageSelectScreen() {
             styles.group,
             { backgroundColor: theme.color.surface, borderColor: theme.color.border },
           ]}
-          testID="settings.languageSelect.optionsGroup">
+          testID="settings.languageSelect.optionsGroup"
+        >
           {SUPPORTED_LOCALES.map((locale, index) => {
             const isSelected = locale === pendingLocale;
             const isLast = index === SUPPORTED_LOCALES.length - 1;
@@ -154,20 +152,19 @@ export default function LanguageSelectScreen() {
               <View key={locale}>
                 <Pressable
                   onPress={() => setPendingLocale(locale)}
-                  style={({ pressed }) => [
-                    styles.localeRow,
-                    pressed && { opacity: 0.6 },
-                  ]}
+                  style={({ pressed }) => [styles.localeRow, pressed && { opacity: 0.6 }]}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: isSelected }}
                   aria-checked={isSelected}
                   accessibilityLabel={LOCALE_DISPLAY_NAMES[locale]}
-                  testID={`settings.languageSelect.option.${locale}`}>
+                  testID={`settings.languageSelect.option.${locale}`}
+                >
                   <Text
                     style={[
                       styles.localeName,
                       { color: isSelected ? theme.color.accentPrimary : theme.color.textPrimary },
-                    ]}>
+                    ]}
+                  >
                     {LOCALE_DISPLAY_NAMES[locale]}
                   </Text>
                   {isSelected ? (

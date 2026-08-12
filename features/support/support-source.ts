@@ -4,10 +4,7 @@
 
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
-import {
-  SupportSourceError,
-  type SupportMessageInput,
-} from './support.logic';
+import { SupportSourceError, type SupportMessageInput } from './support.logic';
 
 export interface SupportSourceDeps {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -79,7 +76,7 @@ async function readSupportResponse(response: Response): Promise<{ id?: string } 
 
 export async function submitSupportMessage(
   input: SupportMessageInput & { userRole?: string | null },
-  deps = makeDeps()
+  deps = makeDeps(),
 ): Promise<string> {
   const e2eSourceOverride = resolveSupportSourceE2EOverride();
   if (e2eSourceOverride) {

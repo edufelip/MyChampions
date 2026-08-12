@@ -1,8 +1,4 @@
-import type {
-  PhotoPickerAdapter,
-  PhotoPickerCopy,
-  PickedPhoto,
-} from './photo-picker-adapter';
+import type { PhotoPickerAdapter, PhotoPickerCopy, PickedPhoto } from './photo-picker-adapter';
 
 const MAX_DIMENSION_PX = 1600;
 const JPEG_QUALITY = 0.75;
@@ -25,7 +21,7 @@ export class BrowserPhotoTooLargeError extends Error {
 }
 
 export function resolveCompressedPhotoSize(
-  photo: PickedPhoto
+  photo: PickedPhoto,
 ): Pick<PickedPhoto, 'width' | 'height'> {
   const scale = Math.min(1, MAX_DIMENSION_PX / Math.max(photo.width, photo.height));
   return {
@@ -40,7 +36,7 @@ export async function resolveBrowserPhoto(
     createObjectUrl: (file: File) => string;
     readDimensions: (uri: string) => Promise<{ width: number; height: number }>;
     revokeObjectUrl: (uri: string) => void;
-  }
+  },
 ): Promise<PickedPhoto | null> {
   if (!file) return null;
   const uri = deps.createObjectUrl(file);
@@ -55,7 +51,7 @@ export async function resolveBrowserPhoto(
 
 export async function compressBrowserPhotoWithinLimit(
   size: Pick<PickedPhoto, 'width' | 'height'>,
-  encode: (input: { width: number; height: number; quality: number }) => Promise<Blob | null>
+  encode: (input: { width: number; height: number; quality: number }) => Promise<Blob | null>,
 ): Promise<Blob> {
   for (const attempt of COMPRESSION_ATTEMPTS) {
     const blob = await encode({
@@ -97,7 +93,7 @@ function pickPhoto(_copy: PhotoPickerCopy): Promise<PickedPhoto | null> {
               image.src = uri;
             }),
           revokeObjectUrl: (uri) => URL.revokeObjectURL(uri),
-        })
+        }),
       );
     };
     const onWindowFocus = () => {
@@ -129,7 +125,7 @@ async function compress(photo: PickedPhoto): Promise<Blob> {
           canvas.height = height;
           context.drawImage(image, 0, 0, width, height);
           canvas.toBlob(resolve, 'image/jpeg', quality);
-        })
+        }),
     );
   } finally {
     URL.revokeObjectURL(photo.uri);

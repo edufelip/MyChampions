@@ -22,7 +22,9 @@ import {
 const fakeUser = { uid: 'source-test-user' } as Parameters<typeof analyzeMealPhoto>[0];
 
 /** Returns a deps object with all fields overridable. Default is a happy-path config. */
-function makeDeps(overrides: Partial<MealPhotoAnalysisSourceDeps> = {}): MealPhotoAnalysisSourceDeps {
+function makeDeps(
+  overrides: Partial<MealPhotoAnalysisSourceDeps> = {},
+): MealPhotoAnalysisSourceDeps {
   return {
     getServerBaseUrl: () => 'http://localhost:3400',
     getCurrentAccessToken: async () => 'server-access-token',
@@ -93,7 +95,7 @@ describe('analyzeMealPhoto — configuration error', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 });
@@ -103,7 +105,9 @@ describe('analyzeMealPhoto — configuration error', () => {
 describe('analyzeMealPhoto — network errors', () => {
   it('throws network error when fetch itself rejects (no connectivity)', async () => {
     const deps = makeDeps({
-      fetchFn: async () => { throw new TypeError('Network request failed'); },
+      fetchFn: async () => {
+        throw new TypeError('Network request failed');
+      },
     });
     await assert.rejects(
       () => analyzeMealPhoto(fakeUser, 'base64data', deps),
@@ -111,20 +115,22 @@ describe('analyzeMealPhoto — network errors', () => {
         assert.equal(err.code, 'network');
         assert.ok(err.message.includes('Network request'));
         return true;
-      }
+      },
     );
   });
 
   it('always maps any fetch error to network regardless of error message content', async () => {
     const deps = makeDeps({
-      fetchFn: async () => { throw new Error('something completely unrelated'); },
+      fetchFn: async () => {
+        throw new Error('something completely unrelated');
+      },
     });
     await assert.rejects(
       () => analyzeMealPhoto(fakeUser, 'base64data', deps),
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'network');
         return true;
-      }
+      },
     );
   });
 });
@@ -135,15 +141,18 @@ describe('analyzeMealPhoto — unauthenticated errors', () => {
   it('throws unauthenticated when the local server bearer token is missing and never requests a legacy ID token', async () => {
     let idTokenCalls = 0;
     const legacyTokenProperty = ['get', 'IdToken'].join('');
-    const userWithLegacyToken = new Proxy({ uid: 'source-test-user' }, {
-      get(target, property, receiver) {
-        if (property === legacyTokenProperty) {
-          idTokenCalls += 1;
-          return async () => 'legacy-token';
-        }
-        return Reflect.get(target, property, receiver);
+    const userWithLegacyToken = new Proxy(
+      { uid: 'source-test-user' },
+      {
+        get(target, property, receiver) {
+          if (property === legacyTokenProperty) {
+            idTokenCalls += 1;
+            return async () => 'legacy-token';
+          }
+          return Reflect.get(target, property, receiver);
+        },
       },
-    }) as Parameters<typeof analyzeMealPhoto>[0];
+    ) as Parameters<typeof analyzeMealPhoto>[0];
     const deps = makeDeps({
       getCurrentAccessToken: async () => null,
     });
@@ -154,7 +163,7 @@ describe('analyzeMealPhoto — unauthenticated errors', () => {
         assert.equal(err.code, 'unauthenticated');
         assert.ok(err.message.includes('server token'));
         return true;
-      }
+      },
     );
     assert.equal(idTokenCalls, 0);
   });
@@ -168,23 +177,26 @@ describe('analyzeMealPhoto — unauthenticated errors', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'unauthenticated');
         return true;
-      }
+      },
     );
   });
 
   it('throws unauthenticated error on 401 response even when the body is not JSON', async () => {
     const deps = makeDeps({
-      fetchFn: async () => ({
-        status: 401,
-        json: async () => { throw new SyntaxError('Unexpected token'); },
-      } as unknown as Response),
+      fetchFn: async () =>
+        ({
+          status: 401,
+          json: async () => {
+            throw new SyntaxError('Unexpected token');
+          },
+        }) as unknown as Response,
     });
     await assert.rejects(
       () => analyzeMealPhoto(fakeUser, 'base64data', deps),
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'unauthenticated');
         return true;
-      }
+      },
     );
   });
 
@@ -197,7 +209,7 @@ describe('analyzeMealPhoto — unauthenticated errors', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'unauthenticated');
         return true;
-      }
+      },
     );
   });
 });
@@ -207,10 +219,13 @@ describe('analyzeMealPhoto — unauthenticated errors', () => {
 describe('analyzeMealPhoto — invalid_response errors', () => {
   it('throws invalid_response when response body is not JSON', async () => {
     const deps = makeDeps({
-      fetchFn: async () => ({
-        status: 200,
-        json: async () => { throw new SyntaxError('Unexpected token'); },
-      } as unknown as Response),
+      fetchFn: async () =>
+        ({
+          status: 200,
+          json: async () => {
+            throw new SyntaxError('Unexpected token');
+          },
+        }) as unknown as Response,
     });
     await assert.rejects(
       () => analyzeMealPhoto(fakeUser, 'base64data', deps),
@@ -218,7 +233,7 @@ describe('analyzeMealPhoto — invalid_response errors', () => {
         assert.equal(err.code, 'invalid_response');
         assert.ok(err.message.includes('non-JSON'));
         return true;
-      }
+      },
     );
   });
 
@@ -232,7 +247,7 @@ describe('analyzeMealPhoto — invalid_response errors', () => {
         assert.equal(err.code, 'invalid_response');
         assert.ok(err.message.includes('macro estimate shape'));
         return true;
-      }
+      },
     );
   });
 
@@ -245,7 +260,7 @@ describe('analyzeMealPhoto — invalid_response errors', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'invalid_response');
         return true;
-      }
+      },
     );
   });
 });
@@ -262,7 +277,7 @@ describe('analyzeMealPhoto — domain errors', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'unrecognizable_image');
         return true;
-      }
+      },
     );
   });
 
@@ -275,7 +290,7 @@ describe('analyzeMealPhoto — domain errors', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'quota_exceeded');
         return true;
-      }
+      },
     );
   });
 
@@ -288,7 +303,7 @@ describe('analyzeMealPhoto — domain errors', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'quota_exceeded');
         return true;
-      }
+      },
     );
   });
 
@@ -302,7 +317,7 @@ describe('analyzeMealPhoto — domain errors', () => {
         assert.equal(err.code, 'unknown');
         assert.ok(err.message.includes('internal_error'));
         return true;
-      }
+      },
     );
   });
 
@@ -315,7 +330,7 @@ describe('analyzeMealPhoto — domain errors', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'unknown');
         return true;
-      }
+      },
     );
   });
 
@@ -334,7 +349,7 @@ describe('analyzeMealPhoto — domain errors', () => {
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'configuration');
         return true;
-      }
+      },
     );
   });
 });
@@ -360,7 +375,7 @@ describe('analyzeMealPhoto — happy path', () => {
     assert.equal(capturedInit?.method, 'POST');
     assert.equal(
       (capturedInit?.headers as Record<string, string>)['Authorization'],
-      'Bearer server-access-token'
+      'Bearer server-access-token',
     );
     const parsedBody = JSON.parse(capturedInit?.body as string) as {
       image: string;
@@ -394,8 +409,7 @@ describe('analyzeMealPhoto — happy path', () => {
 
   it('rounds macro values to 1 decimal place', async () => {
     const deps = makeDeps({
-      fetchFn: async () =>
-        makeResponse(200, { ...validBody, calories: 520.567, carbs: 60.123 }),
+      fetchFn: async () => makeResponse(200, { ...validBody, calories: 520.567, carbs: 60.123 }),
     });
     const result = await analyzeMealPhoto(fakeUser, 'base64data', deps);
     assert.equal(result.calories, 520.6);
@@ -418,7 +432,7 @@ describe('analyzeMealPhoto — happy path', () => {
     assert.equal(capturedInit?.method, 'POST');
     assert.equal(
       (capturedInit?.headers as Record<string, string>)['Authorization'],
-      'Bearer my-token-xyz'
+      'Bearer my-token-xyz',
     );
     const parsedBody = JSON.parse(capturedInit?.body as string) as {
       image: string;

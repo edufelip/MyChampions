@@ -17,7 +17,7 @@ test('server-backed plan reads do not load Firestore at module import', async ()
     this: unknown,
     request: string,
     parent: NodeModule | null,
-    isMain: boolean
+    isMain: boolean,
   ) {
     if (request === 'firebase/firestore' || request === '../firestore') {
       blockedLoads.push(request);
@@ -63,7 +63,7 @@ test('server-backed plan reads do not load Firestore at module import', async ()
               },
             ],
           }),
-          { status: 200, headers: { 'content-type': 'application/json' } }
+          { status: 200, headers: { 'content-type': 'application/json' } },
         );
       },
     } as any);
@@ -87,7 +87,7 @@ test('server-backed plan reads invoke fetch with the global receiver', async () 
       new Response(JSON.stringify({ plans: [] }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
-      })
+      }),
     );
   } as AppFetch;
 

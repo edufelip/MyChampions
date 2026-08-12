@@ -23,10 +23,10 @@ test(
   'timed-out invocation reports its ID and terminates its exact owned process group',
   { skip: process.platform === 'win32' },
   async () => {
+    const timeoutMs = 2_000;
     const temp = mkdtempSync(join(tmpdir(), 'selective-invocation-timeout-'));
     const descendantPidPath = join(temp, 'descendant.pid');
-    const descendantProgram =
-      "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);";
+    const descendantProgram = "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);";
     const leaderProgram = `
       const { spawn } = require('node:child_process');
       const { writeFileSync } = require('node:fs');
@@ -47,9 +47,9 @@ test(
           ['-e', leaderProgram],
           process.cwd(),
           process.env,
-          150
+          timeoutMs,
         ),
-        /Invocation detox:timeout-fixture timed out after 150 ms/
+        new RegExp(`Invocation detox:timeout-fixture timed out after ${timeoutMs} ms`),
       );
       const descendantPid = Number(readFileSync(descendantPidPath, 'utf8'));
       assert.ok(Number.isInteger(descendantPid) && descendantPid > 0);
@@ -57,7 +57,7 @@ test(
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
-  }
+  },
 );
 
 test('invocation remains unbounded when no timeout is configured', async () => {
@@ -67,6 +67,6 @@ test('invocation remains unbounded when no timeout is configured', async () => {
     ['-e', 'process.exit(0)'],
     process.cwd(),
     process.env,
-    undefined
+    undefined,
   );
 });

@@ -63,8 +63,7 @@ function getE2ESubscriptionOverride() {
     appVariant: process.env.APP_VARIANT,
     enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
     entitlementStatus: process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS,
-    professionalEntitlementRenewalRisk:
-      process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK,
+    professionalEntitlementRenewalRisk: process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK,
     isDev: typeof __DEV__ !== 'undefined' && __DEV__,
   });
 }
@@ -81,7 +80,10 @@ function getProductionDeps(): SubscriptionSourceDeps {
       await Purchases.logIn(appUserId);
     },
     getCustomerInfo: () => Purchases.getCustomerInfo() as Promise<RawCustomerInfo>,
-    purchasePackage: (pkg) => Purchases.purchasePackage(pkg as Parameters<typeof Purchases.purchasePackage>[0]) as Promise<import('./subscription-source').RawPurchaseResult>,
+    purchasePackage: (pkg) =>
+      Purchases.purchasePackage(pkg as Parameters<typeof Purchases.purchasePackage>[0]) as Promise<
+        import('./subscription-source').RawPurchaseResult
+      >,
     restorePurchases: () => Purchases.restorePurchases() as Promise<RawCustomerInfo>,
     getApiKey: () => {
       const platform = Platform.OS === 'ios' ? 'ios' : 'android';
@@ -95,13 +97,10 @@ function getProductionDeps(): SubscriptionSourceDeps {
       if (!offeringIdentifier) {
         throw new SubscriptionSourceError(
           'configuration',
-          'RevenueCat paywall presentation requires an explicit offering.'
+          'RevenueCat paywall presentation requires an explicit offering.',
         );
       }
-      const offering = resolveRequiredRevenueCatOffering(
-        offerings.all,
-        offeringIdentifier
-      );
+      const offering = resolveRequiredRevenueCatOffering(offerings.all, offeringIdentifier);
       return RevenueCatUI.presentPaywall({ offering });
     },
   };
@@ -174,7 +173,7 @@ export type UseSubscriptionOptions = {
  */
 export function useSubscription(
   authUid: string | null,
-  optionsOrActiveStudentCount: number | UseSubscriptionOptions = 0
+  optionsOrActiveStudentCount: number | UseSubscriptionOptions = 0,
 ): UseSubscriptionResult {
   const activeAuthUid = authUid?.trim() || null;
   const activeStudentCountOverride =
@@ -187,13 +186,14 @@ export function useSubscription(
 
   const [entitlementStatus, setEntitlementStatus] = useState<EntitlementStatus>('unknown');
   const [aiEntitlementStatus, setAiEntitlementStatus] = useState<EntitlementStatus>('unknown');
-  const [professionalEntitlementExpiresAt, setProfessionalEntitlementExpiresAt] =
-    useState<string | null>(null);
+  const [professionalEntitlementExpiresAt, setProfessionalEntitlementExpiresAt] = useState<
+    string | null
+  >(null);
   const [professionalEntitlementRenewalRisk, setProfessionalEntitlementRenewalRisk] =
     useState(false);
   const [activeStudentCount, setActiveStudentCount] = useState(activeStudentCountOverride ?? 0);
   const [isActiveStudentCountKnown, setIsActiveStudentCountKnown] = useState(
-    typeof activeStudentCountOverride === 'number'
+    typeof activeStudentCountOverride === 'number',
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<SubscriptionErrorReason | null>(null);
@@ -204,38 +204,45 @@ export function useSubscription(
   const deps = useMemo(getProductionDeps, []);
 
   const runRevenueCatOperation = useCallback(
-    <T,>(operation: () => Promise<T>): Promise<T> => {
+    <T>(operation: () => Promise<T>): Promise<T> => {
       if (!activeAuthUid) {
         return Promise.reject(
           new SubscriptionSourceError(
             'unauthenticated',
-            'A self-managed MyChampions auth session is required for RevenueCat operations.'
-          )
+            'A self-managed MyChampions auth session is required for RevenueCat operations.',
+          ),
         );
       }
       return revenueCatIdentityCoordinator.run(deps, activeAuthUid, operation);
     },
-    [activeAuthUid, deps]
+    [activeAuthUid, deps],
   );
 
   const syncSnapshot = useCallback(
-    (input: {
-      professionalEntitlementStatus: EntitlementStatus;
-      aiEntitlementStatus: EntitlementStatus;
-      professionalEntitlementExpiresAt: string | null;
-      professionalEntitlementRenewalRisk: boolean;
-    }, expectedAuthUid: string) => {
+    (
+      input: {
+        professionalEntitlementStatus: EntitlementStatus;
+        aiEntitlementStatus: EntitlementStatus;
+        professionalEntitlementExpiresAt: string | null;
+        professionalEntitlementRenewalRisk: boolean;
+      },
+      expectedAuthUid: string,
+    ) => {
       if (currentAuthUidRef.current !== expectedAuthUid) return;
 
-      void syncSubscriptionEntitlementSnapshot({
-        ...input,
-        activeStudentCount,
-        observedAt: new Date().toISOString(),
-      }, undefined, expectedAuthUid).catch(() => {
+      void syncSubscriptionEntitlementSnapshot(
+        {
+          ...input,
+          activeStudentCount,
+          observedAt: new Date().toISOString(),
+        },
+        undefined,
+        expectedAuthUid,
+      ).catch(() => {
         // Local development only; production cap-sensitive writes use signed webhook entitlement snapshots.
       });
     },
-    [activeStudentCount]
+    [activeStudentCount],
   );
 
   const applyE2EProSubscriptionAction = useCallback(() => {
@@ -276,7 +283,7 @@ export function useSubscription(
     setAiEntitlementStatus('active');
     setProfessionalEntitlementExpiresAt(null);
     setProfessionalEntitlementRenewalRisk(
-      e2eSubscriptionOverride.professionalEntitlementRenewalRisk
+      e2eSubscriptionOverride.professionalEntitlementRenewalRisk,
     );
     setError(null);
     setIsLoading(false);
@@ -295,9 +302,7 @@ export function useSubscription(
       setEntitlementStatus(serverSnapshot.professionalEntitlementStatus);
       setAiEntitlementStatus(serverSnapshot.aiEntitlementStatus);
       setProfessionalEntitlementExpiresAt(serverSnapshot.professionalEntitlementExpiresAt);
-      setProfessionalEntitlementRenewalRisk(
-        serverSnapshot.professionalEntitlementRenewalRisk
-      );
+      setProfessionalEntitlementRenewalRisk(serverSnapshot.professionalEntitlementRenewalRisk);
       if (serverSnapshot.activeStudentCount !== null) {
         setActiveStudentCount(serverSnapshot.activeStudentCount);
         setIsActiveStudentCountKnown(true);
@@ -361,7 +366,7 @@ export function useSubscription(
       setAiEntitlementStatus(e2eSubscriptionOverride.aiEntitlementStatus);
       setProfessionalEntitlementExpiresAt(null);
       setProfessionalEntitlementRenewalRisk(
-        e2eSubscriptionOverride.professionalEntitlementRenewalRisk
+        e2eSubscriptionOverride.professionalEntitlementRenewalRisk,
       );
       setError(null);
       setLastSyncedAtIso(new Date().toISOString());
@@ -387,18 +392,20 @@ export function useSubscription(
 
       const professionalEntitlementStatus = mapCustomerInfoToEntitlementStatus(customerInfo);
       const aiEntitlementStatus = mapCustomerInfoToAiEntitlementStatus(customerInfo);
-      const professionalMetadata =
-        mapCustomerInfoToProfessionalEntitlementMetadata(customerInfo);
+      const professionalMetadata = mapCustomerInfoToProfessionalEntitlementMetadata(customerInfo);
       setEntitlementStatus(professionalEntitlementStatus);
       setAiEntitlementStatus(aiEntitlementStatus);
       setProfessionalEntitlementExpiresAt(professionalMetadata.expiresAt);
       setProfessionalEntitlementRenewalRisk(professionalMetadata.renewalRisk);
-      syncSnapshot({
-        professionalEntitlementStatus,
-        aiEntitlementStatus,
-        professionalEntitlementExpiresAt: professionalMetadata.expiresAt,
-        professionalEntitlementRenewalRisk: professionalMetadata.renewalRisk,
-      }, activeAuthUid);
+      syncSnapshot(
+        {
+          professionalEntitlementStatus,
+          aiEntitlementStatus,
+          professionalEntitlementExpiresAt: professionalMetadata.expiresAt,
+          professionalEntitlementRenewalRisk: professionalMetadata.renewalRisk,
+        },
+        activeAuthUid,
+      );
       setLastSyncedAtIso(new Date().toISOString());
     } catch (err: unknown) {
       if (currentAuthUidRef.current !== activeAuthUid) return;
@@ -454,7 +461,7 @@ export function useSubscription(
         }
       }
     },
-    [activeAuthUid, applyE2EProSubscriptionAction, deps, fetchStatus, runRevenueCatOperation]
+    [activeAuthUid, applyE2EProSubscriptionAction, deps, fetchStatus, runRevenueCatOperation],
   );
 
   // Restore action
@@ -487,20 +494,20 @@ export function useSubscription(
   }, [fetchStatus]);
 
   // Open AI paywall action (D-132): present native RevenueCat paywall, then refresh.
-  const openAiPaywall = useCallback(async (
-    studentOfferingId: ReturnType<typeof resolveStudentOfferingId>
-  ) => {
-    if (!activeAuthUid) return;
+  const openAiPaywall = useCallback(
+    async (studentOfferingId: ReturnType<typeof resolveStudentOfferingId>) => {
+      if (!activeAuthUid) return;
 
-    if (applyE2EAiSubscriptionSuccess()) return;
-    await runPaywallPresentation({
-      present: () =>
-        runRevenueCatOperation(() => presentAiPaywall(deps, studentOfferingId)),
-      refresh: fetchStatus,
-      reportError: setError,
-      isCurrent: () => currentAuthUidRef.current === activeAuthUid,
-    });
-  }, [activeAuthUid, applyE2EAiSubscriptionSuccess, deps, fetchStatus, runRevenueCatOperation]);
+      if (applyE2EAiSubscriptionSuccess()) return;
+      await runPaywallPresentation({
+        present: () => runRevenueCatOperation(() => presentAiPaywall(deps, studentOfferingId)),
+        refresh: fetchStatus,
+        reportError: setError,
+        isCurrent: () => currentAuthUidRef.current === activeAuthUid,
+      });
+    },
+    [activeAuthUid, applyE2EAiSubscriptionSuccess, deps, fetchStatus, runRevenueCatOperation],
+  );
 
   // Open pro paywall action (D-152): present the configured production or
   // development Test Store professional offering, then refresh both entitlement statuses.
@@ -529,9 +536,8 @@ export function useSubscription(
     async (role: RoleIntent | null) => {
       let offeringId: ReturnType<typeof resolveAiUpgradeOfferingId>;
       try {
-        offeringId = resolveAiUpgradeOfferingId(
-          role,
-          () => resolveStudentOfferingId(getRevenueCatExtra())
+        offeringId = resolveAiUpgradeOfferingId(role, () =>
+          resolveStudentOfferingId(getRevenueCatExtra()),
         );
       } catch (err: unknown) {
         const reason = err instanceof SubscriptionSourceError ? err.code : 'configuration';
@@ -550,7 +556,7 @@ export function useSubscription(
       }
       await openAiPaywall(offeringId);
     },
-    [openAiPaywall, openProPaywall]
+    [openAiPaywall, openProPaywall],
   );
 
   return {

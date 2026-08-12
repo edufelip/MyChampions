@@ -62,7 +62,7 @@ function isCancellationError(error: unknown): boolean {
 }
 
 export async function signInWithAppleProviderTokenFromSource(
-  deps: AppleSocialAuthSourceDeps = makeDeps()
+  deps: AppleSocialAuthSourceDeps = makeDeps(),
 ): Promise<void> {
   let isAvailable: boolean;
   try {
@@ -94,7 +94,10 @@ export async function signInWithAppleProviderTokenFromSource(
   const idToken = credential.identityToken?.trim();
 
   if (!idToken) {
-    throw new SocialAuthSourceError('invalid_credentials', 'Apple did not return an identity token.');
+    throw new SocialAuthSourceError(
+      'invalid_credentials',
+      'Apple did not return an identity token.',
+    );
   }
 
   await deps.signInWithSocialProviderToken({

@@ -24,9 +24,7 @@ async function openProfessionalSubscription(page: Page) {
   await expect(page.getByTestId('pro.subscription.warning')).toHaveCount(0);
 }
 
-test.describe(
-  '@evidence @feature:student @feature:professional @feature:subscription @feature:connections visual checkpoints',
-  () => {
+test.describe('@evidence @feature:student @feature:professional @feature:subscription @feature:connections visual checkpoints', () => {
   for (const viewport of viewports) {
     test(`${viewport.name} student onboarding and account shell`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport);
@@ -72,9 +70,9 @@ test.describe(
   test('mobile professional subscription handoff unavailable', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openProfessionalSubscription(page);
-    await expect.poll(() =>
-      page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-    ).toBeLessThanOrEqual(1);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+      .toBeLessThanOrEqual(1);
     await captureEvidence(page, testInfo, 'mobile-subscription-unavailable');
   });
 
@@ -92,5 +90,4 @@ test.describe(
     await captureEvidence(page, testInfo, 'mobile-manual-invite-fallback');
     await context.close();
   });
-  }
-);
+});

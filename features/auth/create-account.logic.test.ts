@@ -66,19 +66,19 @@ test('resolveCreateAccountValidationAnalyticsReason returns the first validation
       password: 'auth.validation.password_required',
       passwordConfirmation: 'auth.validation.password_confirmation_required',
     }),
-    'validation_name_required'
+    'validation_name_required',
   );
   assert.equal(
     resolveCreateAccountValidationAnalyticsReason({
       password: 'auth.validation.password_policy',
     }),
-    'validation_password_policy'
+    'validation_password_policy',
   );
   assert.equal(
     resolveCreateAccountValidationAnalyticsReason({
       passwordConfirmation: 'auth.validation.password_confirmation_mismatch',
     }),
-    'validation_password_confirmation_mismatch'
+    'validation_password_confirmation_mismatch',
   );
 });
 
@@ -142,13 +142,16 @@ test('normalizeCreateAccountReason falls back to unknown', () => {
 test('mapCreateAccountReasonToMessageKey returns contextual key', () => {
   assert.equal(
     mapCreateAccountReasonToMessageKey('duplicate_email'),
-    'auth.signup.error.duplicate_email'
+    'auth.signup.error.duplicate_email',
   );
   assert.equal(mapCreateAccountReasonToMessageKey('network'), 'auth.signup.error.network');
   assert.equal(
     mapCreateAccountReasonToMessageKey('provider_conflict'),
-    'auth.signup.error.provider_conflict'
+    'auth.signup.error.provider_conflict',
   );
-  assert.equal(mapCreateAccountReasonToMessageKey('configuration'), 'auth.signup.error.configuration');
+  assert.equal(
+    mapCreateAccountReasonToMessageKey('configuration'),
+    'auth.signup.error.configuration',
+  );
   assert.equal(mapCreateAccountReasonToMessageKey('unknown'), 'common.error.generic');
 });

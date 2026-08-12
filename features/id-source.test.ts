@@ -6,7 +6,11 @@ test('generateLocalId creates prefixed IDs without loading Firebase modules', ()
   const originalLoad = (Module as any)._load;
   const blockedRequests: string[] = [];
   (Module as any)._load = function patchedLoad(request: string, parent: unknown, isMain: boolean) {
-    if (request.startsWith('firebase/') || request === './firestore' || request === '@/features/firestore') {
+    if (
+      request.startsWith('firebase/') ||
+      request === './firestore' ||
+      request === '@/features/firestore'
+    ) {
       blockedRequests.push(request);
       throw new Error(`blocked Firebase import: ${request}`);
     }

@@ -159,6 +159,13 @@ android {
         missingDimensionStrategy 'detox', 'full'
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        def detoxMetroPort = findProperty('detoxMetroPort') ?: System.getenv('DETOX_METRO_PORT') ?: '8081'
+        if (!(detoxMetroPort.toString() ==~ /[0-9]+/) ||
+                detoxMetroPort.toString().toInteger() < 1024 ||
+                detoxMetroPort.toString().toInteger() > 49151) {
+            throw new GradleException('detoxMetroPort must be an unprivileged decimal port')
+        }
+        buildConfigField "String", "DETOX_METRO_HOST", "\"localhost:${detoxMetroPort}\""
     }
     flavorDimensions "env"
     productFlavors {

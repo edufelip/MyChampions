@@ -80,7 +80,7 @@ export default function CreateAccountScreen() {
 
   useEffect(() => {
     emitEvent(buildAuthEntryViewed('auth_create_account'));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onPasswordConfirmationChange = (value: string) => {
@@ -93,8 +93,7 @@ export default function CreateAccountScreen() {
       name,
       email,
       password,
-      passwordConfirmation:
-        submittedPasswordConfirmation ?? passwordConfirmationRef.current,
+      passwordConfirmation: submittedPasswordConfirmation ?? passwordConfirmationRef.current,
     };
     const nextErrors = validateCreateAccountInput(submissionInput);
     setErrors(nextErrors);
@@ -148,7 +147,8 @@ export default function CreateAccountScreen() {
 
       throw new CreateAccountFailure('configuration');
     } catch (error: unknown) {
-      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       if (code.includes('ERR_REQUEST_CANCELED')) {
         return;
       }
@@ -182,7 +182,8 @@ export default function CreateAccountScreen() {
 
       throw new CreateAccountFailure('configuration');
     } catch (error: unknown) {
-      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       if (code.includes('ERR_REQUEST_CANCELED')) {
         return;
       }
@@ -199,24 +200,17 @@ export default function CreateAccountScreen() {
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.color.canvas }]}
       behavior={Platform.select({ ios: 'padding', default: undefined })}
-      testID="auth.createAccount.screen">
+      testID="auth.createAccount.screen"
+    >
       <Stack.Screen options={{ title: t('auth.signup.title'), headerShown: false }} />
 
       <View
         pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobTopLeft,
-          { backgroundColor: theme.blob.topLeft },
-        ]}
+        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
       />
       <View
         pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobBottomRight,
-          { backgroundColor: theme.blob.bottomRight },
-        ]}
+        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
       />
 
       <ScrollView
@@ -231,7 +225,8 @@ export default function CreateAccountScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        testID="auth.createAccount.scrollView">
+        testID="auth.createAccount.scrollView"
+      >
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
@@ -244,21 +239,35 @@ export default function CreateAccountScreen() {
               router.replace(buildAuthRoute('/auth/sign-in') as never);
             }}
             style={[styles.backButton, { backgroundColor: theme.color.surface }]}
-            testID="auth.createAccount.backButton">
+            testID="auth.createAccount.backButton"
+          >
             <MaterialIcons color={palette.text} name="arrow-back" size={22} />
           </Pressable>
           <View style={styles.headerSpacer} />
         </View>
 
         <View style={[styles.titleArea, usesCompactMobileLayout && styles.titleAreaCompact]}>
-          <View style={[
-            styles.brandBadge,
-            usesCompactMobileLayout && styles.brandBadgeCompact,
-            { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft },
-          ]}>
-            <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={usesCompactMobileLayout ? 25 : 32} />
+          <View
+            style={[
+              styles.brandBadge,
+              usesCompactMobileLayout && styles.brandBadgeCompact,
+              { backgroundColor: theme.color.surface, borderColor: theme.color.accentPrimarySoft },
+            ]}
+          >
+            <MaterialIcons
+              color={theme.color.accentPrimary}
+              name="fitness-center"
+              size={usesCompactMobileLayout ? 25 : 32}
+            />
           </View>
-          <Text style={[styles.title, usesCompactMobileLayout && styles.titleCompact, { color: palette.text }]} testID="auth.createAccount.title">
+          <Text
+            style={[
+              styles.title,
+              usesCompactMobileLayout && styles.titleCompact,
+              { color: palette.text },
+            ]}
+            testID="auth.createAccount.title"
+          >
             {t('auth.signup.title')}
           </Text>
         </View>
@@ -275,14 +284,21 @@ export default function CreateAccountScreen() {
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
-                { backgroundColor: theme.color.surface, borderColor: 'transparent', color: palette.text },
+                {
+                  backgroundColor: theme.color.surface,
+                  borderColor: 'transparent',
+                  color: palette.text,
+                },
               ]}
               testID="auth.createAccount.nameInput"
               value={name}
             />
             <View accessibilityLiveRegion="polite">
               {errors.name ? (
-                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.createAccount.error.nameRequired">
+                <Text
+                  style={[styles.inlineError, { color: theme.color.danger }]}
+                  testID="auth.createAccount.error.nameRequired"
+                >
                   {t(errors.name)}
                 </Text>
               ) : null}
@@ -290,7 +306,9 @@ export default function CreateAccountScreen() {
           </View>
 
           <View style={styles.formSection}>
-            <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.email')}</Text>
+            <Text style={[styles.fieldLabel, { color: palette.text }]}>
+              {t('auth.field.email')}
+            </Text>
             <TextInput
               accessibilityLabel={t('auth.field.email')}
               autoCapitalize="none"
@@ -301,14 +319,21 @@ export default function CreateAccountScreen() {
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
-                { backgroundColor: theme.color.surface, borderColor: 'transparent', color: palette.text },
+                {
+                  backgroundColor: theme.color.surface,
+                  borderColor: 'transparent',
+                  color: palette.text,
+                },
               ]}
               testID="auth.createAccount.emailInput"
               value={email}
             />
             <View accessibilityLiveRegion="polite">
               {errors.email ? (
-                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.createAccount.error.emailRequired">
+                <Text
+                  style={[styles.inlineError, { color: theme.color.danger }]}
+                  testID="auth.createAccount.error.emailRequired"
+                >
                   {t(errors.email)}
                 </Text>
               ) : null}
@@ -316,7 +341,9 @@ export default function CreateAccountScreen() {
           </View>
 
           <View style={styles.formSection}>
-            <Text style={[styles.fieldLabel, { color: palette.text }]}>{t('auth.field.password')}</Text>
+            <Text style={[styles.fieldLabel, { color: palette.text }]}>
+              {t('auth.field.password')}
+            </Text>
             <View style={styles.passwordRow}>
               <TextInput
                 accessibilityLabel={t('auth.field.password')}
@@ -345,16 +372,24 @@ export default function CreateAccountScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPassword((current) => !current)}
                 testID="auth.createAccount.passwordToggle"
-                style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}>
+                style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}
+              >
                 <Text style={[styles.passwordToggleText, { color: palette.text }]}>
-                  {showPassword ? t('auth.password.toggle_hide_short') : t('auth.password.toggle_show_short')}
+                  {showPassword
+                    ? t('auth.password.toggle_hide_short')
+                    : t('auth.password.toggle_show_short')}
                 </Text>
               </Pressable>
             </View>
-            <Text style={[styles.helperText, { color: palette.icon }]}>{t('auth.signup.password_helper')}</Text>
+            <Text style={[styles.helperText, { color: palette.icon }]}>
+              {t('auth.signup.password_helper')}
+            </Text>
             <View accessibilityLiveRegion="polite">
               {errors.password ? (
-                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.createAccount.error.password">
+                <Text
+                  style={[styles.inlineError, { color: theme.color.danger }]}
+                  testID="auth.createAccount.error.password"
+                >
                   {t(errors.password)}
                 </Text>
               ) : null}
@@ -400,7 +435,8 @@ export default function CreateAccountScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPasswordConfirmation((current) => !current)}
                 testID="auth.createAccount.passwordConfirmationToggle"
-                style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}>
+                style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}
+              >
                 <Text style={[styles.passwordToggleText, { color: palette.text }]}>
                   {showPasswordConfirmation
                     ? t('auth.password.toggle_hide_short')
@@ -410,7 +446,10 @@ export default function CreateAccountScreen() {
             </View>
             <View accessibilityLiveRegion="polite">
               {errors.passwordConfirmation ? (
-                <Text style={[styles.inlineError, { color: theme.color.danger }]} testID="auth.createAccount.error.passwordConfirmation">
+                <Text
+                  style={[styles.inlineError, { color: theme.color.danger }]}
+                  testID="auth.createAccount.error.passwordConfirmation"
+                >
                   {t(errors.passwordConfirmation)}
                 </Text>
               ) : null}
@@ -419,7 +458,10 @@ export default function CreateAccountScreen() {
 
           <View accessibilityRole="alert">
             {submitError ? (
-              <Text style={[styles.submitError, { color: theme.color.danger }]} testID="auth.createAccount.error.submit">
+              <Text
+                style={[styles.submitError, { color: theme.color.danger }]}
+                testID="auth.createAccount.error.submit"
+              >
                 {t(submitError)}
               </Text>
             ) : null}
@@ -439,7 +481,8 @@ export default function CreateAccountScreen() {
                 transform: [{ scale: pressed ? 0.96 : 1 }],
               },
             ]}
-            testID="auth.createAccount.submitButton">
+            testID="auth.createAccount.submitButton"
+          >
             {submitting ? (
               <ActivityIndicator
                 accessibilityLabel={t('a11y.loading.submitting')}
@@ -447,13 +490,17 @@ export default function CreateAccountScreen() {
               />
             ) : (
               <>
-                <Text style={[styles.primaryButtonText, { color: theme.color.onAccent }]}>{t('auth.signup.cta_primary')}</Text>
+                <Text style={[styles.primaryButtonText, { color: theme.color.onAccent }]}>
+                  {t('auth.signup.cta_primary')}
+                </Text>
                 <MaterialIcons color={theme.color.onAccent} name="arrow-forward" size={20} />
               </>
             )}
           </Pressable>
 
-          <Text style={[styles.dividerText, { color: palette.icon }]}>{t('auth.signup.or_continue')}</Text>
+          <Text style={[styles.dividerText, { color: palette.icon }]}>
+            {t('auth.signup.or_continue')}
+          </Text>
 
           <View style={styles.socialRow}>
             <Pressable
@@ -467,8 +514,11 @@ export default function CreateAccountScreen() {
                   opacity: submitting ? 0.5 : 1,
                 },
               ]}
-              testID="auth.createAccount.googleButton">
-              <Text style={[styles.socialButtonText, { color: theme.color.accentPrimary }]}>{t('auth.social.google')}</Text>
+              testID="auth.createAccount.googleButton"
+            >
+              <Text style={[styles.socialButtonText, { color: theme.color.accentPrimary }]}>
+                {t('auth.social.google')}
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -481,8 +531,11 @@ export default function CreateAccountScreen() {
                   opacity: submitting ? 0.5 : 1,
                 },
               ]}
-              testID="auth.createAccount.appleButton">
-              <Text style={[styles.socialButtonText, { color: palette.text }]}>{t('auth.social.apple')}</Text>
+              testID="auth.createAccount.appleButton"
+            >
+              <Text style={[styles.socialButtonText, { color: palette.text }]}>
+                {t('auth.social.apple')}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -492,7 +545,8 @@ export default function CreateAccountScreen() {
           onPress={() => router.replace(buildAuthRoute('/auth/sign-in') as never)}
           style={[styles.secondaryButton, usesCompactMobileLayout && styles.secondaryButtonCompact]}
           testID="auth.createAccount.backToSignInButton"
-          disabled={submitting}>
+          disabled={submitting}
+        >
           <Text style={[styles.secondaryButtonHint, { color: palette.icon }]}>
             {t('auth.signup.already_have')}
           </Text>

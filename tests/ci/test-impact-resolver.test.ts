@@ -20,6 +20,14 @@ import {
 
 const root = process.cwd();
 
+test('documented critical browser paths remain selected for auth-impact changes', () => {
+  const result = resolveImpact(loadManifest(root), [
+    { status: 'M', path: 'features/auth/auth-route-guard.logic.ts' },
+  ]);
+
+  assert.ok(result.webSuites.includes('web:critical-paths'));
+});
+
 function syntheticManifest(): TestImpactManifest {
   return {
     schemaVersion: 1,
@@ -179,7 +187,7 @@ test('reverse import consumers widen a design-system change only to actual consu
   const result = resolveImpact(
     syntheticManifest(),
     [{ status: 'M', path: 'components/ds/Button.tsx' }],
-    [reverseGraph]
+    [reverseGraph],
   );
 
   assert.deepEqual(result.directFeatures, []);
@@ -193,26 +201,29 @@ test('reverse import graph includes platform-specific module variants', () => {
   try {
     mkdirSync(join(repository, 'components', 'ui'), { recursive: true });
     mkdirSync(join(repository, 'features', 'a'), { recursive: true });
-    writeFileSync(join(repository, 'components', 'ui', 'icon-symbol.tsx'), 'export const Icon = 1;\n');
+    writeFileSync(
+      join(repository, 'components', 'ui', 'icon-symbol.tsx'),
+      'export const Icon = 1;\n',
+    );
     writeFileSync(
       join(repository, 'components', 'ui', 'icon-symbol.ios.tsx'),
-      'export const Icon = 2;\n'
+      'export const Icon = 2;\n',
     );
     writeFileSync(
       join(repository, 'features', 'a', 'screen.tsx'),
-      "import { Icon } from '@/components/ui/icon-symbol';\nexport const Screen = Icon;\n"
+      "import { Icon } from '@/components/ui/icon-symbol';\nexport const Screen = Icon;\n",
     );
 
     const graph = buildWorkingTreeGraph(repository);
     assert.deepEqual(
       [...(graph.get('components/ui/icon-symbol.ios.tsx') ?? [])],
-      ['features/a/screen.tsx']
+      ['features/a/screen.tsx'],
     );
 
     const result = resolveImpact(
       syntheticManifest(),
       [{ status: 'M', path: 'components/ui/icon-symbol.ios.tsx' }],
-      [graph]
+      [graph],
     );
     assert.deepEqual(result.affectedFeatures, ['a', 'c']);
   } finally {
@@ -221,9 +232,7 @@ test('reverse import graph includes platform-specific module variants', () => {
 });
 
 test('navigation changes select the complete registered CI matrix', () => {
-  const result = resolveImpact(syntheticManifest(), [
-    { status: 'M', path: 'app/_layout.tsx' },
-  ]);
+  const result = resolveImpact(syntheticManifest(), [{ status: 'M', path: 'app/_layout.tsx' }]);
 
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
@@ -250,7 +259,7 @@ for (const scenario of [
       syntheticManifestWithUnownedSuites(),
       scenario.changedFiles,
       [],
-      scenario.options
+      scenario.options,
     );
 
     assert.equal(result.mode, scenario.expectedMode);
@@ -431,7 +440,7 @@ test('CLI emits compact suite arrays and web-server workflow outputs', () => {
           GITHUB_STEP_SUMMARY: '',
         },
         encoding: 'utf8',
-      }
+      },
     );
 
     const outputs = Object.fromEntries(
@@ -441,7 +450,7 @@ test('CLI emits compact suite arrays and web-server workflow outputs', () => {
         .map((line) => {
           const separator = line.indexOf('=');
           return [line.slice(0, separator), line.slice(separator + 1)];
-        })
+        }),
     );
     const result = JSON.parse(readFileSync(impactOutput, 'utf8'));
     const manifest = loadManifest(root);
@@ -451,9 +460,9 @@ test('CLI emits compact suite arrays and web-server workflow outputs', () => {
       outputs.has_web_server,
       String(
         result.webSuites.some(
-          (suite: string) => manifest.suites[suite]?.runner === 'playwright-server'
-        )
-      )
+          (suite: string) => manifest.suites[suite]?.runner === 'playwright-server',
+        ),
+      ),
     );
 
     for (const [outputName, resultKey] of [
@@ -549,10 +558,13 @@ test('registered UI spec discovery recurses through nested E2E directories', () 
   try {
     mkdirSync(join(repository, 'e2e', 'web', 'auth'), { recursive: true });
     mkdirSync(join(repository, 'e2e', 'native', 'student'), { recursive: true });
-    writeFileSync(join(repository, 'e2e', 'web', 'auth', 'login.spec.ts'), 'test("login", () => {});\n');
+    writeFileSync(
+      join(repository, 'e2e', 'web', 'auth', 'login.spec.ts'),
+      'test("login", () => {});\n',
+    );
     writeFileSync(
       join(repository, 'e2e', 'native', 'student', 'home.e2e.test.js'),
-      'describe("home", () => {});\n'
+      'describe("home", () => {});\n',
     );
 
     assert.deepEqual(discoverRegisteredTestFiles(repository), [

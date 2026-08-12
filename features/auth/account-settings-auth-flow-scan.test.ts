@@ -6,7 +6,7 @@ import { test } from 'node:test';
 const source = readFileSync(join(process.cwd(), 'app/settings/account.tsx'), 'utf8');
 const complianceBaseline = readFileSync(
   join(process.cwd(), 'docs/compliance/CP-001-store-and-privacy-baseline-2026-02-26.md'),
-  'utf8'
+  'utf8',
 );
 
 function functionBody(name: string): string {
@@ -21,12 +21,12 @@ function assertUsesSingleAwaitableClearSession(name: string) {
   assert.match(
     body,
     /(?:void|await) clearSession\(\)/,
-    `${name} should use the awaitable auth-session cleanup boundary`
+    `${name} should use the awaitable auth-session cleanup boundary`,
   );
   assert.equal(
     body.includes('signOutFromSource()'),
     false,
-    `${name} should not issue a second detached server sign-out request`
+    `${name} should not issue a second detached server sign-out request`,
   );
 }
 
@@ -50,20 +50,20 @@ test('account deletion does not expose provider reauthentication semantics', () 
 test('store compliance baseline records local server-owned account deletion evidence', () => {
   assert.equal(
     complianceBaseline.includes(
-      'Local implementation status: SC-213 now initiates account deletion through the MyChampions server `DELETE /me` boundary'
+      'Local implementation status: SC-213 now initiates account deletion through the MyChampions server `DELETE /me` boundary',
     ),
-    true
+    true,
   );
   assert.equal(
     complianceBaseline.includes(
-      'A236 repository evidence verified removal of direct account-owned rows and pseudonymization of retained relationship/history rows'
+      'A236 repository evidence verified removal of direct account-owned rows and pseudonymization of retained relationship/history rows',
     ),
-    true
+    true,
   );
   assert.equal(
     complianceBaseline.includes(
-      'Release gate remains open until iOS and Android platform builds verify the flow end to end'
+      'Release gate remains open until iOS and Android platform builds verify the flow end to end',
     ),
-    true
+    true,
   );
 });

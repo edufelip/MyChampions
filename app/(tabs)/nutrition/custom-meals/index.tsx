@@ -83,8 +83,7 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 const QUICK_LOG_KEYBOARD_ACCESSORY_ID = 'quick-log-keyboard-accessory';
 
 type QuickLogPanelState =
-  | { kind: 'closed' }
-  | { kind: 'open'; meal: CustomMeal; grams: string; error: string | null };
+  { kind: 'closed' } | { kind: 'open'; meal: CustomMeal; grams: string; error: string | null };
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -142,7 +141,7 @@ export default function CustomMealLibraryScreen({
     if (quickLog.kind !== 'open') return;
     const totalGrams = String(analysis.state.estimate.totalGrams);
     setQuickLog((prev) =>
-      prev.kind === 'open' ? { ...prev, grams: totalGrams, error: null } : prev
+      prev.kind === 'open' ? { ...prev, grams: totalGrams, error: null } : prev,
     );
   }, [analysis.state.kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -210,7 +209,12 @@ export default function CustomMealLibraryScreen({
       : null;
 
   return (
-    <DsScreen scheme={scheme} contentWidth="content" scrollable={false} testID="meal.library.screen">
+    <DsScreen
+      scheme={scheme}
+      contentWidth="content"
+      scrollable={false}
+      testID="meal.library.screen"
+    >
       <Stack.Screen options={{ title: t('meal.library.title'), headerShown: !hideHeader }} />
 
       {offlineDisplay.showOfflineBanner ? (
@@ -233,7 +237,13 @@ export default function CustomMealLibraryScreen({
           <Text style={[styles.meta, { color: palette.icon }]}>{t('meal.library.error')}</Text>
         </View>
       ) : state.kind === 'ready' && state.meals.length === 0 ? (
-        <EmptyState palette={palette} scheme={scheme} t={t} onCreate={() => router.push('/(tabs)/nutrition/custom-meals/new')} isWriteLocked={isWriteLocked} />
+        <EmptyState
+          palette={palette}
+          scheme={scheme}
+          t={t}
+          onCreate={() => router.push('/(tabs)/nutrition/custom-meals/new')}
+          isWriteLocked={isWriteLocked}
+        />
       ) : state.kind === 'ready' ? (
         <FlatList
           data={state.meals}
@@ -256,7 +266,8 @@ export default function CustomMealLibraryScreen({
               accessibilityRole="button"
               onPress={() => router.push('/(tabs)/nutrition/custom-meals/new')}
               style={[styles.createButton, { borderColor: palette.tint }]}
-              testID="meal.library.cta.create">
+              testID="meal.library.cta.create"
+            >
               <Text style={[styles.createButtonText, { color: palette.tint }]}>
                 {t('meal.library.cta_create')}
               </Text>
@@ -333,12 +344,15 @@ function EmptyState({
               backgroundColor: theme.color.surface,
               shadowColor: amber.shadow,
             },
-          ]}>
+          ]}
+        >
           <MaterialIcons color={amber.accent} name="menu-book" size={58} />
         </View>
 
         {/* Accent tile — utensils */}
-        <View style={[emptyStyles.emptyAccentTile, DsShadow.soft, { backgroundColor: amber.accent }]}>
+        <View
+          style={[emptyStyles.emptyAccentTile, DsShadow.soft, { backgroundColor: amber.accent }]}
+        >
           <MaterialIcons color={amber.accentDark} name="restaurant" size={34} />
         </View>
       </View>
@@ -396,7 +410,8 @@ function MealRow({
   return (
     <View
       style={[styles.mealRow, { borderColor: palette.icon + '33' }]}
-      testID={`meal.library.row.${meal.id}`}>
+      testID={`meal.library.row.${meal.id}`}
+    >
       <View style={styles.mealInfo}>
         <Text style={[styles.mealName, { color: palette.text }]} numberOfLines={1}>
           {meal.name}
@@ -411,17 +426,24 @@ function MealRow({
           accessibilityLabel={`${t('meal.library.quick_log.cta_log') as string} ${meal.name}`}
           disabled={isWriteLocked}
           onPress={onLog}
-          style={[styles.smallButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
-          testID={`meal.library.row.${meal.id}.log`}>
+          style={[
+            styles.smallButton,
+            { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+          ]}
+          testID={`meal.library.row.${meal.id}.log`}
+        >
           <MaterialIcons color={palette.onAccent} name="add-circle-outline" size={17} />
-          <Text style={[styles.smallButtonText, { color: palette.onAccent }]}>{t('meal.library.quick_log.cta_log')}</Text>
+          <Text style={[styles.smallButtonText, { color: palette.onAccent }]}>
+            {t('meal.library.quick_log.cta_log')}
+          </Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${t('meal.library.cta_edit') as string} ${meal.name}`}
           onPress={onEdit}
           style={[styles.ghostAction]}
-          testID={`meal.library.row.${meal.id}.edit`}>
+          testID={`meal.library.row.${meal.id}.edit`}
+        >
           <MaterialIcons color={palette.icon} name="edit" size={17} />
           <Text style={[styles.ghostActionText, { color: palette.icon }]}>
             {t('meal.library.cta_edit')}
@@ -433,7 +455,8 @@ function MealRow({
           disabled={isWriteLocked}
           onPress={onShare}
           style={[styles.ghostAction, { opacity: isWriteLocked ? 0.4 : 1 }]}
-          testID={`meal.library.row.${meal.id}.share`}>
+          testID={`meal.library.row.${meal.id}.share`}
+        >
           <MaterialIcons color={palette.tint} name="share" size={17} />
           <Text style={[styles.ghostActionText, { color: palette.tint }]}>
             {t('meal.library.cta_share')}
@@ -445,7 +468,8 @@ function MealRow({
           disabled={isWriteLocked}
           onPress={() => void onDelete()}
           style={[styles.ghostAction, { opacity: isWriteLocked ? 0.4 : 1 }]}
-          testID={`meal.library.row.${meal.id}.delete`}>
+          testID={`meal.library.row.${meal.id}.delete`}
+        >
           <MaterialIcons color={palette.danger} name="delete-outline" size={17} />
           <Text style={[styles.ghostActionText, { color: palette.danger }]}>
             {t('common.cta.delete')}
@@ -505,7 +529,7 @@ function QuickLogPanel({
   const caloriesLabel = nutritionPreview
     ? (t('meal.library.quick_log.preview.calories') as string).replace(
         '{calories}',
-        String(nutritionPreview.calories)
+        String(nutritionPreview.calories),
       )
     : null;
 
@@ -519,7 +543,8 @@ function QuickLogPanel({
   return (
     <View
       accessibilityViewIsModal
-      style={[styles.quickLogOverlay, usesCenteredDialog && styles.quickLogOverlayCentered]}>
+      style={[styles.quickLogOverlay, usesCenteredDialog && styles.quickLogOverlayCentered]}
+    >
       <Pressable
         accessibilityLabel={t('meal.library.quick_log.cta_cancel') as string}
         accessibilityRole="button"
@@ -533,103 +558,118 @@ function QuickLogPanel({
           usesCenteredDialog && styles.quickLogPanelCentered,
           { backgroundColor: palette.background, borderColor: palette.tint + '66' },
         ]}
-        testID="meal.library.quickLog.panel">
-      <Text style={[styles.panelTitle, { color: palette.text }]}>
-        {t('meal.library.quick_log.title')}
-      </Text>
-      <Text style={[styles.mealName, { color: palette.text }]} numberOfLines={1}>
-        {meal.name}
-      </Text>
-      <Text style={[styles.meta, { color: palette.icon }]}>
-        {t('meal.library.quick_log.helper')}
-      </Text>
+        testID="meal.library.quickLog.panel"
+      >
+        <Text style={[styles.panelTitle, { color: palette.text }]}>
+          {t('meal.library.quick_log.title')}
+        </Text>
+        <Text style={[styles.mealName, { color: palette.text }]} numberOfLines={1}>
+          {meal.name}
+        </Text>
+        <Text style={[styles.meta, { color: palette.icon }]}>
+          {t('meal.library.quick_log.helper')}
+        </Text>
 
-      <Text style={[styles.fieldLabel, { color: palette.text }]}>
-        {t('meal.library.quick_log.field.label')}
-      </Text>
-      <TextInput
-        style={[
-          styles.input,
-          {
-            borderColor: error ? palette.danger : palette.icon + '66',
-            color: palette.text,
-          },
-        ]}
-        placeholder={t('meal.library.quick_log.field.placeholder') as string}
-        placeholderTextColor={palette.icon}
-        value={grams}
-        onChangeText={onChangeGrams}
-        keyboardType="decimal-pad"
-        inputAccessoryViewID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}
-        accessibilityLabel={t('meal.library.quick_log.field.label') as string}
-        testID="meal.library.quickLog.input"
-      />
-      {error ? (
-        <View accessibilityLiveRegion="polite">
-          <Text style={[styles.fieldError, { color: palette.danger }]} testID="meal.library.quickLog.error">
-            {error}
-          </Text>
-        </View>
-      ) : null}
+        <Text style={[styles.fieldLabel, { color: palette.text }]}>
+          {t('meal.library.quick_log.field.label')}
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              borderColor: error ? palette.danger : palette.icon + '66',
+              color: palette.text,
+            },
+          ]}
+          placeholder={t('meal.library.quick_log.field.placeholder') as string}
+          placeholderTextColor={palette.icon}
+          value={grams}
+          onChangeText={onChangeGrams}
+          keyboardType="decimal-pad"
+          inputAccessoryViewID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}
+          accessibilityLabel={t('meal.library.quick_log.field.label') as string}
+          testID="meal.library.quickLog.input"
+        />
+        {error ? (
+          <View accessibilityLiveRegion="polite">
+            <Text
+              style={[styles.fieldError, { color: palette.danger }]}
+              testID="meal.library.quickLog.error"
+            >
+              {error}
+            </Text>
+          </View>
+        ) : null}
 
-      {/* Nutrition preview */}
-      {caloriesLabel && macrosLabel ? (
-        <View style={[styles.preview, { borderColor: palette.tint + '44' }]} testID="meal.library.quickLog.preview">
-          <Text style={[styles.previewCalories, { color: palette.text }]}>{caloriesLabel}</Text>
-          <Text style={[styles.meta, { color: palette.icon }]}>{macrosLabel}</Text>
-        </View>
-      ) : null}
+        {/* Nutrition preview */}
+        {caloriesLabel && macrosLabel ? (
+          <View
+            style={[styles.preview, { borderColor: palette.tint + '44' }]}
+            testID="meal.library.quickLog.preview"
+          >
+            <Text style={[styles.previewCalories, { color: palette.text }]}>{caloriesLabel}</Text>
+            <Text style={[styles.meta, { color: palette.icon }]}>{macrosLabel}</Text>
+          </View>
+        ) : null}
 
-      {/* AI photo analysis (BL-108, FR-236, AC-517, D-132) */}
-      <QuickLogAnalysisRow
-        analysisState={analysisState}
-        onAnalyzeCta={onAnalyzeCta}
-        onResetAnalysis={onResetAnalysis}
-        hasAiAccess={hasAiAccess}
-        isSubscriptionLoading={isSubscriptionLoading}
-        onOpenPaywall={onOpenPaywall}
-        palette={palette}
-        t={t}
-      />
+        {/* AI photo analysis (BL-108, FR-236, AC-517, D-132) */}
+        <QuickLogAnalysisRow
+          analysisState={analysisState}
+          onAnalyzeCta={onAnalyzeCta}
+          onResetAnalysis={onResetAnalysis}
+          hasAiAccess={hasAiAccess}
+          isSubscriptionLoading={isSubscriptionLoading}
+          onOpenPaywall={onOpenPaywall}
+          palette={palette}
+          t={t}
+        />
 
-      <View style={styles.panelActions}>
-        {isLogging ? (
-          <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting') as string} />
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            disabled={isWriteLocked}
-            onPress={onConfirm}
-            style={[styles.primaryButton, { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 }]}
-            testID="meal.library.quickLog.cta.confirm">
-            <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>{t('meal.library.quick_log.cta_log')}</Text>
-          </Pressable>
-        )}
-        <Pressable
-          accessibilityRole="button"
-          onPress={onCancel}
-          style={styles.cancelButton}
-          testID="meal.library.quickLog.cta.cancel">
-          <Text style={[styles.cancelButtonText, { color: palette.icon }]}>
-            {t('meal.library.quick_log.cta_cancel')}
-          </Text>
-        </Pressable>
-      </View>
-
-        {Platform.OS === 'ios' ? (
-        <InputAccessoryView nativeID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}>
-          <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+        <View style={styles.panelActions}>
+          {isLogging ? (
+            <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting') as string} />
+          ) : (
             <Pressable
               accessibilityRole="button"
-              onPress={Keyboard.dismiss}
-              style={styles.keyboardDoneButton}
-              testID="meal.library.quickLog.keyboard.done">
-              <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
-                {t('common.cta.done')}
+              disabled={isWriteLocked}
+              onPress={onConfirm}
+              style={[
+                styles.primaryButton,
+                { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+              ]}
+              testID="meal.library.quickLog.cta.confirm"
+            >
+              <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>
+                {t('meal.library.quick_log.cta_log')}
               </Text>
             </Pressable>
-          </View>
-        </InputAccessoryView>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            onPress={onCancel}
+            style={styles.cancelButton}
+            testID="meal.library.quickLog.cta.cancel"
+          >
+            <Text style={[styles.cancelButtonText, { color: palette.icon }]}>
+              {t('meal.library.quick_log.cta_cancel')}
+            </Text>
+          </Pressable>
+        </View>
+
+        {Platform.OS === 'ios' ? (
+          <InputAccessoryView nativeID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}>
+            <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={Keyboard.dismiss}
+                style={styles.keyboardDoneButton}
+                testID="meal.library.quickLog.keyboard.done"
+              >
+                <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
+                  {t('common.cta.done')}
+                </Text>
+              </Pressable>
+            </View>
+          </InputAccessoryView>
         ) : null}
       </View>
     </View>
@@ -684,7 +724,8 @@ function QuickLogAnalysisRow({
               accessibilityRole="button"
               onPress={onOpenPaywall}
               style={[styles.analysisCtaButton, { borderColor: palette.tint, marginTop: 6 }]}
-              testID="meal.library.quickLog.analysis.paywall.cta">
+              testID="meal.library.quickLog.analysis.paywall.cta"
+            >
               <Text style={[styles.analysisCtaText, { color: palette.tint }]}>
                 {t('meal.photo_analysis.paywall.cta_upgrade')}
               </Text>
@@ -699,7 +740,8 @@ function QuickLogAnalysisRow({
           accessibilityRole="button"
           onPress={onAnalyzeCta}
           style={[styles.analysisCtaButton, { borderColor: palette.tint }]}
-          testID="meal.library.quickLog.analysis.cta">
+          testID="meal.library.quickLog.analysis.cta"
+        >
           <Text style={[styles.analysisCtaText, { color: palette.tint }]}>
             {t('meal.photo_analysis.cta')}
           </Text>
@@ -732,10 +774,18 @@ function QuickLogAnalysisRow({
             {t('meal.photo_analysis.disclaimer')}
           </Text>
           {analysisState.estimate.confidence === 'low' ? (
-            <Text style={[styles.analysisMeta, { color: palette.danger }]}>{t('meal.photo_analysis.confidence.low')}</Text>
+            <Text style={[styles.analysisMeta, { color: palette.danger }]}>
+              {t('meal.photo_analysis.confidence.low')}
+            </Text>
           ) : null}
-          <Pressable accessibilityRole="button" onPress={onResetAnalysis} testID="meal.library.quickLog.analysis.reset">
-            <Text style={[styles.analysisMeta, { color: palette.tint }]}>{t('meal.photo_analysis.cta')}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onResetAnalysis}
+            testID="meal.library.quickLog.analysis.reset"
+          >
+            <Text style={[styles.analysisMeta, { color: palette.tint }]}>
+              {t('meal.photo_analysis.cta')}
+            </Text>
           </Pressable>
         </View>
       ) : null}

@@ -1,7 +1,4 @@
-import {
-  redactEventProperties,
-  type AnalyticsEvent,
-} from './analytics.logic';
+import { redactEventProperties, type AnalyticsEvent } from './analytics.logic';
 
 export type AnalyticsSendResult = 'sent' | 'skipped';
 
@@ -39,7 +36,7 @@ function defaultDeps(): AnalyticsSourceDeps {
 
 export async function sendAnalyticsEventToServer(
   event: AnalyticsEvent,
-  deps: AnalyticsSourceDeps = defaultDeps()
+  deps: AnalyticsSourceDeps = defaultDeps(),
 ): Promise<AnalyticsSendResult> {
   const baseUrl = deps.getServerBaseUrl()?.replace(/\/+$/, '');
   if (!baseUrl) {

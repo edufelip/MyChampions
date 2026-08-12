@@ -83,11 +83,25 @@ const SessionItemRow = React.memo(function SessionItemRow({
     >
       {isSortMode && (
         <View style={styles.itemSortControls}>
-          <Pressable onPress={() => onMoveItemUp?.(item.id)} disabled={isInteractionLocked || index === 0}>
-            <IconSymbol name="chevron.up" size={16} color={index === 0 ? theme.color.textSecondary : palette.tint} />
+          <Pressable
+            onPress={() => onMoveItemUp?.(item.id)}
+            disabled={isInteractionLocked || index === 0}
+          >
+            <IconSymbol
+              name="chevron.up"
+              size={16}
+              color={index === 0 ? theme.color.textSecondary : palette.tint}
+            />
           </Pressable>
-          <Pressable onPress={() => onMoveItemDown?.(item.id)} disabled={isInteractionLocked || index === totalItems - 1}>
-            <IconSymbol name="chevron.down" size={16} color={index === totalItems - 1 ? theme.color.textSecondary : palette.tint} />
+          <Pressable
+            onPress={() => onMoveItemDown?.(item.id)}
+            disabled={isInteractionLocked || index === totalItems - 1}
+          >
+            <IconSymbol
+              name="chevron.down"
+              size={16}
+              color={index === totalItems - 1 ? theme.color.textSecondary : palette.tint}
+            />
           </Pressable>
         </View>
       )}
@@ -114,7 +128,9 @@ const SessionItemRow = React.memo(function SessionItemRow({
             </Text>
           )}
           {item.notes ? (
-            <Text style={[styles.itemMeta, { color: palette.icon, marginLeft: 8 }]}>• {item.notes}</Text>
+            <Text style={[styles.itemMeta, { color: palette.icon, marginLeft: 8 }]}>
+              • {item.notes}
+            </Text>
           ) : null}
         </View>
       </View>
@@ -137,119 +153,155 @@ const SessionItemRow = React.memo(function SessionItemRow({
 
 // ─── SessionCard ──────────────────────────────────────────────────────────────
 
-export const SessionCard = React.memo(({
-  session,
-  sessionIndex,
-  totalSessions,
-  palette,
-  theme,
-  t,
-  tr,
-  onRemoveSession,
-  onAddItem,
-  onRemoveItem,
-  isSortMode,
-  isInteractionLocked,
-  onMoveSession,
-  onMoveItem,
-  testIDPrefix = 'pro.training_plan',
-}: SessionCardProps) => {
-  const { id: sessionId } = session;
-  const isFirst = sessionIndex === 0;
-  const isLast = sessionIndex === totalSessions - 1;
+export const SessionCard = React.memo(
+  ({
+    session,
+    sessionIndex,
+    totalSessions,
+    palette,
+    theme,
+    t,
+    tr,
+    onRemoveSession,
+    onAddItem,
+    onRemoveItem,
+    isSortMode,
+    isInteractionLocked,
+    onMoveSession,
+    onMoveItem,
+    testIDPrefix = 'pro.training_plan',
+  }: SessionCardProps) => {
+    const { id: sessionId } = session;
+    const isFirst = sessionIndex === 0;
+    const isLast = sessionIndex === totalSessions - 1;
 
-  // Bind session.id here — stable references so SessionItemRow memo is preserved.
-  const handleRemoveSession = useCallback(() => onRemoveSession(sessionId), [onRemoveSession, sessionId]);
-  const handleAddItem = useCallback(() => onAddItem(sessionId), [onAddItem, sessionId]);
-  const handleRemoveItem = useCallback((itemId: string) => onRemoveItem(sessionId, itemId), [onRemoveItem, sessionId]);
-  const handleMoveUp = useCallback(() => onMoveSession?.(sessionIndex, 'up'), [onMoveSession, sessionIndex]);
-  const handleMoveDown = useCallback(() => onMoveSession?.(sessionIndex, 'down'), [onMoveSession, sessionIndex]);
-  const handleMoveItemUp = useCallback((itemId: string) => onMoveItem?.(sessionId, itemId, 'up'), [onMoveItem, sessionId]);
-  const handleMoveItemDown = useCallback((itemId: string) => onMoveItem?.(sessionId, itemId, 'down'), [onMoveItem, sessionId]);
+    // Bind session.id here — stable references so SessionItemRow memo is preserved.
+    const handleRemoveSession = useCallback(
+      () => onRemoveSession(sessionId),
+      [onRemoveSession, sessionId],
+    );
+    const handleAddItem = useCallback(() => onAddItem(sessionId), [onAddItem, sessionId]);
+    const handleRemoveItem = useCallback(
+      (itemId: string) => onRemoveItem(sessionId, itemId),
+      [onRemoveItem, sessionId],
+    );
+    const handleMoveUp = useCallback(
+      () => onMoveSession?.(sessionIndex, 'up'),
+      [onMoveSession, sessionIndex],
+    );
+    const handleMoveDown = useCallback(
+      () => onMoveSession?.(sessionIndex, 'down'),
+      [onMoveSession, sessionIndex],
+    );
+    const handleMoveItemUp = useCallback(
+      (itemId: string) => onMoveItem?.(sessionId, itemId, 'up'),
+      [onMoveItem, sessionId],
+    );
+    const handleMoveItemDown = useCallback(
+      (itemId: string) => onMoveItem?.(sessionId, itemId, 'down'),
+      [onMoveItem, sessionId],
+    );
 
-  return (
-    <View
-      style={[styles.sessionCard, { backgroundColor: theme.color.surface }]}
-      testID={`${testIDPrefix}.sessionRow.${toTestIDSegment(session.name)}`}
-    >
-      {/* Session header */}
-      <View style={styles.sessionHeader}>
-        {isSortMode && (
-          <View style={styles.sortControls}>
-            <Pressable onPress={handleMoveUp} disabled={isInteractionLocked || isFirst} style={(isInteractionLocked || isFirst) && styles.disabled}>
-              <IconSymbol name="chevron.up" size={20} color={isFirst ? theme.color.textSecondary : palette.tint} />
-            </Pressable>
-            <Pressable onPress={handleMoveDown} disabled={isInteractionLocked || isLast} style={(isInteractionLocked || isLast) && styles.disabled}>
-              <IconSymbol name="chevron.down" size={20} color={isLast ? theme.color.textSecondary : palette.tint} />
-            </Pressable>
+    return (
+      <View
+        style={[styles.sessionCard, { backgroundColor: theme.color.surface }]}
+        testID={`${testIDPrefix}.sessionRow.${toTestIDSegment(session.name)}`}
+      >
+        {/* Session header */}
+        <View style={styles.sessionHeader}>
+          {isSortMode && (
+            <View style={styles.sortControls}>
+              <Pressable
+                onPress={handleMoveUp}
+                disabled={isInteractionLocked || isFirst}
+                style={(isInteractionLocked || isFirst) && styles.disabled}
+              >
+                <IconSymbol
+                  name="chevron.up"
+                  size={20}
+                  color={isFirst ? theme.color.textSecondary : palette.tint}
+                />
+              </Pressable>
+              <Pressable
+                onPress={handleMoveDown}
+                disabled={isInteractionLocked || isLast}
+                style={(isInteractionLocked || isLast) && styles.disabled}
+              >
+                <IconSymbol
+                  name="chevron.down"
+                  size={20}
+                  color={isLast ? theme.color.textSecondary : palette.tint}
+                />
+              </Pressable>
+            </View>
+          )}
+          <View style={styles.sessionHeaderTitle}>
+            <Text style={[styles.sessionName, { color: palette.text }]}>{session.name}</Text>
+            {session.notes ? (
+              <Text style={[styles.sessionNotes, { color: palette.icon }]}>{session.notes}</Text>
+            ) : null}
           </View>
-        )}
-        <View style={styles.sessionHeaderTitle}>
-          <Text style={[styles.sessionName, { color: palette.text }]}>{session.name}</Text>
-          {session.notes ? (
-            <Text style={[styles.sessionNotes, { color: palette.icon }]}>{session.notes}</Text>
-          ) : null}
+          {!isSortMode && (
+            <Pressable
+              onPress={handleRemoveSession}
+              disabled={isInteractionLocked}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove session ${session.name}`}
+              hitSlop={8}
+              style={styles.removeBtnWrapper}
+            >
+              <IconSymbol name="minus.circle.fill" size={24} color={palette.danger} />
+            </Pressable>
+          )}
         </View>
+
+        {/* Items */}
+        <View style={styles.itemsList}>
+          {session.items.map((item, index) => (
+            <SessionItemRow
+              key={item.id}
+              item={item}
+              index={index}
+              totalItems={session.items.length}
+              palette={palette}
+              theme={theme}
+              tr={tr}
+              isSortMode={isSortMode}
+              isInteractionLocked={isInteractionLocked}
+              onRemoveItem={handleRemoveItem}
+              onMoveItemUp={handleMoveItemUp}
+              onMoveItemDown={handleMoveItemDown}
+            />
+          ))}
+
+          {session.items.length === 0 && (
+            <View style={styles.emptyItemsContainer}>
+              <Text style={[styles.emptyItemsText, { color: palette.icon }]}>
+                {tr('pro.plan.session.no_exercises', 'student.plan.session.no_exercises')}
+              </Text>
+            </View>
+          )}
+        </View>
+
         {!isSortMode && (
           <Pressable
-            onPress={handleRemoveSession}
+            style={styles.addItemBtn}
+            onPress={handleAddItem}
             disabled={isInteractionLocked}
             accessibilityRole="button"
-            accessibilityLabel={`Remove session ${session.name}`}
-            hitSlop={8}
-            style={styles.removeBtnWrapper}
+            accessibilityLabel={t('pro.plan.cta.add_item')}
+            testID={`${testIDPrefix}.sessionRow.${toTestIDSegment(session.name)}.addItem`}
           >
-            <IconSymbol name="minus.circle.fill" size={24} color={palette.danger} />
+            <IconSymbol name="plus.circle.fill" size={18} color={palette.tint} />
+            <Text style={[styles.addItemBtnText, { color: palette.tint }]}>
+              {t('pro.plan.cta.add_item')}
+            </Text>
           </Pressable>
         )}
       </View>
-
-      {/* Items */}
-      <View style={styles.itemsList}>
-        {session.items.map((item, index) => (
-          <SessionItemRow
-            key={item.id}
-            item={item}
-            index={index}
-            totalItems={session.items.length}
-            palette={palette}
-            theme={theme}
-            tr={tr}
-            isSortMode={isSortMode}
-            isInteractionLocked={isInteractionLocked}
-            onRemoveItem={handleRemoveItem}
-            onMoveItemUp={handleMoveItemUp}
-            onMoveItemDown={handleMoveItemDown}
-          />
-        ))}
-        
-        {session.items.length === 0 && (
-          <View style={styles.emptyItemsContainer}>
-            <Text style={[styles.emptyItemsText, { color: palette.icon }]}>
-              {tr('pro.plan.session.no_exercises', 'student.plan.session.no_exercises')}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {!isSortMode && (
-        <Pressable
-          style={styles.addItemBtn}
-          onPress={handleAddItem}
-          disabled={isInteractionLocked}
-          accessibilityRole="button"
-          accessibilityLabel={t('pro.plan.cta.add_item')}
-          testID={`${testIDPrefix}.sessionRow.${toTestIDSegment(session.name)}.addItem`}
-        >
-          <IconSymbol name="plus.circle.fill" size={18} color={palette.tint} />
-          <Text style={[styles.addItemBtnText, { color: palette.tint }]}>
-            {t('pro.plan.cta.add_item')}
-          </Text>
-        </Pressable>
-      )}
-    </View>
-  );
-});
+    );
+  },
+);
 
 function toTestIDSegment(value: string): string {
   return value.trim().replace(/[^A-Za-z0-9_-]+/g, '_');
@@ -268,9 +320,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  sessionHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  sessionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: DsSpace.sm,
   },
@@ -280,11 +332,11 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   sessionHeaderTitle: { flex: 1, gap: 2 },
-  sessionName: { 
+  sessionName: {
     ...DsTypography.cardTitle,
     fontFamily: Fonts?.rounded ?? 'normal',
   },
-  sessionNotes: { 
+  sessionNotes: {
     ...DsTypography.caption,
     opacity: 0.8,
   },
@@ -315,9 +367,9 @@ const styles = StyleSheet.create({
     ...DsTypography.caption,
     fontStyle: 'italic',
   },
-  removeBtnWrapper: { 
-    padding: DsSpace.xs, 
-    justifyContent: 'center', 
+  removeBtnWrapper: {
+    padding: DsSpace.xs,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   thumbnail: {

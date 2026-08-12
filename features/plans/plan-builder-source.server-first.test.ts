@@ -45,7 +45,11 @@ describe('plan-builder source server-first module loading', () => {
   it('imports and reads server-backed nutrition detail without loading Firestore fallbacks', async () => {
     const originalLoad = (Module as any)._load;
     const blockedRequests: string[] = [];
-    (Module as any)._load = function patchedLoad(request: string, parent: unknown, isMain: boolean) {
+    (Module as any)._load = function patchedLoad(
+      request: string,
+      parent: unknown,
+      isMain: boolean,
+    ) {
       if (request === 'firebase/firestore' || request === '../firestore') {
         blockedRequests.push(request);
         throw new Error(`blocked eager Firebase import: ${request}`);
@@ -54,7 +58,8 @@ describe('plan-builder source server-first module loading', () => {
     };
 
     try {
-      const { getNutritionPlanDetail } = require('./plan-builder-source') as typeof import('./plan-builder-source');
+      const { getNutritionPlanDetail } =
+        require('./plan-builder-source') as typeof import('./plan-builder-source');
 
       const plan = await getNutritionPlanDetail('nutrition-plan-1', {
         getServerBaseUrl: () => 'http://server.test',
@@ -82,7 +87,7 @@ describe('plan-builder source server-first module loading', () => {
                 updatedAt: '2026-07-01T09:30:00.000Z',
               },
             }),
-            { status: 200, headers: { 'content-type': 'application/json' } }
+            { status: 200, headers: { 'content-type': 'application/json' } },
           );
         }) as AppFetch,
       });

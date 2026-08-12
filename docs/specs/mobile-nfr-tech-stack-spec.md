@@ -65,10 +65,10 @@ Define non-functional architecture constraints and technology options for the mo
   required by the Expo video playback service, and places
   `windowSplashScreenBehavior` in `values-v33` so the API-33 attribute does not
   violate the API-24 minimum. The lane rejects stale emulator/QEMU/console
-  state, preboots `Pixel_10` on `emulator-5554`, bounds exact AVD readiness to
-  120 seconds while revalidating PID/UID/Linux start time plus AVD/port command
-  identity, lets Detox reuse that instance, and verifies that no QEMU process,
-  emulator device, or owned port survives teardown.
+  state, preboots `Pixel_10` on the MyChampions slot's `emulator-5556`, bounds
+  exact AVD readiness to 120 seconds while revalidating PID/UID/Linux start time
+  plus AVD/port command identity, lets Detox reuse that instance, and verifies
+  that no QEMU process, emulator device, or owned port survives teardown.
 
 ## Constraints From Platform Docs
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.
@@ -171,10 +171,12 @@ relaxed pending private-broker/JIT/ephemeral isolation.
 Contradictory native fixture states execute in scenario-gated fresh-Metro phases,
 each of which fully prewarms its exact platform bundle before Detox launches, and
 the iOS lane keeps its app launch route and compiled fallback on dedicated port
-`18081`. Android instrumentation routes Metro through the configured localhost ADB
-reverse tunnel before React Native starts. The Android runner supplies one
-health-checked `emulator-5554` for the job instead of delegating console-port
-allocation to Detox. Successful runs create no GitHub
+`18081`. Android instrumentation routes Metro through the configured localhost
+ADB reverse tunnel before React Native starts. Meer and MyChampions use separate
+health-checked Android slots (`emulator-5554`/ADB `5037`/Metro `18081` and
+`emulator-5556`/ADB `5038`/Metro `18082`) with distinct AVD, user, recovery,
+temporary, and lock roots rather than delegating console-port allocation to
+Detox. Successful runs create no GitHub
 Actions artifact or cache.
 
 ## High-Level Architecture (Target)

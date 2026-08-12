@@ -17,7 +17,7 @@ test('server-backed water logging does not load Firestore at module import', asy
     this: unknown,
     request: string,
     parent: NodeModule | null,
-    isMain: boolean
+    isMain: boolean,
   ) {
     if (request === 'firebase/firestore') {
       blockedLoads.push(request);
@@ -27,7 +27,8 @@ test('server-backed water logging does not load Firestore at module import', asy
   };
 
   try {
-    const { logWaterIntake } = require('./water-tracking-source') as typeof import('./water-tracking-source');
+    const { logWaterIntake } =
+      require('./water-tracking-source') as typeof import('./water-tracking-source');
 
     const id = await logWaterIntake(250, '2026-06-28', {
       getCurrentAccessToken: async () => 'server-token',
@@ -42,7 +43,7 @@ test('server-backed water logging does not load Firestore at module import', asy
               loggedAt: '2026-06-28T10:00:00.000Z',
             },
           }),
-          { status: 201, headers: { 'content-type': 'application/json' } }
+          { status: 201, headers: { 'content-type': 'application/json' } },
         ),
     } as any);
 

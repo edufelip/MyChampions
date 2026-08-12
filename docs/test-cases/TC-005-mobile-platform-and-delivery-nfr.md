@@ -34,6 +34,11 @@
 - TC-519 proves CI trust, isolation, and repository enforcement only. It does not
   authorize provider-console changes, deployment, production credentials, store
   distribution, or provider-live purchase/restore claims.
+- The repository variable `MYCHAMPIONS_ENABLE_IOS_TESTS` is default-on: an
+  exact value of `false` skips new iOS test-only jobs and the final selective
+  gate allows their intentional skip; unset or any other value keeps iOS tests
+  enabled. It does not cancel already-running jobs or gate release/distribution
+  workflows.
 - TC-519's executable contract must cover `SIGINT`/`SIGTERM`, workspace-link and
   runner-temp secret-target removal, interrupted UUID/PID ownership handoff,
   cleanup failure with retained durable records, exact next-run retry,

@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {
-  resolveProfileHydrationFailure,
-} from './profile-hydration.logic';
+import { resolveProfileHydrationFailure } from './profile-hydration.logic';
 import { resolveTabShellState } from './tab-shell.logic';
 
 const currentProfile = {
@@ -39,7 +37,7 @@ for (const errorCode of ['network', 'configuration', 'token_unavailable'] as con
           establishedUid: 'user-a',
           establishedRole: lockedRole,
         }).effectiveRole,
-        lockedRole
+        lockedRole,
       );
     });
   }
@@ -65,7 +63,7 @@ test('keeps the terms gate for a stale cached acceptance', () => {
       establishedUid: 'user-a',
       establishedRole: 'student',
     }).effectiveRole,
-    null
+    null,
   );
 });
 
@@ -89,7 +87,7 @@ test('keeps the role-selection gate for a cached profile without a locked role',
       establishedUid: 'user-a',
       establishedRole: 'student',
     }).effectiveRole,
-    null
+    null,
   );
 });
 
@@ -108,7 +106,7 @@ test('does not grant cached state to a different active user or a signed-out ses
         acceptedTermsVersion: null,
         lastProfileSyncedAtIso: null,
         requiresTermsAcceptance: true,
-      }
+      },
     );
   }
 });

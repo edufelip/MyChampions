@@ -7,10 +7,7 @@ import type { EntitlementStatus } from './subscription.logic';
 import { hasAiAnalysisAccess } from './subscription.logic';
 import { getSubscriptionEntitlementSnapshot } from './subscription-server-source';
 import type { RawPurchasesPackage, SubscriptionErrorReason } from './subscription-source';
-import {
-  subscriptionRuntime,
-  type SubscriptionPurchaseCapability,
-} from './subscription-runtime';
+import { subscriptionRuntime, type SubscriptionPurchaseCapability } from './subscription-runtime';
 
 export type UseSubscriptionResult = {
   entitlementStatus: EntitlementStatus;
@@ -43,15 +40,14 @@ function getE2ESubscriptionOverride() {
     appVariant: process.env.APP_VARIANT,
     enabledFlag: process.env.EXPO_PUBLIC_E2E_AUTH_SESSION,
     entitlementStatus: process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS,
-    professionalEntitlementRenewalRisk:
-      process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK,
+    professionalEntitlementRenewalRisk: process.env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK,
     isDev: typeof __DEV__ !== 'undefined' && __DEV__,
   });
 }
 
 export function useSubscription(
   authUid: string | null,
-  optionsOrActiveStudentCount: number | UseSubscriptionOptions = 0
+  optionsOrActiveStudentCount: number | UseSubscriptionOptions = 0,
 ): UseSubscriptionResult {
   const activeAuthUid = authUid?.trim() || null;
   const currentAuthUidRef = useRef<string | null>(activeAuthUid);
@@ -72,15 +68,16 @@ export function useSubscription(
     typeof resolvedActiveStudentCountOverride !== 'number';
   const [entitlementStatus, setEntitlementStatus] = useState<EntitlementStatus>('unknown');
   const [aiEntitlementStatus, setAiEntitlementStatus] = useState<EntitlementStatus>('unknown');
-  const [professionalEntitlementExpiresAt, setProfessionalEntitlementExpiresAt] =
-    useState<string | null>(null);
+  const [professionalEntitlementExpiresAt, setProfessionalEntitlementExpiresAt] = useState<
+    string | null
+  >(null);
   const [professionalEntitlementRenewalRisk, setProfessionalEntitlementRenewalRisk] =
     useState(false);
   const [activeStudentCount, setActiveStudentCount] = useState(
-    resolvedActiveStudentCountOverride ?? 0
+    resolvedActiveStudentCountOverride ?? 0,
   );
   const [isActiveStudentCountKnown, setIsActiveStudentCountKnown] = useState(
-    typeof resolvedActiveStudentCountOverride === 'number'
+    typeof resolvedActiveStudentCountOverride === 'number',
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<SubscriptionErrorReason | null>(null);
@@ -151,11 +148,7 @@ export function useSubscription(
         setIsLoading(false);
       }
     }
-  }, [
-    activeAuthUid,
-    resolvedActiveStudentCountOverride,
-    shouldLoadProfessionalActiveStudentCount,
-  ]);
+  }, [activeAuthUid, resolvedActiveStudentCountOverride, shouldLoadProfessionalActiveStudentCount]);
 
   useEffect(() => {
     void refresh();
@@ -196,11 +189,7 @@ export function useSubscription(
     return () => {
       isCancelled = true;
     };
-  }, [
-    activeAuthUid,
-    loadProfessionalActiveStudentCount,
-    resolvedActiveStudentCountOverride,
-  ]);
+  }, [activeAuthUid, loadProfessionalActiveStudentCount, resolvedActiveStudentCountOverride]);
 
   const openHandoff = useCallback(async () => {
     try {
@@ -219,7 +208,7 @@ export function useSubscription(
       }
       await openHandoff();
     },
-    [openHandoff]
+    [openHandoff],
   );
 
   return {

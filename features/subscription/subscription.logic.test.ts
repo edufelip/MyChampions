@@ -17,39 +17,54 @@ import {
 test('checkStudentCapEnforcement allows below free cap regardless of entitlement', () => {
   assert.deepEqual(
     checkStudentCapEnforcement({ activeStudentCount: 0, entitlementStatus: 'lapsed' }),
-    { allowed: true }
+    { allowed: true },
   );
   assert.deepEqual(
-    checkStudentCapEnforcement({ activeStudentCount: FREE_STUDENT_CAP - 1, entitlementStatus: 'lapsed' }),
-    { allowed: true }
+    checkStudentCapEnforcement({
+      activeStudentCount: FREE_STUDENT_CAP - 1,
+      entitlementStatus: 'lapsed',
+    }),
+    { allowed: true },
   );
 });
 
 test('checkStudentCapEnforcement allows at cap with active entitlement (D-010)', () => {
   assert.deepEqual(
-    checkStudentCapEnforcement({ activeStudentCount: FREE_STUDENT_CAP, entitlementStatus: 'active' }),
-    { allowed: true }
+    checkStudentCapEnforcement({
+      activeStudentCount: FREE_STUDENT_CAP,
+      entitlementStatus: 'active',
+    }),
+    { allowed: true },
   );
 });
 
 test('checkStudentCapEnforcement blocks at cap when lapsed (D-043)', () => {
   assert.deepEqual(
-    checkStudentCapEnforcement({ activeStudentCount: FREE_STUDENT_CAP, entitlementStatus: 'lapsed' }),
-    { allowed: false, reason: 'lapsed_above_cap' }
+    checkStudentCapEnforcement({
+      activeStudentCount: FREE_STUDENT_CAP,
+      entitlementStatus: 'lapsed',
+    }),
+    { allowed: false, reason: 'lapsed_above_cap' },
   );
 });
 
 test('checkStudentCapEnforcement fails closed when entitlement is unknown', () => {
   assert.deepEqual(
-    checkStudentCapEnforcement({ activeStudentCount: FREE_STUDENT_CAP + 5, entitlementStatus: 'unknown' }),
-    { allowed: false, reason: 'requires_entitlement' }
+    checkStudentCapEnforcement({
+      activeStudentCount: FREE_STUDENT_CAP + 5,
+      entitlementStatus: 'unknown',
+    }),
+    { allowed: false, reason: 'requires_entitlement' },
   );
 });
 
 test('checkStudentCapEnforcement blocks above cap when lapsed', () => {
   assert.deepEqual(
-    checkStudentCapEnforcement({ activeStudentCount: FREE_STUDENT_CAP + 1, entitlementStatus: 'lapsed' }),
-    { allowed: false, reason: 'lapsed_above_cap' }
+    checkStudentCapEnforcement({
+      activeStudentCount: FREE_STUDENT_CAP + 1,
+      entitlementStatus: 'lapsed',
+    }),
+    { allowed: false, reason: 'lapsed_above_cap' },
   );
 });
 
@@ -97,7 +112,7 @@ test('resolveSubscriptionStatusPresentation separates loading, entitlement, and 
       isLoading: true,
       hasError: false,
     }),
-    'loading'
+    'loading',
   );
   assert.equal(
     resolveSubscriptionStatusPresentation({
@@ -105,7 +120,7 @@ test('resolveSubscriptionStatusPresentation separates loading, entitlement, and 
       isLoading: false,
       hasError: false,
     }),
-    'active'
+    'active',
   );
   assert.equal(
     resolveSubscriptionStatusPresentation({
@@ -113,7 +128,7 @@ test('resolveSubscriptionStatusPresentation separates loading, entitlement, and 
       isLoading: false,
       hasError: false,
     }),
-    'inactive'
+    'inactive',
   );
   assert.equal(
     resolveSubscriptionStatusPresentation({
@@ -121,7 +136,7 @@ test('resolveSubscriptionStatusPresentation separates loading, entitlement, and 
       isLoading: false,
       hasError: true,
     }),
-    'unavailable'
+    'unavailable',
   );
 });
 
