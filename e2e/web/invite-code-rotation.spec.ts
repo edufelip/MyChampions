@@ -61,6 +61,10 @@ test.describe('@critical @feature:professional invite-code rotation', () => {
     await expect(page.getByTestId('pro.home.rotateCodeSuccess')).toBeVisible();
     await expect(code).toHaveText(/E2E-[A-Z0-9]+/);
     await expect(code).not.toHaveText(oldCode as string);
+    await expect(page.getByRole('button', { name: '0 Connection requests' })).toBeVisible();
+    await expect(
+      page.locator('[data-testid="pro.home.connectionRequestTask"]:visible'),
+    ).toHaveCount(0);
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath('invite-code-rotation-success-mobile-412.png'),

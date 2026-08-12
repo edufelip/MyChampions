@@ -202,6 +202,7 @@ export default function ProfessionalHomeScreen() {
 
     setIsRotateConfirmVisible(false);
     setRotateSuccess(true);
+    reloadConnections();
     emitEvent(buildInviteCodeRotationSucceeded());
   }
 
@@ -402,7 +403,7 @@ export default function ProfessionalHomeScreen() {
                 scheme={scheme}
                 iconName="person-add-alt-1"
                 title={t('pro.home.connection_requests')}
-                body={(t('pro.home.connection_requests_body')).replace(
+                body={t('pro.home.connection_requests_body').replace(
                   '{count}',
                   String(pendingConnections.length),
                 )}
@@ -417,7 +418,7 @@ export default function ProfessionalHomeScreen() {
                 scheme={scheme}
                 iconName="notifications-active"
                 title={t('pro.home.plan_change_notification.title')}
-                body={(t('pro.home.plan_change_notification.body'))
+                body={t('pro.home.plan_change_notification.body')
                   .replace('{count}', String(planChangeNotification.pendingCount))
                   .replace('{studentUid}', planChangeNotification.latestRequest.studentUid)}
                 cta={t('pro.home.plan_change_notification.cta')}
@@ -727,10 +728,10 @@ function buildOfflineText(
 
   const stalePart =
     staleElapsed.unit === 'minutes'
-      ? (t('offline.stale_minutes')).replace('{value}', String(staleElapsed.value))
+      ? t('offline.stale_minutes').replace('{value}', String(staleElapsed.value))
       : staleElapsed.unit === 'hours'
-        ? (t('offline.stale_hours')).replace('{value}', String(staleElapsed.value))
-        : (t('offline.stale_days')).replace('{value}', String(staleElapsed.value));
+        ? t('offline.stale_hours').replace('{value}', String(staleElapsed.value))
+        : t('offline.stale_days').replace('{value}', String(staleElapsed.value));
 
   return `${t('offline.banner')} • ${stalePart}`;
 }
