@@ -19,6 +19,7 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 - Plan rows use icon-leading card treatment aligned with the nutrition library, including open-status pill + trailing chevron.
 - Session cards and the "Add session" form use a reduced vertical padding (`DsSpace.xs` / 8px) to maximize content density.
 - Primary create/retry actions use DS pill buttons and localization-key copy only.
+- When an existing plan cannot be loaded, the builder fails closed: it does not render an editable form, and it presents a localized error with a retry action plus back navigation.
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
 - On compact native viewports, native validation scrolls the builder until the current action (including a reopened plan's `Add session` CTA) is visible. After confirming an exercise it waits for the native modal transition to leave the hierarchy, then adds bottom-navigation clearance before tapping the footer save action below longer session/item content.
@@ -81,7 +82,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
 | Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
-| Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
+| Error | Source fetch or mutation failed | Non-editable error state with localized error, retry action, and back navigation; `accessibilityLiveRegion="polite"` |
 
 ## Validation Rules
 - Plan name is required and must be at least 2 characters (BR-293).

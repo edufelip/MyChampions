@@ -19,6 +19,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Empty state uses a centered hero treatment (soft glow + icon circle) and localized copy.
 - Plan rows include icon-leading visual treatment, open-status pill, and trailing chevron for faster scanability.
 - Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
+- When an existing plan cannot be loaded, the builder fails closed: it does not render an editable form, and it presents a localized error with a retry action plus back navigation.
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
 - Native professional and self-managed builder validation submits the controlled
@@ -72,7 +73,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
 | Saving | `createPlan`, `savePlan`, delete plan, add/remove/reorder meal/item in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with item list, CTAs |
-| Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
+| Error | Source fetch or mutation failed | Non-editable error state with localized error, retry action, and back navigation; `accessibilityLiveRegion="polite"` |
 | Food search idle | No query | Placeholder shown |
 | Food search searching | Query in flight | Search loading indicator |
 | Food search done | Results returned | Result list (empty state helper shown) |

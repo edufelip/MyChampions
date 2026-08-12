@@ -24,13 +24,14 @@ export default defineConfig({
   },
   webServer: {
     command:
-      'CI=1 EXPO_OFFLINE=1 APP_VARIANT=dev EXPO_PUBLIC_E2E_AUTH_SESSION=true EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT=2 yarn web:dev --port 8081 --clear',
+      'CI=1 EXPO_OFFLINE=1 APP_VARIANT=dev EXPO_PUBLIC_E2E_AUTH_SESSION=true EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT=2 EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE=assigned EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE=assigned EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE=basic yarn web:dev --port 8081 --clear',
     url: 'http://127.0.0.1:8081',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'mobile', use: { ...devices['Pixel 5'], locale: 'en-US' } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],

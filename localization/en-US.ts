@@ -276,6 +276,8 @@ export const enUS = {
   'student.nutrition.meal.logged_badge': 'Logged',
   'student.nutrition.meal.log_button': 'Log Meal',
   'student.nutrition.meal.items_label': 'Food items',
+  'student.nutrition.meal.expand': 'Expand meal details',
+  'student.nutrition.meal.collapse': 'Collapse meal details',
   'student.training.title': 'Workouts',
   'student.training.calendar.cta': 'Open calendar',
   'student.training.session.title': "Today's guided plan",

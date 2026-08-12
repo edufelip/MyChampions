@@ -6,10 +6,10 @@
  * illustration while keeping BL-008 offline/write-lock and D-081 hydration-goal
  * ownership behavior.
  */
-import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,36 +21,34 @@ import {
   View,
   type DimensionValue,
 } from 'react-native';
-
-import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import {
-  logAssignedMealPortion,
-  getTodayPortionLogs,
-  type PortionLog,
-} from '@/features/nutrition/custom-meal-source';
-import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/plan-builder.logic';
-
-import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
-import { Fonts } from '@/constants/theme';
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
+import {
+  logAssignedMealPortion,
+  getTodayPortionLogs,
+  type PortionLog,
+} from '@/features/nutrition/custom-meal-source';
+import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
-import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
-import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
+import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/plan-builder.logic';
 import {
   resolveStudentNutritionDisplayState,
   resolveStudentNutritionState,
 } from '@/features/plans/student-nutrition-state.logic';
+import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -466,12 +464,12 @@ export default function StudentNutritionScreen() {
                             style={styles.mealCard}
                             testID={`student.nutrition.mealCard.${meal.id}`}
                           >
-                            <Pressable
-                              accessibilityRole="button"
-                              onPress={() => toggleMealExpand(meal.id)}
-                              style={styles.mealHeaderPressable}
-                            >
-                              <View style={styles.mealHeaderLeft}>
+                            <View style={styles.mealHeaderPressable}>
+                              <Pressable
+                                accessibilityRole="button"
+                                onPress={() => toggleMealExpand(meal.id)}
+                                style={styles.mealHeaderLeft}
+                              >
                                 <Text style={[styles.mealName, { color: theme.color.textPrimary }]}>
                                   {meal.name}
                                 </Text>
@@ -483,7 +481,7 @@ export default function StudentNutritionScreen() {
                                 >
                                   {`${Math.round(mealCal)} kcal · ${Math.round(mealCarbs)}g C · ${Math.round(mealProt)}g P · ${Math.round(mealFats)}g F`}
                                 </Text>
-                              </View>
+                              </Pressable>
 
                               <View style={styles.mealHeaderRight}>
                                 {isLogged ? (
@@ -519,14 +517,26 @@ export default function StudentNutritionScreen() {
                                     testID={`student.nutrition.logMealButton.${meal.id}`}
                                   />
                                 )}
-                                <MaterialIcons
-                                  color={theme.color.textSecondary}
-                                  name={isExpanded ? 'expand-less' : 'expand-more'}
-                                  size={24}
-                                  style={styles.expandIcon}
-                                />
+                                <Pressable
+                                  accessibilityRole="button"
+                                  accessibilityLabel={
+                                    isExpanded
+                                      ? (t('student.nutrition.meal.collapse'))
+                                      : (t('student.nutrition.meal.expand'))
+                                  }
+                                  hitSlop={10}
+                                  onPress={() => toggleMealExpand(meal.id)}
+                                  testID={`student.nutrition.expandMealButton.${meal.id}`}
+                                >
+                                  <MaterialIcons
+                                    color={theme.color.textSecondary}
+                                    name={isExpanded ? 'expand-less' : 'expand-more'}
+                                    size={24}
+                                    style={styles.expandIcon}
+                                  />
+                                </Pressable>
                               </View>
-                            </Pressable>
+                            </View>
 
                             {isExpanded && (
                               <View
@@ -1415,6 +1425,7 @@ const styles = StyleSheet.create({
   },
   mealHeaderLeft: {
     gap: 2,
+    width: '100%',
   },
   mealHeaderRight: {
     flexDirection: 'row',

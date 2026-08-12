@@ -9,6 +9,7 @@
 ## User Actions
 - Primary:
   - Log meal entries.
+  - Expand a planned meal to inspect its food items without making the meal logging control a child of another interactive control.
   - Log water intake.
   - Log consumed grams from a saved custom meal.
   - Review daily calorie and macro totals.
@@ -34,6 +35,7 @@
 - Published assigned NutritionPlan takes precedence over Self-Managed Plan while the active nutritionist Connection exists.
 - Student may submit change request while assigned-plan edit remains blocked.
 - Offline mode must show persistent banner and explicit write-lock reasons for blocked mutations.
+- Meal expansion and meal logging are separate accessible controls; the web render must not nest one button inside another.
 - Effective hydration target uses nutritionist-defined goal when active assignment override exists; otherwise student personal goal is used.
 
 ## Data Contract

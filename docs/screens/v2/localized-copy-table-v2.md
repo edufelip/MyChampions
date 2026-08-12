@@ -159,6 +159,8 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `relationship.credential.authority` | SC-211 | Credential field label | Authority | Órgão | Organismo | Visible only for assigned professional |
 | `relationship.credential.country` | SC-211 | Credential field label | Country | País | País | Visible only for assigned professional |
 | `student.nutrition.title` | SC-209 | Screen title | Nutrition | Nutrição | Nutrición | |
+| `student.nutrition.meal.expand` | SC-209 | Expand meal details accessibility label | Expand meal details | Expandir detalhes da refeição | Expandir detalles de la comida | |
+| `student.nutrition.meal.collapse` | SC-209 | Collapse meal details accessibility label | Collapse meal details | Recolher detalhes da refeição | Contraer detalles de la comida | |
 | `student.nutrition.empty.title` | SC-209 | Tracking empty state | Meal plan unavailable | Plano alimentar não disponível | Plan alimentario no disponible | Secondary self-guided action remains available on screen |
 | `student.nutrition.empty.body` | SC-209 | Tracking empty helper | To receive a personalized meal plan and reach your goals, you need support from a qualified professional. | Para receber um plano alimentar personalizado e atingir seus objetivos, você precisa do acompanhamento de um profissional qualificado. | Para recibir un plan alimentario personalizado y alcanzar tus objetivos, necesitas el acompañamiento de un profesional cualificado. | Primary copy favors nutritionist acquisition; self-guided optionality preserved via secondary CTA |
 | `student.nutrition.empty.cta` | SC-209 | Tracking empty CTA | Hire a nutritionist | Contratar nutricionista | Contratar nutricionista | Routes to relationship management screen |
