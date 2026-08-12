@@ -94,7 +94,8 @@ export const enUS = {
   'auth.signup.or_continue': 'or continue with',
   'auth.signup.password_helper':
     'Use at least 8 characters, including uppercase, number, and a symbol (e.g., ! @ #).',
-  'auth.signup.error.duplicate_email': 'This email is already in use. Sign in to continue.',
+  'auth.signup.error.requires_sign_in':
+    "We couldn't sign you in automatically. Enter your email and password on the sign-in screen to continue.",
   'auth.signup.error.network': "Couldn't connect right now. Check your connection and try again.",
   'auth.signup.error.provider_conflict':
     'This email is already linked to another sign-in method. Sign in with your existing method first.',

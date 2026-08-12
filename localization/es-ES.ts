@@ -100,7 +100,8 @@ export const esES: Record<TranslationKey, string> = {
   'auth.signup.or_continue': 'o continuar con',
   'auth.signup.password_helper':
     'Usa al menos 8 caracteres, incluyendo mayúscula, número y símbolo (ej.: ! @ #).',
-  'auth.signup.error.duplicate_email': 'Este correo ya está en uso. Inicia sesión para continuar.',
+  'auth.signup.error.requires_sign_in':
+    'No pudimos iniciar tu sesión automáticamente. Ingresa tu correo y contraseña en la pantalla de inicio de sesión para continuar.',
   'auth.signup.error.network':
     'No se pudo conectar ahora. Comprueba tu conexión e inténtalo de nuevo.',
   'auth.signup.error.provider_conflict':

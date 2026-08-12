@@ -4,7 +4,7 @@ const NUMBER_REGEX = /[0-9]/;
 const EMOJI_REGEX = /\p{Extended_Pictographic}/u;
 
 export type CreateAccountErrorReason =
-  'duplicate_email' | 'network' | 'provider_conflict' | 'configuration' | 'unknown';
+  'requires_sign_in' | 'network' | 'provider_conflict' | 'configuration' | 'unknown';
 
 export type CreateAccountRequest = {
   name: string;
@@ -31,7 +31,7 @@ export type CreateAccountValidationAnalyticsReason =
   | 'validation_password_confirmation_mismatch';
 
 export type CreateAccountErrorMessageKey =
-  | 'auth.signup.error.duplicate_email'
+  | 'auth.signup.error.requires_sign_in'
   | 'auth.signup.error.network'
   | 'auth.signup.error.provider_conflict'
   | 'auth.signup.error.configuration'
@@ -146,16 +146,10 @@ export function normalizeCreateAccountReason(error: unknown): CreateAccountError
   const code = typeof maybeError.code === 'string' ? maybeError.code.toLowerCase() : '';
   const message = typeof maybeError.message === 'string' ? maybeError.message.toLowerCase() : '';
 
-  if (
-    code.includes('duplicate') ||
-    code.includes('already_exists') ||
-    code.includes('already_registered') ||
-    code.includes('email_taken') ||
-    message.includes('already registered') ||
-    message.includes('already in use')
-  ) {
-    return 'duplicate_email';
-  }
+  // Deliberately no "duplicate email"/"already registered" detection here (ET-75):
+  // the server no longer reveals whether an email was already registered, so this
+  // reason is only ever produced explicitly by createAccountWithEmailPasswordFromSource
+  // (as 'requires_sign_in') when it cannot establish a session after signup.
 
   if (
     code.includes('provider_conflict') ||
@@ -191,8 +185,8 @@ export function normalizeCreateAccountReason(error: unknown): CreateAccountError
 export function mapCreateAccountReasonToMessageKey(
   reason: CreateAccountErrorReason,
 ): CreateAccountErrorMessageKey {
-  if (reason === 'duplicate_email') {
-    return 'auth.signup.error.duplicate_email';
+  if (reason === 'requires_sign_in') {
+    return 'auth.signup.error.requires_sign_in';
   }
 
   if (reason === 'network') {

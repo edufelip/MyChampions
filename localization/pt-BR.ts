@@ -99,7 +99,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.signup.or_continue': 'ou continue com',
   'auth.signup.password_helper':
     'Use pelo menos 8 caracteres, incluindo maiúscula, número e símbolo (ex.: ! @ #).',
-  'auth.signup.error.duplicate_email': 'Este e-mail já está em uso. Entre para continuar.',
+  'auth.signup.error.requires_sign_in':
+    'Não conseguimos entrar automaticamente. Informe seu e-mail e senha na tela de login para continuar.',
   'auth.signup.error.network':
     'Não foi possível conectar agora. Verifique sua conexão e tente novamente.',
   'auth.signup.error.provider_conflict':
