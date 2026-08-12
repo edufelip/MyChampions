@@ -19,7 +19,7 @@
 ## States
 - Loading: account creation or provider auth in progress.
 - Empty: idle form state.
-- Error: validation failure, duplicate email, provider/network error.
+- Error: validation failure, automatic sign-in failure (`requires_sign_in`), provider/network error.
 - Success: account created and routed into role-selection flow.
 
 ## Validation Rules
@@ -63,7 +63,7 @@
 - CTA create account: `Create account`
 - CTA back sign-in: `Back to sign in`
 - Password helper: `Use at least 8 characters, including uppercase, number, and a symbol (e.g., ! @ #).`
-- Duplicate email error: `This email is already in use. Sign in to continue.`
+- Requires-sign-in error (ET-75: no longer reveals whether the email was a duplicate): `We couldn't sign you in automatically. Enter your email and password on the sign-in screen to continue.`
 
 ## Implementation Snapshot (2026-03-04)
 - Implemented in code:
@@ -75,9 +75,9 @@
   - Password and password-confirmation reveal/hide toggles are implemented.
   - Validation rules are enforced in tested domain logic (`required`, password policy, no emoji, ASCII symbol, password confirmation match).
   - Confirmation changes are mirrored synchronously for CTA submission, while Done/Return submission also supplies the native field snapshot; validation and the server request consume one immutable submission input.
-  - Contextual submit error mapping is implemented for `duplicate_email`, `network`, `provider_conflict`, and `configuration`.
-  - Email/password sign-up is wired to the MyChampions server auth boundary for native and browser runtimes.
-  - The documented session-less HTTP 202 create-account acknowledgement is completed by a follow-up MyChampions server email/password sign-in before the authenticated terms gate; any other session-less success response fails closed without a second auth request, and failed 202 follow-up authentication remains a localized, recoverable error.
+  - Contextual submit error mapping is implemented for `requires_sign_in`, `network`, `provider_conflict`, and `configuration`.
+  - Email/password sign-up is wired to the MyChampions server auth boundary for native and browser runtimes. As of ET-75, the server's `create-account` route responds identically (`202 { status: 'accepted' }`, no session) whether the submitted email was new or already registered, to close a user-enumeration gap. The client establishes the session by immediately signing in with the just-submitted credentials; if that sign-in fails (expected for a duplicate email with a different password), the generic `requires_sign_in` message is shown instead of a duplicate-email-specific one.
+  - Session-less HTTP 202 create-account acknowledgements are completed by a follow-up email/password sign-in before the authenticated terms gate; any other session-less success response fails closed without a second auth request.
   - Google social auth shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.
   - Apple social auth shows the approved E2E fixture path in test mode, then tries native Apple identity-token capture and posts the token plus nonce to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer, audience, and nonce claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `apple` IDs only when the app variant is unset, blank, or `dev`.
   - Successful sign-up routes to `/auth/accept-terms`; the MyChampions server auth session + guard then continue to role-selection or role home when terms are accepted.

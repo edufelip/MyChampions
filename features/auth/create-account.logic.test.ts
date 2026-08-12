@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   CreateAccountFailure,
   hasEmoji,
@@ -97,18 +96,22 @@ test('isPasswordPolicySatisfied rejects emoji in password', () => {
 });
 
 test('normalizeCreateAccountReason maps CreateAccountFailure directly', () => {
-  const reason = normalizeCreateAccountReason(new CreateAccountFailure('duplicate_email'));
+  const reason = normalizeCreateAccountReason(new CreateAccountFailure('requires_sign_in'));
 
-  assert.equal(reason, 'duplicate_email');
+  assert.equal(reason, 'requires_sign_in');
 });
 
-test('normalizeCreateAccountReason maps duplicate-email backend hints', () => {
+test('normalizeCreateAccountReason does not infer duplicate-email from backend hints (ET-75)', () => {
+  // The server no longer reveals "this email is already registered" in any
+  // response shape (ET-75), so generic error payloads that happen to mention
+  // "already in use" must not be reinterpreted as a duplicate-email signal —
+  // there is no such reason left to map to. They fall through to 'unknown'.
   const reason = normalizeCreateAccountReason({
     code: 'USER_ALREADY_EXISTS',
     message: 'email already in use',
   });
 
-  assert.equal(reason, 'duplicate_email');
+  assert.equal(reason, 'unknown');
 });
 
 test('normalizeCreateAccountReason maps network hints', () => {
@@ -141,8 +144,8 @@ test('normalizeCreateAccountReason falls back to unknown', () => {
 
 test('mapCreateAccountReasonToMessageKey returns contextual key', () => {
   assert.equal(
-    mapCreateAccountReasonToMessageKey('duplicate_email'),
-    'auth.signup.error.duplicate_email',
+    mapCreateAccountReasonToMessageKey('requires_sign_in'),
+    'auth.signup.error.requires_sign_in',
   );
   assert.equal(mapCreateAccountReasonToMessageKey('network'), 'auth.signup.error.network');
   assert.equal(

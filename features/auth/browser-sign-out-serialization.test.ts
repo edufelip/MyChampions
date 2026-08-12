@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-
-import type { AuthSessionRuntime } from './auth-session-runtime';
 import {
   createAccountWithEmailPasswordFromSource,
   signInWithEmailPasswordFromSource,
 } from './email-auth-source';
-import { signInWithSocialProviderTokenFromSource } from './social-auth-source';
 import {
   clearPersistedServerAuthSession,
   clearServerAuthSession,
@@ -14,6 +11,8 @@ import {
   persistServerAuthSessionFromPayload,
   startLocalServerSession,
 } from './server-auth-source';
+import { signInWithSocialProviderTokenFromSource } from './social-auth-source';
+import type { AuthSessionRuntime } from './auth-session-runtime';
 
 const browserRuntime: AuthSessionRuntime = {
   sessionMode: 'cookie',

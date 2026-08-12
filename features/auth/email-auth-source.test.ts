@@ -1,14 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-
 import { CreateAccountFailure } from './create-account.logic';
 import {
   createAccountWithEmailPasswordFromSource,
   signInWithEmailPasswordFromSource,
   type EmailAuthSourceDeps,
 } from './email-auth-source';
-import { SignInFailure } from './sign-in.logic';
 import { clearServerAuthSession, getCurrentServerAccessToken } from './server-auth-source';
+import { SignInFailure } from './sign-in.logic';
 
 function response(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {
@@ -80,7 +79,12 @@ describe('email-auth-source', () => {
     assert.equal(getCurrentServerAccessToken(), 'server-email-token');
   });
 
-  it('creates an account through the MyChampions server email auth route and persists the session', async () => {
+  it('creates an account, then signs in with the same credentials to establish the session (ET-75)', async () => {
+    // The server now responds identically to create-account whether the email was
+    // brand new or already registered, and never returns a session from that route
+    // (see server ET-75 fix). The client must chain into a real sign-in call with
+    // the credentials it just submitted to establish the session for a genuine
+    // new signup.
     clearServerAuthSession();
     const storage = createMemoryStorage();
     const requests: Request[] = [];
@@ -89,6 +93,9 @@ describe('email-auth-source', () => {
       fetch: async (input, init) => {
         const request = new Request(input, init);
         requests.push(request);
+        if (request.url.endsWith('/auth/email/create-account')) {
+          return response({ status: 'accepted' }, { status: 202 });
+        }
         return response(serverSessionPayload('server-create-token'), { status: 201 });
       },
       getServerBaseUrl: () => 'http://server.test',
@@ -105,7 +112,7 @@ describe('email-auth-source', () => {
       deps,
     );
 
-    assert.equal(requests.length, 1);
+    assert.equal(requests.length, 2);
     assert.equal(requests[0]?.method, 'POST');
     assert.equal(requests[0]?.url, 'http://server.test/auth/email/create-account');
     assert.deepEqual(await requests[0]?.json(), {
@@ -113,53 +120,57 @@ describe('email-auth-source', () => {
       email: 'user@example.test',
       password: 'Password1!',
     });
-    assert.equal(getCurrentServerAccessToken(), 'server-create-token');
-  });
-
-  it('signs in after a privacy-safe session-less create-account acknowledgement', async () => {
-    clearServerAuthSession();
-    const storage = createMemoryStorage();
-    const requests: Request[] = [];
-    const responses = [
-      response({ status: 'accepted' }, { status: 202 }),
-      response(serverSessionPayload('server-signin-token'), { status: 201 }),
-    ];
-
-    const deps: EmailAuthSourceDeps = {
-      fetch: async (input, init) => {
-        const request = new Request(input, init);
-        requests.push(request);
-        const next = responses.shift();
-        assert.ok(next);
-        return next;
-      },
-      getServerBaseUrl: () => 'http://server.test',
-      storage,
-    };
-
-    await createAccountWithEmailPasswordFromSource(
-      {
-        name: ' Provider User ',
-        email: ' USER@Example.test ',
-        password: 'Password1!',
-        passwordConfirmation: 'Password1!',
-      },
-      deps
-    );
-
-    assert.equal(requests.length, 2);
-    assert.equal(requests[0]?.url, 'http://server.test/auth/email/create-account');
-    assert.deepEqual(await requests[0]?.json(), {
-      displayName: 'Provider User',
-      email: 'user@example.test',
-      password: 'Password1!',
-    });
+    assert.equal(requests[1]?.method, 'POST');
     assert.equal(requests[1]?.url, 'http://server.test/auth/email/sign-in');
     assert.deepEqual(await requests[1]?.json(), {
       email: 'user@example.test',
       password: 'Password1!',
     });
-    assert.equal(getCurrentServerAccessToken(), 'server-signin-token');
+    assert.equal(getCurrentServerAccessToken(), 'server-create-token');
+  });
+
+  it('surfaces requires_sign_in without leaking whether the email was a duplicate (ET-75)', async () => {
+    // create-account accepts (202) for both a brand-new email and a duplicate one.
+    // When the follow-up sign-in fails — as it will for a duplicate email guessed
+    // with the wrong password — the failure must not be distinguishable from any
+    // other "couldn't establish a session" case: no accessToken is ever set, and
+    // the thrown reason is the same generic 'requires_sign_in' regardless of cause.
+    clearServerAuthSession();
+    const requests: Request[] = [];
+
+    const deps: EmailAuthSourceDeps = {
+      fetch: async (input, init) => {
+        const request = new Request(input, init);
+        requests.push(request);
+        if (request.url.endsWith('/auth/email/create-account')) {
+          return response({ status: 'accepted' }, { status: 202 });
+        }
+        return response(
+          { error: { code: 'invalid_credentials', message: 'Invalid email or password.' } },
+          { status: 401 },
+        );
+      },
+      getServerBaseUrl: () => 'http://server.test',
+      storage: createMemoryStorage(),
+    };
+
+    await assert.rejects(
+      () =>
+        createAccountWithEmailPasswordFromSource(
+          {
+            name: 'Existing User',
+            email: 'existing@example.test',
+            password: 'GuessedPassword1!',
+            passwordConfirmation: 'GuessedPassword1!',
+          },
+          deps,
+        ),
+      (error: unknown) =>
+        error instanceof CreateAccountFailure && error.reason === 'requires_sign_in',
+    );
+
+    assert.equal(requests.length, 2);
+    assert.equal(getCurrentServerAccessToken(), null);
   });
 
   it('fails closed for a session-less non-202 create-account response', async () => {

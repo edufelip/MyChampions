@@ -1,3 +1,4 @@
+import { authSessionRuntime } from './auth-session-runtime';
 import { CreateAccountFailure, type CreateAccountRequest } from './create-account.logic';
 import {
   persistServerAuthSessionFromPayload,
@@ -5,7 +6,6 @@ import {
   waitForPendingServerAuthSignOut,
 } from './server-auth-source';
 import { SignInFailure, type SignInRequest } from './sign-in.logic';
-import { authSessionRuntime } from './auth-session-runtime';
 
 export type EmailAuthSourceDeps = {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -69,7 +69,6 @@ function signInReasonForResponse(status: number, payload: unknown) {
 function createAccountReasonForResponse(status: number, payload: unknown) {
   const code = normalizeServerErrorCode(payload);
   if (code === 'configuration') return 'configuration';
-  if (code === 'duplicate_email') return 'duplicate_email';
   if (code === 'provider_conflict' || status === 409) return 'provider_conflict';
   return status >= 500 ? 'network' : 'unknown';
 }
@@ -178,20 +177,9 @@ export async function createAccountWithEmailPasswordFromSource(
   try {
     await signInWithEmailPasswordFromSource(
       { email: input.email, password: input.password },
-      deps
+      deps,
     );
-  } catch (error) {
-    if (error instanceof SignInFailure) {
-      const reason =
-        error.reason === 'network'
-          ? 'network'
-          : error.reason === 'configuration'
-            ? 'configuration'
-            : error.reason === 'provider_conflict'
-              ? 'provider_conflict'
-              : 'unknown';
-      throw new CreateAccountFailure(reason);
-    }
-    throw error;
+  } catch {
+    throw new CreateAccountFailure('requires_sign_in');
   }
 }
