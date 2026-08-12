@@ -1,3 +1,4 @@
+import { authSessionRuntime } from './auth-session-runtime';
 import { CreateAccountFailure, type CreateAccountRequest } from './create-account.logic';
 import {
   persistServerAuthSessionFromPayload,
@@ -5,7 +6,6 @@ import {
   waitForPendingServerAuthSignOut,
 } from './server-auth-source';
 import { SignInFailure, type SignInRequest } from './sign-in.logic';
-import { authSessionRuntime } from './auth-session-runtime';
 
 export type EmailAuthSourceDeps = {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -69,7 +69,6 @@ function signInReasonForResponse(status: number, payload: unknown) {
 function createAccountReasonForResponse(status: number, payload: unknown) {
   const code = normalizeServerErrorCode(payload);
   if (code === 'configuration') return 'configuration';
-  if (code === 'duplicate_email') return 'duplicate_email';
   if (code === 'provider_conflict' || status === 409) return 'provider_conflict';
   return status >= 500 ? 'network' : 'unknown';
 }
@@ -161,8 +160,17 @@ export async function createAccountWithEmailPasswordFromSource(
     throw new CreateAccountFailure(createAccountReasonForResponse(response.status, payload));
   }
 
-  const session = await persistServerAuthSessionFromPayload(payload, deps);
-  if (!session) {
-    throw new CreateAccountFailure('unknown');
+  // The server intentionally responds the same way here whether this email was
+  // brand new or already had an account (ET-75: a distinguishable response let a
+  // caller enumerate registered emails), and it never issues a session from this
+  // route any more. Establish the session by signing in with the credentials just
+  // submitted: this succeeds transparently for a genuine new signup, and fails the
+  // same way any wrong-password attempt would for an existing account — the sign-in
+  // route already returns the identical invalid_credentials error for "no such
+  // account" and "wrong password" alike, so this introduces no new signal either.
+  try {
+    await signInWithEmailPasswordFromSource({ email: input.email, password: input.password }, deps);
+  } catch {
+    throw new CreateAccountFailure('requires_sign_in');
   }
 }
