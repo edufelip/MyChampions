@@ -219,13 +219,10 @@ export default function StudentTrainingScreen() {
                     return (
                       <DsCard scheme={scheme} key={session.id} style={styles.workoutCard} testID={`student.training.sessionCard-${session.id}`}>
                         <View style={[styles.workoutHeaderRow, usesCompactWorkoutHeader && styles.workoutHeaderRowCompact]}>
-                          <Pressable
-                            accessibilityRole="button"
-                            onPress={() => toggleSessionExpand(session.id)}
-                            style={({ pressed }) => [
+                          <View
+                            style={[
                               styles.workoutHeaderLeft,
                               usesCompactWorkoutHeader && styles.workoutHeaderLeftCompact,
-                              { opacity: pressed ? 0.72 : 1 },
                             ]}
                           >
                             <View style={[styles.workoutIconWrap, { backgroundColor: theme.color.accentPrimarySoft }]}>
@@ -239,7 +236,7 @@ export default function StudentTrainingScreen() {
                                 {t('student.training.exercise_count', { count: session.items?.length || 0 })}
                               </Text>
                             </View>
-                          </Pressable>
+                          </View>
 
                           <View style={[styles.workoutHeaderRight, usesCompactWorkoutHeader && styles.workoutHeaderRightCompact]}>
                             <DsPillButton

@@ -101,7 +101,7 @@
 - `BR-272`: Offline state must be clearly signaled with persistent banner and write-lock reason whenever write actions are blocked.
 - `BR-273`: Entitlement pre-lapse warning must be shown before write-lock enforcement for professionals at risk of cap lock.
 - `BR-274`: Specialty-removal blocked state must include direct navigation/actions to resolve active/pending blockers.
-- `BR-275`: Accessibility baseline requires support for dynamic text scaling, screen-reader semantics, logical focus order, and sufficient contrast on core screens; expandable workout-session controls must expose meaningful localized labels and current expanded state.
+- `BR-275`: Accessibility baseline requires support for dynamic text scaling, screen-reader semantics, logical focus order, and sufficient contrast on core screens; each workout session must expose one dedicated expandable-details control with a minimum 44×44 CSS px touch/focus target, a meaningful localized label, and current expanded state.
 - `BR-276`: BL-104 habit-tracking scope is hydration-only (water intake); sleep and steps are excluded from this item.
 - `BR-277`: Student personal daily water-goal targets are authored in self-managed nutrition plan creation/edit contexts.
 - `BR-278`: Nutritionist daily water-goal targets are authored in assigned nutrition plan creation/edit or assignment fine-tune contexts.

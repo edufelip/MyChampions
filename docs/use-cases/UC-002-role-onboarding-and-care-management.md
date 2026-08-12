@@ -246,7 +246,7 @@
   1. User enables larger text and opens core screens.
   2. UI scales without clipping critical controls/content.
   3. User navigates interactive elements in logical focus order.
-  4. Screen reader announces meaningful labels and current state for key controls, including expandable workout-session details.
+  4. Screen reader announces meaningful labels and current state for key controls, including one dedicated expandable-workout-session control with a minimum 44×44 CSS px target.
 - Expected result: Core flows remain usable with baseline accessibility support.
 
 ## UC-002.19 Water Goal And Intake Tracking
