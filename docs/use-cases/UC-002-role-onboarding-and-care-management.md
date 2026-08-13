@@ -1,6 +1,7 @@
 # UC-002 Role Onboarding And Care Management (Proposed)
 
 ## UC-002.0 Sign In And Create Account
+
 - Primary actor: New or returning user.
 - Trigger: User opens auth entry.
 - Preconditions: App launched.
@@ -13,6 +14,7 @@
 - Expected result: Authenticated session is created without duplicate-account creation for same email.
 
 ## UC-002.1 Select Role During Onboarding
+
 - Primary actor: New user.
 - Trigger: User completes sign-up and enters onboarding.
 - Preconditions: Account created.
@@ -26,6 +28,7 @@
   - If account already has locked role, app auto-redirects to role-appropriate home and bypasses role-selection.
 
 ## UC-002.1b Optional Professional Verification
+
 - Primary actor: New professional user.
 - Trigger: Professional onboarding flow.
 - Preconditions: User selected Professional role.
@@ -36,6 +39,7 @@
 - Expected result: Professional account is created even if credential data is skipped, and credential info visibility remains internal/assignment-scoped by policy.
 
 ## UC-002.1c Manage Professional Specialties After Onboarding
+
 - Primary actor: Professional.
 - Trigger: Professional updates specialty configuration.
 - Preconditions: Professional account active.
@@ -46,6 +50,7 @@
 - Expected result: Specialty set is updated without violating student-management constraints.
 
 ## UC-002.2 Professional Manages Multiple Students
+
 - Primary actor: Professional.
 - Trigger: Professional opens dashboard.
 - Preconditions: Professional account active.
@@ -57,6 +62,7 @@
 - Expected result: Student-specific plan is created or updated.
 
 ## UC-002.3 Student Connects To Professionals
+
 - Primary actor: Student.
 - Trigger: Student requests or accepts professional connection.
 - Preconditions: Student authenticated.
@@ -76,6 +82,7 @@
   - Student-facing professional credential snippet for active assignments exposes only `registry_id`, `authority`, and `country`.
 
 ## UC-002.4 Student Self-Managed Planning
+
 - Primary actor: Student.
 - Trigger: Student has no professional for one or both specialties.
 - Preconditions: No active assignment for that specialty.
@@ -90,6 +97,7 @@
 - Expected result: Student can progress without a professional relationship.
 
 ## UC-002.5 End Relationship With History Retention
+
 - Primary actor: Student or Professional.
 - Trigger: Active assignment is ended.
 - Preconditions: Active assignment exists.
@@ -102,6 +110,7 @@
 - Expected result: Historical records remain accessible for auditing and continuity; no replacement plan is auto-created.
 
 ## UC-002.6 Professional Student-Cap Subscription Gate
+
 - Primary actor: Professional.
 - Trigger: Professional attempts to activate/manage an 11th active student.
 - Preconditions: Professional has 10 active students and no active subscription entitlement.
@@ -116,6 +125,7 @@
   - If entitlement becomes inactive while professional is above cap, system blocks new activations and locks student-plan update actions until entitlement is restored.
 
 ## UC-002.7 Fully Custom Training Schema Authoring
+
 - Primary actor: Fitness coach / professional.
 - Trigger: Professional creates or edits a training template/plan.
 - Preconditions: Professional authenticated and authorized for training management.
@@ -126,6 +136,7 @@
 - Expected result: Training schema reflects professional-defined structure without hardcoded field restrictions.
 
 ## UC-002.8 Quick Self-Guided Start
+
 - Primary actor: New or returning student-context user.
 - Trigger: User chooses Student role in onboarding and proceeds.
 - Preconditions: User authenticated and role not yet locked.
@@ -137,6 +148,7 @@
 - Expected result: User reaches first-value tracking flow with minimum friction and no professional dependency.
 
 ## UC-002.9 Student Connects Via QR Invite Scan
+
 - Primary actor: Student.
 - Trigger: Student chooses QR scan in professional-connection flow.
 - Preconditions: Camera permission granted and professional invite QR available.
@@ -151,6 +163,7 @@
 - Expected result: Student can initiate pending assignment with lower entry friction.
 
 ## UC-002.10 Contextual Error Recovery In Auth And Invite
+
 - Primary actor: Student or professional user.
 - Trigger: Auth or invite submission fails.
 - Preconditions: User performs sign-in/sign-up/invite action.
@@ -161,6 +174,7 @@
 - Expected result: Errors are understandable and actionable without ambiguous generic failure text.
 
 ## UC-002.11 Milestone A Analytics Emission
+
 - Primary actor: System.
 - Trigger: User executes Milestone A funnel actions.
 - Preconditions: Analytics service enabled in environment.
@@ -171,6 +185,7 @@
 - Expected result: Product team can analyze conversion and failure funnels without leaking sensitive data.
 
 ## UC-002.12 Professional Pending Queue Operations
+
 - Primary actor: Professional.
 - Trigger: Professional opens pending requests queue.
 - Preconditions: Professional has one or more pending student requests.
@@ -183,6 +198,7 @@
 - Expected result: Professional can operationally manage queue volume efficiently.
 
 ## UC-002.13 Student Requests Plan Changes
+
 - Primary actor: Student.
 - Trigger: Student identifies needed adjustment in assigned plan.
 - Preconditions: Student has professional-assigned nutrition or training plan.
@@ -194,6 +210,7 @@
 - Expected result: Student can request adjustments while assigned plan remains read-only.
 
 ## UC-002.14 Professional Starts From Starter Templates
+
 - Primary actor: Professional.
 - Trigger: Professional starts creating a nutrition or training plan.
 - Preconditions: Professional is authenticated and has relevant specialty.
@@ -205,6 +222,7 @@
 - Expected result: Professional plan authoring is accelerated with standardized starting points.
 
 ## UC-002.15 Subscription Pre-Lapse Warning
+
 - Primary actor: Professional.
 - Trigger: Entitlement risk window is detected before subscription lapse lock.
 - Preconditions: Professional is near or above cap; `professional_pro` remains active; RevenueCat provides a valid expiration timestamp and explicit non-renewal, unsubscribe, or billing-issue risk.
@@ -217,6 +235,7 @@
   - If expiry/risk metadata is absent, malformed, healthy, or the entitlement is already inactive, the pre-lapse warning is not inferred from student count; normal active, locked, or unknown behavior applies.
 
 ## UC-002.16 Specialty Removal Assist
+
 - Primary actor: Professional.
 - Trigger: Professional attempts to remove specialty blocked by active/pending links.
 - Preconditions: Specialty removal action is blocked by policy.
@@ -228,6 +247,7 @@
 - Expected result: Blocking rules remain enforced while resolution path is straightforward.
 
 ## UC-002.17 Offline Read-Only Clarity
+
 - Primary actor: Student or professional.
 - Trigger: User interacts with app while offline.
 - Preconditions: Device is offline and cached session/content exists.
@@ -239,6 +259,7 @@
 - Expected result: User understands offline state and blocked writes are not mistaken for app defects.
 
 ## UC-002.18 Accessibility Baseline Interaction
+
 - Primary actor: Student or professional using accessibility features.
 - Trigger: User navigates core journeys with screen reader, large text, or keyboard/focus navigation.
 - Preconditions: Core screens are loaded in authenticated or onboarding contexts.
@@ -250,6 +271,7 @@
 - Expected result: Core flows remain usable with baseline accessibility support.
 
 ## UC-002.19 Water Goal And Intake Tracking
+
 - Primary actor: Student (and assigned nutritionist for goal authoring in plan builder).
 - Trigger: Student tracks hydration or creates/edits nutrition plan.
 - Preconditions: User authenticated; nutrition plan exists or is being created.
@@ -261,6 +283,7 @@
 - Expected result: Hydration tracking and streaks reflect plan-defined water goals and active assignment precedence.
 
 ## UC-002.20 Professional Predefined Plans And Bulk Assignment
+
 - Primary actor: Professional.
 - Trigger: Professional wants to reuse plan patterns across multiple students.
 - Preconditions: Professional authenticated with relevant specialty; target students available.
@@ -274,6 +297,7 @@
 - Nutrition assignment constraint: for NutritionPlans, every target Student must have an active nutritionist Connection and nutrition-scoped target; draft assigned plans remain hidden until sent/published.
 
 ## UC-002.20b Nutritionist Review Of Student Tracking
+
 - Primary actor: Professional with nutritionist Specialty.
 - Trigger: Professional opens Student Profile.
 - Preconditions: Active nutritionist Connection exists.
@@ -284,6 +308,7 @@
 - Expected result: Nutritionist can review adherence without owning or mutating Student tracking logs.
 
 ## UC-002.22 SC-208 Exercise Search Via MyChampions Server
+
 - Primary actor: Professional.
 - Trigger: Professional searches and previews exercises while editing a training plan.
 - Preconditions: Professional authenticated and SC-208 is open.
@@ -299,6 +324,7 @@
 - Expected result: Exercise search works without exposing upstream API key in client runtime.
 
 ## UC-002.21 Accept Terms Before Onboarding Continuation
+
 - Primary actor: New or returning authenticated user.
 - Trigger: User completes sign-in or create-account.
 - Preconditions: Authenticated MyChampions server session is active.
@@ -310,9 +336,11 @@
   5. Route guard continues user to role-selection (if role unlocked) or role home (if role locked).
 - Alternate flow:
   - If required terms version changes, user is re-routed to terms gate until new version is accepted.
+  - The legal handoff is intent-scoped to the configured terms URL; an exact configured legal URL may use its trusted HTTPS host, while missing, repeated, unsafe, or arbitrary WebView parameters are blocked. If an invalid legal route is opened directly without history, Back returns to the appropriate app screen.
 - Expected result: Onboarding and role journeys only continue after required terms version acceptance.
 
 ## UC-002.23 Browser Sign-Out Before Account Switch
+
 - Primary actor: Authenticated browser user.
 - Trigger: User confirms sign-out and then attempts to authenticate another account.
 - Preconditions: Browser session uses an in-memory access token and rotating HttpOnly refresh cookie.
@@ -327,6 +355,7 @@
 - Expected result: A delayed sign-out response can never clear the replacement account's refresh cookie or leak the prior account state.
 
 ## UC-003.9 Capture Meal Photo For AI Macronutrient Estimation
+
 - Primary actor: Student (or professional).
 - Trigger: User opens the camera entry point within SC-214 (Custom Meal Builder) or SC-215 (Custom Meal Library Quick Log).
 - Preconditions: User is authenticated; camera permission granted or requested.

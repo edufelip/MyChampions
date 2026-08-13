@@ -1,0 +1,97 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import test from 'node:test';
+
+// app/shared/webview.tsx is the native (iOS/Android) in-app WebView screen. It reads `url`
+// from the route's search params, so it is reachable via the app's own deep-link scheme
+// (mychampions://shared/webview?url=<attacker-controlled>). `resolveSafeExternalUrl()` rejects
+// non-https, javascript:/data:/file:, and credentials-embedded URLs before either native sink;
+// this test locks the native screen to that contract and its recoverable invalid-link state.
+const webviewSource = readFileSync(join(process.cwd(), 'app/shared/webview.tsx'), 'utf8');
+const webviewWebSource = readFileSync(join(process.cwd(), 'app/shared/webview.web.tsx'), 'utf8');
+
+test('native webview screen validates the route url with resolveSafeExternalUrl before use', () => {
+  assert.match(
+    webviewSource,
+    /import\s*\{[^}]*resolveSafeExternalUrl[^}]*\}\s*from\s*['"]@\/features\/platform\/external-url['"]/,
+    'expected app/shared/webview.tsx to import resolveSafeExternalUrl from @/features/platform/external-url',
+  );
+
+  assert.match(
+    webviewSource,
+    /resolveSafeExternalUrl\(\s*url/,
+    'expected the raw `url` route param to be passed through resolveSafeExternalUrl before use',
+  );
+  assert.match(
+    webviewSource,
+    /approvedHttpsUrls:\s*configuredLegalUrls/,
+    'expected operator-configured legal URLs to remain safe when hosted outside the default origin',
+  );
+});
+
+test('native webview screen never feeds the raw route url straight into WebView or Linking', () => {
+  assert.doesNotMatch(
+    webviewSource,
+    /source=\{\{\s*uri:\s*url\s*\}\}/,
+    'WebView source must use the sanitized url, not the raw route param `url`',
+  );
+  assert.doesNotMatch(
+    webviewSource,
+    /Linking\.openURL\(url\)/,
+    'Linking.openURL must use the sanitized url, not the raw route param `url`',
+  );
+
+  // Asserting only the absence of the raw `url` at each sink leaves room for a
+  // future alias or fallback (e.g. `safeUrl ?? url`) to reintroduce it without
+  // failing either check above. Pin the exact validated expression at both
+  // sinks and require a visible back affordance when validation fails.
+  assert.match(
+    webviewSource,
+    /const\s+goBack\s*=\s*\(\)\s*=>\s*\{[\s\S]*router\.canGoBack\(\)[\s\S]*router\.replace\(fallbackPath\)/s,
+    'expected invalid-link recovery to handle both history and direct-entry navigation',
+  );
+  assert.match(
+    webviewSource,
+    /testID="shared\.webview\.invalidLink\.backButton"/,
+    'expected the native invalid-link state to expose a stable back control',
+  );
+  assert.match(
+    webviewSource,
+    /Linking\.openURL\(safeUrl\)/,
+    'Linking.openURL must call the sanitized safeUrl exactly, not an alias or fallback',
+  );
+  assert.match(
+    webviewSource,
+    /source=\{\{\s*uri:\s*safeUrl\s*\}\}/,
+    'WebView source must use the sanitized safeUrl exactly, not an alias or fallback',
+  );
+  assert.match(
+    webviewSource,
+    /buildOriginWhitelistForUrl\(safeUrl\)/,
+    'expected the native WebView origin whitelist to follow the validated legal URL host',
+  );
+});
+
+test('web webview screen offers recovery when the legal url is invalid', () => {
+  assert.match(
+    webviewWebSource,
+    /resolveSafeExternalUrl\(\s*url/,
+    'expected the web screen to validate the raw `url` route param before rendering link actions',
+  );
+  assert.match(
+    webviewWebSource,
+    /approvedHttpsUrls:\s*configuredLegalUrls/,
+    'expected the web screen to accept only exact configured legal URLs outside the default origin',
+  );
+  assert.match(
+    webviewWebSource,
+    /const\s+goBack\s*=\s*\(\)\s*=>\s*\{[\s\S]*router\.canGoBack\(\)[\s\S]*router\.replace\(fallbackPath\)/s,
+    'expected the web invalid-link state to handle both history and direct-entry navigation',
+  );
+  assert.match(
+    webviewWebSource,
+    /testID="shared\.webview\.invalidLink\.backButton"/,
+    'expected the web invalid-link state to expose a stable back control',
+  );
+});
