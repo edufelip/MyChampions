@@ -45,7 +45,7 @@ async function capture(page: Page, testInfo: TestInfo, name: string) {
   });
 }
 
-test('@functional @feature:training exercise search opens with a useful initial state', async ({
+test('@feature:training exercise search opens with a useful initial state', async ({
   page,
 }, testInfo) => {
   test.setTimeout(120_000);
@@ -105,7 +105,7 @@ test('@functional @feature:training exercise search opens with a useful initial 
 test.describe('exercise search on a compact keyboard-safe viewport', () => {
   test.use({ viewport: { width: 320, height: 720 } });
 
-  test('@accessibility @feature:training keeps the focused dialog usable when the viewport shrinks', async ({
+  test('@feature:training keeps the focused dialog usable when the viewport shrinks', async ({
     page,
   }, testInfo) => {
     test.setTimeout(120_000);
