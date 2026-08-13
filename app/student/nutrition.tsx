@@ -464,8 +464,18 @@ export default function StudentNutritionScreen() {
                             style={styles.mealCard}
                             testID={`student.nutrition.mealCard.${meal.id}`}
                           >
-                            <View style={styles.mealHeaderPressable}>
-                              <View style={styles.mealHeaderLeft}>
+                            <View style={styles.mealHeaderRow}>
+                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityState={{ expanded: isExpanded }}
+                                aria-expanded={isExpanded}
+                                onPress={() => toggleMealExpand(meal.id)}
+                                style={({ pressed }) => [
+                                  styles.mealHeaderLeft,
+                                  { opacity: pressed ? 0.72 : 1 },
+                                ]}
+                                testID={`student.nutrition.mealHeaderToggle.${meal.id}`}
+                              >
                                 <Text style={[styles.mealName, { color: theme.color.textPrimary }]}>
                                   {meal.name}
                                 </Text>
@@ -477,7 +487,7 @@ export default function StudentNutritionScreen() {
                                 >
                                   {`${Math.round(mealCal)} kcal · ${Math.round(mealCarbs)}g C · ${Math.round(mealProt)}g P · ${Math.round(mealFats)}g F`}
                                 </Text>
-                              </View>
+                              </Pressable>
 
                               <View style={styles.mealHeaderRight}>
                                 {isLogged ? (
@@ -514,13 +524,11 @@ export default function StudentNutritionScreen() {
                                   />
                                 )}
                                 <Pressable
-                                  accessibilityLabel={
-                                    t(
-                                      isExpanded
-                                        ? 'student.nutrition.meal.collapse'
-                                        : 'student.nutrition.meal.expand',
-                                    )
-                                  }
+                                  accessibilityLabel={t(
+                                    isExpanded
+                                      ? 'student.nutrition.meal.collapse'
+                                      : 'student.nutrition.meal.expand',
+                                  )}
                                   accessibilityRole="button"
                                   accessibilityState={{ expanded: isExpanded }}
                                   aria-expanded={isExpanded}
@@ -1419,7 +1427,7 @@ const styles = StyleSheet.create({
     padding: DsSpace.sm,
     gap: DsSpace.sm,
   },
-  mealHeaderPressable: {
+  mealHeaderRow: {
     alignItems: 'stretch',
     gap: DsSpace.sm,
   },
