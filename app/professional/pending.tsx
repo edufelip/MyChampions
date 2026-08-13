@@ -203,10 +203,7 @@ export default function ProfessionalPendingScreen() {
             style={[styles.pendingCountPill, { backgroundColor: theme.color.accentPrimarySoft }]}
           >
             <Text style={[styles.pendingCountText, { color: theme.color.accentPrimary }]}>
-              {(t('pro.pending.count')).replace(
-                '{count}',
-                String(pendingConnections.length),
-              )}
+              {t('pro.pending.count').replace('{count}', String(pendingConnections.length))}
             </Text>
           </View>
         ) : null}
@@ -234,7 +231,7 @@ export default function ProfessionalPendingScreen() {
         {selectedIds.size > 0 ? (
           <View style={styles.bulkBar}>
             <Text style={[styles.bulkCount, { color: theme.color.textPrimary }]}>
-              {(t('a11y.selected_count')).replace('{count}', String(selectedIds.size))}
+              {t('a11y.selected_count').replace('{count}', String(selectedIds.size))}
             </Text>
             <DsPillButton
               scheme={scheme}
@@ -324,10 +321,7 @@ function PendingRow({
     connection.specialty === 'nutritionist'
       ? t('pro.students.specialty.nutritionist')
       : t('pro.students.specialty.fitness_coach');
-  const selectLabel = (t('pro.pending.row.select')).replace(
-    '{specialty}',
-    specialtyLabel,
-  );
+  const selectLabel = t('pro.pending.row.select').replace('{specialty}', specialtyLabel);
 
   const onCheckboxKeyDown = (event: WebKeyboardEvent) => {
     if (event.key !== ' ' && event.key !== 'Spacebar') {
