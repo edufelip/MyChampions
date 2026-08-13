@@ -68,3 +68,14 @@ test('isReadOnlyForStudentSurface never locks the Professional surface, regardle
   assert.equal(isReadOnlyForStudentSurface({ sourceKind: 'predefined' }, false), false);
   assert.equal(isReadOnlyForStudentSurface({ sourceKind: 'self_managed' }, false), false);
 });
+
+// Defensive: sourceKind arrives over the wire from untyped server JSON
+// (plan-builder-source.ts), so the TypeScript union doesn't guarantee this at
+// runtime. Fail-closed must hold for any value that isn't literally
+// 'self_managed', including one the client has never seen before.
+test('isReadOnlyForStudentSurface fails closed for an unrecognized source kind on the Student surface', () => {
+  assert.equal(
+    isReadOnlyForStudentSurface({ sourceKind: 'unknown_future_kind' as never }, true),
+    true,
+  );
+});

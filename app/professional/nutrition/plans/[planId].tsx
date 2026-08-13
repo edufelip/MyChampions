@@ -106,10 +106,17 @@ export default function NutritionPlanBuilderScreen() {
     state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
   // D-006 / ET-107: a Student may only view — never edit — a professionally
   // assigned (or otherwise non-self-managed) plan. Fail-closed by source kind,
-  // not by a cosmetic path flag.
+  // not by a cosmetic path flag. Also fail-closed while the store's plan
+  // hasn't caught up with this route's planId yet (e.g. right after
+  // navigating from a different plan) — a stale, unrelated plan must never
+  // be treated as this route's editable plan.
+  const isPlanLoadedForCurrentRoute = state.kind === 'ready' && state.plan.id === planId;
   const isReadOnlyAssignedPlan =
-    state.kind === 'ready' &&
+    isPlanLoadedForCurrentRoute &&
     isReadOnlyForStudentSurface({ sourceKind: state.plan.sourceKind }, isStudentBuilder);
+  // Gate for write-triggering controls (Save/Delete/Add/Sort): only true once
+  // the plan is confirmed loaded, fresh for this route, and editable.
+  const canEditPlan = isPlanLoadedForCurrentRoute && !isReadOnlyAssignedPlan;
   const creationMode = isStudentBuilder ? 'self_managed' : 'professional_library';
 
   const initialValues = useMemo(
@@ -279,23 +286,19 @@ export default function NutritionPlanBuilderScreen() {
       const meal = state.plan.meals.find((m) => m.id === mealId);
       const mealName = meal?.name || t('pro.plan.section.meals');
 
-      Alert.alert(
-        t('common.cta.delete'),
-        (t('pro.plan.delete.body')).replace('{name}', mealName),
-        [
-          { text: t('common.cta.cancel'), style: 'cancel' },
-          {
-            text: t('common.cta.delete'),
-            style: 'destructive',
-            onPress: () => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              void removeMeal(state.plan.id, mealId);
-              setIsDirty(true);
-            },
+      Alert.alert(t('common.cta.delete'), t('pro.plan.delete.body').replace('{name}', mealName), [
+        { text: t('common.cta.cancel'), style: 'cancel' },
+        {
+          text: t('common.cta.delete'),
+          style: 'destructive',
+          onPress: () => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            void removeMeal(state.plan.id, mealId);
+            setIsDirty(true);
           },
-        ],
-      );
+        },
+      ]);
     },
     [isBusy, state, removeMeal, setIsDirty, t],
   );
@@ -413,7 +416,7 @@ export default function NutritionPlanBuilderScreen() {
           testID="pro.nutrition_plan.backButton"
         />
 
-        {!isReadOnlyAssignedPlan && (
+        {canEditPlan && (
           <View style={{ flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center' }}>
             <DsPillButton
               scheme={scheme}
@@ -524,95 +527,89 @@ export default function NutritionPlanBuilderScreen() {
       </View>
 
       {/* ── Add meal form ─────────────────────────────────────────────────── */}
-      {!isReadOnlyAssignedPlan &&
-        !isSortMode &&
-        state.kind === 'ready' &&
-        addMealForm.kind === 'open' && (
-          <Animated.View
-            entering={FadeIn.duration(300)}
-            exiting={FadeOut.duration(200)}
-            style={[styles.addMealInline, { backgroundColor: theme.color.surface }]}
-          >
-            <TextInput
-              style={[styles.addMealInput, { color: palette.text }]}
-              placeholder={t('pro.plan.meal.name.placeholder')}
-              placeholderTextColor={palette.icon}
-              value={addMealForm.name}
-              onChangeText={(v) => setAddMealForm({ ...addMealForm, name: v })}
-              autoFocus
-              testID="pro.nutrition_plan.addMeal.input"
-            />
-            <View style={styles.addMealActions}>
-              <DsPillButton
-                scheme={scheme}
-                variant="ghost"
-                size="sm"
-                label={t('common.cta.cancel')}
-                onPress={handleCloseAddMeal}
-                disabled={isBusy}
-                fullWidth={false}
-                testID="pro.nutrition_plan.addMeal.cancel"
-              />
-              <DsPillButton
-                scheme={scheme}
-                variant="ghost"
-                size="sm"
-                label={t('common.cta.add')}
-                onPress={handleAddMeal}
-                disabled={isBusy || !addMealForm.name.trim()}
-                fullWidth={false}
-                testID="pro.nutrition_plan.addMeal.confirm"
-              />
-            </View>
-          </Animated.View>
-        )}
-
-      {!isReadOnlyAssignedPlan &&
-        !isSortMode &&
-        state.kind === 'ready' &&
-        addMealForm.kind === 'closed' && (
-          <View style={styles.actionRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
+      {canEditPlan && !isSortMode && state.kind === 'ready' && addMealForm.kind === 'open' && (
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(200)}
+          style={[styles.addMealInline, { backgroundColor: theme.color.surface }]}
+        >
+          <TextInput
+            style={[styles.addMealInput, { color: palette.text }]}
+            placeholder={t('pro.plan.meal.name.placeholder')}
+            placeholderTextColor={palette.icon}
+            value={addMealForm.name}
+            onChangeText={(v) => setAddMealForm({ ...addMealForm, name: v })}
+            autoFocus
+            testID="pro.nutrition_plan.addMeal.input"
+          />
+          <View style={styles.addMealActions}>
+            <DsPillButton
+              scheme={scheme}
+              variant="ghost"
+              size="sm"
+              label={t('common.cta.cancel')}
+              onPress={handleCloseAddMeal}
               disabled={isBusy}
-              onPress={handleOpenAddMeal}
-              testID="pro.nutrition_plan.addMeal"
-              style={({ pressed }) => [
-                styles.addMealButton,
-                {
-                  borderColor: palette.tint,
-                  opacity: isBusy ? 0.6 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                },
-              ]}
-            >
-              <IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />
-              <Text style={[styles.addMealButtonText, { color: palette.tint }]}>
-                {tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
-              </Text>
-            </Pressable>
-
-            {state.plan.meals.length > 1 && (
-              <DsPillButton
-                scheme={scheme}
-                variant="outline"
-                label={t('pro.plan.cta.sort')}
-                onPress={() => {
-                  if (isBusy) return;
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setIsSortMode(true);
-                }}
-                disabled={isBusy}
-                fullWidth={false}
-                style={styles.sortBtn}
-                leftIcon={<IconSymbol name="arrow.up.arrow.down" size={14} color={palette.tint} />}
-              />
-            )}
+              fullWidth={false}
+              testID="pro.nutrition_plan.addMeal.cancel"
+            />
+            <DsPillButton
+              scheme={scheme}
+              variant="ghost"
+              size="sm"
+              label={t('common.cta.add')}
+              onPress={handleAddMeal}
+              disabled={isBusy || !addMealForm.name.trim()}
+              fullWidth={false}
+              testID="pro.nutrition_plan.addMeal.confirm"
+            />
           </View>
-        )}
+        </Animated.View>
+      )}
 
-      {!isReadOnlyAssignedPlan && isSortMode && state.kind === 'ready' && (
+      {canEditPlan && !isSortMode && state.kind === 'ready' && addMealForm.kind === 'closed' && (
+        <View style={styles.actionRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
+            disabled={isBusy}
+            onPress={handleOpenAddMeal}
+            testID="pro.nutrition_plan.addMeal"
+            style={({ pressed }) => [
+              styles.addMealButton,
+              {
+                borderColor: palette.tint,
+                opacity: isBusy ? 0.6 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
+          >
+            <IconSymbol name="plus.circle.fill" size={20} color={palette.tint} />
+            <Text style={[styles.addMealButtonText, { color: palette.tint }]}>
+              {tr('pro.plan.cta.add_meal', 'student.plan.cta.add_meal')}
+            </Text>
+          </Pressable>
+
+          {state.plan.meals.length > 1 && (
+            <DsPillButton
+              scheme={scheme}
+              variant="outline"
+              label={t('pro.plan.cta.sort')}
+              onPress={() => {
+                if (isBusy) return;
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setIsSortMode(true);
+              }}
+              disabled={isBusy}
+              fullWidth={false}
+              style={styles.sortBtn}
+              leftIcon={<IconSymbol name="arrow.up.arrow.down" size={14} color={palette.tint} />}
+            />
+          )}
+        </View>
+      )}
+
+      {canEditPlan && isSortMode && state.kind === 'ready' && (
         <View style={styles.sortModeHeader}>
           <DsPillButton
             scheme={scheme}

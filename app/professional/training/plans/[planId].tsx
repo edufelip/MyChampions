@@ -19,8 +19,6 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import type { ExerciseItem } from '@/features/plans/exercise-service-source';
-import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-builder.logic';
 import { generateLocalId } from '@/features/id-source';
 import {
   createBuilderPalette,
@@ -31,6 +29,7 @@ import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBann
 import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
 import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
 import { SessionCard } from '@/features/plans/components/SessionCard';
+import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-builder.logic';
 import { isReadOnlyForStudentSurface } from '@/features/plans/plan-ownership.logic';
 import { useExerciseSearch } from '@/features/plans/use-exercise-search';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
@@ -44,6 +43,7 @@ import {
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
 import { useTranslation } from '@/localization';
+import type { ExerciseItem } from '@/features/plans/exercise-service-source';
 
 enableBuilderLayoutAnimations();
 
@@ -85,10 +85,17 @@ export default function TrainingPlanBuilderScreen() {
     state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
   // D-006 / ET-107: a Student may only view — never edit — a professionally
   // assigned (or otherwise non-self-managed) plan. Fail-closed by source kind,
-  // not by a cosmetic path flag.
+  // not by a cosmetic path flag. Also fail-closed while the store's plan
+  // hasn't caught up with this route's planId yet (e.g. right after
+  // navigating from a different plan) — a stale, unrelated plan must never
+  // be treated as this route's editable plan.
+  const isPlanLoadedForCurrentRoute = state.kind === 'ready' && state.plan.id === planId;
   const isReadOnlyAssignedPlan =
-    state.kind === 'ready' &&
+    isPlanLoadedForCurrentRoute &&
     isReadOnlyForStudentSurface({ sourceKind: state.plan.sourceKind }, isStudentBuilder);
+  // Gate for write-triggering controls (Save/Delete/Add/Sort/Assign): only
+  // true once the plan is confirmed loaded, fresh for this route, and editable.
+  const canEditPlan = isPlanLoadedForCurrentRoute && !isReadOnlyAssignedPlan;
   const creationMode = isStudentBuilder ? 'self_managed' : 'professional_library';
 
   const initialValues = useMemo(
@@ -321,7 +328,7 @@ export default function TrainingPlanBuilderScreen() {
 
       Alert.alert(
         t('common.cta.delete'),
-        (t('pro.plan.delete.body')).replace('{name}', sessionName),
+        t('pro.plan.delete.body').replace('{name}', sessionName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -348,34 +355,30 @@ export default function TrainingPlanBuilderScreen() {
       const item = session?.items.find((i) => i.id === itemId);
       const itemName = item?.name || t('pro.plan.section.sessions');
 
-      Alert.alert(
-        t('common.cta.delete'),
-        (t('pro.plan.delete.body')).replace('{name}', itemName),
-        [
-          { text: t('common.cta.cancel'), style: 'cancel' },
-          {
-            text: t('common.cta.delete'),
-            style: 'destructive',
-            onPress: async () => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setDraftSessions((prev) =>
-                prev.map((sessionDraft) => {
-                  if (sessionDraft.id !== sessionId) {
-                    return sessionDraft;
-                  }
+      Alert.alert(t('common.cta.delete'), t('pro.plan.delete.body').replace('{name}', itemName), [
+        { text: t('common.cta.cancel'), style: 'cancel' },
+        {
+          text: t('common.cta.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setDraftSessions((prev) =>
+              prev.map((sessionDraft) => {
+                if (sessionDraft.id !== sessionId) {
+                  return sessionDraft;
+                }
 
-                  return {
-                    ...sessionDraft,
-                    items: sessionDraft.items.filter((candidate) => candidate.id !== itemId),
-                  };
-                }),
-              );
-              setIsDirty(true);
-            },
+                return {
+                  ...sessionDraft,
+                  items: sessionDraft.items.filter((candidate) => candidate.id !== itemId),
+                };
+              }),
+            );
+            setIsDirty(true);
           },
-        ],
-      );
+        },
+      ]);
     },
     [draftSessions, isBusy, state.kind, setIsDirty, t],
   );
@@ -526,7 +529,7 @@ export default function TrainingPlanBuilderScreen() {
   const isEmptySessionsState = state.kind === 'ready' && sessions.length === 0;
   const addSessionDraft = addSessionForm.kind === 'open' ? addSessionForm : null;
   const isEmptyStateAddSessionOpen =
-    !isReadOnlyAssignedPlan && !isSortMode && isEmptySessionsState && addSessionDraft !== null;
+    canEditPlan && !isSortMode && isEmptySessionsState && addSessionDraft !== null;
 
   return (
     <DsScreen
@@ -548,7 +551,7 @@ export default function TrainingPlanBuilderScreen() {
         />
 
         <View style={{ flexDirection: 'row', gap: DsSpace.sm }}>
-          {!isReadOnlyAssignedPlan && sessions.length > 1 && (
+          {canEditPlan && sessions.length > 1 && (
             <DsPillButton
               scheme={scheme}
               variant="ghost"
@@ -571,7 +574,7 @@ export default function TrainingPlanBuilderScreen() {
               }
             />
           )}
-          {!isReadOnlyAssignedPlan && !isNew && (
+          {canEditPlan && !isNew && (
             <Pressable
               onPress={handleDeletePlan}
               disabled={isBusy}
@@ -779,7 +782,7 @@ export default function TrainingPlanBuilderScreen() {
       ))}
 
       {/* ── Add session form ──────────────────────────────────────────────── */}
-      {!isReadOnlyAssignedPlan &&
+      {canEditPlan &&
         !isEmptySessionsState &&
         !isSortMode &&
         state.kind === 'ready' &&
@@ -854,27 +857,24 @@ export default function TrainingPlanBuilderScreen() {
           </Animated.View>
         )}
 
-      {!isReadOnlyAssignedPlan &&
-        !isSortMode &&
-        state.kind === 'ready' &&
-        addSessionForm.kind === 'closed' && (
-          <DsPillButton
-            scheme={scheme}
-            variant="primary"
-            label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')}
-            onPress={() => {
-              if (isBusy) return;
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              setAddSessionForm({ kind: 'open', name: '', notes: '' });
-            }}
-            disabled={isBusy}
-            leftIcon={<IconSymbol name="plus.circle.fill" size={18} color={theme.color.onAccent} />}
-            testID="pro.training_plan.addSession"
-          />
-        )}
+      {canEditPlan && !isSortMode && state.kind === 'ready' && addSessionForm.kind === 'closed' && (
+        <DsPillButton
+          scheme={scheme}
+          variant="primary"
+          label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')}
+          onPress={() => {
+            if (isBusy) return;
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setAddSessionForm({ kind: 'open', name: '', notes: '' });
+          }}
+          disabled={isBusy}
+          leftIcon={<IconSymbol name="plus.circle.fill" size={18} color={theme.color.onAccent} />}
+          testID="pro.training_plan.addSession"
+        />
+      )}
 
       {/* ── Footer Actions ────────────────────────────────────────────────── */}
-      {!isReadOnlyAssignedPlan && (
+      {canEditPlan && (
         <View style={styles.footerActions}>
           <DsPillButton
             scheme={scheme}
