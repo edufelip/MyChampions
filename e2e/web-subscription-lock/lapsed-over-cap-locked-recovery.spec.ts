@@ -13,14 +13,15 @@ import { enUS } from '../../localization/en-US';
 // bug: "restore" and "purchase" legitimately appear together in both the
 // native and the fixed handoff/unavailable copy — the difference this ticket
 // cares about is which control the sentence claims exists.
-const nativeLockedCopy = enUS['pro.subscription.locked'];
-const handoffLockedCopy = enUS['pro.subscription.locked_handoff'];
-const unavailableLockedCopy = enUS['pro.subscription.locked_unavailable'];
 //
 // Fixture: EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS=lapsed,
 // EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS=lapsed,
 // EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT=11 (see playwright.subscription-lock.config.ts),
 // matching this ticket's reported preconditions exactly.
+const nativeLockedCopy = enUS['pro.subscription.locked'];
+const handoffLockedCopy = enUS['pro.subscription.locked_handoff'];
+const unavailableLockedCopy = enUS['pro.subscription.locked_unavailable'];
+
 const UNAVAILABLE_BASE_URL = 'http://127.0.0.1:8291';
 const HANDOFF_BASE_URL = 'http://127.0.0.1:8292';
 
