@@ -13,14 +13,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
-import { useAuthSession } from '@/features/auth/auth-session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import { useAuthSession } from '@/features/auth/auth-session';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import {
   createBuilderPalette,
@@ -202,7 +202,7 @@ export default function NutritionMealBuilderScreen() {
 
       Alert.alert(
         t('common.cta.delete'),
-        (t('pro.plan.item.delete.body')).replace('{name}', itemName),
+        t('pro.plan.item.delete.body').replace('{name}', itemName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {

@@ -758,7 +758,7 @@ function MealRow({
             </Text>
           </View>
 
-          {isSortMode ? (
+          {isSortMode && !readOnly ? (
             <View style={styles.sortActions}>
               <Pressable
                 onPress={onMoveUp}
