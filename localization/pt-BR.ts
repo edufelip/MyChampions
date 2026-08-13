@@ -293,6 +293,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'student.nutrition.meal.logged_badge': 'Registrado',
   'student.nutrition.meal.log_button': 'Registrar refeição',
   'student.nutrition.meal.items_label': 'Alimentos',
+  'student.nutrition.meal.expand': 'Expandir detalhes da refeição',
+  'student.nutrition.meal.collapse': 'Recolher detalhes da refeição',
   'student.training.title': 'Treinos',
   'student.training.calendar.cta': 'Abrir calendário',
   'student.training.session.title': 'Plano guiado de hoje',

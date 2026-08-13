@@ -289,6 +289,8 @@ export const esES: Record<TranslationKey, string> = {
   'student.nutrition.meal.logged_badge': 'Registrado',
   'student.nutrition.meal.log_button': 'Registrar comida',
   'student.nutrition.meal.items_label': 'Alimentos',
+  'student.nutrition.meal.expand': 'Expandir detalles de la comida',
+  'student.nutrition.meal.collapse': 'Contraer detalles de la comida',
   'student.training.title': 'Entrenamientos',
   'student.training.calendar.cta': 'Abrir calendario',
   'student.training.session.title': 'Plan guiado de hoy',

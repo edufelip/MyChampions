@@ -1,5 +1,4 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
-
 import { captureFlowEvidence } from '../web/support/evidence';
 
 async function chooseRole(page: Page, role: 'student' | 'professional') {
@@ -94,6 +93,11 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
   });
 
   test('student daily care and assigned plan tracking', async ({ page }, testInfo) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+
     await chooseRole(page, 'student');
     await capture(
       page,
@@ -111,6 +115,40 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
       '02-nutrition-tracking',
       'student.nutrition.screen',
     );
+
+    // ET-99 regression guard: the assigned meal card must not nest interactive
+    // controls (outer expand toggle wrapping the inner Log Meal button), which
+    // previously produced invalid <button> nesting and a React hydration error
+    // on every load of this screen.
+    const nestedButtonCount = await page.evaluate(() => {
+      const mealCard = document.querySelector(
+        '[data-testid="student.nutrition.mealCard.e2e-assigned-meal"]',
+      );
+      if (!mealCard) return -1;
+      let nested = 0;
+      mealCard.querySelectorAll('button').forEach((outerButton) => {
+        nested += outerButton.querySelectorAll('button').length;
+      });
+      return nested;
+    });
+    expect(nestedButtonCount).toBe(0);
+    expect(
+      consoleErrors.filter((text) => /descendant of|nested <button>|hydration error/i.test(text)),
+    ).toEqual([]);
+
+    const expandButton = page.getByTestId('student.nutrition.expandBtn.e2e-assigned-meal');
+    await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
+    await expandButton.click();
+    await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeVisible();
+    await expect(expandButton).toHaveAttribute('aria-expanded', 'true');
+    await expandButton.click();
+    await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeHidden();
+
+    await page.getByTestId('student.nutrition.logMealButton.e2e-assigned-meal').click();
+    await expect(
+      page.getByTestId('student.nutrition.loggedMealBadge.e2e-assigned-meal'),
+    ).toBeVisible();
+
     await page.getByTestId('student.nutrition.waterWidget.intakeInput').fill('250');
     await page.getByTestId('student.nutrition.waterWidget.logButton').click();
     await capture(
