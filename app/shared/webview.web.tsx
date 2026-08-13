@@ -1,4 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DsSpace, getDsTheme } from '@/constants/design-system';
 import { resolveTermsConfigFromExpo } from '@/features/auth/terms-config';
@@ -31,6 +32,10 @@ export default function WebExternalLinkScreen() {
     approvedHttpsHostname: EDUWALDO_HTTPS_HOSTNAME,
     approvedHttpsUrls: configuredLegalUrls,
   });
+  const [openError, setOpenError] = useState(false);
+  const openLabel = screenTitle
+    ? t('shared.webview.open_cta', { title: screenTitle })
+    : t('auth.terms.open_link');
 
   const goBack = () => {
     if (Platform.OS === 'web') {
@@ -46,6 +51,19 @@ export default function WebExternalLinkScreen() {
     router.replace(fallbackPath);
   };
 
+  const handleOpenExternal = async () => {
+    if (!safeUrl) return;
+    try {
+      await shareAdapter.openExternalLink(safeUrl);
+      setOpenError(false);
+    } catch {
+      // A browser popup blocker (or another open failure) shouldn't strand
+      // the user on a dead CTA — surface a recoverable, observable message
+      // with the destination URL instead of failing silently.
+      setOpenError(true);
+    }
+  };
+
   return (
     <View
       style={[styles.container, { backgroundColor: theme.color.canvas }]}
@@ -53,16 +71,36 @@ export default function WebExternalLinkScreen() {
     >
       <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
       <Text style={[styles.body, { color: theme.color.textPrimary }]}>
-        {safeUrl ? t('auth.terms.offline_hint') : t('auth.terms.invalid_link')}
+        {safeUrl ? t('shared.webview.browser_hint') : t('auth.terms.invalid_link')}
       </Text>
+      {safeUrl && openError ? (
+        <Text
+          style={[styles.body, styles.errorText, { color: theme.color.textPrimary }]}
+          testID="shared.webview.openError"
+        >
+          {t('shared.webview.open_error', { url: safeUrl })}
+        </Text>
+      ) : null}
       {safeUrl ? (
         <Pressable
           accessibilityRole="link"
-          onPress={() => void shareAdapter.openExternalLink(safeUrl)}
+          accessibilityLabel={openLabel}
+          onPress={() => void handleOpenExternal()}
           style={[styles.button, { backgroundColor: theme.color.accentPrimary }]}
           testID="shared.webview.openExternal"
         >
-          <Text style={{ color: theme.color.onAccent }}>{t('auth.terms.open_link')}</Text>
+          <Text style={{ color: theme.color.onAccent }}>{openLabel}</Text>
+        </Pressable>
+      ) : null}
+      {safeUrl ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+          onPress={goBack}
+          style={[styles.button, { backgroundColor: theme.color.accentPrimary }]}
+          testID="shared.webview.backButton"
+        >
+          <Text style={{ color: theme.color.onAccent }}>{t('common.back')}</Text>
         </Pressable>
       ) : (
         <Pressable
@@ -88,6 +126,7 @@ const styles = StyleSheet.create({
     padding: DsSpace.lg,
   },
   body: { maxWidth: 560, textAlign: 'center' },
+  errorText: { fontSize: 13, opacity: 0.8 },
   button: {
     borderRadius: 999,
     minHeight: 44,

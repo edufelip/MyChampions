@@ -54,8 +54,9 @@ in-app support access.
 
 ### 3. Legal & Privacy Section
 
-- **Privacy Policy** — opens `PRIVACY_POLICY_URL` in an internal WebView screen (`/shared/webview`).
-- **Terms of Service** — opens `TERMS_URL` in an internal WebView screen (`/shared/webview`).
+- **Privacy Policy** — opens `PRIVACY_POLICY_URL` in an internal WebView screen (`/shared/webview`, `intent=account`, `title` = this row's localized label).
+- **Terms of Service** — opens `TERMS_URL` in an internal WebView screen (`/shared/webview`, `intent=account`, `title` = this row's localized label).
+- **Browser fallback (web only)** — the web build of `/shared/webview` can't embed a native WebView, so it hands the legal URL off to the browser instead. For a validated, safe URL it shows `shared.webview.browser_hint` ("This legal page opens in a new browser tab.") and a destination-specific `shared.webview.open_cta` ("Open {title}") rather than an offline warning — the URL passing validation has nothing to do with network connectivity. A `shared.webview.backButton` returns to this screen via `router.replace`, not browser-history discovery. A missing/unsafe URL still falls back to `auth.terms.invalid_link` with no open CTA. See ET-112.
 
 ### 4. Support Section
 

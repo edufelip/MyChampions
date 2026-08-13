@@ -49,6 +49,10 @@ export const enUS = {
   'auth.terms.offline_hint': 'You need internet access to open the legal link.',
   'auth.terms.version': 'Required version: {version}',
   'auth.terms.error.link_unavailable': 'Could not open the terms link right now. Try again.',
+  'shared.webview.browser_hint': 'This legal page opens in a new browser tab.',
+  'shared.webview.open_cta': 'Open {title}',
+  'shared.webview.open_error':
+    'Could not open the link automatically. Try the button again, or use this address: {url}',
   'auth.social.google': 'Google',
   'auth.social.apple': 'Apple',
   'auth.password.toggle_show': 'Show password',
