@@ -144,6 +144,33 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
     await expandButton.click();
     await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeHidden();
 
+    // ET-99 follow-up: the meal name/summary block is its own sibling toggle
+    // (mirrors the training-session card's larger tap target) and must drive
+    // the exact same expand/collapse state as the chevron button above,
+    // without reintroducing nested-button DOM (re-checked below).
+    const headerToggle = page.getByTestId('student.nutrition.mealHeaderToggle.e2e-assigned-meal');
+    await expect(headerToggle).toHaveAttribute('aria-expanded', 'false');
+    await headerToggle.click();
+    await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeVisible();
+    await expect(headerToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(expandButton).toHaveAttribute('aria-expanded', 'true');
+    await headerToggle.click();
+    await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeHidden();
+    await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
+
+    const nestedButtonCountAfterToggle = await page.evaluate(() => {
+      const mealCard = document.querySelector(
+        '[data-testid="student.nutrition.mealCard.e2e-assigned-meal"]',
+      );
+      if (!mealCard) return -1;
+      let nested = 0;
+      mealCard.querySelectorAll('button').forEach((outerButton) => {
+        nested += outerButton.querySelectorAll('button').length;
+      });
+      return nested;
+    });
+    expect(nestedButtonCountAfterToggle).toBe(0);
+
     await page.getByTestId('student.nutrition.logMealButton.e2e-assigned-meal').click();
     await expect(
       page.getByTestId('student.nutrition.loggedMealBadge.e2e-assigned-meal'),

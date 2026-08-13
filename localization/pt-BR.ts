@@ -295,6 +295,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'student.nutrition.meal.items_label': 'Alimentos',
   'student.nutrition.meal.expand': 'Expandir detalhes da refeição',
   'student.nutrition.meal.collapse': 'Recolher detalhes da refeição',
+  'student.nutrition.meal.header_expand': 'Expandir detalhes de {meal}',
+  'student.nutrition.meal.header_collapse': 'Recolher detalhes de {meal}',
   'student.training.title': 'Treinos',
   'student.training.calendar.cta': 'Abrir calendário',
   'student.training.session.title': 'Plano guiado de hoje',

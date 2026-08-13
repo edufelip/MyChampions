@@ -278,6 +278,8 @@ export const enUS = {
   'student.nutrition.meal.items_label': 'Food items',
   'student.nutrition.meal.expand': 'Expand meal details',
   'student.nutrition.meal.collapse': 'Collapse meal details',
+  'student.nutrition.meal.header_expand': 'Expand {meal} details',
+  'student.nutrition.meal.header_collapse': 'Collapse {meal} details',
   'student.training.title': 'Workouts',
   'student.training.calendar.cta': 'Open calendar',
   'student.training.session.title': "Today's guided plan",

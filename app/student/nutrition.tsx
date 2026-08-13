@@ -466,6 +466,12 @@ export default function StudentNutritionScreen() {
                           >
                             <View style={styles.mealHeaderRow}>
                               <Pressable
+                                accessibilityLabel={t(
+                                  isExpanded
+                                    ? 'student.nutrition.meal.header_collapse'
+                                    : 'student.nutrition.meal.header_expand',
+                                  { meal: meal.name },
+                                )}
                                 accessibilityRole="button"
                                 accessibilityState={{ expanded: isExpanded }}
                                 aria-expanded={isExpanded}

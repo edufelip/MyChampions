@@ -291,6 +291,8 @@ export const esES: Record<TranslationKey, string> = {
   'student.nutrition.meal.items_label': 'Alimentos',
   'student.nutrition.meal.expand': 'Expandir detalles de la comida',
   'student.nutrition.meal.collapse': 'Contraer detalles de la comida',
+  'student.nutrition.meal.header_expand': 'Expandir detalles de {meal}',
+  'student.nutrition.meal.header_collapse': 'Contraer detalles de {meal}',
   'student.training.title': 'Entrenamientos',
   'student.training.calendar.cta': 'Abrir calendario',
   'student.training.session.title': 'Plan guiado de hoy',
