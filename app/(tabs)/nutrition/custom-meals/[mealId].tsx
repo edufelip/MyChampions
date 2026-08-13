@@ -175,10 +175,15 @@ export default function CustomMealBuilderScreen() {
     hydrateExisting,
   } = useImageUpload(currentUser);
 
-  const didHydrateExistingMealRef = useRef(false);
+  // Tracks the mealId that has actually hydrated into the form, not just
+  // "hydration has happened at least once" — so a same-instance mealId change
+  // (e.g. client-side navigation between two edit routes without an unmount)
+  // re-resolves against the new id instead of latching onto the previous
+  // meal's data under a status stuck at 'ready'.
+  const hydratedMealIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isCreateMode || didHydrateExistingMealRef.current) return;
+    if (isCreateMode || hydratedMealIdRef.current === mealId) return;
     if (customMealsState.kind !== 'ready') return;
 
     const meal = customMealsState.meals.find((entry) => entry.id === mealId);
@@ -195,16 +200,18 @@ export default function CustomMealBuilderScreen() {
     });
     setSavedMealId(meal.id);
     hydrateExisting(meal.imageUrl);
-    didHydrateExistingMealRef.current = true;
+    hydratedMealIdRef.current = meal.id;
   }, [customMealsState, hydrateExisting, isCreateMode, mealId]);
 
   // ── Edit-resource state machine (ET-100, TC-401, SC-214) ───────────────────
   // A missing/deleted/unauthorized edit ID must never render a blank editable
   // form. Once a real meal has hydrated once, later background reloads never
-  // fall back to 'not-found' so an in-progress draft is preserved.
+  // fall back to 'not-found' so an in-progress draft is preserved. The latch
+  // is keyed to the current mealId so it doesn't persist across a same-instance
+  // navigation to a different edit id.
   const editStatus = resolveEditLoadStatus({
     isCreateMode,
-    hasHydrated: didHydrateExistingMealRef.current,
+    hasHydrated: hydratedMealIdRef.current === mealId,
     mealId,
     mealsState: customMealsState,
   });
@@ -327,8 +334,8 @@ export default function CustomMealBuilderScreen() {
             testID="meal.builder.error.message"
           >
             {editStatus === 'not-found'
-              ? (t('meal.builder.error.not_found'))
-              : (t('meal.builder.error.load'))}
+              ? t('meal.builder.error.not_found')
+              : t('meal.builder.error.load')}
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -729,21 +736,18 @@ function ImageUploadSection({
 
   // Primary area label
   const areaLabel: string = display.isDone
-    ? (t('meal.builder.image.cta_change'))
-    : (t('meal.builder.image.cta_upload'));
+    ? t('meal.builder.image.cta_change')
+    : t('meal.builder.image.cta_upload');
 
   // Progress message when uploading
   const progressMessage: string | null =
     display.showProgress && display.progressPercent !== null
-      ? buildUploadProgressMessage(
-          t('custom_meal.image.upload_progress'),
-          display.progressPercent,
-        )
+      ? buildUploadProgressMessage(t('custom_meal.image.upload_progress'), display.progressPercent)
       : null;
 
   // Error message key → localized string
   const errorMessage: string | null = display.errorMessageKey
-    ? (t(display.errorMessageKey as Parameters<TFn>[0]))
+    ? t(display.errorMessageKey as Parameters<TFn>[0])
     : null;
 
   const imagePreviewUrl = uploadState.kind === 'done' ? uploadState.url : null;
@@ -902,7 +906,7 @@ function resolveFieldError(
   };
 
   const key = map[field]?.[code];
-  return key ? (t(key as Parameters<TFn>[0])) : null;
+  return key ? t(key as Parameters<TFn>[0]) : null;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────

@@ -271,6 +271,18 @@ test('resolveEditLoadStatus is "create" for create mode regardless of meals-list
   );
 });
 
+test('resolveEditLoadStatus is "create" even if hasHydrated is stale/true (create takes priority)', () => {
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: true,
+      hasHydrated: true,
+      mealId: 'new',
+      mealsState: { kind: 'error' },
+    }),
+    'create',
+  );
+});
+
 test('resolveEditLoadStatus is "loading" while the meals list has not settled', () => {
   assert.equal(
     resolveEditLoadStatus({
