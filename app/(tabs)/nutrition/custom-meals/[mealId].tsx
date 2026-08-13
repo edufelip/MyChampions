@@ -207,8 +207,8 @@ export default function CustomMealBuilderScreen() {
   // If a same-instance navigation lands on the create route after a prior
   // edit target had already hydrated (no in-app path does this today via
   // push, but nothing prevents it via replace/deep link), clear the stale
-  // edit-mode form/id/image state instead of letting it leak into what
-  // renders as a fresh create form.
+  // edit-mode form/id/image/AI-analysis/error state instead of letting it
+  // leak into what renders as a fresh create form.
   useEffect(() => {
     if (!isCreateMode || hydratedMealIdRef.current === null) return;
     hydratedMealIdRef.current = null;
@@ -222,8 +222,12 @@ export default function CustomMealBuilderScreen() {
       fats: '',
       ingredientCost: '',
     });
+    setErrors({});
+    setSaveError(null);
+    setAttachPhoto(false);
     clearImageUpload();
-  }, [isCreateMode, clearImageUpload]);
+    analysis.reset();
+  }, [isCreateMode, clearImageUpload, analysis.reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Edit-resource state machine (ET-100, TC-401, SC-214) ───────────────────
   // A missing/deleted/unauthorized edit ID must never render a blank editable

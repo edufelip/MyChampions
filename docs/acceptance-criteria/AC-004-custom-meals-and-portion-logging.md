@@ -119,6 +119,6 @@ Feature: Custom meal creation and portion logging
   Scenario: Same-instance transition into create mode clears stale edit-mode state (ET-100)
     Given an authenticated user has an edit target that already hydrated on the mounted meal builder screen
     When that same screen instance transitions to /nutrition/custom-meals/new without unmounting
-    Then the previously hydrated meal's form fields, saved meal id, and image-upload state are cleared
+    Then the previously hydrated meal's form fields, saved meal id, validation/save errors, attach-photo toggle, AI photo-analysis state, and image-upload state are all cleared
     And the create form does not carry over the prior meal's data or share id
 ```
