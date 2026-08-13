@@ -13,6 +13,7 @@
 - Student capacity uses a labeled progress bar and displays an em dash instead of a fabricated zero when no authoritative count is available.
 - Purchase/restore actions use DS pill buttons; refresh stays as a lightweight text action.
 - On web, purchase/restore is replaced by a localized mobile handoff when configured. If it is unavailable, no dead purchase CTA is rendered; the screen keeps status refresh available.
+- The lapsed-over-cap locked-state message is capability-aware (D-203, ET-105): it never instructs the user to use a purchase/restore/handoff control that isn't mounted for the current `purchaseCapability`. `native_purchase` keeps the restore-or-purchase imperative, `mobile_handoff` names the single mounted "Continue on mobile" CTA, and `unavailable` defers to the mobile app plus Refresh status instead of naming any browser control.
 - Offline messaging uses `DsOfflineBanner` and keeps BL-008 write-lock gating.
 - Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
 
@@ -46,6 +47,7 @@
 - If entitlement is inactive while over cap, new activations and professional writes to assigned student plans are locked until an active professional entitlement snapshot is synced.
 - Pre-lapse warning must appear before lock state with clear renew/restore path, but it must never be inferred from active-student count.
 - Entitlement-based plan locks must not disable purchase, restore, or configured mobile-handoff recovery actions.
+- Lapsed-over-cap browser lock copy must never tell the user to tap a purchase/restore/handoff control that is not mounted for the current `purchaseCapability` (D-203, ET-105).
 - Accessibility baseline applies for readable warnings/CTAs with proper labels and focus order.
 
 ## RevenueCat Wiring (D-152)

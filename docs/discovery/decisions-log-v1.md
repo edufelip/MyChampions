@@ -828,6 +828,35 @@
     was already a correct no-op (web relies on the server's HttpOnly cookie
     refresh session, not client-JS-readable storage).
 
+- `D-203` (ET-105, TC-310, SC-212): The lapsed-over-cap locked-state message
+  on `/professional/subscription` (`app/professional/subscription.tsx`) is
+  capability-aware instead of using one fixed `pro.subscription.locked`
+  string regardless of `purchaseCapability`. Prior to this decision the
+  locked card always told the user to "Restore or purchase a subscription"
+  even on browser where `purchaseCapability` is `unavailable` and neither
+  control is mounted (`pro.subscription.purchaseCta`/`restoreCta` render 0
+  times), which is the exact defect ET-105 reported.
+  - `resolveLockedRecoveryMessageKey` (`features/subscription/subscription.logic.ts`)
+    is the single source of truth for which locked-state key renders, keyed
+    off `entitlementStatus` and `purchaseCapability` (D-186/D-187/ADR-0007's
+    existing `native_purchase | mobile_handoff | unavailable` capability
+    model — no new capability state was introduced).
+  - Unknown entitlement (`pro.subscription.locked_unknown`) always takes
+    precedence: it is a verification problem independent of platform.
+  - `native_purchase` keeps the original `pro.subscription.locked` copy
+    unchanged, since purchase and restore are both mounted on native.
+  - `mobile_handoff` uses new key `pro.subscription.locked_handoff`, which
+    names the single mounted "Continue on mobile" CTA instead of the generic
+    imperative.
+  - `unavailable` uses new key `pro.subscription.locked_unavailable`, which
+    never references purchase/restore/handoff (none render) and instead
+    defers to the mobile app plus the Refresh status action, which stays
+    mounted — consistent with the existing `pro.subscription.unavailable_note`
+    card shown alongside it.
+  - This is a copy/wiring fix only. It does not add, configure, or choose a
+    canonical browser purchase destination; that remains the deferred
+    open item already tracked under D-186/ADR-0007.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.
