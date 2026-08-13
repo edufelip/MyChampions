@@ -173,6 +173,7 @@ export default function CustomMealBuilderScreen() {
     pickAndUpload,
     retry: retryUpload,
     hydrateExisting,
+    clear: clearImageUpload,
   } = useImageUpload(currentUser);
 
   // Tracks the mealId that has actually hydrated into the form, not just
@@ -202,6 +203,27 @@ export default function CustomMealBuilderScreen() {
     hydrateExisting(meal.imageUrl);
     hydratedMealIdRef.current = meal.id;
   }, [customMealsState, hydrateExisting, isCreateMode, mealId]);
+
+  // If a same-instance navigation lands on the create route after a prior
+  // edit target had already hydrated (no in-app path does this today via
+  // push, but nothing prevents it via replace/deep link), clear the stale
+  // edit-mode form/id/image state instead of letting it leak into what
+  // renders as a fresh create form.
+  useEffect(() => {
+    if (!isCreateMode || hydratedMealIdRef.current === null) return;
+    hydratedMealIdRef.current = null;
+    setSavedMealId(null);
+    setForm({
+      name: '',
+      totalGrams: '',
+      calories: '',
+      carbs: '',
+      proteins: '',
+      fats: '',
+      ingredientCost: '',
+    });
+    clearImageUpload();
+  }, [isCreateMode, clearImageUpload]);
 
   // ── Edit-resource state machine (ET-100, TC-401, SC-214) ───────────────────
   // A missing/deleted/unauthorized edit ID must never render a blank editable
