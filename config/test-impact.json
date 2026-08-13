@@ -399,7 +399,10 @@
     "web:nutrition": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts"],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/custom-meal-library-error-recovery.spec.ts"
+      ],
       "grep": "@feature:nutrition",
       "tier": "feature",
       "ci": true
