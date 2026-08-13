@@ -209,6 +209,18 @@ export default function NutritionPlanBuilderScreen() {
     }
   }, [isNew, planId]);
 
+  // This screen instance can be reused across a planId change (route params
+  // updating in place rather than a fresh mount) — the same reason the
+  // builder store keys its reset on scopeKey. Sort mode is local UI state
+  // with no such reset, so without this it can survive navigating from an
+  // editable plan into a read-only one. The "Done" button that normally
+  // clears it is itself hidden once canEditPlan is false, which would leave
+  // it stuck true and (via MealRow's onPress={isSortMode ? undefined : ...})
+  // silently block tapping into any meal on the read-only plan.
+  useLayoutEffect(() => {
+    setIsSortMode(false);
+  }, [planId]);
+
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
     if (nutritionGate !== 'allow') {

@@ -184,6 +184,16 @@ export default function TrainingPlanBuilderScreen() {
     }
   }, [isNew, values.name, state.kind]);
 
+  // This screen instance can be reused across a planId change (route params
+  // updating in place rather than a fresh mount) — the same reason the
+  // builder store keys its reset on scopeKey. Sort mode is local UI state
+  // with no such reset, so without this it can survive navigating from an
+  // editable plan into a read-only one, leaving it stuck true once the
+  // "Done" button (hidden when canEditPlan is false) is no longer reachable.
+  useLayoutEffect(() => {
+    setIsSortMode(false);
+  }, [planId]);
+
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
     if (isNew) {
