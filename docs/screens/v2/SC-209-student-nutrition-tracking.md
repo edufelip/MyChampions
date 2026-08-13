@@ -2,7 +2,7 @@
 
 ## Route
 - `/student/nutrition/today` (canonical, documented deep link; ET-109)
-- `/student/nutrition` (tab-shell alias; renders the same screen via `(tabs)/nutrition`)
+- `/student/nutrition` (flat alias; hosts the screen implementation, also reused by the `/nutrition` tab route via `(tabs)/nutrition`)
 
 ## Objective
 - Enable daily meal logging, hydration tracking, and macro/calorie tracking against assigned or self-managed targets.
