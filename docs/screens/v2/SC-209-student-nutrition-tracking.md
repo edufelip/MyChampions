@@ -1,7 +1,8 @@
 # SC-209 Student Nutrition Tracking (V2)
 
 ## Route
-- `/student/nutrition/today`
+- `/student/nutrition/today` (canonical, documented deep link; ET-109)
+- `/student/nutrition` (tab-shell alias; renders the same screen via `(tabs)/nutrition`)
 
 ## Objective
 - Enable daily meal logging, hydration tracking, and macro/calorie tracking against assigned or self-managed targets.

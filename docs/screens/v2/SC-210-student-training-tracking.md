@@ -1,7 +1,8 @@
 # SC-210 Student Training Tracking (V2)
 
 ## Route
-- `/student/training/today`
+- `/student/training/today` (canonical, documented deep link; ET-109)
+- `/student/training` (tab-shell alias; renders the same screen via `(tabs)/training`)
 
 ## Objective
 - Let students track daily workout completion and session progress for assigned or self-managed plans.

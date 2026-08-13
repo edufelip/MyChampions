@@ -9,8 +9,8 @@
 |---|---|---|---|---|
 | Root resolver | `/` | Router | Restores auth, terms, role, and role-home routing | Implemented |
 | Student home | `/student/home` | Tab | Daily plan, hydration, and relationship entry | Implemented |
-| Student nutrition | `/student/nutrition` | Tab | Assigned/self-managed nutrition tracking | Implemented |
-| Student training | `/student/training` | Tab | Assigned/self-managed workout tracking | Implemented |
+| Student nutrition | `/student/nutrition/today` (canonical, SC-209), tab alias `/student/nutrition` | Tab | Assigned/self-managed nutrition tracking | Implemented |
+| Student training | `/student/training/today` (canonical, SC-210), tab alias `/student/training` | Tab | Assigned/self-managed workout tracking | Implemented |
 | Custom meal library/builder | `/nutrition/custom-meals`, `/nutrition/custom-meals/:mealId` | Stack | Meal reuse, logging, photo analysis, upload, and sharing | Implemented |
 | Student professionals | `/student/professionals` | Stack | Invite, QR fallback, connection state, and relationship ending | Implemented |
 | Professional dashboard | `/professional/home` | Tab | Operational workbench and subscription state | Implemented |
@@ -42,8 +42,6 @@ Use one line per future screen.
 | Custom Meal Library And Quick Log | `/nutrition/custom-meals` | Nutrition Tracking | Reuse saved meals and log consumed grams quickly | Saved custom meals and grams input | Select meal, log grams | Nutrition tracking model | Specified (V2) |
 | Shared Recipe Save Confirmation | `/shared/recipes/:shareToken` | Recipe Sharing | Save shared recipe as account-owned copy | Share token and source recipe snapshot | Confirm save to account | Sharing service and auth | Specified (V2) |
 | Training Plan Builder | `/professional/training/plans/:planId` | Training Management | Author reusable/custom sessions | Exercise model data | Add sessions/exercises | Training schema model | Specified (V2) |
-| Student Nutrition Tracking | `/student/nutrition/today` | Student Journey | Track daily calories/macros | Assigned or self plan targets | Log meals, monitor totals | Food calorie API | Specified (V2) |
-| Student Training Tracking | `/student/training/today` | Student Journey | Track workout execution | Assigned or self sessions | Mark complete, log performance | Training schema model | Specified (V2) |
 | Relationship Management | `/student/professionals` | Assignment Lifecycle | Connect/replace professionals | Professional lookup and assignment state | Manual invite entry, QR scan, accept, replace, remove | Assignment lifecycle rules | Specified (V2) |
 | Professional Subscription Gate | `/professional/subscription` | Monetization | Unlock management beyond 10 active students | Entitlement and product data | Purchase, restore, view plan | RevenueCat + store billing | Specified (V2) |
 | Account And Privacy Settings | `/settings/account` | Compliance | Give users account deletion and policy access | Account state and legal links | Delete account, view privacy policy | Store policy requirements | Specified (V2) |
