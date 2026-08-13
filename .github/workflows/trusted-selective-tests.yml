@@ -1198,12 +1198,13 @@ jobs:
       cancel-in-progress: false
     env:
       CI: 'true'
-      PLAYWRIGHT_BROWSERS_PATH: /home/eduardo/.cache/ms-playwright-mychampions
       PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'
       SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
       SELECTED_SUITES_JSON: ${{ needs.impact.outputs.web_suites }}
       MYCHAMPIONS_SERVER_ROOT: ${{ github.workspace }}/.ci/mychampions-api
     steps:
+      - name: Resolve runner-owned Playwright browsers cache path
+        run: echo "PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright-mychampions" >> "$GITHUB_ENV"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
