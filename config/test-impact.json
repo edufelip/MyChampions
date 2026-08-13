@@ -415,7 +415,11 @@
     "web:professional": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/visual-evidence.spec.ts"],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/visual-evidence.spec.ts",
+        "e2e/web/professional-roster-error.spec.ts"
+      ],
       "grep": "@feature:professional",
       "tier": "feature",
       "ci": true

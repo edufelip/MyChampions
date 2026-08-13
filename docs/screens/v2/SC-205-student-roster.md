@@ -35,7 +35,7 @@
 ## States
 - Loading: first roster fetch is in progress; list shell stays mounted with spinner.
 - Empty: shown only after first fetch settles with zero visible students (no loading overlap).
-- Error: fetch/search failure.
+- Error: a settled roster-read failure renders a dedicated error card (Retry + Back to dashboard) in place of the search/filter/bulk-assign shell. Search, filters, and Bulk assign plan are not mounted while this state is showing, so there is no dead control surface around the error copy. Retry re-invokes the roster load and shows the loading indicator before settling into error, empty, or the roster list. Preserved via `resolveStudentRosterViewState` in `features/professional/students-screen.logic.ts`, which is exclusive with the empty hero state — a stale roster is not shown read-only behind an error (open question, see below).
 - Success: roster list with actionable entries.
 
 ## Validation Rules
@@ -64,6 +64,7 @@
 - Concurrent unbind can remove student from active list in-session.
 - If invite code is missing/loading/error in empty state, share CTA falls back to `/professional/home` (no modal error copy).
 - Transient auth/profile re-hydration must not remount the tab shell for the same authenticated UID.
+- Open question (not yet resolved): whether a roster read error should fall back to a cached read-only roster when one exists, following the same stale-data policy as the professional dashboard, instead of always showing the error card. Currently any settled error hides the roster shell regardless of prior successful data.
 
 ## Links
 - Functional requirement: FR-105, FR-122, FR-210, FR-224, FR-225

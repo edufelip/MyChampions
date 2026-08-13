@@ -415,6 +415,7 @@ export const enUS = {
   'pro.students.empty.cta_add_first': 'Add first student',
   'pro.students.empty.cta_share_link': 'Share invite link',
   'pro.students.error': 'Could not load student roster. Try again.',
+  'pro.students.error.cta_back': 'Back to dashboard',
   'pro.students.bulk_assign.cta': 'Bulk assign plan',
   'pro.students.bulk_assign.cta_confirm': 'Assign to {count} students',
   'pro.students.bulk_assign.selection_mode': 'Bulk Assignment',
