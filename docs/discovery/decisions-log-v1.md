@@ -828,6 +828,19 @@
     was already a correct no-op (web relies on the server's HttpOnly cookie
     refresh session, not client-JS-readable storage).
 
+- `D-203`: ET-106 — the professional pending-queue row (`SC-205`, `/professional/pending`)
+  is a non-interactive container, not a button. Row-level `accessibilityRole="button"`
+  previously wrapped the Accept and Deny buttons as DOM descendants, which
+  react-native-web rendered as an invalid `<button>` nested inside another
+  `<button>` on web, producing React hydration errors and an unreliable
+  accessibility tree/focus order. The fix scopes row selection to a single
+  dedicated sibling checkbox control (`accessibilityRole="checkbox"`, 44x44
+  touch target, Space-key operable) so the row, checkbox, Accept, and Deny are
+  all siblings with independent, unambiguous focus stops. This resolves the
+  "entire row vs. checkbox only" open question in favor of checkbox-only
+  selection, matching the equivalent decision already made for the student
+  assigned-meal card (ET-99).
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.

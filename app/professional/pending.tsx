@@ -5,9 +5,9 @@
  * Surfaces: pending connection list, confirm (accept), deny (endConnection),
  * search/filter (BL-004 / D-070), bulk deny.
  */
-import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useMemo, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useMemo, useState, type ComponentProps, type ComponentType } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,9 +17,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-
-import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
+import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
@@ -32,7 +31,6 @@ import {
 } from '@/features/analytics/analytics.logic';
 import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useAuthSession } from '@/features/auth/auth-session';
-import type { ConnectionRecord } from '@/features/connections/connection.logic';
 import { useConnections } from '@/features/connections/use-connections';
 import {
   resolveOfflineDisplayState,
@@ -42,6 +40,17 @@ import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.l
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation, type TranslationKey } from '@/localization';
+import type { ConnectionRecord } from '@/features/connections/connection.logic';
+
+// react-native-web's Pressable does not natively map Space/Enter to onPress
+// for accessibilityRole="checkbox" (only accessibilityRole="button" gets that
+// treatment), so the row-selection checkbox below needs its own keydown
+// handling — this mirrors the pattern already used in app/auth/accept-terms.tsx.
+type WebKeyboardEvent = { key?: string; repeat?: boolean; preventDefault?: () => void };
+type KeyboardPressableProps = ComponentProps<typeof Pressable> & {
+  onKeyDown?: (event: WebKeyboardEvent) => void;
+};
+const KeyboardPressable = Pressable as ComponentType<KeyboardPressableProps>;
 
 export default function ProfessionalPendingScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -164,7 +173,7 @@ export default function ProfessionalPendingScreen() {
 
           router.replace('/');
         }}
-        accessibilityLabel={t('auth.role.cta_back') as string}
+        accessibilityLabel={t('auth.role.cta_back')}
         style={styles.backButton}
         testID="pro.pending.backButton"
       />
@@ -172,7 +181,7 @@ export default function ProfessionalPendingScreen() {
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
           scheme={scheme}
-          text={t('offline.banner') as string}
+          text={t('offline.banner')}
           testID="pro.pending.offlineBanner"
         />
       ) : null}
@@ -194,7 +203,7 @@ export default function ProfessionalPendingScreen() {
             style={[styles.pendingCountPill, { backgroundColor: theme.color.accentPrimarySoft }]}
           >
             <Text style={[styles.pendingCountText, { color: theme.color.accentPrimary }]}>
-              {(t('pro.pending.count') as string).replace(
+              {(t('pro.pending.count')).replace(
                 '{count}',
                 String(pendingConnections.length),
               )}
@@ -225,7 +234,7 @@ export default function ProfessionalPendingScreen() {
         {selectedIds.size > 0 ? (
           <View style={styles.bulkBar}>
             <Text style={[styles.bulkCount, { color: theme.color.textPrimary }]}>
-              {(t('a11y.selected_count') as string).replace('{count}', String(selectedIds.size))}
+              {(t('a11y.selected_count')).replace('{count}', String(selectedIds.size))}
             </Text>
             <DsPillButton
               scheme={scheme}
@@ -233,7 +242,7 @@ export default function ProfessionalPendingScreen() {
               disabled={isBulkDenying || isWriteLocked}
               loading={isBulkDenying}
               onPress={onBulkDeny}
-              label={t('pro.pending.bulk_deny.cta') as string}
+              label={t('pro.pending.bulk_deny.cta')}
               fullWidth={false}
               style={styles.bulkButton}
               testID="pro.pending.bulkDenyButton"
@@ -247,7 +256,7 @@ export default function ProfessionalPendingScreen() {
           <ActivityIndicator
             style={styles.centered}
             testID="pro.pending.loading"
-            accessibilityLabel={t('a11y.loading.default') as string}
+            accessibilityLabel={t('a11y.loading.default')}
             color={theme.color.accentPrimary}
           />
         ) : state.kind === 'error' ? (
@@ -311,10 +320,31 @@ function PendingRow({
 }) {
   const theme = getDsTheme(scheme);
 
+  const specialtyLabel =
+    connection.specialty === 'nutritionist'
+      ? t('pro.students.specialty.nutritionist')
+      : t('pro.students.specialty.fitness_coach');
+  const selectLabel = (t('pro.pending.row.select')).replace(
+    '{specialty}',
+    specialtyLabel,
+  );
+
+  const onCheckboxKeyDown = (event: WebKeyboardEvent) => {
+    if (event.key !== ' ' && event.key !== 'Spacebar') {
+      return;
+    }
+    event.preventDefault?.();
+    if (event.repeat) {
+      return;
+    }
+    onToggleSelect(connection.id);
+  };
+
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => onToggleSelect(connection.id)}
+    // Non-interactive row container — selection, Accept, and Deny are sibling
+    // interactive controls below rather than nested inside a row-level button,
+    // so the row itself must not carry a button/pressable role (ET-106).
+    <View
       style={[
         styles.row,
         {
@@ -324,24 +354,32 @@ function PendingRow({
       ]}
       testID={`pro.pending.row.${testIndex}`}
     >
-      <View
-        style={[
-          styles.checkbox,
-          { borderColor: isSelected ? theme.color.accentPrimary : theme.color.textSecondary },
-        ]}
+      <KeyboardPressable
+        accessibilityLabel={selectLabel}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: isSelected }}
+        aria-checked={isSelected}
+        hitSlop={12}
+        onKeyDown={onCheckboxKeyDown}
+        onPress={() => onToggleSelect(connection.id)}
+        style={styles.checkboxHitArea}
+        testID={`pro.pending.checkbox.${testIndex}`}
       >
-        {isSelected ? (
-          <View style={[styles.checkboxFill, { backgroundColor: theme.color.accentPrimary }]} />
-        ) : null}
-      </View>
+        <View
+          style={[
+            styles.checkbox,
+            { borderColor: isSelected ? theme.color.accentPrimary : theme.color.textSecondary },
+          ]}
+        >
+          {isSelected ? (
+            <View style={[styles.checkboxFill, { backgroundColor: theme.color.accentPrimary }]} />
+          ) : null}
+        </View>
+      </KeyboardPressable>
 
       <View style={styles.rowInfo}>
         <Text style={[styles.rowSpecialty, { color: theme.color.textPrimary }]}>
-          {connection.specialty === 'nutritionist'
-            ? t('pro.students.specialty.nutritionist')
-            : t('pro.students.specialty.fitness_coach')}
+          {specialtyLabel}
         </Text>
         <Text style={[styles.rowId, { color: theme.color.textSecondary }]} numberOfLines={1}>
           {connection.id}
@@ -353,7 +391,7 @@ function PendingRow({
           scheme={scheme}
           disabled={isWriteLocked}
           onPress={() => onAccept(connection.id)}
-          label={t('pro.pending.confirm.cta') as string}
+          label={t('pro.pending.confirm.cta')}
           fullWidth={false}
           style={styles.actionButton}
           testID={`pro.pending.acceptButton.${testIndex}`}
@@ -376,7 +414,7 @@ function PendingRow({
           </Text>
         </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -453,6 +491,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: DsSpace.sm,
     padding: DsSpace.sm,
+  },
+  checkboxHitArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
   },
   checkbox: {
     alignItems: 'center',
