@@ -115,4 +115,10 @@ Feature: Custom meal creation and portion logging
     And a semantic error state is shown with localized copy, a Retry action, and a Back to recipes action
     And Save and Share stay disabled or absent until a real meal is loaded
     And /nutrition/custom-meals/new create mode is unaffected
+
+  Scenario: Same-instance transition into create mode clears stale edit-mode state (ET-100)
+    Given an authenticated user has an edit target that already hydrated on the mounted meal builder screen
+    When that same screen instance transitions to /nutrition/custom-meals/new without unmounting
+    Then the previously hydrated meal's form fields, saved meal id, and image-upload state are cleared
+    And the create form does not carry over the prior meal's data or share id
 ```

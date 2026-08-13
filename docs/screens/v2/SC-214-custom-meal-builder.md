@@ -74,6 +74,7 @@
 - If upload fails on transient network error, user can retry without losing current draft edits.
 - A stale, deleted, mistyped, or unauthorized `mealId` (e.g. `/nutrition/custom-meals/not-a-real-meal`) must render the not-found/load-error card, not a blank create-looking form (ET-100, TC-401).
 - Whether the server distinguishes a 404 (not found) from a 403 (unauthorized) in user-facing copy is an open product question; both currently render the same generic "could not load" copy.
+- If the same mounted screen instance transitions from an already-hydrated edit target into create mode (`/nutrition/custom-meals/new`) — e.g. a `replace`/deep-link navigation rather than a fresh screen push — the previously hydrated meal's form fields, `savedMealId`, and image-upload state are reset instead of leaking into what renders as a fresh create form (ET-100 follow-up hardening).
 
 ## Native Validation Notes
 - Deterministic Detox coverage runs the source-sheet state and synthetic successful-upload state in separate fresh-Metro phases. The source-sheet phase explicitly clears the success fixture; the success phase bypasses the native picker and validates the preview. An authenticated run without a valid `sheet|success` runner scenario fails closed.
