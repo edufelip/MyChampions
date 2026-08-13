@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   validateCustomMealInput,
   validatePortionLogInput,
@@ -8,6 +7,7 @@ import {
   buildCustomMealPlanSnapshot,
   buildSharedMealSnapshot,
   normalizeMealActionError,
+  resolveEditLoadStatus,
   type CustomMeal,
 } from './custom-meal.logic';
 
@@ -244,4 +244,107 @@ test('normalizeMealActionError maps network and config', () => {
 test('normalizeMealActionError returns unknown for unrecognized', () => {
   assert.equal(normalizeMealActionError(null), 'unknown');
   assert.equal(normalizeMealActionError({ message: 'weird error' }), 'unknown');
+});
+
+// --- resolveEditLoadStatus (ET-100, TC-401, SC-214) ---
+// Regression guard: a missing/deleted/unauthorized edit ID must never resolve
+// to a status the screen renders as a blank editable form.
+
+test('resolveEditLoadStatus is "create" for create mode regardless of meals-list state', () => {
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: true,
+      hasHydrated: false,
+      mealId: undefined,
+      mealsState: { kind: 'idle' },
+    }),
+    'create',
+  );
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: true,
+      hasHydrated: false,
+      mealId: 'new',
+      mealsState: { kind: 'error' },
+    }),
+    'create',
+  );
+});
+
+test('resolveEditLoadStatus is "loading" while the meals list has not settled', () => {
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: false,
+      hasHydrated: false,
+      mealId: 'meal-1',
+      mealsState: { kind: 'idle' },
+    }),
+    'loading',
+  );
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: false,
+      hasHydrated: false,
+      mealId: 'meal-1',
+      mealsState: { kind: 'loading' },
+    }),
+    'loading',
+  );
+});
+
+test('resolveEditLoadStatus is "not-found" for a missing/deleted/unauthorized edit ID once the list is ready — never falls through to a blank form', () => {
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: false,
+      hasHydrated: false,
+      mealId: 'not-a-real-meal',
+      mealsState: { kind: 'ready', meals: [{ id: 'meal-1' }, { id: 'meal-2' }] },
+    }),
+    'not-found',
+  );
+});
+
+test('resolveEditLoadStatus is "load-error" when the meals list itself fails to load', () => {
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: false,
+      hasHydrated: false,
+      mealId: 'meal-1',
+      mealsState: { kind: 'error' },
+    }),
+    'load-error',
+  );
+});
+
+test('resolveEditLoadStatus is "ready" once the requested meal is present in the loaded list', () => {
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: false,
+      hasHydrated: false,
+      mealId: 'meal-1',
+      mealsState: { kind: 'ready', meals: [{ id: 'meal-1' }, { id: 'meal-2' }] },
+    }),
+    'ready',
+  );
+});
+
+test('resolveEditLoadStatus latches "ready" once hydrated, preserving an in-progress draft through a later error or empty reload', () => {
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: false,
+      hasHydrated: true,
+      mealId: 'meal-1',
+      mealsState: { kind: 'error' },
+    }),
+    'ready',
+  );
+  assert.equal(
+    resolveEditLoadStatus({
+      isCreateMode: false,
+      hasHydrated: true,
+      mealId: 'meal-1',
+      mealsState: { kind: 'ready', meals: [] },
+    }),
+    'ready',
+  );
 });

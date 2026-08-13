@@ -38,12 +38,13 @@
   - Generate share link for recipe.
 
 ## States
-- Loading: fetch existing meal definition (edit mode).
+- Loading: fetch existing meal definition (edit mode). Shown as a bounded spinner (`meal.builder.loading`); the form is not rendered while resolving.
 - Empty: new meal form with no values.
 - Edit hydrated: when existing meal has `imageUrl`, upload section starts in `completed/change photo` state before selecting a new image.
 - Image preview: when upload state is `completed`, show a thumbnail preview above the upload/change action area.
 - Uploading: image upload in progress with visible percentage/progress indicator.
 - Error: validation, save failure, or recoverable image-upload failure.
+- Edit-resource not found / load error (ET-100, TC-401): a missing, deleted, or unauthorized `mealId`, or a failed meals-list fetch, renders a semantic error card (`meal.builder.error`) instead of the form. It shows localized copy (`meal.builder.error.not_found` or `meal.builder.error.load`), a Retry action (`meal.builder.error.retry`, re-runs the meals-list load) and a Back to recipes action (`meal.builder.error.backToLibrary`, returns to `/nutrition/custom-meals`). Save and Share are absent in this state — they only appear once a real meal has hydrated. Once hydration has happened once, a later background reload never falls back to this state, so an in-progress draft is preserved (see `resolveEditLoadStatus` in `features/nutrition/custom-meal.logic.ts`).
 - Success: meal saved and available in custom meal library.
 
 ## Validation Rules
@@ -52,7 +53,7 @@
 - Calories/carbs/proteins/fats must be non-negative.
 - Ingredient cost is optional but must be non-negative if provided.
 - Share link generation requires existing saved meal record.
-- `mealId` route parameter must resolve to a UUIDv7 record for edit mode.
+- `mealId` route parameter must resolve to a UUIDv7 record for edit mode. A missing, deleted, or unauthorized `mealId` must never render a blank editable form — it fails closed to the not-found/load-error state described above (AC-401, TC-401).
 - Recoverable image-upload failures must show reason and retry action without discarding current draft fields.
 
 ## Data Contract
@@ -71,6 +72,8 @@
 - Large values should still validate numeric bounds safely.
 - Source recipe deletion after sharing does not remove recipient-owned copies already saved.
 - If upload fails on transient network error, user can retry without losing current draft edits.
+- A stale, deleted, mistyped, or unauthorized `mealId` (e.g. `/nutrition/custom-meals/not-a-real-meal`) must render the not-found/load-error card, not a blank create-looking form (ET-100, TC-401).
+- Whether the server distinguishes a 404 (not found) from a 403 (unauthorized) in user-facing copy is an open product question; both currently render the same generic "could not load" copy.
 
 ## Native Validation Notes
 - Deterministic Detox coverage runs the source-sheet state and synthetic successful-upload state in separate fresh-Metro phases. The source-sheet phase explicitly clears the success fixture; the success phase bypasses the native picker and validates the preview. An authenticated run without a valid `sheet|success` runner scenario fails closed.

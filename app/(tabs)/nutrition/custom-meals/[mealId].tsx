@@ -28,9 +28,8 @@
  *       TC-401–403, TC-407–409, TC-412, TC-413, TC-415, TC-420, TC-422, TC-425–427,
  *       TC-271–TC-274, TC-286, TC-287
  */
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useImageUpload } from '@/features/nutrition/use-image-upload';
-import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   ActivityIndicator,
   Alert,
@@ -44,17 +43,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { shareAdapter } from '@/features/platform/share-adapter';
-import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import {
+  resolveEditLoadStatus,
   validateCustomMealInput,
   type CustomMealInput,
   type CustomMealValidationErrors,
@@ -64,16 +60,20 @@ import {
   buildUploadProgressMessage,
   type ImageUploadState,
 } from '@/features/nutrition/image-upload.logic';
+import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
+import { useImageUpload } from '@/features/nutrition/use-image-upload';
 import { useMealPhotoAnalysis } from '@/features/nutrition/use-meal-photo-analysis';
-import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import { shareAdapter } from '@/features/platform/share-adapter';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -117,6 +117,7 @@ export default function CustomMealBuilderScreen() {
     create,
     update,
     shareLink,
+    reload,
   } = useCustomMeals(Boolean(currentUser));
 
   // ── Subscription / AI paywall (D-132) ─────────────────────────────────────
@@ -161,9 +162,9 @@ export default function CustomMealBuilderScreen() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Existing meals can generate share links through the server-backed source.
-  const [savedMealId, setSavedMealId] = useState<string | null>(
-    isCreateMode ? null : (mealId ?? null),
-  );
+  // Stays null in edit mode until the requested meal actually hydrates (AC: Save
+  // and Share stay disabled/absent until the requested meal is loaded).
+  const [savedMealId, setSavedMealId] = useState<string | null>(null);
 
   // ── Image upload (BL-007, D-073, D-130, D-131) ────────────────────────────
   // Server-backed custom meal image upload with progress tracking.
@@ -196,6 +197,19 @@ export default function CustomMealBuilderScreen() {
     hydrateExisting(meal.imageUrl);
     didHydrateExistingMealRef.current = true;
   }, [customMealsState, hydrateExisting, isCreateMode, mealId]);
+
+  // ── Edit-resource state machine (ET-100, TC-401, SC-214) ───────────────────
+  // A missing/deleted/unauthorized edit ID must never render a blank editable
+  // form. Once a real meal has hydrated once, later background reloads never
+  // fall back to 'not-found' so an in-progress draft is preserved.
+  const editStatus = resolveEditLoadStatus({
+    isCreateMode,
+    hasHydrated: didHydrateExistingMealRef.current,
+    mealId,
+    mealsState: customMealsState,
+  });
+  const isResolvingMeal = editStatus === 'loading';
+  const isUnresolvedMeal = editStatus === 'not-found' || editStatus === 'load-error';
 
   const networkStatus = useNetworkStatus();
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
@@ -232,7 +246,7 @@ export default function CustomMealBuilderScreen() {
     setIsSaving(false);
 
     if (err) {
-      setSaveError(t('meal.builder.error.save') as string);
+      setSaveError(t('meal.builder.error.save'));
     } else {
       if (isCreateMode) {
         // After create, ID is unknown until source wiring returns it.
@@ -246,13 +260,13 @@ export default function CustomMealBuilderScreen() {
   // ── Share ──────────────────────────────────────────────────────────────────
   async function handleShare() {
     if (!savedMealId) {
-      Alert.alert('', t('meal.builder.share.error.needs_save') as string);
+      Alert.alert('', t('meal.builder.share.error.needs_save'));
       return;
     }
     const result = await shareLink(savedMealId);
     if (typeof result === 'string') {
       // MealActionErrorReason
-      Alert.alert('', t('meal.builder.share.error.unknown') as string);
+      Alert.alert('', t('meal.builder.share.error.unknown'));
       return;
     }
     await shareAdapter.shareText(result.shareLinkId);
@@ -283,7 +297,7 @@ export default function CustomMealBuilderScreen() {
 
           router.replace('/(tabs)/nutrition/custom-meals');
         }}
-        accessibilityLabel={t('auth.role.cta_back') as string}
+        accessibilityLabel={t('auth.role.cta_back')}
         style={styles.backButton}
         testID="meal.builder.backButton"
       />
@@ -291,179 +305,224 @@ export default function CustomMealBuilderScreen() {
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
           scheme={scheme}
-          text={t('offline.banner') as string}
+          text={t('offline.banner')}
           testID="meal.builder.offlineBanner"
         />
       ) : null}
 
-      {/* Helper text */}
-      <Text style={[styles.helper, { color: palette.icon }]}>{t('meal.builder.helper')}</Text>
-
-      {/* AI photo analysis CTA & status (BL-108, FR-229, AC-513, D-132) */}
-      <MealPhotoAnalysisSection
-        analysisState={analysis.state}
-        attachPhoto={attachPhoto}
-        onAnalyzeCta={handleAnalyzeCta}
-        onReset={analysis.reset}
-        onToggleAttach={() => setAttachPhoto((v) => !v)}
-        hasAiAccess={hasAiAccess}
-        isSubscriptionLoading={isSubscriptionLoading}
-        onOpenPaywall={() => openAiUpgradePaywall(lockedRole)}
-        palette={palette}
-        t={t}
-      />
-
-      {/* Image upload progress + retry (BL-007, FR-213, AC-424, AC-425) */}
-      <ImageUploadSection
-        uploadState={imageUpload}
-        onPickAndUpload={() => void pickAndUpload(savedMealId ?? 'new')}
-        onRetry={() => void retryUpload()}
-        palette={palette}
-        t={t}
-      />
-
-      {/* Required fields */}
-      <FormField
-        label={t('meal.builder.field.name.label') as string}
-        placeholder={t('meal.builder.field.name.placeholder') as string}
-        value={form.name}
-        onChangeText={(v) => setField('name', v)}
-        error={resolveFieldError('name', errors, t)}
-        palette={palette}
-        testID="meal.builder.field.name"
-      />
-      <FormField
-        label={t('meal.builder.field.grams.label') as string}
-        placeholder={t('meal.builder.field.grams.placeholder') as string}
-        value={form.totalGrams}
-        onChangeText={(v) => setField('totalGrams', v)}
-        error={resolveFieldError('totalGrams', errors, t)}
-        keyboardType="decimal-pad"
-        palette={palette}
-        testID="meal.builder.field.grams"
-      />
-      <FormField
-        label={t('meal.builder.field.calories.label') as string}
-        placeholder={t('meal.builder.field.calories.placeholder') as string}
-        value={form.calories}
-        onChangeText={(v) => setField('calories', v)}
-        error={resolveFieldError('calories', errors, t)}
-        keyboardType="decimal-pad"
-        palette={palette}
-        testID="meal.builder.field.calories"
-      />
-      <FormField
-        label={t('meal.builder.field.carbs.label') as string}
-        placeholder={t('meal.builder.field.carbs.placeholder') as string}
-        value={form.carbs}
-        onChangeText={(v) => setField('carbs', v)}
-        error={resolveFieldError('carbs', errors, t)}
-        keyboardType="decimal-pad"
-        palette={palette}
-        testID="meal.builder.field.carbs"
-      />
-      <FormField
-        label={t('meal.builder.field.proteins.label') as string}
-        placeholder={t('meal.builder.field.proteins.placeholder') as string}
-        value={form.proteins}
-        onChangeText={(v) => setField('proteins', v)}
-        error={resolveFieldError('proteins', errors, t)}
-        keyboardType="decimal-pad"
-        palette={palette}
-        testID="meal.builder.field.proteins"
-      />
-      <FormField
-        label={t('meal.builder.field.fats.label') as string}
-        placeholder={t('meal.builder.field.fats.placeholder') as string}
-        value={form.fats}
-        onChangeText={(v) => setField('fats', v)}
-        error={resolveFieldError('fats', errors, t)}
-        keyboardType="decimal-pad"
-        palette={palette}
-        testID="meal.builder.field.fats"
-      />
-
-      {/* Optional ingredient cost */}
-      <FormField
-        label={t('meal.builder.field.cost.label') as string}
-        placeholder={t('meal.builder.field.cost.placeholder') as string}
-        value={form.ingredientCost ?? ''}
-        onChangeText={(v) => setField('ingredientCost', v)}
-        error={resolveFieldError('ingredientCost', errors, t)}
-        keyboardType="decimal-pad"
-        palette={palette}
-        testID="meal.builder.field.cost"
-      />
-
-      {/* Save error */}
-      {saveError ? (
-        <View accessibilityLiveRegion="polite">
-          <Text
-            style={[styles.errorText, { color: palette.danger }]}
-            testID="meal.builder.saveError"
-          >
-            {saveError}
-          </Text>
+      {isResolvingMeal ? (
+        // Resolving the requested meal — never fall through to a blank form.
+        <View style={[styles.statusCard, styles.loadingCard]} testID="meal.builder.loading">
+          <ActivityIndicator
+            accessibilityLabel={t('a11y.loading.default')}
+            testID="meal.builder.loading.indicator"
+          />
         </View>
-      ) : null}
-
-      {/* Save CTA */}
-      {isSaving ? (
-        <ActivityIndicator
-          testID="meal.builder.savingIndicator"
-          accessibilityLabel={t('a11y.loading.saving') as string}
-        />
+      ) : isUnresolvedMeal ? (
+        // Missing/deleted/unauthorized edit ID (AC: never render a blank editable
+        // form; expose a semantic error state with Retry and Back to recipes).
+        <View style={styles.statusCard} testID="meal.builder.error">
+          <Text
+            style={[styles.errorCardMessage, { color: palette.text }]}
+            testID="meal.builder.error.message"
+          >
+            {editStatus === 'not-found'
+              ? (t('meal.builder.error.not_found'))
+              : (t('meal.builder.error.load'))}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => reload()}
+            style={[styles.outlineButton, { borderColor: palette.tint }]}
+            testID="meal.builder.error.retry"
+          >
+            <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
+              {t('common.error.retry')}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace('/(tabs)/nutrition/custom-meals')}
+            style={[styles.primaryButton, { backgroundColor: palette.tint }]}
+            testID="meal.builder.error.backToLibrary"
+          >
+            <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>
+              {t('meal.builder.error.cta_back_to_library')}
+            </Text>
+          </Pressable>
+        </View>
       ) : (
-        <Pressable
-          accessibilityRole="button"
-          disabled={isWriteLocked}
-          onPress={handleSave}
-          style={[
-            styles.primaryButton,
-            { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
-          ]}
-          testID="meal.builder.cta.save"
-        >
-          <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>
-            {t('meal.builder.cta_save')}
-          </Text>
-        </Pressable>
-      )}
+        <>
+          {/* Helper text */}
+          <Text style={[styles.helper, { color: palette.icon }]}>{t('meal.builder.helper')}</Text>
 
-      {/* Share CTA — only available after a meal has been saved */}
-      {savedMealId ? (
-        <Pressable
-          accessibilityRole="button"
-          disabled={isWriteLocked}
-          onPress={handleShare}
-          style={[
-            styles.outlineButton,
-            { borderColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
-          ]}
-          testID="meal.builder.cta.share"
-        >
-          <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
-            {t('meal.builder.cta_share')}
-          </Text>
-        </Pressable>
-      ) : null}
+          {/* AI photo analysis CTA & status (BL-108, FR-229, AC-513, D-132) */}
+          <MealPhotoAnalysisSection
+            analysisState={analysis.state}
+            attachPhoto={attachPhoto}
+            onAnalyzeCta={handleAnalyzeCta}
+            onReset={analysis.reset}
+            onToggleAttach={() => setAttachPhoto((v) => !v)}
+            hasAiAccess={hasAiAccess}
+            isSubscriptionLoading={isSubscriptionLoading}
+            onOpenPaywall={() => openAiUpgradePaywall(lockedRole)}
+            palette={palette}
+            t={t}
+          />
 
-      {Platform.OS === 'ios' ? (
-        <InputAccessoryView nativeID={MEAL_BUILDER_KEYBOARD_ACCESSORY_ID}>
-          <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+          {/* Image upload progress + retry (BL-007, FR-213, AC-424, AC-425) */}
+          <ImageUploadSection
+            uploadState={imageUpload}
+            onPickAndUpload={() => void pickAndUpload(savedMealId ?? 'new')}
+            onRetry={() => void retryUpload()}
+            palette={palette}
+            t={t}
+          />
+
+          {/* Required fields */}
+          <FormField
+            label={t('meal.builder.field.name.label')}
+            placeholder={t('meal.builder.field.name.placeholder')}
+            value={form.name}
+            onChangeText={(v) => setField('name', v)}
+            error={resolveFieldError('name', errors, t)}
+            palette={palette}
+            testID="meal.builder.field.name"
+          />
+          <FormField
+            label={t('meal.builder.field.grams.label')}
+            placeholder={t('meal.builder.field.grams.placeholder')}
+            value={form.totalGrams}
+            onChangeText={(v) => setField('totalGrams', v)}
+            error={resolveFieldError('totalGrams', errors, t)}
+            keyboardType="decimal-pad"
+            palette={palette}
+            testID="meal.builder.field.grams"
+          />
+          <FormField
+            label={t('meal.builder.field.calories.label')}
+            placeholder={t('meal.builder.field.calories.placeholder')}
+            value={form.calories}
+            onChangeText={(v) => setField('calories', v)}
+            error={resolveFieldError('calories', errors, t)}
+            keyboardType="decimal-pad"
+            palette={palette}
+            testID="meal.builder.field.calories"
+          />
+          <FormField
+            label={t('meal.builder.field.carbs.label')}
+            placeholder={t('meal.builder.field.carbs.placeholder')}
+            value={form.carbs}
+            onChangeText={(v) => setField('carbs', v)}
+            error={resolveFieldError('carbs', errors, t)}
+            keyboardType="decimal-pad"
+            palette={palette}
+            testID="meal.builder.field.carbs"
+          />
+          <FormField
+            label={t('meal.builder.field.proteins.label')}
+            placeholder={t('meal.builder.field.proteins.placeholder')}
+            value={form.proteins}
+            onChangeText={(v) => setField('proteins', v)}
+            error={resolveFieldError('proteins', errors, t)}
+            keyboardType="decimal-pad"
+            palette={palette}
+            testID="meal.builder.field.proteins"
+          />
+          <FormField
+            label={t('meal.builder.field.fats.label')}
+            placeholder={t('meal.builder.field.fats.placeholder')}
+            value={form.fats}
+            onChangeText={(v) => setField('fats', v)}
+            error={resolveFieldError('fats', errors, t)}
+            keyboardType="decimal-pad"
+            palette={palette}
+            testID="meal.builder.field.fats"
+          />
+
+          {/* Optional ingredient cost */}
+          <FormField
+            label={t('meal.builder.field.cost.label')}
+            placeholder={t('meal.builder.field.cost.placeholder')}
+            value={form.ingredientCost ?? ''}
+            onChangeText={(v) => setField('ingredientCost', v)}
+            error={resolveFieldError('ingredientCost', errors, t)}
+            keyboardType="decimal-pad"
+            palette={palette}
+            testID="meal.builder.field.cost"
+          />
+
+          {/* Save error */}
+          {saveError ? (
+            <View accessibilityLiveRegion="polite">
+              <Text
+                style={[styles.errorText, { color: palette.danger }]}
+                testID="meal.builder.saveError"
+              >
+                {saveError}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Save CTA */}
+          {isSaving ? (
+            <ActivityIndicator
+              testID="meal.builder.savingIndicator"
+              accessibilityLabel={t('a11y.loading.saving')}
+            />
+          ) : (
             <Pressable
               accessibilityRole="button"
-              onPress={Keyboard.dismiss}
-              style={styles.keyboardDoneButton}
-              testID="meal.builder.keyboard.done"
+              disabled={isWriteLocked}
+              onPress={handleSave}
+              style={[
+                styles.primaryButton,
+                { backgroundColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+              ]}
+              testID="meal.builder.cta.save"
             >
-              <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
-                {t('common.cta.done')}
+              <Text style={[styles.primaryButtonText, { color: palette.onAccent }]}>
+                {t('meal.builder.cta_save')}
               </Text>
             </Pressable>
-          </View>
-        </InputAccessoryView>
-      ) : null}
+          )}
+
+          {/* Share CTA — only available after a meal has been saved */}
+          {savedMealId ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isWriteLocked}
+              onPress={handleShare}
+              style={[
+                styles.outlineButton,
+                { borderColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+              ]}
+              testID="meal.builder.cta.share"
+            >
+              <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
+                {t('meal.builder.cta_share')}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {Platform.OS === 'ios' ? (
+            <InputAccessoryView nativeID={MEAL_BUILDER_KEYBOARD_ACCESSORY_ID}>
+              <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={Keyboard.dismiss}
+                  style={styles.keyboardDoneButton}
+                  testID="meal.builder.keyboard.done"
+                >
+                  <Text style={[styles.keyboardDoneText, { color: palette.tint }]}>
+                    {t('common.cta.done')}
+                  </Text>
+                </Pressable>
+              </View>
+            </InputAccessoryView>
+          ) : null}
+        </>
+      )}
     </DsScreen>
   );
 }
@@ -519,7 +578,7 @@ function MealPhotoAnalysisSection({
           <ActivityIndicator
             size="small"
             color={palette.icon}
-            accessibilityLabel={t('meal.photo_analysis.paywall.loading') as string}
+            accessibilityLabel={t('meal.photo_analysis.paywall.loading')}
             testID="meal.photoAnalysis.paywall.loading"
           />
         ) : (
@@ -635,17 +694,17 @@ function MealPhotoAnalysisSection({
 function resolveAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string {
   switch (reason) {
     case 'permission_denied':
-      return t('meal.photo_analysis.error.permission_denied') as string;
+      return t('meal.photo_analysis.error.permission_denied');
     case 'file_too_large':
-      return t('meal.photo_analysis.error.file_too_large') as string;
+      return t('meal.photo_analysis.error.file_too_large');
     case 'unrecognizable_image':
-      return t('meal.photo_analysis.error.unrecognizable') as string;
+      return t('meal.photo_analysis.error.unrecognizable');
     case 'quota_exceeded':
-      return t('meal.photo_analysis.error.quota') as string;
+      return t('meal.photo_analysis.error.quota');
     case 'network':
-      return t('meal.photo_analysis.error.network') as string;
+      return t('meal.photo_analysis.error.network');
     default:
-      return t('meal.photo_analysis.error.generic') as string;
+      return t('meal.photo_analysis.error.generic');
   }
 }
 
@@ -670,21 +729,21 @@ function ImageUploadSection({
 
   // Primary area label
   const areaLabel: string = display.isDone
-    ? (t('meal.builder.image.cta_change') as string)
-    : (t('meal.builder.image.cta_upload') as string);
+    ? (t('meal.builder.image.cta_change'))
+    : (t('meal.builder.image.cta_upload'));
 
   // Progress message when uploading
   const progressMessage: string | null =
     display.showProgress && display.progressPercent !== null
       ? buildUploadProgressMessage(
-          t('custom_meal.image.upload_progress') as string,
+          t('custom_meal.image.upload_progress'),
           display.progressPercent,
         )
       : null;
 
   // Error message key → localized string
   const errorMessage: string | null = display.errorMessageKey
-    ? (t(display.errorMessageKey as Parameters<TFn>[0]) as string)
+    ? (t(display.errorMessageKey as Parameters<TFn>[0]))
     : null;
 
   const imagePreviewUrl = uploadState.kind === 'done' ? uploadState.url : null;
@@ -703,7 +762,7 @@ function ImageUploadSection({
       {/* Tap area: upload / change photo */}
       <Pressable
         accessibilityRole="button"
-        accessibilityHint={t('meal.builder.image.cta_upload') as string}
+        accessibilityHint={t('meal.builder.image.cta_upload')}
         onPress={onPickAndUpload}
         style={[styles.imageUploadArea, { borderColor: palette.icon + '55' }]}
         testID="meal.builder.imageUpload"
@@ -843,7 +902,7 @@ function resolveFieldError(
   };
 
   const key = map[field]?.[code];
-  return key ? (t(key as Parameters<TFn>[0]) as string) : null;
+  return key ? (t(key as Parameters<TFn>[0])) : null;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -865,6 +924,18 @@ const styles = StyleSheet.create({
   },
   fieldError: { fontSize: 12 },
   errorText: { fontSize: 13 },
+  statusCard: {
+    gap: 12,
+    paddingVertical: 32,
+  },
+  loadingCard: {
+    alignItems: 'center',
+  },
+  errorCardMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
   imageUploadArea: {
     alignItems: 'center',
     borderRadius: 10,

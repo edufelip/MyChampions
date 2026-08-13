@@ -106,4 +106,13 @@ Feature: Custom meal creation and portion logging
     When a recoverable upload failure occurs
     Then user sees failure reason and retry action
     And recipe draft fields remain preserved
+
+  Scenario: Missing, deleted, or unauthorized edit ID fails closed (ET-100)
+    Given an authenticated user opens /nutrition/custom-meals/:mealId
+    And the mealId does not resolve to a meal the user can access
+    When the route settles
+    Then the screen never renders a blank editable form as if the resource exists
+    And a semantic error state is shown with localized copy, a Retry action, and a Back to recipes action
+    And Save and Share stay disabled or absent until a real meal is loaded
+    And /nutrition/custom-meals/new create mode is unaffected
 ```
