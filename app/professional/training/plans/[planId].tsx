@@ -2,48 +2,48 @@
  * SC-208 Training Plan Builder
  * Route: /professional/training/plans/:planId
  */
+import { useNavigation } from '@react-navigation/native';
+import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
 import { Alert, LayoutAnimation, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
-import * as Haptics from '@/features/platform/haptics-adapter';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-
+import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
+import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
+import { ExerciseSearchModal } from '@/components/ds/patterns/ExerciseSearchModal';
+import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
+import { StudentPickerModal } from '@/components/ds/patterns/StudentPickerModal';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
-import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
-import { StudentPickerModal } from '@/components/ds/patterns/StudentPickerModal';
-import { ExerciseSearchModal } from '@/components/ds/patterns/ExerciseSearchModal';
-import { SessionCard } from '@/features/plans/components/SessionCard';
-import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
-import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
-import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
-
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
-import { usePlans } from '@/features/plans/use-plans';
-import { useExerciseSearch } from '@/features/plans/use-exercise-search';
+import type { ExerciseItem } from '@/features/plans/exercise-service-source';
+import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-builder.logic';
+import { generateLocalId } from '@/features/id-source';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
-import type { ExerciseItem } from '@/features/plans/exercise-service-source';
-import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-builder.logic';
-import { generateLocalId } from '@/features/id-source';
+import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
+import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
+import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
+import { SessionCard } from '@/features/plans/components/SessionCard';
+import { isReadOnlyForStudentSurface } from '@/features/plans/plan-ownership.logic';
+import { useExerciseSearch } from '@/features/plans/use-exercise-search';
+import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
+import { usePlanForm } from '@/features/plans/use-plan-form';
+import { usePlans } from '@/features/plans/use-plans';
+import * as Haptics from '@/features/platform/haptics-adapter';
 import {
   getProfessionalStudentRoster,
   type ProfessionalStudentRosterItem,
 } from '@/features/professional/professional-source';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useTranslation } from '@/localization';
-import { usePlanForm } from '@/features/plans/use-plan-form';
 import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
+import { useTranslation } from '@/localization';
 
 enableBuilderLayoutAnimations();
 
@@ -73,13 +73,22 @@ export default function TrainingPlanBuilderScreen() {
   const { state, loadPlan, initNewPlan, savePlanWithSessions, deletePlan, validateInput } =
     useTrainingPlanBuilder(Boolean(currentUser), `${pathname}:plan:${planId ?? 'new'}`);
 
-  const { createDraftAssignedPlan } = usePlans(Boolean(currentUser), { fetchOnMount: false });
+  const { createDraftAssignedPlan, submitChangeRequest, validateChangeRequest } = usePlans(
+    Boolean(currentUser),
+    { fetchOnMount: false },
+  );
 
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
   const isDraftAssignment =
     state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
+  // D-006 / ET-107: a Student may only view — never edit — a professionally
+  // assigned (or otherwise non-self-managed) plan. Fail-closed by source kind,
+  // not by a cosmetic path flag.
+  const isReadOnlyAssignedPlan =
+    state.kind === 'ready' &&
+    isReadOnlyForStudentSurface({ sourceKind: state.plan.sourceKind }, isStudentBuilder);
   const creationMode = isStudentBuilder ? 'self_managed' : 'professional_library';
 
   const initialValues = useMemo(
@@ -311,8 +320,8 @@ export default function TrainingPlanBuilderScreen() {
       const sessionName = session?.name || t('pro.plan.section.sessions');
 
       Alert.alert(
-        t('common.cta.delete') as string,
-        (t('pro.plan.delete.body') as string).replace('{name}', sessionName),
+        t('common.cta.delete'),
+        (t('pro.plan.delete.body')).replace('{name}', sessionName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -340,8 +349,8 @@ export default function TrainingPlanBuilderScreen() {
       const itemName = item?.name || t('pro.plan.section.sessions');
 
       Alert.alert(
-        t('common.cta.delete') as string,
-        (t('pro.plan.delete.body') as string).replace('{name}', itemName),
+        t('common.cta.delete'),
+        (t('pro.plan.delete.body')).replace('{name}', itemName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -476,7 +485,7 @@ export default function TrainingPlanBuilderScreen() {
       const roster = await getProfessionalStudentRoster();
       setStudents(roster.filter((s) => s.specialty === 'fitness_coach'));
     } catch {
-      Alert.alert(t('pro.students.error') as string);
+      Alert.alert(t('pro.students.error'));
       setIsStudentPickerVisible(false);
     } finally {
       setIsLoadingStudents(false);
@@ -494,7 +503,7 @@ export default function TrainingPlanBuilderScreen() {
       setIsAssigning(false);
 
       if ('error' in result) {
-        Alert.alert(t('pro.plan.assign.error') as string);
+        Alert.alert(t('pro.plan.assign.error'));
         return;
       }
 
@@ -517,7 +526,7 @@ export default function TrainingPlanBuilderScreen() {
   const isEmptySessionsState = state.kind === 'ready' && sessions.length === 0;
   const addSessionDraft = addSessionForm.kind === 'open' ? addSessionForm : null;
   const isEmptyStateAddSessionOpen =
-    !isSortMode && isEmptySessionsState && addSessionDraft !== null;
+    !isReadOnlyAssignedPlan && !isSortMode && isEmptySessionsState && addSessionDraft !== null;
 
   return (
     <DsScreen
@@ -533,13 +542,13 @@ export default function TrainingPlanBuilderScreen() {
         <DsBackButton
           scheme={scheme}
           onPress={handleBack}
-          accessibilityLabel={t('auth.role.cta_back') as string}
+          accessibilityLabel={t('auth.role.cta_back')}
           style={styles.backButton}
           testID="pro.training_plan.backButton"
         />
 
         <View style={{ flexDirection: 'row', gap: DsSpace.sm }}>
-          {sessions.length > 1 && (
+          {!isReadOnlyAssignedPlan && sessions.length > 1 && (
             <DsPillButton
               scheme={scheme}
               variant="ghost"
@@ -562,13 +571,13 @@ export default function TrainingPlanBuilderScreen() {
               }
             />
           )}
-          {!isNew && (
+          {!isReadOnlyAssignedPlan && !isNew && (
             <Pressable
               onPress={handleDeletePlan}
               disabled={isBusy}
               hitSlop={12}
               accessibilityRole="button"
-              accessibilityLabel={t('common.cta.delete') as string}
+              accessibilityLabel={t('common.cta.delete')}
               style={styles.headerActionBtn}
             >
               <IconSymbol name="trash" size={20} color={palette.danger} />
@@ -582,6 +591,15 @@ export default function TrainingPlanBuilderScreen() {
           message={t('pro.plan.draft_banner.training')}
           backgroundColor={palette.tint}
           textColor={theme.color.surface}
+        />
+      )}
+
+      {isReadOnlyAssignedPlan && (
+        <BuilderAlertBanner
+          message={t('student.training.assigned_plan.read_only_notice')}
+          backgroundColor={palette.tint}
+          textColor={theme.color.surface}
+          testID="student.training_plan.readOnlyNotice"
         />
       )}
 
@@ -618,7 +636,9 @@ export default function TrainingPlanBuilderScreen() {
           placeholderTextColor={palette.icon}
           value={values.name}
           onChangeText={handleNameChange}
+          editable={!isReadOnlyAssignedPlan}
           accessibilityLabel={tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
+          accessibilityState={isReadOnlyAssignedPlan ? { disabled: true } : undefined}
           testID="pro.training_plan.name"
         />
         <Text style={[styles.supportText, { color: palette.icon }]}>
@@ -751,6 +771,7 @@ export default function TrainingPlanBuilderScreen() {
           onRemoveItem={handleRemoveSessionItem}
           isSortMode={isSortMode}
           isInteractionLocked={isBusy}
+          readOnly={isReadOnlyAssignedPlan}
           onMoveSession={handleMoveSession}
           onMoveItem={handleMoveItem}
           testIDPrefix="pro.training_plan"
@@ -758,7 +779,8 @@ export default function TrainingPlanBuilderScreen() {
       ))}
 
       {/* ── Add session form ──────────────────────────────────────────────── */}
-      {!isEmptySessionsState &&
+      {!isReadOnlyAssignedPlan &&
+        !isEmptySessionsState &&
         !isSortMode &&
         state.kind === 'ready' &&
         addSessionForm.kind === 'open' && (
@@ -832,50 +854,80 @@ export default function TrainingPlanBuilderScreen() {
           </Animated.View>
         )}
 
-      {!isSortMode && state.kind === 'ready' && addSessionForm.kind === 'closed' && (
-        <DsPillButton
-          scheme={scheme}
-          variant="primary"
-          label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')}
-          onPress={() => {
-            if (isBusy) return;
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            setAddSessionForm({ kind: 'open', name: '', notes: '' });
-          }}
-          disabled={isBusy}
-          leftIcon={<IconSymbol name="plus.circle.fill" size={18} color={theme.color.onAccent} />}
-          testID="pro.training_plan.addSession"
-        />
-      )}
-
-      {/* ── Footer Actions ────────────────────────────────────────────────── */}
-      <View style={styles.footerActions}>
-        <DsPillButton
-          scheme={scheme}
-          variant="primary"
-          label={
-            isDraftAssignment
-              ? t('pro.plan.cta.assign_and_send')
-              : tr('pro.plan.cta.save', 'student.plan.cta.save')
-          }
-          onPress={handleSaveDraft}
-          disabled={!hasUnsavedChanges || isSaving || isMutating}
-          loading={isSaving}
-          style={{ flex: 1 }}
-          testID="pro.training_plan.saveButton"
-        />
-
-        {!isNew && !isStudentBuilder && (
+      {!isReadOnlyAssignedPlan &&
+        !isSortMode &&
+        state.kind === 'ready' &&
+        addSessionForm.kind === 'closed' && (
           <DsPillButton
             scheme={scheme}
-            variant="outline"
-            label={t('pro.plan.cta.assign')}
-            onPress={handleOpenStudentPicker}
-            disabled={isBusy || hasUnsavedChanges}
-            style={{ flex: 1 }}
+            variant="primary"
+            label={tr('pro.plan.cta.add_session', 'student.plan.cta.add_session')}
+            onPress={() => {
+              if (isBusy) return;
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setAddSessionForm({ kind: 'open', name: '', notes: '' });
+            }}
+            disabled={isBusy}
+            leftIcon={<IconSymbol name="plus.circle.fill" size={18} color={theme.color.onAccent} />}
+            testID="pro.training_plan.addSession"
           />
         )}
-      </View>
+
+      {/* ── Footer Actions ────────────────────────────────────────────────── */}
+      {!isReadOnlyAssignedPlan && (
+        <View style={styles.footerActions}>
+          <DsPillButton
+            scheme={scheme}
+            variant="primary"
+            label={
+              isDraftAssignment
+                ? t('pro.plan.cta.assign_and_send')
+                : tr('pro.plan.cta.save', 'student.plan.cta.save')
+            }
+            onPress={handleSaveDraft}
+            disabled={!hasUnsavedChanges || isSaving || isMutating}
+            loading={isSaving}
+            style={{ flex: 1 }}
+            testID="pro.training_plan.saveButton"
+          />
+
+          {!isNew && !isStudentBuilder && (
+            <DsPillButton
+              scheme={scheme}
+              variant="outline"
+              label={t('pro.plan.cta.assign')}
+              onPress={handleOpenStudentPicker}
+              disabled={isBusy || hasUnsavedChanges}
+              style={{ flex: 1 }}
+            />
+          )}
+        </View>
+      )}
+
+      {/* ── Request plan change (D-006 assigned-plan read-only surface) ────── */}
+      {state.kind === 'ready' && isReadOnlyAssignedPlan && (
+        <PlanChangeRequestCard
+          scheme={scheme}
+          t={t}
+          isWriteLocked={false}
+          testID="student.training_plan.planChangeForm"
+          validate={validateChangeRequest}
+          submit={(requestText) => submitChangeRequest(state.plan.id, 'training', requestText)}
+          keys={{
+            title: 'student.training.plan_change.title',
+            label: 'student.training.plan_change.label',
+            placeholder: 'student.training.plan_change.placeholder',
+            cta: 'student.training.plan_change.cta',
+            success: 'student.training.plan_change.success',
+            validationRequired: 'student.training.plan_change.validation.required',
+            validationTooShort: 'student.training.plan_change.validation.too_short',
+            errorPlanNotFound: 'student.training.plan_change.error.plan_not_found',
+            errorNoActiveAssignment: 'student.training.plan_change.error.no_active_assignment',
+            errorNetwork: 'student.training.plan_change.error.network',
+            errorUnknown: 'student.training.plan_change.error.unknown',
+          }}
+        />
+      )}
 
       <StudentPickerModal
         isVisible={isStudentPickerVisible}

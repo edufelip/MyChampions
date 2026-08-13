@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from 'react-native';
-
 import { DsRadius, DsSpace, DsTypography } from '@/constants/design-system';
 
 type BuilderAlertBannerProps = {
@@ -7,6 +6,7 @@ type BuilderAlertBannerProps = {
   backgroundColor: string;
   textColor: string;
   borderColor?: string;
+  testID?: string;
 };
 
 export function BuilderAlertBanner({
@@ -14,11 +14,13 @@ export function BuilderAlertBanner({
   backgroundColor,
   textColor,
   borderColor,
+  testID,
 }: BuilderAlertBannerProps) {
   return (
     <View
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
+      testID={testID}
       style={[
         styles.banner,
         {
