@@ -1288,6 +1288,9 @@ const styles = StyleSheet.create({
   textInput: {
     borderRadius: DsRadius.lg,
     borderWidth: 2,
+    // flex: 1 grows the input across the row in the default (row) layout;
+    // in inputRowCompact (column) it is inert on the cross axis and the
+    // input's full width there comes from the default `stretch` alignment.
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
