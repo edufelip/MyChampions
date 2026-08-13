@@ -20,6 +20,18 @@ async function chooseRole(page: Page, role: 'student' | 'professional') {
   }
 }
 
+async function countNestedButtons(page: Page, cardTestId: string): Promise<number> {
+  return page.evaluate((testId) => {
+    const card = document.querySelector(`[data-testid="${testId}"]`);
+    if (!card) return -1;
+    let nested = 0;
+    card.querySelectorAll('button').forEach((outerButton) => {
+      nested += outerButton.querySelectorAll('button').length;
+    });
+    return nested;
+  }, cardTestId);
+}
+
 async function capture(
   page: Page,
   testInfo: TestInfo,
@@ -120,17 +132,10 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
     // controls (outer expand toggle wrapping the inner Log Meal button), which
     // previously produced invalid <button> nesting and a React hydration error
     // on every load of this screen.
-    const nestedButtonCount = await page.evaluate(() => {
-      const mealCard = document.querySelector(
-        '[data-testid="student.nutrition.mealCard.e2e-assigned-meal"]',
-      );
-      if (!mealCard) return -1;
-      let nested = 0;
-      mealCard.querySelectorAll('button').forEach((outerButton) => {
-        nested += outerButton.querySelectorAll('button').length;
-      });
-      return nested;
-    });
+    const nestedButtonCount = await countNestedButtons(
+      page,
+      'student.nutrition.mealCard.e2e-assigned-meal',
+    );
     expect(nestedButtonCount).toBe(0);
     expect(
       consoleErrors.filter((text) => /descendant of|nested <button>|hydration error/i.test(text)),
@@ -158,17 +163,10 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
     await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeHidden();
     await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
 
-    const nestedButtonCountAfterToggle = await page.evaluate(() => {
-      const mealCard = document.querySelector(
-        '[data-testid="student.nutrition.mealCard.e2e-assigned-meal"]',
-      );
-      if (!mealCard) return -1;
-      let nested = 0;
-      mealCard.querySelectorAll('button').forEach((outerButton) => {
-        nested += outerButton.querySelectorAll('button').length;
-      });
-      return nested;
-    });
+    const nestedButtonCountAfterToggle = await countNestedButtons(
+      page,
+      'student.nutrition.mealCard.e2e-assigned-meal',
+    );
     expect(nestedButtonCountAfterToggle).toBe(0);
 
     await page.getByTestId('student.nutrition.logMealButton.e2e-assigned-meal').click();
