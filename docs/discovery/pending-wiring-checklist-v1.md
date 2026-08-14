@@ -467,7 +467,7 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: 7 `a11y.*` localization keys added to all three locale bundles (`en-US`, `pt-BR`, `es-ES`) and tracked in `localized-copy-table-v2.md`.
 - `Done`: Accessibility baseline approach documented in `decisions-log-v1.md` as D-105 (React Native core a11y props only, no external a11y library).
 - `Done`: BL-013 annotation layer complete across all MVP screens. Deferred items explicitly scoped out per D-125.
-- `Done`: SC-213 support dialog web accessibility bridge (D-202) adds named dialog semantics, a distinct localized close label, and mobile Playwright assertions for 390x844 and 320x720. Native Modal dismissal behavior remains unchanged.
+- `Done`: SC-213 support dialog web accessibility bridge (D-203) adds named dialog semantics, a distinct localized close label, and mobile Playwright assertions for 390x844 and 320x720. Native Modal dismissal behavior remains unchanged.
 - `Pending (deferred — release hardening)`: Screen-reader end-to-end smoke test via Detox (requires Detox CI wiring, D-125).
 - `Pending (deferred — release hardening)`: Color-contrast audit with automated tool (requires design token finalization, D-125).
 

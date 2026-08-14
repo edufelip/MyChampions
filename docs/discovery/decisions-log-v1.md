@@ -830,15 +830,19 @@
 
 - `D-203`: SC-213 support dialog accessibility uses a web-only semantic bridge
   over the existing React Native modal.
-  - The visible support sheet receives `role="dialog"`, `aria-modal="true"`,
-    and `aria-labelledby` pointing to the localized title only on web; native
-    modal behavior remains owned by React Native `Modal` and `onRequestClose`.
+  - React Native Web's own `<Modal>` ancestor already exposes `role="dialog"`
+    and `aria-modal="true"` once active; the bridge names that same ancestor
+    with `aria-labelledby` pointing to the localized title instead of stamping
+    a second, nested `role="dialog"` on the visible support sheet — only one
+    dialog role is ever exposed to assistive tech. Native modal behavior
+    remains owned by React Native `Modal` and `onRequestClose`.
   - The icon close control has a dedicated localized label, while the form
     Cancel action retains its own visible label. This prevents duplicate
     accessible names without changing the support submission contract.
-  - Mobile Playwright regression coverage verifies the semantic tree, focus
-    containment, Escape dismissal, and trigger focus restoration at 390x844 and
-    320x720.
+  - Mobile-viewport Playwright regression coverage (390x844 and 320x720,
+    desktop browser engines resized, no touch-input emulation) verifies the
+    semantic tree, focus containment, Escape dismissal, and trigger focus
+    restoration.
 
 ## Pending Decisions
 

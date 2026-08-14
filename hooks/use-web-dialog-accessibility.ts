@@ -31,12 +31,20 @@ export function useWebDialogAccessibility(input: {
     const title = input.dialogTitleTestID
       ? document.querySelector<HTMLElement>(`[data-testid="${input.dialogTitleTestID}"]`)
       : null;
-    const previousAttributes = root
+    // React Native's <Modal> already renders a web ancestor with role="dialog" and
+    // aria-modal="true" (react-native-web's ModalContent) once it activates. Reusing that
+    // ancestor — instead of stamping a second, nested role="dialog" on `root` — avoids two
+    // overlapping dialog roles being exposed to assistive tech, only one of which would be
+    // named. `aria-modal` is applied by that ancestor unconditionally (even before the
+    // activation-driven `role` lands), so it is a stable way to find it synchronously.
+    const dialogEl = root?.closest<HTMLElement>('[aria-modal="true"]') ?? root;
+    const ownsDialogRole = dialogEl === root;
+    const previousAttributes = dialogEl
       ? {
-          role: root.getAttribute('role'),
-          ariaModal: root.getAttribute('aria-modal'),
-          ariaLabel: root.getAttribute('aria-label'),
-          ariaLabelledBy: root.getAttribute('aria-labelledby'),
+          role: dialogEl.getAttribute('role'),
+          ariaModal: dialogEl.getAttribute('aria-modal'),
+          ariaLabel: dialogEl.getAttribute('aria-label'),
+          ariaLabelledBy: dialogEl.getAttribute('aria-labelledby'),
         }
       : null;
     const previousTitleId = title ? title.getAttribute('id') : null;
@@ -44,14 +52,18 @@ export function useWebDialogAccessibility(input: {
       title && !previousTitleId
         ? `${input.testID.replace(/[^a-zA-Z0-9_-]/g, '-')}-title`
         : previousTitleId;
-    const canApplyDialogSemantics = Boolean(root && title);
+    const canApplyDialogSemantics = Boolean(dialogEl && title);
 
-    if (root && canApplyDialogSemantics) {
-      root.setAttribute('role', 'dialog');
-      root.setAttribute('aria-modal', 'true');
+    if (dialogEl && canApplyDialogSemantics) {
+      // Only take ownership of role/aria-modal when no ancestor already manages them —
+      // otherwise React Native's own re-renders of that ancestor own those attributes.
+      if (ownsDialogRole) {
+        dialogEl.setAttribute('role', 'dialog');
+        dialogEl.setAttribute('aria-modal', 'true');
+      }
       if (generatedTitleId) {
         if (!previousTitleId) title?.setAttribute('id', generatedTitleId);
-        root.setAttribute('aria-labelledby', generatedTitleId);
+        dialogEl.setAttribute('aria-labelledby', generatedTitleId);
       }
     }
     const focusable = () =>
@@ -85,15 +97,17 @@ export function useWebDialogAccessibility(input: {
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', onKeyDown);
-      if (root && canApplyDialogSemantics && previousAttributes) {
-        if (previousAttributes.role === null) root.removeAttribute('role');
-        else root.setAttribute('role', previousAttributes.role);
-        if (previousAttributes.ariaModal === null) root.removeAttribute('aria-modal');
-        else root.setAttribute('aria-modal', previousAttributes.ariaModal);
-        if (previousAttributes.ariaLabel === null) root.removeAttribute('aria-label');
-        else root.setAttribute('aria-label', previousAttributes.ariaLabel);
-        if (previousAttributes.ariaLabelledBy === null) root.removeAttribute('aria-labelledby');
-        else root.setAttribute('aria-labelledby', previousAttributes.ariaLabelledBy);
+      if (dialogEl && canApplyDialogSemantics && previousAttributes) {
+        if (ownsDialogRole) {
+          if (previousAttributes.role === null) dialogEl.removeAttribute('role');
+          else dialogEl.setAttribute('role', previousAttributes.role);
+          if (previousAttributes.ariaModal === null) dialogEl.removeAttribute('aria-modal');
+          else dialogEl.setAttribute('aria-modal', previousAttributes.ariaModal);
+          if (previousAttributes.ariaLabel === null) dialogEl.removeAttribute('aria-label');
+          else dialogEl.setAttribute('aria-label', previousAttributes.ariaLabel);
+        }
+        if (previousAttributes.ariaLabelledBy === null) dialogEl.removeAttribute('aria-labelledby');
+        else dialogEl.setAttribute('aria-labelledby', previousAttributes.ariaLabelledBy);
       }
       if (title && canApplyDialogSemantics) {
         if (previousTitleId === null) title.removeAttribute('id');

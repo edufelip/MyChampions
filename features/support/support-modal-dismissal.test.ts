@@ -38,11 +38,32 @@ test('support modal web Escape callback uses the submission-aware dismissal guar
   );
 });
 
-test('web dialog accessibility hook applies named modal semantics and restores attributes', () => {
-  assert.match(dialogHookSource, /root\.setAttribute\('role', 'dialog'\)/);
-  assert.match(dialogHookSource, /root\.setAttribute\('aria-modal', 'true'\)/);
-  assert.match(dialogHookSource, /root\.setAttribute\('aria-labelledby', generatedTitleId\)/);
-  assert.match(dialogHookSource, /const canApplyDialogSemantics = Boolean\(root && title\)/);
+test('web dialog accessibility hook names the existing React Native Modal ancestor instead of stamping a second nested dialog role', () => {
+  // React Native's own <Modal> already renders a web ancestor with role="dialog" and
+  // aria-modal="true" once active (react-native-web ModalContent). The hook must reuse
+  // that ancestor for aria-labelledby rather than adding role/aria-modal directly on the
+  // inner testID node, or two overlapping dialog roles would be exposed to assistive tech.
+  assert.match(
+    dialogHookSource,
+    /const dialogEl = root\?\.closest<HTMLElement>\('\[aria-modal="true"\]'\) \?\? root;/,
+  );
+  assert.match(dialogHookSource, /const ownsDialogRole = dialogEl === root;/);
+  assert.match(
+    dialogHookSource,
+    /if \(ownsDialogRole\) \{\s*dialogEl\.setAttribute\('role', 'dialog'\);\s*dialogEl\.setAttribute\('aria-modal', 'true'\);\s*\}/,
+  );
+  assert.match(dialogHookSource, /dialogEl\.setAttribute\('aria-labelledby', generatedTitleId\)/);
+  assert.match(dialogHookSource, /const canApplyDialogSemantics = Boolean\(dialogEl && title\)/);
+});
+
+test('web dialog accessibility hook restores prior dialog-ancestor attributes on cleanup, gated by ownership', () => {
+  assert.match(
+    dialogHookSource,
+    /if \(dialogEl && canApplyDialogSemantics && previousAttributes\) \{\s*if \(ownsDialogRole\) \{/,
+  );
+  assert.match(dialogHookSource, /previousAttributes\.role/);
+  assert.match(dialogHookSource, /previousAttributes\.ariaModal/);
+  assert.match(dialogHookSource, /previousAttributes\.ariaLabel\b/);
   assert.match(dialogHookSource, /previousAttributes\.ariaLabelledBy/);
 });
 

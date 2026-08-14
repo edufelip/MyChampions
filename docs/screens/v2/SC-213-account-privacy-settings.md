@@ -144,4 +144,4 @@ in-app support access.
 - Acceptance criteria: AC-305, AC-306, AC-307, AC-308, AC-310, AC-520, AC-521, AC-522, AC-523, AC-524
 - Business rules: BR-225, BR-231, BR-299, BR-300, BR-301, BR-302
 - Test cases: TC-261, TC-304, TC-305, TC-306, TC-307, TC-309, TC-310, TC-311, TC-312, TC-313, TC-314
-- Decisions: D-045, D-103, D-025, D-014
+- Decisions: D-045, D-103, D-025, D-014, D-203
