@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     padding: DsSpace.lg,
   },
   body: { maxWidth: 560, textAlign: 'center' },
-  errorText: { fontSize: 13, opacity: 0.8 },
+  errorText: { fontSize: 13 },
   button: {
     borderRadius: 999,
     minHeight: 44,
