@@ -6,6 +6,9 @@ import {
   loadAverageMultiplier,
   memAvailableFloorBytes,
   parseMemAvailableBytes,
+  readCompetingBuildProcessCount,
+  readMemAvailableBytes,
+  resolveOwnAvdName,
   waitForHostCapacity,
   type HostCapacitySnapshot,
 } from '../../scripts/ci/wait-for-host-capacity';
@@ -187,4 +190,35 @@ test('waitForHostCapacity gives up after its bounded wait budget and proceeds an
   });
   assert.equal(sleepCalls, 3);
   assert.match(messages[messages.length - 1], /proceeding anyway/);
+});
+
+test('resolveOwnAvdName trims and returns a configured MYCHAMPIONS_ANDROID_AVD', () => {
+  assert.equal(resolveOwnAvdName({ MYCHAMPIONS_ANDROID_AVD: '  Custom_AVD  ' }), 'Custom_AVD');
+});
+
+test('resolveOwnAvdName defaults to Pixel_10 when the env var is unset or blank', () => {
+  assert.equal(resolveOwnAvdName({}), 'Pixel_10');
+  assert.equal(resolveOwnAvdName({ MYCHAMPIONS_ANDROID_AVD: '   ' }), 'Pixel_10');
+});
+
+// These two exercise the real, unmocked OS-facing code paths (actual
+// /proc/meminfo and an actual `ps` invocation) that every other test in this
+// file bypasses via injected snapshot/sleep/log fakes. They're deliberately
+// loose sanity checks — the goal is to catch wiring bugs (wrong `ps` flags,
+// a meminfo parse regression, an unhandled throw) rather than to assert a
+// specific host state.
+test('readMemAvailableBytes reads a real, positive value from this host', () => {
+  const bytes = readMemAvailableBytes();
+  assert.ok(
+    Number.isFinite(bytes) && bytes > 0,
+    `expected a positive available-memory byte count, got ${bytes}`,
+  );
+});
+
+test('readCompetingBuildProcessCount runs the real `ps` command without throwing', () => {
+  const count = readCompetingBuildProcessCount('__no-avd-should-ever-be-named-this__');
+  assert.ok(
+    Number.isInteger(count) && count >= 0,
+    `expected a non-negative integer process count, got ${count}`,
+  );
 });

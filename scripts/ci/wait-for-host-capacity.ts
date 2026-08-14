@@ -83,8 +83,13 @@ export function parseMemAvailableBytes(procMeminfo: string): number | undefined 
 // AVD name). The `emulator` launcher re-execs into qemu-system-x86_64 with
 // the AVD named as a bare `@<avd>` argument rather than `-avd <avd>`
 // (confirmed against a live process: `qemu-system-x86_64-headless @Pixel_10
-// -port 5556 ...`); the higher-level `emulator` wrapper process (when it is
-// what's visible instead) does use `-avd <avd>`, so both forms are matched.
+// -port 5556 ...`). Only that confirmed qemu-system-x86_64/crash-service form
+// is currently pattern-matched below; a bare, not-yet-re-exec'd `emulator
+// -avd <avd>` wrapper line would not be recognized as an emulator process at
+// all (neither counted as competing nor excluded as our own) until it
+// re-execs. That window has been observed to be effectively instantaneous in
+// practice, so it is left unhandled rather than matched speculatively without
+// a confirmed live sample of that exact process line.
 export function countCompetingBuildProcesses(psOutput: string, ownAvdName: string): number {
   const ownAvdMarkers = ownAvdName ? [`-avd ${ownAvdName}`, `@${ownAvdName}`] : [];
   let count = 0;
@@ -99,24 +104,35 @@ export function countCompetingBuildProcesses(psOutput: string, ownAvdName: strin
   return count;
 }
 
-function readMemAvailableBytes(): number {
+export function readMemAvailableBytes(): number {
   try {
     const parsed = parseMemAvailableBytes(readFileSync('/proc/meminfo', 'utf8'));
     if (parsed !== undefined) return parsed;
-  } catch {
+    console.error(
+      'Android host capacity check: /proc/meminfo has no MemAvailable field; falling back to freemem().',
+    );
+  } catch (error) {
     // Non-Linux host or /proc unavailable: fall back to a conservative signal.
+    console.error(
+      'Android host capacity check: could not read /proc/meminfo; falling back to freemem().',
+      error,
+    );
   }
   return freemem();
 }
 
-function readCompetingBuildProcessCount(ownAvdName: string): number {
+export function readCompetingBuildProcessCount(ownAvdName: string): number {
   try {
     const output = execFileSync('ps', ['-eo', 'pid,cmd'], {
       encoding: 'utf8',
       maxBuffer: 8 * 1024 * 1024,
     });
     return countCompetingBuildProcesses(output, ownAvdName);
-  } catch {
+  } catch (error) {
+    console.error(
+      'Android host capacity check: `ps -eo pid,cmd` failed; assuming zero competing processes.',
+      error,
+    );
     return 0;
   }
 }
@@ -175,9 +191,29 @@ export async function waitForHostCapacity(
   }
 }
 
+const defaultOwnAvdName = 'Pixel_10';
+
+// Exported so the fallback-selection logic itself is directly testable
+// without exercising the real host (ps/proc) or the network-free but still
+// async waitForHostCapacity loop.
+export function resolveOwnAvdName(env: Readonly<Record<string, string | undefined>>): string {
+  const configured = env.MYCHAMPIONS_ANDROID_AVD?.trim();
+  if (!configured) {
+    // The workflow always supplies MYCHAMPIONS_ANDROID_AVD from the
+    // android-slot step's output, so this should be unreachable in CI; if it
+    // ever does fire (local run, misconfiguration), log loudly rather than
+    // silently guessing an AVD name that could misclassify this job's own
+    // emulator as a sibling's.
+    console.error(
+      `Android host capacity check: MYCHAMPIONS_ANDROID_AVD is not set; defaulting to "${defaultOwnAvdName}" for own-process exclusion.`,
+    );
+    return defaultOwnAvdName;
+  }
+  return configured;
+}
+
 async function main(): Promise<void> {
-  const ownAvdName = process.env.MYCHAMPIONS_ANDROID_AVD?.trim() || 'Pixel_10';
-  await waitForHostCapacity(ownAvdName);
+  await waitForHostCapacity(resolveOwnAvdName(process.env));
 }
 
 const invokedDirectly =
