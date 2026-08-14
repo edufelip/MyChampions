@@ -1194,16 +1194,17 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-wsl-ui
+      group: mychampions-wsl-ui-${{ needs.authorize-candidate.outputs.pull_request_number || needs.authorize-candidate.outputs.head_sha }}
       cancel-in-progress: false
     env:
       CI: 'true'
-      PLAYWRIGHT_BROWSERS_PATH: /home/eduardo/.cache/ms-playwright-mychampions
       PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'
       SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'
       SELECTED_SUITES_JSON: ${{ needs.impact.outputs.web_suites }}
       MYCHAMPIONS_SERVER_ROOT: ${{ github.workspace }}/.ci/mychampions-api
     steps:
+      - name: Resolve runner-owned Playwright browsers cache path
+        run: echo "PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright-mychampions" >> "$GITHUB_ENV"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
@@ -1343,7 +1344,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-ios-detox
+      group: mychampions-ios-detox-${{ needs.authorize-candidate.outputs.pull_request_number || needs.authorize-candidate.outputs.head_sha }}
       cancel-in-progress: false
     env:
       APP_VARIANT: dev
@@ -2204,7 +2205,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-wsl-ui
+      group: mychampions-android-detox-${{ needs.authorize-candidate.outputs.pull_request_number || needs.authorize-candidate.outputs.head_sha }}
       cancel-in-progress: false
     env:
       APP_VARIANT: dev
@@ -2488,6 +2489,11 @@ jobs:
             app:assembleDevDebugAndroidTest \
             -PdetoxMetroPort="$DETOX_METRO_PORT" \
             -DtestBuildType=debug
+      - name: Wait for Android host capacity before booting the emulator
+        env:
+          MYCHAMPIONS_ANDROID_AVD: ${{ steps.android-slot.outputs.MYCHAMPIONS_ANDROID_AVD }}
+        shell: bash
+        run: yarn tsx scripts/ci/wait-for-host-capacity.ts
       - name: Run selected Android suites on a supported emulator port
         env:
           ADB_SERVER_PORT: ${{ steps.android-slot.outputs.ADB_SERVER_PORT }}
@@ -3448,18 +3454,24 @@ jobs:
           printf '%s\n' "$emulator_pid" > "$diagnostics_dir/emulator-${emulator_port}.pid"
 
           booted=false
-          boot_deadline=$((SECONDS + 120))
+          # Boot deadline and per-adb-call timeouts are widened beyond
+          # single-tenant defaults because this host runs 5 independent
+          # self-hosted runners (mychampions, meer, meerserver,
+          # meerdashboard, meerwebsite) that are not coordinated against
+          # each other; a sibling repo's cold Gradle build has been shown to
+          # overlap this exact boot/test window and slow adb round-trips.
+          boot_deadline=$((SECONDS + 180))
           while (( SECONDS < boot_deadline )); do
             if ! emulator_pid_matches; then
               echo "Android emulator exited or changed identity before boot completed" >&2
               tail -n 160 "$emulator_log" >&2
               exit 1
             fi
-            state="$(timeout 2s adb -P "$adb_server_port" -s "$emulator_serial" get-state 2>/dev/null || true)"
-            complete="$(timeout 2s adb -P "$adb_server_port" -s "$emulator_serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-            avd_name="$(timeout 2s adb -P "$adb_server_port" -s "$emulator_serial" shell getprop ro.boot.qemu.avd_name 2>/dev/null | tr -d '\r' || true)"
+            state="$(timeout 4s adb -P "$adb_server_port" -s "$emulator_serial" get-state 2>/dev/null || true)"
+            complete="$(timeout 4s adb -P "$adb_server_port" -s "$emulator_serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            avd_name="$(timeout 4s adb -P "$adb_server_port" -s "$emulator_serial" shell getprop ro.boot.qemu.avd_name 2>/dev/null | tr -d '\r' || true)"
             attached_emulator="$(
-              timeout 2s adb -P "$adb_server_port" devices 2>/dev/null |
+              timeout 4s adb -P "$adb_server_port" devices 2>/dev/null |
                 awk -v expected="$emulator_serial" \
                   '$1 == expected && $2 == "device" { print $1 }' || true
             )"
