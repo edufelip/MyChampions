@@ -201,7 +201,7 @@ export default function TrainingPlanBuilderScreen() {
     } else if (!isStarterClone && planId) {
       loadPlan(planId);
     }
-  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan]);
+  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan, pathname]);
 
   useEffect(() => {
     if (!shouldNavigateAfterDelete || isDeletingPlan) {
