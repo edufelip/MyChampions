@@ -346,11 +346,12 @@ test.describe('@accessibility @critical @feature:shell keyboard and dialog behav
       await trigger.click();
       const modal = page.getByTestId('settings.account.support.modal');
       const close = page.getByTestId('settings.account.support.closeButton');
-      const dialog = page.getByRole('dialog');
-      await expect(modal).toBeVisible();
       // The named dialog role/aria-modal live on React Native's own <Modal> ancestor, not on
-      // the inner testID node — asserting a single dialog role here also guards against the
-      // hook stamping a second, nested, unnamed role="dialog" on `modal`.
+      // the inner testID node — scoping to an ancestor of `modal` (rather than the whole page)
+      // still catches the hook stamping a second, nested, unnamed role="dialog" on `modal`
+      // itself, without coupling this assertion to unrelated dialogs elsewhere on the page.
+      const dialog = modal.locator('xpath=ancestor::*[@role="dialog"]');
+      await expect(modal).toBeVisible();
       await expect(dialog).toHaveCount(1);
       await expect(dialog).toHaveAttribute('aria-modal', 'true');
       await expect(dialog).toHaveAccessibleName('Talk to support');
