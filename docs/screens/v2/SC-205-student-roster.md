@@ -64,7 +64,7 @@
 - Concurrent unbind can remove student from active list in-session.
 - If invite code is missing/loading/error in empty state, share CTA falls back to `/professional/home` (no modal error copy).
 - Transient auth/profile re-hydration must not remount the tab shell for the same authenticated UID.
-- Open question (not yet resolved): whether a roster read error should fall back to a cached read-only roster when one exists, following the same stale-data policy as the professional dashboard, instead of always showing the error card. Currently any settled error hides the roster shell regardless of prior successful data.
+- Open question (not yet resolved, tracked as `Q-028` in `docs/discovery/open-questions-v1.md`): whether a roster read error should fall back to a cached read-only roster when one exists, following the same stale-data policy as the professional dashboard, instead of always showing the error card. Currently any settled error hides the roster shell regardless of prior successful data.
 
 ## Links
 - Functional requirement: FR-105, FR-122, FR-210, FR-224, FR-225
