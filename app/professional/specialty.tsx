@@ -716,9 +716,7 @@ function CredentialForm({
       : `${t('pro.specialty.credential.title')} — ${specialtyLabel}`;
 
   const skipLabel =
-    mode === 'add'
-      ? (t('pro.specialty.credential.skip_add'))
-      : (t('pro.specialty.credential.skip'));
+    mode === 'add' ? t('pro.specialty.credential.skip_add') : t('pro.specialty.credential.skip');
 
   return (
     <DsCard scheme={scheme} testID="pro.specialty.credentialForm" style={styles.cardGap}>

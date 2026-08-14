@@ -415,7 +415,7 @@
       "ci": true
     },
     "web:specialty-removal-assist": {
-      "runner": "playwright",
+      "runner": "playwright-evidence",
       "projects": ["chromium"],
       "specs": ["e2e/web/specialty-removal-assist.spec.ts"],
       "grep": "@feature:professional-specialty-removal-assist",
