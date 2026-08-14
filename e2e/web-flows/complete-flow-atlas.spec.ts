@@ -203,7 +203,14 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
       'student.nutrition.planChangeForm.success',
     );
 
+    // ET-107 (D-006): a Student opening a professionally assigned plan must see a
+    // read-only detail — never the editable professional builder surface.
     await page.goto('/student/nutrition/plans/e2e-assigned-nutrition-plan');
+    await expect(page.getByTestId('student.nutrition_plan.readOnlyNotice')).toBeVisible();
+    await expect(page.getByTestId('pro.plan.metadata.name')).toHaveAttribute('readonly', '');
+    await expect(page.getByTestId('pro.nutrition_plan.saveButton')).toHaveCount(0);
+    await expect(page.getByTestId('pro.nutrition_plan.addMeal')).toHaveCount(0);
+    await expect(page.getByTestId('student.nutrition_plan.planChangeForm')).toBeVisible();
     const assignedNutritionNameBox = await page.getByTestId('pro.plan.metadata.name').boundingBox();
     expect(assignedNutritionNameBox).not.toBeNull();
     expect(assignedNutritionNameBox?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(880);
@@ -216,6 +223,8 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
     );
 
     await page.goto('/student/nutrition/plans/e2e-assigned-nutrition-plan/meals/e2e-assigned-meal');
+    await expect(page.getByTestId('student.nutrition_meal.readOnlyNotice')).toBeVisible();
+    await expect(page.getByTestId('pro.nutrition_meal.addFood')).toHaveCount(0);
     await capture(
       page,
       testInfo,
@@ -242,7 +251,13 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
       'student.training.screen',
     );
 
+    // ET-107 (D-006): same read-only contract applies to the training plan route.
     await page.goto('/student/training/plans/e2e-assigned-training-plan');
+    await expect(page.getByTestId('student.training_plan.readOnlyNotice')).toBeVisible();
+    await expect(page.getByTestId('pro.training_plan.name')).toHaveAttribute('readonly', '');
+    await expect(page.getByTestId('pro.training_plan.saveButton')).toHaveCount(0);
+    await expect(page.getByTestId('pro.training_plan.addSession')).toHaveCount(0);
+    await expect(page.getByTestId('student.training_plan.planChangeForm')).toBeVisible();
     await capture(
       page,
       testInfo,

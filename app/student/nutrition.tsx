@@ -18,6 +18,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
   type DimensionValue,
 } from 'react-native';
@@ -925,6 +926,8 @@ function WaterWidget({
 }) {
   const theme = getDsTheme(scheme);
   const { state, validateIntake, logIntake } = waterHook;
+  const { width: viewportWidth } = useWindowDimensions();
+  const usesCompactWaterLogLayout = viewportWidth < 480;
 
   const [intakeRaw, setIntakeRaw] = useState('');
   const [intakeError, setIntakeError] = useState<string | null>(null);
@@ -1014,7 +1017,7 @@ function WaterWidget({
 
           {!isWriteLocked ? (
             <>
-              <View style={styles.inputRow}>
+              <View style={[styles.inputRow, usesCompactWaterLogLayout && styles.inputRowCompact]}>
                 <TextInput
                   accessibilityLabel={t('student.nutrition.water.log.label')}
                   keyboardType="numeric"
@@ -1045,7 +1048,7 @@ function WaterWidget({
                     void onLogIntake();
                   }}
                   loading={isLoggingIntake}
-                  fullWidth={false}
+                  fullWidth={usesCompactWaterLogLayout}
                   testID="student.nutrition.waterWidget.logButton"
                   style={styles.compactButton}
                 />
@@ -1305,13 +1308,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  inputRowCompact: {
+    flexDirection: 'column',
+  },
   textInput: {
     borderRadius: DsRadius.lg,
     borderWidth: 2,
+    // flex: 1 grows the input across the row in the default (row) layout;
+    // in inputRowCompact (column) it is inert on the cross axis and the
+    // input's full width there comes from the default `stretch` alignment.
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
     minHeight: 48,
+    minWidth: 0,
     paddingHorizontal: 12,
   },
   compactButton: {

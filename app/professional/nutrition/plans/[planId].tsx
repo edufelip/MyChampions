@@ -2,6 +2,8 @@
  * SC-207 Nutrition Plan Builder
  * Route: /professional/nutrition/plans/:planId
  */
+import { useNavigation } from '@react-navigation/native';
+import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -14,37 +16,36 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
-import * as Haptics from '@/features/platform/haptics-adapter';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-
+import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
+import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
-import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
-import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
-import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
-import { PlanMetadataForm } from '@/features/plans/components/PlanMetadataForm';
-
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
-import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
+import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
+import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
+import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
+import { PlanMetadataForm } from '@/features/plans/components/PlanMetadataForm';
 import { isStarterTemplate, calculateTotalsFromItems } from '@/features/plans/plan-builder.logic';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useTranslation } from '@/localization';
+import { isReadOnlyForStudentSurface } from '@/features/plans/plan-ownership.logic';
+import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import { usePlanForm } from '@/features/plans/use-plan-form';
+import { usePlans } from '@/features/plans/use-plans';
+import * as Haptics from '@/features/platform/haptics-adapter';
+import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
+import { useTranslation } from '@/localization';
 
 enableBuilderLayoutAnimations();
 
@@ -94,11 +95,28 @@ export default function NutritionPlanBuilderScreen() {
     `${pathname}:plan:${planId ?? 'new'}`,
   );
 
+  const { submitChangeRequest, validateChangeRequest } = usePlans(Boolean(currentUser), {
+    fetchOnMount: false,
+  });
+
   // ── Form logic ─────────────────────────────────────────────────────────────
   const isNew = planId === 'new';
   const isStarterClone = typeof planId === 'string' && isStarterTemplate(planId);
   const isDraftAssignment =
     state.kind === 'ready' && state.plan.isDraft && state.plan.sourceKind === 'assigned';
+  // D-006 / ET-107: a Student may only view — never edit — a professionally
+  // assigned (or otherwise non-self-managed) plan. Fail-closed by source kind,
+  // not by a cosmetic path flag. Also fail-closed while the store's plan
+  // hasn't caught up with this route's planId yet (e.g. right after
+  // navigating from a different plan) — a stale, unrelated plan must never
+  // be treated as this route's editable plan.
+  const isPlanLoadedForCurrentRoute = state.kind === 'ready' && state.plan.id === planId;
+  const isReadOnlyAssignedPlan =
+    isPlanLoadedForCurrentRoute &&
+    isReadOnlyForStudentSurface({ sourceKind: state.plan.sourceKind }, isStudentBuilder);
+  // Gate for write-triggering controls (Save/Delete/Add/Sort): only true once
+  // the plan is confirmed loaded, fresh for this route, and editable.
+  const canEditPlan = isPlanLoadedForCurrentRoute && !isReadOnlyAssignedPlan;
   const creationMode = isStudentBuilder ? 'self_managed' : 'professional_library';
 
   const initialValues = useMemo(
@@ -128,7 +146,7 @@ export default function NutritionPlanBuilderScreen() {
       if (isNew || isStarterClone) {
         return createPlan(formValues, creationMode);
       }
-      return savePlan(planId!, formValues, isDraftAssignment);
+      return savePlan(planId, formValues, isDraftAssignment);
     },
     onSuccess: (id) => {
       Keyboard.dismiss();
@@ -190,6 +208,18 @@ export default function NutritionPlanBuilderScreen() {
       Keyboard.dismiss();
     }
   }, [isNew, planId]);
+
+  // This screen instance can be reused across a planId change (route params
+  // updating in place rather than a fresh mount) — the same reason the
+  // builder store keys its reset on scopeKey. Sort mode is local UI state
+  // with no such reset, so without this it can survive navigating from an
+  // editable plan into a read-only one. The "Done" button that normally
+  // clears it is itself hidden once canEditPlan is false, which would leave
+  // it stuck true and (via MealRow's onPress={isSortMode ? undefined : ...})
+  // silently block tapping into any meal on the read-only plan.
+  useLayoutEffect(() => {
+    setIsSortMode(false);
+  }, [planId]);
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
@@ -268,23 +298,19 @@ export default function NutritionPlanBuilderScreen() {
       const meal = state.plan.meals.find((m) => m.id === mealId);
       const mealName = meal?.name || t('pro.plan.section.meals');
 
-      Alert.alert(
-        t('common.cta.delete') as string,
-        (t('pro.plan.delete.body') as string).replace('{name}', mealName),
-        [
-          { text: t('common.cta.cancel'), style: 'cancel' },
-          {
-            text: t('common.cta.delete'),
-            style: 'destructive',
-            onPress: () => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              void removeMeal(state.plan.id, mealId);
-              setIsDirty(true);
-            },
+      Alert.alert(t('common.cta.delete'), t('pro.plan.delete.body').replace('{name}', mealName), [
+        { text: t('common.cta.cancel'), style: 'cancel' },
+        {
+          text: t('common.cta.delete'),
+          style: 'destructive',
+          onPress: () => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            void removeMeal(state.plan.id, mealId);
+            setIsDirty(true);
           },
-        ],
-      );
+        },
+      ]);
     },
     [isBusy, state, removeMeal, setIsDirty, t],
   );
@@ -397,40 +423,42 @@ export default function NutritionPlanBuilderScreen() {
         <DsBackButton
           scheme={scheme}
           onPress={handleBack}
-          accessibilityLabel={t('auth.role.cta_back') as string}
+          accessibilityLabel={t('auth.role.cta_back')}
           style={styles.backButton}
           testID="pro.nutrition_plan.backButton"
         />
 
-        <View style={{ flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center' }}>
-          <DsPillButton
-            scheme={scheme}
-            variant="primary"
-            size="sm"
-            fullWidth={false}
-            label={
-              isDraftAssignment
-                ? t('pro.plan.cta.assign_and_send')
-                : tr('pro.plan.cta.save', 'student.plan.cta.save')
-            }
-            onPress={handleSave}
-            disabled={!isDirty || isSaving}
-            loading={isSaving}
-            testID="pro.nutrition_plan.saveButton"
-          />
+        {canEditPlan && (
+          <View style={{ flexDirection: 'row', gap: DsSpace.sm, alignItems: 'center' }}>
+            <DsPillButton
+              scheme={scheme}
+              variant="primary"
+              size="sm"
+              fullWidth={false}
+              label={
+                isDraftAssignment
+                  ? t('pro.plan.cta.assign_and_send')
+                  : tr('pro.plan.cta.save', 'student.plan.cta.save')
+              }
+              onPress={handleSave}
+              disabled={!isDirty || isSaving}
+              loading={isSaving}
+              testID="pro.nutrition_plan.saveButton"
+            />
 
-          {!isNew && (
-            <Pressable
-              onPress={handleDeletePlan}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel={t('common.cta.delete') as string}
-              style={styles.headerActionBtn}
-            >
-              <IconSymbol name="trash" size={20} color={palette.danger} />
-            </Pressable>
-          )}
-        </View>
+            {!isNew && (
+              <Pressable
+                onPress={handleDeletePlan}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.cta.delete')}
+                style={styles.headerActionBtn}
+              >
+                <IconSymbol name="trash" size={20} color={palette.danger} />
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
 
       {isDraftAssignment && (
@@ -438,6 +466,15 @@ export default function NutritionPlanBuilderScreen() {
           message={t('pro.plan.draft_banner.nutrition')}
           backgroundColor={palette.tint}
           textColor={theme.color.surface}
+        />
+      )}
+
+      {isReadOnlyAssignedPlan && (
+        <BuilderAlertBanner
+          message={t('student.nutrition.assigned_plan.read_only_notice')}
+          backgroundColor={palette.tint}
+          textColor={theme.color.surface}
+          testID="student.nutrition_plan.readOnlyNotice"
         />
       )}
 
@@ -487,6 +524,7 @@ export default function NutritionPlanBuilderScreen() {
         onNameChange={(v) => handleFieldChange('name', v)}
         onHydrationGoalChange={(v) => handleFieldChange('hydrationGoalMl', v)}
         autoFocus={isNew && !values.name}
+        readOnly={isReadOnlyAssignedPlan}
         testIDPrefix="pro.plan.metadata"
       />
 
@@ -501,7 +539,7 @@ export default function NutritionPlanBuilderScreen() {
       </View>
 
       {/* ── Add meal form ─────────────────────────────────────────────────── */}
-      {!isSortMode && state.kind === 'ready' && addMealForm.kind === 'open' && (
+      {canEditPlan && !isSortMode && state.kind === 'ready' && addMealForm.kind === 'open' && (
         <Animated.View
           entering={FadeIn.duration(300)}
           exiting={FadeOut.duration(200)}
@@ -521,7 +559,7 @@ export default function NutritionPlanBuilderScreen() {
               scheme={scheme}
               variant="ghost"
               size="sm"
-              label={t('common.cta.cancel') as string}
+              label={t('common.cta.cancel')}
               onPress={handleCloseAddMeal}
               disabled={isBusy}
               fullWidth={false}
@@ -531,7 +569,7 @@ export default function NutritionPlanBuilderScreen() {
               scheme={scheme}
               variant="ghost"
               size="sm"
-              label={t('common.cta.add') as string}
+              label={t('common.cta.add')}
               onPress={handleAddMeal}
               disabled={isBusy || !addMealForm.name.trim()}
               fullWidth={false}
@@ -541,7 +579,7 @@ export default function NutritionPlanBuilderScreen() {
         </Animated.View>
       )}
 
-      {!isSortMode && state.kind === 'ready' && addMealForm.kind === 'closed' && (
+      {canEditPlan && !isSortMode && state.kind === 'ready' && addMealForm.kind === 'closed' && (
         <View style={styles.actionRow}>
           <Pressable
             accessibilityRole="button"
@@ -583,7 +621,7 @@ export default function NutritionPlanBuilderScreen() {
         </View>
       )}
 
-      {isSortMode && state.kind === 'ready' && (
+      {canEditPlan && isSortMode && state.kind === 'ready' && (
         <View style={styles.sortModeHeader}>
           <DsPillButton
             scheme={scheme}
@@ -631,10 +669,36 @@ export default function NutritionPlanBuilderScreen() {
               onMoveDown={() => handleMoveMeal(index, 'down')}
               isFirstInList={index === 0}
               isLastInList={index === state.plan.meals.length - 1}
+              readOnly={isReadOnlyAssignedPlan}
               testID={`pro.nutrition_plan.mealRow.${toTestIDSegment(meal.name)}`}
             />
           ))}
         </View>
+      )}
+
+      {/* ── Request plan change (D-006 assigned-plan read-only surface) ────── */}
+      {state.kind === 'ready' && isReadOnlyAssignedPlan && (
+        <PlanChangeRequestCard
+          scheme={scheme}
+          t={t}
+          isWriteLocked={false}
+          testID="student.nutrition_plan.planChangeForm"
+          validate={validateChangeRequest}
+          submit={(requestText) => submitChangeRequest(state.plan.id, 'nutrition', requestText)}
+          keys={{
+            title: 'student.nutrition.plan_change.title',
+            label: 'student.nutrition.plan_change.label',
+            placeholder: 'student.nutrition.plan_change.placeholder',
+            cta: 'student.nutrition.plan_change.cta',
+            success: 'student.nutrition.plan_change.success',
+            validationRequired: 'student.nutrition.plan_change.validation.required',
+            validationTooShort: 'student.nutrition.plan_change.validation.too_short',
+            errorPlanNotFound: 'student.nutrition.plan_change.error.plan_not_found',
+            errorNoActiveAssignment: 'student.nutrition.plan_change.error.no_active_assignment',
+            errorNetwork: 'student.nutrition.plan_change.error.network',
+            errorUnknown: 'student.nutrition.plan_change.error.unknown',
+          }}
+        />
       )}
 
       {/* ── Footer Actions Removed ──────────────────────────────────────────── */}
@@ -663,6 +727,7 @@ function MealRow({
   onMoveDown,
   isFirstInList,
   isLastInList,
+  readOnly,
   testID,
 }: {
   meal: any;
@@ -676,6 +741,7 @@ function MealRow({
   onMoveDown: () => void;
   isFirstInList: boolean;
   isLastInList: boolean;
+  readOnly?: boolean;
   testID: string;
 }) {
   const totals = calculateTotalsFromItems(meal.items);
@@ -704,7 +770,7 @@ function MealRow({
             </Text>
           </View>
 
-          {isSortMode ? (
+          {isSortMode && !readOnly ? (
             <View style={styles.sortActions}>
               <Pressable
                 onPress={onMoveUp}
@@ -729,7 +795,7 @@ function MealRow({
         </View>
       </Pressable>
 
-      {!isSortMode && (
+      {!isSortMode && !readOnly && (
         <Pressable onPress={onRemove} hitSlop={8} style={styles.removeBtn}>
           <IconSymbol name="minus.circle.fill" size={20} color={palette.danger} />
         </Pressable>
