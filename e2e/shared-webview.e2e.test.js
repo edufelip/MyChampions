@@ -57,4 +57,18 @@ describeWithE2EAuthSession('Shared WebView', () => {
       .toBeVisible()
       .withTimeout(10000);
   });
+
+  it('shows recoverable state for a repeated unsafe WebView deep link', async () => {
+    await selectStudentRole();
+    await device.openURL({
+      url: 'mychampions://shared/webview?intent=account&url=https%3A%2F%2Feduwaldo.com%2Fterms&url=javascript%3Aalert(1)',
+    });
+
+    await waitFor(element(by.id('shared.webview.screen')))
+      .toBeVisible()
+      .withTimeout(10000);
+    await waitFor(element(by.id('shared.webview.invalidLink.backButton')))
+      .toBeVisible()
+      .withTimeout(10000);
+  });
 });
