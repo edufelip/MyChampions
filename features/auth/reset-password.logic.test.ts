@@ -26,6 +26,17 @@ describe('reset-password.logic', () => {
       );
     });
 
+    it('rejects a malformed email', () => {
+      const errors = validateResetPasswordInput({
+        email: 'user@',
+        token: 'reset-token',
+        newPassword: 'Str0ng!Pass',
+        newPasswordConfirmation: 'Str0ng!Pass',
+      });
+
+      assert.equal(errors.email, 'auth.validation.email_invalid');
+    });
+
     it('rejects a new password that fails the policy', () => {
       const errors = validateResetPasswordInput({
         email: 'user@example.test',

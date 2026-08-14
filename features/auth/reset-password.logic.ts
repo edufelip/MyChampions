@@ -1,4 +1,5 @@
 import { isPasswordPolicySatisfied } from './create-account.logic';
+import { isValidEmailFormat } from './forgot-password.logic';
 
 export type ResetPasswordConfirmErrorReason =
   | 'invalid_or_expired_token'
@@ -16,7 +17,7 @@ export type ResetPasswordRequest = {
 };
 
 export type ResetPasswordValidationErrors = {
-  email?: 'auth.validation.email_required';
+  email?: 'auth.validation.email_required' | 'auth.validation.email_invalid';
   token?: 'auth.reset_password.validation.token_required';
   newPassword?: 'auth.validation.password_required' | 'auth.validation.password_policy';
   newPasswordConfirmation?:
@@ -47,8 +48,11 @@ export function validateResetPasswordInput(
 ): ResetPasswordValidationErrors {
   const errors: ResetPasswordValidationErrors = {};
 
-  if (input.email.trim().length === 0) {
+  const trimmedEmail = input.email.trim();
+  if (trimmedEmail.length === 0) {
     errors.email = 'auth.validation.email_required';
+  } else if (!isValidEmailFormat(trimmedEmail)) {
+    errors.email = 'auth.validation.email_invalid';
   }
 
   if (input.token.trim().length === 0) {
