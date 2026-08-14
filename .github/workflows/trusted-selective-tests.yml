@@ -2481,6 +2481,15 @@ jobs:
           trap 'cleanup_build_signal 143' TERM
 
           create_secret_link
+          # This job's emulator is always the x86_64 Pixel_10 AVD
+          # (DETOX_ANDROID_AVD above), so armeabi-v7a/arm64-v8a/x86 native
+          # libraries are compiled and packaged for nothing every run.
+          # Restricting to the one ABI the emulator actually loads cuts the
+          # NDK/CMake compile fan-out (a single reanimated build alone can
+          # spin up dozens of parallel clang++ jobs per ABI) roughly 4x,
+          # which matters on this shared self-hosted host where sibling
+          # repos' builds compete for the same CPUs. Release builds are
+          # unaffected: reactNativeArchitectures is only overridden here.
           run_supervised ./gradlew \
             --no-daemon \
             lintDevDebug \
@@ -2488,6 +2497,7 @@ jobs:
             app:assembleDevDebug \
             app:assembleDevDebugAndroidTest \
             -PdetoxMetroPort="$DETOX_METRO_PORT" \
+            -PreactNativeArchitectures=x86_64 \
             -DtestBuildType=debug
       - name: Run selected Android suites on a supported emulator port
         env:
