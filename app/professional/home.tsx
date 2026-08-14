@@ -815,6 +815,8 @@ function QuickActionCard({
   );
 }
 
+const taskIconWidth = 38;
+
 const styles = StyleSheet.create({
   content: {
     gap: DsSpace.md,
@@ -961,9 +963,9 @@ const styles = StyleSheet.create({
   taskIcon: {
     alignItems: 'center',
     borderRadius: DsRadius.pill,
-    height: 38,
+    height: taskIconWidth,
     justifyContent: 'center',
-    width: 38,
+    width: taskIconWidth,
   },
   taskCopy: {
     flex: 1,
@@ -978,7 +980,7 @@ const styles = StyleSheet.create({
   taskCtaCompact: {
     flexBasis: '100%',
     justifyContent: 'flex-end',
-    paddingLeft: 46,
+    paddingLeft: taskIconWidth + DsSpace.sm,
     paddingTop: DsSpace.xs,
   },
   taskCtaText: {
