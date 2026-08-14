@@ -44,6 +44,8 @@ type PlanMetadataFormProps = {
   onNameChange: (v: string) => void;
   onHydrationGoalChange: (v: string) => void;
   autoFocus?: boolean;
+  /** D-006: renders the name/hydration fields as non-editable for an assigned plan viewed by a Student. */
+  readOnly?: boolean;
   testIDPrefix?: string;
 };
 
@@ -63,6 +65,7 @@ export const PlanMetadataForm = React.memo(
     onNameChange,
     onHydrationGoalChange,
     autoFocus,
+    readOnly,
     testIDPrefix,
   }: PlanMetadataFormProps) => {
     const hydrationInputRef = React.useRef<TextInput>(null);
@@ -84,7 +87,9 @@ export const PlanMetadataForm = React.memo(
               placeholderTextColor={palette.icon}
               value={name}
               onChangeText={onNameChange}
+              editable={!readOnly}
               accessibilityLabel={t('pro.plan.field.name.label')}
+              accessibilityState={readOnly ? { disabled: true } : undefined}
               autoFocus={autoFocus}
               returnKeyType="next"
               onSubmitEditing={() => hydrationInputRef.current?.focus()}
@@ -118,6 +123,7 @@ export const PlanMetadataForm = React.memo(
               placeholderTextColor={palette.icon}
               value={hydrationGoalMl}
               onChangeText={onHydrationGoalChange}
+              editable={!readOnly}
               keyboardType="numeric"
               returnKeyType="done"
               onSubmitEditing={Keyboard.dismiss}
@@ -128,6 +134,7 @@ export const PlanMetadataForm = React.memo(
                 'pro.plan.field.hydration_goal.label',
                 'student.plan.field.hydration_goal.label',
               )}
+              accessibilityState={readOnly ? { disabled: true } : undefined}
               testID={testIDPrefix ? `${testIDPrefix}.hydrationGoalMl` : undefined}
             />
             {errors.hydrationGoalMl && (
