@@ -73,14 +73,16 @@ export default function WebExternalLinkScreen() {
       <Text style={[styles.body, { color: theme.color.textPrimary }]}>
         {safeUrl ? t('shared.webview.browser_hint') : t('auth.terms.invalid_link')}
       </Text>
-      {safeUrl && openError ? (
-        <Text
-          style={[styles.body, styles.errorText, { color: theme.color.textPrimary }]}
-          testID="shared.webview.openError"
-        >
-          {t('shared.webview.open_error', { url: safeUrl })}
-        </Text>
-      ) : null}
+      <View accessibilityRole="alert">
+        {safeUrl && openError ? (
+          <Text
+            style={[styles.body, styles.errorText, { color: theme.color.danger }]}
+            testID="shared.webview.openError"
+          >
+            {t('shared.webview.open_error', { url: safeUrl })}
+          </Text>
+        ) : null}
+      </View>
       {safeUrl ? (
         <Pressable
           accessibilityRole="link"
@@ -97,10 +99,14 @@ export default function WebExternalLinkScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
           onPress={goBack}
-          style={[styles.button, { backgroundColor: theme.color.accentPrimary }]}
+          style={[
+            styles.button,
+            styles.secondaryButton,
+            { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+          ]}
           testID="shared.webview.backButton"
         >
-          <Text style={{ color: theme.color.onAccent }}>{t('common.back')}</Text>
+          <Text style={{ color: theme.color.textSecondary }}>{t('common.back')}</Text>
         </Pressable>
       ) : (
         <Pressable
@@ -132,5 +138,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: DsSpace.lg,
     justifyContent: 'center',
+  },
+  secondaryButton: {
+    borderWidth: 1,
   },
 });

@@ -89,4 +89,42 @@ test.describe('@manual-runtime @feature:auth shared WebView recovery', () => {
     await expect(page).not.toHaveURL(/\/shared\/webview/);
     await expect(page.getByTestId('settings.account.screen')).toBeVisible();
   });
+
+  test('surfaces a recoverable error when the browser blocks the popup (ET-112)', async ({
+    page,
+  }, testInfo) => {
+    // Simulate a popup blocker: `window.open` returns `null` instead of a
+    // window handle when the browser blocks it.
+    await page.addInitScript(() => {
+      window.open = () => null;
+    });
+
+    await page.goto(
+      '/shared/webview?intent=account&url=https%3A%2F%2Flegal.example.test%2Fterms&title=Terms%20of%20Service',
+    );
+
+    await expect(page.getByTestId('shared.webview.screen')).toBeVisible();
+    await expect(page.getByTestId('shared.webview.openError')).toHaveCount(0);
+
+    await page.getByTestId('shared.webview.openExternal').click();
+
+    const openError = page.getByTestId('shared.webview.openError');
+    await expect(openError).toBeVisible();
+    await expect(openError).toContainText('legal.example.test/terms');
+
+    const screenshotPath = testInfo.outputPath('popup-blocked-recoverable-error-mobile.png');
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await testInfo.attach('popup-blocked-recoverable-error-mobile', {
+      path: screenshotPath,
+      contentType: 'image/png',
+    });
+
+    // The recoverable path still lets the user leave the screen instead of
+    // being stranded behind a failed handoff.
+    const backButton = page.getByTestId('shared.webview.backButton');
+    await expect(backButton).toBeVisible();
+    await backButton.click();
+    await expect(page).not.toHaveURL(/\/shared\/webview/);
+    await expect(page.getByTestId('settings.account.screen')).toBeVisible();
+  });
 });
