@@ -1194,7 +1194,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-wsl-ui
+      group: mychampions-wsl-ui-${{ needs.authorize-candidate.outputs.pull_request_number || needs.authorize-candidate.outputs.head_sha }}
       cancel-in-progress: false
     env:
       CI: 'true'
@@ -1344,7 +1344,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-ios-detox
+      group: mychampions-ios-detox-${{ needs.authorize-candidate.outputs.pull_request_number || needs.authorize-candidate.outputs.head_sha }}
       cancel-in-progress: false
     env:
       APP_VARIANT: dev
@@ -2205,7 +2205,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: mychampions-wsl-ui
+      group: mychampions-android-detox-${{ needs.authorize-candidate.outputs.pull_request_number || needs.authorize-candidate.outputs.head_sha }}
       cancel-in-progress: false
     env:
       APP_VARIANT: dev
