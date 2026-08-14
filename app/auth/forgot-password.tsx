@@ -15,6 +15,10 @@ import {
 import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import { requestPasswordResetFromSource } from '@/features/auth/account-auth-source';
+import {
+  validateForgotPasswordEmail,
+  type ForgotPasswordEmailErrorKey,
+} from '@/features/auth/forgot-password.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -27,7 +31,7 @@ export default function ForgotPasswordScreen() {
 
   const [email, setEmail] = useState('');
   const emailRef = useRef('');
-  const [emailError, setEmailError] = useState<'auth.validation.email_required' | null>(null);
+  const [emailError, setEmailError] = useState<ForgotPasswordEmailErrorKey | null>(null);
   const [submitError, setSubmitError] = useState<'auth.forgot_password.error.generic' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
@@ -41,8 +45,9 @@ export default function ForgotPasswordScreen() {
     const trimmedEmail = emailRef.current.trim();
     setSubmitError(null);
 
-    if (trimmedEmail.length === 0) {
-      setEmailError('auth.validation.email_required');
+    const nextEmailError = validateForgotPasswordEmail(trimmedEmail);
+    if (nextEmailError) {
+      setEmailError(nextEmailError);
       return;
     }
     setEmailError(null);

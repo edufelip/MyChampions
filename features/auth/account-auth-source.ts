@@ -117,6 +117,9 @@ export async function confirmPasswordResetFromSource(
     throw new ResetPasswordConfirmFailure('configuration');
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
   let response: Response;
   try {
     response = await deps.fetch(`${baseUrl}/auth/password-reset/confirm`, {
@@ -124,12 +127,15 @@ export async function confirmPasswordResetFromSource(
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         email: emailNormalized,
-        token: input.token,
+        token: input.token.trim(),
         newPassword: input.newPassword,
       }),
+      signal: controller.signal,
     });
   } catch {
     throw new ResetPasswordConfirmFailure('network');
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const payload = await readJson(response);

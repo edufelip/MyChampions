@@ -18,6 +18,7 @@ export const enUS = {
   'auth.placeholder.password_confirmation': 'Confirm password',
   'auth.validation.name_required': 'Name is required.',
   'auth.validation.email_required': 'Email is required.',
+  'auth.validation.email_invalid': 'Enter a valid email address.',
   'auth.validation.password_required': 'Password is required.',
   'auth.validation.password_confirmation_required': 'Password confirmation is required.',
   'auth.validation.password_policy':

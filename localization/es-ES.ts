@@ -20,6 +20,7 @@ export const esES: Record<TranslationKey, string> = {
   'auth.placeholder.password_confirmation': 'Confirmar contraseña',
   'auth.validation.name_required': 'El nombre es obligatorio.',
   'auth.validation.email_required': 'El correo es obligatorio.',
+  'auth.validation.email_invalid': 'Ingresa un correo válido.',
   'auth.validation.password_required': 'La contraseña es obligatoria.',
   'auth.validation.password_confirmation_required': 'La confirmación de contraseña es obligatoria.',
   'auth.validation.password_policy':
@@ -46,7 +47,7 @@ export const esES: Record<TranslationKey, string> = {
   'auth.signin.forgot_password': '¿Olvidaste tu contraseña?',
   'auth.forgot_password.title': 'Restablece tu contraseña',
   'auth.forgot_password.subtitle':
-    'Escribe el correo de tu cuenta y te enviaremos instrucciones para restablecerla si existe.',
+    'Escribe el correo de tu cuenta y te enviaremos instrucciones para restablecer tu contraseña si existe una cuenta.',
   'auth.forgot_password.cta_primary': 'Enviar instrucciones',
   'auth.forgot_password.success.title': 'Revisa tu correo',
   'auth.forgot_password.success.body':

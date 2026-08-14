@@ -20,6 +20,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.placeholder.password_confirmation': 'Confirmar senha',
   'auth.validation.name_required': 'Nome é obrigatório.',
   'auth.validation.email_required': 'E-mail é obrigatório.',
+  'auth.validation.email_invalid': 'Informe um e-mail válido.',
   'auth.validation.password_required': 'Senha é obrigatória.',
   'auth.validation.password_confirmation_required': 'A confirmação de senha é obrigatória.',
   'auth.validation.password_policy':

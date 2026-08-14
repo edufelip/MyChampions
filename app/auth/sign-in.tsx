@@ -569,8 +569,10 @@ const styles = StyleSheet.create({
   },
   forgotPasswordLink: {
     alignSelf: 'flex-end',
+    justifyContent: 'center',
+    minHeight: 44,
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
   forgotPasswordText: {
     fontSize: 13,

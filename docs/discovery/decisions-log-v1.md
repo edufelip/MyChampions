@@ -809,8 +809,10 @@
 
 - `D-203`: ET-71 closes the client-side gap left after the server shipped a
   complete password-reset backend (`POST /auth/password-reset` request +
-  `POST /auth/password-reset/confirm` confirm, the latter added by ET-74) with
-  no corresponding mobile UI. Decisions applied:
+  `POST /auth/password-reset/confirm` confirm, the latter added by ET-74,
+  now merged) with no corresponding mobile UI. ET-74 is `Done`, so both the
+  client (this change) and the production confirm endpoint it depends on are
+  fully wired end to end. Decisions applied:
   - **Entry point**: A "Forgot password?" text link is added to SC-217 sign-in,
     above the primary CTA, pushing to a new unauthenticated SC-226
     forgot-password screen (`/auth/forgot-password`).

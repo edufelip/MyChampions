@@ -91,7 +91,7 @@
 - Implemented in code: `app/auth/forgot-password.tsx`.
 - Objective: let an unauthenticated user request a password-reset email by submitting their account email to the MyChampions server `POST /auth/password-reset` endpoint (`requestPasswordResetFromSource()`, unchanged from the existing SC-213 "change password" implementation).
 - States: idle form → submitting → success banner (privacy-preserving copy: shown identically whether or not the email is registered, matching the server's enumeration-resistant `202 accepted` response) → generic error banner on network/server failure.
-- Validation: email required (client-side); server-side `invalid_email` rejection surfaces as a generic submit error, matching the existing account-settings reset request's error handling.
+- Validation: email required and format-checked (client-side, `validateForgotPasswordEmail()` in `features/auth/forgot-password.logic.ts`); server-side `invalid_email` rejection surfaces as a generic submit error, matching the existing account-settings reset request's error handling.
 - Links back to `/auth/sign-in`.
 
 ### SC-227 Reset Password (confirm)
