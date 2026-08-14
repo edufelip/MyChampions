@@ -6,10 +6,10 @@
  * illustration while keeping BL-008 offline/write-lock and D-081 hydration-goal
  * ownership behavior.
  */
-import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,39 +18,38 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
   type DimensionValue,
 } from 'react-native';
-
-import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
-import {
-  logAssignedMealPortion,
-  getTodayPortionLogs,
-  type PortionLog,
-} from '@/features/nutrition/custom-meal-source';
-import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/plan-builder.logic';
-
-import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
-import { Fonts } from '@/constants/theme';
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
+import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
+import {
+  logAssignedMealPortion,
+  getTodayPortionLogs,
+  type PortionLog,
+} from '@/features/nutrition/custom-meal-source';
+import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
 import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
-import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
-import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
+import { calculateTotalsFromItems, type NutritionMeal } from '@/features/plans/plan-builder.logic';
 import {
   resolveStudentNutritionDisplayState,
   resolveStudentNutritionState,
 } from '@/features/plans/student-nutrition-state.logic';
+import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import { usePlans } from '@/features/plans/use-plans';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import type { UseWaterTrackingResult } from '@/features/nutrition/use-water-tracking';
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -901,6 +900,8 @@ function WaterWidget({
 }) {
   const theme = getDsTheme(scheme);
   const { state, validateIntake, logIntake } = waterHook;
+  const { width: viewportWidth } = useWindowDimensions();
+  const usesCompactWaterLogLayout = viewportWidth < 480;
 
   const [intakeRaw, setIntakeRaw] = useState('');
   const [intakeError, setIntakeError] = useState<string | null>(null);
@@ -990,7 +991,7 @@ function WaterWidget({
 
           {!isWriteLocked ? (
             <>
-              <View style={styles.inputRow}>
+              <View style={[styles.inputRow, usesCompactWaterLogLayout && styles.inputRowCompact]}>
                 <TextInput
                   accessibilityLabel={t('student.nutrition.water.log.label')}
                   keyboardType="numeric"
@@ -1021,7 +1022,7 @@ function WaterWidget({
                     void onLogIntake();
                   }}
                   loading={isLoggingIntake}
-                  fullWidth={false}
+                  fullWidth={usesCompactWaterLogLayout}
                   testID="student.nutrition.waterWidget.logButton"
                   style={styles.compactButton}
                 />
@@ -1281,13 +1282,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  inputRowCompact: {
+    flexDirection: 'column',
+  },
   textInput: {
     borderRadius: DsRadius.lg,
     borderWidth: 2,
+    // flex: 1 grows the input across the row in the default (row) layout;
+    // in inputRowCompact (column) it is inert on the cross axis and the
+    // input's full width there comes from the default `stretch` alignment.
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
     minHeight: 48,
+    minWidth: 0,
     paddingHorizontal: 12,
   },
   compactButton: {
