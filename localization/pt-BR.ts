@@ -711,6 +711,9 @@ export const ptBR: Record<TranslationKey, string> = {
   'meal.builder.validation.cost_non_negative': 'O custo dos ingredientes deve ser zero ou mais.',
   'meal.builder.error.save': 'Não foi possível salvar a refeição. Tente novamente.',
   'meal.builder.error.load': 'Não foi possível carregar a refeição. Tente novamente.',
+  'meal.builder.error.not_found':
+    'Não foi possível encontrar esta refeição. Ela pode ter sido excluída ou o link pode estar incorreto.',
+  'meal.builder.error.cta_back_to_library': 'Voltar para as receitas',
   'meal.builder.share.error.needs_save': 'Salve a refeição primeiro para compartilhá-la.',
   'meal.builder.share.error.unknown':
     'Não foi possível gerar o link de compartilhamento. Tente novamente.',

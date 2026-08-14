@@ -2392,7 +2392,7 @@ test('selected web browsers use an isolated cache and preserve user-local librar
 
   assert.match(
     webLane,
-    /^      PLAYWRIGHT_BROWSERS_PATH: \/home\/eduardo\/\.cache\/ms-playwright-mychampions$/m,
+    /run: echo "PLAYWRIGHT_BROWSERS_PATH=\$HOME\/\.cache\/ms-playwright-mychampions" >> "\$GITHUB_ENV"/,
   );
   assert.match(webLane, /^      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'$/m);
   assert.match(webLane, /find "\$PLAYWRIGHT_BROWSERS_PATH"/);
