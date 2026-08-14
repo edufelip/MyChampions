@@ -710,6 +710,9 @@ export const esES: Record<TranslationKey, string> = {
   'meal.builder.validation.cost_non_negative': 'El coste de ingredientes debe ser cero o más.',
   'meal.builder.error.save': 'No se pudo guardar la comida. Inténtalo de nuevo.',
   'meal.builder.error.load': 'No se pudo cargar la comida. Inténtalo de nuevo.',
+  'meal.builder.error.not_found':
+    'No se pudo encontrar esta comida. Puede que haya sido eliminada o que el enlace sea incorrecto.',
+  'meal.builder.error.cta_back_to_library': 'Volver a las recetas',
   'meal.builder.share.error.needs_save': 'Guarda la comida primero para compartirla.',
   'meal.builder.share.error.unknown':
     'No se pudo generar el enlace para compartir. Inténtalo de nuevo.',
