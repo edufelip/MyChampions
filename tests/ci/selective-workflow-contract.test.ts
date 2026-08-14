@@ -1046,7 +1046,7 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   );
   assert.match(
     androidLane,
-    /boot_deadline=\$\(\(SECONDS \+ 120\)\)[\s\S]*?"\$attached_emulator" == "\$emulator_serial"/,
+    /boot_deadline=\$\(\(SECONDS \+ 180\)\)[\s\S]*?"\$attached_emulator" == "\$emulator_serial"/,
   );
   assert.match(
     androidLane,
@@ -1138,6 +1138,27 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   assert.match(gate, /selected_lane\(\s+"ios"/);
   assert.match(gate, /selected_lane\(\s+"android"/);
   assert.match(gate, /expected = "success" if selected == "true" else "skipped"/);
+});
+
+test('Android lane waits for host capacity before booting the emulator', () => {
+  const source = workflow('trusted-selective-tests.yml');
+  const androidLane = jobBlock(source, 'detox-android-selected');
+
+  assert.match(
+    androidLane,
+    /- name: Run native checks and build the debug APKs once[\s\S]*?- name: Wait for Android host capacity before booting the emulator[\s\S]*?- name: Run selected Android suites on a supported emulator port/,
+    'the host-capacity gate must run after the native build and before the emulator boots',
+  );
+
+  const gateStep = namedStepBlock(
+    androidLane,
+    'Wait for Android host capacity before booting the emulator',
+  );
+  assert.match(
+    gateStep,
+    /MYCHAMPIONS_ANDROID_AVD: \$\{\{ steps\.android-slot\.outputs\.MYCHAMPIONS_ANDROID_AVD \}\}/,
+  );
+  assert.match(gateStep, /run: yarn tsx scripts\/ci\/wait-for-host-capacity\.ts/);
 });
 
 test('web and Android use separate services with shared WSL load containment', () => {
