@@ -1046,7 +1046,7 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   );
   assert.match(
     androidLane,
-    /boot_deadline=\$\(\(SECONDS \+ 120\)\)[\s\S]*?"\$attached_emulator" == "\$emulator_serial"/,
+    /boot_deadline=\$\(\(SECONDS \+ 180\)\)[\s\S]*?"\$attached_emulator" == "\$emulator_serial"/,
   );
   assert.match(
     androidLane,
@@ -1140,25 +1140,56 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   assert.match(gate, /expected = "success" if selected == "true" else "skipped"/);
 });
 
-test('web and Android use separate services with shared WSL load containment', () => {
+test('Android lane waits for host capacity before booting the emulator', () => {
+  const source = workflow('trusted-selective-tests.yml');
+  const androidLane = jobBlock(source, 'detox-android-selected');
+
+  assert.match(
+    androidLane,
+    /- name: Run native checks and build the debug APKs once[\s\S]*?- name: Wait for Android host capacity before booting the emulator[\s\S]*?- name: Run selected Android suites on a supported emulator port/,
+    'the host-capacity gate must run after the native build and before the emulator boots',
+  );
+
+  const gateStep = namedStepBlock(
+    androidLane,
+    'Wait for Android host capacity before booting the emulator',
+  );
+  assert.match(
+    gateStep,
+    /MYCHAMPIONS_ANDROID_AVD: \$\{\{ steps\.android-slot\.outputs\.MYCHAMPIONS_ANDROID_AVD \}\}/,
+  );
+  assert.match(gateStep, /run: yarn tsx scripts\/ci\/wait-for-host-capacity\.ts/);
+});
+
+test('web and Android use separate services with per-PR-scoped load containment', () => {
+  // Note: prior to fix(ci): scope selective-CI concurrency groups per PR/run
+  // (#44), the web and Android lanes shared one literal `mychampions-wsl-ui`
+  // concurrency group so they always serialized against each other on this
+  // runner. #44 rescoped every lane to its own `<lane>-${{ pull request or
+  // sha }}` group to stop unrelated PRs from queuing behind each other; each
+  // lane now only self-serializes across reruns of its own PR/branch.
   const source = workflow('trusted-selective-tests.yml');
   const webLane = jobBlock(source, 'web-selected');
   const iosLane = jobBlock(source, 'detox-ios-selected');
   const androidLane = jobBlock(source, 'detox-android-selected');
+  const scopedGroupSuffix =
+    /\$\{\{ needs\.authorize-candidate\.outputs\.pull_request_number \|\| needs\.authorize-candidate\.outputs\.head_sha \}\}$/m;
 
   assert.match(
     webLane,
     /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-web-only\]$/m,
   );
-  assert.match(webLane, /^      group: mychampions-wsl-ui$/m);
+  assert.match(webLane, /^      group: mychampions-wsl-ui-/m);
+  assert.match(webLane, scopedGroupSuffix);
   assert.match(
     webLane,
     /uses: actions\/setup-node@[a-f0-9]+[\s\S]*?- name: Enable repository Yarn\n        run: corepack enable\n      - run: yarn install --frozen-lockfile --no-progress/,
   );
   assert.equal(packageManifest.packageManager, 'yarn@1.22.22');
-  assert.match(androidLane, /^      group: mychampions-wsl-ui$/m);
-  assert.doesNotMatch(source, /group: mychampions-web-ui/);
-  assert.doesNotMatch(source, /group: mychampions-android-detox/);
+  assert.match(androidLane, /^      group: mychampions-android-detox-/m);
+  assert.match(androidLane, scopedGroupSuffix);
+  assert.match(iosLane, /^      group: mychampions-ios-detox-/m);
+  assert.match(iosLane, scopedGroupSuffix);
 
   for (const lane of [webLane, iosLane, androidLane]) {
     assert.match(lane, /^      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'$/m);
@@ -2392,7 +2423,7 @@ test('selected web browsers use an isolated cache and preserve user-local librar
 
   assert.match(
     webLane,
-    /^      PLAYWRIGHT_BROWSERS_PATH: \/home\/eduardo\/\.cache\/ms-playwright-mychampions$/m,
+    /run: echo "PLAYWRIGHT_BROWSERS_PATH=\$HOME\/\.cache\/ms-playwright-mychampions" >> "\$GITHUB_ENV"/,
   );
   assert.match(webLane, /^      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'$/m);
   assert.match(webLane, /find "\$PLAYWRIGHT_BROWSERS_PATH"/);
