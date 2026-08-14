@@ -465,12 +465,24 @@ export default function StudentNutritionScreen() {
                             style={styles.mealCard}
                             testID={`student.nutrition.mealCard.${meal.id}`}
                           >
-                            <Pressable
-                              accessibilityRole="button"
-                              onPress={() => toggleMealExpand(meal.id)}
-                              style={styles.mealHeaderPressable}
-                            >
-                              <View style={styles.mealHeaderLeft}>
+                            <View style={styles.mealHeaderRow}>
+                              <Pressable
+                                accessibilityLabel={t(
+                                  isExpanded
+                                    ? 'student.nutrition.meal.header_collapse'
+                                    : 'student.nutrition.meal.header_expand',
+                                  { meal: meal.name },
+                                )}
+                                accessibilityRole="button"
+                                accessibilityState={{ expanded: isExpanded }}
+                                aria-expanded={isExpanded}
+                                onPress={() => toggleMealExpand(meal.id)}
+                                style={({ pressed }) => [
+                                  styles.mealHeaderLeft,
+                                  { opacity: pressed ? 0.72 : 1 },
+                                ]}
+                                testID={`student.nutrition.mealHeaderToggle.${meal.id}`}
+                              >
                                 <Text style={[styles.mealName, { color: theme.color.textPrimary }]}>
                                   {meal.name}
                                 </Text>
@@ -482,7 +494,7 @@ export default function StudentNutritionScreen() {
                                 >
                                   {`${Math.round(mealCal)} kcal · ${Math.round(mealCarbs)}g C · ${Math.round(mealProt)}g P · ${Math.round(mealFats)}g F`}
                                 </Text>
-                              </View>
+                              </Pressable>
 
                               <View style={styles.mealHeaderRight}>
                                 {isLogged ? (
@@ -518,14 +530,28 @@ export default function StudentNutritionScreen() {
                                     testID={`student.nutrition.logMealButton.${meal.id}`}
                                   />
                                 )}
-                                <MaterialIcons
-                                  color={theme.color.textSecondary}
-                                  name={isExpanded ? 'expand-less' : 'expand-more'}
-                                  size={24}
-                                  style={styles.expandIcon}
-                                />
+                                <Pressable
+                                  accessibilityLabel={t(
+                                    isExpanded
+                                      ? 'student.nutrition.meal.collapse'
+                                      : 'student.nutrition.meal.expand',
+                                  )}
+                                  accessibilityRole="button"
+                                  accessibilityState={{ expanded: isExpanded }}
+                                  aria-expanded={isExpanded}
+                                  hitSlop={10}
+                                  onPress={() => toggleMealExpand(meal.id)}
+                                  style={styles.expandButton}
+                                  testID={`student.nutrition.expandBtn.${meal.id}`}
+                                >
+                                  <MaterialIcons
+                                    color={theme.color.textSecondary}
+                                    name={isExpanded ? 'expand-less' : 'expand-more'}
+                                    size={24}
+                                  />
+                                </Pressable>
                               </View>
-                            </Pressable>
+                            </View>
 
                             {isExpanded && (
                               <View
@@ -1417,7 +1443,7 @@ const styles = StyleSheet.create({
     padding: DsSpace.sm,
     gap: DsSpace.sm,
   },
-  mealHeaderPressable: {
+  mealHeaderRow: {
     alignItems: 'stretch',
     gap: DsSpace.sm,
   },
@@ -1457,8 +1483,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: DsRadius.pill,
   },
-  expandIcon: {
+  expandButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
     marginLeft: 4,
+    minHeight: 44,
+    minWidth: 44,
   },
   mealDetails: {
     marginTop: DsSpace.xs,
