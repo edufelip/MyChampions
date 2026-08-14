@@ -1140,25 +1140,33 @@ test('self-hosted selected lanes require authorization and selected skips fail p
   assert.match(gate, /expected = "success" if selected == "true" else "skipped"/);
 });
 
-test('web and Android use separate services with shared WSL load containment', () => {
+test('web and Android use separate services with per-candidate scoped concurrency', () => {
   const source = workflow('trusted-selective-tests.yml');
   const webLane = jobBlock(source, 'web-selected');
   const iosLane = jobBlock(source, 'detox-ios-selected');
   const androidLane = jobBlock(source, 'detox-android-selected');
+  const scopedSuffix =
+    '\\$\\{\\{ needs\\.authorize-candidate\\.outputs\\.pull_request_number \\|\\| needs\\.authorize-candidate\\.outputs\\.head_sha \\}\\}$';
 
   assert.match(
     webLane,
     /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-web-only\]$/m,
   );
-  assert.match(webLane, /^      group: mychampions-wsl-ui$/m);
+  assert.match(webLane, new RegExp(`^      group: mychampions-wsl-ui-${scopedSuffix}`, 'm'));
   assert.match(
     webLane,
     /uses: actions\/setup-node@[a-f0-9]+[\s\S]*?- name: Enable repository Yarn\n        run: corepack enable\n      - run: yarn install --frozen-lockfile --no-progress/,
   );
   assert.equal(packageManifest.packageManager, 'yarn@1.22.22');
-  assert.match(androidLane, /^      group: mychampions-wsl-ui$/m);
+  // Web and Android no longer share one repo-wide "wsl-ui" group (that caused
+  // cross-PR job cancellations); each lane gets its own group scoped to the
+  // candidate PR/head SHA so concurrent PRs cannot cancel each other's runs.
+  assert.match(
+    androidLane,
+    new RegExp(`^      group: mychampions-android-detox-${scopedSuffix}`, 'm'),
+  );
+  assert.doesNotMatch(source, /^ {6}group: mychampions-wsl-ui$/m);
   assert.doesNotMatch(source, /group: mychampions-web-ui/);
-  assert.doesNotMatch(source, /group: mychampions-android-detox/);
 
   for (const lane of [webLane, iosLane, androidLane]) {
     assert.match(lane, /^      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'$/m);
