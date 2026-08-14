@@ -62,7 +62,7 @@ describeWithE2EAuthSession('Student Self-Managed Builder', () => {
       .toBeVisible()
       .withTimeout(10000);
     await element(by.id('pro.training_plan.name')).replaceText('E2E Student Training Plan');
-    await device.tap({ x: 350, y: 420 });
+    await dismissFocusedEditor('pro.training_plan.name');
     await scrollToTrainingPlanSave();
     await element(by.id('pro.training_plan.saveButton')).tap();
 
