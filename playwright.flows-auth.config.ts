@@ -1,5 +1,5 @@
-import { defineConfig } from '@playwright/test';
 import path from 'node:path';
+import { defineConfig, devices } from '@playwright/test';
 
 const artifactRoot = path.resolve(
   process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/flow-atlas',
@@ -7,6 +7,7 @@ const artifactRoot = path.resolve(
 
 export default defineConfig({
   testDir: './e2e/web-flows-auth',
+  testMatch: '**/authentication-flow-atlas.spec.ts',
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -18,6 +19,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: 'http://127.0.0.1:8084',
+    locale: 'en-US',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
@@ -36,7 +38,7 @@ export default defineConfig({
     timeout: 120_000,
   },
   projects: [
-    { name: 'mobile', use: { browserName: 'chromium', viewport: { width: 390, height: 844 } } },
+    { name: 'mobile', use: { ...devices['Pixel 5'], locale: 'en-US' } },
     { name: 'tablet', use: { browserName: 'chromium', viewport: { width: 820, height: 1000 } } },
     { name: 'web', use: { browserName: 'chromium', viewport: { width: 1440, height: 1000 } } },
   ],

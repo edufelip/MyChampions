@@ -2,6 +2,7 @@
  * SC-207 Nutrition Meal Builder
  * Route: /professional/nutrition/plans/:planId/meals/:mealId
  */
+import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -12,38 +13,37 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Redirect, Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import * as Haptics from '@/features/platform/haptics-adapter';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { FoodItemRow } from '@/features/plans/components/FoodItemRow';
-import { AddItemForm } from '@/features/plans/components/AddItemForm';
-import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
-
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNutritionPlanBuilder, type FoodSearchResult } from '@/features/plans/use-plan-builder';
 import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
-import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
-import { useSpecialties } from '@/features/professional/use-professional';
 import {
   createBuilderPalette,
   createBuilderRoleTranslator,
   enableBuilderLayoutAnimations,
 } from '@/features/plans/builder-screen';
+import { AddItemForm } from '@/features/plans/components/AddItemForm';
+import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
+import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
+import { FoodItemRow } from '@/features/plans/components/FoodItemRow';
 import {
   buildNutritionMealItemInputFromCustomMealSnapshot,
   calculateTotalsFromItems,
   sanitizeNutritionMealItemInput,
 } from '@/features/plans/plan-builder.logic';
-import type { CustomMealPlanSnapshot } from '@/features/nutrition/custom-meal.logic';
+import { isReadOnlyForStudentSurface } from '@/features/plans/plan-ownership.logic';
+import { useNutritionPlanBuilder, type FoodSearchResult } from '@/features/plans/use-plan-builder';
+import * as Haptics from '@/features/platform/haptics-adapter';
+import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
+import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import type { CustomMealPlanSnapshot } from '@/features/nutrition/custom-meal.logic';
 
 enableBuilderLayoutAnimations();
 
@@ -115,6 +115,11 @@ export default function NutritionMealBuilderScreen() {
   const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
   const isInitialLoading = state.kind === 'loading';
   const isBusy = isMutating;
+  // D-006 / ET-107: a Student may only view — never edit — food items within a
+  // professionally assigned (or otherwise non-self-managed) plan.
+  const isReadOnlyAssignedPlan =
+    state.kind === 'ready' &&
+    isReadOnlyForStudentSurface({ sourceKind: state.plan.sourceKind }, isStudentBuilder);
 
   // ── Load existing plan ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
@@ -175,11 +180,11 @@ export default function NutritionMealBuilderScreen() {
       customMealSnapshot,
     });
 
-    const { error } = await addItem(planId!, mealId, sanitized);
+    const { error } = await addItem(planId, mealId, sanitized);
     if (error) {
       Alert.alert(
         tr('pro.plan.error.save', 'student.plan.error.save'),
-        t('pro.plan.error.reason', { reason: error }) as string,
+        t('pro.plan.error.reason', { reason: error }),
       );
     } else {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -196,8 +201,8 @@ export default function NutritionMealBuilderScreen() {
       const itemName = item?.name || t('pro.plan.section.meal_items');
 
       Alert.alert(
-        t('common.cta.delete') as string,
-        (t('pro.plan.item.delete.body') as string).replace('{name}', itemName),
+        t('common.cta.delete'),
+        t('pro.plan.item.delete.body').replace('{name}', itemName),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -206,7 +211,7 @@ export default function NutritionMealBuilderScreen() {
             onPress: () => {
               LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              void removeItem(planId!, mealId, itemId);
+              void removeItem(planId, mealId, itemId);
             },
           },
         ],
@@ -231,7 +236,7 @@ export default function NutritionMealBuilderScreen() {
 
       // Call optimistic reorder
       await reorderItems(
-        planId!,
+        planId,
         mealId,
         newItems.map((i) => i.id),
       );
@@ -277,7 +282,7 @@ export default function NutritionMealBuilderScreen() {
         <Text style={{ color: palette.text }}>{t('pro.plan.meal.not_found')}</Text>
         <DsPillButton
           scheme={scheme}
-          label={t('pro.plan.meal.go_back') as string}
+          label={t('pro.plan.meal.go_back')}
           onPress={() => router.back()}
         />
       </DsScreen>
@@ -302,7 +307,7 @@ export default function NutritionMealBuilderScreen() {
         <DsBackButton
           scheme={scheme}
           onPress={() => router.back()}
-          accessibilityLabel={t('auth.role.cta_back') as string}
+          accessibilityLabel={t('auth.role.cta_back')}
           style={styles.backButton}
           testID="pro.nutrition_meal.backButton"
         />
@@ -339,13 +344,22 @@ export default function NutritionMealBuilderScreen() {
         </View>
       </View>
 
+      {isReadOnlyAssignedPlan && (
+        <BuilderAlertBanner
+          message={t('student.nutrition.assigned_plan.read_only_notice')}
+          backgroundColor={palette.tint}
+          textColor={theme.color.surface}
+          testID="student.nutrition_meal.readOnlyNotice"
+        />
+      )}
+
       {/* ── Food items list ───────────────────────────────────────────────── */}
       <View style={[styles.sectionHeaderRow, { zIndex: 10 }]}>
         <View style={styles.sectionHeaderMainRow}>
           <Text style={[styles.sectionHeader, { color: palette.text }]}>
             {tr('pro.plan.section.meal_items', 'student.plan.section.meal_items')}
           </Text>
-          {meal && meal.items.length > 1 ? (
+          {!isReadOnlyAssignedPlan && meal && meal.items.length > 1 ? (
             <DsPillButton
               scheme={scheme}
               variant="secondary"
@@ -372,7 +386,7 @@ export default function NutritionMealBuilderScreen() {
         </View>
 
         {/* ── Add item form ────────────────────────────────────────────────── */}
-        {!isSortMode && meal && addItemForm.kind === 'open' && (
+        {!isReadOnlyAssignedPlan && !isSortMode && meal && addItemForm.kind === 'open' && (
           <AddItemForm
             palette={palette}
             theme={theme}
@@ -558,6 +572,7 @@ export default function NutritionMealBuilderScreen() {
               isFirstInList={index === 0}
               isLastInList={index === meal.items.length - 1}
               isInteractionLocked={isBusy}
+              readOnly={isReadOnlyAssignedPlan}
               testID={`pro.nutrition_meal.foodRow.${toTestIDSegment(item.name)}`}
             />
           ))}
@@ -565,7 +580,7 @@ export default function NutritionMealBuilderScreen() {
       )}
 
       {/* ── Add item trigger button (at bottom) ───────────────────────────── */}
-      {!isSortMode && meal && addItemForm.kind === 'closed' && (
+      {!isReadOnlyAssignedPlan && !isSortMode && meal && addItemForm.kind === 'closed' && (
         <Pressable
           style={[styles.addSessionBtn, { backgroundColor: theme.color.surface }]}
           onPress={isBusy ? undefined : handleOpenAddItem}
