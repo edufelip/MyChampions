@@ -240,6 +240,48 @@ test.describe('@smoke @critical @feature:shell @feature:auth @feature:student @f
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
       .toBeLessThanOrEqual(1);
   });
+
+  test('student hydration log intake stays inside the card at 320px (ET-108)', async ({ page }) => {
+    const viewport = { width: 320, height: 720 };
+    await page.setViewportSize(viewport);
+    await page.goto('/auth/role-selection');
+    await page.getByTestId('auth.roleSelection.studentCard').click();
+    await page.getByTestId('auth.roleSelection.continueButton').click();
+    await page.goto('/nutrition');
+
+    const waterWidget = page.getByTestId('student.nutrition.waterWidget').last();
+    await waterWidget.scrollIntoViewIfNeeded();
+    const input = page.getByTestId('student.nutrition.waterWidget.intakeInput').last();
+    const logButton = page.getByTestId('student.nutrition.waterWidget.logButton').last();
+
+    const [cardBox, inputBox, buttonBox] = await Promise.all([
+      waterWidget.boundingBox(),
+      input.boundingBox(),
+      logButton.boundingBox(),
+    ]);
+    expect(cardBox).not.toBeNull();
+    expect(inputBox).not.toBeNull();
+    expect(buttonBox).not.toBeNull();
+    if (!cardBox || !inputBox || !buttonBox) return;
+
+    // Both controls stay fully inside the card and the viewport instead of
+    // being clipped by an inputRow that never shrinks below its intrinsic
+    // content width (the CSS flexbox min-width:auto trap on web).
+    for (const box of [inputBox, buttonBox]) {
+      expect(box.x).toBeGreaterThanOrEqual(cardBox.x - 1);
+      expect(box.x + box.width).toBeLessThanOrEqual(cardBox.x + cardBox.width + 1);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+      .toBeLessThanOrEqual(1);
+
+    await expect(logButton).toHaveAccessibleName('Log Intake');
+    await input.click();
+    await page.keyboard.press('Tab');
+    await expect(logButton).toBeFocused();
+  });
 });
 
 test.describe('@accessibility @critical @feature:shell keyboard and dialog behavior', () => {

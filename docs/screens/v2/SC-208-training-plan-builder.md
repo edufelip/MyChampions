@@ -3,7 +3,7 @@
 ## Route
 - `/professional/training/plans/:planId` — builder/editor for a specific plan.
 - `/professional/training` (tab) — plan library list with create and open CTAs.
-- Shared student self-guided alias: `/student/training/plans/:planId` (same builder engine with student-branded titles/actions).
+- Shared student route: `/student/training/plans/:planId` renders through the same builder engine but branches on the loaded plan's `sourceKind` (D-006, D-013, ET-107): a `self_managed` plan (including `new`) stays fully editable with student-branded titles/actions; any other `sourceKind` (`assigned`, `predefined`) renders read-only — no Save/Delete/Add-session/reorder/add-item controls, a disabled name field, a localized `student.training.assigned_plan.read_only_notice` banner (`student.training_plan.readOnlyNotice` testID), and a `PlanChangeRequestCard` (`student.training_plan.planChangeForm` testID). The gate is computed by `isReadOnlyForStudentSurface` (`features/plans/plan-ownership.logic.ts`) and fails closed for any non-self-managed source kind.
 
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
