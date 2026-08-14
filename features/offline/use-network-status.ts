@@ -11,7 +11,10 @@
 
 import NetInfo from '@react-native-community/netinfo';
 import { useEffect, useState } from 'react';
-import { resolveE2ENetworkStatusOverride } from './network-status-override.logic';
+import {
+  resolveE2ENetworkStatusEventTarget,
+  resolveE2ENetworkStatusOverride,
+} from './network-status-override.logic';
 import type { NetworkStatus } from './offline.logic';
 
 /**
@@ -32,13 +35,9 @@ export function useNetworkStatus(): NetworkStatus {
   const [status, setStatus] = useState<NetworkStatus>(e2eNetworkStatusOverride ?? 'unknown');
 
   useEffect(() => {
-    const e2eEventTarget =
-      isE2EAuthSession &&
-      typeof window !== 'undefined' &&
-      typeof window.addEventListener === 'function' &&
-      typeof window.removeEventListener === 'function'
-        ? window
-        : null;
+    const e2eEventTarget = isE2EAuthSession
+      ? resolveE2ENetworkStatusEventTarget(typeof window === 'undefined' ? null : window)
+      : null;
     const onE2ENetworkStatusChange = () => {
       if (!isE2EAuthSession || typeof sessionStorage === 'undefined') return;
 

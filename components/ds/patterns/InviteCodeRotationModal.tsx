@@ -10,6 +10,7 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 export function InviteCodeRotationModal({
   isVisible,
   isSubmitting,
+  isOffline,
   onClose,
   onConfirm,
   errorMessage,
@@ -19,6 +20,7 @@ export function InviteCodeRotationModal({
 }: {
   isVisible: boolean;
   isSubmitting: boolean;
+  isOffline: boolean;
   onClose: () => void;
   onConfirm: () => void;
   errorMessage: string | null;
@@ -71,6 +73,17 @@ export function InviteCodeRotationModal({
             </Text>
           ) : null}
 
+          {isOffline ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              accessibilityRole="alert"
+              style={[styles.error, { color: theme.color.danger }]}
+              testID="pro.home.rotateCodeModal.offlineLock"
+            >
+              {t('offline.write_lock')}
+            </Text>
+          ) : null}
+
           <View style={styles.actions}>
             <DsPillButton
               scheme={scheme}
@@ -85,6 +98,7 @@ export function InviteCodeRotationModal({
               scheme={scheme}
               label={t('pro.home.invite_code.rotate_confirm_yes')}
               onPress={onConfirm}
+              disabled={isOffline}
               loading={isSubmitting}
               variant="primary"
               style={styles.actionButton}

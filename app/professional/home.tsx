@@ -715,6 +715,7 @@ export default function ProfessionalHomeScreen() {
       </DsScreen>
       <InviteCodeRotationModal
         errorMessage={rotateError}
+        isOffline={isInviteCodeWriteLocked}
         isSubmitting={isRotating}
         isVisible={isRotateConfirmVisible}
         onClose={closeRotateConfirmation}

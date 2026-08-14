@@ -120,4 +120,43 @@ test.describe('@critical @feature:professional invite-code rotation', () => {
       path: testInfo.outputPath('invite-code-rotation-offline-lock-mobile-390.png'),
     });
   });
+
+  test('going offline while the rotation modal is open disables confirm with feedback, not a silent no-op', async ({
+    page,
+  }, testInfo) => {
+    const analyticsEvents: { name?: string; properties?: Record<string, unknown> }[] = [];
+    await page.route('**/analytics/events', async (route) => {
+      analyticsEvents.push(route.request().postDataJSON() as (typeof analyticsEvents)[number]);
+      await route.fulfill({ status: 202, body: JSON.stringify({ accepted: true }) });
+    });
+
+    await setUpProfessionalHome(page);
+    const code = page.getByTestId('pro.home.inviteCodeValue');
+    const oldCode = await code.textContent();
+
+    await page.getByTestId('pro.home.rotateCodeCta').click();
+    const modal = page.getByTestId('pro.home.rotateCodeModal');
+    await expect(modal).toBeVisible();
+
+    await page.evaluate(() => {
+      sessionStorage.setItem('mychampions.e2e.network-status', 'offline');
+      window.dispatchEvent(new Event('mychampions.e2e.network-status-change'));
+    });
+
+    await expect(page.getByTestId('pro.home.rotateCodeModal.offlineLock')).toHaveText(
+      'Connect to the internet to save changes.',
+    );
+    await expect(page.getByTestId('pro.home.rotateCodeConfirmCta')).toBeDisabled();
+    await expect(page.getByTestId('pro.home.rotateCodeCancelCta')).toBeEnabled();
+
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath('invite-code-rotation-offline-mid-flow-mobile-390.png'),
+    });
+
+    await page.getByTestId('pro.home.rotateCodeCancelCta').click();
+    await expect(modal).toBeHidden();
+    await expect(code).toHaveText(oldCode as string);
+    expect(analyticsEvents.some((event) => event.name === 'invite.rotation.succeeded')).toBe(false);
+  });
 });
