@@ -3,8 +3,8 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
-import type { TrainingSession, TrainingSessionItem } from '@/features/plans/plan-builder.logic';
 import { useExerciseThumbnail } from '@/features/plans/use-exercise-thumbnail';
+import type { TrainingSession, TrainingSessionItem } from '@/features/plans/plan-builder.logic';
 import type { TranslationBinding } from '@/localization';
 
 type TFn = TranslationBinding['t'];
@@ -34,6 +34,8 @@ type SessionCardProps = {
   onRemoveItem: (sessionId: string, itemId: string) => void;
   isSortMode?: boolean;
   isInteractionLocked?: boolean;
+  /** D-006: hides remove-session/remove-item/add-item/reorder controls for an assigned plan viewed by a Student. */
+  readOnly?: boolean;
   onMoveSession?: (index: number, direction: 'up' | 'down') => void;
   onMoveItem?: (sessionId: string, itemId: string, direction: 'up' | 'down') => void;
   testIDPrefix?: string;
@@ -51,6 +53,7 @@ type SessionItemRowProps = {
   tr: (pro: string, student: string) => string;
   isSortMode?: boolean;
   isInteractionLocked?: boolean;
+  readOnly?: boolean;
   onRemoveItem: (itemId: string) => void;
   onMoveItemUp?: (itemId: string) => void;
   onMoveItemDown?: (itemId: string) => void;
@@ -65,6 +68,7 @@ const SessionItemRow = React.memo(function SessionItemRow({
   tr,
   isSortMode,
   isInteractionLocked,
+  readOnly,
   onRemoveItem,
   onMoveItemUp,
   onMoveItemDown,
@@ -81,7 +85,7 @@ const SessionItemRow = React.memo(function SessionItemRow({
         index < totalItems - 1 && { borderBottomWidth: 1, borderBottomColor: theme.color.border },
       ]}
     >
-      {isSortMode && (
+      {isSortMode && !readOnly && (
         <View style={styles.itemSortControls}>
           <Pressable
             onPress={() => onMoveItemUp?.(item.id)}
@@ -134,7 +138,7 @@ const SessionItemRow = React.memo(function SessionItemRow({
           ) : null}
         </View>
       </View>
-      {!isSortMode && (
+      {!isSortMode && !readOnly && (
         <Pressable
           onPress={() => onRemoveItem(item.id)}
           disabled={isInteractionLocked}
@@ -167,6 +171,7 @@ export const SessionCard = React.memo(
     onRemoveItem,
     isSortMode,
     isInteractionLocked,
+    readOnly,
     onMoveSession,
     onMoveItem,
     testIDPrefix = 'pro.training_plan',
@@ -209,7 +214,7 @@ export const SessionCard = React.memo(
       >
         {/* Session header */}
         <View style={styles.sessionHeader}>
-          {isSortMode && (
+          {isSortMode && !readOnly && (
             <View style={styles.sortControls}>
               <Pressable
                 onPress={handleMoveUp}
@@ -241,7 +246,7 @@ export const SessionCard = React.memo(
               <Text style={[styles.sessionNotes, { color: palette.icon }]}>{session.notes}</Text>
             ) : null}
           </View>
-          {!isSortMode && (
+          {!isSortMode && !readOnly && (
             <Pressable
               onPress={handleRemoveSession}
               disabled={isInteractionLocked}
@@ -268,6 +273,7 @@ export const SessionCard = React.memo(
               tr={tr}
               isSortMode={isSortMode}
               isInteractionLocked={isInteractionLocked}
+              readOnly={readOnly}
               onRemoveItem={handleRemoveItem}
               onMoveItemUp={handleMoveItemUp}
               onMoveItemDown={handleMoveItemDown}
@@ -283,7 +289,7 @@ export const SessionCard = React.memo(
           )}
         </View>
 
-        {!isSortMode && (
+        {!isSortMode && !readOnly && (
           <Pressable
             style={styles.addItemBtn}
             onPress={handleAddItem}
