@@ -250,8 +250,12 @@ export default function CustomMealLibraryScreen({
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              disabled={isWriteLocked}
               onPress={() => router.push('/(tabs)/nutrition/custom-meals/new')}
-              style={[styles.errorSecondaryButton, { borderColor: palette.tint }]}
+              style={[
+                styles.errorSecondaryButton,
+                { borderColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+              ]}
               testID="meal.library.error.cta.create"
             >
               <Text style={[styles.errorSecondaryButtonText, { color: palette.tint }]}>
@@ -551,14 +555,14 @@ function QuickLogPanel({
     testID: 'meal.library.quickLog.panel',
   });
   const caloriesLabel = nutritionPreview
-    ? (t('meal.library.quick_log.preview.calories')).replace(
+    ? t('meal.library.quick_log.preview.calories').replace(
         '{calories}',
         String(nutritionPreview.calories),
       )
     : null;
 
   const macrosLabel = nutritionPreview
-    ? (t('meal.library.quick_log.preview.macros'))
+    ? t('meal.library.quick_log.preview.macros')
         .replace('{carbs}', String(nutritionPreview.carbs))
         .replace('{proteins}', String(nutritionPreview.proteins))
         .replace('{fats}', String(nutritionPreview.fats))

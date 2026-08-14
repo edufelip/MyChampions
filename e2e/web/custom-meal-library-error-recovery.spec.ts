@@ -44,10 +44,33 @@ test.describe('@feature:nutrition custom-meal library load error recovery', () =
       // No stale meal rows should be interactive behind the error state.
       await expect(page.locator('[data-testid^="meal.library.row."]')).toHaveCount(0);
 
-      // Retry re-runs the load: it must announce a loading state before
-      // settling (there is no live backend in this lane, so it settles back
-      // into the same semantic error state rather than hanging).
+      // Retry must actually re-run the load, not just leave the error card
+      // in place. There is no live backend in this lane, so the loading
+      // window is a single, sub-millisecond render pass — too short for a
+      // post-click assertion to reliably observe — so watch for it with a
+      // MutationObserver armed before the click (mirrors the manual
+      // transition-timing proof from the PR's live verification). Without
+      // this, a regression that silently drops the `reload()` wiring would
+      // pass every other assertion in this test, since the error card looks
+      // identical whether or not the click did anything.
+      await page.evaluate(() => {
+        (window as unknown as { __sawLibraryLoading?: boolean }).__sawLibraryLoading = false;
+        const observer = new MutationObserver(() => {
+          if (document.querySelector('[data-testid="meal.library.loading"]')) {
+            (window as unknown as { __sawLibraryLoading?: boolean }).__sawLibraryLoading = true;
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+      });
       await retryButton.click();
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => (window as unknown as { __sawLibraryLoading?: boolean }).__sawLibraryLoading,
+          ),
+        )
+        .toBe(true);
       await expect(errorRegion).toBeVisible();
       await expect(page.getByTestId('meal.library.loading')).toHaveCount(0);
       await expect(retryButton).toBeVisible();
