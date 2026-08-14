@@ -115,7 +115,7 @@ export default function ProfessionalSubscriptionScreen() {
         : t('pro.subscription.status.unavailable_body');
 
   const hasCapacityData = isActiveStudentCountKnown;
-  const capLabel = (t('pro.subscription.cap_usage'))
+  const capLabel = t('pro.subscription.cap_usage')
     .replace(
       '{count}',
       hasCapacityData ? String(activeStudentCount) : t('common.value.unavailable'),
@@ -309,13 +309,11 @@ export default function ProfessionalSubscriptionScreen() {
             onPress={() => {
               void openProPaywall();
             }}
-            label={
-              t(
-                purchaseCapability === 'native_purchase'
-                  ? 'pro.subscription.cta_purchase'
-                  : 'pro.subscription.cta_mobile_handoff',
-              )
-            }
+            label={t(
+              purchaseCapability === 'native_purchase'
+                ? 'pro.subscription.cta_purchase'
+                : 'pro.subscription.cta_mobile_handoff',
+            )}
             testID="pro.subscription.purchaseCta"
           />
 
