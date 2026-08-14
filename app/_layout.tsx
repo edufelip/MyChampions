@@ -6,15 +6,15 @@ import { ActivityIndicator, LogBox, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { getDsTheme } from '@/constants/design-system';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useTranslation } from '@/localization';
-import { LocaleProvider, useLocale } from '@/localization/locale-context';
 import {
   normalizeAuthReturnTo,
   normalizeGuardPathname,
   resolveAuthGuardRedirect,
 } from '@/features/auth/auth-route-guard.logic';
 import { AuthSessionProvider, useAuthSession } from '@/features/auth/auth-session';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTranslation } from '@/localization';
+import { LocaleProvider, useLocale } from '@/localization/locale-context';
 
 if (__DEV__ && process.env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX === 'true') {
   // Runner output still records warnings; only the in-app overlay is disabled.
@@ -43,7 +43,11 @@ function RootLayoutContent() {
   const { activeLocale } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useGlobalSearchParams<{ returnTo?: string | string[] }>();
+  const searchParams = useGlobalSearchParams<{
+    intent?: string | string[];
+    returnTo?: string | string[];
+    url?: string | string[];
+  }>();
   const normalizedPathname = normalizeGuardPathname(pathname);
   const authReturnTo = normalizeAuthReturnTo(searchParams.returnTo);
   const lastRedirectAttemptRef = useRef<string | null>(null);
@@ -52,6 +56,7 @@ function RootLayoutContent() {
     isAuthenticated,
     lockedRole,
     needsTermsAcceptance,
+    termsUrl,
     currentUser,
     pendingRoleSelectionRole,
     completeRoleSelectionNavigation,
@@ -82,6 +87,9 @@ function RootLayoutContent() {
       pendingRoleSelectionRole,
       pathname: normalizedPathname,
       returnTo: authReturnTo,
+      sharedWebviewIntent: searchParams.intent,
+      sharedWebviewUrl: searchParams.url,
+      termsUrl,
     });
 
     if (__DEV__) {
@@ -122,6 +130,9 @@ function RootLayoutContent() {
     normalizedPathname,
     pendingRoleSelectionRole,
     router,
+    searchParams.intent,
+    searchParams.url,
+    termsUrl,
   ]);
 
   if (!isHydrated) {

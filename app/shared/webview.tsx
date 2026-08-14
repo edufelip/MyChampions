@@ -4,8 +4,17 @@
  *
  * Generic screen to display web content (e.g., Privacy Policy, Terms of Use)
  * within the app using react-native-webview.
+ *
+ * URL contract: `url` is validated by `resolveSafeExternalUrl` before use
+ * (see `@/features/platform/external-url`) — arbitrary deep-link URLs must
+ * use the fixed `eduwaldo.com` origin, while exact configured legal URLs may
+ * use their operator-approved host. Development loopback URLs are also
+ * supported. On an invalid `url`, this native screen renders a localized
+ * invalid-link state with a back action; the web platform variant
+ * (`webview.web.tsx`) renders its own equivalent state.
  */
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -16,22 +25,78 @@ import {
   Linking,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useState } from 'react';
-
 import { getDsTheme, DsRadius, DsSpace } from '@/constants/design-system';
+import { resolveTermsConfigFromExpo } from '@/features/auth/terms-config';
+import {
+  allowInsecureLocalhostForDevelopment,
+  buildOriginWhitelistForUrl,
+  EDUWALDO_HTTPS_HOSTNAME,
+  resolveSafeExternalUrl,
+} from '@/features/platform/external-url';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
 export default function WebViewScreen() {
-  const { url, title } = useLocalSearchParams<{ url: string; title: string }>();
+  const { intent, url, title } = useLocalSearchParams<{
+    intent?: string | string[];
+    url?: string | string[];
+    title?: string | string[];
+  }>();
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = getDsTheme(colorScheme === 'dark' ? 'dark' : 'light');
   const { t } = useTranslation();
+  const { termsUrl, privacyPolicyUrl } = resolveTermsConfigFromExpo();
+  const configuredLegalUrls = [termsUrl, privacyPolicyUrl];
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0); // For retry
+  const screenTitle = typeof title === 'string' ? title : '';
+  const fallbackPath =
+    intent === 'terms' ? '/auth/accept-terms' : intent === 'account' ? '/settings/account' : '/';
 
-  if (!url) {
-    return null;
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace(fallbackPath);
+  };
+
+  // Validate the route param before it ever reaches WebView/Linking. This screen is a
+  // file-based expo-router route and is reachable via the app's own deep-link scheme
+  // (mychampions://shared/webview?url=...), so `url` must not be trusted as-is — the
+  // WebView's `originWhitelist` prop below is not a substitute for this app-level check.
+  const safeUrl = resolveSafeExternalUrl(url, {
+    allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),
+    approvedHttpsHostname: EDUWALDO_HTTPS_HOSTNAME,
+    approvedHttpsUrls: configuredLegalUrls,
+  });
+
+  if (!safeUrl) {
+    return (
+      <View
+        style={[styles.container, styles.centered, { backgroundColor: theme.color.canvas }]}
+        collapsable={false}
+        testID="shared.webview.screen"
+      >
+        <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
+        <Text style={[styles.errorText, { color: theme.color.textPrimary }]}>
+          {t('auth.terms.invalid_link')}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+          onPress={goBack}
+          style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary }]}
+          testID="shared.webview.invalidLink.backButton"
+        >
+          <Text style={[styles.retryText, { color: theme.color.onAccent }]}>
+            {t('common.back')}
+          </Text>
+        </Pressable>
+      </View>
+    );
   }
 
   // react-native-webview doesn't support Web. Fallback to external link.
@@ -42,14 +107,14 @@ export default function WebViewScreen() {
         collapsable={false}
         testID="shared.webview.screen"
       >
-        <Stack.Screen options={{ title: title ?? '', headerShown: true }} />
+        <Stack.Screen options={{ title: screenTitle, headerShown: true }} />
         <Text
           style={[styles.errorText, { color: theme.color.textPrimary, marginBottom: DsSpace.md }]}
         >
           {t('auth.terms.offline_hint')}
         </Text>
         <Pressable
-          onPress={() => Linking.openURL(url)}
+          onPress={() => Linking.openURL(safeUrl)}
           style={[styles.retryButton, { backgroundColor: theme.color.accentPrimary }]}
         >
           <Text style={[styles.retryText, { color: theme.color.onAccent }]}>
@@ -68,7 +133,7 @@ export default function WebViewScreen() {
     >
       <Stack.Screen
         options={{
-          title: title ?? '',
+          title: screenTitle,
           headerShown: true,
           headerStyle: {
             backgroundColor: theme.color.surface,
@@ -100,10 +165,10 @@ export default function WebViewScreen() {
         <WebView
           testID="shared.webview.webview"
           key={key}
-          source={{ uri: url }}
+          source={{ uri: safeUrl }}
           style={styles.webview}
           startInLoadingState
-          originWhitelist={['https://portfolio.eduwaldo.com', 'https://*.eduwaldo.com']}
+          originWhitelist={buildOriginWhitelistForUrl(safeUrl)}
           onError={() => setError(true)}
           onHttpError={() => setError(true)}
           renderLoading={() => (
