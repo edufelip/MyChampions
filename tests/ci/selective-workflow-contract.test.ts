@@ -2266,8 +2266,7 @@ test(
     symlinkSync(sleepExecutable, join(pidDirectory, 'exe'));
     writeFileSync(join(unrelatedDirectory, 'cmdline'), Buffer.from('unrelated\0--listener\0'));
 
-    const flags =
-      '-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=host';
+    const flags = '-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=host';
     const writeAndroidState = (start: string) => {
       writeFileSync(
         stateFile,
@@ -2551,7 +2550,7 @@ test('every other artifact is either bounded failure evidence or a one-day relea
   }
 });
 
-test('protected native full validation is manual/release-only and builds once per platform', () => {
+test('protected native full validation is manual/release/protected-branch-push-only and builds once per platform', () => {
   const workflow = readFileSync(
     join(root, '.github', 'workflows', 'detox-protected-full.yml'),
     'utf8',
@@ -2559,6 +2558,7 @@ test('protected native full validation is manual/release-only and builds once pe
 
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /release:\s*\n\s+types: \[published\]/);
+  assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+-\s+release\/\*\*\s*\n\s+-\s+hotfix\/\*\*/);
   assert.doesNotMatch(workflow, /schedule:/);
   assert.match(workflow, /mychampions-ios/);
   assert.match(workflow, /mychampions-android/);
@@ -2572,4 +2572,36 @@ test('protected native full validation is manual/release-only and builds once pe
   assert.match(workflow, /if: failure\(\)/);
   assert.match(workflow, /retention-days: 1/);
   assert.doesNotMatch(workflow, /detox:revenuecat-live/);
+
+  // No new authorization job is introduced for push — push events to
+  // release/**|hotfix/** can't be spoofed/forked (same trust basis already
+  // relied on by android-release.yml/ios-release.yml), so both jobs must
+  // stay reachable on a push event and must not depend on the manual
+  // workflow_dispatch `inputs.platform` choice (undefined on push).
+  const iosCondition = workflow.match(
+    /detox-ios-full:[\s\S]*?if: >-\n([\s\S]*?)\n\s+runs-on:/,
+  )?.[1];
+  const androidCondition = workflow.match(
+    /detox-android-full:[\s\S]*?if: >-\n([\s\S]*?)\n\s+runs-on:/,
+  )?.[1];
+  assert.ok(iosCondition, 'detox-ios-full if: condition not found');
+  assert.ok(androidCondition, 'detox-android-full if: condition not found');
+  for (const condition of [iosCondition, androidCondition]) {
+    assert.match(condition, /github\.event_name == 'push'/);
+    // The ref-guard clause must accept push without requiring main.
+    assert.match(
+      condition,
+      /github\.event_name == 'release' \|\| github\.event_name == 'push' \|\| github\.ref == 'refs\/heads\/main'/,
+    );
+    // The platform-guard clause must short-circuit before inputs.platform.
+    assert.match(
+      condition,
+      /github\.event_name == 'release' \|\| github\.event_name == 'push' \|\| inputs\.platform ==/,
+    );
+  }
+
+  // Push events to release/**|hotfix/** rely on the same push-can't-be-
+  // spoofed trust basis as android-release.yml/ios-release.yml — no new
+  // authorization/identity-check job should be introduced for this trigger.
+  assert.doesNotMatch(workflow, /authoriz/i);
 });
