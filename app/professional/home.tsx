@@ -70,6 +70,7 @@ export default function ProfessionalHomeScreen() {
   const { currentUser } = useAuthSession();
   const { width: viewportWidth } = useWindowDimensions();
   const usesDesktopLayout = viewportWidth >= 1024;
+  const usesCompactMobileLayout = viewportWidth < 400;
 
   const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
   const inviteSpecialty =
@@ -324,13 +325,14 @@ export default function ProfessionalHomeScreen() {
           <Text style={[styles.sectionTitle, { color: theme.color.textPrimary }]}>
             {t('pro.home.overview')}
           </Text>
-          <View style={styles.statsRow}>
+          <View style={[styles.statsRow, usesCompactMobileLayout ? styles.statsRowCompact : null]}>
             <SummaryLinkCard
               label={t('pro.home.active_students')}
               value={activeStudentLabel}
               scheme={scheme}
               iconName="groups"
               onPress={() => router.push('/(tabs)/students')}
+              compact={usesCompactMobileLayout}
               testID="pro.home.activeStudents"
             />
             <SummaryLinkCard
@@ -339,6 +341,7 @@ export default function ProfessionalHomeScreen() {
               scheme={scheme}
               iconName="person-add-alt-1"
               onPress={() => router.push('/professional/pending')}
+              compact={usesCompactMobileLayout}
               testID="pro.home.pendingConnections"
             />
           </View>
@@ -377,6 +380,7 @@ export default function ProfessionalHomeScreen() {
                 String(pendingConnections.length),
               )}
               cta={t('pro.home.cta_pending')}
+              compact={usesCompactMobileLayout}
               onPress={() => router.push('/professional/pending')}
               testID="pro.home.connectionRequestTask"
             />
@@ -391,6 +395,7 @@ export default function ProfessionalHomeScreen() {
                 .replace('{count}', String(planChangeNotification.pendingCount))
                 .replace('{studentUid}', planChangeNotification.latestRequest.studentUid)}
               cta={t('pro.home.plan_change_notification.cta')}
+              compact={usesCompactMobileLayout}
               onPress={() => {
                 router.push(
                   `/professional/student-profile?studentId=${encodeURIComponent(
@@ -673,6 +678,7 @@ function buildOfflineText(
 }
 
 function SummaryLinkCard({
+  compact,
   label,
   value,
   scheme,
@@ -680,6 +686,7 @@ function SummaryLinkCard({
   onPress,
   testID,
 }: {
+  compact: boolean;
   label: string;
   value: string;
   scheme: 'light' | 'dark';
@@ -696,6 +703,7 @@ function SummaryLinkCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.statCard,
+        compact ? styles.statCardCompact : null,
         { backgroundColor: theme.color.surface, borderColor: theme.color.border },
         pressed ? styles.pressed : null,
       ]}
@@ -715,6 +723,7 @@ function SummaryLinkCard({
 
 function TaskCard({
   body,
+  compact,
   cta,
   iconName,
   onPress,
@@ -723,6 +732,7 @@ function TaskCard({
   title,
 }: {
   body: string;
+  compact: boolean;
   cta: string;
   iconName: keyof typeof MaterialIcons.glyphMap;
   onPress: () => void;
@@ -738,6 +748,7 @@ function TaskCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.taskCard,
+        compact ? styles.taskCardCompact : null,
         {
           backgroundColor: theme.color.accentPrimarySoft,
           borderColor: theme.color.accentPrimary,
@@ -753,7 +764,7 @@ function TaskCard({
         <Text style={[styles.cardTitle, { color: theme.color.textPrimary }]}>{title}</Text>
         <Text style={[styles.cardSubtitle, { color: theme.color.textSecondary }]}>{body}</Text>
       </View>
-      <View style={styles.taskCta}>
+      <View style={[styles.taskCta, compact ? styles.taskCtaCompact : null]}>
         <Text style={[styles.taskCtaText, { color: theme.color.accentPrimary }]}>{cta}</Text>
         <MaterialIcons
           name="chevron-right"
@@ -803,6 +814,8 @@ function QuickActionCard({
     </Pressable>
   );
 }
+
+const taskIconWidth = 38;
 
 const styles = StyleSheet.create({
   content: {
@@ -889,6 +902,7 @@ const styles = StyleSheet.create({
     marginTop: DsSpace.md,
   },
   statsRow: { flexDirection: 'row', gap: DsSpace.sm },
+  statsRowCompact: { flexDirection: 'column' },
   statCard: {
     borderWidth: 1,
     borderRadius: DsRadius.lg,
@@ -897,6 +911,10 @@ const styles = StyleSheet.create({
     minHeight: 126,
     minWidth: 0,
     padding: DsSpace.md,
+  },
+  statCardCompact: {
+    flex: 0,
+    width: '100%',
   },
   statTopRow: {
     alignItems: 'center',
@@ -939,12 +957,15 @@ const styles = StyleSheet.create({
     minHeight: 78,
     padding: DsSpace.md,
   },
+  taskCardCompact: {
+    flexWrap: 'wrap',
+  },
   taskIcon: {
     alignItems: 'center',
     borderRadius: DsRadius.pill,
-    height: 38,
+    height: taskIconWidth,
     justifyContent: 'center',
-    width: 38,
+    width: taskIconWidth,
   },
   taskCopy: {
     flex: 1,
@@ -955,6 +976,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 2,
+  },
+  taskCtaCompact: {
+    flexBasis: '100%',
+    justifyContent: 'flex-end',
+    paddingLeft: taskIconWidth + DsSpace.sm,
+    paddingTop: DsSpace.xs,
   },
   taskCtaText: {
     ...DsTypography.caption,
