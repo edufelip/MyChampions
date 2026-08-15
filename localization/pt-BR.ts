@@ -51,6 +51,10 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.terms.accept_button': 'Aceitar e continuar',
   'auth.terms.offline_hint': 'Você precisa de internet para abrir o link acima.',
   'auth.terms.version': 'Versão obrigatória: {version}',
+  'shared.webview.browser_hint': 'Esta página legal abre em uma nova aba do navegador.',
+  'shared.webview.open_cta': 'Abrir {title}',
+  'shared.webview.open_error':
+    'Não foi possível abrir o link automaticamente. Tente o botão novamente ou use este endereço: {url}',
   'auth.terms.error.link_unavailable':
     'Não foi possível abrir o link dos termos agora. Tente novamente.',
   'auth.social.google': 'Google',

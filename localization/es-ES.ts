@@ -51,6 +51,10 @@ export const esES: Record<TranslationKey, string> = {
   'auth.terms.accept_button': 'Aceptar y continuar',
   'auth.terms.offline_hint': 'Necesitas internet para abrir el enlace legal.',
   'auth.terms.version': 'Versión obligatoria: {version}',
+  'shared.webview.browser_hint': 'Esta página legal se abre en una nueva pestaña del navegador.',
+  'shared.webview.open_cta': 'Abrir {title}',
+  'shared.webview.open_error':
+    'No se pudo abrir el enlace automáticamente. Intenta el botón de nuevo o usa esta dirección: {url}',
   'auth.terms.error.link_unavailable':
     'No se pudo abrir el enlace de términos ahora. Inténtalo de nuevo.',
   'auth.social.google': 'Google',
