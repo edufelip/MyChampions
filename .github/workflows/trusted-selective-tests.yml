@@ -2550,7 +2550,7 @@ jobs:
           emulator_avd="$DETOX_ANDROID_AVD"
           emulator_executable=
           emulator_qemu_executable=
-          emulator_flags="-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect"
+          emulator_flags="-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=host"
           supervised_pid=
           supervised_pgid=
           supervisor_launching=false
@@ -2900,7 +2900,7 @@ jobs:
               or not values["executable"].startswith("/")
               or not values["qemu_executable"].startswith("/")
               or values["flags"]
-              != "-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect"
+              != "-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=host"
           ):
               raise SystemExit("Invalid Android recovery state values")
           print(
@@ -3423,7 +3423,7 @@ jobs:
               "-no-snapshot",
               "-read-only",
               "-gpu",
-              "swiftshader_indirect",
+              "host",
           ]
           os.dup2(log_descriptor, 1)
           os.dup2(log_descriptor, 2)
@@ -3675,7 +3675,7 @@ jobs:
                   or not values["executable"].startswith("/")
                   or not values["qemu_executable"].startswith("/")
                   or values["flags"]
-                  != "-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect"
+                  != "-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=host"
               ):
                   raise SystemExit("Invalid Android recovery state values")
 

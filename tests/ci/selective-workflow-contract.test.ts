@@ -2267,7 +2267,7 @@ test(
     writeFileSync(join(unrelatedDirectory, 'cmdline'), Buffer.from('unrelated\0--listener\0'));
 
     const flags =
-      '-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect';
+      '-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=host';
     const writeAndroidState = (start: string) => {
       writeFileSync(
         stateFile,
@@ -2393,7 +2393,7 @@ printf '%s\n' "$emulator_pid:$emulator_avd:$emulator_port:$emulator_serial"
             '-no-snapshot',
             '-read-only',
             '-gpu',
-            'swiftshader_indirect',
+            'host',
             '',
           ].join('\0'),
         ),
