@@ -931,6 +931,7 @@ export const enUS = {
 
   // Support
   'settings.account.support.dialog.title': 'Talk to support',
+  'settings.account.support.dialog.close': 'Close support dialog',
   'settings.account.support.dialog.disclaimer': 'This screen is for messaging our support team.',
   'settings.account.support.field.subject.label': 'Subject',
   'settings.account.support.field.subject.placeholder': 'e.g. Login issue',

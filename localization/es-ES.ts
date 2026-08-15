@@ -978,6 +978,7 @@ export const esES: Record<TranslationKey, string> = {
 
   // Support
   'settings.account.support.dialog.title': 'Contactar soporte',
+  'settings.account.support.dialog.close': 'Cerrar diálogo de soporte',
   'settings.account.support.dialog.disclaimer':
     'Esta pantalla es para enviar mensajes a nuestro equipo de soporte.',
   'settings.account.support.field.subject.label': 'Asunto',
