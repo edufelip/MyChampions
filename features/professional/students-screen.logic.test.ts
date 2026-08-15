@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   filterStudentRosterRows,
   filterBulkAssignmentStudentsByPlanType,
@@ -29,11 +28,33 @@ test('SC-205 loaded empty renders hero empty state', () => {
   assert.equal(state, 'hero_empty');
 });
 
-test('SC-205 load error excludes hero empty state', () => {
+test('SC-205 settled load error renders the dedicated error state, not hero empty', () => {
   const state = resolveStudentRosterViewState({
     hasLoadedOnce: true,
     isLoading: false,
     hasError: true,
+    visibleCount: 0,
+  });
+
+  assert.equal(state, 'error');
+});
+
+test('SC-205 load error takes priority even when stale rows remain visible', () => {
+  const state = resolveStudentRosterViewState({
+    hasLoadedOnce: true,
+    isLoading: false,
+    hasError: true,
+    visibleCount: 3,
+  });
+
+  assert.equal(state, 'error');
+});
+
+test('SC-205 retry in flight (loading again after an error) renders list shell, not the error state', () => {
+  const state = resolveStudentRosterViewState({
+    hasLoadedOnce: true,
+    isLoading: true,
+    hasError: false,
     visibleCount: 0,
   });
 

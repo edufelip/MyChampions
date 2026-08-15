@@ -439,6 +439,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.students.empty.cta_add_first': 'Añadir primer alumno',
   'pro.students.empty.cta_share_link': 'Compartir enlace de invitación',
   'pro.students.error': 'No se pudo cargar la lista de alumnos. Inténtalo de nuevo.',
+  'pro.students.error.cta_back': 'Volver al panel',
   'pro.students.bulk_assign.cta': 'Asignación masiva',
   'pro.students.bulk_assign.cta_confirm': 'Asignar a {count} alumnos',
   'pro.students.bulk_assign.selection_mode': 'Asignación Masiva',

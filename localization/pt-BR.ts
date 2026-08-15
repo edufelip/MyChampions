@@ -443,6 +443,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.students.empty.cta_add_first': 'Adicionar primeiro aluno',
   'pro.students.empty.cta_share_link': 'Compartilhar link de convite',
   'pro.students.error': 'Não foi possível carregar a lista de alunos. Tente novamente.',
+  'pro.students.error.cta_back': 'Voltar ao painel',
   'pro.students.bulk_assign.cta': 'Atribuição em massa',
   'pro.students.bulk_assign.cta_confirm': 'Atribuir a {count} alunos',
   'pro.students.bulk_assign.selection_mode': 'Atribuição em Massa',
