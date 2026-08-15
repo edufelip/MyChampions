@@ -1,10 +1,13 @@
-import type { ShareAdapter } from './share-adapter';
 import { allowInsecureLocalhostForDevelopment, resolveSafeExternalUrl } from './external-url';
+import type { ShareAdapter } from './share-adapter';
 
 export type WebShareDependencies = {
   share?: (data: ShareData) => Promise<void>;
   writeClipboard?: (message: string) => Promise<void>;
-  openWindow: (url: string) => void;
+  // Returns the opened window, or a falsy value when the browser blocked the
+  // popup — the caller uses this to surface a recoverable error instead of
+  // silently reporting success.
+  openWindow: (url: string) => unknown;
   isAbortError: (error: unknown) => boolean;
 };
 
@@ -27,7 +30,8 @@ export function createWebShareAdapter(deps: WebShareDependencies): ShareAdapter 
         allowInsecureLocalhost: allowInsecureLocalhostForDevelopment(),
       });
       if (!safeUrl) throw new Error('unsafe_external_url');
-      deps.openWindow(safeUrl);
+      const opened = deps.openWindow(safeUrl);
+      if (!opened) throw new Error('popup_blocked');
     },
   };
 }
@@ -38,9 +42,7 @@ export const shareAdapter = createWebShareAdapter({
     typeof navigator === 'undefined'
       ? undefined
       : navigator.clipboard?.writeText.bind(navigator.clipboard),
-  openWindow: (url) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  },
+  openWindow: (url) => window.open(url, '_blank', 'noopener,noreferrer'),
   isAbortError: (error) =>
     typeof DOMException !== 'undefined' &&
     error instanceof DOMException &&

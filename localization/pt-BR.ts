@@ -20,6 +20,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.placeholder.password_confirmation': 'Confirmar senha',
   'auth.validation.name_required': 'Nome é obrigatório.',
   'auth.validation.email_required': 'E-mail é obrigatório.',
+  'auth.validation.email_invalid': 'Informe um e-mail válido.',
   'auth.validation.password_required': 'Senha é obrigatória.',
   'auth.validation.password_confirmation_required': 'A confirmação de senha é obrigatória.',
   'auth.validation.password_policy':
@@ -43,6 +44,41 @@ export const ptBR: Record<TranslationKey, string> = {
     'Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado.',
   'auth.signin.error.configuration':
     'A autenticação ainda não está configurada. Defina a URL do servidor MyChampions e tente novamente.',
+  'auth.signin.forgot_password': 'Esqueceu a senha?',
+  'auth.forgot_password.title': 'Redefinir sua senha',
+  'auth.forgot_password.subtitle':
+    'Informe o e-mail da sua conta e enviaremos instruções de redefinição, se existir.',
+  'auth.forgot_password.cta_primary': 'Enviar instruções de redefinição',
+  'auth.forgot_password.success.title': 'Verifique seu e-mail',
+  'auth.forgot_password.success.body':
+    'Se existir uma conta para {email}, enviamos instruções para redefinir sua senha.',
+  'auth.forgot_password.success.retry': 'Enviar novamente',
+  'auth.forgot_password.cta_back_signin': 'Voltar para o login',
+  'auth.forgot_password.error.generic':
+    'Não foi possível enviar as instruções agora. Tente novamente.',
+  'auth.reset_password.title': 'Defina uma nova senha',
+  'auth.reset_password.subtitle':
+    'Cole o código de redefinição recebido por e-mail e escolha uma nova senha.',
+  'auth.reset_password.field.email': 'E-mail',
+  'auth.reset_password.field.token': 'Código de redefinição',
+  'auth.reset_password.placeholder.token': 'Cole o código do seu e-mail de redefinição',
+  'auth.reset_password.field.new_password': 'Nova senha',
+  'auth.reset_password.field.new_password_confirmation': 'Confirmar nova senha',
+  'auth.reset_password.placeholder.new_password': 'Nova senha',
+  'auth.reset_password.placeholder.new_password_confirmation': 'Confirmar nova senha',
+  'auth.reset_password.cta_primary': 'Redefinir senha',
+  'auth.reset_password.validation.token_required': 'O código de redefinição é obrigatório.',
+  'auth.reset_password.success.title': 'Senha atualizada',
+  'auth.reset_password.success.body': 'Sua senha foi redefinida. Faça login com sua nova senha.',
+  'auth.reset_password.cta_go_signin': 'Ir para o login',
+  'auth.reset_password.error.invalid_or_expired_token':
+    'Este link de redefinição é inválido ou expirou. Solicite um novo.',
+  'auth.reset_password.error.invalid_email': 'O e-mail é inválido.',
+  'auth.reset_password.error.account_not_found': 'Nenhuma conta foi encontrada para este e-mail.',
+  'auth.reset_password.error.network':
+    'Não foi possível conectar agora. Verifique sua conexão e tente novamente.',
+  'auth.reset_password.error.configuration':
+    'A autenticação ainda não está configurada. Defina a URL do servidor MyChampions e tente novamente.',
   'auth.terms.title': 'Termos e Privacidade',
   'auth.terms.description':
     'Antes de continuar, revise e aceite os termos mais recentes do My Champions.',
@@ -51,6 +87,10 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.terms.accept_button': 'Aceitar e continuar',
   'auth.terms.offline_hint': 'Você precisa de internet para abrir o link acima.',
   'auth.terms.version': 'Versão obrigatória: {version}',
+  'shared.webview.browser_hint': 'Esta página legal abre em uma nova aba do navegador.',
+  'shared.webview.open_cta': 'Abrir {title}',
+  'shared.webview.open_error':
+    'Não foi possível abrir o link automaticamente. Tente o botão novamente ou use este endereço: {url}',
   'auth.terms.error.link_unavailable':
     'Não foi possível abrir o link dos termos agora. Tente novamente.',
   'auth.social.google': 'Google',
@@ -363,6 +403,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerar',
   'pro.home.invite_code.rotate_confirm_no': 'Cancelar',
   'pro.home.invite_code.rotate_error': 'Não foi possível regenerar o código. Tente novamente.',
+  'pro.home.invite_code.rotate_success':
+    'Código de convite regenerado. Compartilhe o novo código com os alunos.',
   'pro.home.invite_code.empty': 'Nenhum código de convite ativo.',
   'pro.home.invite_code.specialty_required':
     'Adicione uma especialidade antes de criar um código de convite.',
@@ -424,9 +466,9 @@ export const ptBR: Record<TranslationKey, string> = {
     'Adicione Nutricionista ou Personal Trainer para permitir remoção',
   'pro.specialty.removal_blocked.title': 'Não é possível remover a especialidade',
   'pro.specialty.removal_blocked.active_students_body':
-    'Esta especialidade tem {count} aluno{plural} ativo. Desvincule ou conclua as atribuições ativas primeiro.',
+    'Esta especialidade tem {count} aluno{plural} ativo{plural}. Desvincule ou conclua as atribuições ativas primeiro.',
   'pro.specialty.removal_blocked.pending_students_body':
-    'Esta especialidade tem {count} aluno{plural} pendente. Aceite ou negue as solicitações pendentes primeiro.',
+    'Esta especialidade tem {count} aluno{plural} pendente{plural}. Aceite ou negue as solicitações pendentes primeiro.',
   'pro.specialty.removal_blocked.last_specialty_body':
     'Você deve ter pelo menos uma especialidade. Adicione uma nova especialidade antes de remover esta.',
   'pro.specialty.remove_blocked.dismiss': 'Dispensar',
@@ -976,6 +1018,7 @@ export const ptBR: Record<TranslationKey, string> = {
 
   // Support
   'settings.account.support.dialog.title': 'Falar com o suporte',
+  'settings.account.support.dialog.close': 'Fechar diálogo de suporte',
   'settings.account.support.dialog.disclaimer':
     'Esta tela é para enviar mensagens para nossa equipe de suporte.',
   'settings.account.support.field.subject.label': 'Assunto',

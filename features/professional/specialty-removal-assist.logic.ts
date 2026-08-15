@@ -164,7 +164,10 @@ export function canRemovalProceedNow(
  * Get localization keys for blocked removal message.
  * Returns structured keys and parameters for message formatting by UI layer.
  */
-export function getRemovalBlockedMessageKeys(blockReason: SpecialtyRemovalBlockReason): {
+export function getRemovalBlockedMessageKeys(
+  blockReason: SpecialtyRemovalBlockReason,
+  counts: { activeStudentCount: number; pendingStudentCount: number },
+): {
   titleKey: TranslationKey;
   bodyKey: TranslationKey;
   bodyParams?: Record<string, string | number>;
@@ -174,11 +177,19 @@ export function getRemovalBlockedMessageKeys(blockReason: SpecialtyRemovalBlockR
       return {
         titleKey: 'pro.specialty.removal_blocked.title',
         bodyKey: 'pro.specialty.removal_blocked.active_students_body',
+        bodyParams: {
+          count: counts.activeStudentCount,
+          plural: counts.activeStudentCount === 1 ? '' : 's',
+        },
       };
     case 'has_pending_students':
       return {
         titleKey: 'pro.specialty.removal_blocked.title',
         bodyKey: 'pro.specialty.removal_blocked.pending_students_body',
+        bodyParams: {
+          count: counts.pendingStudentCount,
+          plural: counts.pendingStudentCount === 1 ? '' : 's',
+        },
       };
     case 'last_specialty':
       return {
