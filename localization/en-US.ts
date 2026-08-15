@@ -49,6 +49,10 @@ export const enUS = {
   'auth.terms.offline_hint': 'You need internet access to open the legal link.',
   'auth.terms.version': 'Required version: {version}',
   'auth.terms.error.link_unavailable': 'Could not open the terms link right now. Try again.',
+  'shared.webview.browser_hint': 'This legal page opens in a new browser tab.',
+  'shared.webview.open_cta': 'Open {title}',
+  'shared.webview.open_error':
+    'Could not open the link automatically. Try the button again, or use this address: {url}',
   'auth.social.google': 'Google',
   'auth.social.apple': 'Apple',
   'auth.password.toggle_show': 'Show password',
@@ -285,6 +289,8 @@ export const enUS = {
   'student.training.session.title': "Today's guided plan",
   'student.training.session.body':
     'Your coach assigned a training structure. Track completion and request adjustments below.',
+  'student.training.session.expand': 'Expand workout details',
+  'student.training.session.collapse': 'Collapse workout details',
   'student.training.empty.title': 'No workouts found',
   'student.training.empty.body':
     "You don't have a personalized workout plan yet. Hire a personal trainer to receive a routine tailored to your goals.",
@@ -421,6 +427,7 @@ export const enUS = {
   'pro.students.empty.cta_add_first': 'Add first student',
   'pro.students.empty.cta_share_link': 'Share invite link',
   'pro.students.error': 'Could not load student roster. Try again.',
+  'pro.students.error.cta_back': 'Back to dashboard',
   'pro.students.bulk_assign.cta': 'Bulk assign plan',
   'pro.students.bulk_assign.cta_confirm': 'Assign to {count} students',
   'pro.students.bulk_assign.selection_mode': 'Bulk Assignment',
@@ -930,6 +937,7 @@ export const enUS = {
 
   // Support
   'settings.account.support.dialog.title': 'Talk to support',
+  'settings.account.support.dialog.close': 'Close support dialog',
   'settings.account.support.dialog.disclaimer': 'This screen is for messaging our support team.',
   'settings.account.support.field.subject.label': 'Subject',
   'settings.account.support.field.subject.placeholder': 'e.g. Login issue',

@@ -51,6 +51,10 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.terms.accept_button': 'Aceitar e continuar',
   'auth.terms.offline_hint': 'Você precisa de internet para abrir o link acima.',
   'auth.terms.version': 'Versão obrigatória: {version}',
+  'shared.webview.browser_hint': 'Esta página legal abre em uma nova aba do navegador.',
+  'shared.webview.open_cta': 'Abrir {title}',
+  'shared.webview.open_error':
+    'Não foi possível abrir o link automaticamente. Tente o botão novamente ou use este endereço: {url}',
   'auth.terms.error.link_unavailable':
     'Não foi possível abrir o link dos termos agora. Tente novamente.',
   'auth.social.google': 'Google',
@@ -302,6 +306,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'student.training.session.title': 'Plano guiado de hoje',
   'student.training.session.body':
     'Seu treinador atribuiu uma estrutura de treino. Registre sua execução e solicite ajustes abaixo.',
+  'student.training.session.expand': 'Expandir detalhes do treino',
+  'student.training.session.collapse': 'Recolher detalhes do treino',
   'student.training.empty.title': 'Nenhum treino encontrado',
   'student.training.empty.body':
     'Você ainda não possui um plano de treino personalizado. Contrate um personal trainer para receber uma rotina feita sob medida para seus objetivos.',
@@ -445,6 +451,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.students.empty.cta_add_first': 'Adicionar primeiro aluno',
   'pro.students.empty.cta_share_link': 'Compartilhar link de convite',
   'pro.students.error': 'Não foi possível carregar a lista de alunos. Tente novamente.',
+  'pro.students.error.cta_back': 'Voltar ao painel',
   'pro.students.bulk_assign.cta': 'Atribuição em massa',
   'pro.students.bulk_assign.cta_confirm': 'Atribuir a {count} alunos',
   'pro.students.bulk_assign.selection_mode': 'Atribuição em Massa',
@@ -975,6 +982,7 @@ export const ptBR: Record<TranslationKey, string> = {
 
   // Support
   'settings.account.support.dialog.title': 'Falar com o suporte',
+  'settings.account.support.dialog.close': 'Fechar diálogo de suporte',
   'settings.account.support.dialog.disclaimer':
     'Esta tela é para enviar mensagens para nossa equipe de suporte.',
   'settings.account.support.field.subject.label': 'Assunto',

@@ -87,3 +87,9 @@
   and monthly gap sweep? The first browser-first QA Run and dated report are
   complete; unattended automation remains intentionally unwired pending an
   explicit schedule and environment owner.
+- `Q-028` (ET-104 / SC-205): Should a settled professional roster read error
+  fall back to a cached read-only roster when one exists from a prior
+  successful load, following the same stale-data policy as the professional
+  dashboard (see `Q-015`), instead of always replacing the shell with the
+  error card? Currently any settled error hides the roster shell regardless
+  of prior successful data; see `docs/screens/v2/SC-205-student-roster.md`.
