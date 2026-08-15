@@ -848,6 +848,14 @@
 
 - See `docs/discovery/open-questions-v1.md`.
 
+- `D-210`: Invite-code regeneration confirmation is rendered through a shared React Native `Modal` contract on all platforms.
+  - The confirmation explains invalidation and pending-request cancellation before a professional confirms.
+  - Web must not depend on `Alert.alert`; it uses the shared modal's Escape/focus behavior, visible loading state, and inline success/error feedback.
+  - The professional dashboard disables regeneration while offline and surfaces the standard `offline.write_lock` reason alongside the persistent read-only banner.
+  - After successful regeneration, the dashboard reloads connection data so auto-canceled old-code requests cannot leave pending or attention counts stale.
+  - Rotation analytics record requested, canceled, succeeded, or failed outcomes with redacted properties only; full invite-code values are never included.
+  - The browser-only E2E network-status event bridge is feature-detected before subscription so native runtimes with a non-DOM `window` remain on the NetInfo path.
+
 ## Native iOS Build Compatibility
 
 - `D-173`: Local iOS builds on Xcode 26.5 keep React Native targets on C++20 but force only the `fmt` pod target to C++17 in `ios/Podfile` post-install, because `fmt 11.0.2` fails to compile its C++20 consteval `FMT_STRING` path under this toolchain.
