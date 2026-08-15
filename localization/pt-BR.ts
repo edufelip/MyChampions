@@ -430,9 +430,9 @@ export const ptBR: Record<TranslationKey, string> = {
     'Adicione Nutricionista ou Personal Trainer para permitir remoção',
   'pro.specialty.removal_blocked.title': 'Não é possível remover a especialidade',
   'pro.specialty.removal_blocked.active_students_body':
-    'Esta especialidade tem {count} aluno{plural} ativo. Desvincule ou conclua as atribuições ativas primeiro.',
+    'Esta especialidade tem {count} aluno{plural} ativo{plural}. Desvincule ou conclua as atribuições ativas primeiro.',
   'pro.specialty.removal_blocked.pending_students_body':
-    'Esta especialidade tem {count} aluno{plural} pendente. Aceite ou negue as solicitações pendentes primeiro.',
+    'Esta especialidade tem {count} aluno{plural} pendente{plural}. Aceite ou negue as solicitações pendentes primeiro.',
   'pro.specialty.removal_blocked.last_specialty_body':
     'Você deve ter pelo menos uma especialidade. Adicione uma nova especialidade antes de remover esta.',
   'pro.specialty.remove_blocked.dismiss': 'Dispensar',

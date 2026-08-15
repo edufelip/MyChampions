@@ -859,3 +859,5 @@
 ## Native iOS Build Compatibility
 
 - `D-173`: Local iOS builds on Xcode 26.5 keep React Native targets on C++20 but force only the `fmt` pod target to C++17 in `ios/Podfile` post-install, because `fmt 11.0.2` fails to compile its C++20 consteval `FMT_STRING` path under this toolchain.
+
+- `D-209`: BL-011 specialty-removal blocker copy keeps the existing `{plural}` parameter contract and applies it to both the student noun and the active/pending-state adjective in Portuguese and Spanish. This preserves singular/plural agreement while keeping the pure assist-state logic locale-neutral; TC-262 covers rendered output in all supported locales.

@@ -14,6 +14,7 @@
  *
  * Offline wiring: real network status via useNetworkStatus (BL-008, FR-214).
  */
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -26,8 +27,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
@@ -140,7 +139,7 @@ export default function ProfessionalSpecialtyScreen() {
     const blockerCounts = await getRemovalBlockerCounts(specialty);
     setIsCheckingRemoval(null);
     if (!blockerCounts) {
-      setActionError(t('pro.specialty.remove_error') as string);
+      setActionError(t('pro.specialty.remove_error'));
       return;
     }
 
@@ -161,7 +160,7 @@ export default function ProfessionalSpecialtyScreen() {
 
     const err = await removeSpecialty(record.id);
     if (err) {
-      setActionError(t('pro.specialty.remove_error') as string);
+      setActionError(t('pro.specialty.remove_error'));
     }
   }
 
@@ -206,7 +205,7 @@ export default function ProfessionalSpecialtyScreen() {
     const result = await addSpecialty(specialty);
     setAddingSpecialty(null);
     if (result.error) {
-      setActionError(t('pro.specialty.add_error') as string);
+      setActionError(t('pro.specialty.add_error'));
       return false;
     }
     return true;
@@ -225,7 +224,7 @@ export default function ProfessionalSpecialtyScreen() {
     const credentialDecision = resolveOptionalCredentialInput(credentialForm);
     if (!credentialDecision.shouldSave && Object.keys(credentialDecision.errors).length > 0) {
       setIsSavingCredential(false);
-      setCredentialError(t('pro.specialty.credential.incomplete_error') as string);
+      setCredentialError(t('pro.specialty.credential.incomplete_error'));
       return;
     }
 
@@ -234,7 +233,7 @@ export default function ProfessionalSpecialtyScreen() {
       const addResult = await addSpecialty(credentialFor);
       if (addResult.error || !addResult.record) {
         setIsSavingCredential(false);
-        setCredentialError(t('pro.specialty.add_error') as string);
+        setCredentialError(t('pro.specialty.add_error'));
         return;
       }
 
@@ -270,7 +269,7 @@ export default function ProfessionalSpecialtyScreen() {
     setIsSavingCredential(false);
 
     if (err) {
-      setCredentialError(t('pro.specialty.credential.save_error') as string);
+      setCredentialError(t('pro.specialty.credential.save_error'));
       return;
     }
 
@@ -296,7 +295,7 @@ export default function ProfessionalSpecialtyScreen() {
 
           router.replace('/');
         }}
-        accessibilityLabel={t('auth.role.cta_back') as string}
+        accessibilityLabel={t('auth.role.cta_back')}
         style={styles.backButton}
         testID="pro.specialty.backButton"
       />
@@ -316,7 +315,7 @@ export default function ProfessionalSpecialtyScreen() {
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
           scheme={scheme}
-          text={t('offline.banner') as string}
+          text={t('offline.banner')}
           testID="pro.specialty.offlineBanner"
         />
       ) : null}
@@ -325,7 +324,7 @@ export default function ProfessionalSpecialtyScreen() {
         <ActivityIndicator
           testID="pro.specialty.loading"
           style={styles.centered}
-          accessibilityLabel={t('a11y.loading.default') as string}
+          accessibilityLabel={t('a11y.loading.default')}
           color={theme.color.accentPrimary}
         />
       ) : null}
@@ -440,7 +439,7 @@ export default function ProfessionalSpecialtyScreen() {
           {state.kind === 'ready' && state.specialties.length > 0 ? (
             <DsPillButton
               scheme={scheme}
-              label={t('pro.specialty.cta_continue') as string}
+              label={t('pro.specialty.cta_continue')}
               onPress={() => router.replace('/(tabs)')}
               testID="pro.specialty.cta_continue"
             />
@@ -493,7 +492,10 @@ function RemovalAssistCard({
 }) {
   if (!assistState.blocked || !assistState.blockReason) return null;
 
-  const { titleKey, bodyKey } = getRemovalBlockedMessageKeys(assistState.blockReason);
+  const { titleKey, bodyKey, bodyParams } = getRemovalBlockedMessageKeys(
+    assistState.blockReason,
+    assistState,
+  );
   const actions = assistState.availableActions.map((a) => buildActionMetadata(a, specialty));
 
   return (
@@ -504,7 +506,7 @@ function RemovalAssistCard({
       testID="pro.specialty.removalAssist"
     >
       <Text style={[styles.assistTitle, { color: palette.danger }]}>{t(titleKey)}</Text>
-      <Text style={[styles.assistBody, { color: palette.text }]}>{t(bodyKey)}</Text>
+      <Text style={[styles.assistBody, { color: palette.text }]}>{t(bodyKey, bodyParams)}</Text>
 
       {actions.map((meta) => (
         <Pressable
@@ -546,7 +548,7 @@ function RemovalAssistCard({
         testID="pro.specialty.removalAssist.dismiss"
       >
         <Text style={[styles.link, { color: palette.icon }]}>
-          {t('pro.specialty.remove_blocked.dismiss') as string}
+          {t('pro.specialty.remove_blocked.dismiss')}
         </Text>
       </Pressable>
     </DsCard>
@@ -646,7 +648,7 @@ function AddSpecialtyButtons({
         <DsPillButton
           scheme={scheme}
           variant="secondary"
-          label={t('pro.specialty.nutritionist') as string}
+          label={t('pro.specialty.nutritionist')}
           onPress={() => onAdd('nutritionist')}
           disabled={isWriteLocked || addingSpecialty !== null}
           loading={addingSpecialty === 'nutritionist'}
@@ -658,7 +660,7 @@ function AddSpecialtyButtons({
         <DsPillButton
           scheme={scheme}
           variant="secondary"
-          label={t('pro.specialty.fitness_coach') as string}
+          label={t('pro.specialty.fitness_coach')}
           onPress={() => onAdd('fitness_coach')}
           disabled={isWriteLocked || addingSpecialty !== null}
           loading={addingSpecialty === 'fitness_coach'}
@@ -714,9 +716,7 @@ function CredentialForm({
       : `${t('pro.specialty.credential.title')} — ${specialtyLabel}`;
 
   const skipLabel =
-    mode === 'add'
-      ? (t('pro.specialty.credential.skip_add') as string)
-      : (t('pro.specialty.credential.skip') as string);
+    mode === 'add' ? t('pro.specialty.credential.skip_add') : t('pro.specialty.credential.skip');
 
   return (
     <DsCard scheme={scheme} testID="pro.specialty.credentialForm" style={styles.cardGap}>
@@ -729,8 +729,8 @@ function CredentialForm({
       </Text>
 
       <LabeledInput
-        label={t('pro.specialty.credential.registry_id.label') as string}
-        placeholder={t('pro.specialty.credential.registry_id.placeholder') as string}
+        label={t('pro.specialty.credential.registry_id.label')}
+        placeholder={t('pro.specialty.credential.registry_id.placeholder')}
         value={form.registryId}
         onChangeText={(v) => onChange('registryId', v)}
         palette={palette}
@@ -738,8 +738,8 @@ function CredentialForm({
       />
 
       <LabeledInput
-        label={t('pro.specialty.credential.authority.label') as string}
-        placeholder={t('pro.specialty.credential.authority.placeholder') as string}
+        label={t('pro.specialty.credential.authority.label')}
+        placeholder={t('pro.specialty.credential.authority.placeholder')}
         value={form.authority}
         onChangeText={(v) => onChange('authority', v)}
         palette={palette}
@@ -747,8 +747,8 @@ function CredentialForm({
       />
 
       <LabeledInput
-        label={t('pro.specialty.credential.country.label') as string}
-        placeholder={t('pro.specialty.credential.country.placeholder') as string}
+        label={t('pro.specialty.credential.country.label')}
+        placeholder={t('pro.specialty.credential.country.placeholder')}
         value={form.country}
         onChangeText={(v) => onChange('country', v)}
         palette={palette}
@@ -768,11 +768,11 @@ function CredentialForm({
 
       <View style={styles.row}>
         {isSaving ? (
-          <ActivityIndicator accessibilityLabel={t('a11y.loading.saving') as string} />
+          <ActivityIndicator accessibilityLabel={t('a11y.loading.saving')} />
         ) : (
           <DsPillButton
             scheme={scheme}
-            label={t('pro.specialty.credential.save') as string}
+            label={t('pro.specialty.credential.save')}
             onPress={onSave}
             disabled={isWriteLocked || isSaving}
             style={styles.saveButton}
