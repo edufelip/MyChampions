@@ -41,7 +41,7 @@ import { useNutritionPlanBuilder } from '@/features/plans/use-plan-builder';
 import { usePlanForm } from '@/features/plans/use-plan-form';
 import { usePlans } from '@/features/plans/use-plans';
 import * as Haptics from '@/features/platform/haptics-adapter';
-import { resolveProfessionalNutritionRouteGate } from '@/features/professional/specialty.logic';
+import { resolveNutritionBuilderRouteGate } from '@/features/professional/specialty.logic';
 import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { usePersistentGuidance } from '@/hooks/use-persistent-guidance';
@@ -65,17 +65,22 @@ export default function NutritionPlanBuilderScreen() {
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const { currentUser, lockedRole } = useAuthSession();
   const isStudentBuilder = pathname.startsWith('/student/');
-  const shouldGateProfessionalNutrition = !isStudentBuilder;
+  // Only trigger the specialties fetch (and the professional-only route
+  // gate) once the pathname is confirmed to be the professional surface —
+  // not merely "not yet confirmed Student". See
+  // resolveNutritionBuilderRouteGate's doc comment (specialty.logic.ts) for
+  // why an unsettled usePathname() value must not fail open into the
+  // professional gate.
+  const shouldGateProfessionalNutrition = pathname.startsWith('/professional/');
   const { state: specialtiesState } = useSpecialties(
     Boolean(currentUser) && shouldGateProfessionalNutrition && lockedRole === 'professional',
   );
-  const nutritionGate = shouldGateProfessionalNutrition
-    ? resolveProfessionalNutritionRouteGate({
-        role: lockedRole,
-        specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
-        specialtiesStatus: specialtiesState.kind,
-      })
-    : 'allow';
+  const nutritionGate = resolveNutritionBuilderRouteGate({
+    pathname,
+    role: lockedRole,
+    specialties: specialtiesState.kind === 'ready' ? specialtiesState.specialties : [],
+    specialtiesStatus: specialtiesState.kind,
+  });
 
   const tr = useMemo(() => createBuilderRoleTranslator(isStudentBuilder, t), [isStudentBuilder, t]);
 
