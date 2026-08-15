@@ -20,6 +20,7 @@ export const esES: Record<TranslationKey, string> = {
   'auth.placeholder.password_confirmation': 'Confirmar contraseña',
   'auth.validation.name_required': 'El nombre es obligatorio.',
   'auth.validation.email_required': 'El correo es obligatorio.',
+  'auth.validation.email_invalid': 'Ingresa un correo válido.',
   'auth.validation.password_required': 'La contraseña es obligatoria.',
   'auth.validation.password_confirmation_required': 'La confirmación de contraseña es obligatoria.',
   'auth.validation.password_policy':
@@ -42,6 +43,42 @@ export const esES: Record<TranslationKey, string> = {
   'auth.signin.error.provider_conflict':
     'Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método.',
   'auth.signin.error.configuration':
+    'La autenticación aún no está configurada. Define la URL del servidor de MyChampions e inténtalo de nuevo.',
+  'auth.signin.forgot_password': '¿Olvidaste tu contraseña?',
+  'auth.forgot_password.title': 'Restablece tu contraseña',
+  'auth.forgot_password.subtitle':
+    'Escribe el correo de tu cuenta y te enviaremos instrucciones para restablecer tu contraseña si existe una cuenta.',
+  'auth.forgot_password.cta_primary': 'Enviar instrucciones',
+  'auth.forgot_password.success.title': 'Revisa tu correo',
+  'auth.forgot_password.success.body':
+    'Si existe una cuenta para {email}, te enviamos instrucciones para restablecer tu contraseña.',
+  'auth.forgot_password.success.retry': 'Enviar de nuevo',
+  'auth.forgot_password.cta_back_signin': 'Volver a iniciar sesión',
+  'auth.forgot_password.error.generic':
+    'No pudimos enviar las instrucciones ahora. Inténtalo de nuevo.',
+  'auth.reset_password.title': 'Establece una nueva contraseña',
+  'auth.reset_password.subtitle':
+    'Pega el código de restablecimiento de tu correo y elige una nueva contraseña.',
+  'auth.reset_password.field.email': 'Correo electrónico',
+  'auth.reset_password.field.token': 'Código de restablecimiento',
+  'auth.reset_password.placeholder.token': 'Pega el código de tu correo de restablecimiento',
+  'auth.reset_password.field.new_password': 'Nueva contraseña',
+  'auth.reset_password.field.new_password_confirmation': 'Confirmar nueva contraseña',
+  'auth.reset_password.placeholder.new_password': 'Nueva contraseña',
+  'auth.reset_password.placeholder.new_password_confirmation': 'Confirmar nueva contraseña',
+  'auth.reset_password.cta_primary': 'Restablecer contraseña',
+  'auth.reset_password.validation.token_required': 'El código de restablecimiento es obligatorio.',
+  'auth.reset_password.success.title': 'Contraseña actualizada',
+  'auth.reset_password.success.body':
+    'Tu contraseña se ha restablecido. Inicia sesión con tu nueva contraseña.',
+  'auth.reset_password.cta_go_signin': 'Ir a iniciar sesión',
+  'auth.reset_password.error.invalid_or_expired_token':
+    'Este enlace de restablecimiento no es válido o ha caducado. Solicita uno nuevo.',
+  'auth.reset_password.error.invalid_email': 'El correo electrónico no es válido.',
+  'auth.reset_password.error.account_not_found': 'No se encontró ninguna cuenta para este correo.',
+  'auth.reset_password.error.network':
+    'No pudimos conectar ahora. Revisa tu conexión e inténtalo de nuevo.',
+  'auth.reset_password.error.configuration':
     'La autenticación aún no está configurada. Define la URL del servidor de MyChampions e inténtalo de nuevo.',
   'auth.terms.title': 'Términos y Privacidad',
   'auth.terms.description':

@@ -18,6 +18,7 @@ export const enUS = {
   'auth.placeholder.password_confirmation': 'Confirm password',
   'auth.validation.name_required': 'Name is required.',
   'auth.validation.email_required': 'Email is required.',
+  'auth.validation.email_invalid': 'Enter a valid email address.',
   'auth.validation.password_required': 'Password is required.',
   'auth.validation.password_confirmation_required': 'Password confirmation is required.',
   'auth.validation.password_policy':
@@ -39,6 +40,40 @@ export const enUS = {
   'auth.signin.error.provider_conflict':
     'This email is already linked to another sign-in method. Sign in with your existing method first.',
   'auth.signin.error.configuration':
+    'Authentication is not configured yet. Set the MyChampions server URL and try again.',
+  'auth.signin.forgot_password': 'Forgot password?',
+  'auth.forgot_password.title': 'Reset your password',
+  'auth.forgot_password.subtitle':
+    "Enter your account email and we'll send reset instructions if it exists.",
+  'auth.forgot_password.cta_primary': 'Send reset instructions',
+  'auth.forgot_password.success.title': 'Check your email',
+  'auth.forgot_password.success.body':
+    "If an account exists for {email}, we've sent instructions to reset your password.",
+  'auth.forgot_password.success.retry': 'Send again',
+  'auth.forgot_password.cta_back_signin': 'Back to sign in',
+  'auth.forgot_password.error.generic': "Couldn't send reset instructions right now. Try again.",
+  'auth.reset_password.title': 'Set a new password',
+  'auth.reset_password.subtitle': 'Paste the reset code from your email and choose a new password.',
+  'auth.reset_password.field.email': 'Email',
+  'auth.reset_password.field.token': 'Reset code',
+  'auth.reset_password.placeholder.token': 'Paste the code from your reset email',
+  'auth.reset_password.field.new_password': 'New password',
+  'auth.reset_password.field.new_password_confirmation': 'Confirm new password',
+  'auth.reset_password.placeholder.new_password': 'New password',
+  'auth.reset_password.placeholder.new_password_confirmation': 'Confirm new password',
+  'auth.reset_password.cta_primary': 'Reset password',
+  'auth.reset_password.validation.token_required': 'Reset code is required.',
+  'auth.reset_password.success.title': 'Password updated',
+  'auth.reset_password.success.body':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.reset_password.cta_go_signin': 'Go to sign in',
+  'auth.reset_password.error.invalid_or_expired_token':
+    'This reset link is invalid or has expired. Request a new one.',
+  'auth.reset_password.error.invalid_email': 'Email is invalid.',
+  'auth.reset_password.error.account_not_found': 'No account was found for this email.',
+  'auth.reset_password.error.network':
+    "Couldn't connect right now. Check your connection and try again.",
+  'auth.reset_password.error.configuration':
     'Authentication is not configured yet. Set the MyChampions server URL and try again.',
   'auth.terms.title': 'Terms and Privacy',
   'auth.terms.description':

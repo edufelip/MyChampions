@@ -807,6 +807,48 @@
     required monthly. This change records the first report and keeps local,
     hosted, native, provider, and store-live evidence as separate states.
 
+- `D-203`: ET-71 closes the client-side gap left after the server shipped a
+  complete password-reset backend (`POST /auth/password-reset` request +
+  `POST /auth/password-reset/confirm` confirm, the latter added by ET-74,
+  now merged) with no corresponding mobile UI. ET-74 is `Done`, so both the
+  client (this change) and the production confirm endpoint it depends on are
+  fully wired end to end. Decisions applied:
+  - **Entry point**: A "Forgot password?" text link is added to SC-217 sign-in,
+    above the primary CTA, pushing to a new unauthenticated SC-226
+    forgot-password screen (`/auth/forgot-password`).
+  - **Request screen (SC-226)** reuses the existing
+    `requestPasswordResetFromSource()` call unchanged (already exercised by
+    SC-213 account settings) and shows privacy-preserving copy identical
+    whether or not the email is registered, matching the server's
+    enumeration-resistant `202 accepted` response.
+  - **Confirm screen (SC-227)** is deliberately routed at `/auth/password-reset`
+    — the same path segment the server's local-dev debug-outbox writes into its
+    `mychampions://auth/password-reset?token=...&email=...` deep link — so
+    Expo Router's default file-based linking (already active via `app.json`
+    `scheme: "mychampions"`) resolves an incoming reset link straight to this
+    screen with `token`/`email` pre-filled from `useLocalSearchParams()`. No
+    new custom `Linking` listener was added: the codebase had none for any
+    route, and file-based routing already provides deep-link resolution for
+    free once the matching route file exists. Email/token stay editable so a
+    reset started on another device can be completed by pasting the code.
+  - **Auth guard**: `/auth/forgot-password` and `/auth/password-reset` are
+    added to `isPublicAuthEntry` in `auth-route-guard.logic.ts`. Without this,
+    the guard's default unauthenticated redirect to `/auth/sign-in` would strip
+    the `token`/`email` query params off a real incoming deep link before the
+    user ever saw the confirm screen.
+  - **New-password policy** reuses `isPasswordPolicySatisfied()` from
+    `create-account.logic.ts` (8+ chars, uppercase, number, ASCII symbol, no
+    emoji) rather than inventing a second policy.
+  - **Error taxonomy**: `reset-password.logic.ts` maps the confirm endpoint's
+    `invalid_or_expired_token` (also covers an already-consumed/replayed
+    token), `invalid_email`, and `account_not_found` codes to distinct
+    reason-specific copy, following the same `*Failure` class +
+    `normalize*Reason`/`map*ReasonToMessageKey` shape used by
+    `sign-in.logic.ts` and `create-account.logic.ts`.
+  - Out of scope: analytics instrumentation for the two new screens (sign-in
+    and create-account emit `buildAuthEntryViewed`/submit/fail analytics
+    events; the new screens do not yet) and rate limiting on
+    `/auth/password-reset*` (tracked server-side in ET-63).
 - `D-202`: Supersedes the AsyncStorage half of `D-151`. Native (iOS/Android)
   server-auth session persistence (`features/auth/server-auth-storage.ts`)
   splits the persisted record across two backing stores instead of writing
