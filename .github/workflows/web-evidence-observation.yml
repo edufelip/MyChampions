@@ -1,0 +1,81 @@
+name: Web evidence-tier suite observation
+
+# Non-blocking observation window for the evidence-tier web suites
+# (web:flow-atlas-auth, web:flow-atlas-complete, web:manual-webview-recovery).
+# These suites are ci:false in config/test-impact.json and are not part of
+# any required check — this workflow exists only to build confidence in
+# their pass rate before they are promoted to ci:true. It never gates a PR.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+
+concurrency:
+  group: mychampions-web-evidence-observation
+  cancel-in-progress: false
+
+jobs:
+  observe-evidence-suites:
+    name: Run evidence-tier suites (non-blocking)
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-web-only]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CI: 'true'
+      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'
+    steps:
+      - name: Resolve runner-owned Playwright browsers cache path
+        run: echo "PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright-mychampions" >> "$GITHUB_ENV"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Enable repository Yarn
+        run: corepack enable
+      - run: yarn install --frozen-lockfile --no-progress
+      - name: Ensure Chromium is installed locally
+        run: yarn playwright install chromium
+      - name: Validate the web bundle
+        run: yarn web:export
+      - name: web:flow-atlas-auth (mobile-auth)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=mobile-auth
+      - name: web:flow-atlas-auth (mobile-auth-pt)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=mobile-auth-pt
+      - name: web:flow-atlas-auth (mobile-auth-es)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=mobile-auth-es
+      - name: web:flow-atlas-auth (tablet)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=tablet
+      - name: web:flow-atlas-auth (web)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=web
+      - name: web:flow-atlas-complete (mobile)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows.config.ts e2e/web-flows/complete-flow-atlas.spec.ts --grep "@feature:shell" --project=mobile
+      - name: web:flow-atlas-complete (tablet)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows.config.ts e2e/web-flows/complete-flow-atlas.spec.ts --grep "@feature:shell" --project=tablet
+      - name: web:flow-atlas-complete (web)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows.config.ts e2e/web-flows/complete-flow-atlas.spec.ts --grep "@feature:shell" --project=web
+      - name: web:manual-webview-recovery (mobile)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.webview-recovery.config.ts e2e/web-flows-auth/shared-webview-recovery.spec.ts --grep "@feature:auth" --project=mobile
+      - name: Upload evidence-suite observation diagnostics
+        # continue-on-error above means the job's own status stays "success"
+        # even when a suite step fails, so failure() would never fire here —
+        # use always() so diagnostics are still captured for review.
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mychampions-web-evidence-observation-${{ github.run_id }}
+          path: .artifacts/web-e2e
+          if-no-files-found: warn
+          retention-days: 1

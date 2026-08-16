@@ -1,19 +1,6 @@
 import assert from 'node:assert/strict';
-import { spawn, spawnSync } from 'node:child_process';
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
-import { createConnection, createServer } from 'node:net';
-import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -24,27 +11,6 @@ const workflowNames = readdirSync(workflowDirectory)
   .sort();
 const workflows = new Map(
   workflowNames.map((name) => [name, readFileSync(join(workflowDirectory, name), 'utf8')]),
-);
-const detoxConfigSource = readFileSync(join(root, '.detoxrc.js'), 'utf8');
-const androidRunnerSlotSource = readFileSync(
-  join(root, 'scripts', 'ci', 'android-runner-slot.ts'),
-  'utf8',
-);
-const androidGradleSource = readFileSync(join(root, 'android', 'app', 'build.gradle'), 'utf8');
-const androidDetoxTestSource = readFileSync(
-  join(
-    root,
-    'android',
-    'app',
-    'src',
-    'androidTest',
-    'java',
-    'com',
-    'eduardo880',
-    'mychampions',
-    'DetoxTest.java',
-  ),
-  'utf8',
 );
 const packageManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
   packageManager?: unknown;
@@ -89,72 +55,6 @@ function jobBlock(source: string, name: string): string {
   const remaining = source.slice(start + marker.length);
   const nextJob = remaining.search(/\n  [a-zA-Z0-9_-]+:\n/);
   return nextJob === -1 ? remaining : remaining.slice(0, nextJob);
-}
-
-function namedStepBlock(source: string, name: string): string {
-  const marker = `\n      - name: ${name}\n`;
-  const start = source.indexOf(marker);
-  assert.notEqual(start, -1, `Workflow is missing step: ${name}`);
-
-  const remaining = source.slice(start + marker.length);
-  const nextStep = remaining.search(/\n      - /);
-  return nextStep === -1 ? remaining : remaining.slice(0, nextStep);
-}
-
-function shellFunctionSource(source: string, name: string): string {
-  const marker = `          ${name}() {\n`;
-  const start = source.indexOf(marker);
-  assert.notEqual(start, -1, `Shell step is missing function: ${name}`);
-  const endMarker = '\n          }\n';
-  const end = source.indexOf(endMarker, start);
-  assert.notEqual(end, -1, `Shell function is unterminated: ${name}`);
-  return source
-    .slice(start, end + endMarker.length)
-    .split('\n')
-    .map((line) => line.replace(/^ {10}/, ''))
-    .join('\n');
-}
-
-async function waitUntil(predicate: () => boolean, timeoutMs: number): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (!predicate()) {
-    if (Date.now() >= deadline) throw new Error('Timed out waiting for fixture');
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  }
-}
-
-async function waitForExit(
-  child: ReturnType<typeof spawn>,
-  timeoutMs: number,
-): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
-  return await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      child.kill('SIGKILL');
-      reject(new Error('Timed out waiting for supervised shell exit'));
-    }, timeoutMs);
-    child.once('error', (error) => {
-      clearTimeout(timeout);
-      reject(error);
-    });
-    child.once('exit', (code, signal) => {
-      clearTimeout(timeout);
-      resolve({ code, signal });
-    });
-  });
-}
-
-async function portIsOpen(port: number): Promise<boolean> {
-  return await new Promise((resolve) => {
-    const socket = createConnection({ host: '127.0.0.1', port });
-    const finish = (open: boolean) => {
-      socket.destroy();
-      resolve(open);
-    };
-    socket.setTimeout(200);
-    socket.once('connect', () => finish(true));
-    socket.once('timeout', () => finish(false));
-    socket.once('error', () => finish(false));
-  });
 }
 
 function actionStepBlocks(source: string, action: string): string[] {
@@ -493,6 +393,13 @@ test('trusted workflow is default-branch sourced and authorizes exact candidates
     authorization,
     /output\.write\(f"base_sha=\{base_sha\}\\n"\)[\s\S]*?output\.write\(f"head_sha=\{head_sha\}\\n"\)[\s\S]*?output\.write\(f"force_full=/,
   );
+  // Detox left the PR path (Step 7): a PR targeting release/**|hotfix/** no
+  // longer auto-forces the complete matrix by virtue of its base branch —
+  // only an explicit ci:full label or an already-forced upstream signal
+  // does. Full Detox validation for those branches now comes exclusively
+  // from detox-protected-full.yml's push trigger.
+  assert.match(authorization, /^\s+force_full = force_full or label_force_full$/m);
+  assert.doesNotMatch(authorization, /force_full or label_force_full or base_ref/);
 
   const impact = jobBlock(source, 'impact');
   assert.match(impact, /^    needs: authorize-candidate$/m);
@@ -502,7 +409,7 @@ test('trusted workflow is default-branch sourced and authorizes exact candidates
   );
 
   const checkoutSteps = actionStepBlocks(source, 'actions/checkout');
-  assert.ok(checkoutSteps.length >= 5);
+  assert.ok(checkoutSteps.length >= 4);
   for (const checkout of checkoutSteps) {
     assert.match(checkout, /persist-credentials: false/);
     if (checkout.includes('repository: edufelip/mychampions-api')) {
@@ -897,13 +804,15 @@ test('selective workflow keeps universal checks and conservative full fallbacks'
 });
 
 test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => {
+  // The MYCHAMPIONS_ENABLE_IOS_TESTS toggle no longer has any presence in
+  // trusted-selective-tests.yml: Detox left the PR path entirely (Step 7 of
+  // the CI web-primary redesign), so authorize-candidate/publish-selective-
+  // status no longer read, thread, or gate on it. The toggle itself is
+  // unchanged and still governs ios-pr.yml, detox-protected-full.yml, and
+  // provider-validation.yml, which this test still covers below.
   const legacyIos = workflow('ios-pr.yml');
-  const trusted = workflow('trusted-selective-tests.yml');
   const legacyToggle = jobBlock(legacyIos, 'resolve-ios-tests');
   const legacyBuild = jobBlock(legacyIos, 'build');
-  const authorization = jobBlock(trusted, 'authorize-candidate');
-  const iosLane = jobBlock(trusted, 'detox-ios-selected');
-  const gate = jobBlock(trusted, 'publish-selective-status');
   const release = workflow('ios-release.yml');
   const protectedFull = workflow('detox-protected-full.yml');
   const protectedResolver = jobBlock(protectedFull, 'resolve-ios-tests');
@@ -919,10 +828,6 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
     legacyBuild,
     /^    if: \$\{\{ needs\.resolve-ios-tests\.outputs\.enabled == 'true' \}\}$/m,
   );
-  assert.match(authorization, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
-  assert.match(authorization, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
-  assert.match(authorization, /ios_tests_enabled=\{'true' if ios_tests_enabled else 'false'\}/);
-  assert.match(iosLane, /needs\.authorize-candidate\.outputs\.ios_tests_enabled == 'true'/);
   for (const resolver of [protectedResolver, providerResolver]) {
     assert.match(resolver, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
     assert.match(resolver, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
@@ -934,19 +839,6 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   assert.match(providerIosLane, /^    needs: resolve-ios-tests$/m);
   assert.match(providerIosLane, /needs\.resolve-ios-tests\.outputs\.enabled == 'true'/);
   assert.match(providerIosLane, /github\.ref == 'refs\/heads\/main'/);
-  assert.match(
-    gate,
-    /IOS_TESTS_ENABLED: \$\{\{ needs\.authorize-candidate\.outputs\.ios_tests_enabled \}\}/,
-  );
-  assert.match(
-    gate,
-    /def selected_lane\(\n\s+name: str,\n\s+selected: str,\n\s+result: str,\n\s+enabled: str = "true",\n\s+\) -> None:/,
-  );
-  assert.match(gate, /if name == "ios" and enabled == "false":\s+expected = "skipped"/);
-  assert.match(
-    gate,
-    /selected_lane\(\n\s+"ios",[\s\S]*?os\.environ\["IOS_TESTS_ENABLED"\],\n\s+\)/,
-  );
 
   assert.equal(iOSTestsEnabled(undefined), true);
   assert.equal(iOSTestsEnabled('true'), true);
@@ -956,215 +848,56 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   assert.equal(iOSTestsEnabled(''), true);
   assert.equal(iOSTestsEnabled('false'), false);
 
-  const expectedIosResult = (
-    selected: boolean,
-    result: 'success' | 'skipped',
-    repositoryVariable: string | undefined,
-  ): boolean => {
-    const expected = iOSTestsEnabled(repositoryVariable)
-      ? selected
-        ? 'success'
-        : 'skipped'
-      : 'skipped';
-    return result === expected;
-  };
-
-  assert.equal(expectedIosResult(true, 'success', undefined), true);
-  assert.equal(expectedIosResult(false, 'skipped', 'true'), true);
-  assert.equal(expectedIosResult(true, 'skipped', 'false'), true);
-  assert.equal(expectedIosResult(false, 'skipped', 'false'), true);
-  assert.equal(expectedIosResult(true, 'success', 'false'), false);
-  assert.equal(expectedIosResult(true, 'skipped', 'true'), false);
-
-  assert.match(gate, /selected_lane\("web"/);
-  assert.match(gate, /selected_lane\(\n\s+"android"/);
   assert.doesNotMatch(release, /MYCHAMPIONS_ENABLE_IOS_TESTS/);
   assert.doesNotMatch(protectedFull, /ios-release\.yml/);
+
+  const trusted = workflow('trusted-selective-tests.yml');
+  assert.doesNotMatch(trusted, /ios_tests_enabled/);
+  assert.doesNotMatch(trusted, /MYCHAMPIONS_ENABLE_IOS_TESTS/);
+  assert.doesNotMatch(trusted, /detox-ios-selected/);
 });
 
-test('self-hosted selected lanes require authorization and selected skips fail publication', () => {
-  const source = workflow('trusted-selective-tests.yml');
-
-  for (const name of ['web-selected', 'detox-ios-selected', 'detox-android-selected']) {
-    const lane = jobBlock(source, name);
-    assert.match(lane, /^      - authorize-candidate$/m);
-    assert.match(lane, /needs\.authorize-candidate\.result == 'success'/);
-    assert.match(lane, /runs-on: \[self-hosted,/);
-    assert.match(lane, /^    permissions:\s+contents: read$/m);
-    assert.doesNotMatch(lane, /statuses:\s*write/);
-  }
-
-  const gate = jobBlock(source, 'publish-selective-status');
-  const iosLane = jobBlock(source, 'detox-ios-selected');
-  const androidLane = jobBlock(source, 'detox-android-selected');
-  assert.match(
-    iosLane,
-    /for candidate in \/Applications\/Xcode_"\$\{XCODE_REQUIRED_MAJOR\}"\*\.app/,
-  );
-  assert.doesNotMatch(iosLane, /find \/Applications -maxdepth/);
-  assert.match(androidLane, /emulator_serial="\$\{MYCHAMPIONS_ANDROID_EMULATOR_SERIAL:\?/);
-  assert.match(
-    androidLane,
-    /android_state_file="\$recovery_root\/android-emulator-\$\{emulator_port\}\.state"/,
-  );
-  assert.match(
-    androidLane,
-    /MYCHAMPIONS_ANDROID_RECOVERY_ROOT must name an absolute real directory/,
-  );
-  assert.match(
-    androidLane,
-    /actual_mode="\$\(stat -c '%a' "\$recovery_root"\)"[\s\S]*?"\$actual_mode" != "700"/,
-  );
-  assert.match(
-    androidLane,
-    /expected_launcher_parent="\$BASHPID"[\s\S]*?os\.getppid\(\) != expected_parent[\s\S]*?libc\.prctl\(1, signal\.SIGKILL\)[\s\S]*?os\.getppid\(\) != expected_parent/,
-  );
-  assert.match(
-    androidLane,
-    /values = \{[\s\S]*?"pid": str\(pid\)[\s\S]*?"uid": str\(os\.getuid\(\)\)[\s\S]*?"start": stat_fields\[19\][\s\S]*?"avd": avd[\s\S]*?"port": port[\s\S]*?"serial": serial[\s\S]*?"executable": emulator_path[\s\S]*?"flags": flags/,
-  );
-  assert.ok(
-    androidLane.indexOf('os.fsync(directory_fd)') <
-      androidLane.indexOf('os.execv(emulator_path, arguments)'),
-    'Android ownership state must be durable before emulator exec',
-  );
-  assert.match(
-    androidLane,
-    /closing = text\.rfind\("\)"\)[\s\S]*?fields = text\[closing \+ 2:\]\.split\(\)[\s\S]*?fields\[19\]/,
-  );
-  assert.match(
-    androidLane,
-    /load_android_state\(\)[\s\S]*?os\.O_NOFOLLOW[\s\S]*?stat\.S_IMODE\(metadata\.st_mode\) != 0o600/,
-  );
-  assert.match(
-    androidLane,
-    /if emulator_pid_matches; then[\s\S]*?kill -TERM "\$emulator_pid"[\s\S]*?if emulator_pid_matches; then[\s\S]*?kill -KILL "\$emulator_pid"/,
-  );
-  assert.match(
-    androidLane,
-    /remove_android_state_if_absent\(\) \{[\s\S]*?emulator_cleanup_complete \|\| return 1[\s\S]*?os\.unlink\(state_path\.name, dir_fd=directory_fd\)[\s\S]*?os\.fsync\(directory_fd\)/,
-  );
-  assert.match(
-    androidLane,
-    /boot_deadline=\$\(\(SECONDS \+ 120\)\)[\s\S]*?"\$attached_emulator" == "\$emulator_serial"/,
-  );
-  assert.match(
-    androidLane,
-    /run_supervised timeout 5s adb -P "\$adb_server_port" -s "\$emulator_serial"[\s\S]*?settings put global window_animation_scale/,
-  );
-  assert.match(
-    androidLane,
-    /timeout 10s adb -P "\$adb_server_port" -s "\$emulator_serial" emu kill/,
-  );
-  assert.match(
-    androidLane,
-    /timeout 0\.3s adb -P "\$adb_server_port" -s "\$emulator_serial" emu kill/,
-  );
-  assert.match(
-    androidLane,
-    /stop_adb_server\(\) \{[\s\S]*?timeout 5s adb -P "\$adb_server_port" kill-server/,
-  );
-  assert.match(androidLane, /adb_command\(\*args\)[\s\S]*?\["adb", "-P", adb_server_port/);
-  assert.match(androidLane, /ADB_SERVER_PORT/);
-  assert.match(androidLane, /MYCHAMPIONS_ANDROID_EMULATOR_PORT/);
-  assert.match(androidLane, /MYCHAMPIONS_ANDROID_LOG_ROOT/);
-  assert.match(androidLane, /MYCHAMPIONS_ANDROID_RECOVERY_ROOT/);
-  assert.match(
-    androidLane,
-    /- id: android-slot[\s\S]*?yarn tsx scripts\/ci\/android-runner-slot\.ts/,
-  );
-  assert.doesNotMatch(androidLane, /GITHUB_ENV/);
-  for (const outputName of [
-    'ADB_SERVER_PORT',
-    'ANDROID_ADB_SERVER_PORT',
-    'ANDROID_AVD_HOME',
-    'ANDROID_EMULATOR_HOME',
-    'ANDROID_SERIAL',
-    'ANDROID_TMPDIR',
-    'ANDROID_USER_HOME',
-    'DETOX_ANDROID_AVD',
-    'DETOX_ANDROID_DEVICE',
-    'DETOX_METRO_PORT',
-    'MYCHAMPIONS_ANDROID_ADB_SERVER_PORT',
-    'MYCHAMPIONS_ANDROID_AVD',
-    'MYCHAMPIONS_ANDROID_AVD_HOME',
-    'MYCHAMPIONS_ANDROID_EMULATOR_PORT',
-    'MYCHAMPIONS_ANDROID_EMULATOR_SERIAL',
-    'MYCHAMPIONS_ANDROID_LOCK_ROOT',
-    'MYCHAMPIONS_ANDROID_LOG_ROOT',
-    'MYCHAMPIONS_ANDROID_METRO_PORT',
-    'MYCHAMPIONS_ANDROID_RECOVERY_ROOT',
-    'MYCHAMPIONS_ANDROID_SLOT_ID',
-    'MYCHAMPIONS_ANDROID_TEMP_ROOT',
-    'MYCHAMPIONS_ANDROID_USER_HOME',
-    'MYCHAMPIONS_NATIVE_STATE_ROOT',
-    'TMPDIR',
-  ]) {
-    assert.match(androidLane, new RegExp(`steps\\.android-slot\\.outputs\\.${outputName}`));
-  }
-  assert.doesNotMatch(androidLane, /5554|5555|emulator-5554/);
-  assert.match(androidLane, /Signal cleanup intentionally retains the durable ledger/);
-  assert.doesNotMatch(
-    androidLane,
-    /owner_(?:prefix|pid_file|uid_file|start_file)|adb kill-server|pgrep -af/,
-  );
-  assert.doesNotMatch(androidLane, /grep -Eq '\^emulator-\[0-9\]\+\[\[:space:\]\]'/);
-  assert.ok(
-    androidLane.indexOf('os.execv(emulator_path, arguments)') <
-      androidLane.indexOf('yarn test:impact:execute --platform android'),
-    'Android lane must preboot the supported-port emulator before Detox',
-  );
-  assert.match(
-    androidLane,
-    /Validate isolated Android runner slot[\s\S]*?yarn tsx scripts\/ci\/android-runner-slot\.ts/,
-  );
-  assert.match(androidRunnerSlotSource, /requiredAbsolutePath\(process\.env, 'GITHUB_OUTPUT'\)/);
-  assert.doesNotMatch(androidLane, /^      DETOX_ANDROID_AVD: Pixel_10$/m);
-  assert.match(
-    detoxConfigSource,
-    /const rawMetroPort = process\.env\.DETOX_METRO_PORT \|\| '8081'/,
-  );
-  assert.match(detoxConfigSource, /reversePorts: \[androidMetroPort\]/);
-  assert.match(
-    androidGradleSource,
-    /findProperty\('detoxMetroPort'\) \?: System\.getenv\('DETOX_METRO_PORT'\) \?: '8081'/,
-  );
-  assert.match(androidGradleSource, /DETOX_METRO_HOST/);
-  assert.match(androidDetoxTestSource, /BuildConfig\.DETOX_METRO_HOST/);
-
-  assert.match(gate, /^    if: \$\{\{ always\(\) && !cancelled\(\) \}\}$/m);
-  assert.match(gate, /^      statuses: write$/m);
-  assert.match(gate, /selected_lane\("web"/);
-  assert.match(gate, /selected_lane\(\s+"ios"/);
-  assert.match(gate, /selected_lane\(\s+"android"/);
-  assert.match(gate, /expected = "success" if selected == "true" else "skipped"/);
-});
-
-test('web and Android use separate services with shared WSL load containment', () => {
+test('web-selected lane is authorized, self-hosted, and per-PR-scoped', () => {
+  // Detox left the PR path (Step 7 of the CI web-primary redesign):
+  // detox-ios-selected/detox-android-selected (and their host-capacity
+  // waiting, native runner-slot allocation, PID-safe supervisors, and
+  // per-lane secrets handling) were deleted outright, not relocated — that
+  // machinery existed specifically to let concurrent PRs share a limited
+  // pool of emulator slots safely, which release/hotfix pushes to
+  // detox-protected-full.yml don't need (infrequent, not concurrent PR
+  // volume). web-selected is the only self-hosted selected lane left here.
   const source = workflow('trusted-selective-tests.yml');
   const webLane = jobBlock(source, 'web-selected');
-  const iosLane = jobBlock(source, 'detox-ios-selected');
-  const androidLane = jobBlock(source, 'detox-android-selected');
 
+  assert.match(webLane, /^      - authorize-candidate$/m);
+  assert.match(webLane, /needs\.authorize-candidate\.result == 'success'/);
+  assert.match(webLane, /runs-on: \[self-hosted,/);
+  assert.match(webLane, /^    permissions:\s+contents: read$/m);
+  assert.doesNotMatch(webLane, /statuses:\s*write/);
+
+  // Note: prior to fix(ci): scope selective-CI concurrency groups per PR/run
+  // (#44), the web and Android lanes shared one literal `mychampions-wsl-ui`
+  // concurrency group so they always serialized against each other on this
+  // runner. #44 rescoped every lane to its own `<lane>-${{ pull request or
+  // sha }}` group to stop unrelated PRs from queuing behind each other; web
+  // now only self-serializes across reruns of its own PR/branch.
   assert.match(
     webLane,
     /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-web-only\]$/m,
   );
-  assert.match(webLane, /^      group: mychampions-wsl-ui$/m);
+  assert.match(webLane, /^      group: mychampions-wsl-ui-/m);
+  assert.match(
+    webLane,
+    /\$\{\{ needs\.authorize-candidate\.outputs\.pull_request_number \|\| needs\.authorize-candidate\.outputs\.head_sha \}\}$/m,
+  );
   assert.match(
     webLane,
     /uses: actions\/setup-node@[a-f0-9]+[\s\S]*?- name: Enable repository Yarn\n        run: corepack enable\n      - run: yarn install --frozen-lockfile --no-progress/,
   );
   assert.equal(packageManifest.packageManager, 'yarn@1.22.22');
-  assert.match(androidLane, /^      group: mychampions-wsl-ui$/m);
-  assert.doesNotMatch(source, /group: mychampions-web-ui/);
-  assert.doesNotMatch(source, /group: mychampions-android-detox/);
+  assert.match(webLane, /^      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'$/m);
 
-  for (const lane of [webLane, iosLane, androidLane]) {
-    assert.match(lane, /^      SELECTIVE_INVOCATION_TIMEOUT_MS: '600000'$/m);
-  }
-  assert.match(iosLane, /^    timeout-minutes: 75$/m);
-  assert.match(androidLane, /^    timeout-minutes: 75$/m);
+  assert.doesNotMatch(source, /detox-ios-selected|detox-android-selected/);
 });
 
 test('only hosted freshness, authorization, and final publication can write the stable exact-head status', () => {
@@ -1227,7 +960,14 @@ test('only hosted freshness, authorization, and final publication can write the 
     /status_requires_pull_request_ownership = os\.environ\["CANDIDATE_KIND"\] in \{[\s\S]*?"push"/,
   );
   assert.match(publisher, /base\.get\("sha"\) != os\.environ\["CANDIDATE_BASE_SHA"\]/);
-  assert.match(publisher, /or base_ref != "main"/);
+  // Detox left the PR path (Step 7): force_full no longer auto-broadens on
+  // release/hotfix base branches (authorize-candidate's `force_full =
+  // force_full or label_force_full` dropped ` or base_ref != "main"`), so
+  // revalidate_pull_request()'s TOCTOU mirror must match exactly — otherwise
+  // a release/hotfix PR would spuriously fail as "broadened after impact
+  // resolution" even though nothing broadened it.
+  assert.match(publisher, /broadened = ci_full$/m);
+  assert.doesNotMatch(publisher, /or base_ref != "main"/);
   assert.doesNotMatch(source, /^    name: Selective CI gate$/m);
 
   for (const [name, workflowSource] of workflows) {
@@ -1251,1148 +991,12 @@ test('unsafe workflow-controlled persistent-runner hook candidates stay removed'
   }
 });
 
-test('selected iOS lane persists exact intent and only recovers the same simulator identity', () => {
-  const iosLane = jobBlock(workflow('trusted-selective-tests.yml'), 'detox-ios-selected');
-  const step = namedStepBlock(iosLane, 'Build and run selected iOS suites with trapped resources');
-
-  assert.match(step, /expected_identifier = "com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-17"/);
-  assert.match(step, /runtime\.get\("version", ""\)\.split\("\.", 1\)\[0\] == "26"/);
-  assert.match(step, /ios_state_file="\$recovery_root\/ios-simulator\.state"/);
-  assert.match(
-    step,
-    /"phase": "intent"[\s\S]*?"name": sys\.argv\[2\][\s\S]*?"device_type": sys\.argv\[3\][\s\S]*?"runtime": sys\.argv\[4\][\s\S]*?"udid": ""/,
-  );
-  assert.ok(
-    step.indexOf('persist_ios_intent') < step.indexOf('run_supervised xcrun simctl create'),
-    'the exact create intent must be durable before simctl create',
-  );
-  assert.match(step, /same_name = devices\(\)|matching, same_uuid, same_name = devices\(\)/);
-  assert.match(
-    step,
-    /same_name and not matching[\s\S]*?Recovered iOS intent changed runtime or device type/,
-  );
-  assert.match(
-    step,
-    /os\.unlink\(state_path\.name, dir_fd=directory_fd\)[\s\S]*?os\.fsync\(directory_fd\)/,
-  );
-  assert.match(
-    step,
-    /trap cleanup_ios_resources EXIT[\s\S]*?trap 'cleanup_ios_signal 130' INT[\s\S]*?trap 'cleanup_ios_signal 143' TERM/,
-  );
-  assert.match(step, /export DETOX_IOS_SIMULATOR_UDID="\$simulator_udid"/);
-  assert.match(
-    detoxConfigSource,
-    /process\.env\.DETOX_IOS_SIMULATOR_UDID[\s\S]*?\{ id: process\.env\.DETOX_IOS_SIMULATOR_UDID \}/,
-  );
-  assert.doesNotMatch(iosLane, /simctl shutdown all|simctl delete (?:all|unavailable)/);
-});
-
-test('native recovery roots canonically remain outside workspace and runner temp', () => {
-  const source = workflow('trusted-selective-tests.yml');
-  const iosStep = namedStepBlock(
-    jobBlock(source, 'detox-ios-selected'),
-    'Build and run selected iOS suites with trapped resources',
-  );
-  const androidLane = jobBlock(source, 'detox-android-selected');
-  const androidStep = namedStepBlock(
-    androidLane,
-    'Run selected Android suites on a supported emulator port',
-  );
-  const androidVerifier = namedStepBlock(androidLane, 'Verify Android emulator cleanup');
-  const validators = [
-    ['ios', shellFunctionSource(iosStep, 'validate_recovery_root')],
-    ['android', shellFunctionSource(androidStep, 'validate_recovery_root')],
-    ['android-verifier', shellFunctionSource(androidVerifier, 'validate_recovery_root')],
-  ] as const;
-
-  for (const [name, validator] of validators) {
-    assert.match(validator, /canonical_workspace="\$\(cd "\$GITHUB_WORKSPACE" && pwd -P\)"/, name);
-    assert.match(validator, /canonical_runner_temp="\$\(cd "\$RUNNER_TEMP" && pwd -P\)"/, name);
-    assert.match(validator, /"\$canonical_workspace"\/\*/, name);
-    assert.match(validator, /"\$canonical_runner_temp"\/\*/, name);
-    assert.match(validator, /must remain outside GITHUB_WORKSPACE and RUNNER_TEMP/, name);
-  }
-
-  const fixtureRoot = realpathSync(mkdtempSync(join(tmpdir(), 'mychampions-native-root-')));
-  const workspace = join(fixtureRoot, 'workspace-real');
-  const runnerTemp = join(fixtureRoot, 'runner-temp-real');
-  const externalRoot = join(fixtureRoot, 'persistent-state');
-  const workspaceNested = join(workspace, 'nested-state');
-  const runnerTempNested = join(runnerTemp, 'nested-state');
-  const workspaceAlias = join(fixtureRoot, 'workspace-alias');
-  const runnerTempAlias = join(fixtureRoot, 'runner-temp-alias');
-  const fakeBin = join(fixtureRoot, 'bin');
-  const fakeStat = join(fakeBin, 'stat');
-
-  try {
-    for (const directory of [
-      workspace,
-      runnerTemp,
-      externalRoot,
-      workspaceNested,
-      runnerTempNested,
-      fakeBin,
-    ]) {
-      mkdirSync(directory, { mode: 0o700 });
-      chmodSync(directory, 0o700);
-    }
-    symlinkSync(workspace, workspaceAlias);
-    symlinkSync(runnerTemp, runnerTempAlias);
-    writeFileSync(
-      fakeStat,
-      String.raw`#!/usr/bin/env python3
-import os
-import stat
-import sys
-
-if len(sys.argv) != 4 or sys.argv[1] not in {"-c", "-f"}:
-    raise SystemExit("unsupported stat invocation")
-metadata = os.stat(sys.argv[3], follow_symlinks=False)
-if sys.argv[2] == "%u":
-    print(metadata.st_uid)
-elif sys.argv[2] in {"%a", "%Lp"}:
-    print(format(stat.S_IMODE(metadata.st_mode), "o"))
-else:
-    raise SystemExit("unsupported stat format")
-`,
-    );
-    chmodSync(fakeStat, 0o700);
-
-    const cases = [
-      ['workspace-equal', workspace, false],
-      ['workspace-nested', workspaceNested, false],
-      ['runner-temp-equal', runnerTemp, false],
-      ['runner-temp-nested', runnerTempNested, false],
-      ['external', externalRoot, true],
-    ] as const;
-    for (const [validatorName, validator] of validators) {
-      for (const [caseName, recoveryRoot, allowed] of cases) {
-        const result = spawnSync(
-          'bash',
-          [
-            '-c',
-            String.raw`
-set -euo pipefail
-${validator}
-recovery_root="$RECOVERY_ROOT"
-validate_recovery_root
-`,
-          ],
-          {
-            encoding: 'utf8',
-            env: {
-              ...process.env,
-              GITHUB_WORKSPACE: workspaceAlias,
-              PATH: `${fakeBin}:${process.env.PATH ?? '/usr/bin:/bin'}`,
-              RECOVERY_ROOT: recoveryRoot,
-              RUNNER_TEMP: runnerTempAlias,
-            },
-            timeout: 3_000,
-          },
-        );
-        if (allowed) {
-          assert.equal(result.status, 0, `${validatorName}:${caseName}\n${result.stderr}`);
-        } else {
-          assert.notEqual(
-            result.status,
-            0,
-            `${validatorName}:${caseName} was unexpectedly accepted`,
-          );
-          assert.match(
-            result.stderr,
-            /must remain outside GITHUB_WORKSPACE and RUNNER_TEMP/,
-            `${validatorName}:${caseName}`,
-          );
-        }
-      }
-    }
-  } finally {
-    rmSync(fixtureRoot, { force: true, recursive: true });
-  }
-});
-
-test('native secrets use per-step mode-0600 targets and workspace symlinks', () => {
-  const source = workflow('trusted-selective-tests.yml');
-  const iosLane = jobBlock(source, 'detox-ios-selected');
-  const androidLane = jobBlock(source, 'detox-android-selected');
-  const steps = [
-    namedStepBlock(iosLane, 'Build and run selected iOS suites with trapped resources'),
-    namedStepBlock(androidLane, 'Run native checks and build the debug APKs once'),
-    namedStepBlock(androidLane, 'Run selected Android suites on a supported emulator port'),
-  ];
-  const trapNames = [
-    'trap cleanup_ios_resources EXIT',
-    'trap cleanup_build_environment EXIT',
-    'trap on_exit EXIT',
-  ];
-
-  assert.equal(source.match(/\$\{\{ secrets\.ENV_FILE \}\}/g)?.length, 3);
-  for (const [index, step] of steps.entries()) {
-    assert.match(step, /secret_file="\$RUNNER_TEMP\/mychampions-env-/);
-    assert.match(step, /os\.O_EXCL[\s\S]*?os\.O_NOFOLLOW/);
-    assert.match(step, /descriptor = os\.open\(path, flags, 0o600\)/);
-    assert.match(
-      step,
-      /finally:\n\s+os\.close\(descriptor\)\n\s+PY\n\s+unset ENV_FILE_CONTENT\n\s+actual_mode=/,
-    );
-    assert.match(step, /ln -s "\$secret_file" "\$env_file"/);
-    assert.match(step, /rm -f "\$secret_file"/);
-    assert.match(
-      step,
-      /remove_secret_material\(\) \{[\s\S]{0,160}?unset ENV_FILE_CONTENT[\s\S]{0,80}?rm -f "\$secret_file"/,
-    );
-    assert.ok(
-      step.indexOf(trapNames[index]) < step.lastIndexOf('create_secret_link'),
-      'cleanup traps must precede owned secret creation',
-    );
-    assert.doesNotMatch(step, /printf '%s\\n' "\$ENV_FILE_CONTENT" > "\$env_file"/);
-  }
-
-  const androidVerifier = namedStepBlock(androidLane, 'Verify Android emulator cleanup');
-  assert.match(
-    steps[1],
-    /run_supervised \.\/gradlew \\\n\s+--no-daemon \\\n[\s\S]*?app:assembleDevDebugAndroidTest/,
-  );
-  assert.doesNotMatch(androidVerifier, /ENV_FILE_CONTENT|secrets\.ENV_FILE|GITHUB_WORKSPACE\/.env/);
-});
-
-test('native secret bytes are absent from all post-write subprocess environments', () => {
-  const androidBuildStep = namedStepBlock(
-    jobBlock(workflow('trusted-selective-tests.yml'), 'detox-android-selected'),
-    'Run native checks and build the debug APKs once',
-  );
-  const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-native-secret-'));
-  const secretFile = join(fixtureRoot, 'runner-temp', 'native.env');
-  const envLink = join(fixtureRoot, 'workspace.env');
-  mkdirSync(join(fixtureRoot, 'runner-temp'), { mode: 0o700 });
-  const fixtureSecret = 'native-secret-must-not-reach-subprocesses';
-  const createSecretSource = shellFunctionSource(androidBuildStep, 'create_secret_link');
-  const portableCreateSecretSource = createSecretSource.replace(
-    `actual_mode="$(stat -c '%a' "$secret_file")" || return 1`,
-    `actual_mode="$(SECRET_FILE="$secret_file" /usr/bin/python3 -c 'import os, stat; print(format(stat.S_IMODE(os.stat(os.environ["SECRET_FILE"], follow_symlinks=False).st_mode), "o"))')" || return 1`,
-  );
-  assert.notEqual(portableCreateSecretSource, createSecretSource);
-  const harness = String.raw`
-set -euo pipefail
-${shellFunctionSource(androidBuildStep, 'remove_secret_material')}
-${shellFunctionSource(androidBuildStep, 'recover_stale_secret_link')}
-${portableCreateSecretSource}
-env_file="$ENV_LINK"
-secret_file="$SECRET_FILE"
-create_secret_link
-! printenv ENV_FILE_CONTENT >/dev/null
-/usr/bin/python3 - "$env_file" "$EXPECTED_SECRET" <<'PY'
-import os
-import pathlib
-import sys
-
-if "ENV_FILE_CONTENT" in os.environ:
-    raise SystemExit("raw secret remained in the child environment")
-if pathlib.Path(sys.argv[1]).read_text(encoding="utf-8") != sys.argv[2] + "\n":
-    raise SystemExit("secret target content changed")
-PY
-remove_secret_material
-! printenv ENV_FILE_CONTENT >/dev/null
-[[ ! -e "$secret_file" && ! -L "$env_file" ]]
-`;
-
-  try {
-    const result = spawnSync('bash', ['-c', harness], {
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        ENV_FILE_CONTENT: fixtureSecret,
-        ENV_LINK: envLink,
-        EXPECTED_SECRET: fixtureSecret,
-        RUNNER_TEMP: join(fixtureRoot, 'runner-temp'),
-        SECRET_FILE: secretFile,
-      },
-      timeout: 5_000,
-    });
-    assert.equal(result.status, 0, result.stderr);
-  } finally {
-    rmSync(fixtureRoot, { force: true, recursive: true });
-  }
-});
-
-test('all native supervisors protect the pre-$! handoff and bound signal cleanup', () => {
-  const source = workflow('trusted-selective-tests.yml');
-  const iosLane = jobBlock(source, 'detox-ios-selected');
-  const androidLane = jobBlock(source, 'detox-android-selected');
-  const steps = [
-    namedStepBlock(iosLane, 'Build and run selected iOS suites with trapped resources'),
-    namedStepBlock(androidLane, 'Run native checks and build the debug APKs once'),
-    namedStepBlock(androidLane, 'Run selected Android suites on a supported emulator port'),
-  ];
-
-  for (const step of steps) {
-    assert.match(
-      step,
-      /capture_last_background_pid\(\) \{[\s\S]*?set \+u[\s\S]*?captured_background_pid=\$![\s\S]*?set -u/,
-    );
-    assert.match(
-      step,
-      /supervisor_launching=true[\s\S]*?\/usr\/bin\/python3 -c[\s\S]*?' "\$@" <&0 &[\s\S]*?supervised_pid=\$![\s\S]*?supervisor_launching=false/,
-    );
-    assert.match(
-      step,
-      /"\$supervisor_launching" == "true"[\s\S]*?launch_candidate="\$captured_background_pid"[\s\S]*?supervised_pgid="\$launch_candidate"/,
-    );
-    assert.match(
-      step,
-      /sleep 0\.02[\s\S]*?kill -TERM -- "-\$supervised_pgid"[\s\S]*?for _ in \$\(seq 1 15\); do[\s\S]*?sleep 0\.1[\s\S]*?kill -KILL -- "-\$supervised_pgid"/,
-    );
-    assert.match(step, /terminate_supervised_child fast/);
-  }
-  assert.equal(source.match(/capture_last_background_pid\(\) \{/g)?.length, 3);
-});
-
-test(
-  'native supervisor exits on INT/TERM within three seconds without owned descendants',
-  { timeout: 25_000 },
-  async () => {
-    const iosStep = namedStepBlock(
-      jobBlock(workflow('trusted-selective-tests.yml'), 'detox-ios-selected'),
-      'Build and run selected iOS suites with trapped resources',
-    );
-    const processGroupSource = shellFunctionSource(iosStep, 'supervised_process_group_exists');
-    const captureSource = shellFunctionSource(iosStep, 'capture_last_background_pid');
-    const terminateSource = shellFunctionSource(iosStep, 'terminate_supervised_child');
-    const runSource = shellFunctionSource(iosStep, 'run_supervised');
-    const supervisorSource = [processGroupSource, captureSource, terminateSource, runSource].join(
-      '\n',
-    );
-    const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-native-cancel-'));
-    const fixtureProgram = join(fixtureRoot, 'owned-process.py');
-    const detachedFixtureProgram = join(fixtureRoot, 'detached-owned-process.py');
-    const unrelatedServer = createServer();
-    await new Promise<void>((resolve, reject) => {
-      unrelatedServer.once('error', reject);
-      unrelatedServer.listen(0, '127.0.0.1', resolve);
-    });
-    const portProbe = createServer();
-    let detachedHarnessForCleanup: ReturnType<typeof spawn> | undefined;
-    let detachedPidForCleanup: number | undefined;
-    await new Promise<void>((resolve, reject) => {
-      portProbe.once('error', reject);
-      portProbe.listen(0, '127.0.0.1', resolve);
-    });
-    const address = portProbe.address();
-    assert.ok(address && typeof address === 'object');
-    const ownedPort = address.port;
-    await new Promise<void>((resolve, reject) =>
-      portProbe.close((error) => (error ? reject(error) : resolve())),
-    );
-
-    try {
-      writeFileSync(
-        fixtureProgram,
-        String.raw`
-import os
-import signal
-import socket
-import subprocess
-import sys
-import time
-
-child = r"""
-import os
-import signal
-import socket
-import sys
-import time
-signal.signal(signal.SIGINT, signal.SIG_IGN)
-signal.signal(signal.SIGTERM, signal.SIG_IGN)
-listener = socket.socket()
-listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-listener.bind(("127.0.0.1", int(sys.argv[2])))
-listener.listen()
-with open(sys.argv[1], "w", encoding="utf-8") as ready:
-    ready.write(str(os.getpid()))
-while True:
-    time.sleep(1)
-"""
-subprocess.Popen([sys.executable, "-c", child, sys.argv[1], sys.argv[2]])
-while True:
-    time.sleep(1)
-`.trimStart(),
-      );
-      writeFileSync(
-        detachedFixtureProgram,
-        String.raw`
-import os
-import signal
-import socket
-import subprocess
-import sys
-import time
-
-child = r"""
-import os
-import signal
-import socket
-import sys
-import time
-signal.signal(signal.SIGINT, signal.SIG_IGN)
-signal.signal(signal.SIGTERM, signal.SIG_IGN)
-listener = socket.socket()
-listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-listener.bind(("127.0.0.1", int(sys.argv[2])))
-listener.listen()
-with open(sys.argv[1], "w", encoding="utf-8") as ready:
-    ready.write(str(os.getpid()))
-while True:
-    time.sleep(1)
-"""
-detached = subprocess.Popen(
-    [sys.executable, "-c", child, sys.argv[1], sys.argv[2]],
-    start_new_session=True,
-)
-
-def terminate(_signum, _frame):
-    time.sleep(1.1)
-    try:
-        os.killpg(detached.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
-    detached.wait()
-    os._exit(143)
-
-signal.signal(signal.SIGTERM, terminate)
-while True:
-    time.sleep(1)
-`.trimStart(),
-      );
-
-      for (const [signal, expectedCode] of [
-        ['SIGINT', 130],
-        ['SIGTERM', 143],
-      ] as const) {
-        const suffix = signal.toLowerCase();
-        const secretFile = join(fixtureRoot, `${suffix}.secret`);
-        const envLink = join(fixtureRoot, `${suffix}.env`);
-        const readyFile = join(fixtureRoot, `${suffix}.ready`);
-        const harness = String.raw`
-set -euo pipefail
-${supervisorSource}
-supervised_pid=
-supervised_pgid=
-supervisor_launching=false
-supervisor_previous_background_pid=
-captured_background_pid=
-secret_file="$SECRET_FILE"
-env_file="$ENV_LINK"
-cleanup_signal() {
-  local code="$1"
-  trap - EXIT
-  trap '' INT TERM
-  set +e
-  rm -f "$secret_file" "$env_file"
-  terminate_supervised_child fast || true
-  exit "$code"
-}
-trap 'cleanup_signal 130' INT
-trap 'cleanup_signal 143' TERM
-umask 077
-printf '%s\n' fixture-secret > "$secret_file"
-chmod 600 "$secret_file"
-ln -s "$secret_file" "$env_file"
-run_supervised /usr/bin/python3 "$FIXTURE_PROGRAM" "$READY_FILE" "$OWNED_PORT"
-`;
-        const child = spawn('bash', ['-c', harness], {
-          env: {
-            ...process.env,
-            ENV_LINK: envLink,
-            FIXTURE_PROGRAM: fixtureProgram,
-            OWNED_PORT: String(ownedPort),
-            READY_FILE: readyFile,
-            SECRET_FILE: secretFile,
-          },
-          stdio: ['ignore', 'pipe', 'pipe'],
-        });
-        let stderr = '';
-        child.stderr?.setEncoding('utf8');
-        child.stderr?.on('data', (chunk) => {
-          stderr += chunk;
-        });
-        await waitUntil(() => existsSync(readyFile) && existsSync(secretFile), 3_000);
-        assert.equal((await import('node:fs')).lstatSync(secretFile).mode & 0o777, 0o600);
-        assert.equal(await portIsOpen(ownedPort), true);
-        const grandchildPid = Number(readFileSync(readyFile, 'utf8'));
-        const startedAt = Date.now();
-        assert.equal(child.kill(signal), true);
-        const result = await waitForExit(child, 3_000);
-        assert.equal(result.code, expectedCode, stderr);
-        assert.ok(Date.now() - startedAt < 3_000);
-        assert.equal(existsSync(secretFile), false);
-        assert.equal(existsSync(envLink), false);
-        await waitUntil(() => {
-          try {
-            process.kill(grandchildPid, 0);
-            return false;
-          } catch {
-            return true;
-          }
-        }, 1_000);
-        assert.equal(await portIsOpen(ownedPort), false);
-        assert.equal(unrelatedServer.listening, true);
-      }
-
-      const detachedReadyFile = join(fixtureRoot, 'detached.ready');
-      const detachedHarness = String.raw`
-set -euo pipefail
-${supervisorSource}
-supervised_pid=
-supervised_pgid=
-supervisor_launching=false
-supervisor_previous_background_pid=
-captured_background_pid=
-cleanup_signal() {
-  trap - EXIT
-  trap '' INT TERM
-  set +e
-  terminate_supervised_child fast || true
-  exit 143
-}
-trap cleanup_signal TERM
-run_supervised /usr/bin/python3 \
-  "$DETACHED_FIXTURE_PROGRAM" "$DETACHED_READY_FILE" "$OWNED_PORT"
-`;
-      const detachedHarnessProcess = spawn('bash', ['-c', detachedHarness], {
-        env: {
-          ...process.env,
-          DETACHED_FIXTURE_PROGRAM: detachedFixtureProgram,
-          DETACHED_READY_FILE: detachedReadyFile,
-          OWNED_PORT: String(ownedPort),
-        },
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      detachedHarnessForCleanup = detachedHarnessProcess;
-      let detachedStderr = '';
-      detachedHarnessProcess.stderr?.setEncoding('utf8');
-      detachedHarnessProcess.stderr?.on('data', (chunk) => {
-        detachedStderr += chunk;
-      });
-      await waitUntil(() => existsSync(detachedReadyFile), 3_000);
-      const detachedPid = Number(readFileSync(detachedReadyFile, 'utf8'));
-      detachedPidForCleanup = detachedPid;
-      assert.equal(await portIsOpen(ownedPort), true);
-      const detachedStartedAt = Date.now();
-      assert.equal(detachedHarnessProcess.kill('SIGTERM'), true);
-      const detachedResult = await waitForExit(detachedHarnessProcess, 3_000);
-      detachedHarnessForCleanup = undefined;
-      assert.equal(detachedResult.code, 143, detachedStderr);
-      assert.ok(Date.now() - detachedStartedAt < 3_000);
-      await waitUntil(() => {
-        try {
-          process.kill(detachedPid, 0);
-          return false;
-        } catch {
-          return true;
-        }
-      }, 1_000);
-      detachedPidForCleanup = undefined;
-      assert.equal(await portIsOpen(ownedPort), false);
-      assert.equal(unrelatedServer.listening, true);
-
-      const injectedRunSource = runSource.replace(
-        `' "$@" <&0 &\n  supervised_pid=$!`,
-        () => `' "$@" <&0 &\n  kill -TERM "$$"\n  supervised_pid=$!`,
-      );
-      assert.notEqual(injectedRunSource, runSource);
-      const immediateHarness = String.raw`
-set -euo pipefail
-${processGroupSource}
-${captureSource}
-${terminateSource}
-${injectedRunSource}
-supervised_pid=
-supervised_pgid=
-supervisor_launching=false
-supervisor_previous_background_pid=
-captured_background_pid=
-cleanup_signal() {
-  trap - EXIT
-  trap '' INT TERM
-  set +e
-  terminate_supervised_child fast || true
-  exit 143
-}
-trap cleanup_signal TERM
-run_supervised /usr/bin/python3 -c 'import time; time.sleep(5)'
-`;
-      const immediate = spawnSync('bash', ['-c', immediateHarness], {
-        encoding: 'utf8',
-        timeout: 4_000,
-      });
-      assert.equal(immediate.status, 143, `pre-$! cancellation failed:\n${immediate.stderr}`);
-
-      for (const exitCode of [0, 7]) {
-        const result = spawnSync(
-          'bash',
-          [
-            '-c',
-            String.raw`
-set -euo pipefail
-${supervisorSource}
-supervised_pid=
-supervised_pgid=
-supervisor_launching=false
-supervisor_previous_background_pid=
-captured_background_pid=
-run_supervised /usr/bin/python3 -c \
-  "import sys,time; time.sleep(0.1); sys.exit(${exitCode})"
-`,
-          ],
-          { encoding: 'utf8', timeout: 5_000 },
-        );
-        assert.equal(result.status, exitCode, result.stderr);
-      }
-    } finally {
-      detachedHarnessForCleanup?.kill('SIGKILL');
-      if (detachedPidForCleanup !== undefined) {
-        try {
-          process.kill(-detachedPidForCleanup, 'SIGKILL');
-        } catch {
-          // The detached fixture was already reaped.
-        }
-      }
-      await new Promise<void>((resolve) => unrelatedServer.close(() => resolve()));
-      rmSync(fixtureRoot, { force: true, recursive: true });
-    }
-  },
-);
-
-test(
-  'iOS durable intent survives failed cleanup and is recovered by the next run',
-  { timeout: 20_000 },
-  () => {
-    const iosStep = namedStepBlock(
-      jobBlock(workflow('trusted-selective-tests.yml'), 'detox-ios-selected'),
-      'Build and run selected iOS suites with trapped resources',
-    );
-    const supervisorSource = [
-      shellFunctionSource(iosStep, 'supervised_process_group_exists'),
-      shellFunctionSource(iosStep, 'capture_last_background_pid'),
-      shellFunctionSource(iosStep, 'terminate_supervised_child'),
-      shellFunctionSource(iosStep, 'run_supervised'),
-    ].join('\n');
-    const recoveryStart = iosStep.indexOf('          recover_ios_ledger() {\n');
-    const recoveryEnd = iosStep.indexOf('\n          cleanup_ios_resources() {', recoveryStart);
-    assert.notEqual(recoveryStart, -1);
-    assert.notEqual(recoveryEnd, -1);
-    const recoverySource = iosStep
-      .slice(recoveryStart, recoveryEnd)
-      .split('\n')
-      .map((line) => line.replace(/^ {10}/, ''))
-      .join('\n');
-    const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-ios-recovery-'));
-    const fakeBin = join(fixtureRoot, 'bin');
-    const fakeXcrun = join(fakeBin, 'xcrun');
-    const simulatorState = join(fixtureRoot, 'simulators.json');
-    const ledger = join(fixtureRoot, 'ios-simulator.state');
-    const allowDelete = join(fixtureRoot, 'allow-delete');
-    const log = join(fixtureRoot, 'simctl.log');
-    const runtime = 'com.apple.CoreSimulator.SimRuntime.iOS-26-0';
-    const name = 'mychampions-ci-42-1';
-    const ownedUdid = 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE';
-    const unrelatedUdid = '11111111-2222-3333-4444-555555555555';
-    const deviceType = 'com.apple.CoreSimulator.SimDeviceType.iPhone-17';
-
-    mkdirSync(fakeBin);
-    writeFileSync(
-      fakeXcrun,
-      String.raw`#!/usr/bin/env python3
-import json
-import os
-import sys
-
-args = sys.argv[1:]
-with open(os.environ["SIMCTL_LOG"], "a", encoding="utf-8") as log:
-    log.write(" ".join(args) + "\n")
-if args == ["simctl", "list", "devices", "--json"]:
-    with open(os.environ["SIMULATOR_STATE"], encoding="utf-8") as state:
-        print(state.read())
-    raise SystemExit(0)
-if args[:2] == ["simctl", "shutdown"]:
-    raise SystemExit(0)
-if args[:2] == ["simctl", "delete"]:
-    if os.path.exists(os.environ["ALLOW_DELETE"]):
-        with open(os.environ["SIMULATOR_STATE"], encoding="utf-8") as state:
-            payload = json.load(state)
-        for runtime, devices in payload["devices"].items():
-            payload["devices"][runtime] = [
-                device for device in devices if device.get("udid") != args[2]
-            ]
-        with open(os.environ["SIMULATOR_STATE"], "w", encoding="utf-8") as state:
-            json.dump(payload, state)
-    raise SystemExit(0)
-raise SystemExit("unexpected xcrun invocation")
-`,
-    );
-    chmodSync(fakeXcrun, 0o755);
-    const writeLedger = (phase: 'intent' | 'created', udid: string) => {
-      writeFileSync(
-        ledger,
-        [
-          'version=1',
-          `phase=${phase}`,
-          `name=${name}`,
-          `device_type=${deviceType}`,
-          `runtime=${runtime}`,
-          `udid=${udid}`,
-          '',
-        ].join('\n'),
-        { mode: 0o600 },
-      );
-      chmodSync(ledger, 0o600);
-    };
-    const runRecovery = (mode: 'fast' | 'normal' = 'normal') =>
-      spawnSync(
-        'bash',
-        [
-          '-c',
-          String.raw`
-set -euo pipefail
-${supervisorSource}
-${recoverySource}
-ios_state_file="$IOS_STATE_FILE"
-supervised_pid=
-supervised_pgid=
-supervisor_launching=false
-supervisor_previous_background_pid=
-captured_background_pid=
-recover_ios_ledger "$RECOVERY_MODE"
-`,
-        ],
-        {
-          encoding: 'utf8',
-          env: {
-            ...process.env,
-            ALLOW_DELETE: allowDelete,
-            IOS_STATE_FILE: ledger,
-            PATH: `${fakeBin}:${process.env.PATH ?? ''}`,
-            RECOVERY_MODE: mode,
-            SIMCTL_LOG: log,
-            SIMULATOR_STATE: simulatorState,
-          },
-          timeout: 8_000,
-        },
-      );
-
-    try {
-      writeFileSync(simulatorState, JSON.stringify({ devices: { [runtime]: [] } }));
-      writeLedger('intent', '');
-      const interrupted = runRecovery('fast');
-      assert.notEqual(interrupted.status, 0);
-      assert.equal(existsSync(ledger), true);
-
-      writeFileSync(
-        simulatorState,
-        JSON.stringify({
-          devices: {
-            [runtime]: [
-              {
-                name,
-                udid: ownedUdid,
-                deviceTypeIdentifier: deviceType,
-                state: 'Shutdown',
-              },
-              {
-                name: 'unrelated',
-                udid: unrelatedUdid,
-                deviceTypeIdentifier: deviceType,
-                state: 'Shutdown',
-              },
-            ],
-          },
-        }),
-      );
-      const failed = runRecovery();
-      assert.notEqual(
-        failed.status,
-        0,
-        `unexpected successful recovery:\n${failed.stdout}\n${failed.stderr}\n${
-          existsSync(log) ? readFileSync(log, 'utf8') : 'no simctl log'
-        }\nstate=${readFileSync(simulatorState, 'utf8')}\nledger=${
-          existsSync(ledger) ? readFileSync(ledger, 'utf8') : 'missing'
-        }`,
-      );
-      assert.equal(existsSync(ledger), true);
-
-      writeFileSync(allowDelete, '');
-      const recovered = runRecovery();
-      assert.equal(recovered.status, 0, recovered.stderr);
-      assert.equal(existsSync(ledger), false);
-      const remaining = JSON.parse(readFileSync(simulatorState, 'utf8'));
-      assert.deepEqual(
-        remaining.devices[runtime].map((device: { udid: string }) => device.udid),
-        [unrelatedUdid],
-      );
-
-      rmSync(allowDelete);
-      writeLedger('created', ownedUdid);
-      writeFileSync(
-        simulatorState,
-        JSON.stringify({
-          devices: {
-            'com.apple.CoreSimulator.SimRuntime.iOS-25-0': [
-              {
-                name,
-                udid: 'BBBBBBBB-CCCC-DDDD-EEEE-FFFFFFFFFFFF',
-                deviceTypeIdentifier: deviceType,
-                state: 'Shutdown',
-              },
-            ],
-          },
-        }),
-      );
-      const mismatch = runRecovery();
-      assert.notEqual(mismatch.status, 0);
-      assert.equal(existsSync(ledger), true);
-    } finally {
-      rmSync(fixtureRoot, { force: true, recursive: true });
-    }
-  },
-);
-
-test('Android delayed-ledger cancellation retains state for exact next-run recovery', () => {
-  const androidStep = namedStepBlock(
-    jobBlock(workflow('trusted-selective-tests.yml'), 'detox-android-selected'),
-    'Run selected Android suites on a supported emulator port',
-  );
-  const fastCleanup = shellFunctionSource(androidStep, 'cleanup_emulator_fast');
-  const normalCleanup = shellFunctionSource(androidStep, 'cleanup_emulator');
-  const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-android-recovery-'));
-  const fakeBin = join(fixtureRoot, 'bin');
-  const ledger = join(fixtureRoot, 'android.state');
-  mkdirSync(fakeBin);
-  writeFileSync(join(fakeBin, 'timeout'), '#!/usr/bin/env bash\nshift\nexec "$@"\n');
-  writeFileSync(
-    join(fakeBin, 'adb'),
-    '#!/usr/bin/env bash\nkill -TERM "$OWNED_PID" 2>/dev/null || true\n',
-  );
-  chmodSync(join(fakeBin, 'timeout'), 0o755);
-  chmodSync(join(fakeBin, 'adb'), 0o755);
-
-  try {
-    const result = spawnSync(
-      'bash',
-      [
-        '-c',
-        String.raw`
-set -euo pipefail
-${fastCleanup}
-${normalCleanup}
-android_state_file="$STATE_FILE"
-emulator_serial=emulator-5554
-emulator_port=5554
-adb_server_port=5038
-emulator_pid=
-load_count=0
-load_android_state() {
-  load_count=$((load_count + 1))
-  if (( load_count < 4 )); then
-    return 1
-  fi
-  emulator_pid="$OWNED_PID"
-  return 0
-}
-emulator_pid_matches() { kill -0 "$emulator_pid" 2>/dev/null; }
-emulator_pid_is_owned() { kill -0 "$emulator_pid" 2>/dev/null; }
-reap_emulator_if_zombie() { wait "$emulator_pid" 2>/dev/null || true; }
-emulator_cleanup_complete() {
-  reap_emulator_if_zombie
-  ! kill -0 "$emulator_pid" 2>/dev/null
-}
-emulator_identity_process_present_or_unknown() { return 1; }
-emulator_device_present_or_unknown() { return 1; }
-emulator_ports_present_or_unknown() { return 1; }
-remove_android_state_if_absent() {
-  emulator_cleanup_complete || return 1
-  rm -f "$android_state_file"
-}
-sleep 30 &
-OWNED_PID=$!
-export OWNED_PID
-printf '%s\n' ledger > "$android_state_file"
-cleanup_emulator_fast
-[[ -e "$android_state_file" ]]
-sleep 30 &
-OWNED_PID=$!
-export OWNED_PID
-load_count=100
-cleanup_emulator
-[[ ! -e "$android_state_file" ]]
-`,
-      ],
-      {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${fakeBin}:${process.env.PATH ?? ''}`,
-          STATE_FILE: ledger,
-        },
-        timeout: 6_000,
-      },
-    );
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(existsSync(ledger), false);
-  } finally {
-    rmSync(fixtureRoot, { force: true, recursive: true });
-  }
-});
-
-test(
-  'Android ledger loader and verifier fail closed while preserving unrelated PID reuse',
-  { timeout: 20_000 },
-  () => {
-    const androidLane = jobBlock(workflow('trusted-selective-tests.yml'), 'detox-android-selected');
-    const androidStep = namedStepBlock(
-      androidLane,
-      'Run selected Android suites on a supported emulator port',
-    );
-    const loaderStart = androidStep.indexOf('          load_android_state() {\n');
-    const loaderEnd = androidStep.indexOf('\n          proc_identity() {', loaderStart);
-    assert.notEqual(loaderStart, -1);
-    assert.notEqual(loaderEnd, -1);
-    const loaderSource = androidStep
-      .slice(loaderStart, loaderEnd)
-      .split('\n')
-      .map((line) => line.replace(/^ {10}/, ''))
-      .join('\n');
-
-    const verifierStep = namedStepBlock(androidLane, 'Verify Android emulator cleanup');
-    const verifierMarker =
-      '          /usr/bin/python3 - "$recovery_root/android-emulator-${emulator_port}.state" <<\'PY\'\n';
-    const verifierStart = verifierStep.indexOf(verifierMarker);
-    const verifierBodyStart = verifierStart + verifierMarker.length;
-    const verifierEnd = verifierStep.indexOf('\n          PY', verifierBodyStart);
-    assert.notEqual(verifierStart, -1);
-    assert.notEqual(verifierEnd, -1);
-    const verifierPython = verifierStep
-      .slice(verifierBodyStart, verifierEnd)
-      .split('\n')
-      .map((line) => line.replace(/^ {10}/, ''))
-      .join('\n')
-      .replace(
-        'path = pathlib.Path("/proc", pid)',
-        'path = pathlib.Path(os.environ["PROC_ROOT"], pid)',
-      )
-      .replace(
-        'os.path.realpath(f"/proc/{values[\'pid\']}/exe")',
-        'os.path.realpath(pathlib.Path(os.environ["PROC_ROOT"], values["pid"], "exe"))',
-      )
-      .replace(
-        'for directory in pathlib.Path("/proc").glob("[0-9]*"):',
-        'for directory in pathlib.Path(os.environ["PROC_ROOT"]).glob("[0-9]*"):',
-      )
-      .replace(
-        'os.kill(int(values["pid"]), signal.SIGTERM)',
-        'pathlib.Path(os.environ["SIGNAL_LOG"]).write_text("TERM", encoding="utf-8")',
-      )
-      .replace(
-        'os.kill(int(values["pid"]), signal.SIGKILL)',
-        'pathlib.Path(os.environ["SIGNAL_LOG"]).write_text("KILL", encoding="utf-8")',
-      )
-      .replace('for _ in range(30):', 'for _ in range(1):')
-      .replace('for _ in range(20):', 'for _ in range(1):')
-      .replaceAll('time.sleep(0.2)', 'time.sleep(0.01)')
-      .replaceAll('time.sleep(0.5)', 'time.sleep(0.01)')
-      .replaceAll('time.sleep(0.25)', 'time.sleep(0.01)');
-
-    const fixtureRoot = mkdtempSync(join(tmpdir(), 'mychampions-android-verifier-'));
-    const fakeBin = join(fixtureRoot, 'bin');
-    const procRoot = join(fixtureRoot, 'proc');
-    const stateFile = join(fixtureRoot, 'android-emulator-5554.state');
-    const verifierProgram = join(fixtureRoot, 'verifier.py');
-    const signalLog = join(fixtureRoot, 'signals.log');
-    const pidDirectory = join(procRoot, '123');
-    const unrelatedDirectory = join(procRoot, '999');
-    mkdirSync(fakeBin);
-    mkdirSync(procRoot);
-    mkdirSync(pidDirectory);
-    mkdirSync(unrelatedDirectory);
-    writeFileSync(join(fakeBin, 'adb'), '#!/usr/bin/env bash\nexit 0\n');
-    writeFileSync(join(fakeBin, 'ss'), '#!/usr/bin/env bash\nexit 0\n');
-    chmodSync(join(fakeBin, 'adb'), 0o755);
-    chmodSync(join(fakeBin, 'ss'), 0o755);
-    writeFileSync(verifierProgram, verifierPython);
-
-    const sleepExecutable = spawnSync(
-      'python3',
-      ['-c', 'import os; print(os.path.realpath("/bin/sleep"))'],
-      { encoding: 'utf8' },
-    ).stdout.trim();
-    const procFields = Array(20).fill('0');
-    procFields[0] = 'S';
-    procFields[19] = '999';
-    writeFileSync(
-      join(pidDirectory, 'stat'),
-      `123 (fixture process with spaces) ${procFields.join(' ')}\n`,
-    );
-    writeFileSync(join(pidDirectory, 'cmdline'), Buffer.from('fixture\0--unrelated\0'));
-    symlinkSync(sleepExecutable, join(pidDirectory, 'exe'));
-    writeFileSync(join(unrelatedDirectory, 'cmdline'), Buffer.from('unrelated\0--listener\0'));
-
-    const flags =
-      '-no-audio,-no-boot-anim,-no-window,-no-snapshot,-read-only,-gpu=swiftshader_indirect';
-    const writeAndroidState = (start: string) => {
-      writeFileSync(
-        stateFile,
-        [
-          'version=1',
-          'phase=running',
-          'pid=123',
-          `uid=${process.getuid?.() ?? 0}`,
-          `start=${start}`,
-          'avd=Pixel_10',
-          'port=5554',
-          'serial=emulator-5554',
-          `executable=${sleepExecutable}`,
-          `qemu_executable=${sleepExecutable}`,
-          `flags=${flags}`,
-          '',
-        ].join('\n'),
-        { mode: 0o600 },
-      );
-      chmodSync(stateFile, 0o600);
-    };
-    const runLoader = () =>
-      spawnSync(
-        'bash',
-        [
-          '-c',
-          String.raw`
-set -euo pipefail
-${loaderSource}
-android_state_file="$STATE_FILE"
-DETOX_ANDROID_AVD=Pixel_10
-emulator_pid=
-emulator_uid=
-emulator_start_time=
-emulator_avd=
-emulator_port=
-emulator_serial=
-emulator_executable=
-emulator_qemu_executable=
-emulator_flags=
-load_android_state
-printf '%s\n' "$emulator_pid:$emulator_avd:$emulator_port:$emulator_serial"
-`,
-        ],
-        {
-          encoding: 'utf8',
-          env: {
-            ...process.env,
-            DETOX_ANDROID_AVD: 'Pixel_10',
-            MYCHAMPIONS_ANDROID_EMULATOR_PORT: '5554',
-            MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: 'emulator-5554',
-            STATE_FILE: stateFile,
-          },
-        },
-      );
-    const runVerifier = () =>
-      spawnSync('python3', [verifierProgram, stateFile], {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          ADB_SERVER_PORT: '5038',
-          DETOX_ANDROID_AVD: 'Pixel_10',
-          MYCHAMPIONS_ANDROID_EMULATOR_PORT: '5554',
-          MYCHAMPIONS_ANDROID_EMULATOR_SERIAL: 'emulator-5554',
-          PATH: `${fakeBin}:${process.env.PATH ?? ''}`,
-          PROC_ROOT: procRoot,
-          SIGNAL_LOG: signalLog,
-        },
-        timeout: 5_000,
-      });
-
-    try {
-      writeAndroidState('111');
-      const valid = runLoader();
-      assert.equal(valid.status, 0, valid.stderr);
-      assert.match(valid.stdout, /^123:Pixel_10:5554:emulator-5554$/m);
-
-      writeFileSync(stateFile, `${readFileSync(stateFile, 'utf8')}pid=124\n`);
-      const duplicate = runLoader();
-      assert.notEqual(duplicate.status, 0);
-      assert.equal(existsSync(stateFile), true);
-
-      writeAndroidState('111');
-      chmodSync(stateFile, 0o644);
-      const unsafeMode = runLoader();
-      assert.notEqual(unsafeMode.status, 0);
-      assert.equal(existsSync(stateFile), true);
-
-      const symlinkTarget = join(fixtureRoot, 'symlink-target.state');
-      writeAndroidState('111');
-      writeFileSync(symlinkTarget, readFileSync(stateFile));
-      rmSync(stateFile);
-      symlinkSync(symlinkTarget, stateFile);
-      const symlinkState = runLoader();
-      assert.notEqual(symlinkState.status, 0);
-      assert.equal(existsSync(symlinkTarget), true);
-      rmSync(stateFile);
-
-      writeAndroidState('111');
-      const reusedPid = runVerifier();
-      assert.equal(reusedPid.status, 0, reusedPid.stderr);
-      assert.equal(existsSync(stateFile), false);
-      assert.equal(existsSync(unrelatedDirectory), true);
-
-      writeAndroidState('999');
-      chmodSync(join(pidDirectory, 'cmdline'), 0o000);
-      const unknownIdentity = runVerifier();
-      assert.notEqual(unknownIdentity.status, 0);
-      assert.equal(existsSync(stateFile), true);
-      chmodSync(join(pidDirectory, 'cmdline'), 0o600);
-
-      writeFileSync(
-        join(pidDirectory, 'cmdline'),
-        Buffer.from(
-          [
-            'fixture',
-            '@Pixel_10',
-            '-port',
-            '5554',
-            '-no-audio',
-            '-no-boot-anim',
-            '-no-window',
-            '-no-snapshot',
-            '-read-only',
-            '-gpu',
-            'swiftshader_indirect',
-            '',
-          ].join('\0'),
-        ),
-      );
-      writeAndroidState('999');
-      const failedCleanup = runVerifier();
-      assert.notEqual(failedCleanup.status, 0);
-      assert.equal(existsSync(stateFile), true);
-      assert.equal(readFileSync(signalLog, 'utf8'), 'KILL');
-
-      rmSync(pidDirectory, { force: true, recursive: true });
-      const retriedCleanup = runVerifier();
-      assert.equal(retriedCleanup.status, 0, retriedCleanup.stderr);
-      assert.equal(existsSync(stateFile), false);
-      assert.equal(existsSync(unrelatedDirectory), true);
-    } finally {
-      if (existsSync(join(pidDirectory, 'cmdline'))) {
-        chmodSync(join(pidDirectory, 'cmdline'), 0o600);
-      }
-      rmSync(fixtureRoot, { force: true, recursive: true });
-    }
-  },
-);
-
 test('selected web browsers use an isolated cache and preserve user-local libraries', () => {
   const webLane = jobBlock(workflow('trusted-selective-tests.yml'), 'web-selected');
 
   assert.match(
     webLane,
-    /^      PLAYWRIGHT_BROWSERS_PATH: \/home\/eduardo\/\.cache\/ms-playwright-mychampions$/m,
+    /run: echo "PLAYWRIGHT_BROWSERS_PATH=\$HOME\/\.cache\/ms-playwright-mychampions" >> "\$GITHUB_ENV"/,
   );
   assert.match(webLane, /^      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: '1'$/m);
   assert.match(webLane, /find "\$PLAYWRIGHT_BROWSERS_PATH"/);
@@ -2476,12 +1080,11 @@ test('selective artifacts are failure-only, bounded, and retained for one day', 
   const source = workflow('trusted-selective-tests.yml');
   const uploads = actionStepBlocks(source, 'actions/upload-artifact');
 
-  assert.equal(uploads.length, 3);
-  const expectedPaths = new Set([
-    '.artifacts/ci-diagnostics/web',
-    '.artifacts/ci-diagnostics/ios',
-    '.artifacts/ci-diagnostics/android',
-  ]);
+  // Detox left the PR path (Step 7): only the web lane's diagnostics upload
+  // remains here now; iOS/Android diagnostics uploads live in
+  // detox-protected-full.yml instead.
+  assert.equal(uploads.length, 1);
+  const expectedPaths = new Set(['.artifacts/ci-diagnostics/web']);
 
   for (const upload of uploads) {
     assert.match(upload, /^\s+if: failure\(\)$/m);
@@ -2520,7 +1123,7 @@ test('every other artifact is either bounded failure evidence or a one-day relea
   }
 });
 
-test('protected native full validation is manual/release-only and builds once per platform', () => {
+test('protected native full validation is manual/release/protected-branch-push-only and builds once per platform', () => {
   const workflow = readFileSync(
     join(root, '.github', 'workflows', 'detox-protected-full.yml'),
     'utf8',
@@ -2528,6 +1131,7 @@ test('protected native full validation is manual/release-only and builds once pe
 
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /release:\s*\n\s+types: \[published\]/);
+  assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+-\s+release\/\*\*\s*\n\s+-\s+hotfix\/\*\*/);
   assert.doesNotMatch(workflow, /schedule:/);
   assert.match(workflow, /mychampions-ios/);
   assert.match(workflow, /mychampions-android/);
@@ -2541,4 +1145,36 @@ test('protected native full validation is manual/release-only and builds once pe
   assert.match(workflow, /if: failure\(\)/);
   assert.match(workflow, /retention-days: 1/);
   assert.doesNotMatch(workflow, /detox:revenuecat-live/);
+
+  // No new authorization job is introduced for push — push events to
+  // release/**|hotfix/** can't be spoofed/forked (same trust basis already
+  // relied on by android-release.yml/ios-release.yml), so both jobs must
+  // stay reachable on a push event and must not depend on the manual
+  // workflow_dispatch `inputs.platform` choice (undefined on push).
+  const iosCondition = workflow.match(
+    /detox-ios-full:[\s\S]*?if: >-\n([\s\S]*?)\n\s+runs-on:/,
+  )?.[1];
+  const androidCondition = workflow.match(
+    /detox-android-full:[\s\S]*?if: >-\n([\s\S]*?)\n\s+runs-on:/,
+  )?.[1];
+  assert.ok(iosCondition, 'detox-ios-full if: condition not found');
+  assert.ok(androidCondition, 'detox-android-full if: condition not found');
+  for (const condition of [iosCondition, androidCondition]) {
+    assert.match(condition, /github\.event_name == 'push'/);
+    // The ref-guard clause must accept push without requiring main.
+    assert.match(
+      condition,
+      /github\.event_name == 'release' \|\| github\.event_name == 'push' \|\| github\.ref == 'refs\/heads\/main'/,
+    );
+    // The platform-guard clause must short-circuit before inputs.platform.
+    assert.match(
+      condition,
+      /github\.event_name == 'release' \|\| github\.event_name == 'push' \|\| inputs\.platform ==/,
+    );
+  }
+
+  // Push events to release/**|hotfix/** rely on the same push-can't-be-
+  // spoofed trust basis as android-release.yml/ios-release.yml — no new
+  // authorization/identity-check job should be introduced for this trigger.
+  assert.doesNotMatch(workflow, /authoriz/i);
 });

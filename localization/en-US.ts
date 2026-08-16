@@ -18,6 +18,7 @@ export const enUS = {
   'auth.placeholder.password_confirmation': 'Confirm password',
   'auth.validation.name_required': 'Name is required.',
   'auth.validation.email_required': 'Email is required.',
+  'auth.validation.email_invalid': 'Enter a valid email address.',
   'auth.validation.password_required': 'Password is required.',
   'auth.validation.password_confirmation_required': 'Password confirmation is required.',
   'auth.validation.password_policy':
@@ -40,6 +41,40 @@ export const enUS = {
     'This email is already linked to another sign-in method. Sign in with your existing method first.',
   'auth.signin.error.configuration':
     'Authentication is not configured yet. Set the MyChampions server URL and try again.',
+  'auth.signin.forgot_password': 'Forgot password?',
+  'auth.forgot_password.title': 'Reset your password',
+  'auth.forgot_password.subtitle':
+    "Enter your account email and we'll send reset instructions if it exists.",
+  'auth.forgot_password.cta_primary': 'Send reset instructions',
+  'auth.forgot_password.success.title': 'Check your email',
+  'auth.forgot_password.success.body':
+    "If an account exists for {email}, we've sent instructions to reset your password.",
+  'auth.forgot_password.success.retry': 'Send again',
+  'auth.forgot_password.cta_back_signin': 'Back to sign in',
+  'auth.forgot_password.error.generic': "Couldn't send reset instructions right now. Try again.",
+  'auth.reset_password.title': 'Set a new password',
+  'auth.reset_password.subtitle': 'Paste the reset code from your email and choose a new password.',
+  'auth.reset_password.field.email': 'Email',
+  'auth.reset_password.field.token': 'Reset code',
+  'auth.reset_password.placeholder.token': 'Paste the code from your reset email',
+  'auth.reset_password.field.new_password': 'New password',
+  'auth.reset_password.field.new_password_confirmation': 'Confirm new password',
+  'auth.reset_password.placeholder.new_password': 'New password',
+  'auth.reset_password.placeholder.new_password_confirmation': 'Confirm new password',
+  'auth.reset_password.cta_primary': 'Reset password',
+  'auth.reset_password.validation.token_required': 'Reset code is required.',
+  'auth.reset_password.success.title': 'Password updated',
+  'auth.reset_password.success.body':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.reset_password.cta_go_signin': 'Go to sign in',
+  'auth.reset_password.error.invalid_or_expired_token':
+    'This reset link is invalid or has expired. Request a new one.',
+  'auth.reset_password.error.invalid_email': 'Email is invalid.',
+  'auth.reset_password.error.account_not_found': 'No account was found for this email.',
+  'auth.reset_password.error.network':
+    "Couldn't connect right now. Check your connection and try again.",
+  'auth.reset_password.error.configuration':
+    'Authentication is not configured yet. Set the MyChampions server URL and try again.',
   'auth.terms.title': 'Terms and Privacy',
   'auth.terms.description':
     'Before continuing, review and accept the latest terms for My Champions.',
@@ -49,6 +84,10 @@ export const enUS = {
   'auth.terms.offline_hint': 'You need internet access to open the legal link.',
   'auth.terms.version': 'Required version: {version}',
   'auth.terms.error.link_unavailable': 'Could not open the terms link right now. Try again.',
+  'shared.webview.browser_hint': 'This legal page opens in a new browser tab.',
+  'shared.webview.open_cta': 'Open {title}',
+  'shared.webview.open_error':
+    'Could not open the link automatically. Try the button again, or use this address: {url}',
   'auth.social.google': 'Google',
   'auth.social.apple': 'Apple',
   'auth.password.toggle_show': 'Show password',
@@ -56,6 +95,7 @@ export const enUS = {
   'auth.password.toggle_show_short': 'Show',
   'auth.password.toggle_hide_short': 'Hide',
   'auth.signup.title': 'Create your account',
+  'auth.signup.subtitle': 'Start with a plan that fits your routine.',
   'auth.signup.cta_primary': 'Create account',
   'auth.signup.or_continue': 'or continue with',
   'auth.signup.password_helper':
@@ -152,6 +192,7 @@ export const enUS = {
     'Selected students can request again later with your invite code.',
   'pro.pending.bulk_deny.success': 'Requests denied successfully.',
   'pro.pending.bulk_deny.error': 'Some requests could not be denied. Try again.',
+  'pro.pending.row.select': 'Select {specialty} request',
   'pro.pending.confirm.cta': 'Accept',
   'pro.pending.deny.cta': 'Deny',
   'pro.pending.empty': 'No pending connection requests.',
@@ -277,11 +318,17 @@ export const enUS = {
   'student.nutrition.meal.logged_badge': 'Logged',
   'student.nutrition.meal.log_button': 'Log Meal',
   'student.nutrition.meal.items_label': 'Food items',
+  'student.nutrition.meal.expand': 'Expand meal details',
+  'student.nutrition.meal.collapse': 'Collapse meal details',
+  'student.nutrition.meal.header_expand': 'Expand {meal} details',
+  'student.nutrition.meal.header_collapse': 'Collapse {meal} details',
   'student.training.title': 'Workouts',
   'student.training.calendar.cta': 'Open calendar',
   'student.training.session.title': "Today's guided plan",
   'student.training.session.body':
     'Your coach assigned a training structure. Track completion and request adjustments below.',
+  'student.training.session.expand': 'Expand workout details',
+  'student.training.session.collapse': 'Collapse workout details',
   'student.training.empty.title': 'No workouts found',
   'student.training.empty.body':
     "You don't have a personalized workout plan yet. Hire a personal trainer to receive a routine tailored to your goals.",
@@ -341,6 +388,8 @@ export const enUS = {
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerate',
   'pro.home.invite_code.rotate_confirm_no': 'Cancel',
   'pro.home.invite_code.rotate_error': 'Could not regenerate code. Try again.',
+  'pro.home.invite_code.rotate_success':
+    'Invite code regenerated. Share the new code with students.',
   'pro.home.invite_code.empty': 'No active invite code.',
   'pro.home.invite_code.specialty_required': 'Add a specialty before creating an invite code.',
   'pro.home.invite_code.add_specialty': 'Manage specialties',
@@ -416,6 +465,7 @@ export const enUS = {
   'pro.students.empty.cta_add_first': 'Add first student',
   'pro.students.empty.cta_share_link': 'Share invite link',
   'pro.students.error': 'Could not load student roster. Try again.',
+  'pro.students.error.cta_back': 'Back to dashboard',
   'pro.students.bulk_assign.cta': 'Bulk assign plan',
   'pro.students.bulk_assign.cta_confirm': 'Assign to {count} students',
   'pro.students.bulk_assign.selection_mode': 'Bulk Assignment',
@@ -491,6 +541,10 @@ export const enUS = {
   'pro.subscription.pre_lapse.cta_renew': 'Renew subscription',
   'pro.subscription.locked':
     'Student-plan actions are locked. Restore or purchase a subscription to continue.',
+  'pro.subscription.locked_handoff':
+    'Student-plan actions are locked. Continue on mobile to restore or purchase a subscription.',
+  'pro.subscription.locked_unavailable':
+    'Student-plan actions are locked. Subscription changes are not available in this browser — use the mobile app to restore or purchase, then refresh your status here.',
   'pro.subscription.locked_unknown':
     'Student-plan actions are temporarily locked until subscription status can be verified.',
   'pro.subscription.cta_purchase': 'Upgrade plan',
@@ -605,6 +659,9 @@ export const enUS = {
   'meal.builder.validation.cost_non_negative': 'Ingredient cost must be zero or more.',
   'meal.builder.error.save': 'Could not save meal. Try again.',
   'meal.builder.error.load': 'Could not load meal. Try again.',
+  'meal.builder.error.not_found':
+    'This meal could not be found. It may have been deleted, or the link may be incorrect.',
+  'meal.builder.error.cta_back_to_library': 'Back to recipes',
   'meal.builder.share.error.needs_save': 'Save the meal first to share it.',
   'meal.builder.share.error.unknown': 'Could not generate share link. Try again.',
   'meal.library.title': 'My custom meals',
@@ -816,8 +873,12 @@ export const enUS = {
   'pro.plan.item.field.nutrition_notes.placeholder': 'e.g. No salt',
   'pro.plan.item.delete.body': 'Remove {name} from this meal?',
   'pro.plan.item.search.placeholder': 'Search for an exercise...',
+  'pro.plan.item.search.dialog_title': 'Exercise search',
+  'pro.plan.item.search.initial': 'Search the exercise library to add one to this session.',
+  'pro.plan.item.search.loading': 'Searching exercises...',
   'pro.plan.item.search.empty': 'No exercises found.',
   'pro.plan.item.search.error': 'Error searching for exercises.',
+  'pro.plan.item.search.retry': 'Try again',
   'pro.plan.item.search.back': 'Back to search',
   'pro.plan.item.detail.description': 'Description',
   'pro.plan.item.detail.instructions': 'Instructions',
@@ -922,6 +983,7 @@ export const enUS = {
 
   // Support
   'settings.account.support.dialog.title': 'Talk to support',
+  'settings.account.support.dialog.close': 'Close support dialog',
   'settings.account.support.dialog.disclaimer': 'This screen is for messaging our support team.',
   'settings.account.support.field.subject.label': 'Subject',
   'settings.account.support.field.subject.placeholder': 'e.g. Login issue',

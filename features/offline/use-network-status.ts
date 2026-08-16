@@ -9,62 +9,68 @@
  * Refs: D-041, D-047, D-074, FR-214, BR-272, BL-008
  */
 
-import { useEffect, useState } from 'react';
 import NetInfo from '@react-native-community/netinfo';
-
+import { useEffect, useState } from 'react';
+import {
+  resolveE2ENetworkStatusEventTarget,
+  resolveE2ENetworkStatusOverride,
+} from './network-status-override.logic';
 import type { NetworkStatus } from './offline.logic';
-import { resolveE2ENetworkStatusOverride } from './network-status-override.logic';
 
 /**
  * Subscribes to real device network connectivity.
  * Returns `'online'`, `'offline'`, or `'unknown'`.
  */
 export function useNetworkStatus(): NetworkStatus {
-  const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
-  const appVariant = process.env.APP_VARIANT;
-  const isDevVariant =
-    appVariant === undefined || appVariant === '' || appVariant === 'dev';
-  const supportsE2ENetworkStatusOverride = isDev && isDevVariant;
+  const isE2EAuthSession = process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true';
   const storedE2EStatus =
-    process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' && typeof sessionStorage !== 'undefined'
+    isE2EAuthSession && typeof sessionStorage !== 'undefined'
       ? (sessionStorage.getItem('mychampions.e2e.network-status') ?? undefined)
       : undefined;
   const e2eNetworkStatusOverride = resolveE2ENetworkStatusOverride({
-    appVariant,
-    isDev,
+    appVariant: process.env.APP_VARIANT,
+    isDev: typeof __DEV__ !== 'undefined' && __DEV__,
     status: storedE2EStatus ?? process.env.EXPO_PUBLIC_E2E_NETWORK_STATUS,
   });
   const [status, setStatus] = useState<NetworkStatus>(e2eNetworkStatusOverride ?? 'unknown');
 
   useEffect(() => {
-    const onE2ENetworkStatusStorage = (event: StorageEvent) => {
-      if (event.key !== 'mychampions.e2e.network-status') return;
+    const e2eEventTarget = isE2EAuthSession
+      ? resolveE2ENetworkStatusEventTarget(typeof window === 'undefined' ? null : window)
+      : null;
+    const onE2ENetworkStatusChange = () => {
+      if (!isE2EAuthSession || typeof sessionStorage === 'undefined') return;
 
-      const override = resolveE2ENetworkStatusOverride({
-        appVariant,
-        isDev,
-        status: event.newValue ?? undefined,
+      const nextOverride = resolveE2ENetworkStatusOverride({
+        appVariant: process.env.APP_VARIANT,
+        isDev: typeof __DEV__ !== 'undefined' && __DEV__,
+        status: sessionStorage.getItem('mychampions.e2e.network-status') ?? undefined,
       });
-      if (override) setStatus(override);
+      if (nextOverride) setStatus(nextOverride);
     };
-    const e2eNetworkStatusEventTarget =
-      process.env.EXPO_PUBLIC_E2E_AUTH_SESSION === 'true' &&
-      supportsE2ENetworkStatusOverride &&
-      typeof window !== 'undefined' &&
-      typeof window.addEventListener === 'function' &&
-      typeof window.removeEventListener === 'function'
-        ? window
-        : null;
 
-    if (e2eNetworkStatusEventTarget) {
-      e2eNetworkStatusEventTarget.addEventListener('storage', onE2ENetworkStatusStorage);
+    if (e2eEventTarget) {
+      e2eEventTarget.addEventListener(
+        'mychampions.e2e.network-status-change',
+        onE2ENetworkStatusChange,
+      );
+      // The custom event above is the canonical same-tab signal — the native `storage`
+      // event only fires in *other* browsing contexts, never the tab that made the
+      // write. Some E2E specs still hand-dispatch a synthetic `StorageEvent('storage', …)`
+      // to simulate that, so this listener re-reads sessionStorage the same way and stays
+      // wired for backward compatibility with those specs.
+      e2eEventTarget.addEventListener('storage', onE2ENetworkStatusChange);
     }
 
     if (e2eNetworkStatusOverride) {
       setStatus(e2eNetworkStatusOverride);
       return () => {
-        if (e2eNetworkStatusEventTarget) {
-          e2eNetworkStatusEventTarget.removeEventListener('storage', onE2ENetworkStatusStorage);
+        if (e2eEventTarget) {
+          e2eEventTarget.removeEventListener(
+            'mychampions.e2e.network-status-change',
+            onE2ENetworkStatusChange,
+          );
+          e2eEventTarget.removeEventListener('storage', onE2ENetworkStatusChange);
         }
       };
     }
@@ -81,11 +87,15 @@ export function useNetworkStatus(): NetworkStatus {
 
     return () => {
       unsubscribe();
-      if (e2eNetworkStatusEventTarget) {
-        e2eNetworkStatusEventTarget.removeEventListener('storage', onE2ENetworkStatusStorage);
+      if (e2eEventTarget) {
+        e2eEventTarget.removeEventListener(
+          'mychampions.e2e.network-status-change',
+          onE2ENetworkStatusChange,
+        );
+        e2eEventTarget.removeEventListener('storage', onE2ENetworkStatusChange);
       }
     };
-  }, [e2eNetworkStatusOverride]);
+  }, [e2eNetworkStatusOverride, isE2EAuthSession]);
 
   return status;
 }

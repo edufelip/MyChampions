@@ -1,7 +1,8 @@
 # SC-210 Student Training Tracking (V2)
 
 ## Route
-- `/student/training/today`
+- `/student/training/today` (canonical, documented deep link; ET-109)
+- `/student/training` (flat alias; hosts the screen implementation, also reused by the `/training` tab route via `(tabs)/training`)
 
 ## Objective
 - Let students track daily workout completion and session progress for assigned or self-managed plans.
@@ -10,6 +11,7 @@
 - Primary:
   - Open current session plan.
   - Mark session/task completion.
+  - Expand or collapse each workout session's details with one dedicated control; it exposes a localized label and expanded state to assistive technology and provides a minimum 44×44 CSS px touch/focus target.
   - Submit training plan-change request for assigned plans.
 - Secondary:
   - Review prior session history and adherence trend.

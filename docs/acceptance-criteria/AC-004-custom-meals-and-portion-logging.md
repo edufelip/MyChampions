@@ -32,6 +32,7 @@ Users create reusable custom meals and log consumed portions in grams with propo
 - `AC-424`: Recipe image upload flows show visible upload progress and recoverable-failure reason with retry action.
 - `AC-425`: When a recoverable image upload failure occurs, recipe draft fields remain preserved for retry.
 - `AC-426`: If native camera permission is denied during image selection, the picker does not open, localized device-settings guidance is shown, no preview is created, and the custom-meal draft remains available; protected iOS and Android Detox cover the camera-denied fixture.
+- `AC-427` (ET-103): A recoverable custom-meal library read failure renders a semantic Retry action that re-runs the load and shows the loading state before settling, plus a Create meal fallback that reaches a usable create flow without depending on the failed read. Stale meal rows are never left interactive behind the error state, and bottom navigation remains reachable. A successful zero-meal response continues to render the intentional empty state with its own Create meal CTA, distinct from the read-error state. The Create meal fallback respects the screen's existing write-lock while offline (disabled, matching the empty-state Create CTA); Retry is a read action and is always enabled.
 
 ## Gherkin Scenarios
 
@@ -106,4 +107,19 @@ Feature: Custom meal creation and portion logging
     When a recoverable upload failure occurs
     Then user sees failure reason and retry action
     And recipe draft fields remain preserved
+
+  Scenario: Missing, deleted, or unauthorized edit ID fails closed (ET-100)
+    Given an authenticated user opens /nutrition/custom-meals/:mealId
+    And the mealId does not resolve to a meal the user can access
+    When the route settles
+    Then the screen never renders a blank editable form as if the resource exists
+    And a semantic error state is shown with localized copy, a Retry action, and a Back to recipes action
+    And Save and Share stay disabled or absent until a real meal is loaded
+    And /nutrition/custom-meals/new create mode is unaffected
+
+  Scenario: Same-instance transition into create mode clears stale edit-mode state (ET-100)
+    Given an authenticated user has an edit target that already hydrated on the mounted meal builder screen
+    When that same screen instance transitions to /nutrition/custom-meals/new without unmounting
+    Then the previously hydrated meal's form fields, saved meal id, validation/save errors, attach-photo toggle, AI photo-analysis state, and image-upload state are all cleared
+    And the create form does not carry over the prior meal's data or share id
 ```

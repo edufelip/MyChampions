@@ -178,6 +178,7 @@ export default function ProfessionalStudentsScreen() {
     visibleCount: visible.length,
   });
   const shouldRenderHeroEmptyState = viewState === 'hero_empty';
+  const shouldRenderErrorState = viewState === 'error';
 
   const toggleSelection = (uid: string) => {
     setSelectedStudentUids((prev) =>
@@ -255,7 +256,7 @@ export default function ProfessionalStudentsScreen() {
                 : t('pro.students.bulk_assign.select_hint')}
             </Text>
           </View>
-          {!shouldRenderHeroEmptyState && (
+          {!shouldRenderHeroEmptyState && !shouldRenderErrorState && (
             <DsPillButton
               scheme={scheme}
               variant="outline"
@@ -350,6 +351,36 @@ export default function ProfessionalStudentsScreen() {
             </Pressable>
           </View>
         </View>
+      ) : shouldRenderErrorState ? (
+        <View style={styles.errorStateWrap} testID="pro.students.error.wrap">
+          <DsCard scheme={scheme} style={styles.errorCard} testID="pro.students.errorCard">
+            <View accessibilityRole="alert" accessibilityLiveRegion="polite">
+              <Text
+                style={[styles.errorText, { color: theme.color.danger }]}
+                testID="pro.students.error"
+              >
+                {loadErrorKey ? t(loadErrorKey) : ''}
+              </Text>
+            </View>
+            <View style={styles.errorActions}>
+              <DsPillButton
+                scheme={scheme}
+                label={t('common.error.retry')}
+                onPress={() => {
+                  void loadRoster();
+                }}
+                testID="pro.students.retry"
+              />
+              <DsPillButton
+                scheme={scheme}
+                variant="outline"
+                label={t('pro.students.error.cta_back')}
+                onPress={() => router.push('/professional/home')}
+                testID="pro.students.error.backToDashboard"
+              />
+            </View>
+          </DsCard>
+        </View>
       ) : (
         <>
           {!isSelectionMode && (
@@ -424,21 +455,12 @@ export default function ProfessionalStudentsScreen() {
                   />
                 )}
                 ListEmptyComponent={
-                  loadErrorKey ? (
-                    <Text
-                      style={[styles.emptyText, { color: theme.color.danger }]}
-                      testID="pro.students.error"
-                    >
-                      {loadErrorKey ? t(loadErrorKey) : ''}
-                    </Text>
-                  ) : (
-                    <Text
-                      style={[styles.emptyText, { color: theme.color.textSecondary }]}
-                      testID="pro.students.empty"
-                    >
-                      {t('pro.students.empty')}
-                    </Text>
-                  )
+                  <Text
+                    style={[styles.emptyText, { color: theme.color.textSecondary }]}
+                    testID="pro.students.empty"
+                  >
+                    {t('pro.students.empty')}
+                  </Text>
                 }
                 contentContainerStyle={styles.listContent}
               />
@@ -696,6 +718,20 @@ const styles = StyleSheet.create({
     paddingBottom: DsSpace.xl,
     paddingHorizontal: DsSpace.sm,
   },
+  errorStateWrap: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  errorCard: {
+    alignItems: 'center',
+    borderRadius: DsRadius.xl,
+    gap: DsSpace.md,
+    padding: DsSpace.lg,
+  },
+  errorActions: {
+    alignSelf: 'stretch',
+    gap: DsSpace.sm,
+  },
   emptyHeroWrap: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -859,6 +895,10 @@ const styles = StyleSheet.create({
   badgeText: {
     ...DsTypography.caption,
     fontWeight: '700',
+  },
+  errorText: {
+    ...DsTypography.body,
+    textAlign: 'center',
   },
   emptyText: {
     ...DsTypography.body,

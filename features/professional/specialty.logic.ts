@@ -103,6 +103,40 @@ export function resolveProfessionalNutritionRouteGate(
 }
 
 /**
+ * The nutrition plan builder screen (app/professional/nutrition/plans/[planId].tsx)
+ * is mounted for both /student/nutrition/plans/:planId and
+ * /professional/nutrition/plans/:planId — the Student route re-exports the
+ * same component. Only the professional route needs
+ * resolveProfessionalNutritionRouteGate's protection (redirect non-
+ * professionals, and professionals without an active nutritionist
+ * specialty, off the professional-only surface).
+ *
+ * usePathname() can transiently report neither prefix (e.g. '/') while
+ * expo-router is still settling a deep link or an in-flight navigation —
+ * the same flicker PR #45 fixed for the plan builder store's reset/init
+ * ordering. That fix didn't cover this gate: naively treating an unsettled
+ * pathname as "not the Student route" flips the professional gate on, and
+ * since a Student's locked role isn't 'professional',
+ * resolveProfessionalNutritionRouteGate immediately returns 'redirect' —
+ * firing a real navigation away from the Student's own plan mid-edit. Stay
+ * in 'loading' until the pathname settles to one of the two known
+ * prefixes instead of guessing.
+ */
+export function resolveNutritionBuilderRouteGate(
+  input: NutritionSurfaceAccessInput & {
+    specialtiesStatus: NutritionSurfaceGateStatus;
+    pathname: string;
+  },
+): NutritionSurfaceGateDecision {
+  const isStudentBuilder = input.pathname.startsWith('/student/');
+  const isProfessionalBuilder = input.pathname.startsWith('/professional/');
+  if (!isStudentBuilder && !isProfessionalBuilder) return 'loading';
+  if (isStudentBuilder) return 'allow';
+
+  return resolveProfessionalNutritionRouteGate(input);
+}
+
+/**
  * Determines if a specialty can be removed.
  * Block reasons (BR-234, D-062):
  * 1. Active students exist for the specialty.

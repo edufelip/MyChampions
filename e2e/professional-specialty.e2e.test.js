@@ -20,6 +20,13 @@ async function scrollToCredentialSave() {
     .scroll(260, 'down', 0.5, 0.35);
 }
 
+async function scrollToCredentialSkip() {
+  await waitFor(element(by.id('pro.specialty.credential.skip')))
+    .toBeVisible()
+    .whileElement(by.id('pro.specialty.screen'))
+    .scroll(260, 'down', 0.5, 0.35);
+}
+
 describeWithE2EAuthSession('Professional Specialty Setup', () => {
   beforeAll(async () => {
     await device.launchApp({ newInstance: true });
@@ -62,6 +69,7 @@ describeWithE2EAuthSession('Professional Specialty Setup', () => {
     await waitFor(element(by.id('pro.specialty.credential.error')))
       .toBeVisible()
       .withTimeout(5000);
+    await scrollToCredentialSkip();
     await element(by.id('pro.specialty.credential.skip')).tap();
 
     await waitFor(element(by.id('pro.specialty.row.nutritionist')))
