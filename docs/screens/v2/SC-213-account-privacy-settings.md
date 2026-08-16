@@ -54,8 +54,9 @@ in-app support access.
 
 ### 3. Legal & Privacy Section
 
-- **Privacy Policy** — opens `PRIVACY_POLICY_URL` in an internal WebView screen (`/shared/webview`).
-- **Terms of Service** — opens `TERMS_URL` in an internal WebView screen (`/shared/webview`).
+- **Privacy Policy** — opens `PRIVACY_POLICY_URL` in an internal WebView screen (`/shared/webview`, `intent=account`, `title` = this row's localized label).
+- **Terms of Service** — opens `TERMS_URL` in an internal WebView screen (`/shared/webview`, `intent=account`, `title` = this row's localized label).
+- **Browser fallback (web only)** — the web build of `/shared/webview` can't embed a native WebView, so it hands the legal URL off to the browser instead. For a validated, safe URL it shows `shared.webview.browser_hint` ("This legal page opens in a new browser tab.") and a destination-specific `shared.webview.open_cta` ("Open {title}") rather than an offline warning — the URL passing validation has nothing to do with network connectivity. A `shared.webview.backButton` returns to this screen via `router.replace`, not browser-history discovery. A missing/unsafe URL still falls back to `auth.terms.invalid_link` with no open CTA. See ET-112.
 
 ### 4. Support Section
 
@@ -66,6 +67,7 @@ in-app support access.
   - **Message**: Multi-line input (max 500 chars).
   - **Submit Button**: Sends the message to the MyChampions server support endpoint.
   - **Cancel Button**: Dismisses the dialog without submitting.
+  - **Accessibility**: On web, the visible sheet exposes one named `role="dialog"` with `aria-modal="true"` and `aria-labelledby` pointing to the localized title. The icon close control uses the localized `settings.account.support.dialog.close` label, distinct from the form Cancel action.
   - **Success/Error states**: Inline feedback within the dialog.
 
 ### 5. Sign Out
@@ -88,6 +90,7 @@ in-app support access.
 
 - Idle: all sections visible.
 - Offline: `DsOfflineBanner` shown; account deletion CTA disabled.
+- Support dialog semantics: the web support sheet is a named modal dialog; focus is contained while open, Escape/back is submission-aware, and the trigger regains focus after dismissal.
 - Password reset pending: row shows loading state.
 - Password reset success: inline success banner replaces the row.
 - Password reset error: inline error text below the row.
@@ -142,4 +145,4 @@ in-app support access.
 - Acceptance criteria: AC-305, AC-306, AC-307, AC-308, AC-310, AC-520, AC-521, AC-522, AC-523, AC-524
 - Business rules: BR-225, BR-231, BR-299, BR-300, BR-301, BR-302
 - Test cases: TC-261, TC-304, TC-305, TC-306, TC-307, TC-309, TC-310, TC-311, TC-312, TC-313, TC-314
-- Decisions: D-045, D-103, D-025, D-014
+- Decisions: D-045, D-103, D-025, D-014, D-203

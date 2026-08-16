@@ -54,4 +54,57 @@ test.describe('@critical @feature:auth @feature:connections @feature:subscriptio
     await expect(page.getByTestId('pro.subscription.restoreCta')).toHaveCount(0);
     await expect(page.getByTestId('pro.subscription.refreshCta')).toBeEnabled();
   });
+
+  const documentedTodayRoutes = [
+    { path: '/student/nutrition/today', screenTestId: 'student.nutrition.screen' },
+    { path: '/student/training/today', screenTestId: 'student.training.screen' },
+  ] as const;
+
+  for (const viewport of responsiveViewports) {
+    for (const { path, screenTestId } of documentedTodayRoutes) {
+      test(`${viewport.name} documented deep link ${path} reaches the Student tracking screen, not Unmatched Route`, async ({
+        page,
+      }, testInfo) => {
+        test.skip(
+          testInfo.project.name !== 'chromium',
+          'Responsive critical proof is Chromium-only',
+        );
+        await page.setViewportSize(viewport);
+        await page.goto('/auth/role-selection');
+        await page.getByTestId('auth.roleSelection.studentCard').click();
+        await page.getByTestId('auth.roleSelection.continueButton').click();
+        await expect(page.getByTestId('student.home.ready').last()).toBeVisible();
+
+        // ET-109: documented screen-spec routes (SC-209/SC-210, TC-209/TC-210) must resolve
+        // to the same Student tracking surfaces as their canonical /nutrition, /training
+        // tab aliases instead of rendering Expo Router's Unmatched Route page.
+        await page.goto(path);
+        await expect(page.getByTestId('expo-router-unmatched')).toHaveCount(0);
+        await expect(page.getByTestId(screenTestId)).toBeVisible();
+        expect(page.url()).toContain(path);
+
+        // Reloading the documented route must remain on the same screen.
+        await page.reload();
+        await expect(page.getByTestId('expo-router-unmatched')).toHaveCount(0);
+        await expect(page.getByTestId(screenTestId)).toBeVisible();
+        expect(page.url()).toContain(path);
+      });
+    }
+  }
+
+  test('professional session accessing a documented student /today deep link fails closed to the professional shell', async ({
+    page,
+  }) => {
+    await page.goto('/auth/role-selection');
+    await page.getByTestId('auth.roleSelection.professionalCard').click();
+    await page.getByTestId('auth.roleSelection.continueButton').click();
+    await page.getByTestId('pro.specialty.cta_skip').click();
+    await expect(page.getByTestId('pro.home.screen').last()).toBeVisible();
+
+    for (const { path } of documentedTodayRoutes) {
+      await page.goto(path);
+      await expect(page.getByTestId('pro.home.screen').last()).toBeVisible();
+      await expect(page.getByTestId('expo-router-unmatched')).toHaveCount(0);
+    }
+  });
 });

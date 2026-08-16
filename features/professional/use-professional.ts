@@ -94,8 +94,13 @@ export function useInviteCode(
     if (!isAuthenticated || !specialty) return 'configuration';
 
     try {
-      await rotateInviteCode(specialty);
-      load();
+      const code = await rotateInviteCode(specialty);
+      setState({
+        kind: 'ready',
+        code,
+        displayCode: resolveDisplayInviteCode(code),
+        lastSyncedAtIso: new Date().toISOString(),
+      });
       return null;
     } catch (err) {
       return normalizeInviteCodeActionError(err);

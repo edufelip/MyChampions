@@ -369,6 +369,18 @@ export default function SignInScreen() {
                 />
               </Pressable>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/auth/forgot-password')}
+              disabled={submitting}
+              style={styles.forgotPasswordLink}
+              testID="auth.signIn.forgotPasswordLink"
+            >
+              <Text style={[styles.forgotPasswordText, { color: palette.tint }]}>
+                {t('auth.signin.forgot_password')}
+              </Text>
+            </Pressable>
+
             <View accessibilityLiveRegion="polite">
               {errors.password ? (
                 <Text
@@ -608,6 +620,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 4,
     paddingHorizontal: 0,
+  },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  forgotPasswordText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   primaryButton: {
     alignItems: 'center',

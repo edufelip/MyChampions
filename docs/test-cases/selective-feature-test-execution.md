@@ -28,7 +28,12 @@ must dispatch at ref `main`, accept a PR number, resolve its live head/base, and
 force full selection. The trusted workflow has no direct `merge_group` trigger;
 its workflow-run authorization validates every associated live PR. It also has
 no direct release/hotfix trigger; authorized same-upstream owner PRs targeting
-those bases enter through the hosted preflight and force the full matrix. The
+those bases enter through the hosted preflight the same as any other base, and
+no longer force the full matrix on their own (CI web-primary redesign, Step
+7) -- only an explicit `ci:full` label does. Full Detox validation for
+release/hotfix branches instead comes exclusively from
+`detox-protected-full.yml`'s `push` trigger on those branches (Step 6),
+independent of the PR pipeline. The
 legacy Android, iOS, and web PR workflows are manual-only. The repository-scoped Mac
 and WSL runners and stress-proven
 host-wide resource locks establish capacity and serialization, not
@@ -41,16 +46,17 @@ status, repository-setting, and complete exact-head matrix evidence.
 Configure the repository variable `MYCHAMPIONS_ENABLE_IOS_TESTS` under
 **Settings → Secrets and variables → Actions → Variables**. The exact value
 `false` skips new iOS test-only jobs, including the manual `ios-pr.yml` smoke
-lane, selected iOS Detox suites, the system/account-verification tests that run
-through those lanes, the full iOS Detox job in `detox-protected-full.yml`, and
-the provider-backed iOS Test Store job in `provider-validation.yml`. The full
+lane, the full iOS Detox job in `detox-protected-full.yml`, and the
+provider-backed iOS Test Store job in `provider-validation.yml`. There is no
+selected iOS Detox lane on the PR path any more to skip -- Detox left the PR
+path entirely in the CI web-primary redesign's Step 7, so
+`trusted-selective-tests.yml`'s `Selective CI gate` has no iOS-specific
+skip-allowance logic left either; it only evaluates the web lane. The full
 Detox workflow remains test-only even when started by a published release
 event. An unset variable or any value other than the exact string `false` keeps
 iOS testing enabled. The variable does not cancel jobs that are already
 running, and it does not gate the credentialed `ios-release.yml` distribution
-workflow. When disabled, the final selective gate treats the iOS job's
-intentional `skipped` result as allowed while all other enabled quality and
-platform lanes remain enforced. This checkout has no scheduled or nightly iOS
+workflow. This checkout has no scheduled or nightly iOS
 test workflow; any future iOS test-only lane must use the same guard.
 
 ## Sources of truth
@@ -98,19 +104,33 @@ A direct change to a registered suite spec selects that suite when it is
 CI-eligible, even if no feature references it; non-CI provider/evidence suites
 remain excluded.
 
-A normal feature change selects only its affected Playwright and Detox suites.
+A normal feature change selects only its affected Playwright and Detox suites,
+as the resolver (`resolveImpact()`) computes them; this is the resolver's own
+general contract, independent of any one caller.
 Every selected Detox suite runs on both declared mobile platforms. Shared
 navigation, localization, global design tokens, native/tooling configuration,
 workflow or resolver changes, invalid metadata, unmapped runtime paths, Git
 resolution errors, or more than 500 changed files select the complete registered
-CI matrix. `merge_group`, release/hotfix PRs, and `ci:full`
-also force the complete matrix. The `CI_FORCE_FULL` environment input remains
+CI matrix. `merge_group` and `ci:full`
+also force the complete matrix (a release/hotfix base alone no longer does,
+since the CI web-primary redesign's Step 7). The `CI_FORCE_FULL` environment input remains
 available only to local/direct resolver invocation; the trusted gate does not
 read a repository variable by that name. These controls may only
 broaden selection. A complete-matrix decision selects every suite registered
 with `ci: true`, including CI suites that are not referenced by a feature.
 Detox suites enter only the platform lanes declared by their `platforms` field;
 non-CI provider-live and evidence suites remain excluded.
+
+`trusted-selective-tests.yml`'s `impact` job calls the resolver with
+`--platform-scope web-only` (`scripts/ci/test-impact.ts`'s `platformScope`
+option, added ahead of Step 7 and wired in by it): the resolver still
+computes Detox suite membership internally exactly as described above, but
+`platformScope: 'web-only'` strips every `runner === 'detox'` suite from the
+selection after that full computation, so the PR gate never sees or
+dispatches them. Full Detox validation instead runs exclusively through
+`detox-protected-full.yml` on release/hotfix branch pushes and published
+releases (Step 6), calling `execute-selected-tests.ts` directly with a
+hardcoded full suite list rather than through this resolver.
 
 Unowned documentation-only changes run universal fast checks and no expensive
 UI lane.
@@ -256,24 +276,31 @@ yarn tsc --noEmit
 git diff --check <merge-base> <head>
 ```
 
-Expensive jobs run only when selected:
+Expensive jobs run only when selected. As of the CI web-primary redesign
+(Step 7), the PR path runs exactly one expensive job:
 
 - WSL web: web export plus selected Playwright suites. Its browser binaries live
   in a MyChampions-only cache; a post-install guard updates only the isolated
   WebKit launchers to inherit user-local libraries, and the job-scoped static
   validation bypass remains accountable to actual browser-suite execution.
-- macOS: one iOS debug build plus selected iOS Detox phases. D-195 promotion
-  additionally requires one recorded disposable simulator UDID and targeted
-  shutdown/deletion that leaves unrelated simulators untouched.
-- WSL Android: Gradle lint/unit checks, one `devDebug` app/test build, and
-  selected Android Detox phases. The MyChampions slot rejects stale
-  device/QEMU/console state, preboots `Pixel_10` at `emulator-5556`, uses ADB
-  server `5038` and Metro `18082`, requires its saved PID/UID/Linux start time
-  and AVD/port command identity, exact serial, AVD name, and completed boot
-  within 120 seconds, and lets Detox reuse it. In-step and always-run teardown
-  target only that slot's serial, ADB namespace, revalidated process, recovery
-  record, and `5556/5557` listeners; the Meer slot uses separate roots and
-  `5554`/`5037`/`18081` values.
+
+There is no macOS or WSL Android expensive job on the PR path any more --
+`detox-ios-selected`/`detox-android-selected` were deleted outright in Step 7,
+not relocated. The equivalent mechanics moved entirely to
+`detox-protected-full.yml`, which runs on release/hotfix branch pushes and
+published releases instead of on every PR:
+
+- macOS: one iOS debug build plus the full, hardcoded iOS Detox suite list
+  (not resolver-selected). D-195 promotion additionally requires one recorded
+  disposable simulator UDID and targeted shutdown/deletion that leaves
+  unrelated simulators untouched.
+- Linux Android: Gradle lint/unit checks, one `devDebug`/`productionRelease`
+  app/test build, and the full, hardcoded Android Detox suite list. This
+  dedicated runner uses its own fcntl.flock-based native host lock, distinct
+  from the per-PR-slot allocation (`android-runner-slot.ts`, exact serial/AVD
+  identity, PID-reuse-safe teardown) that `detox-android-selected` used to
+  need for sharing a limited emulator pool across concurrent PRs -- a concern
+  release/hotfix pushes don't have (infrequent, not concurrent PR volume).
 
 The Android lint boundary is part of the gate. API-33 splash-only attributes
 live in `values-v33`, camera hardware is optional because manual invite entry
@@ -292,6 +319,22 @@ labels, and host capabilities are tracked in
 job provenance and is not a sandbox.
 
 ## D-195 persistent-runner promotion contract
+
+**Scope note (CI web-primary redesign, Step 7):** the PR-path bullets in this
+section that describe `detox-ios-selected`/`detox-android-selected`
+specifically (iOS simulator UDID lifecycle, the MyChampions Android slot's
+ports/AVD/PID recovery, and their per-lane secrets/native-supervisor
+mechanics) describe machinery that was deleted outright from
+`trusted-selective-tests.yml`, not relocated. Read those bullets as
+documenting `detox-protected-full.yml`'s release/hotfix Detox validation
+instead -- it's a simpler, single-runner, non-concurrent implementation
+that doesn't need the per-PR emulator-slot-sharing safety this section
+largely describes, since release/hotfix pushes are infrequent rather than
+concurrent PR volume. This section has not been fully re-derived line by
+line for the new topology; treat any specific port/path/identity claim
+below as pending re-verification against `detox-protected-full.yml` rather
+than as current fact, and flag to a maintainer before treating it as an
+executable QA spec for that workflow.
 
 The following controls are normative targets and remain pending until TC-519
 records workflow/run, repository, host-resource, and exact-head evidence:
@@ -322,9 +365,17 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   enforcement uses strict up-to-date branches. Manual execution requires `workflow_dispatch` at ref
   `main`, a PR number resolved through the live API, and forced full selection.
 - Live same-upstream owner PRs targeting `release/**` or `hotfix/**` enter
-  through the hosted preflight, use the protected-`main` trusted workflow, and
-  force full selection. The trusted workflow is never sourced or directly
-  triggered from those target branches.
+  through the hosted preflight and use the protected-`main` trusted workflow
+  the same as any other base; they no longer force full selection on their
+  own (CI web-primary redesign, Step 7) -- only an explicit `ci:full` label
+  does. The trusted workflow is never sourced or directly
+  triggered from those target branches. Full Detox validation for
+  release/hotfix branches instead comes exclusively from
+  `detox-protected-full.yml`'s `push` trigger on those branches (Step 6),
+  entirely outside this PR pipeline and its authorization contract -- push
+  events to protected branches can't be spoofed or come from a fork, the
+  same trust basis `android-release.yml`/`ios-release.yml` already rely on,
+  so no separate authorization job was added for it.
 - Candidate and self-hosted jobs have only `contents: read`. Only the trusted
   GitHub-hosted freshness invalidator, authorization/status initializer, and
   always-run finalizer have `statuses: write`; all three share the

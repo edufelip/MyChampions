@@ -10,6 +10,7 @@ import {
   resolveImpact,
   type ChangedFile,
   type ImportGraph,
+  type PlatformScope,
   validateManifest,
 } from './test-impact';
 
@@ -28,6 +29,15 @@ const forceFull =
   process.env.CI_FORCE_FULL === '1';
 const outputPath = valueAfter('--output') ?? '.artifacts/test-impact/impact.json';
 const markdownPath = valueAfter('--markdown') ?? '.artifacts/test-impact/summary.md';
+const platformScopeArg = valueAfter('--platform-scope');
+if (
+  platformScopeArg !== undefined &&
+  platformScopeArg !== 'all' &&
+  platformScopeArg !== 'web-only'
+) {
+  throw new Error(`--platform-scope must be "all" or "web-only", got "${platformScopeArg}"`);
+}
+const platformScope: PlatformScope = (platformScopeArg as PlatformScope | undefined) ?? 'all';
 
 let changes: ChangedFile[] = [];
 let graphs: ImportGraph[] = [];
@@ -49,6 +59,7 @@ if (resolutionError) validationErrors.push(`impact resolution failed: ${resoluti
 const result = resolveImpact(manifest, changes, graphs, {
   forceFull: forceFull || Boolean(resolutionError),
   validationErrors,
+  platformScope,
 });
 
 mkdirSync(dirname(resolve(root, outputPath)), { recursive: true });

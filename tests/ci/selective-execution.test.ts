@@ -39,6 +39,25 @@ test('web suites are grouped by runner and project with argv-safe filters', () =
   assert.match(invocation.args[grepIndex + 1], /@feature:shell/);
 });
 
+test('web suites can select an explicit Playwright config per project', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:professional-home']);
+
+  assert.deepEqual(
+    plan.invocations.map((invocation) =>
+      invocation.args.filter((value) => value.startsWith('--project=')),
+    ),
+    [
+      ['--project=mobile-professional'],
+      ['--project=mobile-professional-es'],
+      ['--project=mobile-professional-pt'],
+    ],
+  );
+  for (const invocation of plan.invocations) {
+    assert.ok(invocation.args.includes('--config=playwright.professional-home.config.ts'));
+    assert.ok(invocation.args.includes('e2e/web/professional-home-responsive.spec.ts'));
+  }
+});
+
 test('server Playwright suites declare their coordinated backend requirement', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:server-auth']);
 
@@ -57,6 +76,32 @@ test('auth flow atlas uses its unauthenticated mobile Playwright config', () => 
     assert.ok(invocation.args.includes('--config=playwright.flows-auth.config.ts'));
     assert.ok(invocation.args.includes('e2e/web-flows-auth/authentication-flow-atlas.spec.ts'));
   }
+});
+
+test('exercise-search Playwright suite uses an isolated fixture configuration', () => {
+  // web:exercise-search (not web:training) owns exercise-search-modal.spec.ts
+  // and its own playwright.training.config.ts fixture profile. web:training
+  // stays on the default config for the shared responsive-shell.spec.ts, so
+  // that spec's other feature-tagged tests (auth, student, professional,
+  // connections, nutrition — all tagged at the describe-block level
+  // alongside @feature:training) keep running with the fixture environment
+  // they actually need instead of this narrower one.
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:exercise-search']);
+
+  assert.equal(plan.invocations.length, 1);
+  const invocation = plan.invocations[0];
+  assert.ok(invocation.args.includes('--config=playwright.training.config.ts'));
+  assert.ok(invocation.args.includes('e2e/web/exercise-search-modal.spec.ts'));
+});
+
+test('training Playwright suite stays on the default fixture configuration', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:training']);
+
+  assert.equal(plan.invocations.length, 1);
+  const invocation = plan.invocations[0];
+  assert.ok(invocation.args.includes('--config=playwright.config.ts'));
+  assert.ok(invocation.args.includes('e2e/web/responsive-shell.spec.ts'));
+  assert.ok(!invocation.args.includes('e2e/web/exercise-search-modal.spec.ts'));
 });
 
 test('unknown and wrong-platform suite IDs fail before command construction', () => {

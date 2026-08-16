@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-
 import { impactAsync, notificationAsync } from './haptics-adapter.web';
 import {
   BrowserPhotoTooLargeError,
@@ -68,7 +67,7 @@ describe('web photo picker adapter', () => {
   });
 
   it('recompresses browser photos until the encoded JPEG is within 1.5 MB', async () => {
-    const attempts: Array<{ width: number; height: number; quality: number }> = [];
+    const attempts: { width: number; height: number; quality: number }[] = [];
     const result = await compressBrowserPhotoWithinLimit(
       { width: 1600, height: 1200 },
       async (attempt) => {
@@ -219,6 +218,17 @@ describe('web share adapter', () => {
     await adapter.openExternalLink('https://example.test');
     assert.deepEqual(opened, ['https://example.test']);
     await assert.rejects(adapter.openExternalLink('javascript:alert(1)'), /unsafe_external_url/);
+  });
+
+  it('reports a recoverable failure when the browser blocks the popup (ET-112)', async () => {
+    // `window.open` returns `null` when a popup is blocked instead of
+    // throwing — a caller that ignores the return value (as this adapter
+    // used to) reports success even though nothing opened.
+    const adapter = createWebShareAdapter({
+      openWindow: () => null,
+      isAbortError: () => false,
+    });
+    await assert.rejects(adapter.openExternalLink('https://example.test'), /popup_blocked/);
   });
 });
 

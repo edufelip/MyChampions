@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-
-import { requestPasswordResetFromSource, signOutFromSource } from './account-auth-source';
+import {
+  confirmPasswordResetFromSource,
+  requestPasswordResetFromSource,
+  signOutFromSource,
+} from './account-auth-source';
+import { ResetPasswordConfirmFailure } from './reset-password.logic';
 import {
   clearServerAuthSession,
   getCurrentServerAccessToken,
@@ -88,5 +92,135 @@ describe('account-auth-source', () => {
     });
 
     assert.equal(getCurrentServerAccessToken(), null);
+  });
+
+  it('confirms a password reset through the MyChampions server', async () => {
+    let captured: Request | null = null;
+
+    await confirmPasswordResetFromSource(
+      { email: ' USER@Example.test ', token: 'reset-token', newPassword: 'Str0ng!Pass' },
+      {
+        fetch: async (input, init) => {
+          captured = new Request(input, init);
+          return response({ status: 'reset' }, { status: 200 });
+        },
+        getServerBaseUrl: () => 'http://server.test',
+      },
+    );
+
+    assert.ok(captured);
+    const request = captured as Request;
+    assert.equal(request.method, 'POST');
+    assert.equal(request.url, 'http://server.test/auth/password-reset/confirm');
+    assert.deepEqual(await request.json(), {
+      email: 'user@example.test',
+      token: 'reset-token',
+      newPassword: 'Str0ng!Pass',
+    });
+  });
+
+  it('trims surrounding whitespace off the reset token before sending it', async () => {
+    let captured: Request | null = null;
+
+    await confirmPasswordResetFromSource(
+      { email: 'user@example.test', token: '  reset-token  ', newPassword: 'Str0ng!Pass' },
+      {
+        fetch: async (input, init) => {
+          captured = new Request(input, init);
+          return response({ status: 'reset' }, { status: 200 });
+        },
+        getServerBaseUrl: () => 'http://server.test',
+      },
+    );
+
+    assert.ok(captured);
+    const body = await (captured as Request).json();
+    assert.equal(body.token, 'reset-token');
+  });
+
+  it('aborts the confirm request via the fetch signal', async () => {
+    let receivedSignal: AbortSignal | undefined;
+
+    await confirmPasswordResetFromSource(
+      { email: 'user@example.test', token: 'reset-token', newPassword: 'Str0ng!Pass' },
+      {
+        fetch: async (_input, init) => {
+          receivedSignal = init?.signal ?? undefined;
+          return response({ status: 'reset' }, { status: 200 });
+        },
+        getServerBaseUrl: () => 'http://server.test',
+      },
+    );
+
+    assert.ok(receivedSignal instanceof AbortSignal);
+  });
+
+  it('maps a request aborted by the timeout to a network failure', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+
+    const pending = confirmPasswordResetFromSource(
+      { email: 'user@example.test', token: 'reset-token', newPassword: 'Str0ng!Pass' },
+      {
+        fetch: async (_input, init) =>
+          new Promise((_resolve, reject) => {
+            const signal = init?.signal;
+            signal?.addEventListener('abort', () => reject(new Error('aborted')));
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+      },
+    );
+
+    t.mock.timers.tick(15000);
+
+    await assert.rejects(
+      () => pending,
+      (error: unknown) => {
+        assert.ok(error instanceof ResetPasswordConfirmFailure);
+        assert.equal(error.reason, 'network');
+        return true;
+      },
+    );
+  });
+
+  it('throws a ResetPasswordConfirmFailure with the server-reported reason on an invalid token', async () => {
+    await assert.rejects(
+      () =>
+        confirmPasswordResetFromSource(
+          { email: 'user@example.test', token: 'garbage', newPassword: 'Str0ng!Pass' },
+          {
+            fetch: async () =>
+              response(
+                { error: { code: 'invalid_or_expired_token', message: 'expired' } },
+                { status: 400 },
+              ),
+            getServerBaseUrl: () => 'http://server.test',
+          },
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof ResetPasswordConfirmFailure);
+        assert.equal(error.reason, 'invalid_or_expired_token');
+        return true;
+      },
+    );
+  });
+
+  it('requires the MyChampions server for password reset confirmation', async () => {
+    await assert.rejects(
+      () =>
+        confirmPasswordResetFromSource(
+          { email: 'user@example.test', token: 'reset-token', newPassword: 'Str0ng!Pass' },
+          {
+            fetch: async () => {
+              throw new Error('fetch should not be called');
+            },
+            getServerBaseUrl: () => undefined,
+          },
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof ResetPasswordConfirmFailure);
+        assert.equal(error.reason, 'configuration');
+        return true;
+      },
+    );
   });
 });

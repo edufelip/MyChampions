@@ -416,6 +416,72 @@ test('impact infrastructure changes fail closed even when they are otherwise unm
   assert.match(result.fallbackReasons.join(' '), /tooling file changed/);
 });
 
+test('platform scope web-only strips detox suites from a fullFallbackPaths full-fallback selection', () => {
+  const result = resolveImpact(
+    syntheticManifest(),
+    [{ status: 'M', path: 'config/test-impact.json' }],
+    [],
+    { platformScope: 'web-only' },
+  );
+
+  assert.equal(result.mode, 'full-fallback');
+  assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
+  assert.deepEqual(result.detoxIosSuites, []);
+  assert.deepEqual(result.detoxAndroidSuites, []);
+  assert.equal(
+    result.selectedSuites.some((suiteId) => suiteId.startsWith('detox:')),
+    false,
+  );
+});
+
+test('platform scope web-only strips detox suites from an unmapped-path full-fallback selection', () => {
+  const result = resolveImpact(
+    syntheticManifest(),
+    [{ status: 'A', path: 'features/unknown/new-source.ts' }],
+    [],
+    { platformScope: 'web-only' },
+  );
+
+  assert.equal(result.mode, 'full-fallback');
+  assert.deepEqual(result.unmappedRuntimePaths, ['features/unknown/new-source.ts']);
+  assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
+  assert.deepEqual(result.detoxIosSuites, []);
+  assert.deepEqual(result.detoxAndroidSuites, []);
+});
+
+test('platform scope web-only strips detox suites when a shared rule matches impact:all', () => {
+  const result = resolveImpact(
+    syntheticManifest(),
+    [{ status: 'M', path: 'docs/screens/v2/localized-copy-table-v2.md' }],
+    [],
+    { platformScope: 'web-only' },
+  );
+
+  assert.equal(result.mode, 'selective');
+  assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
+  assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
+  assert.deepEqual(result.detoxIosSuites, []);
+  assert.deepEqual(result.detoxAndroidSuites, []);
+});
+
+test('platform scope defaults to "all" and leaves Detox suites in a full-fallback selection unchanged', () => {
+  const withDefault = resolveImpact(syntheticManifest(), [
+    { status: 'A', path: 'features/unknown/new-source.ts' },
+  ]);
+  const withExplicitAll = resolveImpact(
+    syntheticManifest(),
+    [{ status: 'A', path: 'features/unknown/new-source.ts' }],
+    [],
+    { platformScope: 'all' },
+  );
+
+  for (const result of [withDefault, withExplicitAll]) {
+    assert.equal(result.mode, 'full-fallback');
+    assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:b', 'detox:c']);
+    assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
+  }
+});
+
 test('CLI emits compact suite arrays and web-server workflow outputs', () => {
   const outputDirectory = mkdtempSync(join(tmpdir(), 'mychampions-test-impact-output-'));
   const githubOutput = join(outputDirectory, 'github-output.txt');
@@ -477,6 +543,67 @@ test('CLI emits compact suite arrays and web-server workflow outputs', () => {
   } finally {
     rmSync(outputDirectory, { recursive: true, force: true });
   }
+});
+
+test('CLI --platform-scope web-only strips Detox suites from the real manifest full-fallback selection', () => {
+  const outputDirectory = mkdtempSync(join(tmpdir(), 'mychampions-platform-scope-cli-'));
+  const githubOutput = join(outputDirectory, 'github-output.txt');
+  const impactOutput = join(outputDirectory, 'impact.json');
+  const markdownOutput = join(outputDirectory, 'summary.md');
+
+  try {
+    execFileSync(
+      join(root, 'node_modules', '.bin', 'tsx'),
+      [
+        'scripts/ci/resolve-test-impact.ts',
+        '--all',
+        '--platform-scope',
+        'web-only',
+        '--output',
+        impactOutput,
+        '--markdown',
+        markdownOutput,
+      ],
+      {
+        cwd: root,
+        env: {
+          ...process.env,
+          GITHUB_OUTPUT: githubOutput,
+          GITHUB_STEP_SUMMARY: '',
+        },
+        encoding: 'utf8',
+      },
+    );
+
+    const outputs = Object.fromEntries(
+      readFileSync(githubOutput, 'utf8')
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const separator = line.indexOf('=');
+          return [line.slice(0, separator), line.slice(separator + 1)];
+        }),
+    );
+    const result = JSON.parse(readFileSync(impactOutput, 'utf8'));
+
+    assert.equal(outputs.has_detox_ios, 'false');
+    assert.equal(outputs.has_detox_android, 'false');
+    assert.deepEqual(result.detoxIosSuites, []);
+    assert.deepEqual(result.detoxAndroidSuites, []);
+    assert.ok(result.webSuites.length > 0);
+  } finally {
+    rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
+test('CLI rejects an invalid --platform-scope value', () => {
+  assert.throws(() => {
+    execFileSync(
+      join(root, 'node_modules', '.bin', 'tsx'),
+      ['scripts/ci/resolve-test-impact.ts', '--all', '--platform-scope', 'bogus'],
+      { cwd: root, encoding: 'utf8', stdio: 'pipe' },
+    );
+  }, /must be "all" or "web-only"/);
 });
 
 test('undeclared dependency cycles fail manifest validation', () => {

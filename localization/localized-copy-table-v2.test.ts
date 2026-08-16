@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
-
 import { enUS, type TranslationKey } from './en-US';
 import { esES } from './es-ES';
 import { ptBR } from './pt-BR';
@@ -58,6 +57,14 @@ const revenueCatHardeningChangedKeys = [
   'student.home.your_day',
 ] as const satisfies readonly TranslationKey[];
 
+// ET-105: locked-state recovery copy must be capability-aware — it must
+// never point at a purchase/restore/handoff control that isn't mounted.
+const et105LockedRecoveryChangedKeys = [
+  'pro.subscription.locked',
+  'pro.subscription.locked_handoff',
+  'pro.subscription.locked_unavailable',
+] as const satisfies readonly TranslationKey[];
+
 const localeBundles = {
   'en-US': enUS,
   'pt-BR': ptBR,
@@ -97,14 +104,18 @@ function parseCopyTableRows(source: string): CopyTableRow[] {
 test('RevenueCat-hardening localization changes stay documented in every supported locale', () => {
   const copyTableSource = readFileSync(
     join(process.cwd(), 'docs/screens/v2/localized-copy-table-v2.md'),
-    'utf8'
+    'utf8',
   );
   const rows = parseCopyTableRows(copyTableSource);
 
   for (const key of revenueCatHardeningChangedKeys) {
     const matchingRows = rows.filter((row) => row.key === key);
 
-    assert.equal(matchingRows.length, 1, `${key} must appear exactly once in the localized copy table`);
+    assert.equal(
+      matchingRows.length,
+      1,
+      `${key} must appear exactly once in the localized copy table`,
+    );
 
     const [row] = matchingRows;
     assert.ok(row);
@@ -113,8 +124,49 @@ test('RevenueCat-hardening localization changes stay documented in every support
       assert.equal(
         row[locale],
         localeBundles[locale][key],
-        `${key} ${locale} copy must match its locale bundle`
+        `${key} ${locale} copy must match its locale bundle`,
       );
     }
+  }
+});
+
+test('ET-105 locked-state recovery copy stays documented and capability-distinct in every supported locale', () => {
+  const copyTableSource = readFileSync(
+    join(process.cwd(), 'docs/screens/v2/localized-copy-table-v2.md'),
+    'utf8',
+  );
+  const rows = parseCopyTableRows(copyTableSource);
+
+  for (const key of et105LockedRecoveryChangedKeys) {
+    const matchingRows = rows.filter((row) => row.key === key);
+
+    assert.equal(
+      matchingRows.length,
+      1,
+      `${key} must appear exactly once in the localized copy table`,
+    );
+
+    const [row] = matchingRows;
+    assert.ok(row);
+
+    for (const locale of Object.keys(localeBundles) as (keyof typeof localeBundles)[]) {
+      assert.equal(
+        row[locale],
+        localeBundles[locale][key],
+        `${key} ${locale} copy must match its locale bundle`,
+      );
+    }
+  }
+
+  // The three capability variants must never share identical copy — otherwise
+  // the locked card would fail to distinguish a mounted "continue on mobile"
+  // CTA from no mounted control at all.
+  for (const locale of Object.keys(localeBundles) as (keyof typeof localeBundles)[]) {
+    const texts = et105LockedRecoveryChangedKeys.map((key) => localeBundles[locale][key]);
+    assert.equal(
+      new Set(texts).size,
+      texts.length,
+      `${locale} locked-state copy must differ across native_purchase/mobile_handoff/unavailable`,
+    );
   }
 });
