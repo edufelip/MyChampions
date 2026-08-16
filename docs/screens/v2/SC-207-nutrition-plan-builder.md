@@ -21,6 +21,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Primary actions (create/retry) use DS pill buttons and keep localization-key based copy.
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
+- A fresh professional builder reaches the Ready state after route-scope reset and exposes the Add meal action immediately after plan metadata is entered, including at 390x844 and 320x720 compact web viewports.
 - Native professional and self-managed builder validation submits the controlled
   name and hydration values before save and verifies both exact values. From
   name to hydration, Android dismisses Gboard through native Back and taps the
@@ -54,6 +55,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Enter or edit daily water goal (required, positive integer ml).
 - Enter or edit calorie target (optional, must be ≥ 0).
 - Enter or edit carbs/proteins/fats targets (optional, must be ≥ 0).
+- In a new plan with no meals, use Add meal to create the first meal before adding food items.
 - Add food items (name, quantity, optional notes).
 - Add saved CustomMeals from the current user's library as copied meal snapshots.
 - Remove food items.
@@ -218,8 +220,8 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | Functional requirements | FR-240, FR-241, FR-242, FR-243, FR-247, FR-248, FR-223, FR-224, FR-225, FR-226 |
 | Use case | UC-002.14, UC-002.20 |
-| Acceptance criteria | AC-256, AC-264, AC-265, AC-541 |
+| Acceptance criteria | AC-256, AC-264, AC-265, AC-267, AC-541 |
 | Business rules | BR-281, BR-282, BR-283, BR-291, BR-292, BR-328, BR-331, BR-332, BR-334, BR-337, BR-343 |
-| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-275, TC-276, TC-277, TC-280, TC-328 |
+| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-275, TC-275A, TC-276, TC-277, TC-280, TC-328 |
 | Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114, D-173, D-194 |
 | Backlog | BL-106 |
