@@ -918,6 +918,23 @@
     decision above by the time this branch merged current `main`, so this
     entry was renumbered to `D-211` (the next unused ID at merge time) to
     avoid a duplicate identifier.
+- `D-212`: ET-106 — the professional pending-queue row (`SC-205`, `/professional/pending`)
+  is a non-interactive container, not a button. Row-level `accessibilityRole="button"`
+  previously wrapped the Accept and Deny buttons as DOM descendants, which
+  react-native-web rendered as an invalid `<button>` nested inside another
+  `<button>` on web, producing React hydration errors and an unreliable
+  accessibility tree/focus order. The fix scopes row selection to a single
+  dedicated sibling checkbox control (`accessibilityRole="checkbox"`, 44x44
+  touch target, Space-key operable) so the row, checkbox, Accept, and Deny are
+  all siblings with independent, unambiguous focus stops. This resolves the
+  "entire row vs. checkbox only" open question in favor of checkbox-only
+  selection, matching the equivalent decision already made for the student
+  assigned-meal card (ET-99).
+  - Note: originally authored as `D-203` on this branch before rebase, which
+    collided with two other branches' concurrently-claimed `D-203` entries
+    (SC-213 support dialog above, and an earlier ET-71 entry); renumbered to
+    `D-212` at merge time, the next unused ID after `D-211` (claimed by a
+    concurrently-merging ET-105 branch) to avoid a further collision.
 
 ## Pending Decisions
 

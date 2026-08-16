@@ -383,6 +383,11 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
   });
 
   test('professional workbench roster queue and student review', async ({ page }, testInfo) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+
     await chooseRole(page, 'professional');
     await capture(
       page,
@@ -442,7 +447,41 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
       '06-pending-request-queue',
       'pro.pending.screen',
     );
+
+    // ET-106 regression guard: the pending row must not nest interactive
+    // controls (a row-level button wrapping the checkbox, Accept, and Deny),
+    // which previously produced invalid <button> nesting and a React
+    // hydration error on every load of this screen.
+    const nestedButtonCount = await page.evaluate(() => {
+      const row = document.querySelector('[data-testid="pro.pending.row.0"]');
+      if (!row) return -1;
+      let nested = 0;
+      row.querySelectorAll('button').forEach((outerButton) => {
+        nested += outerButton.querySelectorAll('button').length;
+      });
+      return nested;
+    });
+    expect(nestedButtonCount).toBe(0);
+    expect(
+      consoleErrors.filter((text) => /descendant of|nested <button>|hydration error/i.test(text)),
+    ).toEqual([]);
+
+    // Row selection, Accept, and Deny are independent, ordered focus stops —
+    // no control is nested inside another, and keyboard Tab order matches the
+    // visual left-to-right layout (checkbox, then Accept, then Deny).
+    const checkbox = page.getByTestId('pro.pending.checkbox.0');
+    await expect(checkbox).toHaveAttribute('aria-checked', 'false');
+    await checkbox.focus();
+    await expect(checkbox).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('pro.pending.acceptButton.0')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('pro.pending.denyButton.0')).toBeFocused();
+
+    // Row selection remains independently operable via the checkbox, exposes
+    // checked state, and does not trigger Accept/Deny.
     await page.getByTestId('pro.pending.row.0').click({ position: { x: 20, y: 20 } });
+    await expect(checkbox).toHaveAttribute('aria-checked', 'true');
     await capture(
       page,
       testInfo,

@@ -16,6 +16,7 @@
 - Roster rows are rendered inside a dedicated `DsCard` list container using DS spacing/radius/typography tokens, initial-avatar chips, status pills, and trailing chevrons.
 - Offline state uses `DsOfflineBanner`; all copy remains localization-key driven.
 - `/professional/pending` queue follows the same shell, card, and pill-action structure for search, selection, and bulk deny flows.
+- Each pending-queue row (`pro.pending.row.N`) is a non-interactive container `View`, never a button/pressable. Selection is a dedicated sibling checkbox control (`pro.pending.checkbox.N`, `accessibilityRole="checkbox"`, 44x44 hit area, keyboard-operable via Space) and Accept/Deny (`pro.pending.acceptButton.N` / `pro.pending.denyButton.N`) are sibling buttons in the same row. No interactive control is nested inside another interactive control, so the web DOM never renders a `<button>` descendant of another `<button>` (ET-106).
 - Selection mode uses an inset elevated action tray with horizontal and bottom clearance around the plan-type chips and assignment CTA.
 - The pending queue begins with an informative summary card that explains the decision, exposes the pending count, and keeps search and request actions in separate task groups.
 
@@ -43,6 +44,7 @@
 - Ended relationships remain in history view but not in active roster default filter.
 - Pending-queue filtering/search cannot expose records outside professional scope.
 - Bulk deny can operate only on `pending_confirmation` requests and must preserve lifecycle audit metadata.
+- Pending-row selection toggles only through the row's dedicated checkbox control, not by pressing elsewhere in the row; this keeps the row itself non-interactive so Accept/Deny remain sibling, independently operable controls (ET-106, D-212).
 - Bulk assignment target list must include only active students eligible for selected plan domain.
 - Each plan-picker row exposes a stable semantic assignment control for native
   interaction. Native automation waits for the modal's presentation-complete
