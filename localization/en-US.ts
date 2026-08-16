@@ -539,6 +539,10 @@ export const enUS = {
   'pro.subscription.pre_lapse.cta_renew': 'Renew subscription',
   'pro.subscription.locked':
     'Student-plan actions are locked. Restore or purchase a subscription to continue.',
+  'pro.subscription.locked_handoff':
+    'Student-plan actions are locked. Continue on mobile to restore or purchase a subscription.',
+  'pro.subscription.locked_unavailable':
+    'Student-plan actions are locked. Subscription changes are not available in this browser — use the mobile app to restore or purchase, then refresh your status here.',
   'pro.subscription.locked_unknown':
     'Student-plan actions are temporarily locked until subscription status can be verified.',
   'pro.subscription.cta_purchase': 'Upgrade plan',
@@ -867,8 +871,12 @@ export const enUS = {
   'pro.plan.item.field.nutrition_notes.placeholder': 'e.g. No salt',
   'pro.plan.item.delete.body': 'Remove {name} from this meal?',
   'pro.plan.item.search.placeholder': 'Search for an exercise...',
+  'pro.plan.item.search.dialog_title': 'Exercise search',
+  'pro.plan.item.search.initial': 'Search the exercise library to add one to this session.',
+  'pro.plan.item.search.loading': 'Searching exercises...',
   'pro.plan.item.search.empty': 'No exercises found.',
   'pro.plan.item.search.error': 'Error searching for exercises.',
+  'pro.plan.item.search.retry': 'Try again',
   'pro.plan.item.search.back': 'Back to search',
   'pro.plan.item.detail.description': 'Description',
   'pro.plan.item.detail.instructions': 'Instructions',

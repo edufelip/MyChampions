@@ -12,9 +12,8 @@
  *       BR-218–221, BR-228, BR-247, BR-273, BR-275
  */
 import { MaterialIcons } from '@expo/vector-icons';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
@@ -32,6 +31,7 @@ import { useNetworkStatus } from '@/features/offline/use-network-status';
 import {
   FREE_STUDENT_CAP,
   isPlanUpdateLocked,
+  resolveLockedRecoveryMessageKey,
   resolveSubscriptionState,
   resolveSubscriptionStatusPresentation,
 } from '@/features/subscription/subscription.logic';
@@ -115,7 +115,7 @@ export default function ProfessionalSubscriptionScreen() {
         : t('pro.subscription.status.unavailable_body');
 
   const hasCapacityData = isActiveStudentCountKnown;
-  const capLabel = (t('pro.subscription.cap_usage') as string)
+  const capLabel = t('pro.subscription.cap_usage')
     .replace(
       '{count}',
       hasCapacityData ? String(activeStudentCount) : t('common.value.unavailable'),
@@ -145,7 +145,7 @@ export default function ProfessionalSubscriptionScreen() {
 
           router.replace('/');
         }}
-        accessibilityLabel={t('auth.role.cta_back') as string}
+        accessibilityLabel={t('auth.role.cta_back')}
         style={styles.backButton}
         testID="pro.subscription.backButton"
       />
@@ -153,7 +153,7 @@ export default function ProfessionalSubscriptionScreen() {
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
           scheme={scheme}
-          text={t('offline.banner') as string}
+          text={t('offline.banner')}
           testID="pro.subscription.offlineBanner"
         />
       ) : null}
@@ -178,7 +178,7 @@ export default function ProfessionalSubscriptionScreen() {
         {isLoading ? (
           <View style={styles.loadingRow} testID="pro.subscription.loading">
             <ActivityIndicator
-              accessibilityLabel={t('a11y.loading.default') as string}
+              accessibilityLabel={t('a11y.loading.default')}
               color={theme.color.accentPrimary}
             />
             <Text style={[styles.statusBody, { color: theme.color.textSecondary }]}>
@@ -189,7 +189,7 @@ export default function ProfessionalSubscriptionScreen() {
           <>
             <View
               accessible
-              accessibilityLabel={`${t('pro.subscription.title') as string}: ${statusLabel as string}`}
+              accessibilityLabel={`${t('pro.subscription.title')}: ${statusLabel}`}
               style={[styles.statusBadge, { backgroundColor: statusBackground }]}
               testID="pro.subscription.statusValue"
             >
@@ -218,7 +218,7 @@ export default function ProfessionalSubscriptionScreen() {
           </Text>
         </View>
         <View
-          accessibilityLabel={t('pro.subscription.capacity_title') as string}
+          accessibilityLabel={t('pro.subscription.capacity_title')}
           accessibilityRole="progressbar"
           accessibilityValue={{
             min: 0,
@@ -261,7 +261,7 @@ export default function ProfessionalSubscriptionScreen() {
             variant="outline"
             disabled={isSubscriptionActionDisabled || isPurchaseUnavailable}
             onPress={() => void openProPaywall()}
-            label={t('pro.subscription.pre_lapse.cta_renew') as string}
+            label={t('pro.subscription.pre_lapse.cta_renew')}
             testID="pro.subscription.renewCta"
           />
         </DsCard>
@@ -271,9 +271,10 @@ export default function ProfessionalSubscriptionScreen() {
         <DsCard scheme={scheme} variant="warning" testID="pro.subscription.locked">
           <Text style={[styles.errorText, { color: theme.color.danger }]}>
             {t(
-              entitlementStatus === 'unknown'
-                ? 'pro.subscription.locked_unknown'
-                : 'pro.subscription.locked',
+              resolveLockedRecoveryMessageKey({
+                entitlementStatus,
+                purchaseCapability,
+              }),
             )}
           </Text>
         </DsCard>
@@ -308,13 +309,11 @@ export default function ProfessionalSubscriptionScreen() {
             onPress={() => {
               void openProPaywall();
             }}
-            label={
-              t(
-                purchaseCapability === 'native_purchase'
-                  ? 'pro.subscription.cta_purchase'
-                  : 'pro.subscription.cta_mobile_handoff',
-              ) as string
-            }
+            label={t(
+              purchaseCapability === 'native_purchase'
+                ? 'pro.subscription.cta_purchase'
+                : 'pro.subscription.cta_mobile_handoff',
+            )}
             testID="pro.subscription.purchaseCta"
           />
 
@@ -324,7 +323,7 @@ export default function ProfessionalSubscriptionScreen() {
               variant="secondary"
               disabled={isSubscriptionActionDisabled}
               onPress={() => void restore()}
-              label={t('pro.subscription.cta_restore') as string}
+              label={t('pro.subscription.cta_restore')}
               testID="pro.subscription.restoreCta"
             />
           ) : null}
@@ -336,7 +335,7 @@ export default function ProfessionalSubscriptionScreen() {
         variant="ghost"
         disabled={offlineDisplay.showOfflineBanner || isLoading}
         onPress={() => void refresh()}
-        label={t('pro.subscription.cta_refresh') as string}
+        label={t('pro.subscription.cta_refresh')}
         testID="pro.subscription.refreshCta"
       />
     </DsScreen>

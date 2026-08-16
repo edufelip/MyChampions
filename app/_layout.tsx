@@ -175,8 +175,10 @@ function RootLayoutContent() {
         <Stack.Screen name="auth/role-selection" options={{ headerShown: false }} />
         <Stack.Screen name="student/home" options={{ headerShown: false }} />
         <Stack.Screen name="student/nutrition" options={{ headerShown: false }} />
+        <Stack.Screen name="student/nutrition/today" options={{ headerShown: false }} />
         <Stack.Screen name="student/nutrition/plans/[planId]" options={{ headerShown: false }} />
         <Stack.Screen name="student/training" options={{ headerShown: false }} />
+        <Stack.Screen name="student/training/today" options={{ headerShown: false }} />
         <Stack.Screen name="student/training/plans/[planId]" options={{ headerShown: false }} />
         <Stack.Screen name="student/professionals" options={{ headerShown: false }} />
         <Stack.Screen name="professional/pending" options={{ headerShown: false }} />

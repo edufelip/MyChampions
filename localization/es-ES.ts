@@ -569,6 +569,10 @@ export const esES: Record<TranslationKey, string> = {
   'pro.subscription.pre_lapse.cta_renew': 'Renovar suscripción',
   'pro.subscription.locked':
     'Las acciones de plan de alumno están bloqueadas. Restaura o adquiere una suscripción para continuar.',
+  'pro.subscription.locked_handoff':
+    'Las acciones de plan de alumno están bloqueadas. Continúa en el móvil para restaurar o adquirir una suscripción.',
+  'pro.subscription.locked_unavailable':
+    'Las acciones de plan de alumno están bloqueadas. Los cambios de suscripción no están disponibles en este navegador — usa la app móvil para restaurar o adquirir, luego actualiza el estado aquí.',
   'pro.subscription.locked_unknown':
     'Las acciones de plan de alumno están bloqueadas temporalmente hasta verificar el estado de la suscripción.',
   'pro.subscription.cta_purchase': 'Mejorar plan',
@@ -988,8 +992,13 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.item.field.nutrition_notes.placeholder': 'p.ej. Sin sal',
   'pro.plan.item.delete.body': '¿Eliminar {name} de esta comida?',
   'pro.plan.item.search.placeholder': 'Buscar un ejercicio...',
+  'pro.plan.item.search.dialog_title': 'Búsqueda de ejercicios',
+  'pro.plan.item.search.initial':
+    'Busca en la biblioteca de ejercicios para añadir uno a la sesión.',
+  'pro.plan.item.search.loading': 'Buscando ejercicios...',
   'pro.plan.item.search.empty': 'No se encontraron ejercicios.',
   'pro.plan.item.search.error': 'Error al buscar ejercicios.',
+  'pro.plan.item.search.retry': 'Intentar de nuevo',
   'pro.plan.item.search.back': 'Volver a la búsqueda',
   'pro.plan.item.detail.description': 'Descripción',
   'pro.plan.item.detail.instructions': 'Instrucciones',

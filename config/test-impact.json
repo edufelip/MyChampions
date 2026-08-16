@@ -145,7 +145,7 @@
       ],
       "dependsOn": ["auth", "connections", "offline", "plans", "platform"],
       "unitTests": ["features/training/**/*.test.ts"],
-      "webSuites": ["web:training", "web:shell"],
+      "webSuites": ["web:training", "web:shell", "web:exercise-search"],
       "detoxSuites": ["detox:training"],
       "owners": ["@edufelip"]
     },
@@ -153,7 +153,7 @@
       "sourcePaths": ["features/plans/**"],
       "dependsOn": ["auth", "connections", "platform"],
       "unitTests": ["features/plans/**/*.test.ts"],
-      "webSuites": ["web:nutrition", "web:training"],
+      "webSuites": ["web:nutrition", "web:training", "web:exercise-search"],
       "detoxSuites": ["detox:plans"],
       "owners": ["@edufelip"]
     },
@@ -169,7 +169,7 @@
       "sourcePaths": ["features/subscription/**", "app/professional/subscription.tsx"],
       "dependsOn": ["auth", "platform", "professional"],
       "unitTests": ["features/subscription/**/*.test.ts"],
-      "webSuites": ["web:subscription", "web:critical-paths"],
+      "webSuites": ["web:subscription", "web:critical-paths", "web:subscription-lock"],
       "detoxSuites": ["detox:subscription", "detox:revenuecat-live"],
       "owners": ["@edufelip"]
     },
@@ -399,7 +399,10 @@
     "web:nutrition": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts"],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/custom-meal-library-error-recovery.spec.ts"
+      ],
       "grep": "@feature:nutrition",
       "tier": "feature",
       "ci": true
@@ -408,6 +411,15 @@
       "runner": "playwright",
       "projects": ["chromium"],
       "specs": ["e2e/web/responsive-shell.spec.ts"],
+      "grep": "@feature:training",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:exercise-search": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.training.config.ts",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/exercise-search-modal.spec.ts"],
       "grep": "@feature:training",
       "tier": "feature",
       "ci": true
@@ -497,6 +509,14 @@
       "projects": ["mobile"],
       "specs": ["e2e/web-flows-auth/shared-webview-recovery.spec.ts"],
       "grep": "@feature:auth",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:subscription-lock": {
+      "runner": "playwright-evidence",
+      "projects": ["chromium"],
+      "specs": ["e2e/web-subscription-lock/lapsed-over-cap-locked-recovery.spec.ts"],
+      "grep": "@feature:subscription",
       "tier": "evidence",
       "ci": false
     },
