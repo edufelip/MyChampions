@@ -7,7 +7,7 @@
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type AnalyticsResult = 'success' | 'failure';
+export type AnalyticsResult = 'success' | 'failure' | 'canceled';
 
 export type AnalyticsChannel = 'email_password' | 'google' | 'apple' | 'manual' | 'qr';
 
@@ -28,7 +28,11 @@ export type AnalyticsEventName =
   | 'invite.pending.canceled'
   | 'invite.pending.confirmed'
   | 'invite.pending.denied'
-  | 'invite.pending.bulk_denied';
+  | 'invite.pending.bulk_denied'
+  | 'invite.rotation.requested'
+  | 'invite.rotation.canceled'
+  | 'invite.rotation.succeeded'
+  | 'invite.rotation.failed';
 
 export type AnalyticsEvent = {
   name: AnalyticsEventName;
@@ -192,6 +196,55 @@ export function buildInvitePendingBulkDenied(pendingCount: number): AnalyticsEve
       result: 'success',
       role_context: 'professional',
       pending_count: pendingCount,
+    },
+  };
+}
+
+export function buildInviteCodeRotationRequested(): AnalyticsEvent {
+  return {
+    name: 'invite.rotation.requested',
+    properties: {
+      surface: 'relationship_management',
+      step: 'rotate',
+      result: 'success',
+      role_context: 'professional',
+    },
+  };
+}
+
+export function buildInviteCodeRotationCanceled(): AnalyticsEvent {
+  return {
+    name: 'invite.rotation.canceled',
+    properties: {
+      surface: 'relationship_management',
+      step: 'rotate',
+      result: 'canceled',
+      role_context: 'professional',
+    },
+  };
+}
+
+export function buildInviteCodeRotationSucceeded(): AnalyticsEvent {
+  return {
+    name: 'invite.rotation.succeeded',
+    properties: {
+      surface: 'relationship_management',
+      step: 'rotate',
+      result: 'success',
+      role_context: 'professional',
+    },
+  };
+}
+
+export function buildInviteCodeRotationFailed(reasonCode: string): AnalyticsEvent {
+  return {
+    name: 'invite.rotation.failed',
+    properties: {
+      surface: 'relationship_management',
+      step: 'rotate',
+      result: 'failure',
+      reason_code: reasonCode,
+      role_context: 'professional',
     },
   };
 }

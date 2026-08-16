@@ -15,6 +15,7 @@
 - Secondary:
   - Navigate to create-account screen.
   - Reveal/hide password field value.
+  - Navigate to the forgot-password (request password reset) screen.
 
 ## States
 - Loading: auth providers initialize and sign-in request is processing.
@@ -81,7 +82,27 @@
   - Visual treatment follows a playful rounded layout with decorative background blobs, rounded brand logo badge, pill-shaped inputs/buttons, in-field password toggle icon, and a centered create-account helper row with 16dp bottom spacing.
   - The brand logo in the title area is an `expo-image` `<Image>` rendering `assets/images/logo.svg` (`contentFit="contain"`, `borderRadius: 20`, `overflow: hidden`, 100×100, `marginBottom: 16`). No wrapper `View` — styles are applied directly on the image. The previous `MaterialIcons fitness-center` icon and its `brandBadge` container are removed. Accessibility label uses key `a11y.brand_logo`.
   - Primary email sign-in pill button uses light foreground (label, icon, and loading spinner) for contrast against the accent background.
-  - No forgot-password flow is exposed on this screen (not part of current documented/auth-wired scope).
+  - A "Forgot password?" text link is anchored above the primary sign-in CTA (`testID: auth.signIn.forgotPasswordLink`) and pushes to `/auth/forgot-password` (SC-226). See SC-226 and SC-227 below for the full request/confirm reset flow, including the `/auth/password-reset` deep-link landing screen that consumes the server's `mychampions://auth/password-reset?token=...&email=...` local-dev debug-outbox link.
+
+## Forgot / Reset Password (SC-226, SC-227)
+
+### SC-226 Forgot Password (request)
+- Route: `/auth/forgot-password`
+- Implemented in code: `app/auth/forgot-password.tsx`.
+- Objective: let an unauthenticated user request a password-reset email by submitting their account email to the MyChampions server `POST /auth/password-reset` endpoint (`requestPasswordResetFromSource()`, unchanged from the existing SC-213 "change password" implementation).
+- States: idle form → submitting → success banner (privacy-preserving copy: shown identically whether or not the email is registered, matching the server's enumeration-resistant `202 accepted` response) → generic error banner on network/server failure.
+- Validation: email required and format-checked (client-side, `validateForgotPasswordEmail()` in `features/auth/forgot-password.logic.ts`); server-side `invalid_email` rejection surfaces as a generic submit error, matching the existing account-settings reset request's error handling.
+- Links back to `/auth/sign-in`.
+
+### SC-227 Reset Password (confirm)
+- Route: `/auth/password-reset` — intentionally matches the path segment the server's local-dev debug-outbox deep link (`mychampions://auth/password-reset?token=...&email=...`) resolves to via Expo Router's default file-based linking (`app.json` `scheme: "mychampions"`); no custom `Linking` listener is needed since Expo Router already handles inbound links for routes that exist.
+- Implemented in code: `app/auth/password-reset.tsx`.
+- Objective: consume a reset token (from a deep link's `token`/`email` query params, pre-filled, or pasted manually as a fallback) plus a new password, and call the MyChampions server `POST /auth/password-reset/confirm` endpoint (`confirmPasswordResetFromSource()`).
+- Fields: email, reset code (token), new password, confirm new password. Email/token are pre-filled from `useLocalSearchParams()` when present but remain editable so a user who received the link on another device can paste the code manually.
+- Email validation reuses the same format check as SC-226 (`isValidEmailFormat` from `forgot-password.logic.ts`), in addition to the token-required check. New-password validation reuses the same policy as account creation (`isPasswordPolicySatisfied` from `create-account.logic.ts`): 8+ characters, uppercase, number, ASCII symbol, no emoji.
+- Error taxonomy (`reset-password.logic.ts`): `invalid_or_expired_token` (token wrong/expired/already consumed), `invalid_email`, `account_not_found`, `network`, `configuration`, each with distinct copy.
+- Success: server returns `{ status: "reset" }`, revokes every existing session for the account server-side, and the screen shows a success banner with a CTA back to `/auth/sign-in`.
+- Both SC-226 and SC-227 are added to `isPublicAuthEntry` in `features/auth/auth-route-guard.logic.ts` so the global auth guard does not bounce an unauthenticated visitor away before they can complete the flow (and, critically, does not strip the `token`/`email` query params off an incoming deep link by redirecting to `/auth/sign-in`).
 
 ## Links
 - Functional requirement: FR-101, FR-163, FR-164, FR-164A, FR-169, FR-171, FR-172, FR-173, FR-182, FR-205, FR-206, FR-207, FR-208, FR-217, FR-249
