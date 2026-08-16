@@ -161,7 +161,7 @@
       "sourcePaths": ["features/professional/**", "app/professional/**", "app/(tabs)/students.tsx"],
       "dependsOn": ["auth", "connections", "nutrition", "offline", "plans", "platform"],
       "unitTests": ["features/professional/**/*.test.ts"],
-      "webSuites": ["web:professional", "web:shell"],
+      "webSuites": ["web:professional", "web:professional-home", "web:shell"],
       "detoxSuites": ["detox:professional"],
       "owners": ["@edufelip"]
     },
@@ -415,10 +415,32 @@
     "web:professional": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/visual-evidence.spec.ts"],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/visual-evidence.spec.ts",
+        "e2e/web/invite-code-rotation.spec.ts",
+        "e2e/web/professional-roster-error.spec.ts"
+      ],
       "grep": "@feature:professional",
       "tier": "feature",
       "ci": true
+    },
+    "web:professional-home": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.professional-home.config.ts",
+      "projects": ["mobile-professional", "mobile-professional-pt", "mobile-professional-es"],
+      "specs": ["e2e/web/professional-home-responsive.spec.ts"],
+      "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:specialty-removal-assist": {
+      "runner": "playwright-evidence",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/specialty-removal-assist.spec.ts"],
+      "grep": "@feature:professional-specialty-removal-assist",
+      "tier": "evidence",
+      "ci": false
     },
     "web:subscription": {
       "runner": "playwright",
@@ -462,7 +484,8 @@
     },
     "web:flow-atlas-auth": {
       "runner": "playwright-evidence",
-      "projects": ["chromium"],
+      "playwrightConfig": "playwright.flows-auth.config.ts",
+      "projects": ["mobile", "tablet", "web"],
       "specs": ["e2e/web-flows-auth/authentication-flow-atlas.spec.ts"],
       "grep": "@feature:auth",
       "tier": "evidence",
@@ -470,6 +493,7 @@
     },
     "web:manual-webview-recovery": {
       "runner": "playwright-evidence",
+      "playwrightConfig": "playwright.webview-recovery.config.ts",
       "projects": ["mobile"],
       "specs": ["e2e/web-flows-auth/shared-webview-recovery.spec.ts"],
       "grep": "@feature:auth",
@@ -478,9 +502,18 @@
     },
     "web:flow-atlas-complete": {
       "runner": "playwright-evidence",
-      "projects": ["chromium"],
+      "playwrightConfig": "playwright.flows.config.ts",
+      "projects": ["mobile", "tablet", "web"],
       "specs": ["e2e/web-flows/complete-flow-atlas.spec.ts"],
       "grep": "@feature:shell",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:invite-code-rotation": {
+      "runner": "playwright",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/invite-code-rotation.spec.ts"],
+      "grep": "@feature:professional",
       "tier": "evidence",
       "ci": false
     }

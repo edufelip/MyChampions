@@ -160,16 +160,25 @@ export async function createAccountWithEmailPasswordFromSource(
     throw new CreateAccountFailure(createAccountReasonForResponse(response.status, payload));
   }
 
-  // The server intentionally responds the same way here whether this email was
-  // brand new or already had an account (ET-75: a distinguishable response let a
-  // caller enumerate registered emails), and it never issues a session from this
-  // route any more. Establish the session by signing in with the credentials just
-  // submitted: this succeeds transparently for a genuine new signup, and fails the
-  // same way any wrong-password attempt would for an existing account — the sign-in
-  // route already returns the identical invalid_credentials error for "no such
-  // account" and "wrong password" alike, so this introduces no new signal either.
+  const session = await persistServerAuthSessionFromPayload(payload, deps);
+  if (session) {
+    return;
+  }
+
+  if (response.status !== 202) {
+    throw new CreateAccountFailure('unknown');
+  }
+
+  // The server intentionally returns a session-less 202 for both successful and
+  // duplicate account creation so the create endpoint cannot be used to enumerate
+  // registered emails. Complete the authenticated flow through the existing email
+  // sign-in route instead of treating that privacy-preserving acknowledgement as
+  // an invalid session.
   try {
-    await signInWithEmailPasswordFromSource({ email: input.email, password: input.password }, deps);
+    await signInWithEmailPasswordFromSource(
+      { email: input.email, password: input.password },
+      deps,
+    );
   } catch {
     throw new CreateAccountFailure('requires_sign_in');
   }

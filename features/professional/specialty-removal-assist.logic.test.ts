@@ -374,21 +374,32 @@ test('BL-011 Edge case: empty action list when no blockers', () => {
 // ─── Localized Message Keys ────────────────────────────────────────────────────
 
 test('BL-011 Localization: returns message keys for active students block', () => {
-  const keys = getRemovalBlockedMessageKeys('has_active_students');
+  const keys = getRemovalBlockedMessageKeys('has_active_students', {
+    activeStudentCount: 2,
+    pendingStudentCount: 0,
+  });
 
   assert.equal(keys.titleKey, 'pro.specialty.removal_blocked.title');
   assert.equal(keys.bodyKey, 'pro.specialty.removal_blocked.active_students_body');
+  assert.deepEqual(keys.bodyParams, { count: 2, plural: 's' });
 });
 
 test('BL-011 Localization: returns message keys for pending students block', () => {
-  const keys = getRemovalBlockedMessageKeys('has_pending_students');
+  const keys = getRemovalBlockedMessageKeys('has_pending_students', {
+    activeStudentCount: 0,
+    pendingStudentCount: 1,
+  });
 
   assert.equal(keys.titleKey, 'pro.specialty.removal_blocked.title');
   assert.equal(keys.bodyKey, 'pro.specialty.removal_blocked.pending_students_body');
+  assert.deepEqual(keys.bodyParams, { count: 1, plural: '' });
 });
 
 test('BL-011 Localization: returns message keys for last specialty block', () => {
-  const keys = getRemovalBlockedMessageKeys('last_specialty');
+  const keys = getRemovalBlockedMessageKeys('last_specialty', {
+    activeStudentCount: 0,
+    pendingStudentCount: 0,
+  });
 
   assert.equal(keys.titleKey, 'pro.specialty.removal_blocked.title');
   assert.equal(keys.bodyKey, 'pro.specialty.removal_blocked.last_specialty_body');

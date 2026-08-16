@@ -44,7 +44,7 @@ export type SelectiveExecutionOptions = {
   metroPort?: number;
 };
 
-const supportedWebRunners = new Set(['playwright', 'playwright-server']);
+const supportedWebRunners = new Set(['playwright', 'playwright-server', 'playwright-evidence']);
 const defaultNativeMetroPort = 8081;
 const minimumUnprivilegedPort = 1024;
 const maximumNonEphemeralPort = 49151;
@@ -111,7 +111,7 @@ function baseExecutionEnvironment(): Record<string, string> {
   };
 }
 
-function mergeEnvironment(...values: Array<Environment | undefined>): Record<string, string> {
+function mergeEnvironment(...values: (Environment | undefined)[]): Record<string, string> {
   return Object.assign({}, ...values.filter(Boolean));
 }
 
@@ -193,7 +193,8 @@ function validateSelection(
 }
 
 type WebGroup = {
-  runner: 'playwright' | 'playwright-server';
+  runner: 'playwright' | 'playwright-server' | 'playwright-evidence';
+  playwrightConfig: string;
   project: string;
   specs: Set<string>;
   greps: Set<string>;
@@ -208,12 +209,16 @@ function createWebPlan(
   const groups = new Map<string, WebGroup>();
 
   for (const suiteId of selectedSuites) {
-    const suite = manifest.suites[suiteId]!;
+    const suite = manifest.suites[suiteId];
     const runner = suite.runner as WebGroup['runner'];
+    const playwrightConfig =
+      suite.playwrightConfig ??
+      (runner === 'playwright-server' ? 'playwright.server.config.ts' : 'playwright.config.ts');
     for (const project of suite.projects ?? []) {
-      const key = `${runner}:${project}`;
+      const key = `${runner}:${playwrightConfig}:${project}`;
       const group = groups.get(key) ?? {
         runner,
+        playwrightConfig,
         project,
         specs: new Set<string>(),
         greps: new Set<string>(),
@@ -228,14 +233,12 @@ function createWebPlan(
 
   const invocations = [...groups.values()]
     .sort((left, right) =>
-      `${left.runner}:${left.project}`.localeCompare(`${right.runner}:${right.project}`),
+      `${left.runner}:${left.playwrightConfig}:${left.project}`.localeCompare(
+        `${right.runner}:${right.playwrightConfig}:${right.project}`,
+      ),
     )
     .map((group): CommandInvocation => {
-      const id = `${group.runner}-${group.project}`;
-      const config =
-        group.runner === 'playwright-server'
-          ? 'playwright.server.config.ts'
-          : 'playwright.config.ts';
+      const id = `${group.runner}-${safeSegment(group.playwrightConfig)}-${group.project}`;
       const grep = [...group.greps]
         .sort()
         .map((value) => `(?:${value})`)
@@ -246,7 +249,7 @@ function createWebPlan(
         args: [
           'playwright',
           'test',
-          `--config=${config}`,
+          `--config=${group.playwrightConfig}`,
           ...uniqueSorted(group.specs),
           '--grep',
           grep,
@@ -293,7 +296,7 @@ function createNativePlan(
   const invocations: CommandInvocation[] = [];
 
   for (const suiteId of [...selectedSuites].sort()) {
-    const suite = manifest.suites[suiteId]!;
+    const suite = manifest.suites[suiteId];
     const profileId = suite.fixtureProfile!;
     if (!isDetoxFixtureProfileId(profileId)) {
       throw new Error(`unknown fixture profile ${profileId}`);
