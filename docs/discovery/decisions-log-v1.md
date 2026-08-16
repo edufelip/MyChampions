@@ -936,7 +936,13 @@
     `D-212` at merge time, the next unused ID after `D-211` (claimed by a
     concurrently-merging ET-105 branch) to avoid a further collision.
 
-### D-213: Shared restrained mobile auth entry shell
+`D-213`: New professional SC-207/SC-208 builder initialization must run after the route-scope reset effect.
+
+- The builder hooks clear stale route state in a passive effect keyed by scope. Route initialization therefore uses a passive effect declared after the hook so reset completes before `initNewNutritionPlan` / `initNewTrainingPlan` publishes the Ready state.
+- This preserves the first Add meal/Add session action for a fresh plan without changing persistence, validation, native modal behavior, or existing-plan loading. Mobile Playwright regression covers 390x844 and 320x720.
+- Note: originally authored as `D-203` on this branch before rebase; renumbered to `D-213` (the next unused ID at merge time) to avoid colliding with the ET-71, SC-213 support-dialog, and ET-106 branches that had already claimed/renumbered around `D-203`/`D-211`/`D-212` by the time this branch merged current `main`.
+
+### D-214: Shared restrained mobile auth entry shell
 
 - Date: 2026-08-12
 - Status: Accepted
@@ -944,11 +950,13 @@
 - Decision: Use one restrained mobile auth visual language for returning and first-time users: design-system canvas, compact brand mark, left-aligned title/subtitle hierarchy, labeled 52dp controls, token-based border/focus/error states, icon-based password visibility actions, outlined social providers, and safe-area-aware scroll padding.
 - Rationale: The previous screens used oversized centered hero treatments, decorative blobs, pill controls, and inconsistent provider/password affordances. The visual weight obscured the primary task on narrow mobile viewports and made the two entry flows feel unrelated. The replacement improves hierarchy and consistency while preserving routes, test IDs, localized behavior, analytics, provider actions, validation, and scrollability.
 - Constraints: Do not introduce raw colors, gradients, decorative imagery, or a new auth-specific design system. All new copy must be localized in `en-US`, `pt-BR`, and `es-ES`. The 320×720 Playwright regression is the minimum narrow viewport gate; the existing Pixel 5 mobile project remains the primary evidence surface.
-- Note: originally authored as `D-203` on this branch before rebase, which by
-  merge time had been independently claimed three times over (an earlier
-  ET-71 entry, the SC-213 support-dialog entry, and the ET-106 pending-row
-  entry above renumbered to `D-212`); renumbered to `D-213`, the next unused
-  ID at merge time.
+- Note: originally authored as `D-203` on this branch before rebase, then
+  renumbered to `D-213` to avoid colliding with the ET-71, SC-213
+  support-dialog, and ET-106 (`D-212`) entries — but by the time this branch
+  merged current `main`, `D-213` had *also* been independently claimed by the
+  ET-107 plan-builder-initialization entry above (same "pick the next unused
+  ID at merge time" collision pattern, now observed a third time). Renumbered
+  again to `D-214`, the actual next unused ID, while resolving that merge.
 
 ## Pending Decisions
 
