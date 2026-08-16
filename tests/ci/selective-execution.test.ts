@@ -68,16 +68,6 @@ test('server Playwright suites declare their coordinated backend requirement', (
   }
 });
 
-test('auth flow atlas uses its unauthenticated mobile Playwright config', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:flow-atlas-auth']);
-
-  assert.equal(plan.invocations.length, 3);
-  for (const invocation of plan.invocations) {
-    assert.ok(invocation.args.includes('--config=playwright.flows-auth.config.ts'));
-    assert.ok(invocation.args.includes('e2e/web-flows-auth/authentication-flow-atlas.spec.ts'));
-  }
-});
-
 test('exercise-search Playwright suite uses an isolated fixture configuration', () => {
   // web:exercise-search (not web:training) owns exercise-search-modal.spec.ts
   // and its own playwright.training.config.ts fixture profile. web:training

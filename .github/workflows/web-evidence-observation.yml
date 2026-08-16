@@ -41,9 +41,15 @@ jobs:
         run: yarn playwright install chromium
       - name: Validate the web bundle
         run: yarn web:export
-      - name: web:flow-atlas-auth (mobile)
+      - name: web:flow-atlas-auth (mobile-auth)
         continue-on-error: true
-        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=mobile
+        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=mobile-auth
+      - name: web:flow-atlas-auth (mobile-auth-pt)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=mobile-auth-pt
+      - name: web:flow-atlas-auth (mobile-auth-es)
+        continue-on-error: true
+        run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=mobile-auth-es
       - name: web:flow-atlas-auth (tablet)
         continue-on-error: true
         run: yarn playwright test --config=playwright.flows-auth.config.ts e2e/web-flows-auth/authentication-flow-atlas.spec.ts --grep "@feature:auth" --project=tablet
