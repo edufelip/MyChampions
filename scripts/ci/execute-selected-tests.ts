@@ -313,6 +313,40 @@ async function runInvocation(
   );
 }
 
+type InvocationFailure = {
+  id: string;
+  error: unknown;
+};
+
+function formatInvocationFailures(failures: InvocationFailure[]): string {
+  return failures
+    .map(({ id, error }) => `${id}: ${error instanceof Error ? error.message : String(error)}`)
+    .join('; ');
+}
+
+export async function runInvocations(
+  invocations: CommandInvocation[],
+  cwd: string,
+  timeoutMs: number | undefined,
+): Promise<void> {
+  const failures: InvocationFailure[] = [];
+  for (const invocation of invocations) {
+    try {
+      await runInvocation(invocation, cwd, timeoutMs);
+    } catch (error) {
+      // Cancellation must abort the batch immediately rather than being
+      // recorded as "just another failed suite" and continued past.
+      if (cancellationSignal) throw error;
+      failures.push({ id: invocation.id, error });
+    }
+  }
+  if (failures.length > 0) {
+    throw new Error(
+      `${failures.length} of ${invocations.length} invocation(s) failed: ${formatInvocationFailures(failures)}`,
+    );
+  }
+}
+
 async function main(): Promise<void> {
   throwIfCancellationRequested();
   const root = resolve(process.cwd());
@@ -345,9 +379,7 @@ async function main(): Promise<void> {
     );
   }
 
-  for (const invocation of plan.invocations) {
-    await runInvocation(invocation, root, invocationTimeoutMs);
-  }
+  await runInvocations(plan.invocations, root, invocationTimeoutMs);
   throwIfCancellationRequested();
 }
 
