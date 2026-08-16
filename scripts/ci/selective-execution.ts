@@ -44,7 +44,7 @@ export type SelectiveExecutionOptions = {
   metroPort?: number;
 };
 
-const supportedWebRunners = new Set(['playwright', 'playwright-server']);
+const supportedWebRunners = new Set(['playwright', 'playwright-server', 'playwright-evidence']);
 const defaultNativeMetroPort = 8081;
 const minimumUnprivilegedPort = 1024;
 const maximumNonEphemeralPort = 49151;
@@ -193,7 +193,7 @@ function validateSelection(
 }
 
 type WebGroup = {
-  runner: 'playwright' | 'playwright-server';
+  runner: 'playwright' | 'playwright-server' | 'playwright-evidence';
   playwrightConfig: string;
   project: string;
   specs: Set<string>;

@@ -14,6 +14,10 @@ on:
           - android
   release:
     types: [published]
+  push:
+    branches:
+      - release/**
+      - hotfix/**
 
 permissions:
   contents: read
@@ -57,8 +61,8 @@ jobs:
     needs: resolve-ios-tests
     if: >-
       needs.resolve-ios-tests.outputs.enabled == 'true' &&
-      (github.event_name == 'release' || github.ref == 'refs/heads/main') &&
-      (github.event_name == 'release' || inputs.platform == 'both' || inputs.platform == 'ios')
+      (github.event_name == 'release' || github.event_name == 'push' || github.ref == 'refs/heads/main') &&
+      (github.event_name == 'release' || github.event_name == 'push' || inputs.platform == 'both' || inputs.platform == 'ios')
     runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
     timeout-minutes: 180
     permissions:
@@ -214,8 +218,8 @@ jobs:
   detox-android-full:
     name: Full Android Detox validation
     if: >-
-      (github.event_name == 'release' || github.ref == 'refs/heads/main') &&
-      (github.event_name == 'release' || inputs.platform == 'both' || inputs.platform == 'android')
+      (github.event_name == 'release' || github.event_name == 'push' || github.ref == 'refs/heads/main') &&
+      (github.event_name == 'release' || github.event_name == 'push' || inputs.platform == 'both' || inputs.platform == 'android')
     runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     timeout-minutes: 180
     permissions:

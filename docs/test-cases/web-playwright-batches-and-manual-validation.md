@@ -14,6 +14,7 @@ Define repeatable browser test batches and a reviewable evidence package for MyC
 | Evidence                | `yarn test:e2e:web:evidence`                | Chromium                             | Screenshot package for human review                     | Role selection, student home, and student account shell at three widths, professional home/unknown-entitlement handoff, and manual invite fallback.                                                                                                                                                                                                       |
 | Complete flow atlas     | `yarn test:e2e:web:flow-atlas`              | Chromium at mobile/tablet/web widths | Exhaustive implemented-flow evidence and manual review  | 13 flow folders, 65 exact checkpoints per platform, 195 expected screenshots, exact-name verifier, auth/app HTML reports. Local only; not wired to CI.                                                                                                                                                                                                    |
 | Mobile WebView recovery | `yarn test:e2e:web:manual-webview-recovery` | Pixel 5 mobile Chromium              | Manual runtime proof for malformed shared-link recovery | Authenticated mobile fixture verifies duplicate URL query parameters render the localized invalid-link state, keep the Back action in view, prevent external-link exposure, return to the professional app shell, and allow an exact configured legal URL on a custom trusted host. Local/manual only.                                                    |
+| Professional dashboard responsive | `yarn playwright test --config=playwright.professional-home.config.ts e2e/web/professional-home-responsive.spec.ts` | Pixel 5 mobile Chromium, en-US/pt-BR/es-ES | Compact dashboard regression | Authenticated professional fixture verifies no horizontal overflow, readable full-width cards below 400 CSS px, a wrapped task CTA, and the two-column summary layout at 412 CSS px. Evidence is local/manual unless selected by the feature-impact runner. |
 | Server auth             | `yarn test:e2e:web:server`                  | Chromium, Firefox, WebKit            | Real client/server browser contract and PR gate         | Email create/sign-in, terms, role onboarding, HttpOnly cookie attributes, refresh rotation, ready-home restoration with error-state rejection, and logout. Local runs default to sibling `server`; CI passes the coordinated backend checkout through `MYCHAMPIONS_SERVER_ROOT`. The backend uses in-memory auth state and never runs against production. |
 | Full                    | `yarn test:e2e:web`                         | Chromium, Firefox, WebKit            | Build-only CI/regression gate                           | All current tests, failure diagnostics, and cross-engine screenshot attachments.                                                                                                                                                                                                                                                                          |
 
@@ -40,6 +41,12 @@ batches; the generated screenshot, HTML/JSON/JUnit reports, metadata, and
 manual checklist remain under the ignored `.artifacts/` directory.
 
 The runner accepts extra Playwright arguments after the batch name. For example, `node scripts/run-web-e2e-batch.mjs evidence --headed` runs the evidence batch visibly.
+
+The professional dashboard responsive proof uses an isolated Expo web server on
+port `8086` and true Playwright Pixel 5 emulation. It runs once for each
+supported locale, captures the 390 CSS px stacked state and the 412 CSS px
+two-column state, and keeps the generated HTML/JSON reports and screenshots in
+the ignored directory selected by `WEB_E2E_ARTIFACT_ROOT`.
 
 ## Artifact contract
 

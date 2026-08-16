@@ -39,6 +39,25 @@ test('web suites are grouped by runner and project with argv-safe filters', () =
   assert.match(invocation.args[grepIndex + 1], /@feature:shell/);
 });
 
+test('web suites can select an explicit Playwright config per project', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:professional-home']);
+
+  assert.deepEqual(
+    plan.invocations.map((invocation) =>
+      invocation.args.filter((value) => value.startsWith('--project=')),
+    ),
+    [
+      ['--project=mobile-professional'],
+      ['--project=mobile-professional-es'],
+      ['--project=mobile-professional-pt'],
+    ],
+  );
+  for (const invocation of plan.invocations) {
+    assert.ok(invocation.args.includes('--config=playwright.professional-home.config.ts'));
+    assert.ok(invocation.args.includes('e2e/web/professional-home-responsive.spec.ts'));
+  }
+});
+
 test('server Playwright suites declare their coordinated backend requirement', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:server-auth']);
 

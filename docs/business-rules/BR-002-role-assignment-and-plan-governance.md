@@ -38,7 +38,7 @@
 - `BR-230B`: During the local MyChampions server migration, student/professional unbind requires the MyChampions server bearer-auth endpoint for the connection-row transition to `ended` outside E2E fixtures; missing local server auth fails closed.
 - `BR-231`: Account deletion workflows must remove direct personal identifiers from retained historical relationship/plan records and keep only anonymized or pseudonymized data required for legal, billing, security, and continuity constraints.
 - `BR-232`: Supported MVP auth methods are email/password, Google, and Apple.
-- `BR-232A`: During the local MyChampions server migration, email/password sign-in and account creation establish a MyChampions server bearer session through local Postgres `local_email_auth_credentials` by default; non-dev app variants must not use the deterministic local dev-session endpoint.
+- `BR-232A`: During the local MyChampions server migration, email/password sign-in and account creation establish a MyChampions server bearer session through local Postgres `local_email_auth_credentials` by default. Because the create-account endpoint may return a privacy-preserving session-less acknowledgement, the client completes the session through the email/password sign-in boundary before the terms gate; non-dev app variants must not use the deterministic local dev-session endpoint.
 - `BR-233`: Password policy requires minimum 8 characters, at least one uppercase letter, one number, one special character, and no emojis.
 - `BR-234`: Email uniqueness is global per account; same email cannot create multiple accounts.
 - `BR-235`: Social login with matching email links provider identity into existing account.
@@ -108,7 +108,7 @@
 - `BR-272`: Offline state must be clearly signaled with persistent banner and write-lock reason whenever write actions are blocked.
 - `BR-273`: Entitlement pre-lapse warning must be shown before write-lock enforcement for professionals at risk of cap lock.
 - `BR-274`: Specialty-removal blocked state must include direct navigation/actions to resolve active/pending blockers.
-- `BR-275`: Accessibility baseline requires support for dynamic text scaling, screen-reader semantics, logical focus order, and sufficient contrast on core screens.
+- `BR-275`: Accessibility baseline requires support for dynamic text scaling, screen-reader semantics, logical focus order, and sufficient contrast on core screens; each workout session must expose one dedicated expandable-details control with a minimum 44×44 CSS px touch/focus target, a meaningful localized label, and current expanded state.
 - `BR-276`: BL-104 habit-tracking scope is hydration-only (water intake); sleep and steps are excluded from this item.
 - `BR-277`: Student personal daily water-goal targets are authored in self-managed nutrition plan creation/edit contexts.
 - `BR-278`: Nutritionist daily water-goal targets are authored in assigned nutrition plan creation/edit or assignment fine-tune contexts.

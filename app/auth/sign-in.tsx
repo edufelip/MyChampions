@@ -1,6 +1,6 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,14 +14,19 @@ import {
   TextInput,
   View,
 } from 'react-native';
-
 import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
+import {
+  buildAuthEntryViewed,
+  buildSignInFailed,
+  buildSignInSubmitted,
+} from '@/features/analytics/analytics.logic';
+import { useAnalytics } from '@/features/analytics/use-analytics';
 import { signInWithAppleProviderTokenFromSource } from '@/features/auth/apple-social-auth-source';
+import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
+import { useAuthSession } from '@/features/auth/auth-session';
 import { signInWithEmailPasswordFromSource } from '@/features/auth/email-auth-source';
 import { signInWithGoogleProviderTokenFromSource } from '@/features/auth/google-social-auth-source';
-import { useAuthSession } from '@/features/auth/auth-session';
-import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
 import {
   SignInFailure,
   mapSignInReasonToMessageKey,
@@ -31,12 +36,6 @@ import {
   validateSignInInput,
   type SignInValidationErrors,
 } from '@/features/auth/sign-in.logic';
-import {
-  buildAuthEntryViewed,
-  buildSignInFailed,
-  buildSignInSubmitted,
-} from '@/features/analytics/analytics.logic';
-import { useAnalytics } from '@/features/analytics/use-analytics';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -331,6 +330,18 @@ export default function SignInScreen() {
             </View>
             <Pressable
               accessibilityRole="button"
+              onPress={() => router.push('/auth/forgot-password')}
+              disabled={submitting}
+              style={styles.forgotPasswordLink}
+              testID="auth.signIn.forgotPasswordLink"
+            >
+              <Text style={[styles.forgotPasswordText, { color: palette.tint }]}>
+                {t('auth.signin.forgot_password')}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
               onPress={() => {
                 void onEmailPasswordSignIn();
               }}
@@ -555,6 +566,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 2,
     paddingHorizontal: 12,
+  },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  forgotPasswordText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   primaryButton: {
     alignItems: 'center',

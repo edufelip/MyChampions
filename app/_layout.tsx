@@ -168,6 +168,8 @@ function RootLayoutContent() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/forgot-password" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/password-reset" options={{ headerShown: false }} />
         <Stack.Screen name="auth/create-account" options={{ headerShown: false }} />
         <Stack.Screen name="auth/accept-terms" options={{ headerShown: false }} />
         <Stack.Screen name="auth/role-selection" options={{ headerShown: false }} />

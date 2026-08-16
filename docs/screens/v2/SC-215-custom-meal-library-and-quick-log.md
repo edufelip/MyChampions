@@ -49,9 +49,10 @@
   - Open share action for owned recipes.
 
 ## States
-- Loading: fetch custom meal library.
-- Empty: no saved meals yet.
-- Error: fetch/log save failure.
+- Loading: fetch custom meal library. Shown as a bounded spinner (`meal.library.loading`).
+- Empty: no saved meals yet (successful zero-meal response) — renders the illustrated empty state and `meal.library.empty.cta` Create meal CTA, distinct from the error state below.
+- Error (ET-103, TC-401): a recoverable library read failure renders `meal.library.error` with localized copy, a Retry action (`meal.library.error.retry`, calls `useCustomMeals().reload()` and re-runs the load) and a safe fallback Create meal action (`meal.library.error.cta.create`, opens `/nutrition/custom-meals/new`). No stale meal rows remain mounted or interactive behind the error card, and the bottom tab navigation stays reachable. Retry transitions through the existing loading state (`meal.library.loading`) before settling into `ready` or back into `error`. The Create meal fallback is gated by the same write-lock used elsewhere on this screen (`isWriteLocked`, derived from the offline banner) and is disabled while offline, consistent with the empty-state Create CTA; Retry itself is a read action and is never lock-gated.
+- Log save failure: quick-log panel shows an inline field error (`meal.library.quickLog.error`) without leaving the panel.
 - Success: log saved and daily nutrition totals updated.
 
 ## Validation Rules

@@ -23,6 +23,9 @@
  *       AC-403–408, AC-411, AC-413, AC-513–AC-519
  *       TC-271–TC-274, TC-286, TC-404–409, TC-412, TC-414, TC-415
  */
+
+import { MaterialIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -37,35 +40,31 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-
-import { MaterialIcons } from '@expo/vector-icons';
-
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
-import { shareAdapter } from '@/features/platform/share-adapter';
-import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import {
   validatePortionLogInput,
   calculatePortionNutrition,
   type CustomMeal,
 } from '@/features/nutrition/custom-meal.logic';
+import { useCustomMeals } from '@/features/nutrition/use-custom-meals';
 import { useMealPhotoAnalysis } from '@/features/nutrition/use-meal-photo-analysis';
-import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
-import { useSubscription } from '@/features/subscription/use-subscription';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
 } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import { shareAdapter } from '@/features/platform/share-adapter';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import { useTranslation } from '@/localization';
+import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,7 +109,7 @@ export default function CustomMealLibraryScreen({
   const { t } = useTranslation();
   const router = useRouter();
   const { currentUser, lockedRole } = useAuthSession();
-  const { state, shareLink, remove, logPortion } = useCustomMeals(Boolean(currentUser));
+  const { state, reload, shareLink, remove, logPortion } = useCustomMeals(Boolean(currentUser));
 
   const networkStatus = useNetworkStatus();
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
@@ -175,7 +174,7 @@ export default function CustomMealLibraryScreen({
         validationErrors.consumedGrams === 'required'
           ? 'meal.library.quick_log.validation.required'
           : 'meal.library.quick_log.validation.positive';
-      setQuickLog({ ...quickLog, error: t(errorKey) as string });
+      setQuickLog({ ...quickLog, error: t(errorKey) });
       return;
     }
 
@@ -183,7 +182,7 @@ export default function CustomMealLibraryScreen({
     const error = await logPortion(quickLog.meal.id, parseFloat(quickLog.grams));
     setIsLoggingMeal(false);
     if (error) {
-      setQuickLog({ ...quickLog, error: t('meal.library.quick_log.error') as string });
+      setQuickLog({ ...quickLog, error: t('meal.library.quick_log.error') });
       return;
     }
     closeQuickLog();
@@ -220,7 +219,7 @@ export default function CustomMealLibraryScreen({
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
           scheme={scheme}
-          text={t('offline.banner') as string}
+          text={t('offline.banner')}
           testID="meal.library.offlineBanner"
         />
       ) : null}
@@ -229,12 +228,41 @@ export default function CustomMealLibraryScreen({
         <View style={styles.center}>
           <ActivityIndicator
             testID="meal.library.loading"
-            accessibilityLabel={t('a11y.loading.default') as string}
+            accessibilityLabel={t('a11y.loading.default')}
           />
         </View>
       ) : state.kind === 'error' ? (
+        // Recoverable library read failure — never leave the user on a dead-end
+        // screen (ET-103). Retry re-runs the load; Create meal is a safe
+        // fallback that does not depend on the failed read succeeding.
         <View style={styles.center} testID="meal.library.error">
           <Text style={[styles.meta, { color: palette.icon }]}>{t('meal.library.error')}</Text>
+          <View style={styles.errorActions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => reload()}
+              style={[styles.errorRetryButton, { backgroundColor: palette.tint }]}
+              testID="meal.library.error.retry"
+            >
+              <Text style={[styles.errorRetryButtonText, { color: palette.onAccent }]}>
+                {t('common.error.retry')}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isWriteLocked}
+              onPress={() => router.push('/(tabs)/nutrition/custom-meals/new')}
+              style={[
+                styles.errorSecondaryButton,
+                { borderColor: palette.tint, opacity: isWriteLocked ? 0.4 : 1 },
+              ]}
+              testID="meal.library.error.cta.create"
+            >
+              <Text style={[styles.errorSecondaryButtonText, { color: palette.tint }]}>
+                {t('meal.library.cta_create')}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       ) : state.kind === 'ready' && state.meals.length === 0 ? (
         <EmptyState
@@ -369,7 +397,7 @@ function EmptyState({
       <DsPillButton
         scheme={scheme}
         disabled={isWriteLocked}
-        label={t('meal.library.cta_create') as string}
+        label={t('meal.library.cta_create')}
         onPress={onCreate}
         contentColor="#f8fafc"
         testID="meal.library.empty.cta"
@@ -423,7 +451,7 @@ function MealRow({
       <View style={styles.mealActions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${t('meal.library.quick_log.cta_log') as string} ${meal.name}`}
+          accessibilityLabel={`${t('meal.library.quick_log.cta_log')} ${meal.name}`}
           disabled={isWriteLocked}
           onPress={onLog}
           style={[
@@ -439,7 +467,7 @@ function MealRow({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${t('meal.library.cta_edit') as string} ${meal.name}`}
+          accessibilityLabel={`${t('meal.library.cta_edit')} ${meal.name}`}
           onPress={onEdit}
           style={[styles.ghostAction]}
           testID={`meal.library.row.${meal.id}.edit`}
@@ -451,7 +479,7 @@ function MealRow({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${t('meal.library.cta_share') as string} ${meal.name}`}
+          accessibilityLabel={`${t('meal.library.cta_share')} ${meal.name}`}
           disabled={isWriteLocked}
           onPress={onShare}
           style={[styles.ghostAction, { opacity: isWriteLocked ? 0.4 : 1 }]}
@@ -464,7 +492,7 @@ function MealRow({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${t('common.cta.delete') as string} ${meal.name}`}
+          accessibilityLabel={`${t('common.cta.delete')} ${meal.name}`}
           disabled={isWriteLocked}
           onPress={() => void onDelete()}
           style={[styles.ghostAction, { opacity: isWriteLocked ? 0.4 : 1 }]}
@@ -527,14 +555,14 @@ function QuickLogPanel({
     testID: 'meal.library.quickLog.panel',
   });
   const caloriesLabel = nutritionPreview
-    ? (t('meal.library.quick_log.preview.calories') as string).replace(
+    ? t('meal.library.quick_log.preview.calories').replace(
         '{calories}',
         String(nutritionPreview.calories),
       )
     : null;
 
   const macrosLabel = nutritionPreview
-    ? (t('meal.library.quick_log.preview.macros') as string)
+    ? t('meal.library.quick_log.preview.macros')
         .replace('{carbs}', String(nutritionPreview.carbs))
         .replace('{proteins}', String(nutritionPreview.proteins))
         .replace('{fats}', String(nutritionPreview.fats))
@@ -546,7 +574,7 @@ function QuickLogPanel({
       style={[styles.quickLogOverlay, usesCenteredDialog && styles.quickLogOverlayCentered]}
     >
       <Pressable
-        accessibilityLabel={t('meal.library.quick_log.cta_cancel') as string}
+        accessibilityLabel={t('meal.library.quick_log.cta_cancel')}
         accessibilityRole="button"
         onPress={onCancel}
         style={styles.quickLogBackdrop}
@@ -581,13 +609,13 @@ function QuickLogPanel({
               color: palette.text,
             },
           ]}
-          placeholder={t('meal.library.quick_log.field.placeholder') as string}
+          placeholder={t('meal.library.quick_log.field.placeholder')}
           placeholderTextColor={palette.icon}
           value={grams}
           onChangeText={onChangeGrams}
           keyboardType="decimal-pad"
           inputAccessoryViewID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}
-          accessibilityLabel={t('meal.library.quick_log.field.label') as string}
+          accessibilityLabel={t('meal.library.quick_log.field.label')}
           testID="meal.library.quickLog.input"
         />
         {error ? (
@@ -626,7 +654,7 @@ function QuickLogPanel({
 
         <View style={styles.panelActions}>
           {isLogging ? (
-            <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting') as string} />
+            <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} />
           ) : (
             <Pressable
               accessibilityRole="button"
@@ -712,7 +740,7 @@ function QuickLogAnalysisRow({
           <ActivityIndicator
             size="small"
             color={palette.icon}
-            accessibilityLabel={t('meal.photo_analysis.paywall.loading') as string}
+            accessibilityLabel={t('meal.photo_analysis.paywall.loading')}
             testID="meal.library.quickLog.analysis.paywall.loading"
           />
         ) : (
@@ -796,17 +824,17 @@ function QuickLogAnalysisRow({
 function resolveQuickLogAnalysisError(reason: PhotoAnalysisErrorReason, t: TFn): string {
   switch (reason) {
     case 'permission_denied':
-      return t('meal.photo_analysis.error.permission_denied') as string;
+      return t('meal.photo_analysis.error.permission_denied');
     case 'file_too_large':
-      return t('meal.photo_analysis.error.file_too_large') as string;
+      return t('meal.photo_analysis.error.file_too_large');
     case 'unrecognizable_image':
-      return t('meal.photo_analysis.error.unrecognizable') as string;
+      return t('meal.photo_analysis.error.unrecognizable');
     case 'quota_exceeded':
-      return t('meal.photo_analysis.error.quota') as string;
+      return t('meal.photo_analysis.error.quota');
     case 'network':
-      return t('meal.photo_analysis.error.network') as string;
+      return t('meal.photo_analysis.error.network');
     default:
-      return t('meal.photo_analysis.error.generic') as string;
+      return t('meal.photo_analysis.error.generic');
   }
 }
 
@@ -898,6 +926,31 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   meta: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
+  errorActions: {
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 16,
+    width: '100%',
+  },
+  errorRetryButton: {
+    alignItems: 'center',
+    borderRadius: 10,
+    justifyContent: 'center',
+    minHeight: 48,
+    minWidth: 160,
+    paddingHorizontal: 20,
+  },
+  errorRetryButtonText: { fontSize: 15, fontWeight: '700' },
+  errorSecondaryButton: {
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    minHeight: 48,
+    minWidth: 160,
+    paddingHorizontal: 20,
+  },
+  errorSecondaryButtonText: { fontSize: 15, fontWeight: '600' },
   mealRow: {
     borderRadius: 12,
     borderWidth: 1,

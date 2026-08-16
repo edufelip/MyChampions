@@ -16,7 +16,7 @@ test('professional home task icons use the scheme-aware accent foreground', () =
   assert.match(taskCardSource, /backgroundColor: theme\.color\.accentPrimary/);
   assert.match(
     taskCardSource,
-    /<MaterialIcons name=\{iconName\} size=\{20\} color=\{theme\.color\.onAccent\} \/>/,
+    /<MaterialIcons name=\{iconName\} size=\{20\} color=\{theme\.color\.onAccent\} aria-hidden \/>/,
   );
   assert.doesNotMatch(taskCardSource, /color=["']#[\da-f]{3,8}["']/i);
 });
