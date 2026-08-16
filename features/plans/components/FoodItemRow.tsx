@@ -2,7 +2,6 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
-
 import { type TranslationKey } from '@/localization';
 
 type FoodItemRowProps = {
@@ -27,6 +26,8 @@ type FoodItemRowProps = {
   isFirstInList?: boolean;
   isLastInList?: boolean;
   isInteractionLocked?: boolean;
+  /** D-006: hides the remove/reorder controls for an assigned plan viewed by a Student. */
+  readOnly?: boolean;
   t: (key: TranslationKey) => string;
   testID?: string;
 };
@@ -50,6 +51,7 @@ export const FoodItemRow = React.memo(
     isFirstInList,
     isLastInList,
     isInteractionLocked,
+    readOnly,
     t,
     testID,
   }: FoodItemRowProps) => {
@@ -61,7 +63,7 @@ export const FoodItemRow = React.memo(
         ]}
         testID={testID}
       >
-        {isSortMode && (
+        {isSortMode && !readOnly && (
           <View style={styles.sortControls}>
             <Pressable onPress={onMoveUp} disabled={isInteractionLocked || isFirstInList}>
               <IconSymbol
@@ -116,7 +118,7 @@ export const FoodItemRow = React.memo(
             </Text>
           ) : null}
         </View>
-        {!isSortMode && (
+        {!isSortMode && !readOnly && (
           <Pressable
             onPress={onRemove}
             disabled={isInteractionLocked}

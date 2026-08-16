@@ -2,9 +2,6 @@
  * Connection source — invite submit, confirm, end, list.
  */
 
-import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getValidServerAccessToken } from '../auth/server-auth-source';
-import { defaultAppFetch } from '../platform/default-app-fetch';
 import {
   normalizeConnectionStatus,
   normalizeCanceledReason,
@@ -12,6 +9,9 @@ import {
   type ConnectionRecord,
   type ConnectionSpecialty,
 } from './connection.logic';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { defaultAppFetch } from '../platform/default-app-fetch';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -72,7 +72,7 @@ export function buildPendingConnectionFromInvite(input: {
 }
 
 export function isPendingStudentCapReached(
-  pendingConnections: Array<{ studentAuthUid?: string | null }>,
+  pendingConnections: { studentAuthUid?: string | null }[],
   nextStudentUid: string,
   cap = MAX_PENDING_STUDENTS,
 ): boolean {
@@ -86,7 +86,7 @@ export function isPendingStudentCapReached(
 }
 
 export function getExistingInviteConnectionConflict(
-  connections: Array<{ status?: string | null }>,
+  connections: { status?: string | null }[],
 ): 'active' | 'pending' | null {
   if (connections.some((connection) => connection.status === 'active')) return 'active';
   if (connections.some((connection) => connection.status === 'pending_confirmation'))
@@ -136,6 +136,17 @@ function getE2EConnectionSourceOverride() {
 
 const e2eEndedConnectionIds = new Set<string>();
 const e2eSubmittedInviteConnections = new Map<string, ConnectionRecord>();
+const e2eRotatedInviteSpecialties = new Set<ConnectionSpecialty>();
+
+/**
+ * Updates the provider-free E2E fixture to mirror server-side invite rotation.
+ * Production rotation remains server-owned; this is only the deterministic web/native test seam.
+ */
+export function markE2EInviteCodeRotated(specialty: ConnectionSpecialty): void {
+  if (getE2EConnectionSourceOverride()) {
+    e2eRotatedInviteSpecialties.add(specialty);
+  }
+}
 
 function getE2EInviteSubmitFixture() {
   const override = getE2EConnectionSourceOverride();
@@ -191,7 +202,10 @@ function getE2EConnectionFixtures(): ConnectionRecord[] | null {
     });
   }
 
-  if (process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE === 'basic') {
+  if (
+    process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE === 'basic' &&
+    !e2eRotatedInviteSpecialties.has('nutritionist')
+  ) {
     connections.push({
       id: 'e2e-professional-pending-connection',
       status: 'pending_confirmation',
@@ -223,7 +237,7 @@ function requireServerResult<T>(result: T | null, operation: string): T {
 }
 
 type ServerConnectionResponse = {
-  connections?: Array<Partial<ConnectionRecord>>;
+  connections?: Partial<ConnectionRecord>[];
   error?: {
     code?: string;
     message?: string;

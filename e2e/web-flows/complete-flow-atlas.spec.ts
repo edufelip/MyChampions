@@ -1,5 +1,4 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
-
 import { captureFlowEvidence } from '../web/support/evidence';
 
 async function chooseRole(page: Page, role: 'student' | 'professional') {
@@ -19,6 +18,18 @@ async function chooseRole(page: Page, role: 'student' | 'professional') {
   } else {
     await expect(page.getByTestId('student.home.ready').last()).toBeVisible();
   }
+}
+
+async function countNestedButtons(page: Page, cardTestId: string): Promise<number> {
+  return page.evaluate((testId) => {
+    const card = document.querySelector(`[data-testid="${testId}"]`);
+    if (!card) return -1;
+    let nested = 0;
+    card.querySelectorAll('button').forEach((outerButton) => {
+      nested += outerButton.querySelectorAll('button').length;
+    });
+    return nested;
+  }, cardTestId);
 }
 
 async function capture(
@@ -94,6 +105,11 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
   });
 
   test('student daily care and assigned plan tracking', async ({ page }, testInfo) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+
     await chooseRole(page, 'student');
     await capture(
       page,
@@ -111,6 +127,53 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
       '02-nutrition-tracking',
       'student.nutrition.screen',
     );
+
+    // ET-99 regression guard: the assigned meal card must not nest interactive
+    // controls (outer expand toggle wrapping the inner Log Meal button), which
+    // previously produced invalid <button> nesting and a React hydration error
+    // on every load of this screen.
+    const nestedButtonCount = await countNestedButtons(
+      page,
+      'student.nutrition.mealCard.e2e-assigned-meal',
+    );
+    expect(nestedButtonCount).toBe(0);
+    expect(
+      consoleErrors.filter((text) => /descendant of|nested <button>|hydration error/i.test(text)),
+    ).toEqual([]);
+
+    const expandButton = page.getByTestId('student.nutrition.expandBtn.e2e-assigned-meal');
+    await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
+    await expandButton.click();
+    await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeVisible();
+    await expect(expandButton).toHaveAttribute('aria-expanded', 'true');
+    await expandButton.click();
+    await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeHidden();
+
+    // ET-99 follow-up: the meal name/summary block is its own sibling toggle
+    // (mirrors the training-session card's larger tap target) and must drive
+    // the exact same expand/collapse state as the chevron button above,
+    // without reintroducing nested-button DOM (re-checked below).
+    const headerToggle = page.getByTestId('student.nutrition.mealHeaderToggle.e2e-assigned-meal');
+    await expect(headerToggle).toHaveAttribute('aria-expanded', 'false');
+    await headerToggle.click();
+    await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeVisible();
+    await expect(headerToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(expandButton).toHaveAttribute('aria-expanded', 'true');
+    await headerToggle.click();
+    await expect(page.getByTestId('student.nutrition.mealDetails.e2e-assigned-meal')).toBeHidden();
+    await expect(expandButton).toHaveAttribute('aria-expanded', 'false');
+
+    const nestedButtonCountAfterToggle = await countNestedButtons(
+      page,
+      'student.nutrition.mealCard.e2e-assigned-meal',
+    );
+    expect(nestedButtonCountAfterToggle).toBe(0);
+
+    await page.getByTestId('student.nutrition.logMealButton.e2e-assigned-meal').click();
+    await expect(
+      page.getByTestId('student.nutrition.loggedMealBadge.e2e-assigned-meal'),
+    ).toBeVisible();
+
     await page.getByTestId('student.nutrition.waterWidget.intakeInput').fill('250');
     await page.getByTestId('student.nutrition.waterWidget.logButton').click();
     await capture(
@@ -140,7 +203,14 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
       'student.nutrition.planChangeForm.success',
     );
 
+    // ET-107 (D-006): a Student opening a professionally assigned plan must see a
+    // read-only detail — never the editable professional builder surface.
     await page.goto('/student/nutrition/plans/e2e-assigned-nutrition-plan');
+    await expect(page.getByTestId('student.nutrition_plan.readOnlyNotice')).toBeVisible();
+    await expect(page.getByTestId('pro.plan.metadata.name')).toHaveAttribute('readonly', '');
+    await expect(page.getByTestId('pro.nutrition_plan.saveButton')).toHaveCount(0);
+    await expect(page.getByTestId('pro.nutrition_plan.addMeal')).toHaveCount(0);
+    await expect(page.getByTestId('student.nutrition_plan.planChangeForm')).toBeVisible();
     const assignedNutritionNameBox = await page.getByTestId('pro.plan.metadata.name').boundingBox();
     expect(assignedNutritionNameBox).not.toBeNull();
     expect(assignedNutritionNameBox?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(880);
@@ -153,6 +223,8 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
     );
 
     await page.goto('/student/nutrition/plans/e2e-assigned-nutrition-plan/meals/e2e-assigned-meal');
+    await expect(page.getByTestId('student.nutrition_meal.readOnlyNotice')).toBeVisible();
+    await expect(page.getByTestId('pro.nutrition_meal.addFood')).toHaveCount(0);
     await capture(
       page,
       testInfo,
@@ -179,7 +251,13 @@ test.describe('@flow-atlas @feature:shell complete product flow atlas', () => {
       'student.training.screen',
     );
 
+    // ET-107 (D-006): same read-only contract applies to the training plan route.
     await page.goto('/student/training/plans/e2e-assigned-training-plan');
+    await expect(page.getByTestId('student.training_plan.readOnlyNotice')).toBeVisible();
+    await expect(page.getByTestId('pro.training_plan.name')).toHaveAttribute('readonly', '');
+    await expect(page.getByTestId('pro.training_plan.saveButton')).toHaveCount(0);
+    await expect(page.getByTestId('pro.training_plan.addSession')).toHaveCount(0);
+    await expect(page.getByTestId('student.training_plan.planChangeForm')).toBeVisible();
     await capture(
       page,
       testInfo,

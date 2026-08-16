@@ -88,7 +88,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 
 | Backlog Item                      | Status                                                                                                                                                                               | FR             | UC       | AC         | BR             | TC         |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- | -------- | ---------- | -------------- | ---------- |
-| BL-014 In-App Support Dialog      | Implemented — custom MyChampions server-backed modal (D-171), logic layer tests, server route/repository tests, character counters, offline awareness, and localization (3 bundles). | FR-133         | UC-002.5 | AC-006     | BR-004         | TC-304     |
+| BL-014 In-App Support Dialog      | Implemented — custom MyChampions server-backed modal (D-171), logic layer tests, server route/repository tests, character counters, offline awareness, localization (3 bundles), and web mobile dialog semantics/focus behavior (ET-114, D-203). | FR-133         | UC-002.5 | AC-006     | BR-004         | TC-304     |
 | BL-015 Account & Privacy Settings | Implemented — SC-213 screen covering identity, password reset, language switcher (SC-222), legal links, and account deletion.                                                        | FR-133, FR-157 | UC-002.5 | AC-305–310 | BR-225, BR-231 | TC-304–310 |
 
 ## Delivery NFR Coverage
