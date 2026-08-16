@@ -417,11 +417,17 @@ function addReverseFeatureDependencies(
   }
 }
 
+export type PlatformScope = 'all' | 'web-only';
+
 export function resolveImpact(
   manifest: TestImpactManifest,
   changedFiles: ChangedFile[],
   graphs: ImportGraph[] = [],
-  options: { forceFull?: boolean; validationErrors?: string[] } = {},
+  options: {
+    forceFull?: boolean;
+    validationErrors?: string[];
+    platformScope?: PlatformScope;
+  } = {},
 ): ImpactResult {
   const allPaths = changedFiles.flatMap((change) =>
     change.previousPath ? [change.previousPath, change.path] : [change.path],
@@ -561,6 +567,12 @@ export function resolveImpact(
     if (!suite?.ci) continue;
     if (suite.runner === 'detox' && hasSelectedDetox) selectedSuites.add(suiteId);
     if (suite.runner.startsWith('playwright') && hasSelectedWeb) selectedSuites.add(suiteId);
+  }
+
+  if (options.platformScope === 'web-only') {
+    for (const suiteId of [...selectedSuites]) {
+      if (manifest.suites[suiteId]?.runner === 'detox') selectedSuites.delete(suiteId);
+    }
   }
 
   const webSuites = [...selectedSuites].filter((suiteId) =>
