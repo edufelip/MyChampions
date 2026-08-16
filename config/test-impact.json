@@ -169,7 +169,7 @@
       "sourcePaths": ["features/subscription/**", "app/professional/subscription.tsx"],
       "dependsOn": ["auth", "platform", "professional"],
       "unitTests": ["features/subscription/**/*.test.ts"],
-      "webSuites": ["web:subscription", "web:critical-paths"],
+      "webSuites": ["web:subscription", "web:critical-paths", "web:subscription-lock"],
       "detoxSuites": ["detox:subscription", "detox:revenuecat-live"],
       "owners": ["@edufelip"]
     },
@@ -497,6 +497,14 @@
       "projects": ["mobile"],
       "specs": ["e2e/web-flows-auth/shared-webview-recovery.spec.ts"],
       "grep": "@feature:auth",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:subscription-lock": {
+      "runner": "playwright-evidence",
+      "projects": ["chromium"],
+      "specs": ["e2e/web-subscription-lock/lapsed-over-cap-locked-recovery.spec.ts"],
+      "grep": "@feature:subscription",
       "tier": "evidence",
       "ci": false
     },
