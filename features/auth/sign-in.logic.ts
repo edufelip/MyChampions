@@ -1,3 +1,6 @@
+// Verification-only comment: confirms Step 7 of the CI web-primary redesign
+// selects only web suites for an auth-feature change, with no Detox
+// dispatch, now that Detox has left the PR path. Safe to remove/ignore.
 export type SignInErrorReason =
   'invalid_credentials' | 'network' | 'provider_conflict' | 'configuration' | 'unknown';
 
