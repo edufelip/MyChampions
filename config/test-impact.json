@@ -484,7 +484,8 @@
     },
     "web:flow-atlas-auth": {
       "runner": "playwright-evidence",
-      "projects": ["chromium"],
+      "playwrightConfig": "playwright.flows-auth.config.ts",
+      "projects": ["mobile", "tablet", "web"],
       "specs": ["e2e/web-flows-auth/authentication-flow-atlas.spec.ts"],
       "grep": "@feature:auth",
       "tier": "evidence",
@@ -492,6 +493,7 @@
     },
     "web:manual-webview-recovery": {
       "runner": "playwright-evidence",
+      "playwrightConfig": "playwright.webview-recovery.config.ts",
       "projects": ["mobile"],
       "specs": ["e2e/web-flows-auth/shared-webview-recovery.spec.ts"],
       "grep": "@feature:auth",
@@ -500,7 +502,8 @@
     },
     "web:flow-atlas-complete": {
       "runner": "playwright-evidence",
-      "projects": ["chromium"],
+      "playwrightConfig": "playwright.flows.config.ts",
+      "projects": ["mobile", "tablet", "web"],
       "specs": ["e2e/web-flows/complete-flow-atlas.spec.ts"],
       "grep": "@feature:shell",
       "tier": "evidence",
