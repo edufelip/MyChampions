@@ -49,7 +49,7 @@ function registeredRootRoutes(): Set<string> {
   );
 }
 
-function directMobileRootRoutes(): Array<{ file: string; route: string }> {
+function directMobileRootRoutes(): { file: string; route: string }[] {
   const baseUrlTemplate = /\$\{(?:(?:auth|source|serverConnection)\.)?baseUrl\}([^`]+)/g;
 
   return collectFeatureSourceFiles().flatMap((file) => {
@@ -101,7 +101,7 @@ serverRouteContractTest('helper-built mobile requests resolve to registered Elys
     },
     {
       file: 'features/auth/profile-source.ts',
-      fragments: ["requestProfile('/me', deps, { method: 'DELETE' })"],
+      fragments: ["requestProfile('/me', deps ?? getProfileSourceDeps(), { method: 'DELETE' })"],
       route: '/me',
     },
     {

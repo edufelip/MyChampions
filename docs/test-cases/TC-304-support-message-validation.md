@@ -42,3 +42,10 @@ In-App Support Dialog.
   - When: User taps "Continue".
   - Then: Modal closes.
   - And: Fields are reset for next open.
+
+- `TC-304.7`: **Mobile Web Dialog Accessibility**
+  - Given: The authenticated Student opens the support modal at the 390x844 and 320x720 mobile viewport sizes (Chromium/Firefox/WebKit desktop engines resized, no touch-input emulation).
+  - When: The browser accessibility tree is inspected while the modal is open.
+  - Then: Exactly one visible named `role="dialog"` exposes `aria-modal="true"` and is labelled by the localized "Talk to support" heading.
+  - And: The icon close control and form Cancel action have distinct localized accessible names.
+  - And: Focus remains inside the dialog during Tab/Shift+Tab navigation and returns to the Contact support trigger after Escape dismissal.

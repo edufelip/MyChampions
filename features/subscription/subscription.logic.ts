@@ -6,6 +6,8 @@
  * BR-218–BR-221, BR-228, BR-247, BR-273
  */
 
+import type { SubscriptionPurchaseCapability } from './subscription-runtime';
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type EntitlementStatus = 'active' | 'lapsed' | 'unknown';
@@ -111,6 +113,50 @@ export function normalizeEntitlementStatus(raw: unknown): EntitlementStatus {
  */
 export function isPlanUpdateLocked(state: SubscriptionState): boolean {
   return state.isAboveCapLocked;
+}
+
+// ─── Locked-state recovery messaging (ET-105) ─────────────────────────────────
+
+export type LockedRecoveryMessageKey =
+  | 'pro.subscription.locked_unknown'
+  | 'pro.subscription.locked'
+  | 'pro.subscription.locked_handoff'
+  | 'pro.subscription.locked_unavailable';
+
+/**
+ * Resolves the localization key for the locked-state recovery message shown
+ * while student-plan writes are blocked.
+ *
+ * The locked card must never point the user at a purchase/restore/handoff
+ * control that isn't actually mounted for the current platform capability
+ * (ET-105, TC-310, SC-212):
+ *  - An unverified (`unknown`) entitlement is a verification problem,
+ *    independent of purchase capability, and always takes precedence.
+ *  - `native_purchase` keeps the original purchase/restore imperative — both
+ *    controls are mounted on native.
+ *  - `mobile_handoff` names the single mounted "Continue on mobile" CTA
+ *    instead of the generic "restore or purchase" wording.
+ *  - `unavailable` never references purchase/restore/handoff, since none of
+ *    those controls render; it defers to the mobile app plus the Refresh
+ *    status action, which stays mounted.
+ */
+export function resolveLockedRecoveryMessageKey(input: {
+  entitlementStatus: EntitlementStatus;
+  purchaseCapability: SubscriptionPurchaseCapability;
+}): LockedRecoveryMessageKey {
+  if (input.entitlementStatus === 'unknown') {
+    return 'pro.subscription.locked_unknown';
+  }
+
+  switch (input.purchaseCapability) {
+    case 'native_purchase':
+      return 'pro.subscription.locked';
+    case 'mobile_handoff':
+      return 'pro.subscription.locked_handoff';
+    case 'unavailable':
+    default:
+      return 'pro.subscription.locked_unavailable';
+  }
 }
 
 // ─── AI feature access ────────────────────────────────────────────────────────

@@ -195,7 +195,7 @@ export default function TrainingPlanBuilderScreen() {
   }, [planId]);
 
   // ── Load existing plan ─────────────────────────────────────────────────────
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (isNew) {
       initNewPlan();
     } else if (!isStarterClone && planId) {

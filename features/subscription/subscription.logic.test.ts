@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   FREE_STUDENT_CAP,
   checkStudentCapEnforcement,
@@ -10,6 +9,7 @@ import {
   hasAiAnalysisAccess,
   AI_ENTITLEMENT_ID,
   resolveSubscriptionStatusPresentation,
+  resolveLockedRecoveryMessageKey,
 } from './subscription.logic';
 
 // --- checkStudentCapEnforcement ---
@@ -222,4 +222,48 @@ test('hasAiAnalysisAccess: professional lapsed + student unknown → false', () 
 
 test('hasAiAnalysisAccess: professional unknown + student lapsed → false', () => {
   assert.equal(hasAiAnalysisAccess('unknown', 'lapsed'), false);
+});
+
+// --- resolveLockedRecoveryMessageKey (ET-105) ---
+// Regression guard: the locked-state message must never point at a
+// purchase/restore/handoff control that isn't mounted for the current
+// platform capability.
+
+test('resolveLockedRecoveryMessageKey: unknown entitlement always wins, regardless of capability', () => {
+  for (const purchaseCapability of ['native_purchase', 'mobile_handoff', 'unavailable'] as const) {
+    assert.equal(
+      resolveLockedRecoveryMessageKey({ entitlementStatus: 'unknown', purchaseCapability }),
+      'pro.subscription.locked_unknown',
+    );
+  }
+});
+
+test('resolveLockedRecoveryMessageKey: native_purchase keeps the restore-or-purchase imperative', () => {
+  assert.equal(
+    resolveLockedRecoveryMessageKey({
+      entitlementStatus: 'lapsed',
+      purchaseCapability: 'native_purchase',
+    }),
+    'pro.subscription.locked',
+  );
+});
+
+test('resolveLockedRecoveryMessageKey: mobile_handoff points at the mounted "continue on mobile" CTA, not a bare restore/purchase imperative', () => {
+  assert.equal(
+    resolveLockedRecoveryMessageKey({
+      entitlementStatus: 'lapsed',
+      purchaseCapability: 'mobile_handoff',
+    }),
+    'pro.subscription.locked_handoff',
+  );
+});
+
+test('resolveLockedRecoveryMessageKey: unavailable never references purchase/restore/handoff (ET-105 reported bug)', () => {
+  assert.equal(
+    resolveLockedRecoveryMessageKey({
+      entitlementStatus: 'lapsed',
+      purchaseCapability: 'unavailable',
+    }),
+    'pro.subscription.locked_unavailable',
+  );
 });

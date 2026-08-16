@@ -227,7 +227,7 @@ export default function NutritionPlanBuilderScreen() {
   }, [planId]);
 
   // ── Load existing plan ─────────────────────────────────────────────────────
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (nutritionGate !== 'allow') {
       return;
     }

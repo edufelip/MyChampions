@@ -28,13 +28,17 @@ for (const flow of flowAtlasManifest) {
   for (const platform of flowAtlasPlatforms) {
     const directory = path.join(screenshotRoot, flow.id, platform);
     const screenshots = await listPngs(directory);
-    const expectedScreenshots = flow.checkpoints.map((checkpoint) => `${checkpoint}.png`).sort();
+    const checkpoints = [
+      ...flow.checkpoints,
+      ...(platform === 'mobile' ? (flow.mobileOnlyCheckpoints ?? []) : []),
+    ];
+    const expectedScreenshots = checkpoints.map((checkpoint) => `${checkpoint}.png`).sort();
     const missingScreenshots = expectedScreenshots.filter((name) => !screenshots.includes(name));
     const unexpectedScreenshots = screenshots.filter((name) => !expectedScreenshots.includes(name));
     inventory.push({
       flow: flow.id,
       platform,
-      expected: flow.checkpointCount,
+      expected: expectedScreenshots.length,
       actual: screenshots.length,
       screenshots,
       expectedScreenshots,
@@ -52,7 +56,15 @@ for (const flow of flowAtlasManifest) {
 }
 
 const expectedTotal = flowAtlasManifest.reduce(
-  (total, flow) => total + flow.checkpointCount * flowAtlasPlatforms.length,
+  (total, flow) =>
+    total +
+    flowAtlasPlatforms.reduce(
+      (platformTotal, platform) =>
+        platformTotal +
+        flow.checkpoints.length +
+        (platform === 'mobile' ? (flow.mobileOnlyCheckpoints ?? []).length : 0),
+      0,
+    ),
   0,
 );
 const actualTotal = inventory.reduce((total, row) => total + row.actual, 0);

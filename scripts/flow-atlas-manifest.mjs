@@ -15,6 +15,12 @@ export const flowAtlasManifest = [
       '09-apple-authentication-terms',
       '10-create-account-terms',
     ],
+    mobileOnlyCheckpoints: [
+      '11-narrow-sign-in',
+      '11-390-sign-in',
+      '12-narrow-create-account',
+      '12-390-create-account',
+    ],
     useCases: ['UC-002.0', 'UC-002.10', 'UC-002.21'],
     screens: ['SC-217', 'SC-218', 'SC-221'],
   },

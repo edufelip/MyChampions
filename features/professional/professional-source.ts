@@ -2,8 +2,6 @@
  * Professional source — server-first invite code and specialty operations.
  */
 
-import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
-import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { normalizeInviteCodeStatus, type InviteCode } from './connection-invite.logic';
 import {
   normalizeSpecialty,
@@ -11,13 +9,15 @@ import {
   type SpecialtyRecord,
   type Credential,
 } from './specialty.logic';
+import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getValidServerAccessToken } from '../auth/server-auth-source';
+import { endConnection, markE2EInviteCodeRotated } from '../connections/connection-source';
 import {
   normalizeConnectionSpecialty,
   normalizeConnectionStatus,
   type ConnectionSpecialty,
   type ConnectionStatus,
 } from '../connections/connection.logic';
-import { endConnection } from '../connections/connection-source';
 import { defaultAppFetch } from '../platform/default-app-fetch';
 
 // ─── Error class ──────────────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ function getOrCreateE2EInviteCode(
 }
 
 function summarizeStudentConnections(
-  rows: Array<{ status: ConnectionStatus; specialty: ConnectionSpecialty }>,
+  rows: { status: ConnectionStatus; specialty: ConnectionSpecialty }[],
 ): {
   assignmentStatus: 'active' | 'pending' | null;
   representativeSpecialty: ConnectionSpecialty;
@@ -300,7 +300,7 @@ export function buildInviteCodeLookupPath(codeValue: string): [string, string] {
 }
 
 export function countUniqueActiveStudents(
-  rows: Array<{ status?: unknown; studentAuthUid?: unknown }>,
+  rows: { status?: unknown; studentAuthUid?: unknown }[],
 ): number {
   const activeStudents = new Set<string>();
   for (const row of rows) {
@@ -336,7 +336,7 @@ type ServerProfessionalSpecialtiesResponse = {
     authority?: unknown;
     country?: unknown;
   };
-  specialties?: Array<{
+  specialties?: {
     id?: unknown;
     specialty?: unknown;
     isActive?: unknown;
@@ -348,7 +348,7 @@ type ServerProfessionalSpecialtiesResponse = {
       authority?: unknown;
       country?: unknown;
     } | null;
-  }>;
+  }[];
   specialty?: {
     id?: unknown;
     specialty?: unknown;
@@ -366,14 +366,14 @@ type ServerProfessionalSpecialtiesResponse = {
 };
 
 type ServerProfessionalStudentsResponse = {
-  students?: Array<{
+  students?: {
     studentAuthUid?: unknown;
     displayName?: unknown;
     specialty?: unknown;
     assignmentStatus?: unknown;
     nutritionStatus?: unknown;
     trainingStatus?: unknown;
-  }>;
+  }[];
   error?: { code?: unknown; message?: unknown } | string;
 };
 
@@ -967,6 +967,7 @@ export async function rotateInviteCode(
         'No active Specialty found for invite code rotation.',
       );
     }
+    markE2EInviteCodeRotated(specialty);
     return code;
   }
 

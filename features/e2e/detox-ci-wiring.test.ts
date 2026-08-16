@@ -182,9 +182,15 @@ test('selective native execution fully prewarms Metro before Detox launches', ()
   assert.match(executor, /Invocation \$\{invocationId\} timed out after \$\{timeoutMs\} ms/);
 });
 
-test('iOS selective CI reserves a dedicated Metro port and routes every app launch to it', () => {
+test('protected full iOS Detox validation reserves a dedicated Metro port and routes every app launch to it', () => {
+  // Detox left the PR path (Step 7 of the CI web-primary redesign):
+  // trusted-selective-tests.yml's detox-ios-selected job -- which used to
+  // own this Metro-port isolation -- was deleted outright. The same
+  // concern (and the same port, 18081) now lives exclusively in
+  // detox-protected-full.yml's detox-ios-full job, which runs full Detox
+  // validation on release/hotfix branch pushes and release publishes.
   const workflow = readFileSync(
-    join(root, '.github', 'workflows', 'trusted-selective-tests.yml'),
+    join(root, '.github', 'workflows', 'detox-protected-full.yml'),
     'utf8',
   );
   const detoxConfig = readFileSync(join(root, '.detoxrc.js'), 'utf8');
@@ -196,4 +202,10 @@ test('iOS selective CI reserves a dedicated Metro port and routes every app laun
     detoxConfig,
     /-derivedDataPath ios\/build RCT_METRO_PORT="\$\{DETOX_METRO_PORT:-8081\}"/,
   );
+
+  const trusted = readFileSync(
+    join(root, '.github', 'workflows', 'trusted-selective-tests.yml'),
+    'utf8',
+  );
+  assert.doesNotMatch(trusted, /DETOX_METRO_PORT/);
 });

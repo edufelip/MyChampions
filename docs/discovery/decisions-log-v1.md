@@ -117,7 +117,7 @@
 - `D-102`: Phase 5 professional screens (SC-202, SC-204, SC-205, SC-206, SC-212) are implemented with server-backed data where migrated and RevenueCat wiring where applicable; all deferred items are tracked in `docs/discovery/pending-wiring-checklist-v1.md`.
 - `D-103`: Phase 6 screens (SC-213, SC-214, SC-215, SC-216) are implemented with server-backed support/custom-meal/share/image paths where migrated. SC-216 shared-recipe deep links now preserve a safe `/shared/recipes/:shareToken` return target through auth, terms acceptance, and role-selection fallbacks. Privacy policy URL in SC-213 is a placeholder that must be replaced with the real legal URL before release.
 - `D-104`: Phase 7 bottom navigation shell is implemented per D-045. Professional SC-207 and SC-208 tabs now route to server-backed plan-library screens (`/professional/nutrition`, `/professional/training`) backed by the local MyChampions server plan store. The `(tabs)/_layout.tsx` uses `href: null` to hide role-inappropriate tabs rather than conditional rendering, keeping expo-router file-system routing intact.
-- `D-105`: Accessibility baseline (BL-013, FR-217) is implemented using React Native core a11y props only — no external a11y library. Pattern applied across all implemented screens: (1) `ActivityIndicator` gets `accessibilityLabel` from `a11y.loading.*` locale keys; (2) inline error `Text` nodes are wrapped in `accessibilityLiveRegion="polite"` `View`; (3) alert banners keep `accessibilityRole="alert"`; (4) interactive rows that carry composite data (student row, stat card, assignment card) get a single `accessibilityLabel` combining all relevant fields; (5) checkbox `View` gets `accessibilityRole="checkbox"` + `accessibilityState={{ checked }}`; (6) `MealRow` action buttons get contextual labels (`"Log <name>"`, `"Edit <name>"`, `"Share <name>"`). This covers auth, student, professional, and Phase 6 screens. Phase 9 analytics and real-service wiring remain deferred.
+- `D-105`: Accessibility baseline (BL-013, FR-217) is implemented using React Native core a11y props only — no external a11y library. Pattern applied across all implemented screens: (1) `ActivityIndicator` gets `accessibilityLabel` from `a11y.loading.*` locale keys; (2) inline error `Text` nodes are wrapped in `accessibilityLiveRegion="polite"` `View`; (3) alert banners keep `accessibilityRole="alert"`; (4) interactive rows that carry composite data (student row, stat card, assignment card) get a single `accessibilityLabel` combining all relevant fields; (5) checkbox `View` gets `accessibilityRole="checkbox"` + `accessibilityState={{ checked }}`; (6) radio rows, including SC-222 language options, expose `accessibilityRole="radio"`, `accessibilityState={{ checked }}`, and an explicit browser-observable checked attribute; (7) `MealRow` action buttons get contextual labels (`"Log <name>"`, `"Edit <name>"`, `"Share <name>"`). This covers auth, student, professional, and Phase 6 screens. Phase 9 analytics and real-service wiring remain deferred.
 - `D-106`: AI meal photo analysis uses the MyChampions server analyzer route. Provider API keys remain server-side; the mobile client sends compressed image data to the local server with a provider-neutral bearer token.
 - `D-107`: Camera capture and client-side image compression happen using Expo Camera / ImagePicker and `expo-image-manipulator`. The compressed image is sent as base64 in the server analyzer request body; image attachment upload is a separate server-backed flow.
 - `D-108`: AI macro estimates always pre-fill editable form fields (calories, carbs, proteins, fats, totalGrams); no auto-save without explicit user confirmation. An AI disclaimer is always shown alongside pre-filled values.
@@ -807,6 +807,48 @@
     required monthly. This change records the first report and keeps local,
     hosted, native, provider, and store-live evidence as separate states.
 
+- `D-203`: ET-71 closes the client-side gap left after the server shipped a
+  complete password-reset backend (`POST /auth/password-reset` request +
+  `POST /auth/password-reset/confirm` confirm, the latter added by ET-74,
+  now merged) with no corresponding mobile UI. ET-74 is `Done`, so both the
+  client (this change) and the production confirm endpoint it depends on are
+  fully wired end to end. Decisions applied:
+  - **Entry point**: A "Forgot password?" text link is added to SC-217 sign-in,
+    above the primary CTA, pushing to a new unauthenticated SC-226
+    forgot-password screen (`/auth/forgot-password`).
+  - **Request screen (SC-226)** reuses the existing
+    `requestPasswordResetFromSource()` call unchanged (already exercised by
+    SC-213 account settings) and shows privacy-preserving copy identical
+    whether or not the email is registered, matching the server's
+    enumeration-resistant `202 accepted` response.
+  - **Confirm screen (SC-227)** is deliberately routed at `/auth/password-reset`
+    — the same path segment the server's local-dev debug-outbox writes into its
+    `mychampions://auth/password-reset?token=...&email=...` deep link — so
+    Expo Router's default file-based linking (already active via `app.json`
+    `scheme: "mychampions"`) resolves an incoming reset link straight to this
+    screen with `token`/`email` pre-filled from `useLocalSearchParams()`. No
+    new custom `Linking` listener was added: the codebase had none for any
+    route, and file-based routing already provides deep-link resolution for
+    free once the matching route file exists. Email/token stay editable so a
+    reset started on another device can be completed by pasting the code.
+  - **Auth guard**: `/auth/forgot-password` and `/auth/password-reset` are
+    added to `isPublicAuthEntry` in `auth-route-guard.logic.ts`. Without this,
+    the guard's default unauthenticated redirect to `/auth/sign-in` would strip
+    the `token`/`email` query params off a real incoming deep link before the
+    user ever saw the confirm screen.
+  - **New-password policy** reuses `isPasswordPolicySatisfied()` from
+    `create-account.logic.ts` (8+ chars, uppercase, number, ASCII symbol, no
+    emoji) rather than inventing a second policy.
+  - **Error taxonomy**: `reset-password.logic.ts` maps the confirm endpoint's
+    `invalid_or_expired_token` (also covers an already-consumed/replayed
+    token), `invalid_email`, and `account_not_found` codes to distinct
+    reason-specific copy, following the same `*Failure` class +
+    `normalize*Reason`/`map*ReasonToMessageKey` shape used by
+    `sign-in.logic.ts` and `create-account.logic.ts`.
+  - Out of scope: analytics instrumentation for the two new screens (sign-in
+    and create-account emit `buildAuthEntryViewed`/submit/fail analytics
+    events; the new screens do not yet) and rate limiting on
+    `/auth/password-reset*` (tracked server-side in ET-63).
 - `D-202`: Supersedes the AsyncStorage half of `D-151`. Native (iOS/Android)
   server-auth session persistence (`features/auth/server-auth-storage.ts`)
   splits the persisted record across two backing stores instead of writing
@@ -828,10 +870,108 @@
     was already a correct no-op (web relies on the server's HttpOnly cookie
     refresh session, not client-JS-readable storage).
 
+- `D-203`: SC-213 support dialog accessibility uses a web-only semantic bridge
+  over the existing React Native modal.
+  - React Native Web's own `<Modal>` ancestor already exposes `role="dialog"`
+    and `aria-modal="true"` once active; the bridge names that same ancestor
+    with `aria-labelledby` pointing to the localized title instead of stamping
+    a second, nested `role="dialog"` on the visible support sheet — only one
+    dialog role is ever exposed to assistive tech. Native modal behavior
+    remains owned by React Native `Modal` and `onRequestClose`.
+  - The icon close control has a dedicated localized label, while the form
+    Cancel action retains its own visible label. This prevents duplicate
+    accessible names without changing the support submission contract.
+  - Mobile-viewport Playwright regression coverage (390x844 and 320x720,
+    desktop browser engines resized, no touch-input emulation) verifies the
+    semantic tree, focus containment, Escape dismissal, and trigger focus
+    restoration.
+- `D-211` (ET-105, TC-310, SC-212): The lapsed-over-cap locked-state message
+  on `/professional/subscription` (`app/professional/subscription.tsx`) is
+  capability-aware instead of using one fixed `pro.subscription.locked`
+  string regardless of `purchaseCapability`. Prior to this decision the
+  locked card always told the user to "Restore or purchase a subscription"
+  even on browser where `purchaseCapability` is `unavailable` and neither
+  control is mounted (`pro.subscription.purchaseCta`/`restoreCta` render 0
+  times), which is the exact defect ET-105 reported.
+  - `resolveLockedRecoveryMessageKey` (`features/subscription/subscription.logic.ts`)
+    is the single source of truth for which locked-state key renders, keyed
+    off `entitlementStatus` and `purchaseCapability` (D-186/D-187/ADR-0007's
+    existing `native_purchase | mobile_handoff | unavailable` capability
+    model — no new capability state was introduced).
+  - Unknown entitlement (`pro.subscription.locked_unknown`) always takes
+    precedence: it is a verification problem independent of platform.
+  - `native_purchase` keeps the original `pro.subscription.locked` copy
+    unchanged, since purchase and restore are both mounted on native.
+  - `mobile_handoff` uses new key `pro.subscription.locked_handoff`, which
+    names the single mounted "Continue on mobile" CTA instead of the generic
+    imperative.
+  - `unavailable` uses new key `pro.subscription.locked_unavailable`, which
+    never references purchase/restore/handoff (none render) and instead
+    defers to the mobile app plus the Refresh status action, which stays
+    mounted — consistent with the existing `pro.subscription.unavailable_note`
+    card shown alongside it.
+  - This is a copy/wiring fix only. It does not add, configure, or choose a
+    canonical browser purchase destination; that remains the deferred
+    open item already tracked under D-186/ADR-0007.
+  - Note: originally authored as `D-203` on this branch before rebase; a
+    concurrent PR had already claimed `D-203` for the SC-213 support-dialog
+    decision above by the time this branch merged current `main`, so this
+    entry was renumbered to `D-211` (the next unused ID at merge time) to
+    avoid a duplicate identifier.
+- `D-212`: ET-106 — the professional pending-queue row (`SC-205`, `/professional/pending`)
+  is a non-interactive container, not a button. Row-level `accessibilityRole="button"`
+  previously wrapped the Accept and Deny buttons as DOM descendants, which
+  react-native-web rendered as an invalid `<button>` nested inside another
+  `<button>` on web, producing React hydration errors and an unreliable
+  accessibility tree/focus order. The fix scopes row selection to a single
+  dedicated sibling checkbox control (`accessibilityRole="checkbox"`, 44x44
+  touch target, Space-key operable) so the row, checkbox, Accept, and Deny are
+  all siblings with independent, unambiguous focus stops. This resolves the
+  "entire row vs. checkbox only" open question in favor of checkbox-only
+  selection, matching the equivalent decision already made for the student
+  assigned-meal card (ET-99).
+  - Note: originally authored as `D-203` on this branch before rebase, which
+    collided with two other branches' concurrently-claimed `D-203` entries
+    (SC-213 support dialog above, and an earlier ET-71 entry); renumbered to
+    `D-212` at merge time, the next unused ID after `D-211` (claimed by a
+    concurrently-merging ET-105 branch) to avoid a further collision.
+
+`D-213`: New professional SC-207/SC-208 builder initialization must run after the route-scope reset effect.
+
+- The builder hooks clear stale route state in a passive effect keyed by scope. Route initialization therefore uses a passive effect declared after the hook so reset completes before `initNewNutritionPlan` / `initNewTrainingPlan` publishes the Ready state.
+- This preserves the first Add meal/Add session action for a fresh plan without changing persistence, validation, native modal behavior, or existing-plan loading. Mobile Playwright regression covers 390x844 and 320x720.
+- Note: originally authored as `D-203` on this branch before rebase; renumbered to `D-213` (the next unused ID at merge time) to avoid colliding with the ET-71, SC-213 support-dialog, and ET-106 branches that had already claimed/renumbered around `D-203`/`D-211`/`D-212` by the time this branch merged current `main`.
+
+### D-214: Shared restrained mobile auth entry shell
+
+- Date: 2026-08-12
+- Status: Accepted
+- Scope: SC-217 sign-in and SC-218 create-account entry screens.
+- Decision: Use one restrained mobile auth visual language for returning and first-time users: design-system canvas, compact brand mark, left-aligned title/subtitle hierarchy, labeled 52dp controls, token-based border/focus/error states, icon-based password visibility actions, outlined social providers, and safe-area-aware scroll padding.
+- Rationale: The previous screens used oversized centered hero treatments, decorative blobs, pill controls, and inconsistent provider/password affordances. The visual weight obscured the primary task on narrow mobile viewports and made the two entry flows feel unrelated. The replacement improves hierarchy and consistency while preserving routes, test IDs, localized behavior, analytics, provider actions, validation, and scrollability.
+- Constraints: Do not introduce raw colors, gradients, decorative imagery, or a new auth-specific design system. All new copy must be localized in `en-US`, `pt-BR`, and `es-ES`. The 320×720 Playwright regression is the minimum narrow viewport gate; the existing Pixel 5 mobile project remains the primary evidence surface.
+- Note: originally authored as `D-203` on this branch before rebase, then
+  renumbered to `D-213` to avoid colliding with the ET-71, SC-213
+  support-dialog, and ET-106 (`D-212`) entries — but by the time this branch
+  merged current `main`, `D-213` had *also* been independently claimed by the
+  ET-107 plan-builder-initialization entry above (same "pick the next unused
+  ID at merge time" collision pattern, now observed a third time). Renumbered
+  again to `D-214`, the actual next unused ID, while resolving that merge.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.
 
+- `D-210`: Invite-code regeneration confirmation is rendered through a shared React Native `Modal` contract on all platforms.
+  - The confirmation explains invalidation and pending-request cancellation before a professional confirms.
+  - Web must not depend on `Alert.alert`; it uses the shared modal's Escape/focus behavior, visible loading state, and inline success/error feedback.
+  - The professional dashboard disables regeneration while offline and surfaces the standard `offline.write_lock` reason alongside the persistent read-only banner.
+  - After successful regeneration, the dashboard reloads connection data so auto-canceled old-code requests cannot leave pending or attention counts stale.
+  - Rotation analytics record requested, canceled, succeeded, or failed outcomes with redacted properties only; full invite-code values are never included.
+  - The browser-only E2E network-status event bridge is feature-detected before subscription so native runtimes with a non-DOM `window` remain on the NetInfo path.
+
 ## Native iOS Build Compatibility
 
 - `D-173`: Local iOS builds on Xcode 26.5 keep React Native targets on C++20 but force only the `fmt` pod target to C++17 in `ios/Podfile` post-install, because `fmt 11.0.2` fails to compile its C++20 consteval `FMT_STRING` path under this toolchain.
+
+- `D-209`: BL-011 specialty-removal blocker copy keeps the existing `{plural}` parameter contract and applies it to both the student noun and the active/pending-state adjective in Portuguese and Spanish. This preserves singular/plural agreement while keeping the pure assist-state logic locale-neutral; TC-262 covers rendered output in all supported locales.
