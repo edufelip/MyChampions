@@ -30,7 +30,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `auth.role.option_pro.description` | SC-201 | Professional role card body | Create plans, manage your students, and track their progress in one place. | Crie planos, gerencie seus alunos e acompanhe a evolução deles em um só lugar. | Crea planes, gestiona a tus alumnos y sigue su progreso en un solo lugar. | New key added 2026-03-06 |
 | `auth.role.lock_note` | SC-201 | Role immutability helper | This can't be changed later — each role has a separate account. | Isso não pode ser alterado depois — cada perfil tem uma conta separada. | Esto no se puede cambiar después — cada perfil tiene una cuenta separada. | Updated 2026-03-06; more concise; role immutability preserved |
 | `auth.role.cta_continue` | SC-201 | Primary CTA | Continue | Continuar | Continuar | |
-| `auth.role.cta_back` | SC-209 | Generic back label (navigation a11y) | Back | Voltar | Volver | Shared key reused outside role selection |
+| `auth.role.cta_back` | SC-201/SC-209/SC-218 | Generic back label (navigation a11y) | Back | Voltar | Volver | Shared key reused by auth, role, shared-recipe, and app navigation controls |
 | `auth.role.validation.required` | SC-201 | Required validation message | Choose how you want to use the app to continue. | Escolha como quer usar o app para continuar. | Elige cómo quieres usar la app para continuar. | |
 | `auth.role.error.save_failed` | SC-201 | Role save failure message | Could not save your role right now. Try again. | Não foi possível salvar seu perfil agora. Tente novamente. | No se pudo guardar tu perfil ahora. Inténtalo de nuevo. | Server profile write failure |
 | `auth.role.error.navigation_failed` | SC-201 | Post-save navigation failure message | Could not continue right now. Try again. | Não foi possível continuar agora. Tente novamente. | No se pudo continuar ahora. Inténtalo de nuevo. | Save succeeded but route transition failed |
@@ -89,6 +89,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `shared.webview.open_cta` | SC-213 | Browser fallback CTA, destination-specific | Open {title} | Abrir {title} | Abrir {title} | ET-112; `{title}` is the route's `title` param (e.g. "Privacy Policy", "Terms of Service") so the CTA names the actual destination instead of a generic combined label |
 | `shared.webview.open_error` | SC-213 | Browser fallback popup-blocked/open-failure message | Could not open the link automatically. Try the button again, or use this address: {url} | Não foi possível abrir o link automaticamente. Tente o botão novamente ou use este endereço: {url} | No se pudo abrir el enlace automáticamente. Intenta el botón de nuevo o usa esta dirección: {url} | ET-112; recoverable/observable state when `window.open` is blocked |
 | `auth.signup.title` | SC-218 | Create-account header | Create your account | Crie sua conta | Crea tu cuenta | |
+| `auth.signup.subtitle` | SC-218 | Create-account helper | Start with a plan that fits your routine. | Comece com um plano que cabe na sua rotina. | Empieza con un plan que se adapte a tu rutina. | |
 | `auth.field.name` | SC-218 | Name label | Name | Nome | Nombre | Shared auth field label |
 | `auth.field.email` | SC-218 | Email label | Email | E-mail | Correo electrónico | Shared create-account field label |
 | `auth.field.password` | SC-217/SC-218 | Password label | Password | Senha | Contraseña | Shared auth field label |
@@ -486,7 +487,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `a11y.selected_count` | SC-pending | SR bulk selection count | {count} selected | {count} selecionado(s) | {count} seleccionado(s) | Replaces hardcoded string in pending.tsx |
 | `a11y.student_row` | SC-205 | SR student row label | {name}, {specialty}, {status} | {name}, {specialty}, {status} | {name}, {specialty}, {status} | Combines name+specialty+status for SR |
 | `a11y.stat_card` | SC-204 | SR stat card label | {value} {label} | {value} {label} | {value} {label} | Combines value+label for stat cards |
-| `a11y.brand_logo` | SC-217 | SR label for brand logo image | My Champions logo | Logo My Champions | Logo de My Champions | Used on sign-in screen brand badge |
+| `a11y.brand_logo` | SC-217/SC-218 | SR label for shared auth brand logo image | My Champions logo | Logo My Champions | Logo de My Champions | Used by the shared sign-in and create-account auth shell |
 | `meal.photo_analysis.cta` | SC-214/SC-215 | Camera/AI entry CTA | Analyze with AI | Analisar com IA | Analizar con IA | BL-108 |
 | `meal.photo_analysis.analyzing` | SC-219 | In-progress loading text | Analyzing your meal… | Analisando sua refeição… | Analizando tu comida… | BL-108 |
 | `meal.photo_analysis.disclaimer` | SC-219 | Estimate disclaimer | These are AI estimates. Please verify before saving. | Estes são valores estimados pela IA. Verifique antes de salvar. | Estos son valores estimados por IA. Verifícalos antes de guardar. | BR-290; always shown with results |

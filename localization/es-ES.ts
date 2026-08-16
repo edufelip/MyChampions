@@ -101,6 +101,7 @@ export const esES: Record<TranslationKey, string> = {
   'auth.password.toggle_show_short': 'Mostrar',
   'auth.password.toggle_hide_short': 'Ocultar',
   'auth.signup.title': 'Crea tu cuenta',
+  'auth.signup.subtitle': 'Empieza con un plan que se adapte a tu rutina.',
   'auth.signup.cta_primary': 'Crear cuenta',
   'auth.signup.or_continue': 'o continuar con',
   'auth.signup.password_helper':

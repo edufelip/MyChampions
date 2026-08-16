@@ -12,7 +12,7 @@ Define repeatable browser test batches and a reviewable evidence package for MyC
 | Functional              | `yarn test:e2e:web:functional`              | Chromium, Firefox, WebKit            | Platform-specific behavior                              | Camera-denied manual invite fallback and subscription mobile-handoff surface.                                                                                                                                                                                                                                                                             |
 | Accessibility           | `yarn test:e2e:web:accessibility`           | Chromium, Firefox, WebKit            | Keyboard, contrast, and dialog regression               | Explicit readable enabled/disabled controls, visible focus, logical role-option order, focus containment, Escape close, and focus restoration.                                                                                                                                                                                                            |
 | Evidence                | `yarn test:e2e:web:evidence`                | Chromium                             | Screenshot package for human review                     | Role selection, student home, and student account shell at three widths, professional home/unknown-entitlement handoff, and manual invite fallback.                                                                                                                                                                                                       |
-| Complete flow atlas     | `yarn test:e2e:web:flow-atlas`              | Chromium at mobile/tablet/web widths | Exhaustive implemented-flow evidence and manual review  | 13 flow folders, 65 exact checkpoints per platform, 195 expected screenshots, exact-name verifier, auth/app HTML reports. Local only; not wired to CI.                                                                                                                                                                                                    |
+| Complete flow atlas     | `yarn test:e2e:web:flow-atlas`              | Chromium at mobile/tablet/web widths | Exhaustive implemented-flow evidence and manual review  | 13 flow folders, 65 base checkpoints per platform plus 4 mobile-only auth checkpoints (199 total), exact-name verifier, auth/app HTML reports. The auth flow atlas is also a required selective-CI suite on Pixel 5 projects for en-US, pt-BR, and es-ES; the broader atlas remains local/manual evidence.                                                |
 | Mobile WebView recovery | `yarn test:e2e:web:manual-webview-recovery` | Pixel 5 mobile Chromium              | Manual runtime proof for malformed shared-link recovery | Authenticated mobile fixture verifies duplicate URL query parameters render the localized invalid-link state, keep the Back action in view, prevent external-link exposure, return to the professional app shell, and allow an exact configured legal URL on a custom trusted host. Local/manual only.                                                    |
 | Professional dashboard responsive | `yarn playwright test --config=playwright.professional-home.config.ts e2e/web/professional-home-responsive.spec.ts` | Pixel 5 mobile Chromium, en-US/pt-BR/es-ES | Compact dashboard regression | Authenticated professional fixture verifies no horizontal overflow, readable full-width cards below 400 CSS px, a wrapped task CTA, and the two-column summary layout at 412 CSS px. Evidence is local/manual unless selected by the feature-impact runner. |
 | Server auth             | `yarn test:e2e:web:server`                  | Chromium, Firefox, WebKit            | Real client/server browser contract and PR gate         | Email create/sign-in, terms, role onboarding, HttpOnly cookie attributes, refresh rotation, ready-home restoration with error-state rejection, and logout. Local runs default to sibling `server`; CI passes the coordinated backend checkout through `MYCHAMPIONS_SERVER_ROOT`. The backend uses in-memory auth state and never runs against production. |
@@ -24,6 +24,20 @@ also exercises mobile (390x844) and tablet (820x1000) viewports for student
 onboarding, camera-denied/manual invite fallback, and overflow safety. It does
 not replace the existing smoke, functional, accessibility, server-auth, or
 flow-atlas batches.
+
+The authentication flow atlas is registered as `web:flow-atlas-auth` with the
+standard Playwright runner. Its required CI projects are `mobile-auth`,
+`mobile-auth-pt`, and `mobile-auth-es`; each uses true Pixel 5 mobile
+emulation with touch input and the corresponding locale. The local auth-flow
+config retains the same three mobile lanes plus tablet and desktop review
+lanes. This keeps the first-run auth redesign covered by a required mobile
+regression signal while preserving the larger screenshot package for manual
+review. The atlas is also mapped to the `auth` feature so every auth-impact
+change selects all three localized mobile projects even when the atlas spec
+itself is unchanged.
+The atlas also verifies localized Google/Apple accessible names and confirms
+sign-in password validation renders between the password field and the primary
+CTA.
 
 The training search suite runs with an isolated Playwright configuration and
 Pixel 5 mobile emulation. It covers the initial, loading, empty, error with

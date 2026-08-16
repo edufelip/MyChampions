@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
 import {
@@ -25,6 +26,7 @@ import { useAnalytics } from '@/features/analytics/use-analytics';
 import { signInWithAppleProviderTokenFromSource } from '@/features/auth/apple-social-auth-source';
 import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
+import { createAuthSubmissionGate } from '@/features/auth/auth-submission-gate';
 import { signInWithEmailPasswordFromSource } from '@/features/auth/email-auth-source';
 import { signInWithGoogleProviderTokenFromSource } from '@/features/auth/google-social-auth-source';
 import {
@@ -64,7 +66,10 @@ export default function SignInScreen() {
   const [errors, setErrors] = useState<SignInValidationErrors>({});
   const [submitError, setSubmitError] = useState<SignInErrorMessageKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submissionGateRef = useRef(createAuthSubmissionGate());
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
+  const insets = useSafeAreaInsets();
 
   const buildAuthRoute = (pathname: '/auth/create-account') => {
     if (!returnTo) {
@@ -101,6 +106,17 @@ export default function SignInScreen() {
     setPassword(value);
   };
 
+  const beginSubmission = () => {
+    if (!submissionGateRef.current.tryAcquire()) return false;
+    setSubmitting(true);
+    return true;
+  };
+
+  const endSubmission = () => {
+    submissionGateRef.current.release();
+    setSubmitting(false);
+  };
+
   const onEmailPasswordSignIn = async (submittedPassword?: string) => {
     const submissionInput = {
       email: emailRef.current,
@@ -118,8 +134,9 @@ export default function SignInScreen() {
       return;
     }
 
+    if (!beginSubmission()) return;
+
     emitEvent(buildSignInSubmitted('email_password'));
-    setSubmitting(true);
     try {
       if (await signInWithE2EEmailPassword(submissionInput.email, submissionInput.password)) {
         return;
@@ -131,11 +148,12 @@ export default function SignInScreen() {
       emitEvent(buildSignInFailed('email_password', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
     } finally {
-      setSubmitting(false);
+      endSubmission();
     }
   };
 
   const onGoogleSignIn = async () => {
+    if (!beginSubmission()) return;
     setSubmitError(null);
     emitEvent(buildSignInSubmitted('google'));
 
@@ -167,10 +185,13 @@ export default function SignInScreen() {
       const reason = normalizeSignInReason(error);
       emitEvent(buildSignInFailed('google', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
+    } finally {
+      endSubmission();
     }
   };
 
   const onAppleSignIn = async () => {
+    if (!beginSubmission()) return;
     setSubmitError(null);
     emitEvent(buildSignInSubmitted('apple'));
 
@@ -203,7 +224,7 @@ export default function SignInScreen() {
       emitEvent(buildSignInFailed('apple', reason));
       setSubmitError(mapSignInReasonToMessageKey(reason));
     } finally {
-      setSubmitting(false);
+      endSubmission();
     }
   };
 
@@ -214,17 +235,11 @@ export default function SignInScreen() {
     >
       <Stack.Screen options={{ title: t('auth.signin.cta_primary'), headerShown: false }} />
 
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
-      />
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
-      />
-
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + 28, paddingTop: insets.top + 24 },
+        ]}
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -233,12 +248,20 @@ export default function SignInScreen() {
         <View
           style={[styles.titleArea, isKeyboardVisible ? styles.titleAreaKeyboardVisible : null]}
         >
-          <Image
-            accessibilityLabel={t('a11y.brand_logo')}
-            contentFit="contain"
-            source={require('../../assets/images/logo.svg')}
-            style={[styles.brandLogo, isKeyboardVisible ? styles.brandLogoKeyboardVisible : null]}
-          />
+          <View
+            style={[
+              styles.brandMark,
+              isKeyboardVisible ? styles.brandMarkKeyboardVisible : null,
+              { backgroundColor: theme.color.accentPrimarySoft },
+            ]}
+          >
+            <Image
+              accessibilityLabel={t('a11y.brand_logo')}
+              contentFit="contain"
+              source={require('../../assets/images/logo.svg')}
+              style={styles.brandLogo}
+            />
+          </View>
           <Text testID="auth.signIn.title" style={[styles.title, { color: palette.text }]}>
             {t('auth.signin.title')}
           </Text>
@@ -249,22 +272,28 @@ export default function SignInScreen() {
 
         <View style={styles.formWrapper}>
           <View style={styles.formSection}>
-            <Text style={[styles.fieldLabel, styles.emailFieldLabel, { color: palette.text }]}>
+            <Text style={[styles.fieldLabel, { color: palette.text }]}>
               {t('auth.signin.field.email')}
             </Text>
             <TextInput
               accessibilityLabel={t('auth.signin.field.email')}
               autoCapitalize="none"
               autoComplete="email"
+              onBlur={() => setFocusedField(null)}
               keyboardType="email-address"
               onChangeText={onEmailChange}
+              onFocus={() => setFocusedField('email')}
               placeholder={t('auth.signin.placeholder.email')}
               placeholderTextColor={palette.icon}
               style={[
                 styles.input,
                 {
                   backgroundColor: theme.color.surface,
-                  borderColor: 'transparent',
+                  borderColor: errors.email
+                    ? theme.color.danger
+                    : focusedField === 'email'
+                      ? theme.color.accentPrimary
+                      : theme.color.textTertiary,
                   color: palette.text,
                 },
               ]}
@@ -292,7 +321,9 @@ export default function SignInScreen() {
                 accessibilityLabel={t('auth.field.password')}
                 autoCapitalize="none"
                 autoComplete="password"
+                onBlur={() => setFocusedField(null)}
                 onChangeText={onPasswordChange}
+                onFocus={() => setFocusedField('password')}
                 onSubmitEditing={({ nativeEvent }) => {
                   void onEmailPasswordSignIn(nativeEvent.text);
                 }}
@@ -305,7 +336,11 @@ export default function SignInScreen() {
                   styles.passwordInput,
                   {
                     backgroundColor: theme.color.surface,
-                    borderColor: 'transparent',
+                    borderColor: errors.password
+                      ? theme.color.danger
+                      : focusedField === 'password'
+                        ? theme.color.accentPrimary
+                        : theme.color.textTertiary,
                     color: palette.text,
                   },
                 ]}
@@ -319,7 +354,13 @@ export default function SignInScreen() {
                 accessibilityRole="button"
                 onPress={() => setShowPassword((current) => !current)}
                 testID="auth.signIn.passwordToggle"
-                style={[styles.passwordIconButton, { backgroundColor: theme.color.surfaceMuted }]}
+                style={[
+                  styles.passwordIconButton,
+                  {
+                    backgroundColor: theme.color.surfaceMuted,
+                    borderColor: theme.color.textTertiary,
+                  },
+                ]}
               >
                 <MaterialIcons
                   color={palette.text}
@@ -340,37 +381,6 @@ export default function SignInScreen() {
               </Text>
             </Pressable>
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                void onEmailPasswordSignIn();
-              }}
-              disabled={submitting}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                {
-                  backgroundColor: theme.color.accentPrimary,
-                  opacity: submitting ? 0.7 : 1,
-                  transform: [{ scale: pressed ? 0.96 : 1 }],
-                },
-              ]}
-              testID="auth.signIn.submitButton"
-            >
-              {submitting ? (
-                <ActivityIndicator
-                  accessibilityLabel={t('a11y.loading.submitting')}
-                  color={primaryButtonForeground}
-                />
-              ) : (
-                <>
-                  <Text style={[styles.primaryButtonText, { color: primaryButtonForeground }]}>
-                    {t('auth.signin.cta_primary')}
-                  </Text>
-                  <MaterialIcons color={primaryButtonForeground} name="arrow-forward" size={20} />
-                </>
-              )}
-            </Pressable>
-
             <View accessibilityLiveRegion="polite">
               {errors.password ? (
                 <Text
@@ -381,6 +391,37 @@ export default function SignInScreen() {
                 </Text>
               ) : null}
             </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                void onEmailPasswordSignIn();
+              }}
+              disabled={submitting}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                {
+                  backgroundColor: submitting
+                    ? theme.color.disabledSurface
+                    : theme.color.accentPrimary,
+                  transform: [{ scale: pressed ? 0.99 : 1 }],
+                },
+              ]}
+              testID="auth.signIn.submitButton"
+            >
+              {submitting ? (
+                <ActivityIndicator
+                  accessibilityLabel={t('a11y.loading.submitting')}
+                  color={submitting ? theme.color.disabledText : primaryButtonForeground}
+                />
+              ) : (
+                <>
+                  <Text style={[styles.primaryButtonText, { color: primaryButtonForeground }]}>
+                    {t('auth.signin.cta_primary')}
+                  </Text>
+                  <MaterialIcons color={primaryButtonForeground} name="arrow-forward" size={20} />
+                </>
+              )}
+            </Pressable>
 
             <View accessibilityRole="alert">
               {submitError ? (
@@ -394,44 +435,68 @@ export default function SignInScreen() {
             </View>
           </View>
 
-          <Text style={[styles.dividerText, { color: palette.icon }]}>
-            {t('auth.signin.or_continue')}
-          </Text>
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: theme.color.border }]} />
+            <Text style={[styles.dividerText, { color: palette.icon }]}>
+              {t('auth.signin.or_continue')}
+            </Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.color.border }]} />
+          </View>
 
           <View style={styles.socialRow}>
             <Pressable
+              accessibilityLabel={t('auth.social.google')}
               accessibilityRole="button"
               disabled={submitting}
               onPress={onGoogleSignIn}
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: theme.color.surface,
-                  opacity: submitting ? 0.5 : 1,
+                  backgroundColor: submitting ? theme.color.disabledSurface : theme.color.surface,
+                  borderColor: submitting ? theme.color.disabledBorder : theme.color.textTertiary,
                 },
               ]}
               testID="auth.signIn.googleButton"
             >
-              <AntDesign name="google" size={20} color={theme.color.accentPrimary} />
-              <Text style={[styles.socialButtonText, { color: palette.text }]}>
+              <AntDesign
+                name="google"
+                size={20}
+                color={submitting ? theme.color.disabledText : theme.color.accentPrimary}
+              />
+              <Text
+                style={[
+                  styles.socialButtonText,
+                  { color: submitting ? theme.color.disabledText : palette.text },
+                ]}
+              >
                 {t('auth.social.google')}
               </Text>
             </Pressable>
             <Pressable
+              accessibilityLabel={t('auth.social.apple')}
               accessibilityRole="button"
               disabled={submitting}
               onPress={onAppleSignIn}
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: theme.color.surface,
-                  opacity: submitting ? 0.5 : 1,
+                  backgroundColor: submitting ? theme.color.disabledSurface : theme.color.surface,
+                  borderColor: submitting ? theme.color.disabledBorder : theme.color.textTertiary,
                 },
               ]}
               testID="auth.signIn.appleButton"
             >
-              <Ionicons name="logo-apple" size={20} color={palette.text} />
-              <Text style={[styles.socialButtonText, { color: palette.text }]}>
+              <Ionicons
+                name="logo-apple"
+                size={20}
+                color={submitting ? theme.color.disabledText : palette.text}
+              />
+              <Text
+                style={[
+                  styles.socialButtonText,
+                  { color: submitting ? theme.color.disabledText : palette.text },
+                ]}
+              >
                 {t('auth.social.apple')}
               </Text>
             </Pressable>
@@ -460,85 +525,72 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    overflow: 'hidden',
-  },
-  blob: {
-    borderRadius: 999,
-    opacity: 0.6,
-    position: 'absolute',
-  },
-  blobTopLeft: {
-    height: 300,
-    left: -110,
-    top: -80,
-    width: 300,
-  },
-  blobBottomRight: {
-    bottom: -100,
-    height: 340,
-    right: -130,
-    width: 340,
   },
   content: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingBottom: 48,
-    paddingTop: 20,
   },
   titleArea: {
-    alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 64,
-  },
-  titleAreaKeyboardVisible: {
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 28,
     marginTop: 16,
   },
-  brandLogo: {
-    borderRadius: 20,
-    height: 100,
-    marginBottom: 16,
-    overflow: 'hidden',
-    width: 100,
+  titleAreaKeyboardVisible: {
+    marginBottom: 20,
+    marginTop: 0,
   },
-  brandLogoKeyboardVisible: {
+  brandMark: {
+    alignItems: 'center',
     borderRadius: 16,
-    height: 72,
-    marginBottom: 10,
-    width: 72,
+    height: 64,
+    justifyContent: 'center',
+    marginBottom: 20,
+    width: 64,
+  },
+  brandMarkKeyboardVisible: {
+    height: 48,
+    marginBottom: 14,
+    width: 48,
+  },
+  brandLogo: {
+    borderRadius: 12,
+    height: 48,
+    overflow: 'hidden',
+    width: 48,
   },
   formWrapper: {
-    gap: 14,
+    gap: 18,
   },
   title: {
     fontFamily: Fonts.rounded,
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: '700',
-    textAlign: 'center',
+    lineHeight: 34,
+    maxWidth: 330,
+    textAlign: 'left',
   },
   subtitle: {
     fontSize: 15,
-    marginTop: 6,
-    textAlign: 'center',
+    lineHeight: 21,
+    marginTop: 8,
+    maxWidth: 330,
+    textAlign: 'left',
   },
   formSection: {
-    gap: 10,
+    gap: 8,
   },
   fieldLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    marginLeft: 12,
-  },
-  emailFieldLabel: {
-    marginTop: 16,
+    letterSpacing: 0.1,
   },
   input: {
-    borderRadius: 28,
-    borderWidth: 2,
+    borderRadius: 12,
+    borderWidth: 1,
     fontSize: 16,
-    minHeight: 56,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    minHeight: 52,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   passwordField: {
     justifyContent: 'center',
@@ -549,23 +601,25 @@ const styles = StyleSheet.create({
   },
   passwordIconButton: {
     alignItems: 'center',
-    borderRadius: 18,
+    borderRadius: 10,
+    borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 36,
-    minWidth: 36,
+    height: 44,
     position: 'absolute',
     right: 10,
+    width: 44,
   },
   inlineError: {
-    fontSize: 13,
-    paddingHorizontal: 12,
+    fontSize: 12,
+    lineHeight: 17,
+    paddingHorizontal: 0,
   },
   submitError: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     lineHeight: 20,
-    marginTop: 2,
-    paddingHorizontal: 12,
+    marginTop: 4,
+    paddingHorizontal: 0,
   },
   forgotPasswordLink: {
     alignSelf: 'flex-end',
@@ -580,22 +634,31 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    borderRadius: 28,
+    borderRadius: 12,
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    minHeight: 56,
-    marginTop: 2,
+    minHeight: 52,
+    marginTop: 4,
     paddingHorizontal: 16,
   },
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '700',
   },
+  dividerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
   dividerText: {
-    alignSelf: 'center',
     fontSize: 14,
-    marginTop: 6,
+    lineHeight: 20,
   },
   socialRow: {
     flexDirection: 'row',
@@ -604,12 +667,13 @@ const styles = StyleSheet.create({
   },
   socialButton: {
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 1,
     flex: 1,
     flexDirection: 'row',
     gap: 10,
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 52,
     paddingHorizontal: 16,
   },
   socialButtonText: {
@@ -622,9 +686,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
-    marginTop: 'auto',
-    paddingBottom: 16,
-    paddingTop: 24,
+    marginTop: 26,
+    paddingBottom: 8,
+    paddingTop: 20,
   },
   secondaryButtonHint: {
     fontSize: 14,

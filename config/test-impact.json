@@ -497,7 +497,7 @@
     "web:flow-atlas-auth": {
       "runner": "playwright-evidence",
       "playwrightConfig": "playwright.flows-auth.config.ts",
-      "projects": ["mobile", "tablet", "web"],
+      "projects": ["mobile-auth", "mobile-auth-pt", "mobile-auth-es"],
       "specs": ["e2e/web-flows-auth/authentication-flow-atlas.spec.ts"],
       "grep": "@feature:auth",
       "tier": "evidence",
