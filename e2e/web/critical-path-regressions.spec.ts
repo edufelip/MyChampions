@@ -50,19 +50,6 @@ const responsiveViewports = [
   { name: 'tablet', width: 820, height: 1000 },
 ] as const;
 
-async function chooseProfessional(page: Page) {
-  await page.goto('/auth/role-selection');
-  await page.getByTestId('auth.roleSelection.professionalCard').click();
-  await page.getByTestId('auth.roleSelection.continueButton').click();
-  await expect(page.getByTestId('pro.specialty.screen')).toBeVisible();
-  await page.getByTestId('pro.specialty.add.nutritionist').click();
-  await page.getByTestId('pro.specialty.credential.skip').click();
-  await page.getByTestId('pro.specialty.add.fitness_coach').click();
-  await page.getByTestId('pro.specialty.credential.skip').click();
-  await page.getByTestId('pro.specialty.cta_continue').click();
-  await expect(page.getByTestId('pro.home.screen').last()).toBeVisible();
-}
-
 test.describe('@critical @feature:auth @feature:connections @feature:subscription critical product paths', () => {
   for (const viewport of responsiveViewports) {
     test(`${viewport.name} student entry reaches manual connection fallback`, async ({

@@ -53,7 +53,10 @@ test('web dialog accessibility hook names the existing React Native Modal ancest
     /if \(ownsDialogRole\) \{\s*dialogEl\.setAttribute\('role', 'dialog'\);\s*dialogEl\.setAttribute\('aria-modal', 'true'\);\s*\}/,
   );
   assert.match(dialogHookSource, /dialogEl\.setAttribute\('aria-labelledby', generatedTitleId\)/);
-  assert.match(dialogHookSource, /const canApplyDialogSemantics = Boolean\(dialogEl && title\)/);
+  // Not gated on `title`: a dialogLabel-only consumer (no dialogTitleTestID, e.g. the
+  // student QR modal) has no title node at all, so requiring one here would silently
+  // disable aria-label application for that variant.
+  assert.match(dialogHookSource, /const canApplyDialogSemantics = Boolean\(dialogEl\)/);
 });
 
 test('web dialog accessibility hook restores prior dialog-ancestor attributes on cleanup, gated by ownership', () => {

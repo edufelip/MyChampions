@@ -30,10 +30,7 @@ test('pending bulk deny rechecks the latest write lock on native confirmation', 
   const source = readFileSync(join(root, 'app', 'professional', 'pending.tsx'), 'utf8');
 
   assert.match(source, /const isWriteLockedRef = useRef\(isWriteLocked\)/);
-  assert.match(
-    source,
-    /if \(isWriteLockedRef\.current\)[\s\S]*?t\('offline\.write_lock'\)/,
-  );
+  assert.match(source, /if \(isWriteLockedRef\.current\)[\s\S]*?t\('offline\.write_lock'\)/);
   assert.match(source, /useLayoutEffect\(\(\) => \{[\s\S]*?isWriteLockedRef\.current/);
 });
 
@@ -48,7 +45,11 @@ test('web dialog fallback focus restores its prior tabindex attribute', () => {
 test('E2E network override events remain dev-only and ignore invalid values', () => {
   const source = readFileSync(join(root, 'features', 'offline', 'use-network-status.ts'), 'utf8');
 
-  assert.match(source, /supportsE2ENetworkStatusOverride = isDev && isDevVariant/);
-  assert.match(source, /supportsE2ENetworkStatusOverride/);
-  assert.match(source, /if \(override\) setStatus\(override\)/);
+  // Dev-only gating and value validation live in resolveE2ENetworkStatusOverride
+  // (covered behaviorally by network-status-override.logic.test.ts); this hook must
+  // route every override read through it rather than re-deriving dev/variant checks
+  // inline.
+  assert.match(source, /resolveE2ENetworkStatusOverride\(\{/);
+  assert.match(source, /isDev: typeof __DEV__ !== 'undefined' && __DEV__/);
+  assert.match(source, /if \(nextOverride\) setStatus\(nextOverride\)/);
 });
