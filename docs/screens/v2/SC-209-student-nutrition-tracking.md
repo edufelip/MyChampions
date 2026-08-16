@@ -36,6 +36,7 @@
 - Student may submit change request while assigned-plan edit remains blocked.
 - Offline mode must show persistent banner and explicit write-lock reasons for blocked mutations.
 - Effective hydration target uses nutritionist-defined goal when active assignment override exists; otherwise student personal goal is used.
+- Hydration widget's amount input and `Log Intake` action stack vertically (full width) below a 480px viewport width instead of sharing a row, so the action and its localized label (en-US, pt-BR, es-ES) never clip against the card bounds on narrow phones; above 480px they remain side by side. Both controls preserve a minimum 44px touch height in either layout (ET-108).
 
 ## Data Contract
 - Inputs:

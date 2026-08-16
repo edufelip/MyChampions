@@ -16,6 +16,10 @@ import {
   buildInvitePendingConfirmed,
   buildInvitePendingDenied,
   buildInvitePendingBulkDenied,
+  buildInviteCodeRotationRequested,
+  buildInviteCodeRotationCanceled,
+  buildInviteCodeRotationSucceeded,
+  buildInviteCodeRotationFailed,
   redactEventProperties,
 } from './analytics.logic';
 
@@ -147,6 +151,26 @@ test('buildInvitePendingBulkDenied produces professional bulk deny analytics eve
   assert.equal(event.properties.result, 'success');
   assert.equal(event.properties.role_context, 'professional');
   assert.equal(event.properties.pending_count, 3);
+});
+
+test('invite-code rotation analytics events describe lifecycle without sensitive values', () => {
+  assert.deepEqual(buildInviteCodeRotationRequested(), {
+    name: 'invite.rotation.requested',
+    properties: {
+      surface: 'relationship_management',
+      step: 'rotate',
+      result: 'success',
+      role_context: 'professional',
+    },
+  });
+  assert.equal(buildInviteCodeRotationCanceled().properties.result, 'canceled');
+  assert.equal(buildInviteCodeRotationSucceeded().properties.result, 'success');
+  const failed = buildInviteCodeRotationFailed('network');
+  assert.equal(failed.name, 'invite.rotation.failed');
+  assert.equal(failed.properties.result, 'failure');
+  assert.equal(failed.properties.reason_code, 'network');
+  assert.equal('invite_code' in failed.properties, false);
+  assert.equal('code' in failed.properties, false);
 });
 
 // --- redactEventProperties ---

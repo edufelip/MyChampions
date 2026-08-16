@@ -1,4 +1,4 @@
-export type StudentRosterViewState = 'hero_empty' | 'list_shell';
+export type StudentRosterViewState = 'hero_empty' | 'error' | 'list_shell';
 
 type BulkAssignableStudent = {
   nutritionStatus: 'active' | 'pending' | 'none';
@@ -18,11 +18,19 @@ export type ResolveStudentRosterViewStateInput = {
 };
 
 /**
- * SC-205 view-state arbitration so loading and empty states do not overlap.
+ * SC-205 view-state arbitration so loading, error, and empty states do not overlap.
+ *
+ * A settled roster-read error takes priority over the empty hero state so
+ * search/filter/bulk-assign controls stay gated behind Retry instead of
+ * silently falling back to "No students yet" copy.
  */
 export function resolveStudentRosterViewState(
   input: ResolveStudentRosterViewStateInput,
 ): StudentRosterViewState {
+  if (input.hasLoadedOnce && !input.isLoading && input.hasError) {
+    return 'error';
+  }
+
   if (input.hasLoadedOnce && !input.isLoading && !input.hasError && input.visibleCount === 0) {
     return 'hero_empty';
   }

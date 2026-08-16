@@ -219,6 +219,49 @@ export function buildCustomMealPlanSnapshot(meal: CustomMeal): CustomMealPlanSna
   };
 }
 
+// ─── Edit-resource state machine (ET-100, TC-401, SC-214) ─────────────────────
+
+/** Loading status the custom-meal builder screen renders against for an edit route. */
+export type EditLoadStatus = 'create' | 'loading' | 'not-found' | 'load-error' | 'ready';
+
+/** Minimal shape of the meals-list load state consumed by {@link resolveEditLoadStatus}. */
+export type EditMealsListState =
+  | { kind: 'idle' }
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | { kind: 'ready'; meals: Pick<CustomMeal, 'id'>[] };
+
+/**
+ * Resolves the edit-route status for /nutrition/custom-meals/:mealId.
+ *
+ * A missing, deleted, or unauthorized edit ID must never render a blank editable
+ * form as if the resource exists — the screen renders 'not-found' (no matching
+ * meal once the list loaded) or 'load-error' (the list itself failed to load)
+ * instead, with Retry and Back-to-recipes actions.
+ *
+ * `hasHydrated` latches once a real meal has hydrated into the form: after that
+ * point a later background reload — even one that comes back without the meal or
+ * with an error — must not flip the screen back to 'not-found'/'load-error' and
+ * discard an in-progress draft.
+ */
+export function resolveEditLoadStatus(params: {
+  isCreateMode: boolean;
+  hasHydrated: boolean;
+  mealId: string | undefined;
+  mealsState: EditMealsListState;
+}): EditLoadStatus {
+  const { isCreateMode, hasHydrated, mealId, mealsState } = params;
+
+  if (isCreateMode) return 'create';
+  if (hasHydrated) return 'ready';
+
+  if (mealsState.kind === 'ready') {
+    return mealsState.meals.some((meal) => meal.id === mealId) ? 'ready' : 'not-found';
+  }
+  if (mealsState.kind === 'error') return 'load-error';
+  return 'loading';
+}
+
 // ─── Error normalization ──────────────────────────────────────────────────────
 
 export function normalizeMealActionError(error: unknown): MealActionErrorReason {

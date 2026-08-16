@@ -20,6 +20,7 @@ export const esES: Record<TranslationKey, string> = {
   'auth.placeholder.password_confirmation': 'Confirmar contraseña',
   'auth.validation.name_required': 'El nombre es obligatorio.',
   'auth.validation.email_required': 'El correo es obligatorio.',
+  'auth.validation.email_invalid': 'Ingresa un correo válido.',
   'auth.validation.password_required': 'La contraseña es obligatoria.',
   'auth.validation.password_confirmation_required': 'La confirmación de contraseña es obligatoria.',
   'auth.validation.password_policy':
@@ -43,6 +44,42 @@ export const esES: Record<TranslationKey, string> = {
     'Este correo ya está vinculado a otro método de acceso. Inicia sesión primero con ese método.',
   'auth.signin.error.configuration':
     'La autenticación aún no está configurada. Define la URL del servidor de MyChampions e inténtalo de nuevo.',
+  'auth.signin.forgot_password': '¿Olvidaste tu contraseña?',
+  'auth.forgot_password.title': 'Restablece tu contraseña',
+  'auth.forgot_password.subtitle':
+    'Escribe el correo de tu cuenta y te enviaremos instrucciones para restablecer tu contraseña si existe una cuenta.',
+  'auth.forgot_password.cta_primary': 'Enviar instrucciones',
+  'auth.forgot_password.success.title': 'Revisa tu correo',
+  'auth.forgot_password.success.body':
+    'Si existe una cuenta para {email}, te enviamos instrucciones para restablecer tu contraseña.',
+  'auth.forgot_password.success.retry': 'Enviar de nuevo',
+  'auth.forgot_password.cta_back_signin': 'Volver a iniciar sesión',
+  'auth.forgot_password.error.generic':
+    'No pudimos enviar las instrucciones ahora. Inténtalo de nuevo.',
+  'auth.reset_password.title': 'Establece una nueva contraseña',
+  'auth.reset_password.subtitle':
+    'Pega el código de restablecimiento de tu correo y elige una nueva contraseña.',
+  'auth.reset_password.field.email': 'Correo electrónico',
+  'auth.reset_password.field.token': 'Código de restablecimiento',
+  'auth.reset_password.placeholder.token': 'Pega el código de tu correo de restablecimiento',
+  'auth.reset_password.field.new_password': 'Nueva contraseña',
+  'auth.reset_password.field.new_password_confirmation': 'Confirmar nueva contraseña',
+  'auth.reset_password.placeholder.new_password': 'Nueva contraseña',
+  'auth.reset_password.placeholder.new_password_confirmation': 'Confirmar nueva contraseña',
+  'auth.reset_password.cta_primary': 'Restablecer contraseña',
+  'auth.reset_password.validation.token_required': 'El código de restablecimiento es obligatorio.',
+  'auth.reset_password.success.title': 'Contraseña actualizada',
+  'auth.reset_password.success.body':
+    'Tu contraseña se ha restablecido. Inicia sesión con tu nueva contraseña.',
+  'auth.reset_password.cta_go_signin': 'Ir a iniciar sesión',
+  'auth.reset_password.error.invalid_or_expired_token':
+    'Este enlace de restablecimiento no es válido o ha caducado. Solicita uno nuevo.',
+  'auth.reset_password.error.invalid_email': 'El correo electrónico no es válido.',
+  'auth.reset_password.error.account_not_found': 'No se encontró ninguna cuenta para este correo.',
+  'auth.reset_password.error.network':
+    'No pudimos conectar ahora. Revisa tu conexión e inténtalo de nuevo.',
+  'auth.reset_password.error.configuration':
+    'La autenticación aún no está configurada. Define la URL del servidor de MyChampions e inténtalo de nuevo.',
   'auth.terms.title': 'Términos y Privacidad',
   'auth.terms.description':
     'Antes de continuar, revisa y acepta los términos más recientes de My Champions.',
@@ -51,6 +88,10 @@ export const esES: Record<TranslationKey, string> = {
   'auth.terms.accept_button': 'Aceptar y continuar',
   'auth.terms.offline_hint': 'Necesitas internet para abrir el enlace legal.',
   'auth.terms.version': 'Versión obligatoria: {version}',
+  'shared.webview.browser_hint': 'Esta página legal se abre en una nueva pestaña del navegador.',
+  'shared.webview.open_cta': 'Abrir {title}',
+  'shared.webview.open_error':
+    'No se pudo abrir el enlace automáticamente. Intenta el botón de nuevo o usa esta dirección: {url}',
   'auth.terms.error.link_unavailable':
     'No se pudo abrir el enlace de términos ahora. Inténtalo de nuevo.',
   'auth.social.google': 'Google',
@@ -289,11 +330,17 @@ export const esES: Record<TranslationKey, string> = {
   'student.nutrition.meal.logged_badge': 'Registrado',
   'student.nutrition.meal.log_button': 'Registrar comida',
   'student.nutrition.meal.items_label': 'Alimentos',
+  'student.nutrition.meal.expand': 'Expandir detalles de la comida',
+  'student.nutrition.meal.collapse': 'Contraer detalles de la comida',
+  'student.nutrition.meal.header_expand': 'Expandir detalles de {meal}',
+  'student.nutrition.meal.header_collapse': 'Contraer detalles de {meal}',
   'student.training.title': 'Entrenamientos',
   'student.training.calendar.cta': 'Abrir calendario',
   'student.training.session.title': 'Plan guiado de hoy',
   'student.training.session.body':
     'Tu entrenador asignó una estructura de entrenamiento. Registra tu ejecución y solicita ajustes abajo.',
+  'student.training.session.expand': 'Expandir detalles del entrenamiento',
+  'student.training.session.collapse': 'Contraer detalles del entrenamiento',
   'student.training.empty.title': 'No se encontraron entrenamientos',
   'student.training.empty.body':
     'Aún no tienes un plan de entrenamiento personalizado. Contrata a un entrenador personal para recibir una rutina adaptada a tus objetivos.',
@@ -353,6 +400,8 @@ export const esES: Record<TranslationKey, string> = {
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerar',
   'pro.home.invite_code.rotate_confirm_no': 'Cancelar',
   'pro.home.invite_code.rotate_error': 'No se pudo regenerar el código. Inténtalo de nuevo.',
+  'pro.home.invite_code.rotate_success':
+    'Código de invitación regenerado. Comparte el nuevo código con los alumnos.',
   'pro.home.invite_code.empty': 'No hay código de invitación activo.',
   'pro.home.invite_code.specialty_required':
     'Añade una especialidad antes de crear un código de invitación.',
@@ -414,9 +463,9 @@ export const esES: Record<TranslationKey, string> = {
     'Añada Nutricionista o Entrenador Personal para permitir la eliminación',
   'pro.specialty.removal_blocked.title': 'No se puede eliminar la especialidad',
   'pro.specialty.removal_blocked.active_students_body':
-    'Esta especialidad tiene {count} alumno{plural} activo. Desvincule o complete las asignaciones activas primero.',
+    'Esta especialidad tiene {count} alumno{plural} activo{plural}. Desvincule o complete las asignaciones activas primero.',
   'pro.specialty.removal_blocked.pending_students_body':
-    'Esta especialidad tiene {count} alumno{plural} pendiente. Acepte o rechace las solicitudes pendientes primero.',
+    'Esta especialidad tiene {count} alumno{plural} pendiente{plural}. Acepte o rechace las solicitudes pendientes primero.',
   'pro.specialty.removal_blocked.last_specialty_body':
     'Debe tener al menos una especialidad. Añada una nueva especialidad antes de eliminar esta.',
   'pro.specialty.remove_blocked.dismiss': 'Descartar',
@@ -435,6 +484,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.students.empty.cta_add_first': 'Añadir primer alumno',
   'pro.students.empty.cta_share_link': 'Compartir enlace de invitación',
   'pro.students.error': 'No se pudo cargar la lista de alumnos. Inténtalo de nuevo.',
+  'pro.students.error.cta_back': 'Volver al panel',
   'pro.students.bulk_assign.cta': 'Asignación masiva',
   'pro.students.bulk_assign.cta_confirm': 'Asignar a {count} alumnos',
   'pro.students.bulk_assign.selection_mode': 'Asignación Masiva',
@@ -710,6 +760,9 @@ export const esES: Record<TranslationKey, string> = {
   'meal.builder.validation.cost_non_negative': 'El coste de ingredientes debe ser cero o más.',
   'meal.builder.error.save': 'No se pudo guardar la comida. Inténtalo de nuevo.',
   'meal.builder.error.load': 'No se pudo cargar la comida. Inténtalo de nuevo.',
+  'meal.builder.error.not_found':
+    'No se pudo encontrar esta comida. Puede que haya sido eliminada o que el enlace sea incorrecto.',
+  'meal.builder.error.cta_back_to_library': 'Volver a las recetas',
   'meal.builder.share.error.needs_save': 'Guarda la comida primero para compartirla.',
   'meal.builder.share.error.unknown':
     'No se pudo generar el enlace para compartir. Inténtalo de nuevo.',
@@ -968,6 +1021,7 @@ export const esES: Record<TranslationKey, string> = {
 
   // Support
   'settings.account.support.dialog.title': 'Contactar soporte',
+  'settings.account.support.dialog.close': 'Cerrar diálogo de soporte',
   'settings.account.support.dialog.disclaimer':
     'Esta pantalla es para enviar mensajes a nuestro equipo de soporte.',
   'settings.account.support.field.subject.label': 'Asunto',

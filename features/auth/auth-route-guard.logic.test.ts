@@ -54,6 +54,32 @@ test('guard allows unauthenticated user on sign-in route', () => {
   assert.equal(redirect, null);
 });
 
+test('guard allows unauthenticated user on the forgot-password route', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: false,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/forgot-password',
+  });
+
+  assert.equal(redirect, null);
+});
+
+test('guard allows unauthenticated user on the reset-password deep-link route', () => {
+  // app/_layout.tsx normalizes usePathname() (query-free by contract) before
+  // calling this function, so the guard only ever sees the bare path here —
+  // it never inspects or strips the token/email query params off the
+  // incoming deep link.
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: false,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/password-reset',
+  });
+
+  assert.equal(redirect, null);
+});
+
 test('guard redirects unauthenticated user from role-selection to sign-in', () => {
   const redirect = resolveAuthGuardRedirect({
     isAuthenticated: false,
