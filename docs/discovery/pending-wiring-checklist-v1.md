@@ -234,11 +234,11 @@ Track intentionally deferred implementation wiring so it is completed before rel
   - Search bar filtering by student ID (substring match, case-insensitive)
   - Row-based selection for bulk operations
   - Individual confirm/deny actions per pending request
-  - Bulk deny with confirmation alert showing count and specialty distribution
+  - Bulk deny with a native confirmation alert and a web-compatible accessible confirmation dialog showing the selected count
   - Optimistic removal after successful bulk deny
-  - Error handling with retry CTA
+  - Loading, localized error, and localized success feedback; web errors keep the confirmation dialog actionable
   - Empty state and loading indicators
-- `Done`: All `pro.pending.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (`search.placeholder`, `filter.label`, `bulk_deny.cta`, `bulk_deny.confirm_title`, `bulk_deny.confirm_body`, `bulk_deny.success`, `confirm.cta`, `deny.cta`, `empty`, `error`).
+- `Done`: All `pro.pending.*` localization keys present in `en-US`, `pt-BR`, and `es-ES` (`search.placeholder`, `filter.label`, `bulk_deny.cta`, `bulk_deny.confirm_title`, `bulk_deny.confirm_body`, `bulk_deny.success`, `bulk_deny.error`, `confirm.cta`, `deny.cta`, `empty`, `error`).
 - `Done`: `confirmPendingConnection` and `endConnection` now require the MyChampions server when local bearer auth is available and fail closed without local server auth outside E2E fixtures. Server-owned confirm/end release local pending invite guard/student-slot state, write tracking-access and active-specialty rows, and archive/restore matching nutrition/training plans in local Postgres. Both operations are consumed by `useConnections` in `app/professional/pending.tsx`; legacy Firestore fallback was removed from the mobile connection source.
 
 ## Professional Specialty Removal Assist (BL-011)

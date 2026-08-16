@@ -12,12 +12,23 @@ function isVisibleFocusable(element: HTMLElement): boolean {
   );
 }
 
-export function useWebDialogAccessibility(input: {
+type WebDialogAccessibilityInput = {
   isVisible: boolean;
   onClose: () => void;
   testID: string;
-  dialogTitleTestID?: string;
-}) {
+  focusRestoreTestID?: string;
+} & (
+  | {
+      dialogTitleTestID: string;
+      dialogLabel?: string;
+    }
+  | {
+      dialogTitleTestID?: never;
+      dialogLabel: string;
+    }
+);
+
+export function useWebDialogAccessibility(input: WebDialogAccessibilityInput) {
   const onCloseRef = useRef(input.onClose);
   useEffect(() => {
     onCloseRef.current = input.onClose;
@@ -52,7 +63,7 @@ export function useWebDialogAccessibility(input: {
       title && !previousTitleId
         ? `${input.testID.replace(/[^a-zA-Z0-9_-]/g, '-')}-title`
         : previousTitleId;
-    const canApplyDialogSemantics = Boolean(dialogEl && title);
+    const canApplyDialogSemantics = Boolean(dialogEl);
 
     if (dialogEl && canApplyDialogSemantics) {
       // Only take ownership of role/aria-modal when no ancestor already manages them —
@@ -61,9 +72,11 @@ export function useWebDialogAccessibility(input: {
         dialogEl.setAttribute('role', 'dialog');
         dialogEl.setAttribute('aria-modal', 'true');
       }
-      if (generatedTitleId) {
+      if (title && generatedTitleId) {
         if (!previousTitleId) title?.setAttribute('id', generatedTitleId);
         dialogEl.setAttribute('aria-labelledby', generatedTitleId);
+      } else if (input.dialogLabel) {
+        dialogEl.setAttribute('aria-label', input.dialogLabel);
       }
     }
     const focusable = () =>
@@ -103,9 +116,9 @@ export function useWebDialogAccessibility(input: {
           else dialogEl.setAttribute('role', previousAttributes.role);
           if (previousAttributes.ariaModal === null) dialogEl.removeAttribute('aria-modal');
           else dialogEl.setAttribute('aria-modal', previousAttributes.ariaModal);
-          if (previousAttributes.ariaLabel === null) dialogEl.removeAttribute('aria-label');
-          else dialogEl.setAttribute('aria-label', previousAttributes.ariaLabel);
         }
+        if (previousAttributes.ariaLabel === null) dialogEl.removeAttribute('aria-label');
+        else dialogEl.setAttribute('aria-label', previousAttributes.ariaLabel);
         if (previousAttributes.ariaLabelledBy === null) dialogEl.removeAttribute('aria-labelledby');
         else dialogEl.setAttribute('aria-labelledby', previousAttributes.ariaLabelledBy);
       }
@@ -113,7 +126,33 @@ export function useWebDialogAccessibility(input: {
         if (previousTitleId === null) title.removeAttribute('id');
         else title.setAttribute('id', previousTitleId);
       }
-      previouslyFocused?.focus();
+      window.setTimeout(() => {
+        if (previouslyFocused?.isConnected) {
+          previouslyFocused.focus();
+          return;
+        }
+
+        if (!input.focusRestoreTestID) return;
+        const fallback = document.querySelector<HTMLElement>(
+          `[data-testid="${input.focusRestoreTestID}"]`,
+        );
+        if (!fallback) return;
+        const previousTabIndex = fallback.getAttribute('tabindex');
+        const restoreFallbackTabIndex = () => {
+          if (!fallback.isConnected) return;
+          if (previousTabIndex === null) fallback.removeAttribute('tabindex');
+          else fallback.setAttribute('tabindex', previousTabIndex);
+        };
+        fallback.addEventListener('blur', restoreFallbackTabIndex, { once: true });
+        fallback.setAttribute('tabindex', '-1');
+        fallback.focus();
+      }, 0);
     };
-  }, [input.dialogTitleTestID, input.isVisible, input.testID]);
+  }, [
+    input.dialogLabel,
+    input.dialogTitleTestID,
+    input.focusRestoreTestID,
+    input.isVisible,
+    input.testID,
+  ]);
 }

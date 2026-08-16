@@ -54,10 +54,10 @@ export function SupportModal({
   const isError = state.kind === 'error';
   const isSubmitLocked = isSubmitting || isOffline;
   useWebDialogAccessibility({
+    dialogTitleTestID: 'settings.account.support.dialog.title',
     isVisible,
     onClose: handleClose,
     testID: 'settings.account.support.modal',
-    dialogTitleTestID: 'settings.account.support.dialog.title',
   });
 
   useEffect(() => {

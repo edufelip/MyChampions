@@ -72,7 +72,12 @@ export function ExerciseSearchModal({
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const notesRef = useRef<TextInput>(null);
-  useWebDialogAccessibility({ isVisible, onClose, testID: 'exerciseSearch.modal' });
+  useWebDialogAccessibility({
+    dialogTitleTestID: 'exerciseSearch.title',
+    isVisible,
+    onClose,
+    testID: 'exerciseSearch.modal',
+  });
 
   useEffect(() => {
     if (!isVisible || view !== 'search' || Platform.OS !== 'web') return;
@@ -139,7 +144,10 @@ export function ExerciseSearchModal({
       >
         <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
+            <Text
+              style={[styles.modalTitle, { color: theme.color.textPrimary }]}
+              testID="exerciseSearch.title"
+            >
               {view === 'detail' ? t('pro.plan.item.field.name.label') : dialogTitle}
             </Text>
             <Pressable

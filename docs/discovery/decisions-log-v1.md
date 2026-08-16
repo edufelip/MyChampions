@@ -807,7 +807,12 @@
     required monthly. This change records the first report and keeps local,
     hosted, native, provider, and store-live evidence as separate states.
 
-- `D-203`: ET-71 closes the client-side gap left after the server shipped a
+- `D-204`: Browser bulk-deny actions use a stateful, web-compatible confirmation dialog instead of relying on `Alert.alert`, which is a no-op in the React Native web adapter. The dialog uses the shared web focus/Escape contract, exposes an accessible name, preserves selection on cancel, reports loading/error/success states, and retains the native alert path. Native confirmation rechecks the latest write lock before mutation and reports the localized offline helper when connectivity is lost.
+- `D-205`: Provider-free browser fixtures are scoped by the persisted E2E role so professional pending data cannot contaminate student relationship journeys. Playwright’s product-web configuration always starts a fresh fixture server instead of reusing an unrelated process; fixture-dependent browser evidence must therefore fail closed when the configured server cannot start.
+- `D-206`: The E2E network-status storage-event bridge is browser-only by capability: it may attach or detach listeners only when both `window.addEventListener` and `window.removeEventListener` are callable. Native authenticated screens continue to use NetInfo and must not assume that React Native’s `window` global implements DOM event APIs.
+- `D-207`: Native pending-queue confirmation reads the latest offline write-lock ref from a layout effect before user callbacks can run, so an Alert opened during an online render cannot mutate after the committed state has become offline.
+- `D-208`: Shared browser-dialog fallback focus may temporarily add `tabindex="-1"` when the original trigger is gone, but it must restore the fallback element’s prior `tabindex` attribute when focus leaves the fallback target.
+- `D-215`: ET-71 closes the client-side gap left after the server shipped a
   complete password-reset backend (`POST /auth/password-reset` request +
   `POST /auth/password-reset/confirm` confirm, the latter added by ET-74,
   now merged) with no corresponding mobile UI. ET-74 is `Done`, so both the
@@ -849,6 +854,12 @@
     and create-account emit `buildAuthEntryViewed`/submit/fail analytics
     events; the new screens do not yet) and rate limiting on
     `/auth/password-reset*` (tracked server-side in ET-63).
+  - Note: originally authored as `D-203` on this branch; a concurrent
+    ET-95 branch merge revealed that `D-203` was already claimed twice over
+    (the SC-213 support-dialog entry below, and a prior collision already
+    documented against it), and `D-204`–`D-208` had just been claimed by the
+    ET-95 bulk-deny branch being merged. Renumbered to `D-215`, the next
+    unused ID at merge time, to avoid a further duplicate.
 - `D-202`: Supersedes the AsyncStorage half of `D-151`. Native (iOS/Android)
   server-auth session persistence (`features/auth/server-auth-storage.ts`)
   splits the persisted record across two backing stores instead of writing

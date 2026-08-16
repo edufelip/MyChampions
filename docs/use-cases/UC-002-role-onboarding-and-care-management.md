@@ -193,8 +193,9 @@
 - Main flow:
   1. Professional opens pending queue view.
   2. Professional filters/searches pending entries.
-  3. Professional selects multiple requests and executes bulk deny.
-  4. System updates request states and refreshes pending counters.
+  3. Professional selects multiple requests and opens the bulk-deny confirmation; the browser dialog exposes an accessible name, cancel preserves selection, and confirm executes the denial and reports loading, success, or recoverable error feedback.
+  4. On native, if connectivity changes before confirmation, the platform alert rechecks the write lock, skips the mutation, and explains that the user must reconnect.
+  5. System updates request states and refreshes pending counters.
 - Expected result: Professional can operationally manage queue volume efficiently.
 
 ## UC-002.13 Student Requests Plan Changes

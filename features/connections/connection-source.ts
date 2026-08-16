@@ -148,6 +148,20 @@ export function markE2EInviteCodeRotated(specialty: ConnectionSpecialty): void {
   }
 }
 
+type E2EPendingMutationMode = 'delay' | 'failure';
+
+function getE2EPendingMutationMode(): E2EPendingMutationMode | null {
+  if (typeof window !== 'undefined') {
+    try {
+      const value = window.localStorage.getItem('mychampions.e2e.pending-mutation');
+      if (value === 'delay' || value === 'failure') return value;
+    } catch {
+      // Browser storage is optional in native and privacy-restricted contexts.
+    }
+  }
+  return null;
+}
+
 function getE2EInviteSubmitFixture() {
   const override = getE2EConnectionSourceOverride();
   if (!override) return null;
@@ -204,6 +218,8 @@ function getE2EConnectionFixtures(): ConnectionRecord[] | null {
 
   if (
     process.env.EXPO_PUBLIC_E2E_PRO_PENDING_FIXTURE === 'basic' &&
+    isProfessionalE2EFixtureSession() &&
+    !e2eEndedConnectionIds.has('e2e-professional-pending-connection') &&
     !e2eRotatedInviteSpecialties.has('nutritionist')
   ) {
     connections.push({
@@ -220,6 +236,11 @@ function getE2EConnectionFixtures(): ConnectionRecord[] | null {
   }
 
   return connections;
+}
+
+function isProfessionalE2EFixtureSession(): boolean {
+  if (typeof sessionStorage === 'undefined') return true;
+  return sessionStorage.getItem('mychampions.e2e.locked-role') === 'professional';
 }
 
 function normalizeConnectionSourceError(error: unknown): ConnectionSourceError {
@@ -557,6 +578,13 @@ export async function endConnection(
       const connection = e2eConnections.find((candidate) => candidate.id === connectionId);
       if (!connection) {
         throw new ConnectionSourceError('graphql', 'Connection not found.');
+      }
+      const mutationMode = getE2EPendingMutationMode();
+      if (mutationMode === 'delay') {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+      if (mutationMode === 'failure') {
+        throw new ConnectionSourceError('network', 'Deterministic E2E mutation failure.');
       }
       e2eEndedConnectionIds.add(connectionId);
       return;

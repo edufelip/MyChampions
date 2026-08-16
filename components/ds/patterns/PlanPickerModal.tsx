@@ -34,7 +34,12 @@ export function PlanPickerModal({
     }
   }, [isVisible]);
 
-  useWebDialogAccessibility({ isVisible, onClose, testID: 'planPicker.modal' });
+  useWebDialogAccessibility({
+    dialogTitleTestID: 'planPicker.title',
+    isVisible,
+    onClose,
+    testID: 'planPicker.modal',
+  });
   const filteredPlans =
     plansState.kind === 'ready'
       ? plansState.predefinedPlans.filter((p) => (planType ? p.planType === planType : true))
@@ -53,7 +58,7 @@ export function PlanPickerModal({
           style={[styles.modalContent, { backgroundColor: theme.color.surface }]}
           testID={isVisible && isPresented ? 'planPicker.ready' : undefined}>
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]}>
+            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]} testID="planPicker.title">
               {t('pro.plan.picker.title')}
             </Text>
             <Pressable onPress={onClose} hitSlop={12} testID="planPicker.close">

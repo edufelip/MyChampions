@@ -54,6 +54,12 @@ export function useNetworkStatus(): NetworkStatus {
         'mychampions.e2e.network-status-change',
         onE2ENetworkStatusChange,
       );
+      // The custom event above is the canonical same-tab signal — the native `storage`
+      // event only fires in *other* browsing contexts, never the tab that made the
+      // write. Some E2E specs still hand-dispatch a synthetic `StorageEvent('storage', …)`
+      // to simulate that, so this listener re-reads sessionStorage the same way and stays
+      // wired for backward compatibility with those specs.
+      e2eEventTarget.addEventListener('storage', onE2ENetworkStatusChange);
     }
 
     if (e2eNetworkStatusOverride) {
@@ -64,6 +70,7 @@ export function useNetworkStatus(): NetworkStatus {
             'mychampions.e2e.network-status-change',
             onE2ENetworkStatusChange,
           );
+          e2eEventTarget.removeEventListener('storage', onE2ENetworkStatusChange);
         }
       };
     }
@@ -85,6 +92,7 @@ export function useNetworkStatus(): NetworkStatus {
           'mychampions.e2e.network-status-change',
           onE2ENetworkStatusChange,
         );
+        e2eEventTarget.removeEventListener('storage', onE2ENetworkStatusChange);
       }
     };
   }, [e2eNetworkStatusOverride, isE2EAuthSession]);

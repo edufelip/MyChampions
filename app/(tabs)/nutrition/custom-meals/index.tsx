@@ -550,6 +550,7 @@ function QuickLogPanel({
   const { width: viewportWidth } = useWindowDimensions();
   const usesCenteredDialog = viewportWidth >= 768;
   useWebDialogAccessibility({
+    dialogTitleTestID: 'meal.library.quickLog.title',
     isVisible: true,
     onClose: onCancel,
     testID: 'meal.library.quickLog.panel',
@@ -588,7 +589,7 @@ function QuickLogPanel({
         ]}
         testID="meal.library.quickLog.panel"
       >
-        <Text style={[styles.panelTitle, { color: palette.text }]}>
+        <Text style={[styles.panelTitle, { color: palette.text }]} testID="meal.library.quickLog.title">
           {t('meal.library.quick_log.title')}
         </Text>
         <Text style={[styles.mealName, { color: palette.text }]} numberOfLines={1}>

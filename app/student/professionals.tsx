@@ -380,6 +380,7 @@ function QrScannerModal({
     }, 100);
   }, [onClose]);
   useWebDialogAccessibility({
+    dialogLabel: t('relationship.cta_scan_qr') as string,
     isVisible: isOpen,
     onClose: handleClose,
     testID: 'student.professionals.qrModal',

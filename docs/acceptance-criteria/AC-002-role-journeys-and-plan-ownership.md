@@ -93,6 +93,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-539`: In a browser, confirming sign-out clears the local identity and exposes unauthenticated entry immediately, but a subsequent email/password or social login cannot send its session-establishing request until the credentialed sign-out barrier is released, including when sign-out fails; native bearer-session clearing remains immediate.
 - `AC-266`: After successful sign-in or create-account—including a session-less create-account acknowledgement followed by the client email/password sign-in—users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted. While pending, only the exact configured terms URL reached with the `terms` legal intent may bypass the gate; malformed, repeated, unsafe, or arbitrary approved-origin WebView parameters are rejected and recover to the gate. Exact configured legal URLs may use a trusted HTTPS host outside the default origin without widening arbitrary route access.
 - `AC-267`: A fresh professional SC-207 nutrition or SC-208 training builder reaches Ready after its route-scope reset and exposes the first child action (Add meal or Add session) after valid metadata entry at 390x844 and 320x720 compact web viewports.
+- `AC-268`: On the browser pending-request queue, bulk deny opens an accessible confirmation dialog; cancel preserves the current selection, confirm shows a loading state, successful denial refreshes the pending count and shows localized success feedback, and failures remain actionable with localized error feedback.
 - `AC-541`: SC-207 renders the complete add-food editor in measured screen flow rather than as clipped absolute content, so search, result selection, quantity review, add, and removal confirmation are reachable without coordinate-only interaction on compact iOS and Android viewports. A successful Add removes the editor from the native hierarchy before exposing the new row action.
 - `AC-513`: Camera/AI analysis entry point is visible and accessible in SC-214 (Custom Meal Builder) and SC-215 (Custom Meal Library Quick Log).
 - `AC-514`: Captured meal image is compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission.
@@ -263,8 +264,13 @@ Feature: Role-based onboarding and care assignments
   Scenario: Professional pending queue operations
     Given a professional has multiple pending requests
     When the professional searches/filters the queue and executes bulk deny
-    Then selected requests are denied
-    And pending counters update correctly
+    Then an accessible browser confirmation dialog shows the selected count
+    And cancel or Escape preserves the current selection
+    And the confirmation dialog exposes an accessible name to assistive technology
+    And confirmation exposes a loading state while mutations are in flight
+    And successful denial refreshes the pending counter and shows localized success feedback
+    And a failed mutation leaves an actionable localized error state for retry
+    And native confirmation rechecks connectivity before mutating and shows the localized write-lock helper when offline
 
   Scenario: Student plan change request on assigned plan
     Given a student has a professionally assigned plan

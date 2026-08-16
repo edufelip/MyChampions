@@ -29,6 +29,7 @@ export function InviteCodeRotationModal({
   t: TFn;
 }) {
   useWebDialogAccessibility({
+    dialogTitleTestID: 'pro.home.rotateCodeModal.title',
     isVisible,
     onClose,
     testID: 'pro.home.rotateCodeModal',

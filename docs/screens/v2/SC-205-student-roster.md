@@ -19,6 +19,7 @@
 - Each pending-queue row (`pro.pending.row.N`) is a non-interactive container `View`, never a button/pressable. Selection is a dedicated sibling checkbox control (`pro.pending.checkbox.N`, `accessibilityRole="checkbox"`, 44x44 hit area, keyboard-operable via Space) and Accept/Deny (`pro.pending.acceptButton.N` / `pro.pending.denyButton.N`) are sibling buttons in the same row. No interactive control is nested inside another interactive control, so the web DOM never renders a `<button>` descendant of another `<button>` (ET-106).
 - Selection mode uses an inset elevated action tray with horizontal and bottom clearance around the plan-type chips and assignment CTA.
 - The pending queue begins with an informative summary card that explains the decision, exposes the pending count, and keeps search and request actions in separate task groups.
+- Browser bulk deny uses an accessible stateful confirmation dialog with a selected-count summary, an explicit accessible name, cancel/confirm actions, focus containment, Escape dismissal, loading feedback, and localized success/error result feedback. Native continues to use the platform confirmation alert, rechecks the latest connectivity state before mutating, and shows the localized write-lock helper if connectivity was lost after the alert opened.
 
 ## User Actions
 - Primary:
@@ -44,6 +45,9 @@
 - Ended relationships remain in history view but not in active roster default filter.
 - Pending-queue filtering/search cannot expose records outside professional scope.
 - Bulk deny can operate only on `pending_confirmation` requests and must preserve lifecycle audit metadata.
+- Bulk deny confirmation cancel or Escape dismissal must preserve the current selection; confirmation must show progress, refresh counters after success, and keep an actionable error state when any selected request fails.
+- Bulk deny batches the selected mutations without per-item reloads and performs one final queue refresh after all results settle, so a stale intermediate response cannot overwrite the final state.
+- Bulk deny confirmation must recheck the offline write lock at the moment of native confirmation; an offline confirmation must not mutate and must explain how to recover.
 - Pending-row selection toggles only through the row's dedicated checkbox control, not by pressing elsewhere in the row; this keeps the row itself non-interactive so Accept/Deny remain sibling, independently operable controls (ET-106, D-212).
 - Bulk assignment target list must include only active students eligible for selected plan domain.
 - Each plan-picker row exposes a stable semantic assignment control for native
@@ -71,7 +75,7 @@
 ## Links
 - Functional requirement: FR-105, FR-122, FR-210, FR-224, FR-225
 - Use case: UC-002.2, UC-002.5, UC-002.12, UC-002.20
-- Acceptance criteria: AC-206, AC-215, AC-254, AC-265
+- Acceptance criteria: AC-206, AC-215, AC-254, AC-265, AC-268
 - Business rules: BR-206, BR-214, BR-268, BR-283
-- Test cases: TC-206, TC-215, TC-257, TC-258, TC-269, TC-269A, TC-301, TC-302
+- Test cases: TC-206, TC-215, TC-257, TC-258, TC-258A, TC-269, TC-269A, TC-301, TC-302
 - Diagram: docs/diagrams/domain-relationships.md
