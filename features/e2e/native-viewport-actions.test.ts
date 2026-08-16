@@ -443,8 +443,9 @@ test('nutrition builders submit native editors before saving', () => {
     /const deleteAction = element\(by\.text\('Delete'\)\)\.atIndex\(1\);[\s\S]*?await deleteAction\.tap\(\);/,
   );
   assert.doesNotMatch(professionalNutritionBuilderSource, /device\.tap\(\{ x: 276, y: 520 \}\);/);
-  assert.equal(
-    studentSelfManagedBuilderSource.match(/device\.tap\(\{ x: 350, y: 420 \}\);/g)?.length,
-    1,
+  assert.doesNotMatch(studentSelfManagedBuilderSource, /device\.tap\(\{ x: 350, y: 420 \}\);/);
+  assert.match(
+    studentSelfManagedBuilderSource,
+    /replaceText\('E2E Student Training Plan'\);\s+await dismissFocusedEditor\('pro\.training_plan\.name'\);/,
   );
 });

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   normalizeAuthReturnTo,
   normalizeGuardPathname,
@@ -50,6 +49,32 @@ test('guard allows unauthenticated user on sign-in route', () => {
     lockedRole: null,
     needsTermsAcceptance: false,
     pathname: '/auth/sign-in',
+  });
+
+  assert.equal(redirect, null);
+});
+
+test('guard allows unauthenticated user on the forgot-password route', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: false,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/forgot-password',
+  });
+
+  assert.equal(redirect, null);
+});
+
+test('guard allows unauthenticated user on the reset-password deep-link route', () => {
+  // app/_layout.tsx normalizes usePathname() (query-free by contract) before
+  // calling this function, so the guard only ever sees the bare path here —
+  // it never inspects or strips the token/email query params off the
+  // incoming deep link.
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: false,
+    lockedRole: null,
+    needsTermsAcceptance: false,
+    pathname: '/auth/password-reset',
   });
 
   assert.equal(redirect, null);
@@ -268,6 +293,66 @@ test('guard allows accept-terms route while terms are pending', () => {
   });
 
   assert.equal(redirect, null);
+});
+
+test('guard allows the controlled legal webview while terms are pending', () => {
+  const redirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview',
+    sharedWebviewIntent: 'terms',
+    sharedWebviewUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+    termsUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+  });
+
+  const nearMatchRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview/other',
+  });
+
+  assert.equal(redirect, null);
+  assert.equal(nearMatchRedirect, '/auth/accept-terms');
+});
+
+test('guard blocks an approved-origin webview without the configured legal intent', () => {
+  const arbitraryUrlRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview',
+    sharedWebviewIntent: 'terms',
+    sharedWebviewUrl: 'https://portfolio.eduwaldo.com/other-page',
+    termsUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+  });
+
+  const missingIntentRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview',
+    sharedWebviewUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+    termsUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+  });
+
+  const repeatedUrlRedirect = resolveAuthGuardRedirect({
+    isAuthenticated: true,
+    lockedRole: null,
+    needsTermsAcceptance: true,
+    pathname: '/shared/webview',
+    sharedWebviewIntent: 'terms',
+    sharedWebviewUrl: [
+      'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+      'https://portfolio.eduwaldo.com/other-page',
+    ],
+    termsUrl: 'https://portfolio.eduwaldo.com/projects/my-champions/terms_of_use',
+  });
+
+  assert.equal(arbitraryUrlRedirect, '/auth/accept-terms');
+  assert.equal(missingIntentRedirect, '/auth/accept-terms');
+  assert.equal(repeatedUrlRedirect, '/auth/accept-terms');
 });
 
 test('guard allows accept-terms route with trailing slash while terms are pending', () => {

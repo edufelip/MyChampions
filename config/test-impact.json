@@ -94,7 +94,13 @@
       "sourcePaths": ["features/auth/**", "app/auth/**"],
       "dependsOn": ["platform"],
       "unitTests": ["features/auth/**/*.test.ts"],
-      "webSuites": ["web:auth", "web:server-auth", "web:shell", "web:critical-paths"],
+      "webSuites": [
+        "web:auth",
+        "web:server-auth",
+        "web:shell",
+        "web:critical-paths",
+        "web:manual-webview-recovery"
+      ],
       "detoxSuites": ["detox:auth"],
       "owners": ["@edufelip"]
     },
@@ -139,7 +145,7 @@
       ],
       "dependsOn": ["auth", "connections", "offline", "plans", "platform"],
       "unitTests": ["features/training/**/*.test.ts"],
-      "webSuites": ["web:training", "web:shell"],
+      "webSuites": ["web:training", "web:shell", "web:exercise-search"],
       "detoxSuites": ["detox:training"],
       "owners": ["@edufelip"]
     },
@@ -147,7 +153,7 @@
       "sourcePaths": ["features/plans/**"],
       "dependsOn": ["auth", "connections", "platform"],
       "unitTests": ["features/plans/**/*.test.ts"],
-      "webSuites": ["web:nutrition", "web:training"],
+      "webSuites": ["web:nutrition", "web:training", "web:exercise-search"],
       "detoxSuites": ["detox:plans"],
       "owners": ["@edufelip"]
     },
@@ -155,7 +161,7 @@
       "sourcePaths": ["features/professional/**", "app/professional/**", "app/(tabs)/students.tsx"],
       "dependsOn": ["auth", "connections", "nutrition", "offline", "plans", "platform"],
       "unitTests": ["features/professional/**/*.test.ts"],
-      "webSuites": ["web:professional", "web:shell"],
+      "webSuites": ["web:professional", "web:professional-home", "web:shell"],
       "detoxSuites": ["detox:professional"],
       "owners": ["@edufelip"]
     },
@@ -163,7 +169,7 @@
       "sourcePaths": ["features/subscription/**", "app/professional/subscription.tsx"],
       "dependsOn": ["auth", "platform", "professional"],
       "unitTests": ["features/subscription/**/*.test.ts"],
-      "webSuites": ["web:subscription", "web:critical-paths"],
+      "webSuites": ["web:subscription", "web:critical-paths", "web:subscription-lock"],
       "detoxSuites": ["detox:subscription", "detox:revenuecat-live"],
       "owners": ["@edufelip"]
     },
@@ -393,7 +399,10 @@
     "web:nutrition": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts"],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/custom-meal-library-error-recovery.spec.ts"
+      ],
       "grep": "@feature:nutrition",
       "tier": "feature",
       "ci": true
@@ -406,13 +415,44 @@
       "tier": "feature",
       "ci": true
     },
+    "web:exercise-search": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.training.config.ts",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/exercise-search-modal.spec.ts"],
+      "grep": "@feature:training",
+      "tier": "feature",
+      "ci": true
+    },
     "web:professional": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/visual-evidence.spec.ts"],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/visual-evidence.spec.ts",
+        "e2e/web/invite-code-rotation.spec.ts",
+        "e2e/web/professional-roster-error.spec.ts"
+      ],
       "grep": "@feature:professional",
       "tier": "feature",
       "ci": true
+    },
+    "web:professional-home": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.professional-home.config.ts",
+      "projects": ["mobile-professional", "mobile-professional-pt", "mobile-professional-es"],
+      "specs": ["e2e/web/professional-home-responsive.spec.ts"],
+      "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:specialty-removal-assist": {
+      "runner": "playwright-evidence",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/specialty-removal-assist.spec.ts"],
+      "grep": "@feature:professional-specialty-removal-assist",
+      "tier": "evidence",
+      "ci": false
     },
     "web:subscription": {
       "runner": "playwright",
@@ -456,17 +496,44 @@
     },
     "web:flow-atlas-auth": {
       "runner": "playwright-evidence",
-      "projects": ["chromium"],
+      "playwrightConfig": "playwright.flows-auth.config.ts",
+      "projects": ["mobile", "tablet", "web"],
       "specs": ["e2e/web-flows-auth/authentication-flow-atlas.spec.ts"],
       "grep": "@feature:auth",
       "tier": "evidence",
       "ci": false
     },
-    "web:flow-atlas-complete": {
+    "web:manual-webview-recovery": {
+      "runner": "playwright-evidence",
+      "playwrightConfig": "playwright.webview-recovery.config.ts",
+      "projects": ["mobile"],
+      "specs": ["e2e/web-flows-auth/shared-webview-recovery.spec.ts"],
+      "grep": "@feature:auth",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:subscription-lock": {
       "runner": "playwright-evidence",
       "projects": ["chromium"],
+      "specs": ["e2e/web-subscription-lock/lapsed-over-cap-locked-recovery.spec.ts"],
+      "grep": "@feature:subscription",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:flow-atlas-complete": {
+      "runner": "playwright-evidence",
+      "playwrightConfig": "playwright.flows.config.ts",
+      "projects": ["mobile", "tablet", "web"],
       "specs": ["e2e/web-flows/complete-flow-atlas.spec.ts"],
       "grep": "@feature:shell",
+      "tier": "evidence",
+      "ci": false
+    },
+    "web:invite-code-rotation": {
+      "runner": "playwright",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/invite-code-rotation.spec.ts"],
+      "grep": "@feature:professional",
       "tier": "evidence",
       "ci": false
     }

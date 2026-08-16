@@ -240,6 +240,48 @@ test.describe('@smoke @critical @feature:shell @feature:auth @feature:student @f
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
       .toBeLessThanOrEqual(1);
   });
+
+  test('student hydration log intake stays inside the card at 320px (ET-108)', async ({ page }) => {
+    const viewport = { width: 320, height: 720 };
+    await page.setViewportSize(viewport);
+    await page.goto('/auth/role-selection');
+    await page.getByTestId('auth.roleSelection.studentCard').click();
+    await page.getByTestId('auth.roleSelection.continueButton').click();
+    await page.goto('/nutrition');
+
+    const waterWidget = page.getByTestId('student.nutrition.waterWidget').last();
+    await waterWidget.scrollIntoViewIfNeeded();
+    const input = page.getByTestId('student.nutrition.waterWidget.intakeInput').last();
+    const logButton = page.getByTestId('student.nutrition.waterWidget.logButton').last();
+
+    const [cardBox, inputBox, buttonBox] = await Promise.all([
+      waterWidget.boundingBox(),
+      input.boundingBox(),
+      logButton.boundingBox(),
+    ]);
+    expect(cardBox).not.toBeNull();
+    expect(inputBox).not.toBeNull();
+    expect(buttonBox).not.toBeNull();
+    if (!cardBox || !inputBox || !buttonBox) return;
+
+    // Both controls stay fully inside the card and the viewport instead of
+    // being clipped by an inputRow that never shrinks below its intrinsic
+    // content width (the CSS flexbox min-width:auto trap on web).
+    for (const box of [inputBox, buttonBox]) {
+      expect(box.x).toBeGreaterThanOrEqual(cardBox.x - 1);
+      expect(box.x + box.width).toBeLessThanOrEqual(cardBox.x + cardBox.width + 1);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+      .toBeLessThanOrEqual(1);
+
+    await expect(logButton).toHaveAccessibleName('Log Intake');
+    await input.click();
+    await page.keyboard.press('Tab');
+    await expect(logButton).toBeFocused();
+  });
 });
 
 test.describe('@accessibility @critical @feature:shell keyboard and dialog behavior', () => {
@@ -284,30 +326,50 @@ test.describe('@accessibility @critical @feature:shell keyboard and dialog behav
     expect(outlineStyle).not.toBe('none');
   });
 
-  test('dialogs contain focus, close on Escape, and restore the trigger', async ({ page }) => {
-    await page.goto('/auth/role-selection');
-    await page.getByTestId('auth.roleSelection.studentCard').click();
-    await page.getByTestId('auth.roleSelection.continueButton').click();
-    await page.getByTestId('tabs.account').last().click();
+  const supportDialogViewports = [
+    { name: 'mobile', width: 390, height: 844 },
+    { name: 'compact', width: 320, height: 720 },
+  ];
 
-    const trigger = page.getByTestId('settings.account.supportQuickCta');
-    await trigger.focus();
-    await trigger.click();
-    const modal = page.getByTestId('settings.account.support.modal');
-    const close = page.getByTestId('settings.account.support.closeButton');
-    await expect(modal).toBeVisible();
-    await expect(close).toBeFocused();
+  for (const viewport of supportDialogViewports) {
+    test(`support dialog at ${viewport.name} (${viewport.width}x${viewport.height}) contains focus, closes on Escape, and restores the trigger`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/auth/role-selection');
+      await page.getByTestId('auth.roleSelection.studentCard').click();
+      await page.getByTestId('auth.roleSelection.continueButton').click();
+      await page.getByTestId('tabs.account').last().click();
 
-    await page.keyboard.press('Shift+Tab');
-    const lastFocusable = modal
-      .locator(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]:not([aria-disabled="true"])',
-      )
-      .last();
-    await expect(lastFocusable).toBeFocused();
+      const trigger = page.getByTestId('settings.account.supportQuickCta');
+      await trigger.focus();
+      await trigger.click();
+      const modal = page.getByTestId('settings.account.support.modal');
+      const close = page.getByTestId('settings.account.support.closeButton');
+      // The named dialog role/aria-modal live on React Native's own <Modal> ancestor, not on
+      // the inner testID node — scoping to an ancestor of `modal` (rather than the whole page)
+      // still catches the hook stamping a second, nested, unnamed role="dialog" on `modal`
+      // itself, without coupling this assertion to unrelated dialogs elsewhere on the page.
+      const dialog = modal.locator('xpath=ancestor::*[@role="dialog"]');
+      await expect(modal).toBeVisible();
+      await expect(dialog).toHaveCount(1);
+      await expect(dialog).toHaveAttribute('aria-modal', 'true');
+      await expect(dialog).toHaveAccessibleName('Talk to support');
+      await expect(close).toHaveAccessibleName('Close support dialog');
+      await expect(modal.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(1);
+      await expect(close).toBeFocused();
 
-    await page.keyboard.press('Escape');
-    await expect(modal).not.toBeVisible();
-    await expect(trigger).toBeFocused();
-  });
+      await page.keyboard.press('Shift+Tab');
+      const lastFocusable = modal
+        .locator(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]:not([aria-disabled="true"])',
+        )
+        .last();
+      await expect(lastFocusable).toBeFocused();
+
+      await page.keyboard.press('Escape');
+      await expect(modal).not.toBeVisible();
+      await expect(trigger).toBeFocused();
+    });
+  }
 });

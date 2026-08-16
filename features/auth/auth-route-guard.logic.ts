@@ -6,6 +6,9 @@ export type AuthGuardInput = {
   needsTermsAcceptance: boolean;
   pathname: string;
   returnTo?: string | string[] | null;
+  sharedWebviewIntent?: string | string[] | null;
+  sharedWebviewUrl?: string | string[] | null;
+  termsUrl?: string | null;
   pendingRoleSelectionRole?: RoleIntent | null;
 };
 
@@ -39,6 +42,22 @@ function isSharedRecipePath(pathname: string): boolean {
 
 function encodeReturnTo(pathname: string): string {
   return encodeURIComponent(pathname);
+}
+
+function normalizeSingleRouteParam(value: string | string[] | null | undefined): string | null {
+  return typeof value === 'string' ? value.trim() || null : null;
+}
+
+function isControlledTermsWebview(input: AuthGuardInput, pathname: string): boolean {
+  if (pathname !== '/shared/webview') {
+    return false;
+  }
+
+  const intent = normalizeSingleRouteParam(input.sharedWebviewIntent);
+  const url = normalizeSingleRouteParam(input.sharedWebviewUrl);
+  const termsUrl = input.termsUrl?.trim() || null;
+
+  return intent === 'terms' && url !== null && termsUrl !== null && url === termsUrl;
 }
 
 function redirectWithReturnTo(
@@ -77,7 +96,11 @@ export function normalizeAuthReturnTo(value: string | string[] | null | undefine
 export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   const path = normalizeGuardPathname(input.pathname);
   const isAuthRoute = path.startsWith('/auth/');
-  const isPublicAuthEntry = path === '/auth/sign-in' || path === '/auth/create-account';
+  const isPublicAuthEntry =
+    path === '/auth/sign-in' ||
+    path === '/auth/create-account' ||
+    path === '/auth/forgot-password' ||
+    path === '/auth/password-reset';
   const safeReturnTo = normalizeAuthReturnTo(input.returnTo);
   const currentSharedRecipeReturnTo = isSharedRecipePath(path) ? path : null;
 
@@ -94,6 +117,10 @@ export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   }
 
   if (input.needsTermsAcceptance) {
+    if (isControlledTermsWebview(input, path)) {
+      return null;
+    }
+
     if (path !== '/auth/accept-terms') {
       const termsReturnTo = currentSharedRecipeReturnTo ?? safeReturnTo;
       return termsReturnTo

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import { buildTranslationBinding, resolveLocale, t } from './index';
 
 test('resolveLocale maps exact supported locale', () => {
@@ -39,7 +38,10 @@ test('unavailable summary values resolve through every locale bundle', () => {
 });
 
 test('t interpolates params', () => {
-  assert.equal(t('en-US', 'student.hydration.progress', { consumed: 500, goal: 2000 }), '500 / 2000 ml');
+  assert.equal(
+    t('en-US', 'student.hydration.progress', { consumed: 500, goal: 2000 }),
+    '500 / 2000 ml',
+  );
 });
 
 test('buildTranslationBinding keeps same t reference for same locale', () => {
@@ -62,6 +64,54 @@ test('BL-011 Locale: pro.specialty.remove_blocked.dismiss resolves in all locale
   assert.equal(t('es-ES', 'pro.specialty.remove_blocked.dismiss'), 'Descartar');
 });
 
+test('BL-011 Locale: specialty-removal blocker counts pluralize nouns and adjectives', () => {
+  const activeParams = { count: 2, plural: 's' };
+  assert.equal(
+    t('en-US', 'pro.specialty.removal_blocked.active_students_body', activeParams),
+    'This specialty has 2 active students. Unbind or complete active assignments first.',
+  );
+  assert.equal(
+    t('pt-BR', 'pro.specialty.removal_blocked.active_students_body', activeParams),
+    'Esta especialidade tem 2 alunos ativos. Desvincule ou conclua as atribuições ativas primeiro.',
+  );
+  assert.equal(
+    t('es-ES', 'pro.specialty.removal_blocked.active_students_body', activeParams),
+    'Esta especialidad tiene 2 alumnos activos. Desvincule o complete las asignaciones activas primero.',
+  );
+
+  const singularParams = { count: 1, plural: '' };
+  assert.equal(
+    t('pt-BR', 'pro.specialty.removal_blocked.active_students_body', singularParams),
+    'Esta especialidade tem 1 aluno ativo. Desvincule ou conclua as atribuições ativas primeiro.',
+  );
+  assert.equal(
+    t('es-ES', 'pro.specialty.removal_blocked.active_students_body', singularParams),
+    'Esta especialidad tiene 1 alumno activo. Desvincule o complete las asignaciones activas primero.',
+  );
+
+  assert.equal(
+    t('pt-BR', 'pro.specialty.removal_blocked.pending_students_body', activeParams),
+    'Esta especialidade tem 2 alunos pendentes. Aceite ou negue as solicitações pendentes primeiro.',
+  );
+  assert.equal(
+    t('es-ES', 'pro.specialty.removal_blocked.pending_students_body', activeParams),
+    'Esta especialidad tiene 2 alumnos pendientes. Acepte o rechace las solicitudes pendientes primero.',
+  );
+
+  assert.equal(
+    t('en-US', 'pro.specialty.removal_blocked.pending_students_body', singularParams),
+    'This specialty has 1 pending student. Accept or deny pending requests first.',
+  );
+  assert.equal(
+    t('pt-BR', 'pro.specialty.removal_blocked.pending_students_body', singularParams),
+    'Esta especialidade tem 1 aluno pendente. Aceite ou negue as solicitações pendentes primeiro.',
+  );
+  assert.equal(
+    t('es-ES', 'pro.specialty.removal_blocked.pending_students_body', singularParams),
+    'Esta especialidad tiene 1 alumno pendiente. Acepte o rechace las solicitudes pendientes primero.',
+  );
+});
+
 test('SC-206 Locale: tracking review numeric templates resolve in all locales', () => {
   assert.equal(
     t('en-US', 'pro.student_profile.tracking_review.water_progress_value', {
@@ -69,11 +119,11 @@ test('SC-206 Locale: tracking review numeric templates resolve in all locales', 
       goal: 2000,
       percent: 25,
     }),
-    '500/2000 ml (25%)'
+    '500/2000 ml (25%)',
   );
   assert.equal(
     t('pt-BR', 'pro.student_profile.tracking_review.water_total_value', { total: 500 }),
-    '500 ml'
+    '500 ml',
   );
   assert.equal(
     t('es-ES', 'pro.student_profile.tracking_review.portion_macros_value', {
@@ -82,7 +132,7 @@ test('SC-206 Locale: tracking review numeric templates resolve in all locales', 
       proteins: 20,
       fats: 8,
     }),
-    '320 kcal · 40 g carb. · 20 g prot. · 8 g grasa'
+    '320 kcal · 40 g carb. · 20 g prot. · 8 g grasa',
   );
 });
 
@@ -95,7 +145,10 @@ test('SC-207 Locale: meal builder fallback copy resolves in all locales', () => 
 test('SC-206 Locale: assignment draft controls resolve in all locales', () => {
   assert.equal(t('en-US', 'pro.student_profile.assignment.draft_pending'), 'Draft pending send');
   assert.equal(t('pt-BR', 'pro.student_profile.assignment.cta_resume_draft'), 'Retomar rascunho');
-  assert.equal(t('es-ES', 'pro.student_profile.assignment.cta_view_edit'), 'Ver/editar plan asignado');
+  assert.equal(
+    t('es-ES', 'pro.student_profile.assignment.cta_view_edit'),
+    'Ver/editar plan asignado',
+  );
   assert.equal(t('en-US', 'pro.plan.discard.success'), 'Draft discarded successfully.');
   assert.equal(t('pt-BR', 'pro.plan.discard.error'), 'Não foi possível descartar o rascunho.');
 });

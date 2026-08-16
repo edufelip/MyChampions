@@ -20,6 +20,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.placeholder.password_confirmation': 'Confirmar senha',
   'auth.validation.name_required': 'Nome é obrigatório.',
   'auth.validation.email_required': 'E-mail é obrigatório.',
+  'auth.validation.email_invalid': 'Informe um e-mail válido.',
   'auth.validation.password_required': 'Senha é obrigatória.',
   'auth.validation.password_confirmation_required': 'A confirmação de senha é obrigatória.',
   'auth.validation.password_policy':
@@ -43,6 +44,41 @@ export const ptBR: Record<TranslationKey, string> = {
     'Este e-mail já está vinculado a outro método de acesso. Entre primeiro com o método já vinculado.',
   'auth.signin.error.configuration':
     'A autenticação ainda não está configurada. Defina a URL do servidor MyChampions e tente novamente.',
+  'auth.signin.forgot_password': 'Esqueceu a senha?',
+  'auth.forgot_password.title': 'Redefinir sua senha',
+  'auth.forgot_password.subtitle':
+    'Informe o e-mail da sua conta e enviaremos instruções de redefinição, se existir.',
+  'auth.forgot_password.cta_primary': 'Enviar instruções de redefinição',
+  'auth.forgot_password.success.title': 'Verifique seu e-mail',
+  'auth.forgot_password.success.body':
+    'Se existir uma conta para {email}, enviamos instruções para redefinir sua senha.',
+  'auth.forgot_password.success.retry': 'Enviar novamente',
+  'auth.forgot_password.cta_back_signin': 'Voltar para o login',
+  'auth.forgot_password.error.generic':
+    'Não foi possível enviar as instruções agora. Tente novamente.',
+  'auth.reset_password.title': 'Defina uma nova senha',
+  'auth.reset_password.subtitle':
+    'Cole o código de redefinição recebido por e-mail e escolha uma nova senha.',
+  'auth.reset_password.field.email': 'E-mail',
+  'auth.reset_password.field.token': 'Código de redefinição',
+  'auth.reset_password.placeholder.token': 'Cole o código do seu e-mail de redefinição',
+  'auth.reset_password.field.new_password': 'Nova senha',
+  'auth.reset_password.field.new_password_confirmation': 'Confirmar nova senha',
+  'auth.reset_password.placeholder.new_password': 'Nova senha',
+  'auth.reset_password.placeholder.new_password_confirmation': 'Confirmar nova senha',
+  'auth.reset_password.cta_primary': 'Redefinir senha',
+  'auth.reset_password.validation.token_required': 'O código de redefinição é obrigatório.',
+  'auth.reset_password.success.title': 'Senha atualizada',
+  'auth.reset_password.success.body': 'Sua senha foi redefinida. Faça login com sua nova senha.',
+  'auth.reset_password.cta_go_signin': 'Ir para o login',
+  'auth.reset_password.error.invalid_or_expired_token':
+    'Este link de redefinição é inválido ou expirou. Solicite um novo.',
+  'auth.reset_password.error.invalid_email': 'O e-mail é inválido.',
+  'auth.reset_password.error.account_not_found': 'Nenhuma conta foi encontrada para este e-mail.',
+  'auth.reset_password.error.network':
+    'Não foi possível conectar agora. Verifique sua conexão e tente novamente.',
+  'auth.reset_password.error.configuration':
+    'A autenticação ainda não está configurada. Defina a URL do servidor MyChampions e tente novamente.',
   'auth.terms.title': 'Termos e Privacidade',
   'auth.terms.description':
     'Antes de continuar, revise e aceite os termos mais recentes do My Champions.',
@@ -51,6 +87,10 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.terms.accept_button': 'Aceitar e continuar',
   'auth.terms.offline_hint': 'Você precisa de internet para abrir o link acima.',
   'auth.terms.version': 'Versão obrigatória: {version}',
+  'shared.webview.browser_hint': 'Esta página legal abre em uma nova aba do navegador.',
+  'shared.webview.open_cta': 'Abrir {title}',
+  'shared.webview.open_error':
+    'Não foi possível abrir o link automaticamente. Tente o botão novamente ou use este endereço: {url}',
   'auth.terms.error.link_unavailable':
     'Não foi possível abrir o link dos termos agora. Tente novamente.',
   'auth.social.google': 'Google',
@@ -157,6 +197,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.pending.bulk_deny.confirm_body':
     'Alunos selecionados podem solicitar novamente depois com seu código de convite.',
   'pro.pending.bulk_deny.success': 'Solicitações negadas com sucesso.',
+  'pro.pending.row.select': 'Selecionar solicitação de {specialty}',
   'pro.pending.confirm.cta': 'Aceitar',
   'pro.pending.deny.cta': 'Negar',
   'pro.pending.empty': 'Nenhuma solicitação de conexão pendente.',
@@ -293,11 +334,17 @@ export const ptBR: Record<TranslationKey, string> = {
   'student.nutrition.meal.logged_badge': 'Registrado',
   'student.nutrition.meal.log_button': 'Registrar refeição',
   'student.nutrition.meal.items_label': 'Alimentos',
+  'student.nutrition.meal.expand': 'Expandir detalhes da refeição',
+  'student.nutrition.meal.collapse': 'Recolher detalhes da refeição',
+  'student.nutrition.meal.header_expand': 'Expandir detalhes de {meal}',
+  'student.nutrition.meal.header_collapse': 'Recolher detalhes de {meal}',
   'student.training.title': 'Treinos',
   'student.training.calendar.cta': 'Abrir calendário',
   'student.training.session.title': 'Plano guiado de hoje',
   'student.training.session.body':
     'Seu treinador atribuiu uma estrutura de treino. Registre sua execução e solicite ajustes abaixo.',
+  'student.training.session.expand': 'Expandir detalhes do treino',
+  'student.training.session.collapse': 'Recolher detalhes do treino',
   'student.training.empty.title': 'Nenhum treino encontrado',
   'student.training.empty.body':
     'Você ainda não possui um plano de treino personalizado. Contrate um personal trainer para receber uma rotina feita sob medida para seus objetivos.',
@@ -357,6 +404,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.home.invite_code.rotate_confirm_yes': 'Regenerar',
   'pro.home.invite_code.rotate_confirm_no': 'Cancelar',
   'pro.home.invite_code.rotate_error': 'Não foi possível regenerar o código. Tente novamente.',
+  'pro.home.invite_code.rotate_success':
+    'Código de convite regenerado. Compartilhe o novo código com os alunos.',
   'pro.home.invite_code.empty': 'Nenhum código de convite ativo.',
   'pro.home.invite_code.specialty_required':
     'Adicione uma especialidade antes de criar um código de convite.',
@@ -418,9 +467,9 @@ export const ptBR: Record<TranslationKey, string> = {
     'Adicione Nutricionista ou Personal Trainer para permitir remoção',
   'pro.specialty.removal_blocked.title': 'Não é possível remover a especialidade',
   'pro.specialty.removal_blocked.active_students_body':
-    'Esta especialidade tem {count} aluno{plural} ativo. Desvincule ou conclua as atribuições ativas primeiro.',
+    'Esta especialidade tem {count} aluno{plural} ativo{plural}. Desvincule ou conclua as atribuições ativas primeiro.',
   'pro.specialty.removal_blocked.pending_students_body':
-    'Esta especialidade tem {count} aluno{plural} pendente. Aceite ou negue as solicitações pendentes primeiro.',
+    'Esta especialidade tem {count} aluno{plural} pendente{plural}. Aceite ou negue as solicitações pendentes primeiro.',
   'pro.specialty.removal_blocked.last_specialty_body':
     'Você deve ter pelo menos uma especialidade. Adicione uma nova especialidade antes de remover esta.',
   'pro.specialty.remove_blocked.dismiss': 'Dispensar',
@@ -439,6 +488,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.students.empty.cta_add_first': 'Adicionar primeiro aluno',
   'pro.students.empty.cta_share_link': 'Compartilhar link de convite',
   'pro.students.error': 'Não foi possível carregar a lista de alunos. Tente novamente.',
+  'pro.students.error.cta_back': 'Voltar ao painel',
   'pro.students.bulk_assign.cta': 'Atribuição em massa',
   'pro.students.bulk_assign.cta_confirm': 'Atribuir a {count} alunos',
   'pro.students.bulk_assign.selection_mode': 'Atribuição em Massa',
@@ -520,6 +570,10 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.subscription.pre_lapse.cta_renew': 'Renovar assinatura',
   'pro.subscription.locked':
     'As ações de plano de aluno estão bloqueadas. Restaure ou adquira uma assinatura para continuar.',
+  'pro.subscription.locked_handoff':
+    'As ações de plano de aluno estão bloqueadas. Continue no celular para restaurar ou adquirir uma assinatura.',
+  'pro.subscription.locked_unavailable':
+    'As ações de plano de aluno estão bloqueadas. Alterações na assinatura não estão disponíveis neste navegador — use o aplicativo no celular para restaurar ou adquirir, depois atualize o status aqui.',
   'pro.subscription.locked_unknown':
     'As ações de plano de aluno estão temporariamente bloqueadas até o status da assinatura ser verificado.',
   'pro.subscription.cta_purchase': 'Fazer upgrade',
@@ -711,6 +765,9 @@ export const ptBR: Record<TranslationKey, string> = {
   'meal.builder.validation.cost_non_negative': 'O custo dos ingredientes deve ser zero ou mais.',
   'meal.builder.error.save': 'Não foi possível salvar a refeição. Tente novamente.',
   'meal.builder.error.load': 'Não foi possível carregar a refeição. Tente novamente.',
+  'meal.builder.error.not_found':
+    'Não foi possível encontrar esta refeição. Ela pode ter sido excluída ou o link pode estar incorreto.',
+  'meal.builder.error.cta_back_to_library': 'Voltar para as receitas',
   'meal.builder.share.error.needs_save': 'Salve a refeição primeiro para compartilhá-la.',
   'meal.builder.share.error.unknown':
     'Não foi possível gerar o link de compartilhamento. Tente novamente.',
@@ -927,8 +984,12 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.item.field.nutrition_notes.placeholder': 'ex.: Sem sal',
   'pro.plan.item.delete.body': 'Remover {name} desta refeição?',
   'pro.plan.item.search.placeholder': 'Buscar por um exercício...',
+  'pro.plan.item.search.dialog_title': 'Busca de exercícios',
+  'pro.plan.item.search.initial': 'Busque na biblioteca de exercícios para adicionar um à sessão.',
+  'pro.plan.item.search.loading': 'Buscando exercícios...',
   'pro.plan.item.search.empty': 'Nenhum exercício encontrado.',
   'pro.plan.item.search.error': 'Erro ao buscar exercícios.',
+  'pro.plan.item.search.retry': 'Tentar novamente',
   'pro.plan.item.search.back': 'Voltar para a busca',
   'pro.plan.item.detail.description': 'Descrição',
   'pro.plan.item.detail.instructions': 'Instruções',
@@ -966,6 +1027,7 @@ export const ptBR: Record<TranslationKey, string> = {
 
   // Support
   'settings.account.support.dialog.title': 'Falar com o suporte',
+  'settings.account.support.dialog.close': 'Fechar diálogo de suporte',
   'settings.account.support.dialog.disclaimer':
     'Esta tela é para enviar mensagens para nossa equipe de suporte.',
   'settings.account.support.field.subject.label': 'Assunto',

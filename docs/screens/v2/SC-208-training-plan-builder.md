@@ -3,7 +3,7 @@
 ## Route
 - `/professional/training/plans/:planId` — builder/editor for a specific plan.
 - `/professional/training` (tab) — plan library list with create and open CTAs.
-- Shared student self-guided alias: `/student/training/plans/:planId` (same builder engine with student-branded titles/actions).
+- Shared student route: `/student/training/plans/:planId` renders through the same builder engine but branches on the loaded plan's `sourceKind` (D-006, D-013, ET-107): a `self_managed` plan (including `new`) stays fully editable with student-branded titles/actions; any other `sourceKind` (`assigned`, `predefined`) renders read-only — no Save/Delete/Add-session/reorder/add-item controls, a disabled name field, a localized `student.training.assigned_plan.read_only_notice` banner (`student.training_plan.readOnlyNotice` testID), and a `PlanChangeRequestCard` (`student.training_plan.planChangeForm` testID). The gate is computed by `isReadOnlyForStudentSurface` (`features/plans/plan-ownership.logic.ts`) and fails closed for any non-self-managed source kind.
 
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
@@ -56,6 +56,8 @@ Exercise items are added via the `ExerciseSearchModal` component, which:
 3. On item selection, shows a detail/confirmation form for `quantity` and `notes`.
 4. On confirm, calls `handleConfirmExercise` which adds the item to the local draft; the MyChampions server plan update is sent only when the user presses `Save`.
 
+On web, the search sheet does not use the native slide-in animation: it is viewport-bounded as soon as it opens so the title, Back action, and focused search field are usable on compact mobile emulation. The results region owns its scroll so long result sets do not push the modal outside the viewport.
+
 ### Catalog Service Contract
 - Base URL: `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL`
 - Search endpoint: `POST /integrations/exercise/search`
@@ -80,6 +82,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | State | Trigger | UI |
 |---|---|---|
 | Idle | Initial mount | Empty form or loading gated |
+| Search opened | User taps Add exercise | One named, viewport-bounded `role="dialog"` with `aria-modal="true"`, localized initial helper state, and focused input; web opens without an off-screen transition |
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
 | Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
@@ -179,9 +182,13 @@ Plan library reads, predefined assignment/draft operations, and builder mutation
 | `pro.predefined_plan.field_name` | Predefined plan name label |
 | `pro.predefined_plan.cta_create` | Save predefined plan CTA |
 | `pro.predefined_plan.bulk_assign.*` | Bulk assign flow keys |
+| `pro.plan.item.search.dialog_title` | Accessible name for the single exercise-search dialog root |
 | `pro.plan.item.search.placeholder` | Exercise search input placeholder |
+| `pro.plan.item.search.initial` | Initial helper state before a query is entered |
+| `pro.plan.item.search.loading` | Accessible loading announcement while search is pending |
 | `pro.plan.item.search.empty` | No results state |
 | `pro.plan.item.search.error` | Search error state |
+| `pro.plan.item.search.retry` | Retry search CTA in the error state |
 | `pro.plan.item.search.back` | "Back to search" link in exercise detail form |
 | `exercise.muscle_group.chest` | Muscle group label: Chest |
 | `exercise.muscle_group.back` | Muscle group label: Back |

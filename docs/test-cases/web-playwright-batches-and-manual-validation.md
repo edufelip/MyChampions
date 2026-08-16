@@ -6,15 +6,17 @@ Define repeatable browser test batches and a reviewable evidence package for MyC
 
 ## Executable batches
 
-| Batch               | Command                           | Engines                              | Intended use                                           | Current coverage                                                                                                                                                                                                                                                                                                                                          |
-| ------------------- | --------------------------------- | ------------------------------------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Smoke               | `yarn test:e2e:web:smoke`         | Chromium                             | Fast local/PR signal                                   | Mobile, tablet, and desktop role onboarding; navigation geometry; horizontal overflow.                                                                                                                                                                                                                                                                    |
-| Functional          | `yarn test:e2e:web:functional`    | Chromium, Firefox, WebKit            | Platform-specific behavior                             | Camera-denied manual invite fallback and subscription mobile-handoff surface.                                                                                                                                                                                                                                                                             |
-| Accessibility       | `yarn test:e2e:web:accessibility` | Chromium, Firefox, WebKit            | Keyboard, contrast, and dialog regression              | Explicit readable enabled/disabled controls, visible focus, logical role-option order, focus containment, Escape close, and focus restoration.                                                                                                                                                                                                            |
-| Evidence            | `yarn test:e2e:web:evidence`      | Chromium                             | Screenshot package for human review                    | Role selection, student home, and student account shell at three widths, professional home/unknown-entitlement handoff, and manual invite fallback.                                                                                                                                                                                                       |
-| Complete flow atlas | `yarn test:e2e:web:flow-atlas`    | Chromium at mobile/tablet/web widths | Exhaustive implemented-flow evidence and manual review | 13 flow folders, 65 exact checkpoints per platform, 195 expected screenshots, exact-name verifier, auth/app HTML reports. Local only; not wired to CI.                                                                                                                                                                                                    |
-| Server auth         | `yarn test:e2e:web:server`        | Chromium, Firefox, WebKit            | Real client/server browser contract and PR gate        | Email create/sign-in, terms, role onboarding, HttpOnly cookie attributes, refresh rotation, ready-home restoration with error-state rejection, and logout. Local runs default to sibling `server`; CI passes the coordinated backend checkout through `MYCHAMPIONS_SERVER_ROOT`. The backend uses in-memory auth state and never runs against production. |
-| Full                | `yarn test:e2e:web`               | Chromium, Firefox, WebKit            | Build-only CI/regression gate                          | All current tests, failure diagnostics, and cross-engine screenshot attachments.                                                                                                                                                                                                                                                                          |
+| Batch                   | Command                                     | Engines                              | Intended use                                            | Current coverage                                                                                                                                                                                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------- | ------------------------------------ | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Smoke                   | `yarn test:e2e:web:smoke`                   | Chromium                             | Fast local/PR signal                                    | Mobile, tablet, and desktop role onboarding; navigation geometry; horizontal overflow.                                                                                                                                                                                                                                                                    |
+| Functional              | `yarn test:e2e:web:functional`              | Chromium, Firefox, WebKit            | Platform-specific behavior                              | Camera-denied manual invite fallback and subscription mobile-handoff surface.                                                                                                                                                                                                                                                                             |
+| Accessibility           | `yarn test:e2e:web:accessibility`           | Chromium, Firefox, WebKit            | Keyboard, contrast, and dialog regression               | Explicit readable enabled/disabled controls, visible focus, logical role-option order, focus containment, Escape close, and focus restoration.                                                                                                                                                                                                            |
+| Evidence                | `yarn test:e2e:web:evidence`                | Chromium                             | Screenshot package for human review                     | Role selection, student home, and student account shell at three widths, professional home/unknown-entitlement handoff, and manual invite fallback.                                                                                                                                                                                                       |
+| Complete flow atlas     | `yarn test:e2e:web:flow-atlas`              | Chromium at mobile/tablet/web widths | Exhaustive implemented-flow evidence and manual review  | 13 flow folders, 65 exact checkpoints per platform, 195 expected screenshots, exact-name verifier, auth/app HTML reports. Local only; not wired to CI.                                                                                                                                                                                                    |
+| Mobile WebView recovery | `yarn test:e2e:web:manual-webview-recovery` | Pixel 5 mobile Chromium              | Manual runtime proof for malformed shared-link recovery | Authenticated mobile fixture verifies duplicate URL query parameters render the localized invalid-link state, keep the Back action in view, prevent external-link exposure, return to the professional app shell, and allow an exact configured legal URL on a custom trusted host. Local/manual only.                                                    |
+| Professional dashboard responsive | `yarn playwright test --config=playwright.professional-home.config.ts e2e/web/professional-home-responsive.spec.ts` | Pixel 5 mobile Chromium, en-US/pt-BR/es-ES | Compact dashboard regression | Authenticated professional fixture verifies no horizontal overflow, readable full-width cards below 400 CSS px, a wrapped task CTA, and the two-column summary layout at 412 CSS px. Evidence is local/manual unless selected by the feature-impact runner. |
+| Server auth             | `yarn test:e2e:web:server`                  | Chromium, Firefox, WebKit            | Real client/server browser contract and PR gate         | Email create/sign-in, terms, role onboarding, HttpOnly cookie attributes, refresh rotation, ready-home restoration with error-state rejection, and logout. Local runs default to sibling `server`; CI passes the coordinated backend checkout through `MYCHAMPIONS_SERVER_ROOT`. The backend uses in-memory auth state and never runs against production. |
+| Full                    | `yarn test:e2e:web`                         | Chromium, Firefox, WebKit            | Build-only CI/regression gate                           | All current tests, failure diagnostics, and cross-engine screenshot attachments.                                                                                                                                                                                                                                                                          |
 
 The critical-path batch is registered as `web:critical-paths` and runs the
 critical product-path spec on Chromium, Firefox, and WebKit. Its Chromium lane
@@ -23,9 +25,28 @@ onboarding, camera-denied/manual invite fallback, and overflow safety. It does
 not replace the existing smoke, functional, accessibility, server-auth, or
 flow-atlas batches.
 
+The training search suite runs with an isolated Playwright configuration and
+Pixel 5 mobile emulation. It covers the initial, loading, empty, error with
+retry, and successful-result states, one named dialog root, compact keyboard-
+safe geometry, and expected error logging without exposing training fixtures to
+unrelated browser batches.
+
 Run both local lanes with `yarn test:e2e:web:all-local`. They intentionally use separate Expo ports and clear Metro state so fixture configuration cannot leak into the real-server bundle or vice versa.
 
+Run the manual mobile recovery proof with
+`yarn test:e2e:web:manual-webview-recovery`. It uses the shared evidence runner,
+true Playwright mobile emulation (`Pixel 5`, mobile context, touch input), an
+isolated Expo port, and the same timestamped artifact contract as the other
+batches; the generated screenshot, HTML/JSON/JUnit reports, metadata, and
+manual checklist remain under the ignored `.artifacts/` directory.
+
 The runner accepts extra Playwright arguments after the batch name. For example, `node scripts/run-web-e2e-batch.mjs evidence --headed` runs the evidence batch visibly.
+
+The professional dashboard responsive proof uses an isolated Expo web server on
+port `8086` and true Playwright Pixel 5 emulation. It runs once for each
+supported locale, captures the 390 CSS px stacked state and the 412 CSS px
+two-column state, and keeps the generated HTML/JSON reports and screenshots in
+the ignored directory selected by `WEB_E2E_ARTIFACT_ROOT`.
 
 ## Artifact contract
 
@@ -69,6 +90,19 @@ manual-only.
 ## Complete flow atlas status
 
 The complete mapping, exact flow/checkpoint inventory, documented-use-case coverage, and honest non-visual/specification gaps live in `docs/test-cases/complete-flow-screenshot-atlas.md`.
+
+The registered `web:exercise-search` selective suite includes
+`e2e/web/exercise-search-modal.spec.ts`, which uses real Playwright Pixel 5
+mobile emulation to assert the initial dialog bounds, focus, named dialog
+semantics, localized initial helper state, search result, and close behavior
+before a query can mask an off-screen opening state. Its compact lane reduces
+the visible height to model the keyboard-open state and fails on page errors or
+console errors. It runs under its own `playwright.training.config.ts` (its own
+dev-server fixture profile), kept as a separate suite from `web:training`
+(which still covers `e2e/web/responsive-shell.spec.ts` under the default
+config) specifically so the shared shell spec's other feature-tagged tests
+(auth, student, professional, connections, nutrition) keep running with the
+fixture environment they actually need instead of the narrower training one.
 
 The atlas is deliberately separate from the three-engine regression batches. It uses Chromium at three responsive widths so the folder names describe product layout modes rather than browser engines. Provider-live, native-device, real assistive-technology, and production deployment validation remain deferred and are not represented as screenshot proof.
 

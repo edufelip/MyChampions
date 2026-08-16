@@ -9,8 +9,8 @@
  * The server searches the mirrored local exercise catalog Postgres database.
  */
 
-import { getEffectiveLocale } from '../auth/language-storage';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getEffectiveLocale } from '../auth/language-storage';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { logNetworkDebug } from '../debug/logging';
 import { defaultAppFetch } from '../platform/default-app-fetch';
@@ -152,6 +152,12 @@ function getE2EExerciseSearchFixture(query: string): ExerciseSearchResult | null
   const normalized = query.trim().toLowerCase();
   if (!normalized)
     return { page: 1, pageSize: 20, total: 0, exercises: [], requestId: 'e2e-exercise-fixture' };
+  if (normalized === 'error') {
+    throw new ExerciseServiceSourceError('service', 'E2E exercise search fixture failure.', {
+      status: 503,
+      requestId: 'e2e-exercise-fixture',
+    });
+  }
   if (!'push'.includes(normalized) && !normalized.includes('push')) {
     return { page: 1, pageSize: 20, total: 0, exercises: [], requestId: 'e2e-exercise-fixture' };
   }
@@ -405,6 +411,9 @@ export async function searchExerciseLibrary(
 ): Promise<ExerciseSearchResult> {
   const fixture = getE2EExerciseSearchFixture(query);
   if (fixture) {
+    // Keep the deterministic browser fixture asynchronous so loading feedback
+    // remains observable in Playwright and manual review.
+    await new Promise((resolve) => setTimeout(resolve, 150));
     return {
       ...fixture,
       pageSize,
