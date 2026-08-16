@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   canAccessNutritionSurface,
+  resolveNutritionBuilderRouteGate,
   resolveNutritionSurfaceGate,
   resolveProfessionalNutritionRouteGate,
 } from './specialty.logic';
@@ -94,6 +94,96 @@ test('redirects students away from professional nutrition routes', () => {
 test('allows active nutritionist professionals to use professional nutrition routes', () => {
   assert.equal(
     resolveProfessionalNutritionRouteGate({
+      role: 'professional',
+      specialties: [
+        { id: 'nutritionist', specialty: 'nutritionist', isActive: true, credential: null },
+      ],
+      specialtiesStatus: 'ready',
+    }),
+    'allow',
+  );
+});
+
+// The nutrition plan builder screen is mounted for both
+// /student/nutrition/plans/:planId and /professional/nutrition/plans/:planId
+// (app/student/nutrition/plans/[planId].tsx re-exports the professional
+// screen). usePathname() can transiently report neither prefix (e.g. '/')
+// while expo-router settles a deep link or an in-flight navigation -- a
+// Student session must never be bounced off their own plan because of that
+// transient value. See resolveNutritionBuilderRouteGate's doc comment.
+test('stays in loading while the builder pathname has not settled to a known prefix, regardless of role', () => {
+  assert.equal(
+    resolveNutritionBuilderRouteGate({
+      pathname: '/',
+      role: 'student',
+      specialties: [],
+      specialtiesStatus: 'idle',
+    }),
+    'loading',
+  );
+  assert.equal(
+    resolveNutritionBuilderRouteGate({
+      pathname: '/',
+      role: 'professional',
+      specialties: [],
+      specialtiesStatus: 'idle',
+    }),
+    'loading',
+  );
+  assert.equal(
+    resolveNutritionBuilderRouteGate({
+      pathname: '',
+      role: null,
+      specialties: [],
+      specialtiesStatus: 'idle',
+    }),
+    'loading',
+  );
+});
+
+test('always allows a settled Student builder pathname, independent of specialties state', () => {
+  assert.equal(
+    resolveNutritionBuilderRouteGate({
+      pathname: '/student/nutrition/plans/new',
+      role: 'student',
+      specialties: [],
+      specialtiesStatus: 'idle',
+    }),
+    'allow',
+  );
+  assert.equal(
+    resolveNutritionBuilderRouteGate({
+      pathname: '/student/nutrition/plans/new',
+      role: null,
+      specialties: [],
+      specialtiesStatus: 'error',
+    }),
+    'allow',
+  );
+});
+
+test('applies the professional route gate once the builder pathname settles to the professional prefix', () => {
+  assert.equal(
+    resolveNutritionBuilderRouteGate({
+      pathname: '/professional/nutrition/plans/new',
+      role: 'student',
+      specialties: [],
+      specialtiesStatus: 'idle',
+    }),
+    'redirect',
+  );
+  assert.equal(
+    resolveNutritionBuilderRouteGate({
+      pathname: '/professional/nutrition/plans/new',
+      role: 'professional',
+      specialties: [],
+      specialtiesStatus: 'loading',
+    }),
+    'loading',
+  );
+  assert.equal(
+    resolveNutritionBuilderRouteGate({
+      pathname: '/professional/nutrition/plans/new',
       role: 'professional',
       specialties: [
         { id: 'nutritionist', specialty: 'nutritionist', isActive: true, credential: null },
