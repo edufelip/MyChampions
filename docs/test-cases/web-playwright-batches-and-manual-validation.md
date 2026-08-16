@@ -91,13 +91,18 @@ manual-only.
 
 The complete mapping, exact flow/checkpoint inventory, documented-use-case coverage, and honest non-visual/specification gaps live in `docs/test-cases/complete-flow-screenshot-atlas.md`.
 
-The registered `web:training` selective suite includes
+The registered `web:exercise-search` selective suite includes
 `e2e/web/exercise-search-modal.spec.ts`, which uses real Playwright Pixel 5
 mobile emulation to assert the initial dialog bounds, focus, named dialog
 semantics, localized initial helper state, search result, and close behavior
 before a query can mask an off-screen opening state. Its compact lane reduces
 the visible height to model the keyboard-open state and fails on page errors or
-console errors.
+console errors. It runs under its own `playwright.training.config.ts` (its own
+dev-server fixture profile), kept as a separate suite from `web:training`
+(which still covers `e2e/web/responsive-shell.spec.ts` under the default
+config) specifically so the shared shell spec's other feature-tagged tests
+(auth, student, professional, connections, nutrition) keep running with the
+fixture environment they actually need instead of the narrower training one.
 
 The atlas is deliberately separate from the three-engine regression batches. It uses Chromium at three responsive widths so the folder names describe product layout modes rather than browser engines. Provider-live, native-device, real assistive-technology, and production deployment validation remain deferred and are not represented as screenshot proof.
 
