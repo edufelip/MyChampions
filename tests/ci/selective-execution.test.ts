@@ -68,6 +68,32 @@ test('server Playwright suites declare their coordinated backend requirement', (
   }
 });
 
+test('exercise-search Playwright suite uses an isolated fixture configuration', () => {
+  // web:exercise-search (not web:training) owns exercise-search-modal.spec.ts
+  // and its own playwright.training.config.ts fixture profile. web:training
+  // stays on the default config for the shared responsive-shell.spec.ts, so
+  // that spec's other feature-tagged tests (auth, student, professional,
+  // connections, nutrition — all tagged at the describe-block level
+  // alongside @feature:training) keep running with the fixture environment
+  // they actually need instead of this narrower one.
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:exercise-search']);
+
+  assert.equal(plan.invocations.length, 1);
+  const invocation = plan.invocations[0];
+  assert.ok(invocation.args.includes('--config=playwright.training.config.ts'));
+  assert.ok(invocation.args.includes('e2e/web/exercise-search-modal.spec.ts'));
+});
+
+test('training Playwright suite stays on the default fixture configuration', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:training']);
+
+  assert.equal(plan.invocations.length, 1);
+  const invocation = plan.invocations[0];
+  assert.ok(invocation.args.includes('--config=playwright.config.ts'));
+  assert.ok(invocation.args.includes('e2e/web/responsive-shell.spec.ts'));
+  assert.ok(!invocation.args.includes('e2e/web/exercise-search-modal.spec.ts'));
+});
+
 test('unknown and wrong-platform suite IDs fail before command construction', () => {
   assert.throws(
     () => createSelectiveExecutionPlan(manifest, 'web', ['web:auth; touch /tmp/should-not-exist']),
