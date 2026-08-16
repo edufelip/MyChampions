@@ -31,6 +31,9 @@ no app restart is required.
 - On mount: `pendingLocale` initialises to `activeLocale` from `LocaleContext`.
 - Tapping a locale row sets `pendingLocale` to that locale (local state only).
 - The tapped row shows a `check` icon; the previous selection loses it.
+- Each locale row is exposed as a semantic radio control with a localized accessible
+  name and an explicit checked state (`aria-checked` on web) that follows the
+  pending selection.
 
 ### Save
 - Save button is **enabled** when `pendingLocale !== activeLocale`.

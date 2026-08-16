@@ -96,7 +96,11 @@ export function normalizeAuthReturnTo(value: string | string[] | null | undefine
 export function resolveAuthGuardRedirect(input: AuthGuardInput): string | null {
   const path = normalizeGuardPathname(input.pathname);
   const isAuthRoute = path.startsWith('/auth/');
-  const isPublicAuthEntry = path === '/auth/sign-in' || path === '/auth/create-account';
+  const isPublicAuthEntry =
+    path === '/auth/sign-in' ||
+    path === '/auth/create-account' ||
+    path === '/auth/forgot-password' ||
+    path === '/auth/password-reset';
   const safeReturnTo = normalizeAuthReturnTo(input.returnTo);
   const currentSharedRecipeReturnTo = isSharedRecipePath(path) ? path : null;
 

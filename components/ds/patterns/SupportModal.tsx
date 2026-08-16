@@ -57,6 +57,7 @@ export function SupportModal({
     isVisible,
     onClose: handleClose,
     testID: 'settings.account.support.modal',
+    dialogTitleTestID: 'settings.account.support.dialog.title',
   });
 
   useEffect(() => {
@@ -70,9 +71,9 @@ export function SupportModal({
   const handleSubmit = async () => {
     const trimmedSubject = subject.trim();
     const trimmedBody = body.trim();
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     await submit({
       subject: trimmedSubject,
       body: trimmedBody,
@@ -105,7 +106,8 @@ export function SupportModal({
                 <View style={styles.modalHeader}>
                   <Text
                     style={[styles.modalTitle, { color: theme.color.textPrimary }]}
-                    accessibilityRole="header">
+                    accessibilityRole="header"
+                    testID="settings.account.support.dialog.title">
                     {t('settings.account.support.dialog.title')}
                   </Text>
                   <Pressable
@@ -115,7 +117,7 @@ export function SupportModal({
                     hitSlop={12}
                     style={styles.closeButton}
                     accessibilityRole="button"
-                    accessibilityLabel={t('common.cta.cancel') as string}
+                    accessibilityLabel={t('settings.account.support.dialog.close') as string}
                     testID="settings.account.support.closeButton">
                     <MaterialIcons
                       name="close"

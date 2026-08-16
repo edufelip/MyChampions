@@ -232,7 +232,7 @@ export default function NutritionPlanBuilderScreen() {
     } else if (!isStarterClone && planId) {
       loadPlan(planId);
     }
-  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan, nutritionGate]);
+  }, [planId, isNew, isStarterClone, loadPlan, initNewPlan, nutritionGate, pathname]);
 
   useEffect(() => {
     if (!shouldNavigateAfterDelete || isDeletingPlan) {
