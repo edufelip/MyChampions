@@ -27,6 +27,7 @@ import {
 } from '@/features/plans/builder-screen';
 import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
 import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
+import { BuilderLoadErrorCard } from '@/features/plans/components/BuilderLoadErrorCard';
 import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
 import { SessionCard } from '@/features/plans/components/SessionCard';
 import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-builder.logic';
@@ -637,44 +638,74 @@ export default function TrainingPlanBuilderScreen() {
         />
       )}
 
-      {/* ── Plan name field ───────────────────────────────────────────────── */}
-      <BuilderInsetGroup theme={theme}>
-        <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
-          {tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
-        </Text>
-        <TextInput
-          ref={planNameRef}
-          style={[styles.titleInput, { color: palette.text }]}
-          placeholder={tr('pro.plan.field.name.placeholder', 'student.plan.field.name.placeholder')}
-          placeholderTextColor={palette.icon}
-          value={values.name}
-          onChangeText={handleNameChange}
-          editable={!isReadOnlyAssignedPlan}
-          accessibilityLabel={tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
-          accessibilityState={isReadOnlyAssignedPlan ? { disabled: true } : undefined}
-          testID="pro.training_plan.name"
+      {/* ── Error state ───────────────────────────────────────────────────── */}
+      {state.kind === 'error' && (
+        <BuilderLoadErrorCard
+          scheme={scheme}
+          message={tr('pro.plan.error.load', 'student.plan.error.load')}
+          errorTextColor={theme.color.danger}
+          retryLabel={t('common.error.retry')}
+          onRetry={() => {
+            if (!isNew && !isStarterClone && planId) {
+              loadPlan(planId);
+            }
+          }}
+          backLabel={tr(
+            'pro.plan.error.cta_back_to_library',
+            'student.plan.error.cta_back_to_library',
+          )}
+          onBack={() =>
+            router.replace(isStudentBuilder ? '/student/training' : '/professional/training')
+          }
+          testIDPrefix="pro.training_plan.error"
         />
-        <Text style={[styles.supportText, { color: palette.icon }]}>
-          {tr('pro.plan.field.name.support', 'student.plan.field.name.support')}
-        </Text>
-        {formErrors.name && (
-          <Text style={[styles.fieldError, { color: palette.danger }]}>
-            {formErrors.name === 'required'
-              ? t('pro.plan.validation.name_required')
-              : t('pro.plan.validation.name_too_short')}
-          </Text>
-        )}
-      </BuilderInsetGroup>
+      )}
 
-      {/* ── Sessions list ─────────────────────────────────────────────────── */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionHeader, { color: palette.text }]}>
-          {tr('pro.plan.section.sessions', 'student.plan.section.sessions')}
-        </Text>
-        <Text style={[styles.supportText, { color: palette.icon, marginTop: 2 }]}>
-          {tr('pro.plan.section.sessions.support', 'student.plan.section.sessions.support')}
-        </Text>
-      </View>
+      {state.kind !== 'error' && (
+        <>
+          {/* ── Plan name field ───────────────────────────────────────────────── */}
+          <BuilderInsetGroup theme={theme}>
+            <Text style={[styles.insetGroupLabel, { color: palette.text }]}>
+              {tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
+            </Text>
+            <TextInput
+              ref={planNameRef}
+              style={[styles.titleInput, { color: palette.text }]}
+              placeholder={tr(
+                'pro.plan.field.name.placeholder',
+                'student.plan.field.name.placeholder',
+              )}
+              placeholderTextColor={palette.icon}
+              value={values.name}
+              onChangeText={handleNameChange}
+              editable={!isReadOnlyAssignedPlan}
+              accessibilityLabel={tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
+              accessibilityState={isReadOnlyAssignedPlan ? { disabled: true } : undefined}
+              testID="pro.training_plan.name"
+            />
+            <Text style={[styles.supportText, { color: palette.icon }]}>
+              {tr('pro.plan.field.name.support', 'student.plan.field.name.support')}
+            </Text>
+            {formErrors.name && (
+              <Text style={[styles.fieldError, { color: palette.danger }]}>
+                {formErrors.name === 'required'
+                  ? t('pro.plan.validation.name_required')
+                  : t('pro.plan.validation.name_too_short')}
+              </Text>
+            )}
+          </BuilderInsetGroup>
+
+          {/* ── Sessions list ─────────────────────────────────────────────────── */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionHeader, { color: palette.text }]}>
+              {tr('pro.plan.section.sessions', 'student.plan.section.sessions')}
+            </Text>
+            <Text style={[styles.supportText, { color: palette.icon, marginTop: 2 }]}>
+              {tr('pro.plan.section.sessions.support', 'student.plan.section.sessions.support')}
+            </Text>
+          </View>
+        </>
+      )}
 
       {isEmptySessionsState && (
         <View style={styles.emptyStateStack}>

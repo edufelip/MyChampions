@@ -952,6 +952,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.validation.macros_non_negative': 'Las metas de macronutrientes deben ser cero o más.',
   'pro.plan.error.save': 'No se pudo guardar el plan. Inténtalo de nuevo.',
   'pro.plan.error.load': 'No se pudo cargar el plan. Inténtalo de nuevo.',
+  'pro.plan.error.cta_back_to_library': 'Volver a la biblioteca',
   'pro.plan.error.assign': 'No se pudo asignar el plan. Inténtalo de nuevo.',
   'pro.plan.picker.title': 'Seleccionar un plan',
   'pro.plan.picker.empty':
@@ -1021,6 +1022,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.predefined.label': 'Plan predefinido',
   'student.plan.error.save': 'No se pudo guardar tu plan. Inténtalo de nuevo.',
   'student.plan.error.load': 'No se pudo cargar tu plan. Inténtalo de nuevo.',
+  'student.plan.error.cta_back_to_library': 'Volver a la biblioteca',
   'student.plan.nutrition.title.create': 'Crear mi plan de alimentación',
   'student.plan.nutrition.title.edit': 'Editar mi plan de alimentación',
   'student.plan.training.title.create': 'Crear mi plan de entrenamiento',
