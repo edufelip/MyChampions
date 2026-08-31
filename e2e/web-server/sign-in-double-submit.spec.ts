@@ -8,6 +8,12 @@ import { captureEvidence } from '../web/support/evidence';
 // what actually has to hold the line is the synchronous client-side submission gate
 // (features/auth/auth-submission-gate.ts) that `onEmailPasswordSignIn` acquires before
 // making the network call. This spec proves the request count, not the DOM attribute.
+//
+// Note on the earlier CI failure investigated for this ticket: the gate itself was
+// never broken (a trace of the failing run showed exactly one sign-in request
+// originating from the triple-click, ~1.1s after an unrelated one from the account-
+// setup fixture's own auto-sign-in step). The test was double-counting requests
+// across two different flows; see the `signInRequests.length = 0` reset below.
 test.describe('@server-auth @critical @feature:auth sign-in double-submit guard', () => {
   test('rapid triple-click on Sign In fires exactly one sign-in request', async ({
     page,
@@ -43,6 +49,17 @@ test.describe('@server-auth @critical @feature:auth sign-in double-submit guard'
     await page.getByTestId('settings.account.signOutCta').click();
     await page.getByTestId('settings.account.signOutConfirmCta').click();
     await expect(page.getByTestId('auth.signIn.title')).toBeVisible();
+
+    // The account-setup fixture above already produced one legitimate
+    // POST /auth/email/sign-in: the server returns 202 (not a session) from
+    // /auth/email/create-account to avoid leaking whether an email is already
+    // registered (see createAccountWithEmailPasswordFromSource in
+    // features/auth/email-auth-source.ts), so the client immediately signs in
+    // to establish the session. That call is unrelated to the double-submit
+    // guard under test here, so drop it from the count before starting the
+    // actual rapid-triple-click repro — otherwise this spec would always see
+    // one extra request regardless of whether the guard holds.
+    signInRequests.length = 0;
 
     await page.getByTestId('auth.signIn.emailInput').fill(email);
     await page.getByTestId('auth.signIn.passwordInput').fill(password);
