@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   normalizeSpecialty,
   checkSpecialtyRemoval,
@@ -196,4 +195,33 @@ test('normalizeSpecialtyActionError maps configuration error', () => {
 test('normalizeSpecialtyActionError returns unknown for unrecognized input', () => {
   assert.equal(normalizeSpecialtyActionError(null), 'unknown');
   assert.equal(normalizeSpecialtyActionError({ message: 'something weird' }), 'unknown');
+});
+
+// Regression guard (ET-160): a ProfessionalSourceError with the real shape
+// thrown by requireServerResult() in professional-source.ts — code
+// 'configuration' (lowercase, not one of the uppercase server codes checked
+// above) and a raw, internal-facing message ("<operation> requires local
+// server auth.") — must classify as 'configuration', not 'unknown'. Before
+// the fix, neither the `code` check (looked for uppercase constants like
+// 'ALREADY_EXISTS') nor the message check (looked for 'endpoint'/'config')
+// matched this exact shape, so callers fell through to 'unknown' and the
+// specialties-load path ended up rendering the raw error.message verbatim
+// on /professional/specialty instead of translated, user-facing copy.
+test('normalizeSpecialtyActionError maps the real requires-local-server-auth error shape', () => {
+  assert.equal(
+    normalizeSpecialtyActionError({
+      code: 'configuration',
+      message: 'Professional specialty reads requires local server auth.',
+    }),
+    'configuration',
+  );
+});
+
+test('normalizeSpecialtyActionError maps requires-local-server-auth by message alone', () => {
+  assert.equal(
+    normalizeSpecialtyActionError({
+      message: 'Specialty removal requires local server auth.',
+    }),
+    'configuration',
+  );
 });
