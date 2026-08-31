@@ -446,6 +446,15 @@
       "tier": "feature",
       "ci": true
     },
+    "web:student-nutrition-error": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.student-nutrition-error.config.ts",
+      "projects": ["chromium"],
+      "specs": ["e2e/web-nutrition-error/student-nutrition-tab-error-recovery.spec.ts"],
+      "grep": "@feature:nutrition",
+      "tier": "feature",
+      "ci": true
+    },
     "web:specialty-removal-assist": {
       "runner": "playwright-evidence",
       "projects": ["chromium"],
