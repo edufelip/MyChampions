@@ -334,7 +334,7 @@ export default function ProfessionalSpecialtyScreen() {
           style={[styles.errorText, { color: theme.color.danger }]}
           testID="pro.specialty.error"
         >
-          {state.message}
+          {t('pro.specialty.load_error')}
         </Text>
       ) : null}
 
