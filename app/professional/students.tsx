@@ -79,6 +79,9 @@ export default function ProfessionalStudentsScreen() {
   const router = useRouter();
   const { width: viewportWidth } = useWindowDimensions();
   const usesCompactRows = viewportWidth < 480;
+  // Narrower than usesCompactRows: below this width the hero row (icon + title +
+  // bulk-assign CTA) is tight enough that the title wraps mid-word (ET-159), so the
+  // CTA moves to its own row beneath the title/subtitle to give the title more room.
   const usesCompactHero = viewportWidth < 380;
   const { currentUser } = useAuthSession();
   const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
@@ -211,6 +214,24 @@ export default function ProfessionalStudentsScreen() {
     router.push('/professional/home');
   }
 
+  const bulkAssignCta = (
+    <DsPillButton
+      scheme={scheme}
+      variant="outline"
+      size="xs"
+      label={
+        isSelectionMode ? t('pro.students.bulk_assign.cancel') : t('pro.students.bulk_assign.cta')
+      }
+      onPress={() => {
+        setIsSelectionMode(!isSelectionMode);
+        setBulkPlanType('nutrition');
+        setSelectedStudentUids([]);
+      }}
+      fullWidth={false}
+      testID="pro.students.bulkAssignToggle"
+    />
+  );
+
   return (
     <DsScreen
       scheme={scheme}
@@ -261,46 +282,12 @@ export default function ProfessionalStudentsScreen() {
                   : t('pro.students.bulk_assign.select_hint')}
               </Text>
             </View>
-            {!usesCompactHero && !shouldRenderHeroEmptyState && !shouldRenderErrorState && (
-              <DsPillButton
-                scheme={scheme}
-                variant="outline"
-                size="xs"
-                label={
-                  isSelectionMode
-                    ? t('pro.students.bulk_assign.cancel')
-                    : t('pro.students.bulk_assign.cta')
-                }
-                onPress={() => {
-                  setIsSelectionMode(!isSelectionMode);
-                  setBulkPlanType('nutrition');
-                  setSelectedStudentUids([]);
-                }}
-                fullWidth={false}
-                testID="pro.students.bulkAssignToggle"
-              />
-            )}
+            {!usesCompactHero && !shouldRenderHeroEmptyState && !shouldRenderErrorState
+              ? bulkAssignCta
+              : null}
           </View>
           {usesCompactHero && !shouldRenderHeroEmptyState && !shouldRenderErrorState && (
-            <View style={styles.heroActionRow}>
-              <DsPillButton
-                scheme={scheme}
-                variant="outline"
-                size="xs"
-                label={
-                  isSelectionMode
-                    ? t('pro.students.bulk_assign.cancel')
-                    : t('pro.students.bulk_assign.cta')
-                }
-                onPress={() => {
-                  setIsSelectionMode(!isSelectionMode);
-                  setBulkPlanType('nutrition');
-                  setSelectedStudentUids([]);
-                }}
-                fullWidth={false}
-                testID="pro.students.bulkAssignToggle"
-              />
-            </View>
+            <View style={styles.heroActionRow}>{bulkAssignCta}</View>
           )}
         </View>
       </DsCard>
