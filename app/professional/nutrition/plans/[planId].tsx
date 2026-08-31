@@ -33,6 +33,7 @@ import {
 } from '@/features/plans/builder-screen';
 import { BuilderAlertBanner } from '@/features/plans/components/BuilderAlertBanner';
 import { BuilderBackgroundErrorBanner } from '@/features/plans/components/BuilderBackgroundErrorBanner';
+import { BuilderLoadErrorCard } from '@/features/plans/components/BuilderLoadErrorCard';
 import { BuilderLoadingScrim } from '@/features/plans/components/BuilderLoadingScrim';
 import { PlanMetadataForm } from '@/features/plans/components/PlanMetadataForm';
 import { isStarterTemplate, calculateTotalsFromItems } from '@/features/plans/plan-builder.logic';
@@ -499,10 +500,24 @@ export default function NutritionPlanBuilderScreen() {
 
       {/* ── Error state ───────────────────────────────────────────────────── */}
       {state.kind === 'error' && (
-        <BuilderAlertBanner
+        <BuilderLoadErrorCard
+          scheme={scheme}
           message={tr('pro.plan.error.load', 'student.plan.error.load')}
-          backgroundColor={palette.icon}
-          textColor={palette.background}
+          errorTextColor={theme.color.danger}
+          retryLabel={t('common.error.retry')}
+          onRetry={() => {
+            if (!isNew && !isStarterClone && planId) {
+              loadPlan(planId);
+            }
+          }}
+          backLabel={tr(
+            'pro.plan.error.cta_back_to_library',
+            'student.plan.error.cta_back_to_library',
+          )}
+          onBack={() =>
+            router.replace(isStudentBuilder ? '/student/nutrition' : '/professional/nutrition')
+          }
+          testIDPrefix="pro.nutrition_plan.error"
         />
       )}
 
@@ -513,35 +528,39 @@ export default function NutritionPlanBuilderScreen() {
         />
       )}
 
-      {/* Plan metadata form ────────────────────────────────────────────── */}
-      <PlanMetadataForm
-        palette={palette}
-        theme={theme}
-        t={t}
-        tr={tr}
-        name={values.name}
-        hydrationGoalMl={values.hydrationGoalMl}
-        caloriesTarget={state.kind === 'ready' ? String(state.plan.caloriesTarget) : '0'}
-        carbsTarget={state.kind === 'ready' ? String(state.plan.carbsTarget) : '0'}
-        proteinsTarget={state.kind === 'ready' ? String(state.plan.proteinsTarget) : '0'}
-        fatsTarget={state.kind === 'ready' ? String(state.plan.fatsTarget) : '0'}
-        errors={formErrors}
-        onNameChange={(v) => handleFieldChange('name', v)}
-        onHydrationGoalChange={(v) => handleFieldChange('hydrationGoalMl', v)}
-        autoFocus={isNew && !values.name}
-        readOnly={isReadOnlyAssignedPlan}
-        testIDPrefix="pro.plan.metadata"
-      />
+      {state.kind !== 'error' && (
+        <>
+          {/* Plan metadata form ────────────────────────────────────────────── */}
+          <PlanMetadataForm
+            palette={palette}
+            theme={theme}
+            t={t}
+            tr={tr}
+            name={values.name}
+            hydrationGoalMl={values.hydrationGoalMl}
+            caloriesTarget={state.kind === 'ready' ? String(state.plan.caloriesTarget) : '0'}
+            carbsTarget={state.kind === 'ready' ? String(state.plan.carbsTarget) : '0'}
+            proteinsTarget={state.kind === 'ready' ? String(state.plan.proteinsTarget) : '0'}
+            fatsTarget={state.kind === 'ready' ? String(state.plan.fatsTarget) : '0'}
+            errors={formErrors}
+            onNameChange={(v) => handleFieldChange('name', v)}
+            onHydrationGoalChange={(v) => handleFieldChange('hydrationGoalMl', v)}
+            autoFocus={isNew && !values.name}
+            readOnly={isReadOnlyAssignedPlan}
+            testIDPrefix="pro.plan.metadata"
+          />
 
-      {/* ── Food items list ───────────────────────────────────────────────── */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionHeader, { color: palette.text }]}>
-          {tr('pro.plan.section.meals', 'student.plan.section.meals')}
-        </Text>
-        <Text style={[styles.supportText, { color: palette.icon, marginTop: 2 }]}>
-          {tr('pro.plan.section.meals.support', 'student.plan.section.meals.support')}
-        </Text>
-      </View>
+          {/* ── Food items list ───────────────────────────────────────────────── */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionHeader, { color: palette.text }]}>
+              {tr('pro.plan.section.meals', 'student.plan.section.meals')}
+            </Text>
+            <Text style={[styles.supportText, { color: palette.icon, marginTop: 2 }]}>
+              {tr('pro.plan.section.meals.support', 'student.plan.section.meals.support')}
+            </Text>
+          </View>
+        </>
+      )}
 
       {/* ── Add meal form ─────────────────────────────────────────────────── */}
       {canEditPlan && !isSortMode && state.kind === 'ready' && addMealForm.kind === 'open' && (

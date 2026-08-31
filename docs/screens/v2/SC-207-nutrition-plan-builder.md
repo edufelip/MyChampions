@@ -74,7 +74,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
 | Saving | `createPlan`, `savePlan`, delete plan, add/remove/reorder meal/item in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with item list, CTAs |
-| Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
+| Error | Initial `loadPlan` fetch failed | Replaces the form entirely with a `DsCard` error state (`role="alert"`, `accessibilityLiveRegion="polite"`): message, Retry (re-invokes `loadPlan`), and Back to library. No metadata inputs, add-meal, or Save controls are mounted while in this state. |
 | Food search idle | No query | Placeholder shown |
 | Food search searching | Query in flight | Search loading indicator |
 | Food search done | Results returned | Result list (empty state helper shown) |
@@ -181,6 +181,7 @@ Plan library and builder persistence use the MyChampions server through `feature
 | `pro.plan.validation.macros_non_negative` | Negative macros error |
 | `pro.plan.error.save` | Save error |
 | `pro.plan.error.load` | Load error |
+| `pro.plan.error.cta_back_to_library` | Back to library CTA on the load-error state |
 | `pro.plan.error.assign` | Assign error |
 | `pro.plan.assign.title` | Assign modal title |
 | `pro.plan.assign.student_count` | Student count label |

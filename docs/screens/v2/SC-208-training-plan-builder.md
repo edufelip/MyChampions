@@ -86,7 +86,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
 | Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
-| Error | Source fetch or mutation failed | Inline error with retry; `accessibilityLiveRegion="polite"` |
+| Error | Initial `loadPlan` fetch failed | Replaces the form entirely with a `DsCard` error state (`role="alert"`, `accessibilityLiveRegion="polite"`): message, Retry (re-invokes `loadPlan`), and Back to library. No plan-name field, add-session, or Save controls are mounted while in this state. |
 
 ## Validation Rules
 - Plan name is required and must be at least 2 characters (BR-293).
@@ -173,6 +173,7 @@ Plan library reads, predefined assignment/draft operations, and builder mutation
 | `pro.plan.validation.name_too_short` | Name too short error |
 | `pro.plan.error.save` | Save error |
 | `pro.plan.error.load` | Load error |
+| `pro.plan.error.cta_back_to_library` | Back to library CTA on the load-error state |
 | `pro.plan.error.assign` | Assign error |
 | `pro.plan.assign.title` | Assign modal title |
 | `pro.plan.assign.student_count` | Student count label |

@@ -407,7 +407,8 @@
       "projects": ["chromium"],
       "specs": [
         "e2e/web/responsive-shell.spec.ts",
-        "e2e/web/custom-meal-library-error-recovery.spec.ts"
+        "e2e/web/custom-meal-library-error-recovery.spec.ts",
+        "e2e/web/nutrition-plan-load-error.spec.ts"
       ],
       "grep": "@feature:nutrition",
       "tier": "feature",
@@ -416,7 +417,7 @@
     "web:training": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts"],
+      "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/training-plan-load-error.spec.ts"],
       "grep": "@feature:training",
       "tier": "feature",
       "ci": true
