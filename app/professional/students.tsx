@@ -79,6 +79,7 @@ export default function ProfessionalStudentsScreen() {
   const router = useRouter();
   const { width: viewportWidth } = useWindowDimensions();
   const usesCompactRows = viewportWidth < 480;
+  const usesCompactHero = viewportWidth < 380;
   const { currentUser } = useAuthSession();
   const { state: specialtiesState } = useSpecialties(Boolean(currentUser));
   const inviteSpecialty =
@@ -230,50 +231,76 @@ export default function ProfessionalStudentsScreen() {
 
       <DsCard scheme={scheme} style={styles.heroCard} testID="pro.students.hero">
         <View style={styles.heroHeader}>
-          <View
-            style={[
-              styles.heroIconWrap,
-              {
-                backgroundColor: theme.color.accentPrimarySoft,
-                borderColor: theme.color.accentPrimary,
-              },
-            ]}
-          >
-            <MaterialIcons name="groups" size={20} color={theme.color.accentPrimary} />
+          <View style={styles.heroTopRow}>
+            <View
+              style={[
+                styles.heroIconWrap,
+                {
+                  backgroundColor: theme.color.accentPrimarySoft,
+                  borderColor: theme.color.accentPrimary,
+                },
+              ]}
+            >
+              <MaterialIcons name="groups" size={20} color={theme.color.accentPrimary} />
+            </View>
+            <View style={styles.heroCopy} testID="pro.students.hero.copy">
+              <Text
+                style={[styles.screenTitle, { color: theme.color.textPrimary }]}
+                testID="pro.students.hero.title"
+              >
+                {isSelectionMode
+                  ? t('pro.students.bulk_assign.selection_mode')
+                  : t('pro.students.title')}
+              </Text>
+              <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
+                {isSelectionMode
+                  ? t('pro.plan.assign.student_count').replace(
+                      '{count}',
+                      String(selectedStudentUids.length),
+                    )
+                  : t('pro.students.bulk_assign.select_hint')}
+              </Text>
+            </View>
+            {!usesCompactHero && !shouldRenderHeroEmptyState && !shouldRenderErrorState && (
+              <DsPillButton
+                scheme={scheme}
+                variant="outline"
+                size="xs"
+                label={
+                  isSelectionMode
+                    ? t('pro.students.bulk_assign.cancel')
+                    : t('pro.students.bulk_assign.cta')
+                }
+                onPress={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  setBulkPlanType('nutrition');
+                  setSelectedStudentUids([]);
+                }}
+                fullWidth={false}
+                testID="pro.students.bulkAssignToggle"
+              />
+            )}
           </View>
-          <View style={styles.heroCopy}>
-            <Text style={[styles.screenTitle, { color: theme.color.textPrimary }]}>
-              {isSelectionMode
-                ? t('pro.students.bulk_assign.selection_mode')
-                : t('pro.students.title')}
-            </Text>
-            <Text style={[styles.screenSubtitle, { color: theme.color.textSecondary }]}>
-              {isSelectionMode
-                ? t('pro.plan.assign.student_count').replace(
-                    '{count}',
-                    String(selectedStudentUids.length),
-                  )
-                : t('pro.students.bulk_assign.select_hint')}
-            </Text>
-          </View>
-          {!shouldRenderHeroEmptyState && !shouldRenderErrorState && (
-            <DsPillButton
-              scheme={scheme}
-              variant="outline"
-              size="xs"
-              label={
-                isSelectionMode
-                  ? t('pro.students.bulk_assign.cancel')
-                  : t('pro.students.bulk_assign.cta')
-              }
-              onPress={() => {
-                setIsSelectionMode(!isSelectionMode);
-                setBulkPlanType('nutrition');
-                setSelectedStudentUids([]);
-              }}
-              fullWidth={false}
-              testID="pro.students.bulkAssignToggle"
-            />
+          {usesCompactHero && !shouldRenderHeroEmptyState && !shouldRenderErrorState && (
+            <View style={styles.heroActionRow}>
+              <DsPillButton
+                scheme={scheme}
+                variant="outline"
+                size="xs"
+                label={
+                  isSelectionMode
+                    ? t('pro.students.bulk_assign.cancel')
+                    : t('pro.students.bulk_assign.cta')
+                }
+                onPress={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  setBulkPlanType('nutrition');
+                  setSelectedStudentUids([]);
+                }}
+                fullWidth={false}
+                testID="pro.students.bulkAssignToggle"
+              />
+            </View>
           )}
         </View>
       </DsCard>
@@ -681,9 +708,16 @@ const styles = StyleSheet.create({
     padding: DsSpace.md,
   },
   heroHeader: {
+    gap: DsSpace.sm,
+  },
+  heroTopRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: DsSpace.sm,
+  },
+  heroActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   heroIconWrap: {
     alignItems: 'center',
