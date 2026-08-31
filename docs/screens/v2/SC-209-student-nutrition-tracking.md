@@ -24,7 +24,7 @@
 - Loading: fetch current-day plan targets and existing logs.
 - Empty: no active nutrition assignment; show illustrated acquisition empty state with direct nutritionist-hiring CTA and secondary self-guided action that opens student self-managed nutrition plan creation.
 - Waiting: active nutritionist Connection exists but no published assigned plan exists; block self-managed create/edit and explain that the nutritionist is preparing the plan.
-- Error: log write/read failure.
+- Error: settled plan/connection load failure (`nutritionDisplayState === 'load_error'`) renders a standalone card with the generic error copy and a `Try again` Retry control that re-invokes both the plans and connections reload (ET-163). Log write/read failure surfaces inline per-widget (for example, the water-intake log) rather than replacing the whole screen.
 - Success: totals update and adherence status visible.
 - Plan context and plan-change request actions are consumed through centralized plans store via `usePlans`.
 

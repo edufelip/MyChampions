@@ -935,6 +935,13 @@ export function shouldExposePlanInMyPlans(raw: PlanVisibilityInput, currentUid: 
 
 export async function getMyPlans(deps = defaultDeps): Promise<Plan[]> {
   if (deps === defaultDeps) {
+    if (
+      getE2EPlanSourceOverride() &&
+      process.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE === 'error'
+    ) {
+      throw new PlanSourceError('network', 'E2E fixture: forced plan list read failure.');
+    }
+
     const e2ePlans = getE2EAssignedPlanFixtures();
     if (e2ePlans) return e2ePlans;
   }
