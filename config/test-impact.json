@@ -387,7 +387,8 @@
       "projects": ["chromium", "firefox", "webkit"],
       "specs": [
         "e2e/web-server/auth-session.spec.ts",
-        "e2e/web-server/create-account-enumeration.spec.ts"
+        "e2e/web-server/create-account-enumeration.spec.ts",
+        "e2e/web-server/sign-in-double-submit.spec.ts"
       ],
       "grep": "@feature:auth|@critical",
       "tier": "critical",

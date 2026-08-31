@@ -1,0 +1,83 @@
+import { expect, test } from '@playwright/test';
+import { captureEvidence } from '../web/support/evidence';
+
+// ET-162: a rapid triple-click on the sign-in "Sign In" button must not fire more than
+// one POST /auth/email/sign-in request. The DOM `disabled` attribute on the submit
+// button only reflects the async React "submitting" state, so it can still read
+// `false` in the instant right after the clicks land (see the ticket's evidence) —
+// what actually has to hold the line is the synchronous client-side submission gate
+// (features/auth/auth-submission-gate.ts) that `onEmailPasswordSignIn` acquires before
+// making the network call. This spec proves the request count, not the DOM attribute.
+//
+// Note on the earlier CI failure investigated for this ticket: the gate itself was
+// never broken (a trace of the failing run showed exactly one sign-in request
+// originating from the triple-click, ~1.1s after an unrelated one from the account-
+// setup fixture's own auto-sign-in step). The test was double-counting requests
+// across two different flows; see the `signInRequests.length = 0` reset below.
+test.describe('@server-auth @critical @feature:auth sign-in double-submit guard', () => {
+  test('rapid triple-click on Sign In fires exactly one sign-in request', async ({
+    page,
+  }, testInfo) => {
+    const email = `et162-double-submit-${testInfo.project.name}-${Date.now()}@example.test`;
+    const password = 'StrongPassword1!';
+
+    // Attach the sign-in request listener before any navigation so a future refactor
+    // that triggers a sign-in call earlier in the flow can't silently escape the count.
+    const signInRequests: string[] = [];
+    page.on('request', (req) => {
+      if (req.url().includes('/auth/email/sign-in') && req.method() === 'POST') {
+        signInRequests.push(req.url());
+      }
+    });
+
+    await page.goto('/auth/create-account');
+    await page.getByTestId('auth.createAccount.nameInput').fill('ET162 Double Submit');
+    await page.getByTestId('auth.createAccount.emailInput').fill(email);
+    await page.getByTestId('auth.createAccount.passwordInput').fill(password);
+    await page.getByTestId('auth.createAccount.passwordConfirmationInput').fill(password);
+    await captureEvidence(page, testInfo, 'et162-01-create-account-filled');
+    await page.getByTestId('auth.createAccount.submitButton').click();
+    await expect(page.getByTestId('auth.terms.screen')).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId('auth.terms.checkbox').click();
+    await page.getByTestId('auth.terms.acceptButton').click();
+    await expect(page.getByTestId('auth.roleSelection.screen')).toBeVisible();
+    await page.getByTestId('auth.roleSelection.studentCard').click();
+    await page.getByTestId('auth.roleSelection.continueButton').click();
+    await expect(page.getByTestId('student.home.screen').last()).toBeVisible({ timeout: 15_000 });
+
+    await page.getByTestId('tabs.account').last().click();
+    await page.getByTestId('settings.account.signOutCta').click();
+    await page.getByTestId('settings.account.signOutConfirmCta').click();
+    await expect(page.getByTestId('auth.signIn.title')).toBeVisible();
+
+    // The account-setup fixture above already produced one legitimate
+    // POST /auth/email/sign-in: the server returns 202 (not a session) from
+    // /auth/email/create-account to avoid leaking whether an email is already
+    // registered (see createAccountWithEmailPasswordFromSource in
+    // features/auth/email-auth-source.ts), so the client immediately signs in
+    // to establish the session. That call is unrelated to the double-submit
+    // guard under test here, so drop it from the count before starting the
+    // actual rapid-triple-click repro — otherwise this spec would always see
+    // one extra request regardless of whether the guard holds.
+    signInRequests.length = 0;
+
+    await page.getByTestId('auth.signIn.emailInput').fill(email);
+    await page.getByTestId('auth.signIn.passwordInput').fill(password);
+    await captureEvidence(page, testInfo, 'et162-02-sign-in-filled');
+
+    // Fire three back-to-back clicks synchronously in the page, mirroring the ticket's
+    // repro (no delay between clicks, disabled-state race included).
+    await page.evaluate(() => {
+      const button = document.querySelector<HTMLElement>(
+        '[data-testid="auth.signIn.submitButton"]',
+      );
+      button?.click();
+      button?.click();
+      button?.click();
+    });
+
+    await expect(page.getByTestId('student.home.screen').last()).toBeVisible({ timeout: 15_000 });
+    await captureEvidence(page, testInfo, 'et162-03-sign-in-single-request-succeeded');
+    expect(signInRequests.length).toBe(1);
+  });
+});
