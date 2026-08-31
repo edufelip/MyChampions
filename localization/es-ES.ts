@@ -439,6 +439,7 @@ export const esES: Record<TranslationKey, string> = {
     'No se puede eliminar: se requiere al menos una especialidad.',
   'pro.specialty.remove_error': 'No se pudo eliminar la especialidad. Inténtalo de nuevo.',
   'pro.specialty.add_error': 'No se pudo añadir la especialidad. Inténtalo de nuevo.',
+  'pro.specialty.load_error': 'No se pudieron cargar tus especialidades. Inténtalo de nuevo.',
   'pro.specialty.credential.title': 'Credencial de registro (opcional)',
   'pro.specialty.credential.registry_id.label': 'Número de registro',
   'pro.specialty.credential.registry_id.placeholder': 'ej.: CRN-12345',
