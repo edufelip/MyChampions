@@ -198,7 +198,17 @@ export function normalizeSpecialtyActionError(error: unknown): SpecialtyActionEr
     if (code === 'REMOVAL_BLOCKED' || msg?.includes('removal blocked')) return 'removal_blocked';
     if (code === 'LAST_SPECIALTY' || msg?.includes('last specialty')) return 'last_specialty';
     if (code === 'NETWORK_ERROR' || msg?.includes('network')) return 'network';
-    if (msg?.includes('endpoint') || msg?.includes('config')) return 'configuration';
+    // ProfessionalSourceError sets its own `code` to the lowercase literal
+    // 'configuration' (features/professional/professional-source.ts), and its
+    // message reads "<operation> requires local server auth." — an internal,
+    // developer-facing string that must never reach the UI verbatim (ET-160).
+    if (
+      code === 'configuration' ||
+      msg?.includes('requires local server auth') ||
+      msg?.includes('endpoint') ||
+      msg?.includes('config')
+    )
+      return 'configuration';
   }
   return 'unknown';
 }

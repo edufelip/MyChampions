@@ -10,6 +10,7 @@
 - Screen shell uses `DsScreen` with blob background and themed canvas.
 - SC-205 adopts the SC-204 professional surface baseline with a top hero header and stronger vertical hierarchy.
 - Hero header is rendered as an elevated card with contextual `groups` icon and compact helper copy.
+- Below a 380px CSS viewport width, the hero header stacks the "Bulk assign plan" pill onto its own row beneath the icon/title/subtitle row instead of sharing the top row with them; at 320px width, keeping all three in one row squeezed the title column narrow enough that "My students" wrapped mid-word ("stude" / "nts") instead of between whole words (ET-159). `usesCompactHero` in `app/professional/students.tsx` drives the breakpoint; the 390px+ layout (pill inline with the title) is unchanged.
 - Because roster rows use `FlatList`, SC-205 sets `DsScreen scrollable={false}` so VirtualizedList windowing remains valid (no nested ScrollView).
 - Empty roster state uses a centered hero illustration (soft glow + group-add icon), headline/body copy, and two stacked CTAs.
 - Search/filter controls are grouped in an elevated `DsCard` with search icon input and pill-style filter chips.

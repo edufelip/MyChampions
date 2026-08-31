@@ -161,7 +161,12 @@
       "sourcePaths": ["features/professional/**", "app/professional/**", "app/(tabs)/students.tsx"],
       "dependsOn": ["auth", "connections", "nutrition", "offline", "plans", "platform"],
       "unitTests": ["features/professional/**/*.test.ts"],
-      "webSuites": ["web:professional", "web:professional-home", "web:shell"],
+      "webSuites": [
+        "web:professional",
+        "web:professional-home",
+        "web:professional-students-roster",
+        "web:shell"
+      ],
       "detoxSuites": ["detox:professional"],
       "owners": ["@edufelip"]
     },
@@ -444,6 +449,24 @@
       "projects": ["mobile-professional", "mobile-professional-pt", "mobile-professional-es"],
       "specs": ["e2e/web/professional-home-responsive.spec.ts"],
       "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:professional-students-roster": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.professional-students-roster.config.ts",
+      "projects": ["mobile-professional"],
+      "specs": ["e2e/web/professional-students-roster-responsive.spec.ts"],
+      "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:student-nutrition-error": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.student-nutrition-error.config.ts",
+      "projects": ["chromium"],
+      "specs": ["e2e/web-nutrition-error/student-nutrition-tab-error-recovery.spec.ts"],
+      "grep": "@feature:nutrition",
       "tier": "feature",
       "ci": true
     },

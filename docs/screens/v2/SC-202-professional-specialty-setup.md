@@ -32,7 +32,9 @@
 ## States
 - Loading: fetch specialty profile and persist specialty updates.
 - Empty: no specialty selected yet.
-- Error: save failure or malformed credential payload.
+- Error: load failure, save failure, or malformed credential payload. A specialties-load failure
+  (e.g. a missing/expired access token) always renders translated, generic copy
+  (`pro.specialty.load_error`) — never a raw internal error string. See ET-160.
 - Success: specialty changes persisted.
 
 ## Validation Rules

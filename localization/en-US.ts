@@ -420,6 +420,7 @@ export const enUS = {
   'pro.specialty.remove_blocked.last': 'Cannot remove: at least one specialty is required.',
   'pro.specialty.remove_error': 'Could not remove specialty. Try again.',
   'pro.specialty.add_error': 'Could not add specialty. Try again.',
+  'pro.specialty.load_error': 'Could not load your specialties. Try again.',
   'pro.specialty.credential.title': 'Registry credential (optional)',
   'pro.specialty.credential.registry_id.label': 'Registry ID',
   'pro.specialty.credential.registry_id.placeholder': 'e.g. CRN-12345',
