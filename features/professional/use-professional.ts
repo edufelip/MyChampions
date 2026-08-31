@@ -5,7 +5,13 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-
+import {
+  resolveDisplayInviteCode,
+  normalizeInviteCodeActionError,
+  type InviteCode,
+  type DisplayInviteCode,
+  type InviteCodeActionErrorReason,
+} from './connection-invite.logic';
 import {
   getOrCreateActiveInviteCode,
   rotateInviteCode,
@@ -15,13 +21,6 @@ import {
   removeProfessionalSpecialty,
   upsertProfessionalCredential,
 } from './professional-source';
-import {
-  resolveDisplayInviteCode,
-  normalizeInviteCodeActionError,
-  type InviteCode,
-  type DisplayInviteCode,
-  type InviteCodeActionErrorReason,
-} from './connection-invite.logic';
 import {
   checkSpecialtyRemoval,
   normalizeSpecialtyActionError,
@@ -47,7 +46,7 @@ export type InviteCodeLoadState =
 export type SpecialtiesLoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; reason: SpecialtyActionErrorReason }
   | { kind: 'ready'; specialties: SpecialtyRecord[]; lastSyncedAtIso: string };
 
 // ─── Invite code hook ─────────────────────────────────────────────────────────
@@ -149,8 +148,12 @@ export function useSpecialties(isAuthenticated: boolean): UseSpecialtiesResult {
       .then((specialties) => {
         setState({ kind: 'ready', specialties, lastSyncedAtIso: new Date().toISOString() });
       })
-      .catch((err: Error) => {
-        setState({ kind: 'error', message: err.message });
+      .catch((err: unknown) => {
+        // Never surface err.message directly — it can be an internal,
+        // developer-facing string (e.g. ProfessionalSourceError's "requires
+        // local server auth" guard). Classify it into a safe reason instead
+        // and let the screen render translated, user-facing copy (ET-160).
+        setState({ kind: 'error', reason: normalizeSpecialtyActionError(err) });
       });
   }, [isAuthenticated]);
 

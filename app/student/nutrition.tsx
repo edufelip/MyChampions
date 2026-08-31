@@ -67,10 +67,13 @@ export default function StudentNutritionScreen() {
   const waterHook = useWaterTracking(Boolean(currentUser), todayKey());
   const {
     state: plansState,
+    reload: reloadPlans,
     submitChangeRequest,
     validateChangeRequest,
   } = usePlans(Boolean(currentUser));
-  const { state: connectionsState } = useConnections(Boolean(currentUser));
+  const { state: connectionsState, reload: reloadConnections } = useConnections(
+    Boolean(currentUser),
+  );
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
     waterHook.state.kind === 'ready' ? waterHook.state.lastSyncedAtIso : null,
     plansState.kind === 'ready' ? plansState.lastSyncedAtIso : null,
@@ -166,6 +169,11 @@ export default function StudentNutritionScreen() {
     }, []),
   );
 
+  const handleRetryNutritionLoad = () => {
+    reloadPlans();
+    reloadConnections();
+  };
+
   const toggleMealExpand = (mealId: string) => {
     setExpandedMealIds((prev) =>
       prev.includes(mealId) ? prev.filter((id) => id !== mealId) : [...prev, mealId],
@@ -260,10 +268,23 @@ export default function StudentNutritionScreen() {
               />
             </DsCard>
           ) : nutritionDisplayState === 'load_error' ? (
-            <DsCard scheme={scheme} style={styles.loadingCard} testID="student.nutrition.loadError">
-              <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
-                {t('common.error.generic')}
-              </Text>
+            <DsCard
+              scheme={scheme}
+              style={styles.loadErrorCard}
+              testID="student.nutrition.loadError"
+            >
+              <View accessibilityLiveRegion="polite" accessibilityRole="alert">
+                <Text style={[styles.loadErrorText, { color: theme.color.danger }]}>
+                  {t('common.error.generic')}
+                </Text>
+              </View>
+              <DsPillButton
+                scheme={scheme}
+                label={t('common.error.retry')}
+                onPress={handleRetryNutritionLoad}
+                style={styles.loadErrorRetryCta}
+                testID="student.nutrition.loadError.retry"
+              />
             </DsCard>
           ) : nutritionState.kind === 'assigned' && assignedNutritionPlan ? (
             <>
@@ -1109,9 +1130,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 120,
   },
+  loadErrorCard: {
+    alignItems: 'center',
+    gap: DsSpace.sm,
+    justifyContent: 'center',
+    minHeight: 120,
+  },
   loadErrorText: {
     ...DsTypography.caption,
     textAlign: 'center',
+  },
+  loadErrorRetryCta: {
+    minWidth: 140,
   },
   emptyStateWrap: {
     alignItems: 'center',

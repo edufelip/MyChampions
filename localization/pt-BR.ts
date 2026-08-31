@@ -442,6 +442,7 @@ export const ptBR: Record<TranslationKey, string> = {
     'Não é possível remover: pelo menos uma especialidade é obrigatória.',
   'pro.specialty.remove_error': 'Não foi possível remover a especialidade. Tente novamente.',
   'pro.specialty.add_error': 'Não foi possível adicionar a especialidade. Tente novamente.',
+  'pro.specialty.load_error': 'Não foi possível carregar suas especialidades. Tente novamente.',
   'pro.specialty.credential.title': 'Credencial de registro (opcional)',
   'pro.specialty.credential.registry_id.label': 'Número de registro',
   'pro.specialty.credential.registry_id.placeholder': 'ex.: CRN-12345',
