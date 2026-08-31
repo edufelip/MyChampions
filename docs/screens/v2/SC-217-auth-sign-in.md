@@ -36,6 +36,7 @@
 - Known sign-in failures must show reason-specific actionable copy.
 - Accessibility baseline applies for text scaling, contrast, focus order, and control labels.
 - Browser auth uses cookie session mode: the access token stays in memory and the rotating refresh token is HttpOnly. Reload restoration never reads browser storage.
+- All three submission paths (email/password, Google, Apple) are guarded against duplicate concurrent submits by a synchronous client-side submission gate (`createAuthSubmissionGate` in `features/auth/auth-submission-gate.ts`) acquired before any network call and released in a `finally` block: a rapid multi-click on the primary CTA fires exactly one request per provider path, even though the button's DOM `disabled` attribute (driven by React state) can still read `false` in the instant right after the clicks land — ET-162. Covered by `features/auth/auth-submission-gate.test.ts` (gate unit semantics) and `e2e/web-server/sign-in-double-submit.spec.ts` (end-to-end request-count proof against the real server).
 
 ## Data Contract
 
