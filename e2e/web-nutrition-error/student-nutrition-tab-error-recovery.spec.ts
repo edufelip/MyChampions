@@ -45,6 +45,11 @@ test.describe('@feature:nutrition ET-163 nutrition tab load error recovery', () 
       // error card in place. There is no live backend in this lane, so the
       // loading window is a single, sub-millisecond render pass — arm a
       // MutationObserver before the click to catch it regardless of timing.
+      // This assumes React 18 batches the reload handler's synchronous
+      // setState calls into one render that mounts the loading testID before
+      // both plans and connections settle back to 'error'; if the reload
+      // internals ever short-circuit that render, this assertion needs
+      // revisiting rather than a longer timeout.
       await page.evaluate(() => {
         (window as unknown as { __sawNutritionLoading?: boolean }).__sawNutritionLoading = false;
         const observer = new MutationObserver(() => {
