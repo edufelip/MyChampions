@@ -46,7 +46,7 @@ test.describe('@server-auth @critical @feature:auth sign-in double-submit guard'
     // Fire three back-to-back clicks synchronously in the page, mirroring the ticket's
     // repro (no delay between clicks, disabled-state race included).
     await page.evaluate(() => {
-      const button = document.querySelector(
+      const button = document.querySelector<HTMLElement>(
         '[data-testid="auth.signIn.submitButton"]',
       );
       button?.click();
