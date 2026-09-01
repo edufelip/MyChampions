@@ -5,7 +5,17 @@
 import { useNavigation } from '@react-navigation/native';
 import { Stack, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
-import { Alert, LayoutAnimation, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextStyle,
+  View,
+} from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { BuilderGuidanceCard } from '@/components/ds/patterns/BuilderGuidanceCard';
 import { BuilderInsetGroup } from '@/components/ds/patterns/BuilderInsetGroup';
@@ -47,6 +57,13 @@ import { useTranslation } from '@/localization';
 import type { ExerciseItem } from '@/features/plans/exercise-service-source';
 
 enableBuilderLayoutAnimations();
+
+// D-006/ET-165: a read-only assigned plan's name is rendered via `multiline` so a
+// long value wraps onto a second line instead of being hard-clipped by a
+// single-line <input>/<TextInput>. `resize: 'none'` keeps the web <textarea> from
+// showing a manual resize handle it doesn't need.
+const WEB_TEXTAREA_RESET =
+  Platform.OS === 'web' ? ({ resize: 'none' } as unknown as TextStyle) : undefined;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -670,7 +687,12 @@ export default function TrainingPlanBuilderScreen() {
             </Text>
             <TextInput
               ref={planNameRef}
-              style={[styles.titleInput, { color: palette.text }]}
+              style={[
+                styles.titleInput,
+                isReadOnlyAssignedPlan && WEB_TEXTAREA_RESET,
+                isReadOnlyAssignedPlan && styles.titleInputReadOnly,
+                { color: palette.text },
+              ]}
               placeholder={tr(
                 'pro.plan.field.name.placeholder',
                 'student.plan.field.name.placeholder',
@@ -679,6 +701,7 @@ export default function TrainingPlanBuilderScreen() {
               value={values.name}
               onChangeText={handleNameChange}
               editable={!isReadOnlyAssignedPlan}
+              multiline={isReadOnlyAssignedPlan}
               accessibilityLabel={tr('pro.plan.field.name.label', 'student.plan.field.name.label')}
               accessibilityState={isReadOnlyAssignedPlan ? { disabled: true } : undefined}
               testID="pro.training_plan.name"
@@ -1030,6 +1053,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts?.rounded ?? 'normal',
     paddingVertical: DsSpace.xxs,
   },
+  // ET-165: read-only assigned name wraps to fit its content instead of
+  // clipping to a single line's fixed height.
+  titleInputReadOnly: { height: 'auto' },
   supportText: {
     ...DsTypography.micro,
     textTransform: 'none',
