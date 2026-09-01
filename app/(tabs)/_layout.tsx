@@ -14,17 +14,16 @@
 import { Redirect, Tabs, usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, useWindowDimensions } from 'react-native';
-
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { getDsTheme } from '@/constants/design-system';
-import type { RoleIntent } from '@/features/auth/role-selection.logic';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { resolveTabShellState } from '@/features/auth/tab-shell.logic';
 import { canAccessNutritionSurface } from '@/features/professional/specialty.logic';
 import { useSpecialties } from '@/features/professional/use-professional';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
+import type { RoleIntent } from '@/features/auth/role-selection.logic';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -128,6 +127,13 @@ export default function TabLayout() {
         name="index"
         options={{
           title: isPro ? t('shell.tabs.dashboard') : t('shell.tabs.home'),
+          // Explicit tabBarLabel (ET-168): the focused leaf screen (e.g.
+          // app/professional/home.tsx) sets its own `title` via a
+          // `Stack.Screen` purely for the web document title, and that
+          // bubbles up to override this Tabs.Screen's `title` too. Setting
+          // `tabBarLabel` here keeps the tab's own short label stable
+          // regardless of what the active screen sets its document title to.
+          tabBarLabel: isPro ? t('shell.tabs.dashboard') : t('shell.tabs.home'),
           tabBarIcon: ({ color }) => (
             <IconSymbol
               size={26}
@@ -146,6 +152,9 @@ export default function TabLayout() {
         name="students"
         options={{
           title: t('shell.tabs.students'),
+          // ET-168: without this, the nested screen's longer document title
+          // ("My students") bubbles up and truncates mid-word at 320px.
+          tabBarLabel: t('shell.tabs.students'),
           tabBarIcon: ({ color }) => <IconSymbol size={26} name="person.2.fill" color={color} />,
           tabBarButtonTestID: 'tabs.students',
           href: isPro ? undefined : null,
@@ -157,6 +166,9 @@ export default function TabLayout() {
         name="nutrition"
         options={{
           title: t('shell.tabs.nutrition'),
+          // ET-168: prevents the nested screen's longer document title
+          // ("Nutrition Plans") from bubbling up into the tab label.
+          tabBarLabel: t('shell.tabs.nutrition'),
           tabBarIcon: ({ color }) => <IconSymbol size={26} name="fork.knife" color={color} />,
           tabBarButtonTestID: 'tabs.nutrition',
           href: canUseNutrition ? undefined : null,
@@ -168,6 +180,9 @@ export default function TabLayout() {
         name="training"
         options={{
           title: isStudent ? t('shell.tabs.exercise') : t('shell.tabs.training'),
+          // ET-168: without this, the nested screen's longer document title
+          // ("Training Plans") bubbles up and truncates mid-word at 320px.
+          tabBarLabel: isStudent ? t('shell.tabs.exercise') : t('shell.tabs.training'),
           tabBarIcon: ({ color }) => <IconSymbol size={26} name="figure.run" color={color} />,
           tabBarButtonTestID: 'tabs.training',
           href: effectiveRole ? undefined : null,

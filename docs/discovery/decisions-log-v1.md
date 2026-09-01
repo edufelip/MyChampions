@@ -981,6 +981,8 @@
   - Rotation analytics record requested, canceled, succeeded, or failed outcomes with redacted properties only; full invite-code values are never included.
   - The browser-only E2E network-status event bridge is feature-detected before subscription so native runtimes with a non-DOM `window` remain on the NetInfo path.
 
+- `D-216`: Every `Tabs.Screen` in `app/(tabs)/_layout.tsx` sets an explicit `tabBarLabel` (never relying on `title` alone). Individual screens (e.g. `app/professional/students.tsx`, `app/professional/training.tsx`) set their own, often longer, web document title via `<Stack.Screen options={{ title }}>`, and without an explicit `tabBarLabel` that document title bubbles up and overwrites the parent Tabs.Screen's label — this caused ET-168, where "Students" became "My students" and "Training" became "Training Plans" in the persistent bottom tab bar, truncating mid-word at 320px width.
+
 ## Native iOS Build Compatibility
 
 - `D-173`: Local iOS builds on Xcode 26.5 keep React Native targets on C++20 but force only the `fmt` pod target to C++17 in `ios/Podfile` post-install, because `fmt 11.0.2` fails to compile its C++20 consteval `FMT_STRING` path under this toolchain.
