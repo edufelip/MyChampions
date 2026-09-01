@@ -21,6 +21,13 @@ const WEB_INPUT_RESET =
     ? ({ outlineStyle: 'none', outlineWidth: 0 } as unknown as TextStyle)
     : undefined;
 
+// D-006/ET-165: a read-only assigned plan's name is rendered via `multiline` so a
+// long value wraps onto a second line instead of being hard-clipped by a
+// single-line <input>/<TextInput>. `resize: 'none'` keeps the web <textarea> from
+// showing a manual resize handle it doesn't need.
+const WEB_TEXTAREA_RESET =
+  Platform.OS === 'web' ? ({ resize: 'none' } as unknown as TextStyle) : undefined;
+
 type TFn = TranslationBinding['t'];
 
 const PLAN_METADATA_KEYBOARD_ACCESSORY_ID = 'plan-metadata-keyboard-accessory';
@@ -79,7 +86,13 @@ export const PlanMetadataForm = React.memo(
               {t('pro.plan.field.name.label')}
             </Text>
             <TextInput
-              style={[styles.titleInput, WEB_INPUT_RESET, { color: palette.text }]}
+              style={[
+                styles.titleInput,
+                WEB_INPUT_RESET,
+                readOnly && WEB_TEXTAREA_RESET,
+                readOnly && styles.titleInputReadOnly,
+                { color: palette.text },
+              ]}
               placeholder={tr(
                 'pro.plan.field.nutrition_name.support',
                 'student.plan.field.nutrition_name.support',
@@ -88,6 +101,7 @@ export const PlanMetadataForm = React.memo(
               value={name}
               onChangeText={onNameChange}
               editable={!readOnly}
+              multiline={readOnly}
               accessibilityLabel={t('pro.plan.field.name.label')}
               accessibilityState={readOnly ? { disabled: true } : undefined}
               autoFocus={autoFocus}
@@ -232,6 +246,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts?.rounded ?? 'normal',
     paddingVertical: DsSpace.xxs,
   },
+  // ET-165: read-only assigned name wraps to fit its content instead of
+  // clipping to a single line's fixed height.
+  titleInputReadOnly: { height: 'auto' },
   targetLabel: {
     ...DsTypography.cardTitle,
     fontFamily: Fonts?.rounded ?? 'normal',

@@ -22,6 +22,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
 - A fresh professional builder reaches the Ready state after route-scope reset and exposes the Add meal action immediately after plan metadata is entered, including at 390x844 and 320x720 compact web viewports.
+- The `PlanMetadataForm` name field (`pro.plan.metadata.name` testID, shared by the nutrition and training builders) renders `multiline` whenever the plan is read-only (an assigned plan viewed by a Student, D-006). At 320px width a long plan name — e.g. "Assigned Nutrition Plan" — now wraps onto a second line instead of being hard-clipped mid-word by the single-line editable `<TextInput>` (ET-165). The professional's own editable name field stays single-line so Enter still advances focus to the hydration field.
 - Native professional and self-managed builder validation submits the controlled
   name and hydration values before save and verifies both exact values. From
   name to hydration, Android dismisses Gboard through native Back and taps the

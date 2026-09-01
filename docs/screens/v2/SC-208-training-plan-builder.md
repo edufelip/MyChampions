@@ -22,6 +22,7 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 - Builder route (`/professional/training/plans/:planId`) follows the same DS shell and component schema.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
 - A fresh professional builder reaches the Ready state after route-scope reset and exposes the Add session action immediately after the plan name is entered, including at 390x844 and 320x720 compact web viewports.
+- The plan name field (`pro.training_plan.name` testID) renders `multiline` whenever the plan is read-only (an assigned plan viewed by a Student, D-006). At 320px width a long plan name — e.g. "Assigned Training Plan" — now wraps onto a second line instead of being hard-clipped mid-word by the single-line editable `<TextInput>` (ET-165). The professional's own editable name field stays single-line.
 - On compact native viewports, native validation scrolls the builder until the current action (including a reopened plan's `Add session` CTA) is visible. After confirming an exercise it waits for the native modal transition to leave the hierarchy, then adds bottom-navigation clearance before tapping the footer save action below longer session/item content.
 - State orchestration uses centralized plans store (`features/plans/plans-store.ts`) through the existing `useTrainingPlanBuilder` adapter hook.
 
