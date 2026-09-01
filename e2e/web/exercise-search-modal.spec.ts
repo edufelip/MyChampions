@@ -38,6 +38,32 @@ async function expectNoBrowserErrors(pageErrors: string[]) {
   expect(pageErrors).toEqual([]);
 }
 
+// ET-172: on desktop/Web-width viewports the dialog must render as a centered
+// modal, not a mobile bottom sheet anchored to the viewport's bottom edge
+// (ET-114 explicitly kept the bottom-sheet treatment for mobile/compact
+// widths only). A sheet anchored to the bottom edge has near-zero top margin
+// and its horizontal margins are unequal (flush left/right); a centered
+// dialog has a real top margin and equal left/right margins.
+async function expectCenteredDesktopDialog(page: Page, testId: string) {
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  if (!viewport) return;
+
+  const box = await page.getByTestId(testId).boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) return;
+
+  const leftMargin = box.x;
+  const rightMargin = viewport.width - box.x - box.width;
+  const topMargin = box.y;
+  const bottomMargin = viewport.height - box.y - box.height;
+
+  expect(topMargin).toBeGreaterThan(20);
+  expect(bottomMargin).toBeGreaterThan(20);
+  expect(Math.abs(leftMargin - rightMargin)).toBeLessThanOrEqual(2);
+  expect(Math.abs(topMargin - bottomMargin)).toBeLessThanOrEqual(2);
+}
+
 async function capture(page: Page, testInfo: TestInfo, name: string) {
   await testInfo.attach(name, {
     body: await page.screenshot({ fullPage: false }),
@@ -141,5 +167,28 @@ test.describe('exercise search on a compact keyboard-safe viewport', () => {
     await expect(dialog).toBeHidden();
     await expect(consoleErrors).toEqual([]);
     await expectNoBrowserErrors(pageErrors);
+  });
+});
+
+test.describe('exercise search on a desktop/Web-width viewport', () => {
+  test.use({ viewport: { width: 1440, height: 1000 } });
+
+  test('@feature:training @feature:shell ET-172 renders as a centered dialog, not a bottom sheet', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    await openExerciseSearch(page);
+    const dialog = page.getByRole('dialog', { name: dialogTitle });
+    await expect(dialog).toBeVisible();
+    await expect(page.getByTestId('exerciseSearch.initialState')).toBeVisible();
+    await expectCenteredDesktopDialog(page, 'exerciseSearch.modal');
+
+    await page.getByTestId('exerciseSearch.input').fill('push');
+    await page.getByTestId('exerciseSearch.input').press('Enter');
+    await expect(page.getByTestId('exerciseSearch.result.e2e-exercise-push-up')).toBeVisible();
+    await page.getByTestId('exerciseSearch.result.e2e-exercise-push-up').click();
+    await expect(page.getByTestId('exerciseSearch.detail')).toBeVisible();
+    await expectCenteredDesktopDialog(page, 'exerciseSearch.modal');
   });
 });

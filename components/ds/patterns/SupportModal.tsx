@@ -1,3 +1,5 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { useState, useEffect } from 'react';
 import {
   Modal,
   Pressable,
@@ -9,19 +11,17 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useState, useEffect } from 'react';
-import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from '@/features/platform/haptics-adapter';
-
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { useDsModalSheetLayout } from '@/components/ds/primitives/useDsModalSheetLayout';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
-import { useSupport } from '@/features/support/use-support';
-import { requestSupportModalDismissal } from '@/features/support/support.logic';
-import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { useAuthSession } from '@/features/auth/auth-session';
-import type { useTranslation } from '@/localization';
+import { useNetworkStatus } from '@/features/offline/use-network-status';
+import * as Haptics from '@/features/platform/haptics-adapter';
+import { requestSupportModalDismissal } from '@/features/support/support.logic';
+import { useSupport } from '@/features/support/use-support';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
+import type { useTranslation } from '@/localization';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -53,6 +53,7 @@ export function SupportModal({
   const isSuccess = state.kind === 'success';
   const isError = state.kind === 'error';
   const isSubmitLocked = isSubmitting || isOffline;
+  const modalLayout = useDsModalSheetLayout();
   useWebDialogAccessibility({
     dialogTitleTestID: 'settings.account.support.dialog.title',
     isVisible,
@@ -98,213 +99,239 @@ export function SupportModal({
       <View style={styles.flex}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.flex}>
-          <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}>
+          style={styles.flex}
+        >
+          <View
+            style={[
+              styles.modalOverlay,
+              modalLayout.overlayStyle,
+              { backgroundColor: theme.color.overlaySoft },
+            ]}
+          >
             <View
-              style={[styles.modalContent, { backgroundColor: theme.color.surface }]}
-              testID="settings.account.support.modal">
-                <View style={styles.modalHeader}>
-                  <Text
-                    style={[styles.modalTitle, { color: theme.color.textPrimary }]}
-                    accessibilityRole="header"
-                    testID="settings.account.support.dialog.title">
-                    {t('settings.account.support.dialog.title')}
-                  </Text>
-                  <Pressable
-                    onPress={handleClose}
-                    onTouchEnd={handleClose}
-                    disabled={isSubmitting}
-                    hitSlop={12}
-                    style={styles.closeButton}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('settings.account.support.dialog.close') as string}
-                    testID="settings.account.support.closeButton">
-                    <MaterialIcons
-                      name="close"
-                      size={24}
-                      color={theme.color.textTertiary}
-                      style={{ opacity: isSubmitting ? 0.3 : 1 }}
-                    />
-                  </Pressable>
-                </View>
+              style={[
+                styles.modalContent,
+                modalLayout.contentStyle,
+                { backgroundColor: theme.color.surface },
+              ]}
+              testID="settings.account.support.modal"
+            >
+              <View style={styles.modalHeader}>
+                <Text
+                  style={[styles.modalTitle, { color: theme.color.textPrimary }]}
+                  accessibilityRole="header"
+                  testID="settings.account.support.dialog.title"
+                >
+                  {t('settings.account.support.dialog.title')}
+                </Text>
+                <Pressable
+                  onPress={handleClose}
+                  onTouchEnd={handleClose}
+                  disabled={isSubmitting}
+                  hitSlop={12}
+                  style={styles.closeButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.account.support.dialog.close')}
+                  testID="settings.account.support.closeButton"
+                >
+                  <MaterialIcons
+                    name="close"
+                    size={24}
+                    color={theme.color.textTertiary}
+                    style={{ opacity: isSubmitting ? 0.3 : 1 }}
+                  />
+                </Pressable>
+              </View>
 
-                {isSuccess ? (
-                  <View
-                    style={styles.successContainer}
-                    accessibilityLiveRegion="polite"
-                    testID="settings.account.support.success">
-                    <View style={[styles.successIcon, { backgroundColor: theme.color.successSoft }]}>
-                      <MaterialIcons name="check-circle" size={48} color={theme.color.success} />
-                    </View>
-                    <View style={styles.successTextColumn}>
-                      <Text style={[styles.successText, { color: theme.color.textPrimary }]}>
-                        {t('settings.account.support.success')}
+              {isSuccess ? (
+                <View
+                  style={styles.successContainer}
+                  accessibilityLiveRegion="polite"
+                  testID="settings.account.support.success"
+                >
+                  <View style={[styles.successIcon, { backgroundColor: theme.color.successSoft }]}>
+                    <MaterialIcons name="check-circle" size={48} color={theme.color.success} />
+                  </View>
+                  <View style={styles.successTextColumn}>
+                    <Text style={[styles.successText, { color: theme.color.textPrimary }]}>
+                      {t('settings.account.support.success')}
+                    </Text>
+                  </View>
+                  <DsPillButton
+                    scheme={scheme}
+                    label={t('auth.role.cta_continue')}
+                    onPress={handleClose}
+                    variant="primary"
+                  />
+                </View>
+              ) : (
+                <ScrollView
+                  contentContainerStyle={styles.modalScroll}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <Text style={[styles.disclaimer, { color: theme.color.textSecondary }]}>
+                    {t('settings.account.support.dialog.disclaimer')}
+                  </Text>
+
+                  <View style={styles.field}>
+                    <View style={styles.labelRow}>
+                      <Text style={[styles.label, { color: theme.color.textPrimary }]}>
+                        {t('settings.account.support.field.subject.label')}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.counter,
+                          {
+                            color:
+                              subject.length >= SUBJECT_LIMIT
+                                ? theme.color.danger
+                                : theme.color.textTertiary,
+                          },
+                        ]}
+                      >
+                        {subject.length}/{SUBJECT_LIMIT}
                       </Text>
                     </View>
-                    <DsPillButton
-                      scheme={scheme}
-                      label={t('auth.role.cta_continue') as string}
-                      onPress={handleClose}
-                      variant="primary"
-                    />
-                  </View>
-                ) : (
-                  <ScrollView
-                    contentContainerStyle={styles.modalScroll}
-                    keyboardShouldPersistTaps="handled">
-                    <Text style={[styles.disclaimer, { color: theme.color.textSecondary }]}>
-                      {t('settings.account.support.dialog.disclaimer')}
-                    </Text>
-
-                    <View style={styles.field}>
-                      <View style={styles.labelRow}>
-                        <Text style={[styles.label, { color: theme.color.textPrimary }]}>
-                          {t('settings.account.support.field.subject.label')}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.counter,
-                            {
-                              color:
-                                subject.length >= SUBJECT_LIMIT
-                                  ? theme.color.danger
-                                  : theme.color.textTertiary,
-                            },
-                          ]}>
-                          {subject.length}/{SUBJECT_LIMIT}
-                        </Text>
-                      </View>
-                      <TextInput
-                        testID="settings.account.support.subjectInput"
-                        style={[
-                          styles.input,
-                          {
-                            backgroundColor: theme.color.surfaceMuted,
-                            color: theme.color.textPrimary,
-                            borderColor:
-                              state.kind === 'error' && state.reason.includes('subject')
-                                ? theme.color.danger
-                                : 'transparent',
-                          },
-                        ]}
-                        placeholder={t('settings.account.support.field.subject.placeholder') as string}
-                        placeholderTextColor={theme.color.textTertiary}
-                        value={subject}
-                        onChangeText={setSubject}
-                        maxLength={SUBJECT_LIMIT}
-                        editable={!isSubmitting}
-                        accessibilityLabel={t('settings.account.support.field.subject.label') as string}
-                      />
-                      {state.kind === 'error' && state.reason === 'subject_required' && (
-                        <Text
-                          style={[styles.errorText, { color: theme.color.danger }]}
-                          accessibilityRole="alert"
-                          testID="settings.account.support.subjectError">
-                          {t('settings.account.support.validation.subject_required')}
-                        </Text>
-                      )}
-                    </View>
-
-                    <View style={styles.field}>
-                      <View style={styles.labelRow}>
-                        <Text style={[styles.label, { color: theme.color.textPrimary }]}>
-                          {t('settings.account.support.field.body.label')}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.counter,
-                            {
-                              color:
-                                body.length >= BODY_LIMIT
-                                  ? theme.color.danger
-                                  : theme.color.textTertiary,
-                            },
-                          ]}>
-                          {body.length}/{BODY_LIMIT}
-                        </Text>
-                      </View>
-                      <TextInput
-                        testID="settings.account.support.bodyInput"
-                        style={[
-                          styles.input,
-                          styles.textArea,
-                          {
-                            backgroundColor: theme.color.surfaceMuted,
-                            color: theme.color.textPrimary,
-                            borderColor:
-                              state.kind === 'error' && state.reason.includes('body')
-                                ? theme.color.danger
-                                : 'transparent',
-                          },
-                        ]}
-                        placeholder={t('settings.account.support.field.body.placeholder') as string}
-                        placeholderTextColor={theme.color.textTertiary}
-                        value={body}
-                        onChangeText={setBody}
-                        maxLength={BODY_LIMIT}
-                        multiline
-                        numberOfLines={6}
-                        textAlignVertical="top"
-                        editable={!isSubmitting}
-                        accessibilityLabel={t('settings.account.support.field.body.label') as string}
-                      />
-                      {state.kind === 'error' && state.reason === 'body_required' && (
-                        <Text
-                          style={[styles.errorText, { color: theme.color.danger }]}
-                          accessibilityRole="alert"
-                          testID="settings.account.support.bodyError">
-                          {t('settings.account.support.validation.body_required')}
-                        </Text>
-                      )}
-                    </View>
-
-                    {state.kind === 'error' && !state.reason.includes('required') && (
-                      <View
-                        style={[styles.errorBanner, { backgroundColor: theme.color.dangerSoft }]}
-                        accessibilityRole="alert"
-                        testID="settings.account.support.errorBanner">
-                        <Text style={[styles.errorBannerText, { color: theme.color.danger }]}>
-                          {t('settings.account.support.error')}
-                        </Text>
-                      </View>
-                    )}
-
-                    {isOffline && (
-                      <View
-                        style={[styles.errorBanner, { backgroundColor: theme.color.warningSoft }]}
-                        accessibilityRole="alert"
-                        testID="settings.account.support.offlineBanner">
-                        <Text style={[styles.errorBannerText, { color: theme.color.warning }]}>
-                          {t('offline.write_lock')}
-                        </Text>
-                      </View>
-                    )}
-
-                    <DsPillButton
-                      scheme={scheme}
-                      label={
-                        isError && !state.reason.includes('required')
-                          ? (t('common.error.retry') as string)
-                          : (t('settings.account.support.cta_submit') as string)
+                    <TextInput
+                      testID="settings.account.support.subjectInput"
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: theme.color.surfaceMuted,
+                          color: theme.color.textPrimary,
+                          borderColor:
+                            state.kind === 'error' && state.reason.includes('subject')
+                              ? theme.color.danger
+                              : 'transparent',
+                        },
+                      ]}
+                      placeholder={
+                        t('settings.account.support.field.subject.placeholder')
                       }
-                      onPress={handleSubmit}
-                      loading={isSubmitting}
-                      disabled={isSubmitLocked}
-                      variant="primary"
-                      style={styles.submitButton}
-                      testID="settings.account.support.submitCta"
+                      placeholderTextColor={theme.color.textTertiary}
+                      value={subject}
+                      onChangeText={setSubject}
+                      maxLength={SUBJECT_LIMIT}
+                      editable={!isSubmitting}
+                      accessibilityLabel={
+                        t('settings.account.support.field.subject.label')
+                      }
                     />
-                    <DsPillButton
-                      scheme={scheme}
-                      label={t('common.cta.cancel') as string}
-                      onPress={handleClose}
-                      disabled={isSubmitting}
-                      variant="ghost"
-                      style={styles.cancelButton}
-                      testID="settings.account.support.cancelCta"
+                    {state.kind === 'error' && state.reason === 'subject_required' && (
+                      <Text
+                        style={[styles.errorText, { color: theme.color.danger }]}
+                        accessibilityRole="alert"
+                        testID="settings.account.support.subjectError"
+                      >
+                        {t('settings.account.support.validation.subject_required')}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.field}>
+                    <View style={styles.labelRow}>
+                      <Text style={[styles.label, { color: theme.color.textPrimary }]}>
+                        {t('settings.account.support.field.body.label')}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.counter,
+                          {
+                            color:
+                              body.length >= BODY_LIMIT
+                                ? theme.color.danger
+                                : theme.color.textTertiary,
+                          },
+                        ]}
+                      >
+                        {body.length}/{BODY_LIMIT}
+                      </Text>
+                    </View>
+                    <TextInput
+                      testID="settings.account.support.bodyInput"
+                      style={[
+                        styles.input,
+                        styles.textArea,
+                        {
+                          backgroundColor: theme.color.surfaceMuted,
+                          color: theme.color.textPrimary,
+                          borderColor:
+                            state.kind === 'error' && state.reason.includes('body')
+                              ? theme.color.danger
+                              : 'transparent',
+                        },
+                      ]}
+                      placeholder={t('settings.account.support.field.body.placeholder')}
+                      placeholderTextColor={theme.color.textTertiary}
+                      value={body}
+                      onChangeText={setBody}
+                      maxLength={BODY_LIMIT}
+                      multiline
+                      numberOfLines={6}
+                      textAlignVertical="top"
+                      editable={!isSubmitting}
+                      accessibilityLabel={t('settings.account.support.field.body.label')}
                     />
-                  </ScrollView>
-                )}
+                    {state.kind === 'error' && state.reason === 'body_required' && (
+                      <Text
+                        style={[styles.errorText, { color: theme.color.danger }]}
+                        accessibilityRole="alert"
+                        testID="settings.account.support.bodyError"
+                      >
+                        {t('settings.account.support.validation.body_required')}
+                      </Text>
+                    )}
+                  </View>
+
+                  {state.kind === 'error' && !state.reason.includes('required') && (
+                    <View
+                      style={[styles.errorBanner, { backgroundColor: theme.color.dangerSoft }]}
+                      accessibilityRole="alert"
+                      testID="settings.account.support.errorBanner"
+                    >
+                      <Text style={[styles.errorBannerText, { color: theme.color.danger }]}>
+                        {t('settings.account.support.error')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {isOffline && (
+                    <View
+                      style={[styles.errorBanner, { backgroundColor: theme.color.warningSoft }]}
+                      accessibilityRole="alert"
+                      testID="settings.account.support.offlineBanner"
+                    >
+                      <Text style={[styles.errorBannerText, { color: theme.color.warning }]}>
+                        {t('offline.write_lock')}
+                      </Text>
+                    </View>
+                  )}
+
+                  <DsPillButton
+                    scheme={scheme}
+                    label={
+                      isError && !state.reason.includes('required')
+                        ? (t('common.error.retry'))
+                        : (t('settings.account.support.cta_submit'))
+                    }
+                    onPress={handleSubmit}
+                    loading={isSubmitting}
+                    disabled={isSubmitLocked}
+                    variant="primary"
+                    style={styles.submitButton}
+                    testID="settings.account.support.submitCta"
+                  />
+                  <DsPillButton
+                    scheme={scheme}
+                    label={t('common.cta.cancel')}
+                    onPress={handleClose}
+                    disabled={isSubmitting}
+                    variant="ghost"
+                    style={styles.cancelButton}
+                    testID="settings.account.support.cancelCta"
+                  />
+                </ScrollView>
+              )}
             </View>
           </View>
         </KeyboardAvoidingView>

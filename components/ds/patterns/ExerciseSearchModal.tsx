@@ -16,6 +16,7 @@ import {
   Platform,
 } from 'react-native';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { useDsModalSheetLayout } from '@/components/ds/primitives/useDsModalSheetLayout';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
@@ -72,6 +73,7 @@ export function ExerciseSearchModal({
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const notesRef = useRef<TextInput>(null);
+  const modalLayout = useDsModalSheetLayout();
   useWebDialogAccessibility({
     dialogTitleTestID: 'exerciseSearch.title',
     isVisible,
@@ -140,9 +142,19 @@ export function ExerciseSearchModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]}
+        style={[
+          styles.modalOverlay,
+          modalLayout.overlayStyle,
+          { backgroundColor: theme.color.overlaySoft },
+        ]}
       >
-        <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
+        <View
+          style={[
+            styles.modalContent,
+            modalLayout.contentStyle,
+            { backgroundColor: theme.color.surface },
+          ]}
+        >
           <View style={styles.modalHeader}>
             <Text
               style={[styles.modalTitle, { color: theme.color.textPrimary }]}
