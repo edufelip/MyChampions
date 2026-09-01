@@ -388,7 +388,11 @@
     "web:auth": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/platform-fallbacks.spec.ts", "e2e/web/responsive-shell.spec.ts"],
+      "specs": [
+        "e2e/web/platform-fallbacks.spec.ts",
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/password-reset-toggle-responsive.spec.ts"
+      ],
       "grep": "@feature:auth|@critical",
       "tier": "feature",
       "ci": true
@@ -408,7 +412,11 @@
     "web:connections": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/platform-fallbacks.spec.ts", "e2e/web/responsive-shell.spec.ts"],
+      "specs": [
+        "e2e/web/platform-fallbacks.spec.ts",
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/multi-role-communication-flows.spec.ts"
+      ],
       "grep": "@feature:connections",
       "tier": "feature",
       "ci": true
@@ -419,7 +427,9 @@
       "specs": [
         "e2e/web/responsive-shell.spec.ts",
         "e2e/web/custom-meal-library-error-recovery.spec.ts",
-        "e2e/web/nutrition-plan-load-error.spec.ts"
+        "e2e/web/nutrition-plan-load-error.spec.ts",
+        "e2e/web/nutrition-plan-macro-target-labels.spec.ts",
+        "e2e/web/multi-role-communication-flows.spec.ts"
       ],
       "grep": "@feature:nutrition",
       "tier": "feature",
@@ -428,7 +438,11 @@
     "web:training": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/training-plan-load-error.spec.ts"],
+      "specs": [
+        "e2e/web/responsive-shell.spec.ts",
+        "e2e/web/training-plan-load-error.spec.ts",
+        "e2e/web/multi-role-communication-flows.spec.ts"
+      ],
       "grep": "@feature:training",
       "tier": "feature",
       "ci": true
@@ -543,7 +557,10 @@
     "web:critical-paths": {
       "runner": "playwright",
       "projects": ["chromium", "firefox", "webkit"],
-      "specs": ["e2e/web/critical-path-regressions.spec.ts"],
+      "specs": [
+        "e2e/web/critical-path-regressions.spec.ts",
+        "e2e/web/multi-role-communication-flows.spec.ts"
+      ],
       "grep": "@critical",
       "tier": "critical",
       "ci": true
