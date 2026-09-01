@@ -212,14 +212,7 @@ export default function ProfessionalPendingScreen() {
     } else {
       Alert.alert(t('pro.pending.bulk_deny.success'));
     }
-  }, [
-    closeBulkDenyConfirmation,
-    emitEvent,
-    reload,
-    selectedIds,
-    t,
-    unbindConnection,
-  ]);
+  }, [closeBulkDenyConfirmation, emitEvent, reload, selectedIds, t, unbindConnection]);
 
   const onBulkDeny = () => {
     if (selectedIds.size === 0) return;
@@ -416,7 +409,7 @@ export default function ProfessionalPendingScreen() {
       {Platform.OS === 'web' && isBulkDenyConfirmVisible ? (
         <View style={[styles.bulkDenyOverlay, { backgroundColor: theme.color.overlaySoft }]}>
           <View
-            accessibilityLabel={t('pro.pending.bulk_deny.confirm_title') as string}
+            accessibilityLabel={t('pro.pending.bulk_deny.confirm_title')}
             accessibilityViewIsModal
             style={[styles.bulkDenyModal, { backgroundColor: theme.color.surface }]}
             testID="pro.pending.bulkDenyConfirm"
@@ -432,7 +425,7 @@ export default function ProfessionalPendingScreen() {
               {t('pro.pending.bulk_deny.confirm_body')}
             </Text>
             <Text style={[styles.bulkDenyModalCount, { color: theme.color.textPrimary }]}>
-              {(t('a11y.selected_count') as string).replace('{count}', String(selectedIds.size))}
+              {(t('a11y.selected_count')).replace('{count}', String(selectedIds.size))}
             </Text>
             {bulkDenyFeedback === 'error' ? (
               <Text
@@ -447,7 +440,7 @@ export default function ProfessionalPendingScreen() {
               <DsPillButton
                 disabled={isBulkDenying}
                 fullWidth={false}
-                label={t('relationship.unbind.confirm_no') as string}
+                label={t('relationship.unbind.confirm_no')}
                 onPress={closeBulkDenyConfirmation}
                 scheme={scheme}
                 testID="pro.pending.bulkDenyConfirm.cancel"
@@ -457,7 +450,7 @@ export default function ProfessionalPendingScreen() {
                 contentColor={theme.color.surface}
                 disabled={isBulkDenying || isWriteLocked}
                 fullWidth={false}
-                label={t('pro.pending.bulk_deny.cta') as string}
+                label={t('pro.pending.bulk_deny.cta')}
                 loading={isBulkDenying}
                 onPress={() => void executeBulkDeny()}
                 scheme={scheme}
@@ -579,18 +572,25 @@ function PendingRow({
         />
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{ disabled: isWriteLocked }}
           disabled={isWriteLocked}
           onPress={() => onDeny(connection.id)}
           style={[
             styles.denyButton,
             {
-              borderColor: theme.color.danger,
+              borderColor: isWriteLocked ? theme.color.disabledBorder : theme.color.danger,
               backgroundColor: isWriteLocked ? theme.color.surfaceMuted : theme.color.dangerSoft,
+              opacity: isWriteLocked ? 0.6 : 1,
             },
           ]}
           testID={`pro.pending.denyButton.${testIndex}`}
         >
-          <Text style={[styles.denyText, { color: theme.color.danger }]}>
+          <Text
+            style={[
+              styles.denyText,
+              { color: isWriteLocked ? theme.color.disabledText : theme.color.danger },
+            ]}
+          >
             {t('pro.pending.deny.cta')}
           </Text>
         </Pressable>
