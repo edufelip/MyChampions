@@ -175,6 +175,7 @@
         "web:professional",
         "web:professional-home",
         "web:professional-students-roster",
+        "web:professional-tabbar-labels",
         "web:shell"
       ],
       "detoxSuites": ["detox:professional"],
@@ -468,6 +469,15 @@
       "playwrightConfig": "playwright.professional-students-roster.config.ts",
       "projects": ["mobile-professional"],
       "specs": ["e2e/web/professional-students-roster-responsive.spec.ts"],
+      "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:professional-tabbar-labels": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.professional-tabbar-labels.config.ts",
+      "projects": ["mobile-professional"],
+      "specs": ["e2e/web/professional-tabbar-labels-responsive.spec.ts"],
       "grep": "@feature:professional",
       "tier": "feature",
       "ci": true
