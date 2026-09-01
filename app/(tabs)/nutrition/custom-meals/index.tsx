@@ -558,15 +558,15 @@ function QuickLogPanel({
   const caloriesLabel = nutritionPreview
     ? t('meal.library.quick_log.preview.calories').replace(
         '{calories}',
-        String(nutritionPreview.calories),
+        String(Math.round(nutritionPreview.calories)),
       )
     : null;
 
   const macrosLabel = nutritionPreview
     ? t('meal.library.quick_log.preview.macros')
-        .replace('{carbs}', String(nutritionPreview.carbs))
-        .replace('{proteins}', String(nutritionPreview.proteins))
-        .replace('{fats}', String(nutritionPreview.fats))
+        .replace('{carbs}', String(Math.round(nutritionPreview.carbs)))
+        .replace('{proteins}', String(Math.round(nutritionPreview.proteins)))
+        .replace('{fats}', String(Math.round(nutritionPreview.fats)))
     : null;
 
   return (
@@ -589,7 +589,10 @@ function QuickLogPanel({
         ]}
         testID="meal.library.quickLog.panel"
       >
-        <Text style={[styles.panelTitle, { color: palette.text }]} testID="meal.library.quickLog.title">
+        <Text
+          style={[styles.panelTitle, { color: palette.text }]}
+          testID="meal.library.quickLog.title"
+        >
           {t('meal.library.quick_log.title')}
         </Text>
         <Text style={[styles.mealName, { color: palette.text }]} numberOfLines={1}>

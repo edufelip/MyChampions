@@ -34,7 +34,7 @@ test('support modal web Escape callback uses the submission-aware dismissal guar
   assert.match(modalSource, /testID="settings\.account\.support\.dialog\.title"/);
   assert.match(
     modalSource,
-    /accessibilityLabel=\{t\('settings\.account\.support\.dialog\.close'\) as string\}/,
+    /accessibilityLabel=\{t\('settings\.account\.support\.dialog\.close'\)\}/,
   );
 });
 
