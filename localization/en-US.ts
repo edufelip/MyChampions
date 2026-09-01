@@ -882,6 +882,7 @@ export const enUS = {
   'pro.plan.item.search.error': 'Error searching for exercises.',
   'pro.plan.item.search.retry': 'Try again',
   'pro.plan.item.search.back': 'Back to search',
+  'pro.plan.item.detail.dialog_title': 'Exercise details',
   'pro.plan.item.detail.description': 'Description',
   'pro.plan.item.detail.instructions': 'Instructions',
   'pro.plan.item.detail.important_points': 'Important Points',

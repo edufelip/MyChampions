@@ -995,6 +995,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.item.search.error': 'Erro ao buscar exercícios.',
   'pro.plan.item.search.retry': 'Tentar novamente',
   'pro.plan.item.search.back': 'Voltar para a busca',
+  'pro.plan.item.detail.dialog_title': 'Detalhes do exercício',
   'pro.plan.item.detail.description': 'Descrição',
   'pro.plan.item.detail.instructions': 'Instruções',
   'pro.plan.item.detail.important_points': 'Pontos Importantes',
