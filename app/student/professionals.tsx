@@ -20,19 +20,12 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-
-import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
+import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import { DsRadius, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
-import { useAuthSession } from '@/features/auth/auth-session';
-import { useQrScannerAdapter } from '@/features/platform/qr-scanner-adapter';
-import { useConnections } from '@/features/connections/use-connections';
-import type { ConnectionDisplayState } from '@/features/connections/connection.logic';
-import { mapInviteSubmitReasonToMessageKey } from '@/features/connections/connection.logic';
-import { parseQrInvitePayload } from '@/features/connections/qr-invite.logic';
 import {
   buildInvitePendingCanceled,
   buildInvitePendingCreated,
@@ -40,9 +33,15 @@ import {
   buildInviteSubmitRequested,
 } from '@/features/analytics/analytics.logic';
 import { useAnalytics } from '@/features/analytics/use-analytics';
+import { useAuthSession } from '@/features/auth/auth-session';
+import { mapInviteSubmitReasonToMessageKey } from '@/features/connections/connection.logic';
+import { parseQrInvitePayload } from '@/features/connections/qr-invite.logic';
+import { useConnections } from '@/features/connections/use-connections';
+import { useQrScannerAdapter } from '@/features/platform/qr-scanner-adapter';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useTranslation, type TranslationKey } from '@/localization';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
+import { useTranslation, type TranslationKey } from '@/localization';
+import type { ConnectionDisplayState } from '@/features/connections/connection.logic';
 
 export default function StudentProfessionalsScreen() {
   const { width: viewportWidth } = useWindowDimensions();
@@ -195,7 +194,7 @@ export default function StudentProfessionalsScreen() {
 
             router.replace('/');
           }}
-          accessibilityLabel={t('auth.role.cta_back') as string}
+          accessibilityLabel={t('auth.role.cta_back')}
           style={styles.backButton}
           testID="student.professionals.backButton"
         />
@@ -380,7 +379,7 @@ function QrScannerModal({
     }, 100);
   }, [onClose]);
   useWebDialogAccessibility({
-    dialogLabel: t('relationship.cta_scan_qr') as string,
+    dialogLabel: t('relationship.cta_scan_qr'),
     isVisible: isOpen,
     onClose: handleClose,
     testID: 'student.professionals.qrModal',
@@ -443,7 +442,7 @@ function QrScannerModal({
           <View style={styles.qrE2ERow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('relationship.cta_scan_qr') as string}
+              accessibilityLabel={t('relationship.cta_scan_qr')}
               onPress={() => handleBarCodeScanned({ data: e2eQrInvitePayload })}
               style={[styles.qrE2EButton, { backgroundColor: theme.color.accentPrimary }]}
               testID="student.professionals.qrE2EScanButton"
@@ -589,7 +588,9 @@ function ConnectionCard({
       testID={`student.professionals.connectionCard.${testIndex}`}
     >
       <Text style={[styles.cardSpecialty, { color: theme.color.textPrimary }]}>
-        {displayState.specialty === 'nutritionist' ? 'Nutritionist' : 'Fitness Coach'}
+        {displayState.specialty === 'nutritionist'
+          ? t('pro.students.specialty.nutritionist')
+          : t('pro.students.specialty.fitness_coach')}
       </Text>
 
       {displayState.kind === 'pending' ? (
