@@ -332,7 +332,7 @@ export default function ProfessionalSubscriptionScreen() {
 
       <DsPillButton
         scheme={scheme}
-        variant="ghost"
+        variant="outline"
         disabled={offlineDisplay.showOfflineBanner || isLoading}
         onPress={() => void refresh()}
         label={t('pro.subscription.cta_refresh')}
