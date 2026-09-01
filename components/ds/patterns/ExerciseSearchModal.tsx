@@ -164,13 +164,12 @@ export function ExerciseSearchModal({
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('auth.role.cta_back')}
+              accessibilityLabel={t('common.cta.close')}
               onPress={onClose}
               hitSlop={12}
+              testID="exerciseSearch.close"
             >
-              <Text style={{ color: theme.color.accentPrimary, fontWeight: '600' }}>
-                {t('auth.role.cta_back')}
-              </Text>
+              <MaterialIcons name="close" size={24} color={theme.color.textSecondary} />
             </Pressable>
           </View>
 
