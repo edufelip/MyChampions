@@ -156,7 +156,7 @@
     },
     "plans": {
       "sourcePaths": ["features/plans/**"],
-      "dependsOn": ["auth", "connections", "platform"],
+      "dependsOn": ["auth", "connections", "offline", "platform"],
       "unitTests": ["features/plans/**/*.test.ts"],
       "webSuites": [
         "web:nutrition",
