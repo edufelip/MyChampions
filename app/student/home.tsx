@@ -6,9 +6,9 @@
  * profile header, weekly stats strip, highlighted workout card, and next-meal card.
  * Keeps BL-008 offline/write-lock and D-081 hydration-goal ownership behavior.
  */
-import { useEffect, useState } from 'react';
-import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ImageBackground,
@@ -22,15 +22,12 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { getDsTheme, type DsColorScheme, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
 import { useConnections } from '@/features/connections/use-connections';
 import { useWaterTracking } from '@/features/nutrition/use-water-tracking';
-import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
-import { usePlans } from '@/features/plans/use-plans';
 import {
   resolveOfflineDisplayState,
   type OfflineDisplayState,
@@ -38,6 +35,8 @@ import {
 } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
+import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
+import { usePlans } from '@/features/plans/use-plans';
 import { resolveStudentHomeDisplayState } from '@/features/student/student-home.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
@@ -52,10 +51,10 @@ function formatStaleElapsed(
 ): string {
   const value = String(elapsed.value);
   if (elapsed.unit === 'minutes')
-    return (t('offline.stale_minutes') as string).replace('{value}', value);
+    return (t('offline.stale_minutes')).replace('{value}', value);
   if (elapsed.unit === 'hours')
-    return (t('offline.stale_hours') as string).replace('{value}', value);
-  return (t('offline.stale_days') as string).replace('{value}', value);
+    return (t('offline.stale_hours')).replace('{value}', value);
+  return (t('offline.stale_days')).replace('{value}', value);
 }
 
 export default function StudentHomeScreen() {
@@ -312,7 +311,7 @@ export default function StudentHomeScreen() {
               <StatCard
                 theme={theme}
                 icon="fitness-center"
-                label={t('student.home.training.section') as string}
+                label={t('student.home.training.section')}
                 value={
                   displayState.canRenderPlans
                     ? String(trainingPlanCount)
@@ -326,7 +325,7 @@ export default function StudentHomeScreen() {
               <StatCard
                 theme={theme}
                 icon="restaurant"
-                label={t('student.home.nutrition.section') as string}
+                label={t('student.home.nutrition.section')}
                 value={
                   displayState.canRenderPlans
                     ? String(nutritionPlanCount)
@@ -340,7 +339,7 @@ export default function StudentHomeScreen() {
               <StatCard
                 theme={theme}
                 icon="water-drop"
-                label={t('student.home.hydration.title') as string}
+                label={t('student.home.hydration.title')}
                 value={displayState.canRenderWater ? hydrationValue : t('common.value.unavailable')}
                 progress={hydrationPercent}
                 tint={theme.color.accentCyan}
@@ -356,7 +355,7 @@ export default function StudentHomeScreen() {
               >
                 <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
                   <SectionTitle
-                    title={t('student.home.training.section') as string}
+                    title={t('student.home.training.section')}
                     theme={theme}
                   />
                   <Pressable
@@ -408,14 +407,14 @@ export default function StudentHomeScreen() {
                       <View>
                         <Text style={styles.heroTitle}>
                           {hasTrainingPlan
-                            ? t('student.home.cta_training')
+                            ? (assignedTrainingPlan?.name ??
+                              selfManagedTrainingPlan?.name ??
+                              t('student.home.cta_training'))
                             : t('student.home.no_active_plan')}
                         </Text>
-                        <Text style={styles.heroMeta}>
-                          {hasTrainingPlan
-                            ? t('student.home.training.plan_available')
-                            : t('student.home.cta_start_self')}
-                        </Text>
+                        {!hasTrainingPlan ? (
+                          <Text style={styles.heroMeta}>{t('student.home.cta_start_self')}</Text>
+                        ) : null}
 
                         <View
                           style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}
@@ -434,7 +433,7 @@ export default function StudentHomeScreen() {
 
                 <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
                   <SectionTitle
-                    title={t('student.home.nutrition.section') as string}
+                    title={t('student.home.nutrition.section')}
                     theme={theme}
                   />
                   <Pressable
@@ -484,12 +483,16 @@ export default function StudentHomeScreen() {
                       </View>
 
                       <View>
-                        <Text style={styles.heroTitle}>{t('student.home.nutrition.section')}</Text>
-                        <Text style={styles.heroMeta}>
+                        <Text style={styles.heroTitle}>
                           {hasNutritionPlan
-                            ? t('student.home.nutrition.plan_available')
-                            : t('student.home.no_active_plan')}
+                            ? (assignedNutritionPlan?.name ??
+                              selfManagedNutritionPlan?.name ??
+                              t('student.home.nutrition.section'))
+                            : t('student.home.nutrition.section')}
                         </Text>
+                        {!hasNutritionPlan ? (
+                          <Text style={styles.heroMeta}>{t('student.home.no_active_plan')}</Text>
+                        ) : null}
 
                         <View
                           style={[styles.heroCta, { backgroundColor: theme.color.accentPrimary }]}
