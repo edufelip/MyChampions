@@ -22,6 +22,7 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
 - Builder route (`/professional/nutrition/plans/:planId`) follows the same DS primitives/pattern layer.
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
 - A fresh professional builder reaches the Ready state after route-scope reset and exposes the Add meal action immediately after plan metadata is entered, including at 390x844 and 320x720 compact web viewports.
+- The macro-targets summary row (Carbs/Proteins/Fats, shared with the read-only student assigned-plan view via the same builder engine) uses short, single-word labels (`pro.plan.field.carbs_target.label` etc., ET-170) so the three columns fit without ellipsis truncation down to 320px width; each label wraps to a second line rather than truncating if a locale's translation is still too wide for its column.
 - Native professional and self-managed builder validation submits the controlled
   name and hydration values before save and verifies both exact values. From
   name to hydration, Android dismisses Gboard through native Back and taps the

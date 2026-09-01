@@ -534,9 +534,9 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `student.plan.field.hydration_goal.placeholder` | SC-207 | Student hydration goal placeholder | e.g. 2200 | ex.: 2200 | p.ej. 2200 | BL-104 |
 | `pro.plan.field.calories_target.label` | SC-207 | Calorie target label | Calorie target (kcal) | Meta de calorias (kcal) | Meta de calorías (kcal) | BR-210 |
 | `pro.plan.field.calories_target.placeholder` | SC-207 | Calorie placeholder | e.g. 2000 | ex.: 2000 | p.ej. 2000 | |
-| `pro.plan.field.carbs_target.label` | SC-207 | Carbs target label | Carbs target (g) | Meta de carboidratos (g) | Meta de carbohidratos (g) | BR-210 |
-| `pro.plan.field.proteins_target.label` | SC-207 | Proteins target label | Proteins target (g) | Meta de proteínas (g) | Meta de proteínas (g) | BR-210 |
-| `pro.plan.field.fats_target.label` | SC-207 | Fats target label | Fats target (g) | Meta de gorduras (g) | Meta de grasas (g) | BR-210 |
+| `pro.plan.field.carbs_target.label` | SC-207 | Carbs target label | Carbs | Carbo | Carbohidratos | BR-210, ET-170 |
+| `pro.plan.field.proteins_target.label` | SC-207 | Proteins target label | Proteins | Proteína | Proteínas | BR-210, ET-170 |
+| `pro.plan.field.fats_target.label` | SC-207 | Fats target label | Fats | Gordura | Grasas | BR-210, ET-170 |
 | `pro.plan.section.meals` | SC-207 | Section header | Meals | Refeições | Comidas | |
 | `pro.plan.section.sessions` | SC-208 | Section header | Sessions | Sessões | Sesiones | |
 | `pro.plan.cta.add_meal` | SC-207 | Add item CTA | Add food item | Adicionar alimento | Añadir alimento | |
