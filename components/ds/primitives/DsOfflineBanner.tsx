@@ -1,7 +1,12 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
-
-import { DsRadius, DsSpace, DsTypography, type DsColorScheme, getDsTheme } from '@/constants/design-system';
+import {
+  DsRadius,
+  DsSpace,
+  DsTypography,
+  type DsColorScheme,
+  getDsTheme,
+} from '@/constants/design-system';
 
 type DsOfflineBannerProps = {
   scheme: DsColorScheme;
@@ -14,11 +19,18 @@ export function DsOfflineBanner({ scheme, text, testID }: DsOfflineBannerProps) 
 
   return (
     <View
-      style={[styles.banner, { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder }]}
+      style={[
+        styles.banner,
+        {
+          backgroundColor: theme.color.warningSoft,
+          borderColor: theme.color.warning,
+        },
+      ]}
       testID={testID}
-      accessibilityRole="alert">
-      <MaterialIcons color={theme.color.danger} name="cloud-off" size={18} />
-      <Text style={[styles.text, { color: theme.color.danger }]}>{text}</Text>
+      accessibilityRole="alert"
+    >
+      <MaterialIcons color={theme.color.warning} name="cloud-off" size={18} />
+      <Text style={[styles.text, { color: theme.color.warning }]}>{text}</Text>
     </View>
   );
 }
