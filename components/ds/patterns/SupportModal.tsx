@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextStyle,
   View,
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +23,9 @@ import { requestSupportModalDismissal } from '@/features/support/support.logic';
 import { useSupport } from '@/features/support/use-support';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import type { useTranslation } from '@/localization';
+
+const WEB_TEXTAREA_RESET =
+  Platform.OS === 'web' ? ({ resize: 'none' } as unknown as TextStyle) : undefined;
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -202,7 +206,7 @@ export function SupportModal({
                           borderColor:
                             state.kind === 'error' && state.reason.includes('subject')
                               ? theme.color.danger
-                              : 'transparent',
+                              : theme.color.border,
                         },
                       ]}
                       placeholder={t('settings.account.support.field.subject.placeholder')}
@@ -248,13 +252,14 @@ export function SupportModal({
                       style={[
                         styles.input,
                         styles.textArea,
+                        WEB_TEXTAREA_RESET,
                         {
                           backgroundColor: theme.color.surfaceMuted,
                           color: theme.color.textPrimary,
                           borderColor:
                             state.kind === 'error' && state.reason.includes('body')
                               ? theme.color.danger
-                              : 'transparent',
+                              : theme.color.border,
                         },
                       ]}
                       placeholder={t('settings.account.support.field.body.placeholder')}

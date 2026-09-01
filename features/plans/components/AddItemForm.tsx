@@ -1,23 +1,27 @@
-import React from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  type TextStyle,
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { MaterialIcons } from '@expo/vector-icons';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsRadius, DsShadow, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import { type TranslationKey } from '@/localization';
 import type { CustomMeal } from '@/features/nutrition/custom-meal.logic';
 import type { FoodSearchState, FoodSearchResult } from '@/features/plans/use-plan-builder';
 
-import { type TranslationKey } from '@/localization';
+
+const WEB_TEXTAREA_RESET =
+  Platform.OS === 'web' ? ({ resize: 'none' } as unknown as TextStyle) : undefined;
 
 type AddItemFormProps = {
   palette: {
@@ -280,6 +284,7 @@ export const AddItemForm = React.memo(
                 style={[
                   styles.input,
                   styles.textArea,
+                  WEB_TEXTAREA_RESET,
                   { color: theme.color.textPrimary, backgroundColor: theme.color.surfaceMuted },
                 ]}
                 value={name}
@@ -398,7 +403,7 @@ export const AddItemForm = React.memo(
 
         <DsPillButton
           scheme={scheme}
-          label={t('common.cta.add') as string}
+          label={t('common.cta.add')}
           onPress={onAdd}
           disabled={isInteractionLocked || !name.trim()}
           style={styles.addBtn}
