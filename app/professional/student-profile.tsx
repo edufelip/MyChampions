@@ -15,11 +15,11 @@
  * Refs: D-043, D-100, D-134, FR-106–108, FR-121, FR-123–125, FR-130–131, FR-185, FR-211
  *       BR-203–205, BR-213, BR-215–217, BR-222–223, BR-247, BR-269, BR-278–279
  */
+import { useFocusEffect } from '@react-navigation/native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-
+import { PlanPickerModal } from '@/components/ds/patterns/PlanPickerModal';
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsCard } from '@/components/ds/primitives/DsCard';
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
@@ -40,9 +40,8 @@ import {
 } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
-import type { PlanChangeRequest } from '@/features/plans/plan-change-request.logic';
-import { usePlans } from '@/features/plans/use-plans';
 import { usePlansStore } from '@/features/plans/plans-store';
+import { usePlans } from '@/features/plans/use-plans';
 import {
   getProfessionalStudentAssignmentSnapshot,
   unbindStudentConnections,
@@ -58,8 +57,7 @@ import {
 import { useSubscription } from '@/features/subscription/use-subscription';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
-
-import { PlanPickerModal } from '@/components/ds/patterns/PlanPickerModal';
+import type { PlanChangeRequest } from '@/features/plans/plan-change-request.logic';
 
 type AssignmentStatus = 'active' | 'pending' | 'none';
 type TFn = ReturnType<typeof useTranslation>['t'];
@@ -116,7 +114,7 @@ export default function ProfessionalStudentProfileScreen() {
       return;
     }
     setChangeRequestsSyncedAtIso(null);
-    setChangeRequestsLoadError(t('pro.student_profile.plan_change_requests.load_error') as string);
+    setChangeRequestsLoadError(t('pro.student_profile.plan_change_requests.load_error'));
   }, [getChangeRequestsForStudent, studentId, t]);
 
   useEffect(() => {
@@ -157,7 +155,7 @@ export default function ProfessionalStudentProfileScreen() {
         setNutritionStatus('none');
         setTrainingStatus('none');
         setAssignmentsSyncedAtIso(null);
-        setProfileLoadError(t('pro.student_profile.error') as string);
+        setProfileLoadError(t('pro.student_profile.error'));
         setIsLoadingAssignments(false);
       }
     });
@@ -181,7 +179,7 @@ export default function ProfessionalStudentProfileScreen() {
     const err = await reviewChangeRequest(requestId, action);
     if (err) {
       setChangeRequestsActionError(
-        t('pro.student_profile.plan_change_requests.action_error') as string,
+        t('pro.student_profile.plan_change_requests.action_error'),
       );
       return;
     }
@@ -195,18 +193,18 @@ export default function ProfessionalStudentProfileScreen() {
       await unbindStudentConnections(studentId);
       await loadAssignments();
     } catch {
-      setUnbindError(t('pro.student_profile.unbind.error') as string);
+      setUnbindError(t('pro.student_profile.unbind.error'));
     }
   }
 
   function confirmUnbind() {
     Alert.alert(
-      t('pro.student_profile.unbind.confirm_title') as string,
-      t('pro.student_profile.unbind.confirm_body') as string,
+      t('pro.student_profile.unbind.confirm_title'),
+      t('pro.student_profile.unbind.confirm_body'),
       [
-        { text: t('pro.student_profile.unbind.confirm_no') as string, style: 'cancel' },
+        { text: t('pro.student_profile.unbind.confirm_no'), style: 'cancel' },
         {
-          text: t('pro.student_profile.unbind.confirm_yes') as string,
+          text: t('pro.student_profile.unbind.confirm_yes'),
           style: 'destructive',
           onPress: () => {
             void handleUnbind();
@@ -251,9 +249,9 @@ export default function ProfessionalStudentProfileScreen() {
       setIsAssigning(false);
 
       if (error) {
-        Alert.alert(t('pro.plan.discard.error') as string);
+        Alert.alert(t('pro.plan.discard.error'));
       } else {
-        Alert.alert(t('pro.plan.discard.success') as string);
+        Alert.alert(t('pro.plan.discard.success'));
         reloadPlans();
         void loadAssignments();
       }
@@ -270,10 +268,10 @@ export default function ProfessionalStudentProfileScreen() {
 
   const confirmDiscardDraft = useCallback(
     (planId: string, planType: 'nutrition' | 'training') => {
-      Alert.alert(t('pro.plan.discard.title') as string, t('pro.plan.discard.body') as string, [
-        { text: t('pro.plan.discard.no') as string, style: 'cancel' },
+      Alert.alert(t('pro.plan.discard.title'), t('pro.plan.discard.body'), [
+        { text: t('pro.plan.discard.no'), style: 'cancel' },
         {
-          text: t('pro.plan.discard.yes') as string,
+          text: t('pro.plan.discard.yes'),
           style: 'destructive',
           onPress: () => {
             void handleDiscardDraft(planId, planType);
@@ -302,9 +300,9 @@ export default function ProfessionalStudentProfileScreen() {
     setIsAssigning(false);
 
     if ('error' in result) {
-      Alert.alert(t('pro.plan.assign.error') as string);
+      Alert.alert(t('pro.plan.assign.error'));
     } else {
-      Alert.alert(t('pro.plan.assign.success') as string);
+      Alert.alert(t('pro.plan.assign.success'));
       reloadPlans();
       void loadAssignments();
       router.push(`/professional/${pickerPlanType}/plans/${result.id}`);
@@ -329,7 +327,7 @@ export default function ProfessionalStudentProfileScreen() {
     } catch {
       setTrackingReview(null);
       setTrackingReviewSyncedAtIso(null);
-      setTrackingReviewError(t('pro.student_profile.tracking_review.error') as string);
+      setTrackingReviewError(t('pro.student_profile.tracking_review.error'));
     }
   }, [nutritionStatus, studentId, t]);
 
@@ -370,7 +368,7 @@ export default function ProfessionalStudentProfileScreen() {
 
           router.replace('/');
         }}
-        accessibilityLabel={t('auth.role.cta_back') as string}
+        accessibilityLabel={t('auth.role.cta_back')}
         style={styles.backButton}
         testID="pro.student_profile.backButton"
       />
@@ -378,7 +376,7 @@ export default function ProfessionalStudentProfileScreen() {
       {offlineDisplay.showOfflineBanner ? (
         <DsOfflineBanner
           scheme={scheme}
-          text={t('offline.banner') as string}
+          text={t('offline.banner')}
           testID="pro.student_profile.offlineBanner"
         />
       ) : null}
@@ -394,7 +392,7 @@ export default function ProfessionalStudentProfileScreen() {
       {isLoadingAssignments || isAssigning ? (
         <DsCard scheme={scheme} testID="pro.student_profile.loading">
           <ActivityIndicator
-            accessibilityLabel={t('a11y.loading.default') as string}
+            accessibilityLabel={t('a11y.loading.default')}
             color={theme.color.accentPrimary}
           />
         </DsCard>
@@ -411,7 +409,7 @@ export default function ProfessionalStudentProfileScreen() {
       ) : null}
 
       <AssignmentCard
-        specialtyLabel={t('pro.student_profile.specialty.nutritionist') as string}
+        specialtyLabel={t('pro.student_profile.specialty.nutritionist')}
         status={nutritionStatus}
         scheme={scheme}
         theme={theme}
@@ -444,7 +442,7 @@ export default function ProfessionalStudentProfileScreen() {
       ) : null}
 
       <AssignmentCard
-        specialtyLabel={t('pro.student_profile.specialty.fitness_coach') as string}
+        specialtyLabel={t('pro.student_profile.specialty.fitness_coach')}
         status={trainingStatus}
         scheme={scheme}
         theme={theme}
@@ -684,21 +682,21 @@ function AssignmentCard({
 
   if (status === 'active') {
     if (draftPlan) {
-      statusLabel = t('pro.student_profile.assignment.draft_pending') as string;
+      statusLabel = t('pro.student_profile.assignment.draft_pending');
       statusColor = theme.color.warning;
     } else if (activePlan) {
-      const activeText = t('pro.student_profile.assignment.active') as string;
+      const activeText = t('pro.student_profile.assignment.active');
       statusLabel = `${activeText}: ${activePlan.name}`;
       statusColor = theme.color.success;
     } else {
-      statusLabel = t('pro.student_profile.assignment.awaiting') as string;
+      statusLabel = t('pro.student_profile.assignment.awaiting');
       statusColor = theme.color.textSecondary;
     }
   } else if (status === 'pending') {
-    statusLabel = t('pro.student_profile.assignment.pending') as string;
+    statusLabel = t('pro.student_profile.assignment.pending');
     statusColor = theme.color.textSecondary;
   } else {
-    statusLabel = t('pro.student_profile.assignment.none') as string;
+    statusLabel = t('pro.student_profile.assignment.none');
     statusColor = theme.color.textSecondary;
   }
 
@@ -714,7 +712,7 @@ function AssignmentCard({
               scheme={scheme}
               variant="primary"
               size="sm"
-              label={t('pro.student_profile.assignment.cta_resume_draft') as string}
+              label={t('pro.student_profile.assignment.cta_resume_draft')}
               onPress={() => onViewPlan(draftPlan.id)}
               fullWidth={false}
               testID={`${testID}.cta_resume_draft`}
@@ -723,7 +721,7 @@ function AssignmentCard({
               scheme={scheme}
               variant="outline"
               size="sm"
-              label={t('pro.student_profile.assignment.cta_discard') as string}
+              label={t('pro.student_profile.assignment.cta_discard')}
               onPress={() => onDiscardDraft(draftPlan.id)}
               contentColor={theme.color.danger}
               style={{ borderColor: theme.color.danger }}
@@ -738,7 +736,7 @@ function AssignmentCard({
             scheme={scheme}
             variant="outline"
             size="sm"
-            label={t('pro.student_profile.assignment.cta_view_edit') as string}
+            label={t('pro.student_profile.assignment.cta_view_edit')}
             onPress={() => onViewPlan(activePlan.id)}
             fullWidth={false}
             testID={`${testID}.cta_view_edit`}
@@ -849,7 +847,7 @@ function PlanChangeRequestsCard({
                   scheme={scheme}
                   variant="outline"
                   size="sm"
-                  label={t('pro.student_profile.plan_change_requests.review') as string}
+                  label={t('pro.student_profile.plan_change_requests.review')}
                   onPress={() => onReview(req.id)}
                   fullWidth={false}
                   style={styles.actionPill}
@@ -859,7 +857,7 @@ function PlanChangeRequestsCard({
                   scheme={scheme}
                   variant="outline"
                   size="sm"
-                  label={t('pro.student_profile.plan_change_requests.dismiss') as string}
+                  label={t('pro.student_profile.plan_change_requests.dismiss')}
                   onPress={() => onDismiss(req.id)}
                   fullWidth={false}
                   style={styles.actionPill}
@@ -994,6 +992,7 @@ const styles = StyleSheet.create({
   },
   draftActionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: DsSpace.sm,
   },
   // Modal

@@ -1,20 +1,25 @@
 import { useState } from 'react';
-import { ActivityIndicator, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
-
 import {
-  DsRadius,
-  DsTypography,
-  type DsColorScheme,
-  getDsTheme,
-} from '@/constants/design-system';
+  Keyboard,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextStyle,
+  View,
+} from 'react-native';
+import { DsRadius, DsTypography, type DsColorScheme, getDsTheme } from '@/constants/design-system';
+import { DsCard } from '../primitives/DsCard';
+import { DsPillButton } from '../primitives/DsPillButton';
 import type {
   PlanChangeRequestErrorReason,
   PlanChangeRequestValidationErrors,
 } from '@/features/plans/plan-change-request.logic';
 import type { TranslationKey } from '@/localization';
 
-import { DsCard } from '../primitives/DsCard';
-import { DsPillButton } from '../primitives/DsPillButton';
+
+const WEB_TEXTAREA_RESET =
+  Platform.OS === 'web' ? ({ resize: 'none' } as unknown as TextStyle) : undefined;
 
 type PlanChangeRequestCardProps = {
   scheme: DsColorScheme;
@@ -35,7 +40,9 @@ type PlanChangeRequestCardProps = {
     errorUnknown: TranslationKey;
   };
   validate: (input: { requestText: string }) => PlanChangeRequestValidationErrors;
-  submit: (requestText: string) => Promise<{ data: unknown } | { error: PlanChangeRequestErrorReason }>;
+  submit: (
+    requestText: string,
+  ) => Promise<{ data: unknown } | { error: PlanChangeRequestErrorReason }>;
 };
 
 export function PlanChangeRequestCard({
@@ -58,7 +65,7 @@ export function PlanChangeRequestCard({
     const errors = validate({ requestText });
     if (errors.requestText) {
       setFieldError(
-        errors.requestText === 'required' ? t(keys.validationRequired) : t(keys.validationTooShort)
+        errors.requestText === 'required' ? t(keys.validationRequired) : t(keys.validationTooShort),
       );
       return;
     }
@@ -96,7 +103,9 @@ export function PlanChangeRequestCard({
       <Text style={[styles.title, { color: theme.color.textPrimary }]}>{t(keys.title)}</Text>
 
       {isWriteLocked ? (
-        <Text style={[styles.errorText, { color: theme.color.danger }]}>{t('offline.write_lock')}</Text>
+        <Text style={[styles.errorText, { color: theme.color.danger }]}>
+          {t('offline.write_lock')}
+        </Text>
       ) : (
         <>
           <Text style={[styles.label, { color: theme.color.textPrimary }]}>{t(keys.label)}</Text>
@@ -116,8 +125,9 @@ export function PlanChangeRequestCard({
             returnKeyType="done"
             style={[
               styles.input,
+              WEB_TEXTAREA_RESET,
               {
-                borderColor: fieldError ? theme.color.danger : 'transparent',
+                borderColor: fieldError ? theme.color.danger : theme.color.border,
                 backgroundColor: theme.color.surfaceMuted,
                 color: theme.color.textPrimary,
               },
@@ -128,7 +138,10 @@ export function PlanChangeRequestCard({
 
           {fieldError ? (
             <View accessibilityLiveRegion="polite">
-              <Text style={[styles.errorText, { color: theme.color.danger }]} testID={`${testID}.error`}>
+              <Text
+                style={[styles.errorText, { color: theme.color.danger }]}
+                testID={`${testID}.error`}
+              >
                 {fieldError}
               </Text>
             </View>
@@ -136,7 +149,10 @@ export function PlanChangeRequestCard({
 
           {successMsg ? (
             <View accessibilityLiveRegion="polite">
-              <Text style={[styles.successText, { color: theme.color.success }]} testID={`${testID}.success`}>
+              <Text
+                style={[styles.successText, { color: theme.color.success }]}
+                testID={`${testID}.success`}
+              >
                 {successMsg}
               </Text>
             </View>
@@ -150,11 +166,6 @@ export function PlanChangeRequestCard({
             }}
             loading={isSubmitting}
             testID={`${testID}.submitButton`}
-            rightIcon={
-              isSubmitting ? (
-                <ActivityIndicator accessibilityLabel={t('a11y.loading.submitting')} color={theme.color.onAccent} />
-              ) : undefined
-            }
           />
         </>
       )}

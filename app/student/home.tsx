@@ -22,6 +22,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { getDsTheme, type DsColorScheme, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -50,11 +51,9 @@ function formatStaleElapsed(
   t: ReturnType<typeof useTranslation>['t'],
 ): string {
   const value = String(elapsed.value);
-  if (elapsed.unit === 'minutes')
-    return (t('offline.stale_minutes')).replace('{value}', value);
-  if (elapsed.unit === 'hours')
-    return (t('offline.stale_hours')).replace('{value}', value);
-  return (t('offline.stale_days')).replace('{value}', value);
+  if (elapsed.unit === 'minutes') return t('offline.stale_minutes').replace('{value}', value);
+  if (elapsed.unit === 'hours') return t('offline.stale_hours').replace('{value}', value);
+  return t('offline.stale_days').replace('{value}', value);
 }
 
 export default function StudentHomeScreen() {
@@ -220,24 +219,15 @@ export default function StudentHomeScreen() {
         </View>
 
         {offlineDisplay.showOfflineBanner ? (
-          <View
-            style={[
-              styles.offlineBanner,
-              { backgroundColor: theme.color.dangerSoft, borderColor: theme.color.dangerBorder },
-            ]}
+          <DsOfflineBanner
+            scheme={scheme}
+            text={
+              offlineDisplay.staleElapsed
+                ? `${t('student.home.offline.mode')} • ${formatStaleElapsed(offlineDisplay.staleElapsed, t)}`
+                : t('student.home.offline.mode')
+            }
             testID="student.home.offlineBanner"
-            accessibilityRole="alert"
-          >
-            <MaterialIcons color={theme.color.danger} name="cloud-off" size={18} />
-            <Text style={[styles.offlineModeText, { color: theme.color.danger }]}>
-              {t('student.home.offline.mode')}
-            </Text>
-            {offlineDisplay.staleElapsed ? (
-              <Text style={[styles.offlineTimeText, { color: theme.color.danger }]}>
-                • {formatStaleElapsed(offlineDisplay.staleElapsed, t)}
-              </Text>
-            ) : null}
-          </View>
+          />
         ) : null}
 
         {displayState.isInitialLoading ? (
@@ -354,10 +344,7 @@ export default function StudentHomeScreen() {
                 testID="student.home.planCards"
               >
                 <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
-                  <SectionTitle
-                    title={t('student.home.training.section')}
-                    theme={theme}
-                  />
+                  <SectionTitle title={t('student.home.training.section')} theme={theme} />
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => {
@@ -409,8 +396,8 @@ export default function StudentHomeScreen() {
                           {hasTrainingPlan
                             ? (assignedTrainingPlan?.name ??
                               selfManagedTrainingPlan?.name ??
-                              t('student.home.cta_training'))
-                            : t('student.home.no_active_plan')}
+                              t('student.home.training.section'))
+                            : t('student.home.training.section')}
                         </Text>
                         {!hasTrainingPlan ? (
                           <Text style={styles.heroMeta}>{t('student.home.cta_start_self')}</Text>
@@ -432,10 +419,7 @@ export default function StudentHomeScreen() {
                 </View>
 
                 <View style={usesPlanCardColumns ? styles.planCardColumn : undefined}>
-                  <SectionTitle
-                    title={t('student.home.nutrition.section')}
-                    theme={theme}
-                  />
+                  <SectionTitle title={t('student.home.nutrition.section')} theme={theme} />
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => {
