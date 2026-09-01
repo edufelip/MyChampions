@@ -315,6 +315,8 @@ export const enUS = {
     'Your nutrition plan is professionally assigned. Contact your nutritionist to request changes.',
   'student.nutrition.target_dashboard.title': 'Daily Targets',
   'student.nutrition.meals.title': 'Assigned Meals',
+  'student.nutrition.meals.offline_empty':
+    "You're offline and don't have your meal plan cached yet. Reconnect to load it.",
   'student.nutrition.meal.logged_badge': 'Logged',
   'student.nutrition.meal.log_button': 'Log Meal',
   'student.nutrition.meal.items_label': 'Food items',
