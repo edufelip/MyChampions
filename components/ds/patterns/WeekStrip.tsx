@@ -1,8 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
-
 import {
   DsRadius,
-  DsShadow,
   DsSpace,
   DsTypography,
   type DsColorScheme,
@@ -26,7 +24,13 @@ export function WeekStrip({ scheme, items, testID }: WeekStripProps) {
   const theme = getDsTheme(scheme);
 
   return (
-    <View style={[styles.wrap, DsShadow.soft, { backgroundColor: theme.color.surface }]} testID={testID}>
+    <View
+      style={[
+        styles.wrap,
+        { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+      ]}
+      testID={testID}
+    >
       {items.map((item) => (
         <View
           key={item.id}
@@ -35,11 +39,22 @@ export function WeekStrip({ scheme, items, testID }: WeekStripProps) {
             item.isActive
               ? { backgroundColor: theme.color.accentPrimary, width: 48, height: 60 }
               : { width: 40, height: 52 },
-          ]}>
-          <Text style={[styles.dayLabel, { color: item.isActive ? theme.color.onAccent : theme.color.textSecondary }]}>
+          ]}
+        >
+          <Text
+            style={[
+              styles.dayLabel,
+              { color: item.isActive ? theme.color.onAccent : theme.color.textSecondary },
+            ]}
+          >
             {item.dayLabel}
           </Text>
-          <Text style={[styles.dayNumber, { color: item.isActive ? theme.color.onAccent : theme.color.textPrimary }]}>
+          <Text
+            style={[
+              styles.dayNumber,
+              { color: item.isActive ? theme.color.onAccent : theme.color.textPrimary },
+            ]}
+          >
             {item.dayNumber}
           </Text>
         </View>
@@ -51,6 +66,7 @@ export function WeekStrip({ scheme, items, testID }: WeekStripProps) {
 const styles = StyleSheet.create({
   wrap: {
     borderRadius: DsRadius.pill,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: DsSpace.xs,
