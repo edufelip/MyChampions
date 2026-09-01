@@ -78,4 +78,57 @@ test.describe('@feature:professional student roster hero heading', () => {
 
     await captureEvidence(page, testInfo, 'professional-students-roster-390-heading');
   });
+
+  test('gives the "Bulk Assignment" selection-mode heading room to wrap between whole words at small-phone width', async ({
+    page,
+  }, testInfo: TestInfo) => {
+    // Regression guard for ET-167: entering bulk-assign selection mode
+    // swaps the hero title to "Bulk Assignment" and the CTA to "Cancel".
+    // Both share the ET-159 `usesCompactHero` breakpoint with the default
+    // "My students" heading, but that breakpoint had never been exercised
+    // against this specific title/CTA pair — assert it independently so a
+    // future change to the selection-mode copy or CTA can't silently
+    // regress this screen back to a mid-word wrap ("Bulk" / "Assignme" /
+    // "nt") at 320px.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await chooseProfessional(page);
+    await page.getByTestId('tabs.students').last().click();
+
+    const heroCopy = page.getByTestId('pro.students.hero.copy').last();
+    const title = page.getByTestId('pro.students.hero.title').last();
+    await expect(heroCopy).toBeVisible();
+
+    await page.getByTestId('pro.students.bulkAssignToggle').last().click();
+    await expect(title).toHaveText('Bulk Assignment');
+
+    const cta = page.getByTestId('pro.students.bulkAssignToggle').last();
+    await expect(cta).toHaveText('Cancel');
+    await assertNoHorizontalOverflow(page);
+
+    const [copyBox, titleBox, ctaBox] = await Promise.all([
+      heroCopy.boundingBox(),
+      title.boundingBox(),
+      cta.boundingBox(),
+    ]);
+    expect(copyBox).not.toBeNull();
+    expect(titleBox).not.toBeNull();
+    expect(ctaBox).not.toBeNull();
+    if (copyBox && titleBox && ctaBox) {
+      // Squeezed alongside the icon and the "Cancel" pill in one row, the
+      // title column measures well under 100px wide (too narrow for
+      // "Assignment" at 24px to wrap on a whole word); with the CTA moved
+      // below, the title column gets the card's near-full width instead.
+      expect(copyBox.width).toBeGreaterThan(150);
+      // The "Cancel" pill no longer shares the title's row at this width —
+      // it sits on its own row underneath, which is what frees up the
+      // title column.
+      expect(ctaBox.y).toBeGreaterThanOrEqual(titleBox.y + titleBox.height);
+    }
+
+    await captureEvidence(
+      page,
+      testInfo,
+      'professional-students-roster-320-bulk-assignment-heading',
+    );
+  });
 });
