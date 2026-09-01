@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
+import { formatQuantityWithUnit } from '@/features/plans/food-item-quantity';
 import { type TranslationKey } from '@/localization';
 
 type FoodItemRowProps = {
@@ -89,7 +90,7 @@ export const FoodItemRow = React.memo(
             <View style={styles.itemMetaWrap}>
               {(quantity || calories != null || (!carbs && !proteins && !fats && !notes)) && (
                 <Text style={[styles.itemMeta, { color: palette.icon }]}>
-                  {quantity ? `${quantity}g` : calories == null ? '-' : ''}
+                  {quantity ? formatQuantityWithUnit(quantity) : calories == null ? '-' : ''}
                   {quantity && calories != null ? ' • ' : ''}
                   {calories != null ? `${calories} kcal` : ''}
                 </Text>

@@ -148,7 +148,7 @@ export function ExerciseSearchModal({
               style={[styles.modalTitle, { color: theme.color.textPrimary }]}
               testID="exerciseSearch.title"
             >
-              {view === 'detail' ? t('pro.plan.item.field.name.label') : dialogTitle}
+              {view === 'detail' ? t('pro.plan.item.detail.dialog_title') : dialogTitle}
             </Text>
             <Pressable
               accessibilityRole="button"
