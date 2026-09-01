@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   createMetroBundlePrewarmUrl,
   DEFAULT_METRO_BUNDLE_PREWARM_TIMEOUT_MS,
@@ -146,8 +145,13 @@ test('Metro prewarm aborts a stalled request at its bounded timeout', async () =
             reject(new Error('prewarm request did not receive an abort signal'));
             return;
           }
-          const rejectWithAbortReason = () => reject(signal.reason);
+          const timer = setTimeout(() => {}, 1000);
+          const rejectWithAbortReason = () => {
+            clearTimeout(timer);
+            reject(signal.reason);
+          };
           if (signal.aborted) {
+            clearTimeout(timer);
             rejectWithAbortReason();
             return;
           }
