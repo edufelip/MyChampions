@@ -261,11 +261,11 @@ export default function ResetPasswordScreen() {
                   testID="auth.resetPassword.newPasswordToggle"
                   style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}
                 >
-                  <Text style={[styles.passwordToggleText, { color: palette.text }]}>
-                    {showNewPassword
-                      ? t('auth.password.toggle_hide_short')
-                      : t('auth.password.toggle_show_short')}
-                  </Text>
+                  <MaterialIcons
+                    color={palette.text}
+                    name={showNewPassword ? 'visibility-off' : 'visibility'}
+                    size={20}
+                  />
                 </Pressable>
               </View>
               <View accessibilityLiveRegion="polite">
@@ -321,11 +321,11 @@ export default function ResetPasswordScreen() {
                   testID="auth.resetPassword.newPasswordConfirmationToggle"
                   style={[styles.passwordToggle, { backgroundColor: theme.color.surfaceMuted }]}
                 >
-                  <Text style={[styles.passwordToggleText, { color: palette.text }]}>
-                    {showNewPasswordConfirmation
-                      ? t('auth.password.toggle_hide_short')
-                      : t('auth.password.toggle_show_short')}
-                  </Text>
+                  <MaterialIcons
+                    color={palette.text}
+                    name={showNewPasswordConfirmation ? 'visibility-off' : 'visibility'}
+                    size={20}
+                  />
                 </Pressable>
               </View>
               <View accessibilityLiveRegion="polite">
@@ -450,14 +450,9 @@ const styles = StyleSheet.create({
   passwordToggle: {
     alignItems: 'center',
     borderRadius: 20,
+    height: 44,
     justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 68,
-    paddingHorizontal: 14,
-  },
-  passwordToggleText: {
-    fontSize: 14,
-    fontWeight: '600',
+    width: 44,
   },
   inlineError: {
     fontSize: 13,

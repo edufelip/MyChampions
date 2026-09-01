@@ -145,7 +145,12 @@
       ],
       "dependsOn": ["auth", "connections", "offline", "plans", "platform"],
       "unitTests": ["features/training/**/*.test.ts"],
-      "webSuites": ["web:training", "web:shell", "web:exercise-search"],
+      "webSuites": [
+        "web:training",
+        "web:shell",
+        "web:exercise-search",
+        "web:assigned-plan-detail-heading"
+      ],
       "detoxSuites": ["detox:training"],
       "owners": ["@edufelip"]
     },
@@ -153,7 +158,12 @@
       "sourcePaths": ["features/plans/**"],
       "dependsOn": ["auth", "connections", "platform"],
       "unitTests": ["features/plans/**/*.test.ts"],
-      "webSuites": ["web:nutrition", "web:training", "web:exercise-search"],
+      "webSuites": [
+        "web:nutrition",
+        "web:training",
+        "web:exercise-search",
+        "web:assigned-plan-detail-heading"
+      ],
       "detoxSuites": ["detox:plans"],
       "owners": ["@edufelip"]
     },
@@ -469,6 +479,15 @@
       "projects": ["mobile-professional"],
       "specs": ["e2e/web/professional-tabbar-labels-responsive.spec.ts"],
       "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:assigned-plan-detail-heading": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.assigned-plan-detail-heading.config.ts",
+      "projects": ["small-phone"],
+      "specs": ["e2e/web/assigned-plan-detail-heading-wrap.spec.ts"],
+      "grep": "@feature:assigned-plan-detail",
       "tier": "feature",
       "ci": true
     },
