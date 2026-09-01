@@ -1,9 +1,9 @@
-import type { PlanBuilderErrorReason } from './plan-builder.logic';
 import type {
   FoodSearchResult,
   NutritionPlanDetail,
   TrainingPlanDetail,
 } from './plan-builder-source';
+import type { PlanBuilderErrorReason } from './plan-builder.logic';
 
 export type NutritionBuilderState =
   | { kind: 'idle' }
@@ -16,7 +16,13 @@ export type NutritionBuilderState =
       isMutating?: boolean;
     }
   | { kind: 'saving' }
-  | { kind: 'error'; reason: PlanBuilderErrorReason; message: string };
+  | { kind: 'error'; reason: PlanBuilderErrorReason; message: string }
+  /**
+   * Device is offline and no cached copy of this plan exists yet (e.g. first
+   * load ever happens while offline). Distinct from `error` so the UI can show
+   * explicit offline messaging instead of a generic failure. Refs: ET-171, D-041.
+   */
+  | { kind: 'offline_empty' };
 
 export type TrainingBuilderState =
   | { kind: 'idle' }

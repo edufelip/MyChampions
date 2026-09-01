@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
 import {
   calculateTotalsFromItems,
   isStarterTemplate,
   deriveStarterTemplatePlanType,
   resolveNutritionPlanCreationMetadata,
   buildNutritionMealItemInputFromCustomMealSnapshot,
+  shouldSkipOfflinePlanNetworkFetch,
 } from './plan-builder.logic';
 import type { CustomMeal } from '../nutrition/custom-meal.logic';
 
@@ -117,4 +117,42 @@ test('buildNutritionMealItemInputFromCustomMealSnapshot keeps a stable custom me
     },
   });
   assert.equal('customMealId' in item, false);
+});
+
+// ─── shouldSkipOfflinePlanNetworkFetch (ET-171) ────────────────────────────────
+
+test('shouldSkipOfflinePlanNetworkFetch skips the network attempt when offline with no cached plan', () => {
+  const result = shouldSkipOfflinePlanNetworkFetch({
+    hasCachedPlan: false,
+    networkStatus: 'offline',
+  });
+
+  assert.equal(result, true);
+});
+
+test('shouldSkipOfflinePlanNetworkFetch allows the network attempt when a cached plan already exists', () => {
+  const result = shouldSkipOfflinePlanNetworkFetch({
+    hasCachedPlan: true,
+    networkStatus: 'offline',
+  });
+
+  assert.equal(result, false);
+});
+
+test('shouldSkipOfflinePlanNetworkFetch allows the network attempt when online', () => {
+  const result = shouldSkipOfflinePlanNetworkFetch({
+    hasCachedPlan: false,
+    networkStatus: 'online',
+  });
+
+  assert.equal(result, false);
+});
+
+test('shouldSkipOfflinePlanNetworkFetch allows the network attempt when connectivity is unknown', () => {
+  const result = shouldSkipOfflinePlanNetworkFetch({
+    hasCachedPlan: false,
+    networkStatus: 'unknown',
+  });
+
+  assert.equal(result, false);
 });

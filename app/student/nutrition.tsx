@@ -147,9 +147,9 @@ export default function StudentNutritionScreen() {
   const assignedNutritionPlanId = assignedNutritionPlan?.id;
   useEffect(() => {
     if (assignedNutritionPlanId) {
-      loadPlan(assignedNutritionPlanId);
+      loadPlan(assignedNutritionPlanId, networkStatus);
     }
-  }, [assignedNutritionPlanId, loadPlan]);
+  }, [assignedNutritionPlanId, loadPlan, networkStatus]);
 
   useEffect(() => {
     if (currentUser) {
@@ -298,6 +298,16 @@ export default function StudentNutritionScreen() {
                     accessibilityLabel={t('a11y.loading.default')}
                     color={theme.color.accentPrimary}
                   />
+                </DsCard>
+              ) : builderState.kind === 'offline_empty' ? (
+                <DsCard
+                  scheme={scheme}
+                  style={styles.loadingCard}
+                  testID="student.nutrition.planDetailsOfflineEmpty"
+                >
+                  <Text style={[styles.loadErrorText, { color: theme.color.textSecondary }]}>
+                    {t('student.nutrition.meals.offline_empty')}
+                  </Text>
                 </DsCard>
               ) : builderState.kind === 'error' ? (
                 <DsCard

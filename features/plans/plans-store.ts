@@ -1,23 +1,4 @@
 import { create } from 'zustand';
-
-import {
-  getMyPlans,
-  getMyPredefinedPlans,
-  bulkAssignPredefinedPlan,
-  createDraftAssignedPlan,
-  submitPlanChangeRequest,
-  reviewPlanChangeRequest,
-  getStudentPlanChangeRequests,
-  getCachedPlans,
-  getCachedPredefinedPlans,
-  getCachedPlansOwnerUid,
-  getCachedPlansSyncedAtIso,
-  clearPlanCaches,
-  optimisticUpdatePredefinedPlan,
-  optimisticDeletePredefinedPlan,
-  type Plan,
-  type PredefinedPlan,
-} from './plan-source';
 import {
   createNutritionPlan,
   updateNutritionPlan,
@@ -44,20 +25,19 @@ import {
   type TrainingPlanDetail,
 } from './plan-builder-source';
 import {
-  validatePlanChangeRequestInput,
-  normalizePlanChangeRequestError,
-  type PlanType,
-  type PlanChangeRequest,
-  type PlanChangeRequestInput,
-  type PlanChangeRequestValidationErrors,
-  type PlanChangeRequestErrorReason,
-} from './plan-change-request.logic';
+  markNutritionBuilderMutating,
+  markTrainingBuilderMutating,
+  type FoodSearchState,
+  type NutritionBuilderState,
+  type TrainingBuilderState,
+} from './plan-builder-state';
 import {
   validateNutritionPlanInput,
   validateTrainingPlanInput,
   resolveTrainingDraftCreationInput,
   validateTrainingSessionItemInput,
   normalizePlanBuilderError,
+  shouldSkipOfflinePlanNetworkFetch,
   type NutritionPlanInput,
   type NutritionPlanCreationMode,
   type NutritionMealInput,
@@ -79,15 +59,36 @@ import {
   setCachedTrainingPlan,
 } from './plan-cache';
 import {
-  markNutritionBuilderMutating,
-  markTrainingBuilderMutating,
-  type FoodSearchState,
-  type NutritionBuilderState,
-  type TrainingBuilderState,
-} from './plan-builder-state';
+  validatePlanChangeRequestInput,
+  normalizePlanChangeRequestError,
+  type PlanType,
+  type PlanChangeRequest,
+  type PlanChangeRequestInput,
+  type PlanChangeRequestValidationErrors,
+  type PlanChangeRequestErrorReason,
+} from './plan-change-request.logic';
+import {
+  getMyPlans,
+  getMyPredefinedPlans,
+  bulkAssignPredefinedPlan,
+  createDraftAssignedPlan,
+  submitPlanChangeRequest,
+  reviewPlanChangeRequest,
+  getStudentPlanChangeRequests,
+  getCachedPlans,
+  getCachedPredefinedPlans,
+  getCachedPlansOwnerUid,
+  getCachedPlansSyncedAtIso,
+  clearPlanCaches,
+  optimisticUpdatePredefinedPlan,
+  optimisticDeletePredefinedPlan,
+  type Plan,
+  type PredefinedPlan,
+} from './plan-source';
 import { resolvePlansAuthUid } from './plans-auth-source';
-import { getCurrentServerUser } from '../auth/server-auth-source';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
+import { getCurrentServerUser } from '../auth/server-auth-source';
+import type { NetworkStatus } from '../offline/offline.logic';
 
 export type PlansLoadState =
   | { kind: 'idle' }
@@ -178,7 +179,11 @@ export type PlansStoreState = {
     studentUid: string,
   ) => Promise<{ id: string } | { error: PlanChangeRequestErrorReason }>;
   clearFoodSearch: () => void;
-  loadNutritionPlan: (isAuthenticated: boolean, planId: string) => Promise<void>;
+  loadNutritionPlan: (
+    isAuthenticated: boolean,
+    planId: string,
+    networkStatus?: NetworkStatus,
+  ) => Promise<void>;
   initNewNutritionPlan: () => void;
   createNutritionPlanAction: (
     isAuthenticated: boolean,
@@ -471,7 +476,7 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
     set({ foodSearchState: { kind: 'idle' }, foodSearchRequestId: 0 });
   },
 
-  loadNutritionPlan: async (isAuthenticated, planId) => {
+  loadNutritionPlan: async (isAuthenticated, planId, networkStatus = 'unknown') => {
     get().syncAuthContext(isAuthenticated);
     if (!get().authUid) {
       set({
@@ -507,6 +512,18 @@ export const usePlansStore = create<PlansStoreState>((set, get) => ({
       }
       return;
     }
+
+    // No cached copy exists for this plan yet. Offline mode is read-only cached
+    // content (D-041) — a live request here has nothing to fall back on if it
+    // rejects slowly or never settles, so fail closed to an explicit offline
+    // state instead of leaving the UI on an indefinite loading spinner.
+    // Refs: ET-171.
+    if (shouldSkipOfflinePlanNetworkFetch({ hasCachedPlan: false, networkStatus })) {
+      if (get().nutritionLoadRequestId !== requestId) return;
+      set({ nutritionBuilderState: { kind: 'offline_empty' } });
+      return;
+    }
+
     const startTime = Date.now();
     try {
       const plan = await getNutritionPlanDetail(planId);

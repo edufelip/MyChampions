@@ -333,6 +333,8 @@ export const ptBR: Record<TranslationKey, string> = {
     'Seu plano alimentar foi atribuído por um profissional. Entre em contato com seu nutricionista para solicitar mudanças.',
   'student.nutrition.target_dashboard.title': 'Metas Diárias',
   'student.nutrition.meals.title': 'Refeições Planejadas',
+  'student.nutrition.meals.offline_empty':
+    'Você está offline e ainda não tem seu plano alimentar em cache. Reconecte-se para carregá-lo.',
   'student.nutrition.meal.logged_badge': 'Registrado',
   'student.nutrition.meal.log_button': 'Registrar refeição',
   'student.nutrition.meal.items_label': 'Alimentos',

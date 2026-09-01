@@ -29,6 +29,7 @@ import type {
   PlanBuilderErrorReason,
   TrainingPlanCreationMode,
 } from './plan-builder.logic';
+import type { NetworkStatus } from '../offline/offline.logic';
 
 export type { FoodSearchResult, FoodSearchState, NutritionBuilderState, TrainingBuilderState };
 export { markNutritionBuilderMutating, markTrainingBuilderMutating };
@@ -37,7 +38,7 @@ export type UseNutritionPlanBuilderResult = {
   state: NutritionBuilderState;
   foodSearchState: FoodSearchState;
   clearFoodSearch: () => void;
-  loadPlan: (planId: string) => void;
+  loadPlan: (planId: string, networkStatus?: NetworkStatus) => void;
   initNewPlan: () => void;
   createPlan: (
     input: NutritionPlanInput,
@@ -134,8 +135,8 @@ export function useNutritionPlanBuilder(
   }, [scopeKey, resetNutritionBuilder, clearFoodSearch]);
 
   const loadPlan = useCallback(
-    (planId: string) => {
-      void loadPlanFromStore(isAuthenticated, planId);
+    (planId: string, networkStatus?: NetworkStatus) => {
+      void loadPlanFromStore(isAuthenticated, planId, networkStatus);
     },
     [isAuthenticated, loadPlanFromStore],
   );

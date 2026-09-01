@@ -330,6 +330,8 @@ export const esES: Record<TranslationKey, string> = {
     'Tu plan de nutrición fue asignado por un profesional. Contacta a tu nutricionista para solicitar cambios.',
   'student.nutrition.target_dashboard.title': 'Metas Diarias',
   'student.nutrition.meals.title': 'Comidas Asignadas',
+  'student.nutrition.meals.offline_empty':
+    'Estás sin conexión y todavía no tienes tu plan de comidas en caché. Reconéctate para cargarlo.',
   'student.nutrition.meal.logged_badge': 'Registrado',
   'student.nutrition.meal.log_button': 'Registrar comida',
   'student.nutrition.meal.items_label': 'Alimentos',

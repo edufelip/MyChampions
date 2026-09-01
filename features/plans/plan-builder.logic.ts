@@ -7,9 +7,10 @@
  *       TC-275–TC-280, TC-281
  */
 
+import { buildCustomMealPlanSnapshot } from '../nutrition/custom-meal.logic';
 import type { PlanType } from './plan-change-request.logic';
 import type { CustomMeal, CustomMealPlanSnapshot } from '../nutrition/custom-meal.logic';
-import { buildCustomMealPlanSnapshot } from '../nutrition/custom-meal.logic';
+import type { NetworkStatus } from '../offline/offline.logic';
 
 export type { PlanType };
 
@@ -207,6 +208,25 @@ export type PlanBuilderErrorReason =
   | 'network'
   | 'configuration'
   | 'unknown';
+
+/**
+ * Decides whether a plan-detail load should skip the network attempt entirely
+ * when there is no cached copy to fall back on.
+ *
+ * D-041 (offline.logic.ts) makes offline mode strictly read-only cached content —
+ * loads should never depend on a live request succeeding while offline. Without
+ * this check, a cache-miss load offline would still fire a network request that
+ * can reject slowly (or hang, depending on the platform's network stack) with no
+ * bound, leaving the UI stuck on a loading spinner indefinitely instead of
+ * failing closed to an explicit "no cached data while offline" state.
+ * Refs: ET-171, D-041.
+ */
+export function shouldSkipOfflinePlanNetworkFetch(input: {
+  hasCachedPlan: boolean;
+  networkStatus: NetworkStatus;
+}): boolean {
+  return !input.hasCachedPlan && input.networkStatus === 'offline';
+}
 
 // ─── Nutrition validation ─────────────────────────────────────────────────────
 
