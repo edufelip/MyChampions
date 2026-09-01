@@ -1004,6 +1004,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.item.search.error': 'Error al buscar ejercicios.',
   'pro.plan.item.search.retry': 'Intentar de nuevo',
   'pro.plan.item.search.back': 'Volver a la búsqueda',
+  'pro.plan.item.detail.dialog_title': 'Detalles del ejercicio',
   'pro.plan.item.detail.description': 'Descripción',
   'pro.plan.item.detail.instructions': 'Instrucciones',
   'pro.plan.item.detail.important_points': 'Puntos Importantes',

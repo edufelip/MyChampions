@@ -4,6 +4,7 @@ import { enUS } from '../../localization/en-US';
 test.use({ ...devices['Pixel 5'] });
 
 const dialogTitle = enUS['pro.plan.item.search.dialog_title'];
+const detailDialogTitle = enUS['pro.plan.item.detail.dialog_title'];
 
 async function chooseProfessional(page: Page) {
   await page.goto('/auth/role-selection');
@@ -99,6 +100,33 @@ test('@feature:training exercise search opens with a useful initial state', asyn
 
   await dialog.getByRole('button', { name: enUS['auth.role.cta_back'], exact: true }).click();
   await expect(dialog).toBeHidden();
+  await expectNoBrowserErrors(pageErrors);
+});
+
+test('@feature:training exercise detail view shows a real header label, not the field placeholder copy', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
+  await openExerciseSearch(page);
+
+  const dialog = page.getByRole('dialog', { name: dialogTitle });
+  const input = page.getByTestId('exerciseSearch.input');
+  await expect(dialog).toBeVisible();
+
+  await input.fill('push');
+  await input.press('Enter');
+  await expect(page.getByTestId('exerciseSearch.result.e2e-exercise-push-up')).toBeVisible();
+  await page.getByTestId('exerciseSearch.result.e2e-exercise-push-up').click();
+
+  const title = page.getByTestId('exerciseSearch.title');
+  await expect(page.getByTestId('exerciseSearch.detail')).toBeVisible();
+  await expect(title).toHaveText(detailDialogTitle);
+  await expect(title).not.toHaveText(enUS['pro.plan.item.field.name.label']);
+  await capture(page, testInfo, 'exercise-detail-header');
+
   await expectNoBrowserErrors(pageErrors);
 });
 
