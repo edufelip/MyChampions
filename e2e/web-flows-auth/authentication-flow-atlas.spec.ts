@@ -149,7 +149,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
 
   test('auth entry screens fit a narrow mobile viewport', async ({ page }, testInfo) => {
     test.skip(
-      !testInfo.project.name.startsWith('mobile-auth'),
+      !testInfo.project.name.startsWith('mobile'),
       'The narrow viewport check is mobile-only.',
     );
     const copy = authAccessibleCopy(testInfo);

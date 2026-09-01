@@ -205,17 +205,13 @@ export function SupportModal({
                               : 'transparent',
                         },
                       ]}
-                      placeholder={
-                        t('settings.account.support.field.subject.placeholder')
-                      }
+                      placeholder={t('settings.account.support.field.subject.placeholder')}
                       placeholderTextColor={theme.color.textTertiary}
                       value={subject}
                       onChangeText={setSubject}
                       maxLength={SUBJECT_LIMIT}
                       editable={!isSubmitting}
-                      accessibilityLabel={
-                        t('settings.account.support.field.subject.label')
-                      }
+                      accessibilityLabel={t('settings.account.support.field.subject.label')}
                     />
                     {state.kind === 'error' && state.reason === 'subject_required' && (
                       <Text
@@ -311,8 +307,8 @@ export function SupportModal({
                     scheme={scheme}
                     label={
                       isError && !state.reason.includes('required')
-                        ? (t('common.error.retry'))
-                        : (t('settings.account.support.cta_submit'))
+                        ? t('common.error.retry')
+                        : t('settings.account.support.cta_submit')
                     }
                     onPress={handleSubmit}
                     loading={isSubmitting}
