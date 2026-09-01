@@ -1,12 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
-
-import {
-  DsTypography,
-  type DsColorScheme,
-  getDsTheme,
-} from '@/constants/design-system';
-
+import { DsTypography, type DsColorScheme, getDsTheme } from '@/constants/design-system';
 import { DsCard } from '../primitives/DsCard';
 import { DsPillButton } from '../primitives/DsPillButton';
 
@@ -40,9 +34,8 @@ export function HeroEmptyState({
   return (
     <DsCard scheme={scheme} style={styles.card} testID={testID}>
       <View style={styles.heroWrap}>
-        <View style={[styles.heroBlob, { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }]}> 
-          <View style={[styles.innerBlob, { backgroundColor: theme.color.accentCyanSoft }]} />
-          <MaterialIcons color={theme.color.accentPrimary} name={icon} size={72} />
+        <View style={[styles.iconBadge, { backgroundColor: theme.color.accentPrimarySoft }]}>
+          <MaterialIcons color={theme.color.accentPrimary} name={icon} size={56} />
         </View>
 
         <Text style={[styles.title, { color: theme.color.textPrimary }]}>{title}</Text>
@@ -71,22 +64,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  heroBlob: {
+  iconBadge: {
     alignItems: 'center',
     borderRadius: 96,
-    borderWidth: 8,
-    height: 192,
-    justifyContent: 'center',
-    marginBottom: 4,
-    position: 'relative',
-    width: 192,
-  },
-  innerBlob: {
-    borderRadius: 64,
     height: 128,
-    position: 'absolute',
-    right: 18,
-    top: 14,
+    justifyContent: 'center',
+    marginBottom: 12,
     width: 128,
   },
   title: {

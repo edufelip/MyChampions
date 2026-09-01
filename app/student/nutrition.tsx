@@ -708,13 +708,7 @@ export default function StudentNutritionScreen() {
             >
               <View style={styles.emptyHero}>
                 <View
-                  style={[
-                    styles.emptyGlow,
-                    {
-                      backgroundColor:
-                        scheme === 'dark' ? 'rgba(30, 169, 90, 0.14)' : 'rgba(19, 236, 73, 0.16)',
-                    },
-                  ]}
+                  style={[styles.emptyGlow, { backgroundColor: theme.color.accentPrimarySoft }]}
                 />
 
                 <View
@@ -723,13 +717,11 @@ export default function StudentNutritionScreen() {
                     DsShadow.floating,
                     {
                       backgroundColor: theme.color.surface,
-                      borderColor:
-                        scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
                       shadowColor: scheme === 'dark' ? '#000000' : theme.color.accentPrimary,
                     },
                   ]}
                 >
-                  <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
+                  <MaterialIcons color={theme.color.accentPrimary} name="hourglass-top" size={58} />
                 </View>
               </View>
 
@@ -799,13 +791,7 @@ export default function StudentNutritionScreen() {
             <View style={styles.emptyStateWrap} testID="student.nutrition.emptyState">
               <View style={styles.emptyHero}>
                 <View
-                  style={[
-                    styles.emptyGlow,
-                    {
-                      backgroundColor:
-                        scheme === 'dark' ? 'rgba(30, 169, 90, 0.14)' : 'rgba(19, 236, 73, 0.16)',
-                    },
-                  ]}
+                  style={[styles.emptyGlow, { backgroundColor: theme.color.accentPrimarySoft }]}
                 />
 
                 <View
@@ -814,8 +800,6 @@ export default function StudentNutritionScreen() {
                     DsShadow.floating,
                     {
                       backgroundColor: theme.color.surface,
-                      borderColor:
-                        scheme === 'dark' ? 'rgba(19, 236, 73, 0.22)' : 'rgba(19, 236, 73, 0.18)',
                       shadowColor: scheme === 'dark' ? '#000000' : theme.color.accentPrimary,
                     },
                   ]}
@@ -824,8 +808,8 @@ export default function StudentNutritionScreen() {
                     style={[
                       styles.emptyPlate,
                       {
-                        backgroundColor: scheme === 'dark' ? '#203828' : '#eef8f0',
-                        borderColor: '#13ec49',
+                        backgroundColor: theme.color.successSoft,
+                        borderColor: theme.color.accentPrimary,
                       },
                     ]}
                   >
@@ -833,36 +817,38 @@ export default function StudentNutritionScreen() {
                       style={[
                         styles.emptyFoodLeaf,
                         styles.emptyFoodLeafTop,
-                        { backgroundColor: '#13ec49' },
+                        { backgroundColor: theme.color.accentPrimary },
                       ]}
                     />
                     <View
                       style={[
                         styles.emptyFoodLeaf,
                         styles.emptyFoodLeafLeft,
-                        { backgroundColor: '#7ddf75' },
+                        { backgroundColor: theme.color.success },
                       ]}
                     />
                     <View
                       style={[
                         styles.emptyFoodLeaf,
                         styles.emptyFoodLeafRight,
-                        { backgroundColor: '#43c463' },
+                        { backgroundColor: theme.color.accentPrimaryHover },
                       ]}
                     />
-                    <View style={[styles.emptyFoodSlice, { backgroundColor: '#ff8a65' }]} />
+                    <View
+                      style={[styles.emptyFoodSlice, { backgroundColor: theme.color.warning }]}
+                    />
                     <View
                       style={[
                         styles.emptyFoodBean,
                         styles.emptyFoodBeanOne,
-                        { backgroundColor: '#ffd54f' },
+                        { backgroundColor: theme.color.warning },
                       ]}
                     />
                     <View
                       style={[
                         styles.emptyFoodBean,
                         styles.emptyFoodBeanTwo,
-                        { backgroundColor: '#ffd54f' },
+                        { backgroundColor: theme.color.warning },
                       ]}
                     />
                   </View>
@@ -877,19 +863,23 @@ export default function StudentNutritionScreen() {
                     ]}
                   >
                     <View style={styles.emptyOverlayRow}>
-                      <MaterialIcons color="#13ec49" name="restaurant-menu" size={18} />
+                      <MaterialIcons
+                        color={theme.color.accentPrimary}
+                        name="restaurant-menu"
+                        size={18}
+                      />
                       <View
                         style={[
                           styles.emptyProgressTrack,
-                          {
-                            backgroundColor:
-                              scheme === 'dark'
-                                ? 'rgba(19, 236, 73, 0.18)'
-                                : 'rgba(19, 236, 73, 0.16)',
-                          },
+                          { backgroundColor: theme.color.accentPrimarySoft },
                         ]}
                       >
-                        <View style={styles.emptyProgressFill} />
+                        <View
+                          style={[
+                            styles.emptyProgressFill,
+                            { backgroundColor: theme.color.accentPrimary },
+                          ]}
+                        />
                       </View>
                     </View>
                   </View>
@@ -1178,7 +1168,6 @@ const styles = StyleSheet.create({
   emptyIllustrationCard: {
     alignItems: 'center',
     borderRadius: 28,
-    borderWidth: 1,
     height: 256,
     justifyContent: 'center',
     overflow: 'hidden',
@@ -1202,24 +1191,20 @@ const styles = StyleSheet.create({
   },
   emptyFoodLeafTop: {
     top: 28,
-    transform: [{ rotate: '-8deg' }],
   },
   emptyFoodLeafLeft: {
     left: 34,
     top: 54,
-    transform: [{ rotate: '-28deg' }],
   },
   emptyFoodLeafRight: {
     right: 34,
     top: 58,
-    transform: [{ rotate: '24deg' }],
   },
   emptyFoodSlice: {
     borderRadius: 18,
     bottom: 44,
     height: 30,
     position: 'absolute',
-    transform: [{ rotate: '-10deg' }],
     width: 54,
   },
   emptyFoodBean: {
@@ -1257,7 +1242,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   emptyProgressFill: {
-    backgroundColor: '#13ec49',
     height: '100%',
     width: '36%',
   },

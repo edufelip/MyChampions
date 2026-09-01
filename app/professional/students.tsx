@@ -485,8 +485,8 @@ export default function ProfessionalStudentsScreen() {
             <View
               style={[
                 styles.bulkActionContainer,
-                DsShadow.soft,
-                { backgroundColor: theme.color.surface, borderColor: theme.color.border },
+                DsShadow.floating,
+                { backgroundColor: theme.color.surface },
               ]}
               testID="pro.students.bulkActionTray"
             >
@@ -933,7 +933,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: DsSpace.xl,
     borderRadius: DsRadius.lg,
-    borderWidth: 1,
     gap: DsSpace.sm,
     left: DsSpace.xl,
     padding: DsSpace.sm,

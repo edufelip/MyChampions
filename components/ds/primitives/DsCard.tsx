@@ -1,7 +1,6 @@
-import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-
-import { DsRadius, DsShadow, DsSpace, type DsColorScheme, getDsTheme } from '@/constants/design-system';
+import { DsRadius, DsSpace, type DsColorScheme, getDsTheme } from '@/constants/design-system';
+import type { ReactNode } from 'react';
 
 type DsCardVariant = 'default' | 'warning' | 'muted';
 
@@ -20,11 +19,11 @@ export function DsCard({ scheme, children, variant = 'default', style, testID }:
     variant === 'warning'
       ? { backgroundColor: theme.color.surfaceWarning, borderColor: theme.color.warning }
       : variant === 'muted'
-      ? { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }
-      : { backgroundColor: theme.color.surface, borderColor: theme.color.border };
+        ? { backgroundColor: theme.color.surfaceMuted, borderColor: theme.color.border }
+        : { backgroundColor: theme.color.surface, borderColor: theme.color.border };
 
   return (
-    <View style={[styles.card, DsShadow.soft, cardStyle, style]} testID={testID}>
+    <View style={[styles.card, cardStyle, style]} testID={testID}>
       {children}
     </View>
   );
