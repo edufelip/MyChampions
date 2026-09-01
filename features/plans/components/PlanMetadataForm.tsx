@@ -186,18 +186,21 @@ export const PlanMetadataForm = React.memo(
               label={t('pro.plan.field.carbs_target.label')}
               value={carbsTarget}
               palette={palette}
+              testID={testIDPrefix ? `${testIDPrefix}.macroTarget.carbs.label` : undefined}
             />
             <View style={[styles.verticalDivider, { backgroundColor: theme.color.border }]} />
             <MacroField
               label={t('pro.plan.field.proteins_target.label')}
               value={proteinsTarget}
               palette={palette}
+              testID={testIDPrefix ? `${testIDPrefix}.macroTarget.proteins.label` : undefined}
             />
             <View style={[styles.verticalDivider, { backgroundColor: theme.color.border }]} />
             <MacroField
               label={t('pro.plan.field.fats_target.label')}
               value={fatsTarget}
               palette={palette}
+              testID={testIDPrefix ? `${testIDPrefix}.macroTarget.fats.label` : undefined}
             />
           </View>
         </BuilderInsetGroup>
@@ -227,10 +230,20 @@ export const PlanMetadataForm = React.memo(
   },
 );
 
-function MacroField({ label, value, palette }: { label: string; value: string; palette: any }) {
+function MacroField({
+  label,
+  value,
+  palette,
+  testID,
+}: {
+  label: string;
+  value: string;
+  palette: any;
+  testID?: string;
+}) {
   return (
     <View style={styles.macroField}>
-      <Text style={[styles.macroLabel, { color: palette.icon }]} numberOfLines={1}>
+      <Text style={[styles.macroLabel, { color: palette.icon }]} numberOfLines={2} testID={testID}>
         {label}
       </Text>
       <Text style={[styles.macroValue, { color: palette.text }]}>{value || '0'}g</Text>
