@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useDsModalSheetLayout } from '@/components/ds/primitives/useDsModalSheetLayout';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import type { usePlans } from '@/features/plans/use-plans';
 import type { useTranslation } from '@/localization';
-import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -27,6 +36,7 @@ export function PlanPickerModal({
   t: TFn;
 }) {
   const [isPresented, setIsPresented] = useState(false);
+  const modalLayout = useDsModalSheetLayout();
 
   useEffect(() => {
     if (!isVisible) {
@@ -52,13 +62,29 @@ export function PlanPickerModal({
       onRequestClose={onClose}
       onShow={() => setIsPresented(true)}
       onDismiss={() => setIsPresented(false)}
-      transparent>
-      <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]} testID="planPicker.modal">
+      transparent
+    >
+      <View
+        style={[
+          styles.modalOverlay,
+          modalLayout.overlayStyle,
+          { backgroundColor: theme.color.overlaySoft },
+        ]}
+        testID="planPicker.modal"
+      >
         <View
-          style={[styles.modalContent, { backgroundColor: theme.color.surface }]}
-          testID={isVisible && isPresented ? 'planPicker.ready' : undefined}>
+          style={[
+            styles.modalContent,
+            modalLayout.contentStyle,
+            { backgroundColor: theme.color.surface },
+          ]}
+          testID={isVisible && isPresented ? 'planPicker.ready' : undefined}
+        >
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]} testID="planPicker.title">
+            <Text
+              style={[styles.modalTitle, { color: theme.color.textPrimary }]}
+              testID="planPicker.title"
+            >
               {t('pro.plan.picker.title')}
             </Text>
             <Pressable onPress={onClose} hitSlop={12} testID="planPicker.close">
@@ -74,7 +100,12 @@ export function PlanPickerModal({
             )}
 
             {plansState.kind === 'ready' && filteredPlans.length === 0 && (
-              <Text style={[styles.emptyText, { color: theme.color.textSecondary, textAlign: 'center', marginTop: 20 }]}>
+              <Text
+                style={[
+                  styles.emptyText,
+                  { color: theme.color.textSecondary, textAlign: 'center', marginTop: 20 },
+                ]}
+              >
                 {t('pro.plan.picker.empty')}
               </Text>
             )}
@@ -89,13 +120,20 @@ export function PlanPickerModal({
                   style={[styles.planRowModal, { borderColor: theme.color.border }]}
                   onPress={() => onSelect(plan.id)}
                   activeOpacity={0.82}
-                  testID={`planPicker.assign.${plan.id}`}>
+                  testID={`planPicker.assign.${plan.id}`}
+                >
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.planNameModal, { color: theme.color.textPrimary }]}>
                       {plan.name}
                     </Text>
                     {!planType && (
-                      <Text style={{ fontSize: 12, color: theme.color.textSecondary, textTransform: 'capitalize' }}>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: theme.color.textSecondary,
+                          textTransform: 'capitalize',
+                        }}
+                      >
                         {plan.planType}
                       </Text>
                     )}
@@ -103,9 +141,10 @@ export function PlanPickerModal({
                   <View
                     pointerEvents="none"
                     style={[styles.assignPill, { backgroundColor: theme.color.accentPrimary }]}
-                    testID={`planPicker.row.${plan.id}`}>
+                    testID={`planPicker.row.${plan.id}`}
+                  >
                     <Text style={[styles.assignPillText, { color: theme.color.onAccent }]}>
-                      {t('pro.plan.picker.cta_assign') as string}
+                      {t('pro.plan.picker.cta_assign')}
                     </Text>
                   </View>
                 </TouchableOpacity>

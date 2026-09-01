@@ -1,11 +1,19 @@
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { useDsModalSheetLayout } from '@/components/ds/primitives/useDsModalSheetLayout';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
+import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import type { ProfessionalStudentRosterItem } from '@/features/professional/professional-source';
 import type { useTranslation } from '@/localization';
-import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -28,6 +36,7 @@ export function StudentPickerModal({
   theme: DsTheme;
   t: TFn;
 }) {
+  const modalLayout = useDsModalSheetLayout();
   useWebDialogAccessibility({
     dialogTitleTestID: 'studentPicker.title',
     isVisible,
@@ -36,10 +45,26 @@ export function StudentPickerModal({
   });
   return (
     <Modal visible={isVisible} animationType="slide" onRequestClose={onClose} transparent>
-      <View style={[styles.modalOverlay, { backgroundColor: theme.color.overlaySoft }]} testID="studentPicker.modal">
-        <View style={[styles.modalContent, { backgroundColor: theme.color.surface }]}>
+      <View
+        style={[
+          styles.modalOverlay,
+          modalLayout.overlayStyle,
+          { backgroundColor: theme.color.overlaySoft },
+        ]}
+        testID="studentPicker.modal"
+      >
+        <View
+          style={[
+            styles.modalContent,
+            modalLayout.contentStyle,
+            { backgroundColor: theme.color.surface },
+          ]}
+        >
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.color.textPrimary }]} testID="studentPicker.title">
+            <Text
+              style={[styles.modalTitle, { color: theme.color.textPrimary }]}
+              testID="studentPicker.title"
+            >
               {t('pro.plan.assign.title')}
             </Text>
             <Pressable onPress={onClose} hitSlop={12}>
@@ -60,26 +85,27 @@ export function StudentPickerModal({
               </Text>
             )}
 
-            {!isLoading && students.map((student) => (
-              <Pressable
-                key={student.studentAuthUid}
-                style={[styles.templateRow, { borderColor: theme.color.border }]}
-                onPress={() => onSelect(student.studentAuthUid)}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.templateName, { color: theme.color.textPrimary }]}>
-                    {student.displayName}
-                  </Text>
-                </View>
-                <DsPillButton
-                  scheme={scheme}
-                  label={t('pro.plan.picker.cta_assign')}
+            {!isLoading &&
+              students.map((student) => (
+                <Pressable
+                  key={student.studentAuthUid}
+                  style={[styles.templateRow, { borderColor: theme.color.border }]}
                   onPress={() => onSelect(student.studentAuthUid)}
-                  size="xs"
-                  fullWidth={false}
-                />
-              </Pressable>
-            ))}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.templateName, { color: theme.color.textPrimary }]}>
+                      {student.displayName}
+                    </Text>
+                  </View>
+                  <DsPillButton
+                    scheme={scheme}
+                    label={t('pro.plan.picker.cta_assign')}
+                    onPress={() => onSelect(student.studentAuthUid)}
+                    size="xs"
+                    fullWidth={false}
+                  />
+                </Pressable>
+              ))}
           </ScrollView>
         </View>
       </View>
