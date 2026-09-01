@@ -609,8 +609,8 @@ function StudentRowItem({
 }) {
   const specialtyLabel =
     student.specialty === 'nutritionist'
-      ? t('pro.students.specialty.nutritionist')
-      : t('pro.students.specialty.fitness_coach');
+      ? t('pro.student_profile.specialty.nutritionist')
+      : t('pro.student_profile.specialty.fitness_coach');
 
   const statusLabel =
     student.assignmentStatus === 'active'
