@@ -218,6 +218,7 @@ export const esES: Record<TranslationKey, string> = {
   'common.cta.clear': 'Limpiar',
   'common.cta.done': 'Hecho',
   'common.cta.delete': 'Eliminar',
+  'common.cta.close': 'Cerrar',
   'pro.plan.food_search.error': 'Búsqueda de alimentos no disponible. Inténtalo de nuevo.',
   'pro.plan.food_search.error.quota':
     'La búsqueda de alimentos está temporalmente limitada. Inténtalo de nuevo en breve.',
