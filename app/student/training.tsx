@@ -341,13 +341,11 @@ export default function StudentTrainingScreen() {
                               testID={`student.training.logBtn-${session.id}`}
                             />
                             <Pressable
-                              accessibilityLabel={
-                                t(
-                                  isExpanded
-                                    ? 'student.training.session.collapse'
-                                    : 'student.training.session.expand',
-                                )
-                              }
+                              accessibilityLabel={t(
+                                isExpanded
+                                  ? 'student.training.session.collapse'
+                                  : 'student.training.session.expand',
+                              )}
                               accessibilityRole="button"
                               accessibilityState={{ expanded: isExpanded }}
                               aria-expanded={isExpanded}
@@ -512,10 +510,10 @@ export default function StudentTrainingScreen() {
               label={t('student.training.waiting.cta')}
               onPress={() => router.push('/student/professionals')}
               disabled={isWriteLocked}
-              contentColor="#f8fafc"
+              contentColor={theme.color.onAccent}
               testID="student.training.waitingCta"
               style={styles.emptyPrimaryCta}
-              leftIcon={<MaterialIcons color="#f8fafc" name="person" size={20} />}
+              leftIcon={<MaterialIcons color={theme.color.onAccent} name="person" size={20} />}
             />
           </View>
         ) : hasSelfManagedPlan ? (
@@ -598,10 +596,10 @@ export default function StudentTrainingScreen() {
               label={t('student.training.empty.cta')}
               onPress={() => router.push('/student/professionals')}
               disabled={isWriteLocked}
-              contentColor="#f8fafc"
+              contentColor={theme.color.onAccent}
               testID="student.training.emptyCta"
               style={styles.emptyPrimaryCta}
-              leftIcon={<MaterialIcons color="#f8fafc" name="person-add" size={20} />}
+              leftIcon={<MaterialIcons color={theme.color.onAccent} name="person-add" size={20} />}
             />
 
             <Pressable

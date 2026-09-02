@@ -739,10 +739,10 @@ export default function StudentNutritionScreen() {
                 disabled={isWriteLocked}
                 label={t('student.nutrition.waiting.cta')}
                 onPress={() => router.push('/student/professionals')}
-                contentColor="#f8fafc"
+                contentColor={theme.color.onAccent}
                 testID="student.nutrition.waitingCta"
                 style={styles.emptyPrimaryCta}
-                leftIcon={<MaterialIcons color="#f8fafc" name="person" size={20} />}
+                leftIcon={<MaterialIcons color={theme.color.onAccent} name="person" size={20} />}
               />
             </View>
           ) : nutritionState.kind === 'self_managed' && selfManagedNutritionPlan ? (
@@ -900,10 +900,12 @@ export default function StudentNutritionScreen() {
                 disabled={isWriteLocked}
                 label={t('student.nutrition.empty.cta')}
                 onPress={() => router.push('/student/professionals')}
-                contentColor="#f8fafc"
+                contentColor={theme.color.onAccent}
                 testID="student.nutrition.emptyCta"
                 style={styles.emptyPrimaryCta}
-                leftIcon={<MaterialIcons color="#f8fafc" name="person-add" size={20} />}
+                leftIcon={
+                  <MaterialIcons color={theme.color.onAccent} name="person-add" size={20} />
+                }
               />
 
               <Pressable

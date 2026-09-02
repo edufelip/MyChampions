@@ -1,3 +1,10 @@
+import {
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/manrope';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useGlobalSearchParams, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -39,6 +46,12 @@ function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const scheme = colorScheme === 'dark' ? 'dark' : 'light';
   const ds = getDsTheme(scheme);
+  const [fontsLoaded, fontError] = useFonts({
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
   const { t } = useTranslation();
   const { activeLocale } = useLocale();
   const router = useRouter();
@@ -135,7 +148,7 @@ function RootLayoutContent() {
     termsUrl,
   ]);
 
-  if (!isHydrated) {
+  if (!isHydrated || (!fontsLoaded && !fontError)) {
     return (
       <View
         style={{

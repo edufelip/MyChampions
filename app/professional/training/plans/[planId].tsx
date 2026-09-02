@@ -1123,5 +1123,5 @@ const styles = StyleSheet.create({
     marginTop: DsSpace.xl,
     paddingBottom: DsSpace.xl,
   },
-  fieldError: { ...DsTypography.micro, color: '#ff0000', marginTop: 2 },
+  fieldError: { ...DsTypography.micro, marginTop: 2 },
 });

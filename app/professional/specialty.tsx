@@ -804,7 +804,12 @@ function CredentialForm({
 
       {Platform.OS === 'ios' ? (
         <InputAccessoryView nativeID={SPECIALTY_KEYBOARD_ACCESSORY_ID}>
-          <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+          <View
+            style={[
+              styles.keyboardAccessory,
+              { backgroundColor: palette.surface, borderTopColor: getDsTheme(scheme).color.border },
+            ]}
+          >
             <Pressable
               accessibilityRole="button"
               onPress={Keyboard.dismiss}
@@ -931,7 +936,6 @@ const styles = StyleSheet.create({
   saveButton: { flex: 1 },
   keyboardAccessory: {
     alignItems: 'flex-end',
-    borderTopColor: '#D8DEE7',
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
     paddingVertical: 8,

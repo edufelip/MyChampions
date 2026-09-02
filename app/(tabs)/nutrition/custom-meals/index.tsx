@@ -77,6 +77,7 @@ type Palette = {
   danger: string;
   success: string;
   onAccent: string;
+  border: string;
 };
 type TFn = ReturnType<typeof useTranslation>['t'];
 const QUICK_LOG_KEYBOARD_ACCESSORY_ID = 'quick-log-keyboard-accessory';
@@ -105,6 +106,7 @@ export default function CustomMealLibraryScreen({
     danger: theme.color.danger,
     success: theme.color.success,
     onAccent: theme.color.onAccent,
+    border: theme.color.border,
   };
   const { t } = useTranslation();
   const router = useRouter();
@@ -392,10 +394,10 @@ function EmptyState({
         disabled={isWriteLocked}
         label={t('meal.library.cta_create')}
         onPress={onCreate}
-        contentColor="#f8fafc"
+        contentColor={theme.color.onAccent}
         testID="meal.library.empty.cta"
         style={emptyStyles.emptyPrimaryCta}
-        leftIcon={<MaterialIcons color="#f8fafc" name="add" size={20} />}
+        leftIcon={<MaterialIcons color={theme.color.onAccent} name="add" size={20} />}
       />
 
       {isWriteLocked ? (
@@ -682,7 +684,12 @@ function QuickLogPanel({
 
         {Platform.OS === 'ios' ? (
           <InputAccessoryView nativeID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}>
-            <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+            <View
+              style={[
+                styles.keyboardAccessory,
+                { backgroundColor: palette.surface, borderTopColor: palette.border },
+              ]}
+            >
               <Pressable
                 accessibilityRole="button"
                 onPress={Keyboard.dismiss}
@@ -1029,7 +1036,6 @@ const styles = StyleSheet.create({
   },
   keyboardAccessory: {
     alignItems: 'flex-end',
-    borderTopColor: '#D8DEE7',
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
     paddingVertical: 8,

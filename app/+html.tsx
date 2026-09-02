@@ -5,7 +5,7 @@ const browserStyles = `
 html, body, #root { min-height: 100%; min-width: 0; }
 body { margin: 0; }
 *:focus { outline: none; }
-:root { --focus-ring: #167a42; }
+:root { --focus-ring: #1f7a4c; }
 @media (prefers-color-scheme: dark) { :root { --focus-ring: #4ade80; } }
 *:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 [role="button"], [role="link"], button, a { cursor: pointer; }

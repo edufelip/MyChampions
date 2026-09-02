@@ -1,7 +1,14 @@
-import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
-
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  type ColorValue,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { DsRadius, DsTypography, type DsColorScheme, getDsTheme } from '@/constants/design-system';
+import type { ReactNode } from 'react';
 
 type DsPillButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 type DsPillButtonSize = 'xs' | 'sm' | 'md';
@@ -49,7 +56,8 @@ export function DsPillButton({
 
   const resolvedContentColor = disabled
     ? theme.color.disabledText
-    : contentColor ?? (isOutline || isSecondary || isGhost ? theme.color.accentPrimary : theme.color.onAccent);
+    : (contentColor ??
+      (isOutline || isSecondary || isGhost ? theme.color.accentPrimary : theme.color.onAccent));
 
   const getVariantStyles = () => {
     if (disabled) {
@@ -72,6 +80,11 @@ export function DsPillButton({
       return {
         backgroundColor: theme.color.accentPrimary,
         borderColor: theme.color.accentPrimary,
+        shadowColor: theme.color.accentPrimary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 18,
+        elevation: 4,
       };
     }
     if (isOutline) {
@@ -120,19 +133,17 @@ export function DsPillButton({
         { transform: [{ scale: pressed && !disabled && !loading ? 0.98 : 1 }] },
         style,
       ]}
-      testID={testID}>
+      testID={testID}
+    >
       {loading ? (
         <ActivityIndicator color={resolvedContentColor} size="small" />
       ) : (
         <>
           {leftIcon}
           <Text
-            style={[
-              styles.text,
-              getTextSizeStyles(),
-              { color: resolvedContentColor },
-            ]}
-            testID={testID ? `${testID}.label` : undefined}>
+            style={[styles.text, getTextSizeStyles(), { color: resolvedContentColor }]}
+            testID={testID ? `${testID}.label` : undefined}
+          >
             {label}
           </Text>
           {rightIcon}

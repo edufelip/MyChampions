@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import {
+  DsFontFamily,
   DsRadius,
+  DsShadow,
   DsSpace,
   DsTypography,
   type DsColorScheme,
@@ -25,10 +27,7 @@ export function WeekStrip({ scheme, items, testID }: WeekStripProps) {
 
   return (
     <View
-      style={[
-        styles.wrap,
-        { backgroundColor: theme.color.surface, borderColor: theme.color.border },
-      ]}
+      style={[styles.wrap, DsShadow.soft, { backgroundColor: theme.color.surface }]}
       testID={testID}
     >
       {items.map((item) => (
@@ -66,7 +65,6 @@ export function WeekStrip({ scheme, items, testID }: WeekStripProps) {
 const styles = StyleSheet.create({
   wrap: {
     borderRadius: DsRadius.pill,
-    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: DsSpace.xs,
@@ -79,10 +77,12 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     ...DsTypography.caption,
+    fontFamily: DsFontFamily.semibold,
     fontWeight: '600',
   },
   dayNumber: {
     ...DsTypography.body,
+    fontFamily: DsFontFamily.bold,
     fontWeight: '700',
   },
 });
