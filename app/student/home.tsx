@@ -169,15 +169,6 @@ export default function StudentHomeScreen() {
     >
       <Stack.Screen options={{ title: t('student.home.title'), headerShown: false }} />
 
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
-      />
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
-      />
-
       <View style={[styles.shell, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerRow}>
           <View style={styles.profileWrap}>
@@ -589,9 +580,6 @@ function StatCard({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flexGrow: 1 },
-  blob: { borderRadius: 999, opacity: 0.5, position: 'absolute' },
-  blobTopLeft: { height: 280, left: -120, top: -80, width: 280 },
-  blobBottomRight: { bottom: -120, height: 320, right: -120, width: 320 },
   shell: { flex: 1, paddingHorizontal: 20, paddingBottom: 28 },
 
   headerRow: {
