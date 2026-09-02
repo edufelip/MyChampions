@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import React from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -13,12 +14,18 @@ import {
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { DsRadius, DsShadow, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
+import {
+  DsRadius,
+  DsShadow,
+  DsSpace,
+  DsTypography,
+  getDsTheme,
+  type DsTheme,
+} from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { type TranslationKey } from '@/localization';
 import type { CustomMeal } from '@/features/nutrition/custom-meal.logic';
 import type { FoodSearchState, FoodSearchResult } from '@/features/plans/use-plan-builder';
-
 
 const WEB_TEXTAREA_RESET =
   Platform.OS === 'web' ? ({ resize: 'none' } as unknown as TextStyle) : undefined;
@@ -99,7 +106,7 @@ export const AddItemForm = React.memo(
     style,
     testIDPrefix,
   }: AddItemFormProps) => {
-    const scheme = theme.color.canvas === '#102215' ? 'dark' : 'light';
+    const scheme = theme.color.canvas === getDsTheme('dark').color.canvas ? 'dark' : 'light';
     const hasSelectedCustomMeal = Boolean(selectedCustomMealName);
     const hasSelectedSource = Boolean(selectedFood || selectedCustomMealName);
 

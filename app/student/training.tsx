@@ -6,8 +6,8 @@
  * training art direction while keeping BL-008 offline/write-lock and D-071
  * assigned-plan change-request behavior.
  */
-import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,7 +18,6 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-
 import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeRequestCard';
 import { WeekStrip, type WeekStripItem } from '@/components/ds/patterns/WeekStrip';
 import { DsCard } from '@/components/ds/primitives/DsCard';
@@ -33,8 +32,8 @@ import { resolveOfflineDisplayState } from '@/features/offline/offline.logic';
 import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.logic';
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { isSelfGuidedPlan } from '@/features/plans/plan-ownership.logic';
-import { usePlans } from '@/features/plans/use-plans';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
+import { usePlans } from '@/features/plans/use-plans';
 import {
   logWorkoutSession,
   getTodayWorkoutLogs,
@@ -342,13 +341,11 @@ export default function StudentTrainingScreen() {
                               testID={`student.training.logBtn-${session.id}`}
                             />
                             <Pressable
-                              accessibilityLabel={
-                                t(
-                                  isExpanded
-                                    ? 'student.training.session.collapse'
-                                    : 'student.training.session.expand'
-                                ) as string
-                              }
+                              accessibilityLabel={t(
+                                isExpanded
+                                  ? 'student.training.session.collapse'
+                                  : 'student.training.session.expand',
+                              )}
                               accessibilityRole="button"
                               accessibilityState={{ expanded: isExpanded }}
                               aria-expanded={isExpanded}
@@ -472,13 +469,7 @@ export default function StudentTrainingScreen() {
           <View style={styles.emptyStateWrap} testID="student.training.waitingForCoachPlan">
             <View style={styles.emptyHero}>
               <View
-                style={[
-                  styles.emptyGlow,
-                  {
-                    backgroundColor:
-                      scheme === 'dark' ? 'rgba(30, 169, 90, 0.10)' : 'rgba(19, 236, 73, 0.12)',
-                  },
-                ]}
+                style={[styles.emptyGlow, { backgroundColor: theme.color.accentPrimarySoft }]}
               />
 
               <View
@@ -491,11 +482,17 @@ export default function StudentTrainingScreen() {
                   },
                 ]}
               >
-                <MaterialIcons color="#13ec49" name="hourglass-top" size={58} />
+                <MaterialIcons color={theme.color.accentPrimary} name="hourglass-top" size={58} />
               </View>
 
-              <View style={[styles.emptyAccentTile, DsShadow.soft, { backgroundColor: '#13ec49' }]}>
-                <MaterialIcons color="#102215" name="fitness-center" size={34} />
+              <View
+                style={[
+                  styles.emptyAccentTile,
+                  DsShadow.soft,
+                  { backgroundColor: theme.color.accentPrimary },
+                ]}
+              >
+                <MaterialIcons color={theme.color.onAccent} name="fitness-center" size={34} />
               </View>
             </View>
 
@@ -513,10 +510,10 @@ export default function StudentTrainingScreen() {
               label={t('student.training.waiting.cta')}
               onPress={() => router.push('/student/professionals')}
               disabled={isWriteLocked}
-              contentColor="#f8fafc"
+              contentColor={theme.color.onAccent}
               testID="student.training.waitingCta"
               style={styles.emptyPrimaryCta}
-              leftIcon={<MaterialIcons color="#f8fafc" name="person" size={20} />}
+              leftIcon={<MaterialIcons color={theme.color.onAccent} name="person" size={20} />}
             />
           </View>
         ) : hasSelfManagedPlan ? (
@@ -558,13 +555,7 @@ export default function StudentTrainingScreen() {
           <View style={styles.emptyStateWrap} testID="student.training.emptyState">
             <View style={styles.emptyHero}>
               <View
-                style={[
-                  styles.emptyGlow,
-                  {
-                    backgroundColor:
-                      scheme === 'dark' ? 'rgba(30, 169, 90, 0.10)' : 'rgba(19, 236, 73, 0.12)',
-                  },
-                ]}
+                style={[styles.emptyGlow, { backgroundColor: theme.color.accentPrimarySoft }]}
               />
 
               <View
@@ -577,11 +568,17 @@ export default function StudentTrainingScreen() {
                   },
                 ]}
               >
-                <MaterialIcons color="#13ec49" name="fitness-center" size={58} />
+                <MaterialIcons color={theme.color.accentPrimary} name="fitness-center" size={58} />
               </View>
 
-              <View style={[styles.emptyAccentTile, DsShadow.soft, { backgroundColor: '#13ec49' }]}>
-                <MaterialIcons color="#102215" name="assignment" size={34} />
+              <View
+                style={[
+                  styles.emptyAccentTile,
+                  DsShadow.soft,
+                  { backgroundColor: theme.color.accentPrimary },
+                ]}
+              >
+                <MaterialIcons color={theme.color.onAccent} name="assignment" size={34} />
               </View>
             </View>
 
@@ -599,10 +596,10 @@ export default function StudentTrainingScreen() {
               label={t('student.training.empty.cta')}
               onPress={() => router.push('/student/professionals')}
               disabled={isWriteLocked}
-              contentColor="#f8fafc"
+              contentColor={theme.color.onAccent}
               testID="student.training.emptyCta"
               style={styles.emptyPrimaryCta}
-              leftIcon={<MaterialIcons color="#f8fafc" name="person-add" size={20} />}
+              leftIcon={<MaterialIcons color={theme.color.onAccent} name="person-add" size={20} />}
             />
 
             <Pressable
@@ -685,7 +682,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     height: 128,
     justifyContent: 'center',
-    transform: [{ rotate: '-8deg' }],
     width: 128,
   },
   emptyAccentTile: {
@@ -696,7 +692,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 24,
     top: 70,
-    transform: [{ rotate: '12deg' }],
     width: 80,
   },
   emptyCopyBlock: {

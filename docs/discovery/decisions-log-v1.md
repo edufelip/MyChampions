@@ -964,10 +964,20 @@
 - Note: originally authored as `D-203` on this branch before rebase, then
   renumbered to `D-213` to avoid colliding with the ET-71, SC-213
   support-dialog, and ET-106 (`D-212`) entries — but by the time this branch
-  merged current `main`, `D-213` had *also* been independently claimed by the
+  merged current `main`, `D-213` had _also_ been independently claimed by the
   ET-107 plan-builder-initialization entry above (same "pick the next unused
   ID at merge time" collision pattern, now observed a third time). Renumbered
   again to `D-214`, the actual next unused ID, while resolving that merge.
+
+### D-217: App-wide "Warm & Human" visual direction; decorative blobs off by default
+
+- Date: 2026-09-02
+- Status: Accepted
+- Scope: `constants/design-system.ts` tokens, all `DsScreen`/`DsCard`/`DsPillButton`/`DsBackButton`/`WeekStrip`/`BuilderInsetGroup` consumers app-wide (native and web).
+- Decision: Extend D-214's restrained-auth-shell rationale to the whole app. `DsScreen`'s `withBlobs` prop defaults to `false` (opt-in only, was opt-out); `DsCard` and the other shared surfaces use one soft diffused shadow with no border instead of a border-plus-shadow combination. The color palette moves to a warm neutral canvas with a green primary accent and a new gold accent reserved for streak/encouragement moments (`accentWarm`/`accentWarmSoft`); the type system loads real Manrope (`@expo-google-fonts/manrope`, gated in `app/_layout.tsx`) instead of the unloaded placeholder font name previously aliased through `constants/theme.ts`'s `Fonts.rounded/sans/serif`; the radius scale is rounder (`sm/md/lg/xl` 10/14/22/28, was 8/12/16/20).
+- Rationale: Picked by the product owner from a design-exploration canvas presenting three full-app direction alternatives. Decorative corner blobs read as generic fitness-app template decoration (an explicit product anti-reference) once seen consistently at direction-review time; centralizing the token/primitive layer keeps every screen's visual language in sync without per-screen edits, matching this project's existing DS-primitive convention.
+- Constraints: No screen may reintroduce a hardcoded hex color, a border-plus-shadow combination on the same surface, or a local reimplementation of the blob/glow background pattern — use the shared tokens and primitives. A screen that deliberately wants the blob background may still pass `withBlobs={true}` explicitly.
+- Affected screen specs updated in the same change: `SC-201`, `SC-202`, `SC-205`, `SC-206` (previously documented a blob background that no longer renders).
 
 ## Pending Decisions
 

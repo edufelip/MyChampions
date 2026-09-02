@@ -75,15 +75,6 @@ export default function AcceptTermsScreen() {
     >
       <Stack.Screen options={{ title: t('auth.terms.title'), headerShown: false }} />
 
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
-      />
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
-      />
-
       <View style={styles.content}>
         <View style={styles.titleArea}>
           <View
@@ -199,25 +190,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     overflow: 'hidden',
-  },
-  blob: {
-    position: 'absolute',
-    opacity: 0.6,
-    zIndex: 0,
-  },
-  blobTopLeft: {
-    top: '-10%',
-    left: '-18%',
-    width: 260,
-    height: 260,
-    borderRadius: 120,
-  },
-  blobBottomRight: {
-    bottom: '-8%',
-    right: '-20%',
-    width: 300,
-    height: 300,
-    borderRadius: 140,
   },
   content: {
     alignSelf: 'center',

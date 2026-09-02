@@ -540,7 +540,12 @@ export default function CustomMealBuilderScreen() {
 
           {Platform.OS === 'ios' ? (
             <InputAccessoryView nativeID={MEAL_BUILDER_KEYBOARD_ACCESSORY_ID}>
-              <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+              <View
+                style={[
+                  styles.keyboardAccessory,
+                  { backgroundColor: palette.surface, borderTopColor: theme.color.border },
+                ]}
+              >
                 <Pressable
                   accessibilityRole="button"
                   onPress={Keyboard.dismiss}
@@ -1002,7 +1007,6 @@ const styles = StyleSheet.create({
   outlineButtonText: { fontSize: 15, fontWeight: '600' },
   keyboardAccessory: {
     alignItems: 'flex-end',
-    borderTopColor: '#D8DEE7',
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
     paddingVertical: 8,

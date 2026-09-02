@@ -77,6 +77,7 @@ export default function ProfessionalSpecialtyScreen() {
     danger: theme.color.danger,
     onAccent: theme.color.onAccent,
     surface: theme.color.surface,
+    border: theme.color.border,
   };
 
   const { t } = useTranslation();
@@ -698,6 +699,7 @@ function CredentialForm({
     danger: string;
     onAccent: string;
     surface: string;
+    border: string;
   };
   t: TFn;
   onChange: (field: keyof CredentialFormData, value: string) => void;
@@ -804,7 +806,12 @@ function CredentialForm({
 
       {Platform.OS === 'ios' ? (
         <InputAccessoryView nativeID={SPECIALTY_KEYBOARD_ACCESSORY_ID}>
-          <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+          <View
+            style={[
+              styles.keyboardAccessory,
+              { backgroundColor: palette.surface, borderTopColor: palette.border },
+            ]}
+          >
             <Pressable
               accessibilityRole="button"
               onPress={Keyboard.dismiss}
@@ -931,7 +938,6 @@ const styles = StyleSheet.create({
   saveButton: { flex: 1 },
   keyboardAccessory: {
     alignItems: 'flex-end',
-    borderTopColor: '#D8DEE7',
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
     paddingVertical: 8,

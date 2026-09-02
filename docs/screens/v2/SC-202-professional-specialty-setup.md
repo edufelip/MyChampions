@@ -1,14 +1,17 @@
 # SC-202 Professional Specialty Setup (V2)
 
 ## Route
+
 - `/professional/specialty`
 - Legacy/alias route intent (documentation only): `/onboarding/professional-specialty`, `/professional/settings/specialties`
 
 ## Objective
+
 - Capture and manage professional specialty profile and optional per-specialty registry credentials.
 
 ## Design Structure (D-134)
-- Screen shell uses `DsScreen` with shared blob background and DS semantic color tokens.
+
+- Screen shell uses `DsScreen` with themed canvas and DS semantic color tokens; no decorative blob background (`D-217`).
 - Specialty rows, credential form, and removal-assist state are rendered as stacked `DsCard` containers.
 - On compact native viewports, the optional credential form can exceed the visible frame: native E2E distinguishes mounted lower fields from currently visible controls, submits the focused credential field through the editor action when iOS opens its keyboard without assuming Android did so after direct replacement, then scrolls the specialty screen until the footer action under test is visible before interacting with it.
 - Primary and secondary specialty actions use DS pill-button treatment, with destructive intent preserved.
@@ -17,6 +20,7 @@
 - Native toolbar is disabled; this pushed route uses an in-content icon-only back button.
 
 ## User Actions
+
 - Primary:
   - Choose specialty: Nutritionist, Fitness Coach, or Both.
   - Submit optional per-specialty `professional_registry` credential.
@@ -30,6 +34,7 @@
   - Open direct blocker-resolution actions when removal is blocked.
 
 ## States
+
 - Loading: fetch specialty profile and persist specialty updates.
 - Empty: no specialty selected yet.
 - Error: load failure, save failure, or malformed credential payload. A specialties-load failure
@@ -38,6 +43,7 @@
 - Success: specialty changes persisted.
 
 ## Validation Rules
+
 - At least one specialty must be selected before the professional can use specialty-dependent features.
 - Specialty setup is skippable at onboarding; the professional can set specialties later from account settings.
 - Credential submission is optional and cannot block onboarding completion.
@@ -49,6 +55,7 @@
 - Accessibility baseline applies for text scaling, focus order, contrast, and screen-reader labels.
 
 ## Data Contract
+
 - Inputs:
   - Professional account identifier.
   - Specialty selection.
@@ -58,6 +65,7 @@
   - Optional credential submission record.
 
 ## Edge Cases
+
 - Dual-specialty selection enables both professional capabilities.
 - Skipped credential submission leaves specialty active without credential record.
 - Credential status is internal and must not generate student-facing verification badges/filters.
@@ -65,6 +73,7 @@
 - Specialty-removal flow remains blocked until all active/pending blockers are resolved.
 
 ## Links
+
 - Functional requirement: FR-103, FR-119, FR-158, FR-174, FR-175, FR-176, FR-177, FR-216, FR-217
 - Use case: UC-002.1, UC-002.1b, UC-002.1c, UC-002.16, UC-002.18
 - Acceptance criteria: AC-202, AC-212, AC-226, AC-234, AC-235, AC-236, AC-258, AC-512

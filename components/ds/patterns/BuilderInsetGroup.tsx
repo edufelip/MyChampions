@@ -8,21 +8,15 @@ type BuilderInsetGroupProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-export const BuilderInsetGroup = React.memo(({
-  theme,
-  children,
-  style,
-}: BuilderInsetGroupProps) => {
-  return (
-    <View style={[
-      styles.group, 
-      { backgroundColor: theme.color.surface },
-      style
-    ]}>
-      {children}
-    </View>
-  );
-});
+export const BuilderInsetGroup = React.memo(
+  ({ theme, children, style }: BuilderInsetGroupProps) => {
+    return (
+      <View style={[styles.group, DsShadow.soft, { backgroundColor: theme.color.surface }, style]}>
+        {children}
+      </View>
+    );
+  },
+);
 
 BuilderInsetGroup.displayName = 'BuilderInsetGroup';
 
@@ -30,6 +24,5 @@ const styles = StyleSheet.create({
   group: {
     borderRadius: DsRadius.lg,
     padding: DsSpace.md,
-    ...DsShadow.soft,
   },
 });

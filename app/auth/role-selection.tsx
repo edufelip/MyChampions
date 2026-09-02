@@ -1,5 +1,5 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -13,23 +13,22 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { getDsTheme } from '@/constants/design-system';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import { getDsTheme } from '@/constants/design-system';
 import { Colors, Fonts } from '@/constants/theme';
-import {
-  resolvePostRoleRoute,
-  type RoleIntent,
-  validateRoleSelectionInput,
-} from '@/features/auth/role-selection.logic';
-import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
-import { useAuthSession } from '@/features/auth/auth-session';
 import {
   buildAuthEntryViewed,
   buildRoleSelected,
   buildSelfGuidedStartClicked,
 } from '@/features/analytics/analytics.logic';
 import { useAnalytics } from '@/features/analytics/use-analytics';
+import { normalizeAuthReturnTo } from '@/features/auth/auth-route-guard.logic';
+import { useAuthSession } from '@/features/auth/auth-session';
+import {
+  resolvePostRoleRoute,
+  type RoleIntent,
+  validateRoleSelectionInput,
+} from '@/features/auth/role-selection.logic';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -148,16 +147,6 @@ export default function RoleSelectionScreen() {
       testID="auth.roleSelection.screen"
     >
       <Stack.Screen options={{ title: t('auth.role.title'), headerShown: false }} />
-
-      {/* Decorative blobs */}
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobTopLeft, { backgroundColor: theme.blob.topLeft }]}
-      />
-      <View
-        pointerEvents="none"
-        style={[styles.blob, styles.blobBottomRight, { backgroundColor: theme.blob.bottomRight }]}
-      />
 
       <View
         style={[
@@ -419,7 +408,7 @@ export default function RoleSelectionScreen() {
           scheme={isDark ? 'dark' : 'light'}
           disabled={isContinueDisabled}
           loading={isSubmitting}
-          label={t('auth.role.cta_continue') as string}
+          label={t('auth.role.cta_continue')}
           onPress={() => {
             void onContinue();
           }}
@@ -441,23 +430,6 @@ export default function RoleSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-  },
-  blob: {
-    borderRadius: 999,
-    opacity: 0.6,
-    position: 'absolute',
-  },
-  blobTopLeft: {
-    height: 280,
-    left: -100,
-    top: -70,
-    width: 280,
-  },
-  blobBottomRight: {
-    bottom: -90,
-    height: 320,
-    right: -120,
-    width: 320,
   },
   content: {
     alignSelf: 'center',

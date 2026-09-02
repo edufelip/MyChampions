@@ -65,7 +65,8 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
         checkbox: readRadius('auth.terms.checkbox.control'),
       };
     });
-    expect(termsRadii).toEqual({ card: 16, link: 12, checkbox: 6 });
+    // card/link track DsRadius.lg/md (22/14 under Direction C's rounder scale).
+    expect(termsRadii).toEqual({ card: 22, link: 14, checkbox: 6 });
     await capture(page, testInfo, '03-required-terms', 'auth.terms.screen');
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
     await expect(page.getByRole('checkbox')).toHaveAccessibleName(copy.termsCheckbox);

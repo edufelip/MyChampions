@@ -77,6 +77,7 @@ type Palette = {
   danger: string;
   success: string;
   onAccent: string;
+  border: string;
 };
 type TFn = ReturnType<typeof useTranslation>['t'];
 const QUICK_LOG_KEYBOARD_ACCESSORY_ID = 'quick-log-keyboard-accessory';
@@ -105,6 +106,7 @@ export default function CustomMealLibraryScreen({
     danger: theme.color.danger,
     success: theme.color.success,
     onAccent: theme.color.onAccent,
+    border: theme.color.border,
   };
   const { t } = useTranslation();
   const router = useRouter();
@@ -347,21 +349,10 @@ function EmptyState({
 }) {
   const theme = getDsTheme(scheme);
 
-  // Warm amber/orange tones — differentiate from the green professional-gated screens
-  const amber = {
-    glow: scheme === 'dark' ? 'rgba(217, 119, 6, 0.14)' : 'rgba(245, 158, 11, 0.16)',
-    accent: '#f59e0b',
-    accentDark: '#92400e',
-    surface: scheme === 'dark' ? '#2d1f08' : '#fef3c7',
-    border: scheme === 'dark' ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.18)',
-    shadow: scheme === 'dark' ? '#000000' : '#d97706',
-    trackBg: scheme === 'dark' ? 'rgba(245, 158, 11, 0.18)' : 'rgba(245, 158, 11, 0.16)',
-  };
-
   return (
     <View style={emptyStyles.emptyStateWrap} testID="meal.library.empty">
       <View style={emptyStyles.emptyHero}>
-        <View style={[emptyStyles.emptyGlow, { backgroundColor: amber.glow }]} />
+        <View style={[emptyStyles.emptyGlow, { backgroundColor: theme.color.warningSoft }]} />
 
         {/* Main card — cookbook with recipe lines */}
         <View
@@ -370,18 +361,22 @@ function EmptyState({
             DsShadow.floating,
             {
               backgroundColor: theme.color.surface,
-              shadowColor: amber.shadow,
+              shadowColor: scheme === 'dark' ? '#000000' : theme.color.warning,
             },
           ]}
         >
-          <MaterialIcons color={amber.accent} name="menu-book" size={58} />
+          <MaterialIcons color={theme.color.warning} name="menu-book" size={58} />
         </View>
 
         {/* Accent tile — utensils */}
         <View
-          style={[emptyStyles.emptyAccentTile, DsShadow.soft, { backgroundColor: amber.accent }]}
+          style={[
+            emptyStyles.emptyAccentTile,
+            DsShadow.soft,
+            { backgroundColor: theme.color.warning },
+          ]}
         >
-          <MaterialIcons color={amber.accentDark} name="restaurant" size={34} />
+          <MaterialIcons color={theme.color.onAccent} name="restaurant" size={34} />
         </View>
       </View>
 
@@ -399,10 +394,10 @@ function EmptyState({
         disabled={isWriteLocked}
         label={t('meal.library.cta_create')}
         onPress={onCreate}
-        contentColor="#f8fafc"
+        contentColor={theme.color.onAccent}
         testID="meal.library.empty.cta"
         style={emptyStyles.emptyPrimaryCta}
-        leftIcon={<MaterialIcons color="#f8fafc" name="add" size={20} />}
+        leftIcon={<MaterialIcons color={theme.color.onAccent} name="add" size={20} />}
       />
 
       {isWriteLocked ? (
@@ -689,7 +684,12 @@ function QuickLogPanel({
 
         {Platform.OS === 'ios' ? (
           <InputAccessoryView nativeID={QUICK_LOG_KEYBOARD_ACCESSORY_ID}>
-            <View style={[styles.keyboardAccessory, { backgroundColor: palette.surface }]}>
+            <View
+              style={[
+                styles.keyboardAccessory,
+                { backgroundColor: palette.surface, borderTopColor: palette.border },
+              ]}
+            >
               <Pressable
                 accessibilityRole="button"
                 onPress={Keyboard.dismiss}
@@ -872,7 +872,6 @@ const emptyStyles = StyleSheet.create({
     borderRadius: 30,
     height: 128,
     justifyContent: 'center',
-    transform: [{ rotate: '-8deg' }],
     width: 128,
   },
   emptyAccentTile: {
@@ -883,7 +882,6 @@ const emptyStyles = StyleSheet.create({
     position: 'absolute',
     right: 24,
     top: 70,
-    transform: [{ rotate: '12deg' }],
     width: 80,
   },
   emptyCopyBlock: {
@@ -1038,7 +1036,6 @@ const styles = StyleSheet.create({
   },
   keyboardAccessory: {
     alignItems: 'flex-end',
-    borderTopColor: '#D8DEE7',
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
     paddingVertical: 8,

@@ -217,6 +217,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'common.cta.clear': 'Limpar',
   'common.cta.done': 'Concluir',
   'common.cta.delete': 'Excluir',
+  'common.cta.close': 'Fechar',
   'pro.plan.draft.title': 'Versão não salva encontrada',
   'pro.plan.draft.body': 'Deseja continuar de onde parou?',
   'pro.plan.draft.yes': 'Sim, continuar',

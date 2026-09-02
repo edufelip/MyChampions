@@ -206,6 +206,7 @@ export const enUS = {
   'common.cta.clear': 'Clear',
   'common.cta.done': 'Done',
   'common.cta.delete': 'Delete',
+  'common.cta.close': 'Close',
   'pro.plan.food_search.error': 'Food search unavailable. Try again.',
   'pro.plan.food_search.error.quota': 'Food search is temporarily rate-limited. Try again soon.',
   'pro.plan.food_search.per_100g': '(per 100g)',
