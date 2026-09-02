@@ -66,13 +66,7 @@ test.describe('@flow-atlas @feature:auth authentication and terms', () => {
       };
     });
     // card/link track DsRadius.lg/md (22/14 under Direction C's rounder scale).
-    // checkbox's own literal radius is unchanged at 6, but the real webfont
-    // load can shift its computed value by a subpixel-rounding artifact
-    // depending on font-swap timing, so it gets a tolerant range instead.
-    expect(termsRadii.card).toBe(22);
-    expect(termsRadii.link).toBe(14);
-    expect(termsRadii.checkbox).toBeGreaterThanOrEqual(6);
-    expect(termsRadii.checkbox).toBeLessThanOrEqual(8);
+    expect(termsRadii).toEqual({ card: 22, link: 14, checkbox: 6 });
     await capture(page, testInfo, '03-required-terms', 'auth.terms.screen');
     await expect(page.getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
     await expect(page.getByRole('checkbox')).toHaveAccessibleName(copy.termsCheckbox);

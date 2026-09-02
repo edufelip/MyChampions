@@ -1,13 +1,16 @@
 # SC-206 Student Profile (Professional View) (V2)
 
 ## Route
+
 - `/professional/student-profile?studentId=<id>`
 
 ## Objective
+
 - Enable per-student assignment oversight and plan authoring/assignment workflows.
 
 ## Design Structure (D-134)
-- Screen shell uses `DsScreen` with shared blob background and semantic DS theme tokens.
+
+- Screen shell uses `DsScreen` with themed canvas and semantic DS theme tokens; no decorative blob background (`D-217`).
 - Assignment and plan-change triage sections are presented as stacked `DsCard` blocks with consistent spacing/radius.
 - Primary/secondary actions use DS pill button treatment; destructive action keeps warning color semantics.
 - Offline/write-lock communication uses DS warning/offline surfaces while preserving existing business gating logic.
@@ -19,6 +22,7 @@
   button rather than a viewport coordinate.
 
 ## User Actions
+
 - Primary:
   - View student assignment status by specialty.
   - Assign or update nutrition plan.
@@ -31,6 +35,7 @@
   - Review archived student self-managed plans when consent exists.
 
 ## States
+
 - Loading: fetch student profile, assignments, plan history, and consent flags.
 - Empty: student has no current plan in one or both specialties.
 - Error: load or save operations fail.
@@ -38,6 +43,7 @@
 - Plan library context and plan-change request triage actions use the centralized plans store through `usePlans`.
 
 ## Validation Rules
+
 - Must preserve one-active-professional-per-specialty invariant.
 - Assigned plans become read-only to student.
 - Archived self-managed plans visible only with student consent.
@@ -57,6 +63,7 @@
   action without falling back to screen coordinates.
 
 ## Data Contract
+
 - Inputs:
   - Student profile context.
   - Assignment lifecycle state.
@@ -73,6 +80,7 @@
   - Plan-change request triage actions.
 
 ## Edge Cases
+
 - Re-assignment requires prior active binding to end first.
 - Consent revoked after professional opens history should hide further access.
 - When entitlement lock is active, screen remains readable but all write CTAs are disabled with lock explanation.
@@ -80,6 +88,7 @@
 - Professional unbind and Student unbind must both invoke the same connection-end lifecycle: archive assigned plans, restore latest tied Self-Managed Plan if present, and create no replacement plan.
 
 ## Copy Draft (Current)
+
 - Nutrition tracking review title: `Nutrition tracking review`
 - Nutrition tracking read-only helper: `Read-only student-owned tracking logs.`
 - Today water label: `Today water progress`
@@ -88,6 +97,7 @@
 - Numeric tracking review values use localized templates for water units, meal calories, and macro labels from `pro.student_profile.tracking_review.*_value` keys.
 
 ## Links
+
 - Functional requirement: FR-106, FR-107, FR-108, FR-121, FR-123, FR-124, FR-125, FR-130, FR-131, FR-185, FR-211
 - Use case: UC-002.2, UC-002.3, UC-002.5, UC-002.6, UC-002.13
 - Acceptance criteria: AC-203, AC-204, AC-205, AC-214, AC-216, AC-217, AC-218, AC-222, AC-255, AC-311

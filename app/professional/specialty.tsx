@@ -77,6 +77,7 @@ export default function ProfessionalSpecialtyScreen() {
     danger: theme.color.danger,
     onAccent: theme.color.onAccent,
     surface: theme.color.surface,
+    border: theme.color.border,
   };
 
   const { t } = useTranslation();
@@ -698,6 +699,7 @@ function CredentialForm({
     danger: string;
     onAccent: string;
     surface: string;
+    border: string;
   };
   t: TFn;
   onChange: (field: keyof CredentialFormData, value: string) => void;
@@ -807,7 +809,7 @@ function CredentialForm({
           <View
             style={[
               styles.keyboardAccessory,
-              { backgroundColor: palette.surface, borderTopColor: getDsTheme(scheme).color.border },
+              { backgroundColor: palette.surface, borderTopColor: palette.border },
             ]}
           >
             <Pressable

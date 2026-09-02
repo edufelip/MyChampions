@@ -1,16 +1,20 @@
 # SC-201 Auth / Role Selection (V2)
 
 ## Route
+
 - `/auth/role-selection`
 
 ## Objective
+
 - Let authenticated first-time accounts choose and lock journey context as Student or Professional.
 
 ## UX Copy Intent
+
 - Make self-guided usage obvious for first-time users who do not have a professional.
 - Reduce jargon in visible labels while preserving internal role model.
 
 ## User Actions
+
 - Primary:
   - Select role: Student or Professional.
   - Continue to role-specific journey.
@@ -19,12 +23,14 @@
   - View role explanation.
 
 ## States
+
 - Loading: session check and role-save processing.
 - Empty: first-time account with no role selected.
 - Error: session failure, role-save failure, or post-save route transition failure.
 - Success: role saved and immutable for account; route transition executes.
 
 ## Validation Rules
+
 - Role selection is required before entering the main app journey.
 - Continue remains explicitly disabled until a role is selected and exposes an accessible disabled state without opacity-derived contrast.
 - Role cannot be changed in this account after confirmation.
@@ -35,6 +41,7 @@
 - Accessibility baseline applies for text scaling, focus order, contrast, and screen-reader labels.
 
 ## Copy Draft (V2 — updated 2026-03-06)
+
 - Screen title: `Choose your path`
 - Intro: `Are you here to track your own fitness journey, or to guide others as a professional?`
 - Option A title: `I want to track my own progress`
@@ -44,7 +51,9 @@
 - Option B tag (subtitle): `Professional account`
 - Option B description: `Create plans, manage your students, and track their progress in one place.`
 - Role lock helper: `This can't be changed later — each role has a separate account.`
+
 ## Implementation Snapshot (2026-03-06)
+
 - Implemented in code:
   - `app/auth/role-selection.tsx`
   - `features/auth/role-selection.logic.ts`
@@ -65,8 +74,8 @@
   - Dev diagnostics emit deterministic pre-lock and per-retry confirmation snapshot logs (`exists`, `lockedRole`, `uid mismatch`) to isolate connector-side non-persistence.
   - Route auto-bypass for locked-role accounts is enforced by global auth guard in `app/_layout.tsx`.
   - Authentication session source is explicit E2E or MyChampions local server auth; role-lock profile source is now MyChampions server-backed via `features/auth/profile-source.ts`.
-  - Visual layout is aligned with Stitch role-selection reference (`0e872419a1ff45b39fbc89d7c3592c44`) using the same playful auth system as SC-217/SC-218:
-    - Soft canvas background with decorative blobs.
+  - Visual layout is aligned with Stitch role-selection reference (`0e872419a1ff45b39fbc89d7c3592c44`) using the same restrained auth system as SC-217/SC-218 (`D-214`, `D-217`):
+    - Themed canvas background, no decorative blobs — matches SC-217/SC-218's restrained treatment.
     - Hero area: circular brand badge matching SC-217/SC-218 treatment.
     - Top content respects device safe area inset to avoid status-bar overlap.
     - Bottom safe-area padding applied to prevent CTA overlap.
@@ -78,10 +87,12 @@
     - New locale keys: `auth.role.option_self.description`, `auth.role.option_pro.description`.
 
 ## Design Reference Assets
+
 - `docs/design-assets/stitch/13906080126528974652/0e872419a1ff45b39fbc89d7c3592c44.html`
 - `docs/design-assets/stitch/13906080126528974652/0e872419a1ff45b39fbc89d7c3592c44.png`
 
 ## Data Contract
+
 - Inputs:
   - Authenticated account context.
   - Selected role (`student` or `professional`).
@@ -91,6 +102,7 @@
   - Routing decision to Student or Professional onboarding/home.
 
 ## Edge Cases
+
 - Existing account with prior role bypasses selection and routes directly.
 - If user attempts to re-open this route after role lock, app hard-redirects to role home.
 - If authenticated user closes and reopens app before role is persisted, app must keep user locked on `/auth/role-selection` and block tab/home access.
@@ -99,6 +111,7 @@
 - Hydrated role-lock must only be accepted for the authenticated MyChampions server session; mismatched or missing server auth keeps the route locked to the unauthenticated/role-selection safe path.
 
 ## Links
+
 - Functional requirement: FR-102, FR-118, FR-135, FR-136, FR-173, FR-203, FR-206, FR-207, FR-208, FR-217
 - Use case: UC-002.1, UC-002.8, UC-002.11, UC-002.18
 - Acceptance criteria: AC-201, AC-211, AC-224, AC-233, AC-248, AC-251, AC-252, AC-512

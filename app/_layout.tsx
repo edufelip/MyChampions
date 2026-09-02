@@ -8,7 +8,7 @@ import {
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useGlobalSearchParams, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, LogBox, View } from 'react-native';
 import 'react-native-reanimated';
 
@@ -52,6 +52,16 @@ function RootLayoutContent() {
     Manrope_700Bold,
     Manrope_800ExtraBold,
   });
+  // Fonts ship as bundled assets, not a network fetch, so this should resolve
+  // almost immediately — this timeout only guards against `useFonts` never
+  // settling at all, so a broken asset can't block the app on the spinner
+  // forever.
+  const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
+  useEffect(() => {
+    if (fontsLoaded || fontError) return;
+    const timer = setTimeout(() => setFontLoadTimedOut(true), 4000);
+    return () => clearTimeout(timer);
+  }, [fontsLoaded, fontError]);
   const { t } = useTranslation();
   const { activeLocale } = useLocale();
   const router = useRouter();
@@ -148,7 +158,7 @@ function RootLayoutContent() {
     termsUrl,
   ]);
 
-  if (!isHydrated || (!fontsLoaded && !fontError)) {
+  if (!isHydrated || (!fontsLoaded && !fontError && !fontLoadTimedOut)) {
     return (
       <View
         style={{

@@ -1,13 +1,16 @@
 # SC-205 Student Roster (V2)
 
 ## Route
+
 - `/professional/students`
 
 ## Objective
+
 - Allow professionals to browse and select managed students for follow-up and plan actions.
 
 ## Design Structure (D-134)
-- Screen shell uses `DsScreen` with blob background and themed canvas.
+
+- Screen shell uses `DsScreen` with themed canvas; no decorative blob background (`D-217`).
 - SC-205 adopts the SC-204 professional surface baseline with a top hero header and stronger vertical hierarchy.
 - Hero header is rendered as an elevated card with contextual `groups` icon and compact helper copy.
 - Below a 380px CSS viewport width, the hero header stacks the "Bulk assign plan" pill onto its own row beneath the icon/title/subtitle row instead of sharing the top row with them; at 320px width, keeping all three in one row squeezed the title column narrow enough that "My students" wrapped mid-word ("stude" / "nts") instead of between whole words (ET-159). `usesCompactHero` in `app/professional/students.tsx` drives the breakpoint; the 390px+ layout (pill inline with the title) is unchanged. The same breakpoint also governs the hero header in bulk-assign selection mode, where the title becomes "Bulk Assignment" and the pill becomes "Cancel" — below 380px the "Cancel" pill likewise moves to its own row so "Bulk Assignment" wraps only between whole words instead of mid-word ("Assignme" / "nt") (ET-167).
@@ -23,6 +26,7 @@
 - Browser bulk deny uses an accessible stateful confirmation dialog with a selected-count summary, an explicit accessible name, cancel/confirm actions, focus containment, Escape dismissal, loading feedback, and localized success/error result feedback. Native continues to use the platform confirmation alert, rechecks the latest connectivity state before mutating, and shows the localized write-lock helper if connectivity was lost after the alert opened.
 
 ## User Actions
+
 - Primary:
   - Browse linked student list.
   - In empty state, start the first-student flow via CTA to `/professional/home`.
@@ -36,12 +40,14 @@
   - View assignment state badges (pending/active/ended).
 
 ## States
+
 - Loading: first roster fetch is in progress; list shell stays mounted with spinner.
 - Empty: shown only after first fetch settles with zero visible students (no loading overlap).
 - Error: a settled roster-read failure renders a dedicated error card (Retry + Back to dashboard) in place of the search/filter/bulk-assign shell. Search, filters, and Bulk assign plan are not mounted while this state is showing, so there is no dead control surface around the error copy. Retry re-invokes the roster load and shows the loading indicator before settling into error, empty, or the roster list. Preserved via `resolveStudentRosterViewState` in `features/professional/students-screen.logic.ts`, which is exclusive with the empty hero state — a stale roster is not shown read-only behind an error (open question, see below).
 - Success: roster list with actionable entries.
 
 ## Validation Rules
+
 - Only students linked to professional should be visible.
 - Ended relationships remain in history view but not in active roster default filter.
 - Pending-queue filtering/search cannot expose records outside professional scope.
@@ -57,6 +63,7 @@
   are not part of the selection contract.
 
 ## Data Contract
+
 - Inputs:
   - Professional id.
   - Assignment state records.
@@ -67,6 +74,7 @@
   - Bulk assignment target selection payload.
 
 ## Edge Cases
+
 - Large client list should support paging/virtualization.
 - Concurrent unbind can remove student from active list in-session.
 - If invite code is missing/loading/error in empty state, share CTA falls back to `/professional/home` (no modal error copy).
@@ -74,6 +82,7 @@
 - Open question (not yet resolved, tracked as `Q-028` in `docs/discovery/open-questions-v1.md`): whether a roster read error should fall back to a cached read-only roster when one exists, following the same stale-data policy as the professional dashboard, instead of always showing the error card. Currently any settled error hides the roster shell regardless of prior successful data.
 
 ## Links
+
 - Functional requirement: FR-105, FR-122, FR-210, FR-224, FR-225
 - Use case: UC-002.2, UC-002.5, UC-002.12, UC-002.20
 - Acceptance criteria: AC-206, AC-215, AC-254, AC-265, AC-268
