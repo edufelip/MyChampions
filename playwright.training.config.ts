@@ -1,10 +1,15 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { parseWebPort } from './scripts/ci/parse-web-port';
 
 const artifactRoot = path.resolve(
   process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/training',
 );
-const webPort = Number.parseInt(process.env.PLAYWRIGHT_TRAINING_WEB_PORT ?? '8081', 10);
+const webPort = parseWebPort(
+  'PLAYWRIGHT_TRAINING_WEB_PORT',
+  process.env.PLAYWRIGHT_TRAINING_WEB_PORT,
+  8081,
+);
 
 export default defineConfig({
   testDir: './e2e/web',

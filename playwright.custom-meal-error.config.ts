@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { parseWebPort } from './scripts/ci/parse-web-port';
 
 // The custom-meal error spec must run without the positive custom-meals
 // fixture. Expo public environment values are baked into the web bundle at
@@ -8,7 +9,11 @@ import { defineConfig, devices } from '@playwright/test';
 const artifactRoot = path.resolve(
   process.env.WEB_E2E_ARTIFACT_ROOT ?? '.artifacts/web-e2e/custom-meal-error',
 );
-const webPort = Number.parseInt(process.env.PLAYWRIGHT_CUSTOM_MEAL_ERROR_WEB_PORT ?? '8095', 10);
+const webPort = parseWebPort(
+  'PLAYWRIGHT_CUSTOM_MEAL_ERROR_WEB_PORT',
+  process.env.PLAYWRIGHT_CUSTOM_MEAL_ERROR_WEB_PORT,
+  8095,
+);
 
 export default defineConfig({
   testDir: './e2e/web',
