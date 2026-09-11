@@ -59,8 +59,8 @@ jobs:
       - name: Install iOS Detox utilities
         run: |
           brew tap wix-incubator/brew
-          brew trust --tap wix-incubator/brew
-          brew install applesimutils
+          brew trust --formula wix-incubator/brew/applesimutils
+          brew install wix-incubator/brew/applesimutils
       - name: Build (simulator debug)
         run: yarn test:e2e:build:ios:debug
 

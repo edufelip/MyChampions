@@ -36,7 +36,7 @@ test('iOS PR workflow runs split-mode Detox smoke coverage for migrated auth/ser
   assert.match(
     smokeRunner,
     /yarn test:e2e:build:ios:debug/,
-    'each fixture mode should rebuild the Debug app',
+    'the smoke runner should build the Debug app when CI does not supply one',
   );
   assert.match(smokeRunner, /e2e\/jest\.auth-entry\.config\.js/);
   assert.match(smokeRunner, /e2e\/jest\.authenticated\.config\.js/);
