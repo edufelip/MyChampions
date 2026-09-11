@@ -97,7 +97,7 @@ local development endpoint.
 4. E2E debug variants (optional)
 
    The iOS Debug test commands start Metro on port `8081` when it is not already running, and leave a pre-existing Metro process alone.
-   The `test:e2e:ios:debug:smoke` command runs unauthenticated auth-entry and authenticated role/connection checks in separate Debug builds so their fixture states cannot conflict. The authenticated connection mode uses deterministic invite, QR, and active-nutrition fixtures without backend mutation.
+   The `test:e2e:ios:debug:smoke` command builds the Debug app once, then runs unauthenticated auth-entry and authenticated role/connection checks in separate fresh Metro phases so their fixture states cannot conflict. CI passes `DETOX_SKIP_BUILD=true` after its single workflow-owned build. The authenticated connection mode uses deterministic invite, QR, and active-nutrition fixtures without backend mutation.
 
    ```bash
    yarn test:e2e:build:ios:debug

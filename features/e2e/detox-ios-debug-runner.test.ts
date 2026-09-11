@@ -472,17 +472,14 @@ test('executes the live RevenueCat runner with a fixed isolated identity and no 
 test('runs auth-entry and authenticated smoke modes with incompatible E2E state isolated', async () => {
   const log = await runSmokeRunner();
 
+  assert.equal((log.match(/^yarn:test:e2e:build:ios:debug\|/gm) ?? []).length, 1);
   assert.match(
     log,
-    /^yarn:test:e2e:build:ios:debug\|authSession=\|signIn=true\|create=true\|social=true\|invite=\|nutrition=\|qr=$/m,
+    /^yarn:test:e2e:build:ios:debug\|authSession=\|signIn=\|create=\|social=\|invite=\|nutrition=\|qr=$/m,
   );
   assert.match(
     log,
     /^bash:scripts\/run-detox-ios-debug\.sh --headless\|authSession=\|signIn=true\|create=true\|social=true\|invite=\|nutrition=\|qr=\|runnerSession=\|config=e2e\/jest\.auth-entry\.config\.js$/m,
-  );
-  assert.match(
-    log,
-    /^yarn:test:e2e:build:ios:debug\|authSession=true\|signIn=\|create=\|social=\|invite=success\|nutrition=assigned\|qr=NUT123$/m,
   );
   assert.match(
     log,
@@ -513,6 +510,6 @@ test('delegates CI smoke fixture setup to the split-mode orchestrator', async ()
     'utf8',
   );
 
-  assert.match(workflow, /run: yarn test:e2e:ios:debug:smoke/);
+  assert.match(workflow, /run: DETOX_SKIP_BUILD=true yarn test:e2e:ios:debug:smoke/);
   assert.doesNotMatch(workflow, /EXPO_PUBLIC_E2E_AUTH_SESSION/);
 });

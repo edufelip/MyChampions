@@ -15,6 +15,7 @@ const workflows = new Map(
 const packageManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
   packageManager?: unknown;
 };
+const iosSmokeScript = readFileSync(join(root, 'scripts', 'run-detox-ios-debug-smoke.sh'), 'utf8');
 
 function workflow(name: string): string {
   const source = workflows.get(name);
@@ -855,6 +856,16 @@ test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', () => 
   assert.doesNotMatch(trusted, /ios_tests_enabled/);
   assert.doesNotMatch(trusted, /MYCHAMPIONS_ENABLE_IOS_TESTS/);
   assert.doesNotMatch(trusted, /detox-ios-selected/);
+});
+
+test('legacy iOS smoke reuses one build across its two Detox phases', () => {
+  const legacyIos = workflow('ios-pr.yml');
+
+  assert.equal((iosSmokeScript.match(/yarn test:e2e:build:ios:debug/g) ?? []).length, 1);
+  assert.match(iosSmokeScript, /DETOX_SKIP_BUILD/);
+  assert.match(legacyIos, /run: yarn test:e2e:build:ios:debug/);
+  assert.match(legacyIos, /run: DETOX_SKIP_BUILD=true yarn test:e2e:ios:debug:smoke/);
+  assert.doesNotMatch(legacyIos, /xcodebuild/);
 });
 
 test('web-selected lane is authorized, self-hosted, and per-PR-scoped', () => {
