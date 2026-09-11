@@ -56,6 +56,11 @@ jobs:
           pod install --silent
       - name: List available simulators
         run: xcrun simctl list devices available
+      - name: Install iOS Detox utilities
+        run: |
+          brew tap wix-incubator/brew
+          brew trust --tap wix-incubator/brew
+          brew install applesimutils
       - name: Build (simulator debug)
         run: |
           cd ios

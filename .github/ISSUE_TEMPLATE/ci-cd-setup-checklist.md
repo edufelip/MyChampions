@@ -52,8 +52,8 @@ workflows. Leave every item unchecked until its evidence is attached.
 ### Mac iOS lane
 - [ ] Register a repository-scoped runner with exact labels
       `self-hosted,macOS,ARM64,mychampions-ci,mychampions-ios`.
-- [ ] Verify Xcode 26 and iOS SDK 26+, an `iPhone 17` simulator, CocoaPods, and
-      the expected Homebrew path.
+- [ ] Verify Xcode 26 and iOS SDK 26+, an `iPhone 17` simulator, CocoaPods,
+      AppleSimulatorUtils (`applesimutils`), and the expected Homebrew path.
 - [ ] Install the runner as a persistent service and record service-status
       evidence without exposing its registration token.
 - [ ] Configure and prove the Mac host-wide lock shared with the Meer iOS
