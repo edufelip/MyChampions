@@ -56,16 +56,13 @@ jobs:
           pod install --silent
       - name: List available simulators
         run: xcrun simctl list devices available
-      - name: Build (simulator debug)
+      - name: Install iOS Detox utilities
         run: |
-          cd ios
-          xcodebuild \
-            -workspace mychampions.xcworkspace \
-            -scheme mychampions \
-            -configuration Debug \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            build
+          brew tap wix-incubator/brew
+          brew trust --formula wix-incubator/brew/applesimutils
+          brew install wix-incubator/brew/applesimutils
+      - name: Build (simulator debug)
+        run: yarn test:e2e:build:ios:debug
 
       - name: Run Detox smoke
-        run: yarn test:e2e:ios:debug:smoke
+        run: DETOX_SKIP_BUILD=true yarn test:e2e:ios:debug:smoke

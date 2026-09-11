@@ -1,13 +1,20 @@
-import { useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, useWindowDimensions } from 'react-native';
 import { DsRadius, DsSpace } from '@/constants/design-system';
 import type { ViewStyle } from 'react-native';
-
 
 // Same compact/desktop threshold DsScreen already uses for its own
 // responsive content width (see components/ds/primitives/DsScreen.tsx).
 const DESKTOP_BREAKPOINT = 768;
 const DESKTOP_DIALOG_MAX_WIDTH = 560;
 const DESKTOP_DIALOG_MAX_HEIGHT_RATIO = 0.85;
+
+type ViewportSize = { width: number; height: number };
+
+function getWebViewportSize(): ViewportSize | null {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
+  return { width: window.innerWidth, height: window.innerHeight };
+}
 
 export type DsModalSheetLayout = {
   isDesktop: boolean;
@@ -26,7 +33,20 @@ export type DsModalSheetLayout = {
  * desktop dialog so the sheet no longer anchors to the viewport edge (ET-172).
  */
 export function useDsModalSheetLayout(): DsModalSheetLayout {
-  const { width, height } = useWindowDimensions();
+  const nativeViewport = useWindowDimensions();
+  const [webViewport, setWebViewport] = useState<ViewportSize | null>(getWebViewportSize);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const handleResize = () => setWebViewport(getWebViewportSize());
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const { width, height } = webViewport ?? nativeViewport;
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
   if (!isDesktop) {
