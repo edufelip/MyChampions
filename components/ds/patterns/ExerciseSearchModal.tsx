@@ -137,7 +137,6 @@ export function ExerciseSearchModal({
       animationType={Platform.OS === 'web' ? 'none' : 'slide'}
       onRequestClose={onClose}
       accessibilityLabel={dialogTitle}
-      testID="exerciseSearch.modal"
       transparent
     >
       <KeyboardAvoidingView
@@ -154,6 +153,7 @@ export function ExerciseSearchModal({
             modalLayout.contentStyle,
             { backgroundColor: theme.color.surface },
           ]}
+          testID="exerciseSearch.modal"
         >
           <View style={styles.modalHeader}>
             <Text

@@ -84,6 +84,40 @@ test('exercise-search Playwright suite uses an isolated fixture configuration', 
   assert.ok(invocation.args.includes('e2e/web/exercise-search-modal.spec.ts'));
 });
 
+test('negative web fixture suites use isolated Playwright configurations', () => {
+  const cases = [
+    {
+      suite: 'web:custom-meal-error',
+      config: 'playwright.custom-meal-error.config.ts',
+      spec: 'e2e/web/custom-meal-library-error-recovery.spec.ts',
+    },
+    {
+      suite: 'web:professional-roster-error',
+      config: 'playwright.professional-roster-error.config.ts',
+      spec: 'e2e/web/professional-roster-error.spec.ts',
+    },
+  ] as const;
+
+  for (const testCase of cases) {
+    const plan = createSelectiveExecutionPlan(manifest, 'web', [testCase.suite]);
+    assert.equal(plan.invocations.length, 1);
+    const invocation = plan.invocations[0];
+    assert.ok(invocation.args.includes(`--config=${testCase.config}`));
+    assert.ok(invocation.args.includes(testCase.spec));
+  }
+
+  assert.ok(!manifest.suites['web:nutrition'].specs.includes(cases[0].spec));
+  assert.ok(!manifest.suites['web:professional'].specs.includes(cases[1].spec));
+  assert.doesNotMatch(
+    readFileSync(`${root}/${cases[0].config}`, 'utf8'),
+    /EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE/,
+  );
+  assert.doesNotMatch(
+    readFileSync(`${root}/${cases[1].config}`, 'utf8'),
+    /EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE/,
+  );
+});
+
 test('training Playwright suite stays on the default fixture configuration', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:training']);
 

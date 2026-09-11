@@ -200,6 +200,30 @@ test.describe('@functional @critical @feature:connections @feature:plans @featur
   test('invite code and connection handshake flow between professional and student', async ({
     page,
   }) => {
+    // The fallback contract is camera-less-device behavior. Browser engines
+    // expose navigator.mediaDevices even in headless CI, so make that input
+    // deterministic instead of relying on host permissions or hardware.
+    await page.addInitScript(() => {
+      try {
+        Object.defineProperty(Navigator.prototype, 'mediaDevices', {
+          configurable: true,
+          get: () => undefined,
+        });
+      } catch {
+        // Some engines expose the property as non-configurable on the
+        // prototype; the instance override below is the fallback.
+      }
+      try {
+        Object.defineProperty(navigator, 'mediaDevices', {
+          configurable: true,
+          value: undefined,
+        });
+      } catch {
+        // Keep the browser's native property if the engine rejects both
+        // overrides; the test still exercises the real permission path.
+      }
+    });
+
     // ── Phase 1: Professional displays invite code ─────────────────────────
     await setupProfessionalWithSpecialty(page, 'dual');
     await expect(page.getByTestId('pro.home.screen').last()).toBeVisible();

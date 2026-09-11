@@ -130,7 +130,7 @@
       ],
       "dependsOn": ["auth", "connections", "offline", "platform"],
       "unitTests": ["features/nutrition/**/*.test.ts"],
-      "webSuites": ["web:nutrition", "web:shell"],
+      "webSuites": ["web:nutrition", "web:custom-meal-error", "web:shell"],
       "detoxSuites": ["detox:nutrition"],
       "owners": ["@edufelip"]
     },
@@ -175,6 +175,7 @@
         "web:professional",
         "web:professional-home",
         "web:professional-students-roster",
+        "web:professional-roster-error",
         "web:professional-tabbar-labels",
         "web:shell"
       ],
@@ -426,7 +427,6 @@
       "projects": ["chromium"],
       "specs": [
         "e2e/web/responsive-shell.spec.ts",
-        "e2e/web/custom-meal-library-error-recovery.spec.ts",
         "e2e/web/nutrition-plan-load-error.spec.ts",
         "e2e/web/nutrition-plan-macro-target-labels.spec.ts",
         "e2e/web/multi-role-communication-flows.spec.ts"
@@ -462,9 +462,26 @@
       "specs": [
         "e2e/web/responsive-shell.spec.ts",
         "e2e/web/visual-evidence.spec.ts",
-        "e2e/web/invite-code-rotation.spec.ts",
-        "e2e/web/professional-roster-error.spec.ts"
+        "e2e/web/invite-code-rotation.spec.ts"
       ],
+      "grep": "@feature:professional",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:custom-meal-error": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.custom-meal-error.config.ts",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/custom-meal-library-error-recovery.spec.ts"],
+      "grep": "@feature:nutrition",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:professional-roster-error": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.professional-roster-error.config.ts",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/professional-roster-error.spec.ts"],
       "grep": "@feature:professional",
       "tier": "feature",
       "ci": true

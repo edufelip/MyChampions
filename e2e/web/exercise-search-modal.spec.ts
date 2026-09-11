@@ -124,7 +124,7 @@ test('@feature:training exercise search opens with a useful initial state', asyn
   await expectInsideViewport(page, 'exerciseSearch.result.e2e-exercise-push-up');
   await capture(page, testInfo, 'exercise-search-results');
 
-  await dialog.getByRole('button', { name: enUS['auth.role.cta_back'], exact: true }).click();
+  await dialog.getByTestId('exerciseSearch.close').click();
   await expect(dialog).toBeHidden();
   await expectNoBrowserErrors(pageErrors);
 });
@@ -191,7 +191,7 @@ test.describe('exercise search on a compact keyboard-safe viewport', () => {
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
       .toBeLessThanOrEqual(1);
     await capture(page, testInfo, 'exercise-search-compact-results');
-    await dialog.getByRole('button', { name: enUS['auth.role.cta_back'], exact: true }).click();
+    await dialog.getByTestId('exerciseSearch.close').click();
     await expect(dialog).toBeHidden();
     await expect(consoleErrors).toEqual([]);
     await expectNoBrowserErrors(pageErrors);
