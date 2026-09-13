@@ -874,6 +874,12 @@ test('legacy iOS smoke reuses one build across its two Detox phases', () => {
   assert.match(iosSmokeScript, /DETOX_SKIP_BUILD/);
   assert.match(legacyIos, /run: yarn test:e2e:build:ios:debug/);
   assert.match(legacyIos, /run: DETOX_SKIP_BUILD=true yarn test:e2e:ios:debug:smoke/);
+  assert.match(legacyIos, /brew list --formula --full-name/);
+  assert.match(
+    legacyIos,
+    /\[ \"\$installed_formula\" != \"wix-incubator\/brew\/applesimutils\" \]/,
+  );
+  assert.match(legacyIos, /brew uninstall applesimutils/);
   assert.match(legacyIos, /brew trust --formula wix-incubator\/brew\/applesimutils/);
   assert.match(legacyIos, /brew install wix-incubator\/brew\/applesimutils/);
   assert.doesNotMatch(legacyIos, /brew trust --tap/);
