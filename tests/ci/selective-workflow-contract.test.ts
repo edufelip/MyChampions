@@ -16,6 +16,7 @@ const packageManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf
   packageManager?: unknown;
 };
 const iosSmokeScript = readFileSync(join(root, 'scripts', 'run-detox-ios-debug-smoke.sh'), 'utf8');
+const authSignInE2e = readFileSync(join(root, 'e2e', 'auth-sign-in.e2e.test.js'), 'utf8');
 
 function workflow(name: string): string {
   const source = workflows.get(name);
@@ -874,6 +875,9 @@ test('legacy iOS smoke reuses one build across its two Detox phases', () => {
   assert.match(iosSmokeScript, /DETOX_SKIP_BUILD/);
   assert.match(legacyIos, /run: yarn test:e2e:build:ios:debug/);
   assert.match(legacyIos, /run: DETOX_SKIP_BUILD=true yarn test:e2e:ios:debug:smoke/);
+  assert.match(legacyIos, /DETOX_METRO_PORT: '18081'/);
+  assert.match(legacyIos, /DETOX_REQUIRE_FRESH_METRO: 'true'/);
+  assert.match(legacyIos, /DETOX_METRO_CLEAR_CACHE: 'true'/);
   assert.match(legacyIos, /brew list --formula --full-name/);
   assert.match(
     legacyIos,
@@ -884,6 +888,14 @@ test('legacy iOS smoke reuses one build across its two Detox phases', () => {
   assert.match(legacyIos, /brew install wix-incubator\/brew\/applesimutils/);
   assert.doesNotMatch(legacyIos, /brew trust --tap/);
   assert.doesNotMatch(legacyIos, /xcodebuild/);
+});
+
+test('auth-entry smoke disables iOS synchronization in the initial launch arguments', () => {
+  assert.match(
+    authSignInE2e,
+    /device\.launchApp\(\{\s*newInstance: true,\s*[\s\S]*?launchArgs: \{ detoxEnableSynchronization: 0 \}/,
+  );
+  assert.doesNotMatch(authSignInE2e, /await device\.disableSynchronization\(\)/);
 });
 
 test('web-selected lane is authorized, self-hosted, and per-PR-scoped', () => {
