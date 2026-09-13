@@ -854,10 +854,12 @@ test('native app builds no longer require Firebase config files', () => {
     join(root, '.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md'),
     'utf8',
   );
+  assert.equal(
+    issueTemplate.includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
+    true,
+    'the delivery-only Firebase service-account setup must be documented',
+  );
   for (const token of [
-    'Firebase',
-    'firebase',
-    'FIREBASE',
     'GOOGLE_SERVICE_INFO_PLIST',
     'GOOGLE_SERVICES_JSON',
     'GoogleService-Info',
@@ -916,14 +918,61 @@ test('generated native build output does not preserve retired Firebase config', 
   }
 });
 
-test('CI workflows no longer target Firebase release or config surfaces', () => {
-  const forbiddenWorkflowFiles = [
-    '.github/workflows/firebase-distribution-android.yml',
-    '.github/workflows/firebase-distribution-ios.yml',
+test('CI uses Firebase only as a development-binary distribution transport', () => {
+  const distributionWorkflows = [
+    {
+      path: '.github/workflows/firebase-distribution-android.yml',
+      appIdSecret: 'FIREBASE_APP_ID_ANDROID_DEV',
+      requiredTokens: [
+        'assembleDevRelease',
+        'devReleaseWithDebugSigning=true',
+        'app/build/outputs/apk/dev/release/app-dev-release.apk',
+        'EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID',
+        'EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV',
+      ],
+    },
+    {
+      path: '.github/workflows/firebase-distribution-ios.yml',
+      appIdSecret: 'FIREBASE_APP_ID_IOS_DEV',
+      requiredTokens: [
+        'PRODUCT_BUNDLE_IDENTIFIER="com.edufelip.mychampions.dev"',
+        'APP_DISPLAY_NAME="MyChampions Dev"',
+        'IOS_ADHOC_PROFILE_BASE64',
+        'EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID',
+        'EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV',
+      ],
+    },
   ];
 
-  for (const relativePath of forbiddenWorkflowFiles) {
-    assert.equal(existsSync(join(root, relativePath)), false, `${relativePath} should be retired`);
+  for (const { path: relativePath, appIdSecret, requiredTokens } of distributionWorkflows) {
+    assert.equal(existsSync(join(root, relativePath)), true, `${relativePath} must exist`);
+    const source = readFileSync(join(root, relativePath), 'utf8');
+
+    for (const token of [
+      'workflow_dispatch',
+      'branches: [develop]',
+      'EXPO_PUBLIC_ENV=dev',
+      'APP_VARIANT=dev',
+      'FIREBASE_SERVICE_ACCOUNT_JSON',
+      appIdSecret,
+      'base-group',
+      'firebase-tools@15.30.0',
+      'appdistribution:distribute',
+      ...requiredTokens,
+    ]) {
+      assert.equal(source.includes(token), true, `${relativePath} must contain ${token}`);
+    }
+
+    for (const token of [
+      'google-services.json',
+      'GoogleService-Info.plist',
+      'GOOGLE_SERVICE_INFO_PLIST',
+      'GOOGLE_SERVICES_JSON',
+      'FIREBASE_DEV_',
+      'FIREBASE_PROD_',
+    ]) {
+      assert.equal(source.includes(token), false, `${relativePath} must not restore ${token}`);
+    }
   }
 
   for (const relativePath of [
@@ -1113,7 +1162,6 @@ test('current product requirements no longer require Firebase provider surfaces'
     'docs/specs/mobile-nfr-tech-stack-spec.md',
   ];
   const staleRequirementClaims = [
-    'Firebase App Distribution',
     'Firebase Cloud Storage',
     'Firebase Crashlytics',
     'Crashlytics-only',

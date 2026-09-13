@@ -1,15 +1,18 @@
 # FR-001 Domain, Roles, And Care Plans (Proposed)
 
 ## Goal
+
 Define the target functional scope for a subscription-based student wellness app connecting students with nutritionists and fitness coaches.
 
 ## Terminology
+
 - Student: end user receiving or self-managing nutrition and training plans (also referred to as alumnus/alumni in discussions).
 - Professional: specialist user, with one or both specialties:
   - Nutritionist.
   - Fitness coach / personal trainer.
 
 ## Functional Requirements
+
 - `FR-101`: The app shall support account creation and authentication.
 - `FR-102`: During onboarding, the user shall declare role intent: Student or Professional.
 - `FR-103`: A Professional account shall support one or both specialties (nutritionist, fitness coach).
@@ -105,7 +108,7 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-192`: Native mobile projects (`ios/`, `android/`) shall be generated once with `expo prebuild`, committed from day 1, and maintained directly thereafter.
 - `FR-193`: CI/CD and release pipelines shall not depend on EAS services for build/distribution.
 - `FR-194`: Tailwind-style UI implementation in React Native shall use NativeWind for MVP.
-- `FR-195`: iOS QA distribution on release branches shall publish builds through TestFlight.
+- `FR-195`: Development QA builds for iOS and Android shall publish through Firebase App Distribution after each `develop` push (including a merged pull request) and from either manually dispatched distribution workflow. Those workflows shall build the `dev` app identities only and reject a missing or production API target. iOS QA distribution on release branches shall continue to publish builds through TestFlight.
 - `FR-196`: Pull requests targeting `main` shall run the required feature-aware
   native and web CI checks on the exact head after the persistent-runner security
   and repository-enforcement prerequisites in FR-272 are verified. Successful
@@ -279,14 +282,17 @@ Define the target functional scope for a subscription-based student wellness app
   that slot's process, device, recovery record, and ports.
 
 ## Non-Functional Direction (Draft)
+
 - Multi-platform support: Android, iOS, web.
 - Data privacy controls for health-related user data.
 - Traceability from requirement to use case, AC, business rule, and test case.
 
 ## Out Of Scope (Until Defined)
+
 - Billing provider choice and payment flow details.
 - Regional/legal compliance implementation details.
 - AI-based automatic plan generation logic.
 
 ## Clarifications Pending
+
 - None currently.

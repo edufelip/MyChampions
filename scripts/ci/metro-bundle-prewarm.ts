@@ -1,5 +1,7 @@
 export type NativeMetroPlatform = 'ios' | 'android';
 
+type FetchImplementation = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+
 export const DEFAULT_METRO_BUNDLE_PREWARM_TIMEOUT_MS = 240_000;
 
 export type MetroBundlePrewarmOptions = {
@@ -7,7 +9,7 @@ export type MetroBundlePrewarmOptions = {
   platform: NativeMetroPlatform;
   appId: string;
   timeoutMs?: number;
-  fetchImpl?: typeof fetch;
+  fetchImpl?: FetchImplementation;
 };
 
 export function createMetroBundlePrewarmUrl(

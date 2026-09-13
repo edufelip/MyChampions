@@ -72,6 +72,12 @@ Both iOS and Android release workflows fail before building when this value is
 missing or different, preventing a production bundle from shipping with the
 local development endpoint.
 
+Development Firebase distribution workflows run after each `develop` push (so a
+merged pull request triggers them) and can also be started manually. They build
+only `MyChampions Dev` and reject a missing or production API URL; configure the
+non-production `ENV_FILE` target, Firebase App IDs/service account, `base-group`
+tester group, and iOS Ad Hoc signing assets before their first live run.
+
 ## Testing
 
 1. Unit tests

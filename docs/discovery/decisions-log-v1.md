@@ -60,12 +60,12 @@
 - `D-054`: UI stack for MVP uses NativeWind (Tailwind-style React Native styling).
 - `D-055`: Native projects (`ios/`, `android/`) are committed from day 1 after a single `expo prebuild`, and are then maintained directly without recurring prebuild regeneration.
 - `D-056`: QA distribution strategy:
+  - A push to `develop` (including a merged pull request) and manual dispatch each build the `MyChampions Dev` Android/iOS identities and upload them to Firebase App Distribution's `base-group`. Firebase is a delivery service only: runtime Firebase config, SDKs, and app-domain provider storage remain retired.
+  - The development distribution workflows fail before build when the configured server URL is absent or points at the production API.
   - Release branches distribute iOS builds via TestFlight.
   - Pull requests use repository-owned native build and test checks. Successful PR
     builds remain ephemeral on the self-hosted runners instead of being uploaded to
     GitHub Actions; only bounded failure diagnostics may be retained for one day.
-    The retired Firebase distribution workflows are no longer part of the mobile
-    package.
 - `D-057`: Client-side media compression is mandatory before server-backed upload.
 - `D-058`: Non-crash monitoring tooling (for example Sentry) is out of MVP; crash/ANR provider selection is deferred while the mobile-owned Firebase runtime is retired.
 - `D-059`: MVP update delivery strategy is store-only (no OTA channel).
@@ -382,7 +382,7 @@
 
 - `D-174`: GitHub Actions workflows no longer run legacy Data Connect runtime validation (`scripts/check-dataconnect-runtime-config.mjs`) because app/runtime persistence is moving through the MyChampions server.
   - Removed `Validate Data Connect runtime config` steps from Android/iOS PR and release workflows.
-  - Retired Firebase distribution workflows and native Firebase config checks are no longer part of the mobile package.
+  - Native Firebase config checks remain retired. The separate Firebase App Distribution workflows use only Firebase App IDs and a CI service account to upload already-built development binaries; they do not reintroduce a Firebase mobile runtime.
 
 - `D-175`: Professional read access to student tracking logs is enforced by the MyChampions server using connection and tracking-access rows materialized in local Postgres. Server route/repository tests validate access without client-side rules.
 
