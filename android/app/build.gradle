@@ -16,6 +16,13 @@ def missingReleaseSigningProperties = requiredReleaseSigningProperties.findAll {
 def releaseStoreFile = releaseKeystoreProperties.getProperty("storeFile")?.trim()
     ? rootProject.file(releaseKeystoreProperties.getProperty("storeFile").trim())
     : null
+def devReleaseWithDebugSigning = providers.gradleProperty("devReleaseWithDebugSigning")
+    .map { it.toBoolean() }
+    .orElse(false)
+    .get()
+def requestedTaskNames = gradle.startParameter.taskNames.collect { it.toLowerCase(Locale.ROOT) }
+def devReleaseRequested = requestedTaskNames.any { it.contains("devrelease") }
+def productionReleaseRequested = requestedTaskNames.any { it.contains("productionrelease") }
 def ciVersionCode = providers.gradleProperty("CI_VERSION_CODE").orNull?.trim()
 Integer parsedCiVersionCode = null
 try {
@@ -30,10 +37,7 @@ try {
 }
 
 gradle.taskGraph.whenReady { taskGraph ->
-    def productionReleaseInGraph = taskGraph.allTasks.any {
-        it.path.toLowerCase(Locale.ROOT).contains("productionrelease")
-    }
-    if (!productionReleaseInGraph) {
+    if (!productionReleaseRequested) {
         return
     }
     if (!releaseKeystorePropertiesFile.isFile()) {
@@ -201,6 +205,8 @@ android {
         release {
             if (releaseSigningConfigured) {
                 signingConfig signingConfigs.release
+            } else if (devReleaseWithDebugSigning && devReleaseRequested && !productionReleaseRequested) {
+                signingConfig signingConfigs.debug
             }
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()

@@ -1,17 +1,19 @@
 ---
 name: CI/CD Setup Checklist
 about: Configure and validate selective CI runners, secrets, and signing assets.
-title: "chore(ci): configure runners, secrets, and exact-head CI evidence"
-labels: ["ci", "infra"]
+title: 'chore(ci): configure runners, secrets, and exact-head CI evidence'
+labels: ['ci', 'infra']
 assignees: []
 ---
 
 ## Goal
+
 Configure the repository-scoped CI prerequisites and collect remote evidence for
 the authoritative feature-selective gate and the separately approved release
 workflows. Leave every item unchecked until its evidence is attached.
 
 ## References
+
 - Secrets and runner source of truth:
   `docs/discovery/ci-secrets-matrix-v1.md`
 - Selective execution contract:
@@ -31,6 +33,7 @@ workflows. Leave every item unchecked until its evidence is attached.
   `.github/workflows/ios-release.yml`
 
 ## Workflow Responsibilities
+
 - [ ] Register `trusted-selective-freshness.yml` and
       `trusted-selective-tests.yml` on protected default branch `main`.
 - [ ] Confirm `trusted-selective-freshness.yml` checks out no candidate code and
@@ -50,6 +53,7 @@ workflows. Leave every item unchecked until its evidence is attached.
 ## Runner Setup
 
 ### Mac iOS lane
+
 - [ ] Register a repository-scoped runner with exact labels
       `self-hosted,macOS,ARM64,mychampions-ci,mychampions-ios`.
 - [ ] Verify Xcode 26 and iOS SDK 26+, an `iPhone 17` simulator, CocoaPods,
@@ -65,6 +69,7 @@ workflows. Leave every item unchecked until its evidence is attached.
       `/Users/eduwaldo/.local/state/github-actions/mychampions-native-recovery`.
 
 ### WSL web and Android lanes
+
 - [ ] Register one repository-scoped runner with the combined labels
       `self-hosted,Linux,X64,mychampions-ci,mychampions-web,mychampions-android`;
       the web and Android jobs intentionally select capability subsets of this
@@ -97,6 +102,7 @@ workflows. Leave every item unchecked until its evidence is attached.
 ## Secret Setup
 
 ### Selective and manual native validation
+
 - [ ] `ENV_FILE` contains the approved dev values needed by selected iOS and
       Android fixture profiles.
 - [ ] Prove `ENV_FILE_CONTENT` is only the initial step-environment transport
@@ -108,13 +114,35 @@ workflows. Leave every item unchecked until its evidence is attached.
       in the persistent device ledger.
 
 ### Android release
+
 - [ ] `ANDROID_KEYSTORE_BASE64`
 - [ ] `ANDROID_KEYSTORE_PASSWORD`
 - [ ] `ANDROID_KEY_ALIAS`
 - [ ] `ANDROID_KEY_ALIAS_PASSWORD`
 - [ ] `PLAY_SERVICE_ACCOUNT_JSON`
 
+### Development Firebase App Distribution
+
+- [ ] Verify Android and iOS `com.edufelip.mychampions.dev` Firebase apps and
+      record `FIREBASE_APP_ID_ANDROID_DEV` and `FIREBASE_APP_ID_IOS_DEV` as
+      repository secrets.
+- [ ] Create a Firebase App Distribution Admin service account solely for this
+      upload path and store its JSON as `FIREBASE_SERVICE_ACCOUNT_JSON`.
+- [ ] Verify the Firebase tester group alias `base-group`.
+- [ ] Set `ENV_FILE` to a non-production MyChampions API URL plus the matching
+      public dev Google OAuth and RevenueCat configuration. The workflows reject
+      a missing or production API URL.
+- [ ] `IOS_ADHOC_KEYCHAIN_PASSWORD`
+- [ ] `IOS_ADHOC_CERT_P12_BASE64`
+- [ ] `IOS_ADHOC_CERT_PASSWORD`
+- [ ] `IOS_ADHOC_PROFILE_BASE64`
+- [ ] `IOS_ADHOC_PROFILE_NAME` for `com.edufelip.mychampions.dev`
+- [ ] Use an Ad Hoc profile for `com.edufelip.mychampions.dev`; enroll every
+      tester device UDID, verify it belongs to `IOS_TEAM_ID`, and includes Sign
+      in with Apple.
+
 ### iOS release/TestFlight
+
 - [ ] `IOS_KEYCHAIN_PASSWORD`
 - [ ] `IOS_DIST_CERT_P12_BASE64`
 - [ ] `IOS_DIST_CERT_PASSWORD`
@@ -126,6 +154,7 @@ workflows. Leave every item unchecked until its evidence is attached.
 - [ ] `APP_STORE_CONNECT_API_KEY_CONTENT`
 
 ## Selective Gate Validation
+
 - [ ] Prove hosted authorization rejects fork, actor/sender, workflow
       path/ref/SHA, event/ref, malformed-input, duplicate-head, live-head, and
       stale-run mismatches before candidate checkout or self-hosted scheduling.
@@ -169,6 +198,7 @@ workflows. Leave every item unchecked until its evidence is attached.
       `retention-days` is `1`.
 
 ## Manual Legacy Validation
+
 - [ ] `android-pr.yml` starts and reaches its Android validation commands when
       manually dispatched.
 - [ ] `ios-pr.yml` starts and reaches its iOS validation commands when manually
@@ -179,6 +209,7 @@ workflows. Leave every item unchecked until its evidence is attached.
       day; successful manual validation uploads no APK.
 
 ## Release Validation
+
 - [ ] Android release validation is explicitly approved before execution.
 - [ ] `android-release.yml` builds the signed AAB and reaches the approved Play
       upload step.
@@ -189,6 +220,7 @@ workflows. Leave every item unchecked until its evidence is attached.
 - [ ] The uploaded IPA Actions artifact has one-day retention.
 
 ## Evidence
+
 - [ ] Attach the authoritative run URL, exact head SHA, and per-lane results.
 - [ ] Attach runner label/capability and persistent-service evidence without
       tokens, credentials, environment values, or personal data.
@@ -197,6 +229,7 @@ workflows. Leave every item unchecked until its evidence is attached.
 - [ ] Attach approved signing/distribution run links separately from PR evidence.
 
 ## Follow-ups
+
 - [ ] Open issues for failures, unavailable runners, missing host locks,
       permissions, or rotated credentials.
 - [ ] Update `docs/discovery/ci-secrets-matrix-v1.md` if secret names, scopes,

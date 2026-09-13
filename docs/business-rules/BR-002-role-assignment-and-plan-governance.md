@@ -1,6 +1,7 @@
 # BR-002 Role Assignment And Plan Governance (Proposed)
 
 ## Rules
+
 - `BR-201`: Every account must have a primary journey context: Student or Professional.
 - `BR-202`: Professional specialty can include nutritionist, fitness coach, or both.
 - `BR-203`: A Student can have only one active nutritionist relationship at a time.
@@ -65,6 +66,7 @@
 - `BR-254`: Build and release automation must remain operational without EAS service dependency.
 - `BR-255`: MVP utility-class styling standard in mobile UI is NativeWind.
 - `BR-256`: QA distribution policy is branch-driven:
+  - Every push to `develop` (including a merged pull request) and manual dispatch of either Firebase distribution workflow publishes the matching `MyChampions Dev` binary to the Firebase App Distribution `base-group` tester group. The workflow must reject a production or missing API URL and must not restore Firebase runtime configuration.
   - Release branches publish to TestFlight.
   - After BR-344 promotion gates are verified, pull requests into `main` prove
     selected native builds/tests on self-hosted runners without publishing
@@ -233,4 +235,5 @@
   operational boundary.
 
 ## Constraints
+
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

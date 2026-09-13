@@ -1,0 +1,147 @@
+name: Android Firebase Distribution
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-firebase-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  firebase-distribution:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Write development environment
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          umask 077
+          printf '%s' "$ENV_FILE_CONTENT" > .env
+          unset ENV_FILE_CONTENT
+        working-directory: .
+
+      - name: Export public environment
+        run: |
+          tr -d '\r' < .env | \
+            awk '/^[[:space:]]*(export[[:space:]]+)?EXPO_PUBLIC_[A-Za-z0-9_]+=/ { sub(/^[[:space:]]*export[[:space:]]+/, "", $0); print $0; }' \
+            >> "$GITHUB_ENV"
+        working-directory: .
+
+      - name: Set development variant
+        run: |
+          echo "EXPO_PUBLIC_ENV=dev" >> "$GITHUB_ENV"
+          echo "APP_VARIANT=dev" >> "$GITHUB_ENV"
+        working-directory: .
+
+      - name: Validate development configuration
+        run: |
+          if [ "$EXPO_PUBLIC_ENV" != "dev" ]; then
+            echo "EXPO_PUBLIC_ENV must be 'dev' (got '$EXPO_PUBLIC_ENV')" >&2
+            exit 1
+          fi
+          case "${EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL:-}" in
+            ""|"https://api.mychampions.eduwaldo.com")
+              echo "Development Firebase distribution requires a configured non-production MyChampions server URL." >&2
+              exit 1
+              ;;
+          esac
+          if [ -z "${EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID:-}" ] || [ -z "${EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID:-}" ]; then
+            echo "Development Firebase distribution requires Android and web Google OAuth client IDs." >&2
+            exit 1
+          fi
+          case "${EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV:-}" in
+            goog_*) ;;
+            *)
+              echo "EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV must be a goog_* public RevenueCat key." >&2
+              exit 1
+              ;;
+          esac
+        working-directory: .
+
+      - name: Validate Firebase distribution credentials
+        env:
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID_ANDROID_DEV }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$FIREBASE_APP_ID" ]; then
+            echo "FIREBASE_APP_ID_ANDROID_DEV is not set." >&2
+            exit 1
+          fi
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON is not set." >&2
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
+          unset FIREBASE_SERVICE_ACCOUNT_JSON
+          python3 -c 'import json, sys; payload = json.load(open(sys.argv[1], encoding="utf-8")); assert payload.get("client_email")' "$RUNNER_TEMP/firebase-service-account.json"
+        working-directory: .
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Install Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+        working-directory: .
+
+      - name: Build signed development APK
+        run: |
+          ./gradlew \
+            clean \
+            assembleDevRelease \
+            -PdevReleaseWithDebugSigning=true \
+            -PCI_VERSION_CODE=${{ github.run_number }} \
+            --no-daemon \
+            --no-build-cache \
+            -Dorg.gradle.parallel=false
+
+      - name: Verify development APK
+        run: |
+          APK_PATH="app/build/outputs/apk/dev/release/app-dev-release.apk"
+          test -s "$APK_PATH"
+          APKSIGNER="$ANDROID_HOME/build-tools/$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V | tail -n 1)/apksigner"
+          "$APKSIGNER" verify --verbose "$APK_PATH"
+
+      - name: Write release notes
+        run: git log -1 --pretty=%B > "$RUNNER_TEMP/firebase-release-notes.txt"
+        working-directory: .
+
+      - name: Upload to Firebase App Distribution
+        env:
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID_ANDROID_DEV }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+        run: |
+          npx --yes firebase-tools@15.30.0 appdistribution:distribute \
+            "android/app/build/outputs/apk/dev/release/app-dev-release.apk" \
+            --app "$FIREBASE_APP_ID" \
+            --groups "base-group" \
+            --release-notes-file "$RUNNER_TEMP/firebase-release-notes.txt"
+        working-directory: .
+
+      - name: Clean generated credentials
+        if: always()
+        run: |
+          rm -f \
+            "$GITHUB_WORKSPACE/.env" \
+            "$RUNNER_TEMP/firebase-service-account.json" \
+            "$RUNNER_TEMP/firebase-release-notes.txt"
+        working-directory: .

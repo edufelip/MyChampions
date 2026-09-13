@@ -14,7 +14,7 @@ test('production Android releases fail closed onto CI versioning and private rel
   const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
 
   assert.match(buildGradle, /gradle\.taskGraph\.whenReady/);
-  assert.match(buildGradle, /productionReleaseInGraph/);
+  assert.match(buildGradle, /productionReleaseRequested/);
   assert.match(buildGradle, /rootProject\.file\("keystore\.properties"\)/);
   assert.match(
     buildGradle,
@@ -30,12 +30,20 @@ test('production Android releases fail closed onto CI versioning and private rel
   assert.match(buildGradle, /versionCode resolvedVersionCode/);
   assert.match(buildGradle, /signingConfig signingConfigs\.release/);
   assert.match(buildGradle, /debug signing is never used/);
+  assert.match(buildGradle, /devReleaseWithDebugSigning/);
+  assert.match(buildGradle, /devReleaseRequested/);
+  assert.match(buildGradle, /productionReleaseRequested/);
+  assert.match(
+    buildGradle,
+    /devReleaseWithDebugSigning && devReleaseRequested && !productionReleaseRequested/,
+    'debug signing is permitted only for the explicit development distribution task',
+  );
 
   const releaseBuildType = buildGradle.slice(buildGradle.indexOf('    buildTypes {'));
   assert.doesNotMatch(
     releaseBuildType,
-    /release \{[\s\S]*?signingConfig signingConfigs\.debug/,
-    'release build type must never fall back to the Android debug certificate',
+    /release \{\s*signingConfig signingConfigs\.debug/,
+    'release build type must not unconditionally fall back to the Android debug certificate',
   );
 
   assert.match(workflow, /cat <<EOF > keystore\.properties/);

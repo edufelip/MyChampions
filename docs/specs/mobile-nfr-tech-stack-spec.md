@@ -1,9 +1,11 @@
 # Mobile NFR And Tech Stack Spec (Draft)
 
 ## Purpose
+
 Define non-functional architecture constraints and technology options for the mobile app stack.
 
 ## Scope
+
 - Mobile framework/runtime strategy.
 - Build/release strategy without EAS dependency.
 - Backend-as-a-service and storage foundation.
@@ -13,6 +15,7 @@ Define non-functional architecture constraints and technology options for the mo
 - CI/CD orchestration options.
 
 ## Confirmed Decisions
+
 - Mobile app uses React Native with Expo.
 - Project must not rely on EAS services as a hard dependency for build/release.
 - Android and iOS native packages/pipelines are managed independently.
@@ -33,6 +36,7 @@ Define non-functional architecture constraints and technology options for the mo
 - CI signing strategy uses platform-native secret management in pipelines.
 - Core MVP screens must meet accessibility baseline (contrast, dynamic text scaling, focus order, screen-reader labels).
 - QA distribution policy:
+  - A push to `develop` (including a merged pull request) or manual dispatch of the platform-specific Firebase workflow builds and distributes the `dev` Android APK or iOS IPA through Firebase App Distribution. Firebase is delivery-only: the app does not restore Firebase runtime configuration, and the workflow rejects a production or missing server target.
   - Release branch iOS builds are distributed through TestFlight.
   - Pull requests targeting `main` run feature-aware native toolchain jobs on the
     exact head. Successful binaries remain ephemeral; only bounded one-day
@@ -71,6 +75,7 @@ Define non-functional architecture constraints and technology options for the mo
   that no QEMU process, emulator device, or owned port survives teardown.
 
 ## Constraints From Platform Docs
+
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.
 - Native server-backed flows require `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL` and a MyChampions bearer session.
 - Direct Google/Apple token verification requires configured server audiences and deep-link handling before production traffic.
@@ -80,6 +85,7 @@ Define non-functional architecture constraints and technology options for the mo
 ## Technology Options
 
 ### 1) Tailwind-Style UI
+
 - Option A: NativeWind.
   - Pros: Tailwind-compatible API, strong Expo/React Native adoption, utility-first workflow.
   - Cons: Build/runtime considerations for dynamic class composition.
@@ -92,6 +98,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Selected for MVP: NativeWind.
 
 ### 2) Navigation
+
 - Option A: Expo Router.
   - Pros: File-based routes, good fit with existing Expo baseline.
   - Cons: Requires strict route conventions.
@@ -101,6 +108,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: Keep Expo Router.
 
 ### 3) Server-State And Caching
+
 - Option A: TanStack Query + lightweight local state (Zustand).
   - Pros: Excellent async cache primitives, retries, invalidation, optimistic updates.
   - Cons: More moving parts if overused for simple local state.
@@ -110,6 +118,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: TanStack Query + Zustand.
 
 ### 4) Forms And Validation
+
 - Option A: React Hook Form + Zod.
   - Pros: Strong performance, type-safe schemas, good RN ergonomics.
   - Cons: Schema duplication risk if backend schemas diverge.
@@ -119,6 +128,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: React Hook Form + Zod.
 
 ### 5) Local Persistence For Offline Read-Only
+
 - Option A: MyChampions server snapshots + SQLite (`expo-sqlite`) tables.
   - Pros: Reliable structured offline reads, explicit TTL policies.
   - Cons: Additional sync layer complexity.
@@ -128,6 +138,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: SQLite snapshots for core lists + MMKV/AsyncStorage for session/preferences.
 
 ### 6) CI/CD Without EAS
+
 - Option A: GitHub Actions + Fastlane + native toolchains (`gradlew`, `xcodebuild`).
   - Pros: Maximum control, transparent pipelines, no EAS lock-in.
   - Cons: More initial setup for signing and caching.
@@ -180,6 +191,7 @@ Detox. Successful runs create no GitHub
 Actions artifact or cache.
 
 ## High-Level Architecture (Target)
+
 1. Expo/React Native client handles UI, routing, and offline read models.
 2. MyChampions server and Postgres manage identity and sessions.
 3. MyChampions server enforces domain rules through route guards and Postgres persistence.
@@ -192,6 +204,7 @@ Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
 Current local server contract: root-level `server/` plus this migration task card.
 
 ## Suggested Default NFR Targets For MVP
+
 - App cold start: <= 2.5s median on modern mid-tier devices.
 - Crash-free sessions: >= 99.5%.
 - API p95 latency (critical endpoints): <= 800ms (region-adjusted).
@@ -200,6 +213,7 @@ Current local server contract: root-level `server/` plus this migration task car
 - Observability: structured logs with no sensitive token/link leakage.
 
 ## Traceability Links
+
 - Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`, `FR-271`, `FR-272`.
 - Business rules: `BR-253`, `BR-254`, `BR-255`, `BR-256`, `BR-257`, `BR-258`, `BR-259`, `BR-260`, `BR-261`, `BR-275`, `BR-284`, `BR-285`, `BR-344`.
 - Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-540`, `AC-542`.
@@ -207,9 +221,11 @@ Current local server contract: root-level `server/` plus this migration task car
 - Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
 
 ## Open Questions
+
 - None currently.
 
 ## References
+
 - Expo local app builds: https://docs.expo.dev/build-reference/local-builds/
 - Expo local builds: https://docs.expo.dev/build-reference/local-builds/
 - Elysia: https://elysiajs.com/

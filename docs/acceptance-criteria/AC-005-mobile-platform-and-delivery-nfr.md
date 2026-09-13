@@ -1,13 +1,15 @@
 # AC-005 Mobile Platform And Delivery NFR (Proposed)
 
 ## Feature
+
 Mobile platform constraints and delivery workflow without EAS dependency.
 
 ## Acceptance Criteria
+
 - `AC-501`: Native project folders (`ios/`, `android/`) exist in repository and are treated as first-class source artifacts.
 - `AC-502`: Build/release pipeline runs without requiring EAS Build or EAS Submit.
 - `AC-503`: Mobile UI utility-class styling is implemented with NativeWind in MVP.
-- `AC-504`: Release branch iOS builds are distributed through TestFlight.
+- `AC-504`: Development iOS and Android builds are distributed through Firebase App Distribution after a `develop` push (including a merged pull request) or manual workflow dispatch, using only the `dev` app identities and a non-production API target; release branch iOS builds are distributed through TestFlight.
 - `AC-505`: Pull requests targeting `main` run the required feature-aware native
   and web checks after AC-542's persistent-runner promotion gates pass.
   Successful build outputs stay ephemeral on self-hosted runners; only bounded
@@ -150,6 +152,7 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   private broker, JIT, or ephemeral-runner boundary is in place.
 
 ## Gherkin Scenarios
+
 ```gherkin
 Feature: Mobile platform and delivery constraints
 
@@ -173,6 +176,13 @@ Feature: Mobile platform and delivery constraints
     Given a release branch is built
     When iOS distribution job completes
     Then build is uploaded to TestFlight
+
+  Scenario: Development Firebase distribution path
+    Given a Firebase distribution workflow is manually dispatched or `develop` receives a push
+    And the development Firebase, signing, and non-production API configuration is valid
+    When Android and iOS distribution jobs complete
+    Then the development APK and IPA are uploaded to the Firebase tester group
+    And neither job restores Firebase runtime configuration into the mobile app
 
   Scenario: Store-only update strategy
     Given MVP release configuration
