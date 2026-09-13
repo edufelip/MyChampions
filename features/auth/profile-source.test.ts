@@ -1,6 +1,5 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-
+import { describe, it } from 'node:test';
 import {
   hydrateProfileFromSource,
   lockRoleInSource,
@@ -178,10 +177,10 @@ describe('profile-source server api', () => {
     process.env.APP_VARIANT = 'dev';
     process.env.EXPO_PUBLIC_E2E_AUTH_SESSION = 'true';
     (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ = true;
-    globalThis.fetch = async () => {
+    globalThis.fetch = (async () => {
       fetchCalls += 1;
       throw new Error('E2E account deletion must not call the server.');
-    };
+    }) as unknown as typeof globalThis.fetch;
 
     try {
       await deleteAccountAndDataFromSource(
