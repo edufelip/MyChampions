@@ -15,14 +15,18 @@ concurrency:
 jobs:
   firebase-distribution:
     runs-on: macos-latest
-    env:
-      IOS_KEYCHAIN_PATH: ${{ runner.temp }}/mychampions-dev-signing.keychain-db
-      IOS_PROFILE_PATH: ${{ runner.temp }}/mychampions-dev.mobileprovision
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+
+      # The runner context is available to steps, but not job-level `env`.
+      # Persist these paths for the following signing and cleanup steps.
+      - name: Initialize ephemeral signing paths
+        run: |
+          echo "IOS_KEYCHAIN_PATH=$RUNNER_TEMP/mychampions-dev-signing.keychain-db" >> "$GITHUB_ENV"
+          echo "IOS_PROFILE_PATH=$RUNNER_TEMP/mychampions-dev.mobileprovision" >> "$GITHUB_ENV"
 
       - name: Write development environment
         env:

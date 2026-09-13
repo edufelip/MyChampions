@@ -938,6 +938,8 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
         'PRODUCT_BUNDLE_IDENTIFIER="com.edufelip.mychampions.dev"',
         'APP_DISPLAY_NAME="MyChampions Dev"',
         'IOS_ADHOC_PROFILE_BASE64',
+        'IOS_KEYCHAIN_PATH=$RUNNER_TEMP/mychampions-dev-signing.keychain-db',
+        'IOS_PROFILE_PATH=$RUNNER_TEMP/mychampions-dev.mobileprovision',
         'EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID',
         'EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV',
       ],
