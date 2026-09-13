@@ -66,7 +66,13 @@ jobs:
           brew trust --formula wix-incubator/brew/applesimutils
           brew install wix-incubator/brew/applesimutils
       - name: Build (simulator debug)
+        env:
+          DETOX_METRO_PORT: '18081'
         run: yarn test:e2e:build:ios:debug
 
       - name: Run Detox smoke
+        env:
+          DETOX_METRO_PORT: '18081'
+          DETOX_REQUIRE_FRESH_METRO: 'true'
+          DETOX_METRO_CLEAR_CACHE: 'true'
         run: DETOX_SKIP_BUILD=true yarn test:e2e:ios:debug:smoke

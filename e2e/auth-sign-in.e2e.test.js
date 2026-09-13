@@ -29,8 +29,13 @@ describe('Auth Sign-In', () => {
   };
 
   beforeEach(async () => {
-    await device.launchApp({ newInstance: true });
-    await device.disableSynchronization();
+    await device.launchApp({
+      newInstance: true,
+      // The auth-entry flow keeps the React Native main queue active during
+      // initial routing. Synchronization must be disabled before Detox waits
+      // for that first launch; doing it afterward is too late for iOS.
+      launchArgs: { detoxEnableSynchronization: 0 },
+    });
   });
 
   it('redirects unauthenticated app launch to sign-in', async () => {
