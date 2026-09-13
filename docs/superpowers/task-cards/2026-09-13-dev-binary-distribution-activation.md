@@ -2,7 +2,7 @@
 
 ## Status
 
-Current bucket: Implementation
+Current bucket: Completed
 Risk level: High (CI release workflow, credentials, external provider, Dev API/DB, and cross-repository delivery)
 Owner: Codex
 Blocked by: None
@@ -20,14 +20,14 @@ Deliver Android and iOS `MyChampions Dev` builds to Firebase App Distribution's 
 
 ## Affected Surfaces
 
-| Surface | Files/Systems | Owner | Notes |
-|---|---|---|---|
-| App/UI | Dev Android/iOS binaries | Mobile | `com.edufelip.mychampions.dev` only. |
-| Service/API | Isolated VM API and database | Server | Must not share production data or credentials. |
-| Data/storage | Dedicated development PostgreSQL and object storage | Server | No production database, bucket, or signing material. |
-| CI/deploy | PR #89, GitHub secrets, `develop` | Platform | Workflows fail closed for empty/production API URL. |
-| Docs | Delivery, QA environment, server deployment documentation | Mobile and Server | Update final environment and rollback facts. |
-| External providers | Firebase App Distribution, Google Cloud IAM, DNS/TLS | Platform | Delivery-only Firebase access; least privilege and removable credentials. |
+| Surface            | Files/Systems                                             | Owner             | Notes                                                                     |
+| ------------------ | --------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------- |
+| App/UI             | Dev Android/iOS binaries                                  | Mobile            | `com.edufelip.mychampions.dev` only.                                      |
+| Service/API        | Isolated VM API and database                              | Server            | Must not share production data or credentials.                            |
+| Data/storage       | Dedicated development PostgreSQL and object storage       | Server            | No production database, bucket, or signing material.                      |
+| CI/deploy          | PR #89, GitHub secrets, `develop`                         | Platform          | Workflows fail closed for empty/production API URL.                       |
+| Docs               | Delivery, QA environment, server deployment documentation | Mobile and Server | Update final environment and rollback facts.                              |
+| External providers | Firebase App Distribution, Google Cloud IAM, DNS/TLS      | Platform          | Delivery-only Firebase access; least privilege and removable credentials. |
 
 ## Docs-Backed Kickoff
 
@@ -44,14 +44,14 @@ Decision: Use a separately named host, database, credentials, and deployment dir
 
 ## Acceptance Matrix
 
-| ID | Scenario | Expected Behavior | Evidence Required | Status | Evidence |
-|---|---|---|---|---|---|
-| A1 | Firebase credentials | CI has a dedicated least-privileged credential in a repository secret; no key is committed or left on disk. | Firebase/Google Cloud identity and `gh secret list` names. | In progress | App-ID secrets configured before this task card. |
-| A2 | Dev backend isolation | Dev API uses a distinct host, database, runtime environment, and credentials; production containers and data remain unchanged. | VM/container/database inspection and Dev `/health`. | In progress | Server change is in `edufelip/mychampions-api` PR #15; activation awaits its merge and deployment receipt. |
-| A3 | CI configuration | `ENV_FILE` names the Dev API and correct Dev public OAuth/RevenueCat inputs; workflows reject wrong env. | Secret inventory plus hosted configuration validation. | Pending | |
-| A4 | Android delivery | The Android workflow produces a signed Dev APK and Firebase shows the release assigned to `base-group`. | Hosted run and Firebase console release record. | Pending | Local build and APK signature verification passed before activation. |
-| A5 | iOS delivery | The iOS workflow produces an Ad Hoc Dev IPA and Firebase shows the release assigned to `base-group`. | Hosted run and Firebase console release record. | Pending | |
-| A6 | Rollback | Disabling the Dev workflow or removing its dedicated secret/host does not affect production. | Configuration separation review and documented rollback. | Pending | |
+| ID  | Scenario              | Expected Behavior                                                                                                              | Evidence Required                                          | Status | Evidence                                                                                                                                                                                                                                                        |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | Firebase credentials  | CI has a dedicated least-privileged credential in a repository secret; no key is committed or left on disk.                    | Firebase/Google Cloud identity and `gh secret list` names. | Done   | Dedicated `firebase-app-distribution-ci` identity has only Firebase App Distribution Admin; app-ID and service-account secret names were verified, and the generated key was removed after secret ingestion.                                                    |
+| A2  | Dev backend isolation | Dev API uses a distinct host, database, runtime environment, and credentials; production containers and data remain unchanged. | VM/container/database inspection and Dev `/health`.        | Done   | `edufelip/mychampions-api` PR #15 merged at `942e7d5`; its isolated Dev API/database deployment passed its external `/health` check. Production containers and database were not changed.                                                                       |
+| A3  | CI configuration      | `ENV_FILE` names the Dev API and correct Dev public OAuth/RevenueCat inputs; workflows reject wrong env.                       | Secret inventory plus hosted configuration validation.     | Done   | The repository secret was replaced with the Dev endpoint and Dev public configuration. Android `34766495807` and iOS `34769384751` passed the fail-closed configuration gates before native compilation.                                                        |
+| A4  | Android delivery      | The Android workflow produces a signed Dev APK and Firebase shows the release assigned to `base-group`.                        | Hosted run and Firebase console release record.            | Done   | Hosted run `34766495807` succeeded. Firebase Android Dev shows `1.0.0-dev (4)` at 13:07:18 UTC-3 with `base-group` assigned (2 invited testers; 0 accepts/downloads at inspection).                                                                             |
+| A5  | iOS delivery          | The iOS workflow produces an Ad Hoc Dev IPA and Firebase shows the release assigned to `base-group`.                           | Hosted run and Firebase console release record.            | Done   | Manual-dispatch hosted run `34769384751` succeeded end-to-end, including IPA export and Firebase upload. Firebase iOS Dev shows `1.0.0 (11)` at 14:05:20 UTC-3 with 2 invited testers from the configured `base-group` (1 accepted; 0 downloads at inspection). |
+| A6  | Rollback              | Disabling the Dev workflow or removing its dedicated secret/host does not affect production.                                   | Configuration separation review and documented rollback.   | Done   | The Dev service, host, database, secrets, Firebase identity, and workflows are distinct from production; the rollback paths above remove only those Dev resources. No production rollback was executed or required.                                             |
 
 ## Edge Cases
 
@@ -70,19 +70,19 @@ Decision: Use a separately named host, database, credentials, and deployment dir
 
 ## Risks
 
-| Risk | Impact | Mitigation | Status |
-|---|---|---|---|
-| Production data or API reuse | Testers affect production | Separate host, database, runtime secrets, and deployment namespace; verify no production resources are addressed. | Open |
-| Overprivileged Firebase credential | Unauthorized release actions | Dedicated delivery identity, minimum role, GitHub secret only, revocation path. | Open |
-| iOS profile lacks Dev tester device | iOS lane fails | Hosted profile/entitlement validation runs before archive/upload. | Open |
-| Secret leakage | Credential exposure | Never print secret values; delete locally generated/downloading key immediately after GitHub secret ingestion. | Open |
+| Risk                                | Impact                       | Mitigation                                                                                                        | Status     |
+| ----------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| Production data or API reuse        | Testers affect production    | Separate host, database, runtime secrets, and deployment namespace; verify no production resources are addressed. | Controlled |
+| Overprivileged Firebase credential  | Unauthorized release actions | Dedicated delivery identity, minimum role, GitHub secret only, revocation path.                                   | Controlled |
+| iOS profile lacks Dev tester device | iOS lane fails               | Hosted profile/entitlement validation runs before archive/upload.                                                 | Verified   |
+| Secret leakage                      | Credential exposure          | Never print secret values; delete locally generated/downloading key immediately after GitHub secret ingestion.    | Controlled |
 
 ## Commands Run
 
-| Command | Result | Notes |
-|---|---|---|
-| Focused mobile contract tests | Passed (90 tests) | Recorded before this card; rerun after workflow changes. |
-| Local Android Dev release build + `apksigner verify` | Passed | `com.edufelip.mychampions.dev`, local-only configuration. |
+| Command                                              | Result            | Notes                                                     |
+| ---------------------------------------------------- | ----------------- | --------------------------------------------------------- |
+| Focused mobile contract tests                        | Passed (90 tests) | Recorded before this card; rerun after workflow changes.  |
+| Local Android Dev release build + `apksigner verify` | Passed            | `com.edufelip.mychampions.dev`, local-only configuration. |
 
 ## Human Approval
 
@@ -94,4 +94,6 @@ Notes: The request explicitly includes external provider, infrastructure, merge,
 
 ## Final Evidence Report
 
-Pending activation and verification.
+Implementation and provider activation are complete. The final mobile workflow revision is `41c6b76e38a6f6563fb4fe5c735e8b583e8784e6` on `develop`; it has a matching `main` revision. The initial `develop` Android run `34766495807` successfully built, signed, and uploaded Android `1.0.0-dev (4)` to Firebase App Distribution. The manual iOS run `34769384751` successfully validated the matching Ad Hoc identity/profile, archived, exported, and uploaded iOS `1.0.0 (11)`. Firebase console receipts show both releases and two invited testers from `base-group`.
+
+These are CI/provider-delivery receipts, not device, product-flow, store, or production-release evidence. At final inspection, Android had 0 accepted invitations and 0 completed downloads; iOS had 1 accepted invitation and 0 completed downloads. The independent Dev API health check passed, but no authenticated tester session or on-device installation was performed in this task.
