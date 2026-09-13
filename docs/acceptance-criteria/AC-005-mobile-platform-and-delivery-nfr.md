@@ -69,14 +69,14 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   relax any other selected or enabled lane.
 - `AC-542`: Persistent-runner promotion passes only when the supported
   pull-request path for bases `main`, `release/**`, and `hotfix/**` begins with a
-  protected-`main`, GitHub-hosted-only `pull_request_target` freshness workflow
+  protected-`main`, self-hosted, source-free `pull_request_target` freshness workflow
   that checks out no candidate code and posts event-fingerprinted pending only
-  for a live owner-authored same-upstream pull request. A GitHub-hosted-only
+  for a live owner-authored same-upstream pull request. A self-hosted, source-free
   preflight with `statuses: read` must observe the pending description for the
   canonical fingerprint of its exact event before it dispatches self-hosted work from
   `.github/workflows/trusted-selective-tests.yml` loaded from protected
   default branch `main` after a completed `workflow_run`. Before candidate
-  checkout or self-hosted scheduling, that trusted workflow's GitHub-hosted
+  checkout or credentialed workload, that trusted workflow's self-hosted
   authorization job must compare the triggering run and event with the live
   pull-request API and validate the exact head SHA, same upstream/base
   repository, owner actor/triggering actor/sender, workflow path/ref/SHA, and
@@ -87,7 +87,7 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   live-head mismatch or stale-run probes must fail authorization. Merge-group
   authorization must validate every associated live pull request with the same
   upstream and owner provenance. Candidate and self-hosted jobs have only
-  `contents: read`. Only three trusted GitHub-hosted jobs may have
+  `contents: read`. Only three trusted self-hosted jobs may have
   `statuses: write`: the freshness invalidator, authorization/status initializer,
   and always-run finalizer. They must share one repository-global `queue: max`
   writer group. Initial and final publication must each prove that the exact head
@@ -241,11 +241,11 @@ Feature: Mobile platform and delivery constraints
     Then the complete applicable web, iOS, and Android matrix is selected
 
   Scenario: Trusted default-branch workflow authorizes persistent-runner work
-    Given a GitHub-hosted-only pull-request preflight completed
+    Given a self-hosted, source-free pull-request preflight completed
     When the default-branch workflow-run authorization compares the triggering run with the live pull-request API
     Then fork, identity, workflow-provenance, event, ref, or stale-head mismatches are rejected before candidate checkout
     And only an authorized exact head may reach a self-hosted job with contents-read permission
-    And trusted freshness posts the exact event-fingerprinted pending status before the hosted preflight completes
+    And trusted freshness posts the exact event-fingerprinted pending status before the Source-free preflight completes
     And the hosted initializer and finalizer publish owned pending then terminal Selective CI gate on that candidate SHA
     And a superseded same-head run cannot overwrite the newer status cycle
 ```

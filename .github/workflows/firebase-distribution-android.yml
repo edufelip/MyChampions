@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   firebase-distribution:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     defaults:
       run:
         working-directory: android

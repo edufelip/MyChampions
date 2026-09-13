@@ -10,10 +10,10 @@ repository-policy, provenance, cleanup, and enforcement controls below are
 implemented and verified.
 
 `.github/workflows/trusted-selective-freshness.yml` is the protected-`main`,
-GitHub-hosted-only `pull_request_target` metadata invalidator. It checks out no
+self-hosted, source-free `pull_request_target` metadata invalidator. It checks out no
 candidate code and posts event-fingerprinted freshness pending only for a live
 owner-authored same-upstream pull request.
-`.github/workflows/pr-selective-tests.yml` is the GitHub-hosted-only
+`.github/workflows/pr-selective-tests.yml` is the self-hosted, source-free
 `pull_request` preflight for bases `main`, `release/**`, and `hotfix/**`, plus
 future-compatible `merge_group`; it never checks out candidate code or targets
 self-hosted labels, and its pull-request job has only `statuses: read` while it
@@ -28,9 +28,8 @@ must dispatch at ref `main`, accept a PR number, resolve its live head/base, and
 force full selection. The trusted workflow has no direct `merge_group` trigger;
 its workflow-run authorization validates every associated live PR. It also has
 no direct release/hotfix trigger; authorized same-upstream owner PRs targeting
-those bases enter through the hosted preflight the same as any other base, and
-no longer force the full matrix on their own (CI web-primary redesign, Step
-7) -- only an explicit `ci:full` label does. Full Detox validation for
+those bases enter through the Source-free preflight the same as any other base, and
+no longer force the full matrix on their own (CI web-primary redesign, Step 7) -- only an explicit `ci:full` label does. Full Detox validation for
 release/hotfix branches instead comes exclusively from
 `detox-protected-full.yml`'s `push` trigger on those branches (Step 6),
 independent of the PR pipeline. The
@@ -73,9 +72,9 @@ test workflow; any future iOS test-only lane must use the same guard.
   fail-closed process-group verification.
 - `scripts/ci/detox-fixture-profiles.ts`: isolated Detox phase contracts.
 - `.github/workflows/trusted-selective-freshness.yml`: protected-`main`,
-  GitHub-hosted-only owner/upstream pull-request metadata invalidation with no
+  self-hosted, source-free owner/upstream pull-request metadata invalidation with no
   candidate checkout.
-- `.github/workflows/pr-selective-tests.yml`: GitHub-hosted-only pull-request
+- `.github/workflows/pr-selective-tests.yml`: self-hosted, source-free pull-request
   preflight for `main`, `release/**`, and `hotfix/**`, plus merge-group
   preflight; it never checks out or executes candidate code and waits for
   the trusted pending description for its canonical exact-event fingerprint with
@@ -139,7 +138,7 @@ UI lane.
 
 The trusted workflow transports suite IDs through validated JSON job outputs; it
 does not upload an impact artifact. Before candidate checkout or self-hosted
-scheduling, its GitHub-hosted authorization job validates the triggering
+scheduling, its self-hosted authorization job validates the triggering
 workflow run against the live pull-request API. Before a command is spawned, the
 executor rejects empty, duplicate, unknown, non-CI, provider-live, wrong-runner,
 wrong-platform, or invalid-profile selections.
@@ -339,8 +338,8 @@ executable QA spec for that workflow.
 The following controls are normative targets and remain pending until TC-519
 records workflow/run, repository, host-resource, and exact-head evidence:
 
-- The supported `pull_request`/`merge_group` preflight is GitHub-hosted-only,
-  has no candidate checkout, and never targets self-hosted labels. The supported
+- The supported `pull_request`/`merge_group` preflight is self-hosted, source-free,
+  has no candidate checkout, and runs only on the Linux self-hosted label. The supported
   candidate path dispatches from `trusted-selective-tests.yml`, loaded from
   protected default branch `main` after the preflight completes through
   `workflow_run`.
@@ -350,7 +349,7 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   event-fingerprinted pending only for a live owner-authored same-upstream pull
   request. The preflight has only `statuses: read` and waits until the pending
   status for its exact event fingerprint is visible.
-- Before candidate checkout or self-hosted scheduling, a GitHub-hosted
+- Before candidate checkout or any credentialed workload, a self-hosted
   authorization job validates the triggering run against the live PR API:
   current exact head SHA, same upstream/base repository, owner actor,
   triggering actor, sender, workflow path/ref/SHA, and allowed event/ref.
@@ -365,7 +364,7 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   enforcement uses strict up-to-date branches. Manual execution requires `workflow_dispatch` at ref
   `main`, a PR number resolved through the live API, and forced full selection.
 - Live same-upstream owner PRs targeting `release/**` or `hotfix/**` enter
-  through the hosted preflight and use the protected-`main` trusted workflow
+  through the Source-free preflight and use the protected-`main` trusted workflow
   the same as any other base; they no longer force full selection on their
   own (CI web-primary redesign, Step 7) -- only an explicit `ci:full` label
   does. The trusted workflow is never sourced or directly
@@ -377,7 +376,7 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   same trust basis `android-release.yml`/`ios-release.yml` already rely on,
   so no separate authorization job was added for it.
 - Candidate and self-hosted jobs have only `contents: read`. Only the trusted
-  GitHub-hosted freshness invalidator, authorization/status initializer, and
+  self-hosted freshness invalidator, authorization/status initializer, and
   always-run finalizer have `statuses: write`; all three share the
   repository-global `mychampions-selective-status-writer` group with
   `queue: max`. The initializer and finalizer each require exactly one eligible
@@ -512,9 +511,9 @@ control in the trusted workflow.
   stable gate fail.
 - A fork, identity mismatch, wrong workflow path/ref/SHA, disallowed event/ref,
   malformed trigger, live-head mismatch, or PR head moved after preflight is
-  rejected by hosted authorization before candidate checkout or self-hosted
+  rejected by self-hosted authorization before candidate checkout or self-hosted
   scheduling.
-- Candidate/self-hosted jobs cannot publish statuses; trusted hosted freshness,
+- Candidate jobs cannot publish statuses; trusted self-hosted freshness,
   initialization, and finalization publish exact-event-fingerprinted freshness
   pending, run-owned pending, then terminal
   `Selective CI gate` on the authorized candidate SHA.

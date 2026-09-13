@@ -24,13 +24,14 @@ concurrency:
 
 jobs:
   hosted-preflight:
+    # Preserve the existing required-check identifier while routing the job locally.
     name: Hosted candidate preflight
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     timeout-minutes: 5
     permissions:
       statuses: read
     steps:
-      - name: Validate hosted-only candidate metadata
+      - name: Validate source-free candidate metadata
         env:
           EVENT_NAME: ${{ github.event_name }}
           REPOSITORY: ${{ github.repository }}
@@ -59,7 +60,7 @@ jobs:
                 ! "$PR_HEAD_SHA" =~ $sha_pattern ||
                 "$GITHUB_REF_VALUE" != refs/pull/*/merge
               ]]; then
-                echo "Pull-request metadata is outside the hosted preflight contract." >&2
+                echo "Pull-request metadata is outside the source-free preflight contract." >&2
                 exit 1
               fi
               case "$PR_BASE_REF" in
@@ -75,7 +76,7 @@ jobs:
                 ! "$MERGE_HEAD_SHA" =~ $sha_pattern ||
                 "$GITHUB_REF_VALUE" != "$MERGE_HEAD_REF"
               ]]; then
-                echo "Merge-group metadata is outside the hosted preflight contract." >&2
+                echo "Merge-group metadata is outside the source-free preflight contract." >&2
                 exit 1
               fi
               merge_base_branch="${MERGE_BASE_REF#refs/heads/}"
@@ -101,7 +102,7 @@ jobs:
               ;;
           esac
 
-          echo "Hosted candidate metadata passed preflight."
+          echo "Source-free candidate metadata passed preflight."
       - name: Await trusted stale-status invalidation
         if: github.event_name == 'pull_request'
         env:

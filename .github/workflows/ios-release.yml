@@ -9,7 +9,7 @@ on:
 
 jobs:
   release:
-    runs-on: macos-latest
+    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
 
     env:
       KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}

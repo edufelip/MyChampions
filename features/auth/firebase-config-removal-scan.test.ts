@@ -923,6 +923,7 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
     {
       path: '.github/workflows/firebase-distribution-android.yml',
       appIdSecret: 'FIREBASE_APP_ID_ANDROID_DEV',
+      runner: 'runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]',
       requiredTokens: [
         'assembleDevRelease',
         'devReleaseWithDebugSigning=true',
@@ -934,6 +935,7 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
     {
       path: '.github/workflows/firebase-distribution-ios.yml',
       appIdSecret: 'FIREBASE_APP_ID_IOS_DEV',
+      runner: 'runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]',
       requiredTokens: [
         'PRODUCT_BUNDLE_IDENTIFIER="com.edufelip.mychampions.dev"',
         'APP_DISPLAY_NAME="MyChampions Dev"',
@@ -946,7 +948,7 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
     },
   ];
 
-  for (const { path: relativePath, appIdSecret, requiredTokens } of distributionWorkflows) {
+  for (const { path: relativePath, appIdSecret, runner, requiredTokens } of distributionWorkflows) {
     assert.equal(existsSync(join(root, relativePath)), true, `${relativePath} must exist`);
     const source = readFileSync(join(root, relativePath), 'utf8');
 
@@ -960,6 +962,7 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
       'base-group',
       'firebase-tools@15.30.0',
       'appdistribution:distribute',
+      runner,
       ...requiredTokens,
     ]) {
       assert.equal(source.includes(token), true, `${relativePath} must contain ${token}`);

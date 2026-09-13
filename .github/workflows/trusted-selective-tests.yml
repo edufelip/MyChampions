@@ -25,7 +25,7 @@ concurrency:
 jobs:
   authorize-candidate:
     name: Authorize trusted candidate
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     timeout-minutes: 10
     concurrency:
       group: mychampions-selective-status-writer
@@ -759,7 +759,7 @@ jobs:
                   if positive_integer(run.get("id"), "run.id") != run_id:
                       fail("triggering workflow run ID changed")
                   if run.get("status") != "completed":
-                      fail("triggering hosted preflight is not complete")
+                      fail("triggering source-free preflight is not complete")
                   preflight_conclusion = text(run.get("conclusion"), "run.conclusion")
                   if text(run.get("name"), "run.name") != PREFLIGHT_NAME:
                       fail("triggering workflow has the wrong name")
@@ -1072,9 +1072,9 @@ jobs:
                           post_status(
                               head_sha,
                               "failure",
-                              "Hosted candidate preflight did not pass.",
+                              "Source-free candidate preflight did not pass.",
                           )
-                      fail("triggering hosted preflight did not complete successfully")
+                      fail("triggering source-free preflight did not complete successfully")
 
               if publish_required_status:
                   post_status(
@@ -1098,7 +1098,7 @@ jobs:
   impact:
     name: Resolve affected features
     needs: authorize-candidate
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     permissions:
       contents: read
     outputs:
@@ -1141,7 +1141,7 @@ jobs:
   fast-quality:
     name: Fast quality checks
     needs: impact
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     permissions:
       contents: read
     steps:
@@ -1325,7 +1325,7 @@ jobs:
       - impact
       - fast-quality
       - web-selected
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     timeout-minutes: 5
     concurrency:
       group: mychampions-selective-status-writer
