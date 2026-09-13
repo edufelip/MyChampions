@@ -47,6 +47,11 @@ test('production Android releases fail closed onto CI versioning and private rel
   );
 
   assert.match(workflow, /cat <<EOF > keystore\.properties/);
+  assert.match(
+    workflow,
+    /runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]/,
+    'credentialed Android release builds must use the repository Linux runner',
+  );
   assert.match(workflow, /- name: Decode keystore[\s\S]*?working-directory: android/);
   assert.match(workflow, /- name: Create keystore\.properties[\s\S]*?working-directory: android/);
   assert.match(workflow, /-PCI_VERSION_CODE=\$\{\{ env\.CI_VERSION_CODE \}\}/);

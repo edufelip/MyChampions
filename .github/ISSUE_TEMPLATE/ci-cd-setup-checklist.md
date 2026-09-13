@@ -20,7 +20,7 @@ workflows. Leave every item unchecked until its evidence is attached.
   `docs/test-cases/selective-feature-test-execution.md`
 - Protected-default-branch freshness invalidator:
   `.github/workflows/trusted-selective-freshness.yml`
-- GitHub-hosted candidate preflight:
+- Source-free candidate preflight:
   `.github/workflows/pr-selective-tests.yml`
 - Authoritative selection/execution and stable status:
   `.github/workflows/trusted-selective-tests.yml`
@@ -38,10 +38,10 @@ workflows. Leave every item unchecked until its evidence is attached.
       `trusted-selective-tests.yml` on protected default branch `main`.
 - [ ] Confirm `trusted-selective-freshness.yml` checks out no candidate code and
       posts the exact-event fingerprinted pending status before the
-      GitHub-hosted-only `pr-selective-tests.yml` preflight completes.
+      self-hosted, source-free `pr-selective-tests.yml` preflight completes.
 - [ ] Confirm `trusted-selective-tests.yml` is loaded from protected `main`,
       authorizes the triggering run/live pull request before candidate checkout
-      or self-hosted scheduling, and owns the stable `Selective CI gate`.
+      or credentialed workload, and owns the stable `Selective CI gate`.
 - [ ] Make `Hosted candidate preflight` and `Selective CI gate` required only
       after the live registration/fingerprint handshake and exact-head full
       promotion matrix are green.
@@ -155,11 +155,11 @@ workflows. Leave every item unchecked until its evidence is attached.
 
 ## Selective Gate Validation
 
-- [ ] Prove hosted authorization rejects fork, actor/sender, workflow
+- [ ] Prove self-hosted authorization rejects fork, actor/sender, workflow
       path/ref/SHA, event/ref, malformed-input, duplicate-head, live-head, and
-      stale-run mismatches before candidate checkout or self-hosted scheduling.
-- [ ] Prove candidate/self-hosted jobs have only `contents: read`; only the
-      hosted freshness, authorization/status initializer, and finalizer jobs
+      stale-run mismatches before candidate checkout or credentialed workload.
+- [ ] Prove candidate jobs have only `contents: read`; only the
+      self-hosted freshness, authorization/status initializer, and finalizer jobs
       have `statuses: write`, all sharing the repository-global `queue: max`
       writer group.
 - [ ] Run the promotion head with complete selection and record the exact head

@@ -6,7 +6,7 @@ on:
 jobs:
   resolve-ios-tests:
     name: Resolve iOS test toggle
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     outputs:
       enabled: ${{ steps.resolve.outputs.enabled }}
     steps:
@@ -27,7 +27,7 @@ jobs:
   build:
     needs: resolve-ios-tests
     if: ${{ needs.resolve-ios-tests.outputs.enabled == 'true' }}
-    runs-on: macos-latest
+    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:

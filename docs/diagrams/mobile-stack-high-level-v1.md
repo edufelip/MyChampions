@@ -50,10 +50,10 @@ flowchart LR
   suites. Shared-global or unknown runtime changes fail closed to the complete
   registered matrix. D-193 defines the candidate exact-head selective gate;
   D-195 blocks authoritative promotion until protected-`main`
-  `pull_request_target` freshness invalidation, a GitHub-hosted-only PR preflight
+  `pull_request_target` freshness invalidation, a self-hosted, source-free PR preflight
   that observes that pending status, protected-`main` `workflow_run` execution through
-  `trusted-selective-tests.yml`, GitHub-hosted triggering-run/live-PR
-  authorization, read-only candidate/self-hosted tokens, trusted GitHub-hosted
+  `trusted-selective-tests.yml`, self-hosted triggering-run/live-PR
+  authorization, read-only candidate/self-hosted tokens, trusted self-hosted
   globally queued freshness/run-owned pending/final status publishing with
   unique owner/upstream PR binding and stale-run protection, repository policy,
   pinned dependencies, exact backend SHA, interruptible supervised native child

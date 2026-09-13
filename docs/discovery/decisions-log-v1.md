@@ -61,6 +61,7 @@
 - `D-055`: Native projects (`ios/`, `android/`) are committed from day 1 after a single `expo prebuild`, and are then maintained directly without recurring prebuild regeneration.
 - `D-056`: QA distribution strategy:
   - A push to `develop` (including a merged pull request) and manual dispatch each build the `MyChampions Dev` Android/iOS identities and upload them to Firebase App Distribution's `base-group`. Firebase is a delivery service only: runtime Firebase config, SDKs, and app-domain provider storage remain retired.
+  - Every CI/CD job selects a repository self-hosted runner: Linux/Android uses `self-hosted,Linux,X64,mychampions-ci,mychampions-android`, iOS uses `self-hosted,macOS,ARM64,mychampions-ci,mychampions-ios`, and web-only work uses `self-hosted,Linux,X64,mychampions-ci,mychampions-web-only`. No workflow may select `ubuntu-latest` or `macos-latest`.
   - The development distribution workflows fail before build when the configured server URL is absent or points at the production API.
   - Release branches distribute iOS builds via TestFlight.
   - Pull requests use repository-owned native build and test checks. Successful PR
@@ -521,7 +522,7 @@
     invocation before React Native starts.
   - The three legacy PR workflows are manual-only. The stable selective gate fails
     when any selected lane is skipped or fails. D-195 separates the
-    GitHub-hosted-only pull-request preflight from the protected-default-branch
+    self-hosted, source-free pull-request preflight from the protected-default-branch
     trusted workflow that may reach persistent runners.
   - Green runs upload no impact report, web export, app, APK, or test artifact.
     Only bounded failure diagnostics may be uploaded, with one-day retention.
@@ -550,16 +551,18 @@
   promotion onto persistent self-hosted runners is conditional on a separate
   runner-security and repository-enforcement gate.
   - `.github/workflows/trusted-selective-freshness.yml` is a
-    protected-default-branch, GitHub-hosted-only `pull_request_target` metadata
+    protected-default-branch, self-hosted, source-free `pull_request_target` metadata
     workflow. It never checks out candidate code. For an open owner-authored,
     same-upstream pull request it replaces any reusable `Selective CI gate`
     success with a freshness-owned pending status carrying a canonical event
     fingerprint before the matching candidate preflight may complete.
-  - `.github/workflows/pr-selective-tests.yml` is a GitHub-hosted-only
-    `pull_request`/`merge_group` preflight and must never target a self-hosted
-    runner. Pull-request base filters include `main`, `release/**`, and
+  - `.github/workflows/pr-selective-tests.yml` is a self-hosted, source-free
+    `pull_request`/`merge_group` preflight on the Linux runner. It never checks
+    out candidate code. Pull-request base filters include `main`, `release/**`, and
     `hotfix/**`. Its pull-request job has only `statuses: read` and waits until
     the trusted pending status for its exact event fingerprint is observable.
+    Its required-check label remains `Hosted candidate preflight` solely for
+    branch-protection compatibility; it does not use GitHub-hosted capacity.
     `.github/workflows/trusted-selective-tests.yml` is the authoritative
     execution workflow. The supported pull-request path reaches it after the
     preflight completes and GitHub dispatches `workflow_run`; GitHub loads this
@@ -569,15 +572,15 @@
     through that same protected-`main` workflow-run path and force the complete
     matrix. Neither target branch is a direct source or trigger for the trusted
     workflow.
-  - Before candidate checkout or self-hosted scheduling, a GitHub-hosted
+  - Before candidate checkout or any credentialed workload, a self-hosted
     authorization job compares the triggering workflow run and event with the
     live pull-request API. It fails closed unless the live head equals the
     candidate SHA and provenance proves the expected upstream/base repository,
     owner actor, triggering actor, sender, preflight workflow path/ref/SHA,
     trusted workflow path/ref/SHA, and allowed event/ref/base. Missing, malformed,
     fork, stale, or inconsistent provenance is rejected.
-  - Candidate and self-hosted jobs have only `contents: read`. Exactly three
-    trusted GitHub-hosted jobs may have `statuses: write`: the freshness
+  - Candidate jobs have only `contents: read`. Exactly three
+    trusted self-hosted jobs may have `statuses: write`: the freshness
     invalidator, the authorization/status initializer, and the always-run
     finalizer. After freshness invalidates an old exact-head success, the
     initializer safely resolves one eligible open, ready, owner-authored
@@ -609,8 +612,8 @@
     from `main` but never publishes the SHA-global pull-request status context.
     Manual execution is allowed only through `workflow_dispatch` at ref `main`;
     it accepts a pull-request number, resolves the live head/base via API, and
-    forces the complete matrix. These paths receive equivalent hosted
-    authorization before candidate checkout or self-hosted scheduling.
+    forces the complete matrix. These paths receive equivalent self-hosted,
+    source-free authorization before candidate checkout or credentialed work.
   - GitHub runner started/completed hooks remain host-wide resource locks and
     defense-in-depth only. They are not an authorization boundary and are not
     used to establish candidate provenance.

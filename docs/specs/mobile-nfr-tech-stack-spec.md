@@ -159,17 +159,17 @@ exact-head gate: universal fast checks always run, affected Playwright and
 both-platform Detox suites execute on dedicated self-hosted lanes, and
 workflow/tooling, scheduled, merge-queue, release/hotfix, or explicit-full
 inputs select the complete registered matrix. D-195 makes persistent-runner
-promotion conditional on a GitHub-hosted-only PR preflight, a
+promotion conditional on a self-hosted, source-free PR preflight, a
 `workflow_run`-triggered trusted workflow sourced from protected default branch
-`main`, a GitHub-hosted triggering-run/live-PR authorization job before
-candidate checkout, read-only candidate/self-hosted tokens, trusted hosted
+`main`, a self-hosted triggering-run/live-PR authorization job before
+candidate checkout, read-only candidate/self-hosted tokens, trusted self-hosted
 pending/terminal exact-status publishers with stale-run protection, all-external fork approval, pinned-action
 policy, an exact recorded backend SHA, ephemeral mode-`0600` environment
 cleanup, owned disposable iOS simulator cleanup, required `main` PR/status
 enforcement, and one complete exact-head matrix. Host hooks remain resource
 locks only. Those promotion controls remain pending verified workflow,
 repository, and exact-head evidence.
-The hosted preflight covers PR bases `main`, `release/**`, and `hotfix/**` plus
+The Source-free preflight covers PR bases `main`, `release/**`, and `hotfix/**` plus
 merge groups. Release/hotfix PRs use the protected-`main` workflow-run path and
 force the complete matrix; the trusted workflow is not sourced or triggered
 directly from those branches.
