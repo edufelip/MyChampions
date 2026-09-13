@@ -2,16 +2,11 @@
 
 ## Status
 
-Current bucket: macOS local-runner acceptance repair in progress
+Current bucket: Completed
 Risk level: High (persistent runner trust boundary, signing, release delivery,
 and exact-head enforcement)
 Owner: Codex
-Blocked by: The recovered Mac runner now completes its toolchain, Debug build,
-and Detox launch. Run `34772832273` then exposed two legacy smoke-harness
-defects: it reused default Metro port `8081` instead of the documented owned
-port, and auth-entry disabled synchronization only after iOS had launched.
-This change must validate the dedicated fresh Metro lifecycle and launch-time
-synchronization setting.
+Blocked by: None
 Human approval required: Yes — explicitly directed by the user on 2026-09-13.
 
 ## Goal
@@ -43,12 +38,12 @@ least-privilege rules while running on the Linux self-hosted runner.
 
 ## Acceptance Matrix
 
-| ID  | Scenario          | Expected behavior                                                                       | Evidence required                                       | Status                                                                                                                                                                                                                      |
-| --- | ----------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1  | Workflow routing  | Every job uses one exact local runner label set.                                        | Workflow contract test plus no hosted `runs-on` search. | Done — focused contracts passed 115/115; no hosted `runs-on` remains.                                                                                                                                                       |
-| R2  | Native delivery   | Android/iOS Firebase and release jobs select their local platform runner.               | Targeted workflow contracts.                            | Done — Firebase and Android release contracts cover the exact labels.                                                                                                                                                       |
-| R3  | Trust boundary    | Source-free preflight and status writers remain no-checkout and minimally permissioned. | Selective-workflow contract test.                       | Done — source-free/no-checkout and the three status-writer constraints passed.                                                                                                                                              |
-| R4  | Runner acceptance | A post-merge Linux and macOS workflow reaches the named local runner.                   | Live workflow logs.                                     | In progress — Linux jobs passed on `mychampions-ci-ubuntu`; run `34772832273` reached the Mac runner, reconciled AppleSimulatorUtils, and built successfully before exposing the isolated-smoke defects now being repaired. |
+| ID  | Scenario          | Expected behavior                                                                       | Evidence required                                       | Status                                                                                                                                                                                                                                                                        |
+| --- | ----------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Workflow routing  | Every job uses one exact local runner label set.                                        | Workflow contract test plus no hosted `runs-on` search. | Done — focused contracts passed 115/115; no hosted `runs-on` remains.                                                                                                                                                                                                         |
+| R2  | Native delivery   | Android/iOS Firebase and release jobs select their local platform runner.               | Targeted workflow contracts.                            | Done — Firebase and Android release contracts cover the exact labels.                                                                                                                                                                                                         |
+| R3  | Trust boundary    | Source-free preflight and status writers remain no-checkout and minimally permissioned. | Selective-workflow contract test.                       | Done — source-free/no-checkout and the three status-writer constraints passed.                                                                                                                                                                                                |
+| R4  | Runner acceptance | A post-merge Linux and macOS workflow reaches the named local runner.                   | Live workflow logs.                                     | Done — Linux run `34772121795` passed on `mychampions-ci-ubuntu`; iOS run `34774126999` passed its simulator build and Detox smoke on `mychampions-ios-ci-m5` after AppleSimulatorUtils reconciliation, fresh Metro on port `18081`, and launch-time synchronization control. |
 
 ## Rollback
 
