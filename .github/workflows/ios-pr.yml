@@ -58,6 +58,10 @@ jobs:
         run: xcrun simctl list devices available
       - name: Install iOS Detox utilities
         run: |
+          installed_formula="$(brew list --formula --full-name 2>/dev/null | awk '$0 ~ /(^|\/)applesimutils$/ { print; exit }')"
+          if [ -n "$installed_formula" ] && [ "$installed_formula" != "wix-incubator/brew/applesimutils" ]; then
+            brew uninstall applesimutils
+          fi
           brew tap wix-incubator/brew
           brew trust --formula wix-incubator/brew/applesimutils
           brew install wix-incubator/brew/applesimutils
