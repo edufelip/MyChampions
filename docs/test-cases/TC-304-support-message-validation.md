@@ -49,3 +49,10 @@ In-App Support Dialog.
   - Then: Exactly one visible named `role="dialog"` exposes `aria-modal="true"` and is labelled by the localized "Talk to support" heading.
   - And: The icon close control and form Cancel action have distinct localized accessible names.
   - And: Focus remains inside the dialog during Tab/Shift+Tab navigation and returns to the Contact support trigger after Escape dismissal.
+
+- `TC-304.8`: **Compact Bottom-Sheet Presentation and Dismissal**
+  - Given: The authenticated Student opens the support sheet at a 390x844 touch-enabled mobile viewport.
+  - Then: The backdrop is neutral grey and the Send message CTA has no extended glow below its bounds.
+  - When: The user deliberately drags the sheet handle downward past the dismissal threshold.
+  - Then: The sheet dismisses without a console error.
+  - And: A short downward drag restores the sheet to its original position without dismissing it or clearing either field.

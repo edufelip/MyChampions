@@ -16,6 +16,7 @@ Contact support dialog in settings screen.
 - `AC-610`: Modal can be dismissed after success or by tapping the close button (when not submitting).
 - `AC-611`: On web, the visible support sheet exposes `role="dialog"`, `aria-modal="true"`, and an accessible name derived from the localized dialog title.
 - `AC-612`: The icon close control and form Cancel action expose distinct localized accessible names; focus remains contained while open and returns to the Contact support trigger after dismissal.
+- `AC-613`: On compact viewports, the support sheet uses a neutral grey backdrop and a restrained Send message CTA with no extended glow. A deliberate downward drag from the visible sheet handle dismisses the sheet; short drags spring back without losing entered content.
 
 ## Gherkin Scenarios
 ```gherkin
