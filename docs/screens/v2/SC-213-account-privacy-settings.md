@@ -67,6 +67,8 @@ in-app support access.
   - **Message**: Multi-line input (max 500 chars).
   - **Submit Button**: Sends the message to the MyChampions server support endpoint.
   - **Cancel Button**: Dismisses the dialog without submitting.
+  - **Rate-limit cooldown**: A typed server `429 support_rate_limited` retains the Subject and Message drafts, shows the localized `settings.account.support.cooldown` countdown using the server's Retry-After seconds, disables Send message, and never auto-retries. Field editing remains available. An in-memory gate rejects duplicate presses before the submit loading state renders.
+  - **Idempotency**: The source creates one opaque idempotency key per logical draft and reuses it only for a user-initiated retry of that unchanged draft; it is never displayed or logged as user-facing copy.
   - **Accessibility**: On web, the visible sheet exposes one named `role="dialog"` with `aria-modal="true"` and `aria-labelledby` pointing to the localized title. The icon close control uses the localized `settings.account.support.dialog.close` label, distinct from the form Cancel action.
   - **Success/Error states**: Inline feedback within the dialog.
 
@@ -91,6 +93,7 @@ in-app support access.
 - Idle: all sections visible.
 - Offline: `DsOfflineBanner` shown; account deletion CTA disabled.
 - Support dialog semantics: the web support sheet is a named modal dialog; focus is contained while open, Escape/back is submission-aware, and the trigger regains focus after dismissal.
+- Support cooldown: Subject and Message remain editable, Send message is disabled, and the localized remaining seconds update until the server-provided cooldown expires.
 - Password reset pending: row shows loading state.
 - Password reset success: inline success banner replaces the row.
 - Password reset error: inline error text below the row.
@@ -140,9 +143,9 @@ in-app support access.
 
 ## Links
 
-- Functional requirement: FR-133, FR-157, FR-250, FR-251, FR-252, FR-253
+- Functional requirement: FR-133, FR-157, FR-250, FR-251, FR-252, FR-253, FR-274
 - Use case: UC-002.5
-- Acceptance criteria: AC-305, AC-306, AC-307, AC-308, AC-310, AC-520, AC-521, AC-522, AC-523, AC-524
-- Business rules: BR-225, BR-231, BR-299, BR-300, BR-301, BR-302
-- Test cases: TC-261, TC-304, TC-305, TC-306, TC-307, TC-309, TC-310, TC-311, TC-312, TC-313, TC-314
-- Decisions: D-045, D-103, D-025, D-014, D-203
+- Acceptance criteria: AC-305, AC-306, AC-307, AC-308, AC-310, AC-520, AC-521, AC-522, AC-523, AC-524, AC-614, AC-615, AC-616, AC-617
+- Business rules: BR-225, BR-231, BR-299, BR-300, BR-301, BR-302, BR-408, BR-409, BR-410, BR-411
+- Test cases: TC-261, TC-304, TC-305, TC-306, TC-307, TC-309, TC-310, TC-311, TC-312, TC-313, TC-314, TC-304.9, TC-304.10, TC-304.11, TC-304.12, TC-304.13, TC-304.14
+- Decisions: D-045, D-103, D-025, D-014, D-203, D-218

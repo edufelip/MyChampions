@@ -56,7 +56,8 @@ export function SupportModal({
   const isSubmitting = state.kind === 'submitting';
   const isSuccess = state.kind === 'success';
   const isError = state.kind === 'error';
-  const isSubmitLocked = isSubmitting || isOffline;
+  const isCooldown = state.kind === 'cooldown';
+  const isSubmitLocked = isSubmitting || isOffline || isCooldown;
   const modalLayout = useDsModalSheetLayout();
   useWebDialogAccessibility({
     dialogTitleTestID: 'settings.account.support.dialog.title',
@@ -292,6 +293,20 @@ export function SupportModal({
                     >
                       <Text style={[styles.errorBannerText, { color: theme.color.danger }]}>
                         {t('settings.account.support.error')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {isCooldown && (
+                    <View
+                      style={[styles.errorBanner, { backgroundColor: theme.color.warningSoft }]}
+                      accessibilityRole="alert"
+                      testID="settings.account.support.cooldownBanner"
+                    >
+                      <Text style={[styles.errorBannerText, { color: theme.color.warning }]}>
+                        {t('settings.account.support.cooldown', {
+                          seconds: state.retryAfterSeconds,
+                        })}
                       </Text>
                     </View>
                   )}

@@ -11,3 +11,7 @@ In-App Support Messaging.
 - `BR-405`: Default status for new support messages is `pending`.
 - `BR-406`: Support messages are write-only for the end-user (app client can create but not list or update).
 - `BR-407`: Offline support submission is blocked by the standard write-lock notice; messages are submitted only when the app can reach the server.
+- `BR-408`: The server must atomically limit accepted messages to three per authenticated user in any rolling fifteen-minute window and ten in any rolling twenty-four-hour window. A limit rejection creates no `support_messages` row and returns `429 support_rate_limited` with the precise whole-second `Retry-After` until the oldest message in the limiting window expires.
+- `BR-409`: The client must attach a valid idempotency key to each logical support draft. The server checks an existing `(auth_uid, idempotency_key)` result before quota evaluation; a replay returns the original message identifier without creating a row or consuming quota.
+- `BR-410`: The production Nginx ingress applies a higher coarse per-IP guard only to `POST /support/messages`, keyed from the trusted edge socket address (`$binary_remote_addr`), never from client-supplied forwarding headers. This guard complements rather than replaces the authenticated server limit.
+- `BR-411`: Support submission observability records only the outcome (`accepted`, `replayed`, `limited`, or `failed`); it must not log raw message content, account identifiers, or idempotency keys.

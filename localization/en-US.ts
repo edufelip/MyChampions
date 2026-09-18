@@ -999,6 +999,8 @@ export const enUS = {
   'settings.account.support.cta_submit': 'Send message',
   'settings.account.support.success': 'Message sent successfully!',
   'settings.account.support.error': 'Error sending message. Try again.',
+  'settings.account.support.cooldown':
+    'Please wait {seconds} seconds before sending another message.',
   'settings.account.support.validation.subject_required': 'Subject is required.',
   'settings.account.support.validation.body_required': 'Message is required.',
 } as const;
