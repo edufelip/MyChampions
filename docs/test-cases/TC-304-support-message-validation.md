@@ -53,12 +53,14 @@ In-App Support Dialog.
 - `TC-304.9`: **Server Rate-Limit Boundaries and Concurrency**
   - Given: One authenticated user submits support messages through the Postgres repository from concurrent server workers.
   - When: The fourth message in fifteen minutes or eleventh in twenty-four hours is attempted.
-  - Then: Exactly three or ten rows respectively are accepted, the overflow creates no row, and the returned Retry-After is the whole-second remaining duration of the limiting window.
+  - Then: Exactly three or ten rows respectively are accepted, the overflow creates no row, and the returned Retry-After waits until every limiting window has capacity, including historical traffic above the new thresholds.
+  - And: Skewing an application worker clock does not bypass the database-clock quota.
 
 - `TC-304.10`: **Idempotent Support Replay**
   - Given: A valid support draft has an idempotency key.
   - When: The request is repeated with the same authenticated user and key, including after a lost client response.
   - Then: The original message identifier is returned, no duplicate row is created, and no additional quota is consumed.
+  - And: A legacy client without the key remains accepted within quota; malformed supplied keys remain rejected.
 
 - `TC-304.11`: **Server CORS Contract**
   - Given: An approved browser origin prepares a support submission.
@@ -69,6 +71,8 @@ In-App Support Dialog.
   - Given: The server responds `429 support_rate_limited` with `Retry-After`.
   - When: The app receives the response.
   - Then: It preserves the draft, exposes localized countdown copy, disables Send message, and makes no automatic retry.
+  - When: The user temporarily closes and reopens the support dialog before the cooldown expires.
+  - Then: The draft, countdown, and idempotency key remain in effect, and Send message remains disabled.
 
 - `TC-304.13`: **Synchronous Duplicate Guard**
   - Given: A valid support draft is submitted.

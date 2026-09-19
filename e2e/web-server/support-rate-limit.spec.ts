@@ -55,6 +55,16 @@ test.describe('@server-auth @critical @feature:support server-backed rate limiti
       'The server must retain this draft while the cooldown is active.',
     );
     await expect(page.getByTestId('settings.account.support.submitCta')).toBeDisabled();
+
+    await page.getByTestId('settings.account.support.closeButton').click();
+    await expect(page.getByTestId('settings.account.support.modal')).toHaveCount(0);
+    await page.getByTestId('settings.account.supportQuickCta').click();
+    await expect(cooldown).toBeVisible();
+    await expect(subject).toHaveValue('Fourth message remains drafted');
+    await expect(body).toHaveValue(
+      'The server must retain this draft while the cooldown is active.',
+    );
+    await expect(page.getByTestId('settings.account.support.submitCta')).toBeDisabled();
     await captureEvidence(page, testInfo, 'support-rate-limit-cooldown');
   });
 });

@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   Pressable,
@@ -52,6 +52,7 @@ export function SupportModal({
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const wasVisible = useRef(false);
 
   const isSubmitting = state.kind === 'submitting';
   const isSuccess = state.kind === 'success';
@@ -67,12 +68,20 @@ export function SupportModal({
   });
 
   useEffect(() => {
-    if (isVisible) {
-      setSubject('');
-      setBody('');
-      reset();
+    if (!isVisible) {
+      wasVisible.current = false;
+      return;
     }
-  }, [isVisible, reset]);
+
+    if (wasVisible.current) return;
+    wasVisible.current = true;
+
+    if (state.kind === 'cooldown') return;
+
+    setSubject('');
+    setBody('');
+    reset();
+  }, [isVisible, reset, state.kind]);
 
   const handleSubmit = async () => {
     const trimmedSubject = subject.trim();

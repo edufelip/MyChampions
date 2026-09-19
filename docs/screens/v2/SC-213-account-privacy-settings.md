@@ -67,8 +67,8 @@ in-app support access.
   - **Message**: Multi-line input (max 500 chars).
   - **Submit Button**: Sends the message to the MyChampions server support endpoint.
   - **Cancel Button**: Dismisses the dialog without submitting.
-  - **Rate-limit cooldown**: A typed server `429 support_rate_limited` retains the Subject and Message drafts, shows the localized `settings.account.support.cooldown` countdown using the server's Retry-After seconds, disables Send message, and never auto-retries. Field editing remains available. An in-memory gate rejects duplicate presses before the submit loading state renders.
-  - **Idempotency**: The source creates one opaque idempotency key per logical draft and reuses it only for a user-initiated retry of that unchanged draft; it is never displayed or logged as user-facing copy.
+  - **Rate-limit cooldown**: A typed server `429 support_rate_limited` retains the Subject and Message drafts, shows the localized `settings.account.support.cooldown` countdown using the server's Retry-After seconds, disables Send message, and never auto-retries. Field editing remains available. Closing and reopening the dialog during an active cooldown preserves the draft and cooldown until expiry. An in-memory gate rejects duplicate presses before the submit loading state renders.
+  - **Idempotency**: The source creates one opaque idempotency key per logical draft and reuses it only for a user-initiated retry of that unchanged draft, including after temporary dialog dismissal during cooldown; it is never displayed or logged as user-facing copy.
   - **Accessibility**: On web, the visible sheet exposes one named `role="dialog"` with `aria-modal="true"` and `aria-labelledby` pointing to the localized title. The icon close control uses the localized `settings.account.support.dialog.close` label, distinct from the form Cancel action.
   - **Success/Error states**: Inline feedback within the dialog.
 
@@ -93,7 +93,7 @@ in-app support access.
 - Idle: all sections visible.
 - Offline: `DsOfflineBanner` shown; account deletion CTA disabled.
 - Support dialog semantics: the web support sheet is a named modal dialog; focus is contained while open, Escape/back is submission-aware, and the trigger regains focus after dismissal.
-- Support cooldown: Subject and Message remain editable, Send message is disabled, and the localized remaining seconds update until the server-provided cooldown expires.
+- Support cooldown: Subject and Message remain editable, Send message is disabled, and the localized remaining seconds update until the server-provided cooldown expires. Temporary dialog dismissal preserves this state until expiry; reopening after expiry starts a fresh draft.
 - Password reset pending: row shows loading state.
 - Password reset success: inline success banner replaces the row.
 - Password reset error: inline error text below the row.

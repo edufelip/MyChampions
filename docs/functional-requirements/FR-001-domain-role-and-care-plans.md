@@ -288,7 +288,8 @@ Define the target functional scope for a subscription-based student wellness app
   request shall create no support row and return `429 support_rate_limited` with
   an accurate `Retry-After`; the client shall preserve the draft, display a
   localized cooldown, disable submission without auto-retry, and prevent
-  synchronous duplicate sends.
+  synchronous duplicate sends. Temporary dialog dismissal during the cooldown
+  shall preserve the draft, cooldown, and idempotency key until expiry.
 
 ## Non-Functional Direction (Draft)
 
