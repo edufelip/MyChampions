@@ -20,6 +20,11 @@ test.describe('@critical @feature:account support bottom sheet', () => {
       testInfo.project.name !== 'chromium',
       'Compact pointer-gesture proof is Chromium-only',
     );
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
     await openSupportSheet(page);
 
     const overlay = page.getByTestId('settings.account.support.overlay');
@@ -74,7 +79,7 @@ test.describe('@critical @feature:account support bottom sheet', () => {
 
     await page.getByTestId('settings.account.support.subjectInput').fill('Login issue');
     await page.getByTestId('settings.account.support.bodyInput').fill('Draft stays here');
-    await drag(40, 120);
+    await drag(40, 0);
     await page.waitForTimeout(300);
     await expect(page.getByTestId('settings.account.support.modal')).toBeVisible();
     await expect(page.getByTestId('settings.account.support.subjectInput')).toHaveValue(
@@ -91,5 +96,6 @@ test.describe('@critical @feature:account support bottom sheet', () => {
     await drag(180, 120);
 
     await expect(page.getByTestId('settings.account.support.modal')).toBeHidden();
+    expect(errors).toEqual([]);
   });
 });

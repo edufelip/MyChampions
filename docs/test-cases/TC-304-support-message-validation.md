@@ -53,6 +53,7 @@ In-App Support Dialog.
 - `TC-304.8`: **Compact Bottom-Sheet Presentation and Dismissal**
   - Given: The authenticated Student opens the support sheet at a 390x844 touch-enabled mobile viewport.
   - Then: The backdrop is neutral grey and the Send message CTA has no extended glow below its bounds.
-  - When: The user deliberately drags the sheet handle downward past the dismissal threshold.
-  - Then: The sheet dismisses without a console error.
-  - And: After the spring-back settles, a short downward drag and a tap on the handle leave the sheet open without clearing either field.
+  - When: The user makes a short downward drag (including a quick flick) and taps the handle.
+  - Then: After spring-back settles, the sheet stays open without clearing either field.
+  - When: Finally, the user deliberately drags the handle downward past the dismissal threshold.
+  - Then: The sheet dismisses without console errors or uncaught page errors.

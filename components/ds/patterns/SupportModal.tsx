@@ -33,7 +33,6 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 const SUBJECT_LIMIT = 50;
 const BODY_LIMIT = 500;
 const SHEET_DISMISS_DISTANCE = 120;
-const SHEET_DISMISS_VELOCITY = 850;
 
 type SupportTouchPoint = {
   clientY?: number;
@@ -81,12 +80,14 @@ export function SupportModal({
   const [body, setBody] = useState('');
 
   const isSubmitting = state.kind === 'submitting';
+  const isSubmittingRef = useRef(isSubmitting);
+  isSubmittingRef.current = isSubmitting;
   const isSuccess = state.kind === 'success';
   const isError = state.kind === 'error';
   const isSubmitLocked = isSubmitting || isOffline;
   const modalLayout = useDsModalSheetLayout();
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
-  const sheetDragStart = useRef<{ pageY: number; startedAt: number } | null>(null);
+  const sheetDragStart = useRef<{ pageY: number } | null>(null);
 
   const resetSheetPosition = () => {
     Animated.spring(sheetTranslateY, {
@@ -95,8 +96,8 @@ export function SupportModal({
     }).start();
   };
 
-  const finishSheetDrag = (distance: number, velocity: number) => {
-    if (distance < SHEET_DISMISS_DISTANCE && velocity < SHEET_DISMISS_VELOCITY) {
+  const finishSheetDrag = (distance: number) => {
+    if (distance < SHEET_DISMISS_DISTANCE || isSubmittingRef.current) {
       resetSheetPosition();
       return;
     }
@@ -108,7 +109,7 @@ export function SupportModal({
     }).start(({ finished }) => {
       if (!finished) return;
       sheetTranslateY.setValue(0);
-      onClose();
+      requestSupportModalDismissal({ isSubmitting: isSubmittingRef.current, onClose });
     });
   };
 
@@ -116,7 +117,7 @@ export function SupportModal({
     if (modalLayout.isDesktop || isSubmitting) return;
     const pageY = getSupportTouchPageY(event);
     if (pageY === null) return;
-    sheetDragStart.current = { pageY, startedAt: Date.now() };
+    sheetDragStart.current = { pageY };
   };
 
   const handleSheetTouchMove = (event: SupportTouchEvent) => {
@@ -138,8 +139,7 @@ export function SupportModal({
     }
 
     const distance = Math.max(0, pageY - dragStart.pageY);
-    const elapsedSeconds = Math.max(0.016, (Date.now() - dragStart.startedAt) / 1000);
-    finishSheetDrag(distance, distance / elapsedSeconds);
+    finishSheetDrag(distance);
   };
 
   const cancelSheetDrag = () => {
