@@ -35,6 +35,30 @@ const BODY_LIMIT = 500;
 const SHEET_DISMISS_DISTANCE = 120;
 const SHEET_DISMISS_VELOCITY = 850;
 
+type SupportTouchPoint = {
+  clientY?: number;
+  pageY?: number;
+};
+
+type SupportTouchEvent = {
+  nativeEvent?: SupportTouchPoint & {
+    changedTouches?: ArrayLike<SupportTouchPoint>;
+  };
+};
+
+function getSupportTouchPageY(event: SupportTouchEvent): number | null {
+  const nativeEvent = event.nativeEvent;
+  const changedTouch = nativeEvent?.changedTouches?.[0];
+  const pageY = changedTouch?.pageY ?? nativeEvent?.pageY;
+  if (typeof pageY === 'number' && Number.isFinite(pageY)) return pageY;
+
+  const clientY = changedTouch?.clientY ?? nativeEvent?.clientY;
+  if (typeof clientY !== 'number' || !Number.isFinite(clientY)) return null;
+
+  const scrollOffset = Platform.OS === 'web' && typeof window !== 'undefined' ? window.scrollY : 0;
+  return clientY + scrollOffset;
+}
+
 export function SupportModal({
   isVisible,
   onClose,
@@ -88,24 +112,39 @@ export function SupportModal({
     });
   };
 
-  const handleSheetTouchStart = (pageY: number) => {
+  const handleSheetTouchStart = (event: SupportTouchEvent) => {
     if (modalLayout.isDesktop || isSubmitting) return;
+    const pageY = getSupportTouchPageY(event);
+    if (pageY === null) return;
     sheetDragStart.current = { pageY, startedAt: Date.now() };
   };
 
-  const handleSheetTouchMove = (pageY: number) => {
+  const handleSheetTouchMove = (event: SupportTouchEvent) => {
     if (!sheetDragStart.current) return;
+    const pageY = getSupportTouchPageY(event);
+    if (pageY === null) return;
     sheetTranslateY.setValue(Math.max(0, pageY - sheetDragStart.current.pageY));
   };
 
-  const handleSheetTouchEnd = (pageY: number) => {
+  const handleSheetTouchEnd = (event: SupportTouchEvent) => {
     const dragStart = sheetDragStart.current;
     sheetDragStart.current = null;
     if (!dragStart) return;
 
+    const pageY = getSupportTouchPageY(event);
+    if (pageY === null) {
+      resetSheetPosition();
+      return;
+    }
+
     const distance = Math.max(0, pageY - dragStart.pageY);
     const elapsedSeconds = Math.max(0.016, (Date.now() - dragStart.startedAt) / 1000);
     finishSheetDrag(distance, distance / elapsedSeconds);
+  };
+
+  const cancelSheetDrag = () => {
+    sheetDragStart.current = null;
+    resetSheetPosition();
   };
   useWebDialogAccessibility({
     dialogTitleTestID: 'settings.account.support.dialog.title',
@@ -174,10 +213,10 @@ export function SupportModal({
             >
               <View
                 accessible={false}
-                onTouchCancel={resetSheetPosition}
-                onTouchEnd={(event) => handleSheetTouchEnd(event.nativeEvent.pageY)}
-                onTouchMove={(event) => handleSheetTouchMove(event.nativeEvent.pageY)}
-                onTouchStart={(event) => handleSheetTouchStart(event.nativeEvent.pageY)}
+                onTouchCancel={cancelSheetDrag}
+                onTouchEnd={handleSheetTouchEnd}
+                onTouchMove={handleSheetTouchMove}
+                onTouchStart={handleSheetTouchStart}
                 style={styles.dragHandleArea}
               >
                 <View

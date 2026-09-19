@@ -55,4 +55,4 @@ In-App Support Dialog.
   - Then: The backdrop is neutral grey and the Send message CTA has no extended glow below its bounds.
   - When: The user deliberately drags the sheet handle downward past the dismissal threshold.
   - Then: The sheet dismisses without a console error.
-  - And: A short downward drag restores the sheet to its original position without dismissing it or clearing either field.
+  - And: After the spring-back settles, a short downward drag and a tap on the handle leave the sheet open without clearing either field.

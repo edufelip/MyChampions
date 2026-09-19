@@ -40,15 +40,17 @@ test.describe('@critical @feature:account support bottom sheet', () => {
     expect(handleBox).not.toBeNull();
     if (!handleBox) return;
 
-    const drag = async (distance: number) =>
+    const drag = async (distance: number, durationMs: number) =>
       handle.evaluate(
-        (element, input: { startY: number; distance: number }) => {
-          const emit = (type: 'touchstart' | 'touchmove' | 'touchend', clientY: number) => {
+        async (element, input: { startY: number; distance: number; durationMs: number }) => {
+          const emit = (type: 'touchstart' | 'touchmove' | 'touchend', pageY: number) => {
             const touch = new Touch({
               identifier: 1,
               target: element,
               clientX: window.innerWidth / 2,
-              clientY,
+              clientY: pageY,
+              pageX: window.scrollX + window.innerWidth / 2,
+              pageY: window.scrollY + pageY,
             });
             element.dispatchEvent(
               new TouchEvent(type, {
@@ -62,15 +64,18 @@ test.describe('@critical @feature:account support bottom sheet', () => {
           };
 
           emit('touchstart', input.startY);
+          await new Promise((resolve) => window.setTimeout(resolve, input.durationMs));
           emit('touchmove', input.startY + input.distance);
+          await new Promise((resolve) => window.setTimeout(resolve, 20));
           emit('touchend', input.startY + input.distance);
         },
-        { startY: handleBox.y + handleBox.height / 2, distance },
+        { startY: handleBox.y + handleBox.height / 2, distance, durationMs },
       );
 
     await page.getByTestId('settings.account.support.subjectInput').fill('Login issue');
     await page.getByTestId('settings.account.support.bodyInput').fill('Draft stays here');
-    await drag(40);
+    await drag(40, 120);
+    await page.waitForTimeout(300);
     await expect(page.getByTestId('settings.account.support.modal')).toBeVisible();
     await expect(page.getByTestId('settings.account.support.subjectInput')).toHaveValue(
       'Login issue',
@@ -79,7 +84,11 @@ test.describe('@critical @feature:account support bottom sheet', () => {
       'Draft stays here',
     );
 
-    await drag(180);
+    await drag(0, 120);
+    await page.waitForTimeout(300);
+    await expect(page.getByTestId('settings.account.support.modal')).toBeVisible();
+
+    await drag(180, 120);
 
     await expect(page.getByTestId('settings.account.support.modal')).toBeHidden();
   });
