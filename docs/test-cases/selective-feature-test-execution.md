@@ -60,6 +60,10 @@ test workflow; any future iOS test-only lane must use the same guard.
 
 ## Sources of truth
 
+Support changes select `web:server-support`, which runs the server-backed
+cooldown and close/reopen regression in Chromium, Firefox, and WebKit. This
+suite is CI-eligible and uses the coordinated API checkout, not fixture auth.
+
 - `config/test-impact.json`: feature paths, dependencies, owners, shared rules,
   suites, platforms, executable fixture profiles, and CI eligibility.
 - `scripts/ci/test-impact.ts`: validation, matching, graph construction, and
