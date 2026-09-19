@@ -78,13 +78,15 @@ export function SupportModal({
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const wasVisible = useRef(false);
 
   const isSubmitting = state.kind === 'submitting';
   const isSubmittingRef = useRef(isSubmitting);
   isSubmittingRef.current = isSubmitting;
   const isSuccess = state.kind === 'success';
   const isError = state.kind === 'error';
-  const isSubmitLocked = isSubmitting || isOffline;
+  const isCooldown = state.kind === 'cooldown';
+  const isSubmitLocked = isSubmitting || isOffline || isCooldown;
   const modalLayout = useDsModalSheetLayout();
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
   const sheetDragStart = useRef<{ pageY: number } | null>(null);
@@ -154,13 +156,21 @@ export function SupportModal({
   });
 
   useEffect(() => {
-    if (isVisible) {
-      sheetTranslateY.setValue(0);
-      setSubject('');
-      setBody('');
-      reset();
+    if (!isVisible) {
+      wasVisible.current = false;
+      return;
     }
-  }, [isVisible, reset, sheetTranslateY]);
+
+    if (wasVisible.current) return;
+    wasVisible.current = true;
+    sheetTranslateY.setValue(0);
+
+    if (state.kind === 'cooldown') return;
+
+    setSubject('');
+    setBody('');
+    reset();
+  }, [isVisible, reset, state.kind, sheetTranslateY]);
 
   const handleSubmit = async () => {
     const trimmedSubject = subject.trim();
@@ -395,6 +405,20 @@ export function SupportModal({
                     >
                       <Text style={[styles.errorBannerText, { color: theme.color.danger }]}>
                         {t('settings.account.support.error')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {isCooldown && (
+                    <View
+                      style={[styles.errorBanner, { backgroundColor: theme.color.warningSoft }]}
+                      accessibilityRole="alert"
+                      testID="settings.account.support.cooldownBanner"
+                    >
+                      <Text style={[styles.errorBannerText, { color: theme.color.warning }]}>
+                        {t('settings.account.support.cooldown', {
+                          seconds: state.retryAfterSeconds,
+                        })}
                       </Text>
                     </View>
                   )}

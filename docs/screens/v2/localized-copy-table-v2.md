@@ -447,6 +447,7 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `settings.account.support.cta_submit` | SC-213 | Primary CTA | Send message | Enviar mensagem | Enviar mensaje | |
 | `settings.account.support.success` | SC-213 | Success message | Message sent successfully! | Mensagem enviada com sucesso! | ¡Mensaje enviado con éxito! | |
 | `settings.account.support.error` | SC-213 | Error message | Error sending message. Try again. | Erro ao enviar mensagem. Tente novamente. | Error al enviar el mensaje. Inténtalo de nuevo. | |
+| `settings.account.support.cooldown` | SC-213 | Rate-limit cooldown | Please wait {seconds} seconds before sending another message. | Aguarde {seconds} segundos antes de enviar outra mensagem. | Espera {seconds} segundos antes de enviar otro mensaje. | Rendered from trusted server Retry-After seconds |
 | `settings.account.support.validation.subject_required` | SC-213 | Validation error | Subject is required. | O assunto é obrigatório. | El asunto es obligatorio. | |
 | `settings.account.support.validation.body_required` | SC-213 | Validation error | Message is required. | A mensagem é obrigatória. | El mensaje es obligatorio. | |
 | `settings.account.app_version.label` | SC-213 | Footer label | Version | Versão | Versión | Followed by app version string |

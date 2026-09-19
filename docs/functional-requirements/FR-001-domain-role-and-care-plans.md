@@ -280,6 +280,16 @@ Define the target functional scope for a subscription-based student wellness app
   fail closed unless Linux, writable KVM, the declared AVD, exact serial, and
   slot ports validate before launch, and cleanup shall prove absence of only
   that slot's process, device, recovery record, and ports.
+- `FR-274`: Support-message submission shall be enforced by the MyChampions
+  server's PostgreSQL transaction per authenticated user: at most three accepted
+  messages in fifteen minutes and ten in twenty-four hours. The client shall
+  send one idempotency key per logical draft; a replay returns the original
+  accepted result without another row or quota charge. A rejected over-limit
+  request shall create no support row and return `429 support_rate_limited` with
+  an accurate `Retry-After`; the client shall preserve the draft, display a
+  localized cooldown, disable submission without auto-retry, and prevent
+  synchronous duplicate sends. Temporary dialog dismissal during the cooldown
+  shall preserve the draft, cooldown, and idempotency key until expiry.
 
 ## Non-Functional Direction (Draft)
 

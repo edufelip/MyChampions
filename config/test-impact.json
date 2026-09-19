@@ -194,7 +194,7 @@
       "sourcePaths": ["features/support/**", "components/ds/patterns/SupportModal.tsx"],
       "dependsOn": ["auth", "offline", "platform"],
       "unitTests": ["features/support/**/*.test.ts"],
-      "webSuites": ["web:shell"],
+      "webSuites": ["web:shell", "web:server-support"],
       "detoxSuites": ["detox:support"],
       "owners": ["@edufelip"]
     },
@@ -395,6 +395,14 @@
         "e2e/web/password-reset-toggle-responsive.spec.ts"
       ],
       "grep": "@feature:auth|@critical",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:server-support": {
+      "runner": "playwright-server",
+      "projects": ["chromium", "firefox", "webkit"],
+      "specs": ["e2e/web-server/support-rate-limit.spec.ts"],
+      "grep": "@feature:support",
       "tier": "feature",
       "ci": true
     },

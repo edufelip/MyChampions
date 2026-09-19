@@ -982,6 +982,16 @@
 - Constraints: No screen may reintroduce a hardcoded hex color, a border-plus-shadow combination on the same surface, or a local reimplementation of the blob/glow background pattern — use the shared tokens and primitives. A screen that deliberately wants the blob background may still pass `withBlobs={true}` explicitly.
 - Affected screen specs updated in the same change: `SC-201`, `SC-202`, `SC-205`, `SC-206` (previously documented a blob background that no longer renders).
 
+### D-218: Support-message abuse controls are server-authoritative
+
+- Date: 2026-09-18
+- Status: Accepted
+- Scope: ET-201, `POST /support/messages`, SC-213, and the production Nginx ingress.
+- Rollout compatibility: Older clients without an idempotency header use a server-generated per-request key and remain subject to the same quota. The database clock after lock acquisition supplies acceptance time; Retry-After covers all active windows, including historical traffic above a threshold. The ingress meters POST only and returns a content-free typed 429 with readable CORS headers and Retry-After; ordinary API origin policy remains unchanged.
+- Decision: Enforce the authenticated support-message quota in a PostgreSQL transaction using a per-user advisory transaction lock: three accepted messages in fifteen minutes and ten in twenty-four hours. Check `(auth_uid, idempotency_key)` before the quota, returning the original result for a replay. Reject overflow with the typed `429 support_rate_limited` contract and an accurate `Retry-After`, without inserting a support row. The mobile client holds the draft, disables Send message for the supplied cooldown, preserves the draft, cooldown, and idempotency key across temporary dialog dismissal, and prevents same-render duplicate submissions. A higher Nginx `limit_req` guard keyed from `$binary_remote_addr` protects only `/support/messages`; forwarding headers are not a trust source.
+- Rationale: UI in-flight state and a process-local server counter can be bypassed by direct requests, concurrent workers, restarts, and blue/green deploys. The database is the shared source of truth, while trusted ingress provides only a coarse pre-application backstop.
+- Constraints: Observability contains outcome labels only, never support text, account identifiers, or idempotency keys. No production deployment or controlled live-429 probe occurs without explicit approval.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.
