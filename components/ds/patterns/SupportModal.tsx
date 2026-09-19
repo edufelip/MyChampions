@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState, useEffect, useRef } from 'react';
 import {
+  Animated,
   Modal,
   Pressable,
   ScrollView,
@@ -31,6 +32,31 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 
 const SUBJECT_LIMIT = 50;
 const BODY_LIMIT = 500;
+const SHEET_DISMISS_DISTANCE = 120;
+
+type SupportTouchPoint = {
+  clientY?: number;
+  pageY?: number;
+};
+
+type SupportTouchEvent = {
+  nativeEvent?: SupportTouchPoint & {
+    changedTouches?: ArrayLike<SupportTouchPoint>;
+  };
+};
+
+function getSupportTouchPageY(event: SupportTouchEvent): number | null {
+  const nativeEvent = event.nativeEvent;
+  const changedTouch = nativeEvent?.changedTouches?.[0];
+  const pageY = changedTouch?.pageY ?? nativeEvent?.pageY;
+  if (typeof pageY === 'number' && Number.isFinite(pageY)) return pageY;
+
+  const clientY = changedTouch?.clientY ?? nativeEvent?.clientY;
+  if (typeof clientY !== 'number' || !Number.isFinite(clientY)) return null;
+
+  const scrollOffset = Platform.OS === 'web' && typeof window !== 'undefined' ? window.scrollY : 0;
+  return clientY + scrollOffset;
+}
 
 export function SupportModal({
   isVisible,
@@ -55,11 +81,73 @@ export function SupportModal({
   const wasVisible = useRef(false);
 
   const isSubmitting = state.kind === 'submitting';
+  const isSubmittingRef = useRef(isSubmitting);
+  isSubmittingRef.current = isSubmitting;
   const isSuccess = state.kind === 'success';
   const isError = state.kind === 'error';
   const isCooldown = state.kind === 'cooldown';
   const isSubmitLocked = isSubmitting || isOffline || isCooldown;
   const modalLayout = useDsModalSheetLayout();
+  const sheetTranslateY = useRef(new Animated.Value(0)).current;
+  const sheetDragStart = useRef<{ pageY: number } | null>(null);
+
+  const resetSheetPosition = () => {
+    Animated.spring(sheetTranslateY, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const finishSheetDrag = (distance: number) => {
+    if (distance < SHEET_DISMISS_DISTANCE || isSubmittingRef.current) {
+      resetSheetPosition();
+      return;
+    }
+
+    Animated.timing(sheetTranslateY, {
+      toValue: 640,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      sheetTranslateY.setValue(0);
+      requestSupportModalDismissal({ isSubmitting: isSubmittingRef.current, onClose });
+    });
+  };
+
+  const handleSheetTouchStart = (event: SupportTouchEvent) => {
+    if (modalLayout.isDesktop || isSubmitting) return;
+    const pageY = getSupportTouchPageY(event);
+    if (pageY === null) return;
+    sheetDragStart.current = { pageY };
+  };
+
+  const handleSheetTouchMove = (event: SupportTouchEvent) => {
+    if (!sheetDragStart.current) return;
+    const pageY = getSupportTouchPageY(event);
+    if (pageY === null) return;
+    sheetTranslateY.setValue(Math.max(0, pageY - sheetDragStart.current.pageY));
+  };
+
+  const handleSheetTouchEnd = (event: SupportTouchEvent) => {
+    const dragStart = sheetDragStart.current;
+    sheetDragStart.current = null;
+    if (!dragStart) return;
+
+    const pageY = getSupportTouchPageY(event);
+    if (pageY === null) {
+      resetSheetPosition();
+      return;
+    }
+
+    const distance = Math.max(0, pageY - dragStart.pageY);
+    finishSheetDrag(distance);
+  };
+
+  const cancelSheetDrag = () => {
+    sheetDragStart.current = null;
+    resetSheetPosition();
+  };
   useWebDialogAccessibility({
     dialogTitleTestID: 'settings.account.support.dialog.title',
     isVisible,
@@ -75,19 +163,20 @@ export function SupportModal({
 
     if (wasVisible.current) return;
     wasVisible.current = true;
+    sheetTranslateY.setValue(0);
 
     if (state.kind === 'cooldown') return;
 
     setSubject('');
     setBody('');
     reset();
-  }, [isVisible, reset, state.kind]);
+  }, [isVisible, reset, state.kind, sheetTranslateY]);
 
   const handleSubmit = async () => {
     const trimmedSubject = subject.trim();
     const trimmedBody = body.trim();
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     await submit({
       subject: trimmedSubject,
@@ -98,9 +187,9 @@ export function SupportModal({
 
   useEffect(() => {
     if (state.kind === 'success') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else if (state.kind === 'error') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, [state.kind]);
 
@@ -119,17 +208,32 @@ export function SupportModal({
             style={[
               styles.modalOverlay,
               modalLayout.overlayStyle,
-              { backgroundColor: theme.color.overlaySoft },
+              { backgroundColor: theme.color.overlayNeutral },
             ]}
+            testID="settings.account.support.overlay"
           >
-            <View
+            <Animated.View
               style={[
                 styles.modalContent,
                 modalLayout.contentStyle,
                 { backgroundColor: theme.color.surface },
+                { transform: [{ translateY: sheetTranslateY }] },
               ]}
               testID="settings.account.support.modal"
             >
+              <View
+                accessible={false}
+                onTouchCancel={cancelSheetDrag}
+                onTouchEnd={handleSheetTouchEnd}
+                onTouchMove={handleSheetTouchMove}
+                onTouchStart={handleSheetTouchStart}
+                style={styles.dragHandleArea}
+              >
+                <View
+                  style={[styles.dragHandle, { backgroundColor: theme.color.borderStrong }]}
+                  testID="settings.account.support.dragHandle"
+                />
+              </View>
               <View style={styles.modalHeader}>
                 <Text
                   style={[styles.modalTitle, { color: theme.color.textPrimary }]}
@@ -140,7 +244,6 @@ export function SupportModal({
                 </Text>
                 <Pressable
                   onPress={handleClose}
-                  onTouchEnd={handleClose}
                   disabled={isSubmitting}
                   hitSlop={12}
                   style={styles.closeButton}
@@ -339,11 +442,11 @@ export function SupportModal({
                         ? t('common.error.retry')
                         : t('settings.account.support.cta_submit')
                     }
-                    onPress={handleSubmit}
+                    onPress={() => void handleSubmit()}
                     loading={isSubmitting}
                     disabled={isSubmitLocked}
                     variant="primary"
-                    style={styles.submitButton}
+                    style={[styles.submitButton, styles.submitButtonWithoutGlow]}
                     testID="settings.account.support.submitCta"
                   />
                   <DsPillButton
@@ -357,7 +460,7 @@ export function SupportModal({
                   />
                 </ScrollView>
               )}
-            </View>
+            </Animated.View>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -377,6 +480,17 @@ const styles = StyleSheet.create({
     minHeight: '60%',
     maxHeight: '90%',
     padding: DsSpace.lg,
+  },
+  dragHandleArea: {
+    alignItems: 'center',
+    height: 24,
+    justifyContent: 'center',
+    marginTop: -DsSpace.sm,
+  },
+  dragHandle: {
+    borderRadius: DsRadius.pill,
+    height: 4,
+    width: 44,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -435,6 +549,13 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: DsSpace.sm,
+  },
+  submitButtonWithoutGlow: {
+    elevation: 0,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   cancelButton: {
     marginTop: -DsSpace.xs,

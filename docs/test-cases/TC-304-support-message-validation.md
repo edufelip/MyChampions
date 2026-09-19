@@ -83,3 +83,11 @@ In-App Support Dialog.
   - Given: A browser creates a real server cookie session and submits three valid support drafts to the web E2E server.
   - When: It submits a fourth distinct draft.
   - Then: The first three server-route requests succeed and the fourth response preserves the draft, shows the localized cooldown, and disables Send message. The E2E auth-session bypass is disabled for this case.
+
+- `TC-304.8`: **Compact Bottom-Sheet Presentation and Dismissal**
+  - Given: The authenticated Student opens the support sheet at a 390x844 touch-enabled mobile viewport.
+  - Then: The backdrop is neutral grey and the Send message CTA has no extended glow below its bounds.
+  - When: The user makes a short downward drag (including a quick flick) and taps the handle.
+  - Then: After spring-back settles, the sheet stays open without clearing either field.
+  - When: Finally, the user deliberately drags the handle downward past the dismissal threshold.
+  - Then: The sheet dismisses without console errors or uncaught page errors.

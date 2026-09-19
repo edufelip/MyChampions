@@ -574,7 +574,7 @@
     "web:shell": {
       "runner": "playwright",
       "projects": ["chromium"],
-      "specs": ["e2e/web/responsive-shell.spec.ts"],
+      "specs": ["e2e/web/responsive-shell.spec.ts", "e2e/web/support-bottom-sheet.spec.ts"],
       "grep": "@feature:shell|@critical",
       "tier": "critical",
       "ci": true

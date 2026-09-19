@@ -66,6 +66,7 @@ in-app support access.
   - **Subject**: One-line input (max 50 chars).
   - **Message**: Multi-line input (max 500 chars).
   - **Submit Button**: Sends the message to the MyChampions server support endpoint.
+  - **Compact sheet treatment**: Uses a neutral-grey backdrop, a non-glowing primary Send message CTA, and a visible drag handle. A downward drag beyond the dismissal threshold closes the sheet; incomplete drags spring back and preserve draft values.
   - **Cancel Button**: Dismisses the dialog without submitting.
   - **Rate-limit cooldown**: A typed server `429 support_rate_limited` retains the Subject and Message drafts, shows the localized `settings.account.support.cooldown` countdown using the server's Retry-After seconds, disables Send message, and never auto-retries. Field editing remains available. Closing and reopening the dialog during an active cooldown preserves the draft and cooldown until expiry. An in-memory gate rejects duplicate presses before the submit loading state renders.
   - **Idempotency**: The source creates one opaque idempotency key per logical draft and reuses it only for a user-initiated retry of that unchanged draft, including after temporary dialog dismissal during cooldown; it is never displayed or logged as user-facing copy.
@@ -148,4 +149,4 @@ in-app support access.
 - Acceptance criteria: AC-305, AC-306, AC-307, AC-308, AC-310, AC-520, AC-521, AC-522, AC-523, AC-524, AC-614, AC-615, AC-616, AC-617
 - Business rules: BR-225, BR-231, BR-299, BR-300, BR-301, BR-302, BR-408, BR-409, BR-410, BR-411
 - Test cases: TC-261, TC-304, TC-305, TC-306, TC-307, TC-309, TC-310, TC-311, TC-312, TC-313, TC-314, TC-304.9, TC-304.10, TC-304.11, TC-304.12, TC-304.13, TC-304.14
-- Decisions: D-045, D-103, D-025, D-014, D-203, D-218
+- Decisions: D-045, D-103, D-025, D-014, D-203, D-217, D-218

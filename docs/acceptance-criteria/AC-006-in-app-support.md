@@ -20,6 +20,7 @@ Contact support dialog in settings screen.
 - `AC-615`: A valid idempotency key identifies one logical support draft. A replay returns the original result without inserting another support row or consuming quota, and this check occurs before rate-limit evaluation. Older clients without this header remain quota-controlled through a per-request server key; malformed supplied keys are rejected.
 - `AC-616`: On a typed support-rate-limit response, the app retains both field values, presents a localized countdown, disables Send message until the server-provided cooldown expires, and never automatically retries the request. Temporarily closing and reopening the dialog during that cooldown retains the draft, countdown, and idempotency key. The submit path rejects immediate duplicate presses before React state renders the loading state.
 - `AC-617`: The production ingress applies a trusted-edge per-IP support-message guard that is deliberately higher than the authenticated per-user limit and does not trust spoofable forwarding headers.
+- `AC-613`: On compact viewports, the support sheet uses a neutral grey backdrop and a restrained Send message CTA with no extended glow. A deliberate downward drag from the visible sheet handle dismisses the sheet; short drags spring back without losing entered content.
 
 ## Gherkin Scenarios
 ```gherkin
