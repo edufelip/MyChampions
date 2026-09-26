@@ -596,6 +596,8 @@ export const ptBR: Record<TranslationKey, string> = {
   'auth.terms.invalid_link':
     'Este link está indisponível porque o endereço está ausente ou não é seguro.',
   'pro.subscription.error': 'Não foi possível carregar o status da assinatura. Tente novamente.',
+  'subscription.error.payment_pending':
+    'Seu pagamento ainda está pendente. O acesso será atualizado após a confirmação da loja. Você pode verificar novamente mais tarde.',
   'offline.banner':
     'Você está offline. Mostrando dados em cache. Atualizações bloqueadas até reconectar.',
   'offline.write_lock': 'Conecte à internet para salvar alterações.',

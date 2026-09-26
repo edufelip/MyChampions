@@ -11,11 +11,12 @@ import type { AuthUser } from '../auth/auth-user';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
 import { defaultAppFetch } from '../platform/default-app-fetch';
 import {
+  mapPhotoAnalysisWireCode,
   parseMacroEstimateFromResponse,
   type MacroEstimate,
   type PhotoAnalysisErrorReason,
-  type RawAnalysisResponse,
 } from './meal-photo-analysis.logic';
+import { isSafeRecord, readBoundedString, readOwnField } from '@/features/errors/read-error-fields';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
 
@@ -65,40 +66,110 @@ async function defaultGetCurrentAccessToken(): Promise<string | null> {
   return getValidServerAccessToken();
 }
 
+const ANALYSIS_ERROR_MESSAGES: Record<PhotoAnalysisErrorReason, string> = {
+  permission_denied: 'Meal photo permission was denied.',
+  file_too_large: 'Meal photo is too large.',
+  unrecognizable_image: 'Meal photo does not contain a recognizable meal.',
+  quota_exceeded: 'Meal photo analysis quota was exceeded.',
+  network: 'Meal photo analysis network request failed.',
+  invalid_response: 'Meal photo analysis returned an invalid response.',
+  configuration: 'Meal photo analysis is not configured.',
+  unauthenticated: 'Meal photo analysis requires an authenticated session.',
+  unknown: 'Meal photo analysis failed.',
+};
+
+function makeAnalysisError(reason: PhotoAnalysisErrorReason): PhotoAnalysisSourceError {
+  return new PhotoAnalysisSourceError(reason, ANALYSIS_ERROR_MESSAGES[reason]);
+}
+
+type ResponseCodeExtraction = {
+  code: string | null;
+  malformed: boolean;
+  hasErrorField: boolean;
+  hasFlatCode: boolean;
+};
+
+function extractResponseCode(body: object): ResponseCodeExtraction {
+  const errorField = readOwnField(body, 'error');
+  const flatCodeField = readOwnField(body, 'code');
+  let malformed = false;
+  const candidates: string[] = [];
+
+  if (errorField.present) {
+    if (!errorField.readable) {
+      malformed = true;
+    } else if (typeof errorField.value === 'string') {
+      const code = readBoundedString(errorField.value);
+      if (!code) malformed = true;
+      else candidates.push(code);
+    } else if (isSafeRecord(errorField.value)) {
+      const nestedCodeField = readOwnField(errorField.value, 'code');
+      if (!nestedCodeField.readable || typeof nestedCodeField.value !== 'string') {
+        malformed = true;
+      } else {
+        const code = readBoundedString(nestedCodeField.value);
+        if (!code) malformed = true;
+        else candidates.push(code);
+      }
+    } else {
+      malformed = true;
+    }
+  }
+
+  if (flatCodeField.present) {
+    if (!flatCodeField.readable || typeof flatCodeField.value !== 'string') {
+      malformed = true;
+    } else {
+      const code = readBoundedString(flatCodeField.value);
+      if (!code) malformed = true;
+      else candidates.push(code);
+    }
+  }
+
+  const distinctCandidates = [...new Set(candidates)];
+  if (distinctCandidates.length > 1) malformed = true;
+
+  return {
+    code: distinctCandidates[0] ?? null,
+    malformed,
+    hasErrorField: errorField.present,
+    hasFlatCode: flatCodeField.present,
+  };
+}
+
 function analysisErrorForResponse(
   responseStatus: number,
-  body: RawAnalysisResponse,
+  body: unknown,
 ): PhotoAnalysisSourceError | null {
   if (responseStatus === 401 || responseStatus === 403) {
-    return new PhotoAnalysisSourceError(
-      'unauthenticated',
-      'Meal analysis endpoint rejected bearer token.',
-    );
+    return makeAnalysisError('unauthenticated');
   }
-  if (body.error === 'unrecognizable_image') {
-    return new PhotoAnalysisSourceError(
-      'unrecognizable_image',
-      'Image does not contain a recognizable meal.',
-    );
+  if (responseStatus === 413) {
+    return makeAnalysisError('file_too_large');
   }
-  if (body.error === 'quota_exceeded' || responseStatus === 429) {
-    return new PhotoAnalysisSourceError(
-      'quota_exceeded',
-      'Meal analysis quota exceeded. Try again later.',
-    );
+  if (responseStatus === 429) {
+    return makeAnalysisError('quota_exceeded');
   }
-  if (body.error === 'configuration') {
-    return new PhotoAnalysisSourceError(
-      'configuration',
-      'Meal analysis endpoint is not configured.',
-    );
+  if (!isSafeRecord(body)) {
+    return makeAnalysisError('invalid_response');
   }
-  if (body.error !== undefined || responseStatus >= 500) {
-    return new PhotoAnalysisSourceError(
-      body.error === 'invalid_response' ? 'invalid_response' : 'unknown',
-      `Meal analysis endpoint error: ${String(body.error ?? responseStatus)}`,
-    );
+
+  const extracted = extractResponseCode(body);
+  if (extracted.malformed) return makeAnalysisError('invalid_response');
+
+  if (extracted.code !== null) {
+    return makeAnalysisError(mapPhotoAnalysisWireCode(extracted.code));
   }
+
+  if (
+    extracted.hasErrorField ||
+    extracted.hasFlatCode ||
+    responseStatus < 200 ||
+    responseStatus >= 300
+  ) {
+    return makeAnalysisError('unknown');
+  }
+
   return null;
 }
 
@@ -126,16 +197,21 @@ async function fetchAnalysisEstimate(
     );
   }
 
+  // These transport classifications have precedence over any response body,
+  // including HTML or an otherwise malformed body.
   if (response.status === 401 || response.status === 403) {
-    throw new PhotoAnalysisSourceError(
-      'unauthenticated',
-      'Meal analysis endpoint rejected bearer token.',
-    );
+    throw makeAnalysisError('unauthenticated');
+  }
+  if (response.status === 413) {
+    throw makeAnalysisError('file_too_large');
+  }
+  if (response.status === 429) {
+    throw makeAnalysisError('quota_exceeded');
   }
 
-  let body: RawAnalysisResponse;
+  let body: unknown;
   try {
-    body = (await response.json()) as RawAnalysisResponse;
+    body = await response.json();
   } catch {
     throw new PhotoAnalysisSourceError('invalid_response', invalidJsonMessage);
   }
@@ -149,7 +225,7 @@ async function fetchAnalysisEstimate(
   if (!estimate) {
     throw new PhotoAnalysisSourceError(
       'invalid_response',
-      'Meal analysis endpoint response did not match expected macro estimate shape.',
+      ANALYSIS_ERROR_MESSAGES.invalid_response,
     );
   }
 

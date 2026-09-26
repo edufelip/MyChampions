@@ -365,45 +365,37 @@ describe('normalizeSubscriptionError', () => {
     assert.equal(normalizeSubscriptionError({ code: 'purchase_cancelled' }), 'purchase_cancelled');
   });
 
-  it('returns purchase_cancelled for message containing cancelled', () => {
-    assert.equal(
-      normalizeSubscriptionError({ message: 'User cancelled the purchase' }),
-      'purchase_cancelled',
-    );
+  it('ignores cancellation prose without a trusted code', () => {
+    assert.equal(normalizeSubscriptionError({ message: 'User cancelled the purchase' }), 'unknown');
   });
 
   it('returns configuration for invalid_api_key code', () => {
     assert.equal(normalizeSubscriptionError({ code: 'invalid_api_key' }), 'configuration');
   });
 
-  it('returns configuration for message containing api key', () => {
-    assert.equal(
-      normalizeSubscriptionError({ message: 'invalid api key provided' }),
-      'configuration',
-    );
+  it('ignores configuration prose without a trusted code', () => {
+    assert.equal(normalizeSubscriptionError({ message: 'invalid api key provided' }), 'unknown');
   });
 
   it('returns network for network_error code', () => {
     assert.equal(normalizeSubscriptionError({ code: 'network_error' }), 'network');
   });
 
-  it('returns network for message containing timeout', () => {
-    assert.equal(normalizeSubscriptionError({ message: 'request timeout' }), 'network');
+  it('ignores timeout prose without a trusted code', () => {
+    assert.equal(normalizeSubscriptionError({ message: 'request timeout' }), 'unknown');
   });
 
   it('returns store_problem for store_problem code', () => {
     assert.equal(normalizeSubscriptionError({ code: 'store_problem' }), 'store_problem');
   });
 
-  it('returns store_problem for message containing store', () => {
-    assert.equal(
-      normalizeSubscriptionError({ message: 'app store error occurred' }),
-      'store_problem',
-    );
+  it('ignores store prose without a trusted code', () => {
+    assert.equal(normalizeSubscriptionError({ message: 'app store error occurred' }), 'unknown');
   });
 
-  it('returns unauthenticated for unauthorized code', () => {
-    assert.equal(normalizeSubscriptionError({ code: 'unauthorized_request' }), 'unauthenticated');
+  it('maps only the exact unauthorized alias', () => {
+    assert.equal(normalizeSubscriptionError({ code: 'unauthorized' }), 'unauthenticated');
+    assert.equal(normalizeSubscriptionError({ code: 'unauthorized_request' }), 'unknown');
   });
 
   it('returns unknown for unrecognized error shape', () => {
@@ -596,7 +588,7 @@ describe('fetchEntitlementStatus', () => {
   it('throws SubscriptionSourceError with network reason on SDK network failure', async () => {
     const deps = makeDeps({
       getCustomerInfo: async () => {
-        throw new Error('network request failed');
+        throw { code: '10', message: 'network request failed' };
       },
     });
     await assert.rejects(fetchEntitlementStatus(deps), (err: unknown) => {
@@ -665,6 +657,20 @@ describe('purchasePackage', () => {
     });
   });
 
+  it('throws payment_pending for the RevenueCat payment-pending code', async () => {
+    const deps = makeDeps({
+      purchasePackage: async () => {
+        throw { code: '20', userCancelled: true, message: 'store is still processing' };
+      },
+    });
+    await assert.rejects(purchasePackage({}, deps), (err: unknown) => {
+      assert.ok(err instanceof SubscriptionSourceError);
+      assert.equal(err.code, 'payment_pending');
+      assert.equal(err.message, 'RevenueCat purchase request failed.');
+      return true;
+    });
+  });
+
   it('throws store_problem on store error', async () => {
     const deps = makeDeps({
       purchasePackage: async () => {
@@ -710,7 +716,7 @@ describe('restorePurchases', () => {
   it('throws network error on restore network failure', async () => {
     const deps = makeDeps({
       restorePurchases: async () => {
-        throw new Error('request timed out');
+        throw { code: '32', message: 'request timed out' };
       },
     });
     await assert.rejects(restorePurchases(deps), (err: unknown) => {

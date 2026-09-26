@@ -992,6 +992,43 @@
 - Rationale: UI in-flight state and a process-local server counter can be bypassed by direct requests, concurrent workers, restarts, and blue/green deploys. The database is the shared source of truth, while trusted ingress provides only a coarse pre-application backstop.
 - Constraints: Observability contains outcome labels only, never support text, account identifiers, or idempotency keys. No production deployment or controlled live-429 probe occurs without explicit approval.
 
+### D-219: Structured reasons are authoritative at the ET-230 boundaries
+
+- Date: 2026-09-26
+- Status: Accepted
+- Scope: ET-230 meal-photo analysis, email sign-up, and RevenueCat error
+  classification.
+- Decision: Each boundary maps explicit structured codes and trusted transport
+  context to its existing domain-reason union exactly once. Diagnostic prose,
+  localization text, and arbitrary object coercion are never classification
+  inputs. A present unknown or malformed code remains `unknown` or
+  `invalid_response`; it cannot be rescued by a message or a less-trustworthy
+  flag. A guarded descriptor-based field reader handles hostile getters,
+  proxies, arrays, symbols, and oversized values without throwing. Current
+  server envelopes, signup session sequencing and anti-enumeration behavior,
+  RevenueCat offerings and entitlement authority, and successful payloads stay
+  unchanged.
+- Rationale: Message wording changes across locales, SDK versions, and
+  providers, while structured producer contracts and HTTP status context are
+  testable and stable. Keeping policy in three small boundary mappers avoids
+  a global exception taxonomy and makes unknown values fail closed.
+
+### D-220: Payment pending is distinct from cancellation
+
+- Date: 2026-09-26
+- Status: Accepted
+- Scope: RevenueCat purchase/restore errors, SC-212, and SC-219's SC-214 and
+  SC-215 consumers.
+- Decision: `PAYMENT_PENDING_ERROR` maps to `payment_pending` and wins over
+  `userCancelled: true`. The hook clears loading, preserves the current
+  auth-scoped entitlement state, and shows a neutral localized notice. It does
+  not retry or poll, grant/revoke access, open a paywall, or enter
+  cancellation-specific suppression. The existing explicit Refresh/Check
+  status action remains the recovery path. `subscription.error.payment_pending`
+  is populated in `en-US`, `pt-BR`, and `es-ES`.
+- Constraints: Platform receipt, restore, and live provider validation remain
+  separate pending evidence and require no provider mutation for this change.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.

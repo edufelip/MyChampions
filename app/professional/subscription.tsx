@@ -36,6 +36,7 @@ import {
   resolveSubscriptionStatusPresentation,
 } from '@/features/subscription/subscription.logic';
 import { useSubscription } from '@/features/subscription/use-subscription';
+import { getSubscriptionErrorMessageKey } from '@/features/subscription/subscription-error-copy';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 
@@ -79,7 +80,10 @@ export default function ProfessionalSubscriptionScreen() {
   const statusPresentation = resolveSubscriptionStatusPresentation({
     entitlementStatus,
     isLoading,
-    hasError: error !== null,
+    // A pending purchase is independent of the last known entitlement. Keep
+    // the current active/inactive badge visible while showing the neutral
+    // provider-processing notice below.
+    hasError: error !== null && error !== 'payment_pending',
   });
 
   const statusLabel =
@@ -243,6 +247,21 @@ export default function ProfessionalSubscriptionScreen() {
         </Text>
       </DsCard>
 
+      {error === 'payment_pending' ? (
+        <View accessibilityLiveRegion="polite">
+          <DsCard
+            scheme={scheme}
+            variant="muted"
+            style={styles.pendingCard}
+            testID="pro.subscription.paymentPending"
+          >
+            <Text style={[styles.statusBody, { color: theme.color.textPrimary }]}>
+              {t(getSubscriptionErrorMessageKey(error))}
+            </Text>
+          </DsCard>
+        </View>
+      ) : null}
+
       {subState.isPreLapseWarningVisible ? (
         <DsCard
           scheme={scheme}
@@ -360,6 +379,9 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   statusCard: {
+    gap: DsSpace.sm,
+  },
+  pendingCard: {
     gap: DsSpace.sm,
   },
   cardTitle: {

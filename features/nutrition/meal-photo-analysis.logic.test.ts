@@ -170,109 +170,49 @@ test('mapMacroEstimateToMealInput preserves decimal string representation', () =
 
 // ─── normalizePhotoAnalysisError ──────────────────────────────────────────────
 
-test('normalizePhotoAnalysisError keeps native permission denial distinct from cancellation', () => {
+test('normalizePhotoAnalysisError maps every exact domain code with empty or foreign messages', () => {
+  const cases = [
+    ['permission_denied', 'permission_denied'],
+    ['photo_permission_denied', 'permission_denied'],
+    ['file_too_large', 'file_too_large'],
+    ['unrecognizable_image', 'unrecognizable_image'],
+    ['quota_exceeded', 'quota_exceeded'],
+    ['network', 'network'],
+    ['invalid_response', 'invalid_response'],
+    ['configuration', 'configuration'],
+    ['unauthenticated', 'unauthenticated'],
+    ['unknown', 'unknown'],
+    ['NETWORK_ERROR', 'network'],
+  ] as const;
+
+  for (const [code, expected] of cases) {
+    assert.equal(
+      normalizePhotoAnalysisError({ code, message: code === 'network' ? '日本語' : '' }),
+      expected,
+    );
+  }
+});
+
+test('normalizePhotoAnalysisError ignores message-only and foreign authorization hints', () => {
+  assert.equal(normalizePhotoAnalysisError({ message: 'Image is unrecognizable' }), 'unknown');
+  assert.equal(normalizePhotoAnalysisError({ message: 'No endpoint configured' }), 'unknown');
+  assert.equal(normalizePhotoAnalysisError({ code: 'unauthorized' }), 'unknown');
   assert.equal(
-    normalizePhotoAnalysisError({
-      code: 'photo_permission_denied',
-      message: 'Photo permission denied for camera',
-    }),
-    'permission_denied',
+    normalizePhotoAnalysisError({ code: 'future_provider_code', message: 'network' }),
+    'unknown',
   );
 });
 
-test('normalizePhotoAnalysisError maps compressed photos above the byte limit', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({
-      code: 'file_too_large',
-      message: 'Compressed photo exceeds 1.5 MB',
-    }),
-    'file_too_large',
-  );
+test('normalizePhotoAnalysisError handles malformed values without coercion', () => {
+  assert.equal(normalizePhotoAnalysisError({ code: 20, message: 'network' }), 'unknown');
+  assert.equal(normalizePhotoAnalysisError({ code: '' }), 'unknown');
+  assert.equal(normalizePhotoAnalysisError({ code: 'x'.repeat(129) }), 'unknown');
 });
 
-test('normalizePhotoAnalysisError maps code unrecognizable_image', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ code: 'unrecognizable_image', message: '' }),
-    'unrecognizable_image',
-  );
-});
-
-test('normalizePhotoAnalysisError maps message containing "unrecognizable"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ message: 'Image is unrecognizable' }),
-    'unrecognizable_image',
-  );
-});
-
-test('normalizePhotoAnalysisError maps code quota_exceeded', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ code: 'quota_exceeded', message: '' }),
-    'quota_exceeded',
-  );
-});
-
-test('normalizePhotoAnalysisError maps message containing "rate limit"', () => {
-  assert.equal(normalizePhotoAnalysisError({ message: 'Rate limit exceeded' }), 'quota_exceeded');
-});
-
-test('normalizePhotoAnalysisError maps code invalid_response', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ code: 'invalid_response', message: '' }),
-    'invalid_response',
-  );
-});
-
-test('normalizePhotoAnalysisError maps message containing "parse"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ message: 'Failed to parse response' }),
-    'invalid_response',
-  );
-});
-
-test('normalizePhotoAnalysisError maps code configuration', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ code: 'configuration', message: '' }),
-    'configuration',
-  );
-});
-
-test('normalizePhotoAnalysisError maps message containing "endpoint"', () => {
-  assert.equal(normalizePhotoAnalysisError({ message: 'No endpoint configured' }), 'configuration');
-});
-
-test('normalizePhotoAnalysisError maps message containing "network"', () => {
-  assert.equal(normalizePhotoAnalysisError({ message: 'Network request failed' }), 'network');
-});
-
-test('normalizePhotoAnalysisError maps message containing "timeout"', () => {
-  assert.equal(normalizePhotoAnalysisError({ message: 'Request timeout' }), 'network');
-});
-
-test('normalizePhotoAnalysisError maps message containing "fetch"', () => {
-  assert.equal(normalizePhotoAnalysisError({ message: 'fetch failed' }), 'network');
-});
-
-test('normalizePhotoAnalysisError maps code unauthenticated', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ code: 'unauthenticated', message: '' }),
-    'unauthenticated',
-  );
-});
-
-test('normalizePhotoAnalysisError maps message containing "unauthenticated"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({
-      message: 'MyChampions server rejected access token: unauthenticated',
-    }),
-    'unauthenticated',
-  );
-});
-
-test('normalizePhotoAnalysisError maps message containing "access token"', () => {
-  assert.equal(
-    normalizePhotoAnalysisError({ message: 'Failed to verify access token' }),
-    'unauthenticated',
-  );
+test('normalizePhotoAnalysisError survives a revoked proxy', () => {
+  const revoked = Proxy.revocable({}, {});
+  revoked.revoke();
+  assert.equal(normalizePhotoAnalysisError(revoked.proxy), 'unknown');
 });
 
 test('normalizePhotoAnalysisError returns unknown for unrecognized errors', () => {

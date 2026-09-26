@@ -3,6 +3,7 @@ import {
   type RawPaywallResult,
   type SubscriptionErrorReason,
 } from './subscription-source';
+import { isSafeInstanceOf } from '@/features/errors/read-error-fields';
 
 export function resolvePaywallPresentationError(
   result: RawPaywallResult | void,
@@ -38,7 +39,7 @@ export async function runPaywallPresentation({
   try {
     presentationError = resolvePaywallPresentationError(await present());
   } catch (error: unknown) {
-    const reason = error instanceof SubscriptionSourceError ? error.code : 'unknown';
+    const reason = isSafeInstanceOf(error, SubscriptionSourceError) ? error.code : 'unknown';
     if (reason !== 'purchase_cancelled') {
       presentationError = reason;
     }

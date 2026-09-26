@@ -31,6 +31,7 @@
 - Empty: no active entitlement.
 - Warning: entitlement is active and an authoritative billing-expiry signal says it is near lapse.
 - Error: purchase/restore/sync failure.
+- Payment pending: the store has not completed a purchase/restore operation; show a neutral localized notice while preserving the current entitlement status.
 - Success: entitlement active and cap-gated actions unlocked.
 
 ## Validation Rules
@@ -47,6 +48,7 @@
 - If entitlement is inactive while over cap, new activations and professional writes to assigned student plans are locked until an active professional entitlement snapshot is synced.
 - Pre-lapse warning must appear before lock state with clear renew/restore path, but it must never be inferred from active-student count.
 - Entitlement-based plan locks must not disable purchase, restore, or configured mobile-handoff recovery actions.
+- Payment pending is distinct from cancellation: clear loading, preserve the current active/inactive entitlement state, show `subscription.error.payment_pending`, and leave the existing Refresh status action available without automatic retry or polling.
 - Lapsed-over-cap browser lock copy must never tell the user to tap a purchase/restore/handoff control that is not mounted for the current `purchaseCapability` (D-211, ET-105).
 - Accessibility baseline applies for readable warnings/CTAs with proper labels and focus order.
 
@@ -56,6 +58,7 @@
 - Paywalls: RevenueCat binds `Professional Paywall v1` to **`default_professional`** and `Professional Paywall v1 Test` to **`test_professional`**. `openProPaywall()` resolves `revenueCatProfessionalOfferingId` through the dev/Test Store guard, then calls `Purchases.getOfferings().all[offeringIdentifier]` → `RevenueCatUI.presentPaywall({ offering })`.
 - Entitlement refresh happens automatically after the native paywall closes.
 - Paywall outcome is explicit: purchase/restore success refreshes access; user cancellation closes without a system-error banner; `NOT_PRESENTED` becomes a recoverable configuration failure; network and store/provider failures remain actionable after the follow-up refresh.
+- RevenueCat `PAYMENT_PENDING_ERROR` maps to the separate `payment_pending` reason and is rendered as a polite neutral status notice; it never enters cancellation suppression or entitlement mutation.
 - SDK key mapping is variant-aware (D-156):
   - `APP_VARIANT=dev` -> `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV` / `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV`
   - `APP_VARIANT=prod` -> `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_PROD` / `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_PROD`
@@ -85,6 +88,7 @@
 ## Edge Cases
 - Entitlement active but stale local cache should reconcile on refresh.
 - Purchase canceled should preserve blocked state with clear retry path.
+- Payment pending should preserve the current entitlement status and rely on explicit Refresh; it must not start a retry or polling loop.
 - Pre-lapse warning may clear automatically after entitlement refresh confirms healthy state.
 - Malformed or missing expiry-risk data fails closed to no warning; it never becomes a warning from student capacity.
 - A transferred purchase is reconciled for both source and destination App User IDs by the server webhook boundary before the delivery is acknowledged.

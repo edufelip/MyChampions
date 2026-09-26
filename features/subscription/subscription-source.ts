@@ -13,16 +13,16 @@
 
 import { normalizeEntitlementStatus, type EntitlementStatus } from './subscription.logic';
 import type { RoleIntent } from '@/features/auth/role-selection.logic';
+import {
+  isSubscriptionErrorReason,
+  normalizeRevenueCatError,
+  type SubscriptionErrorReason,
+} from './revenuecat-error';
+import { isSafeInstanceOf } from '@/features/errors/read-error-fields';
+
+export type { SubscriptionErrorReason } from './revenuecat-error';
 
 // ─── Error type ───────────────────────────────────────────────────────────────
-
-export type SubscriptionErrorReason =
-  | 'configuration' // SDK not configured or API key missing
-  | 'network' // Network failure during SDK call
-  | 'purchase_cancelled' // User dismissed purchase sheet
-  | 'store_problem' // App Store / Google Play returned an error
-  | 'unauthenticated' // RevenueCat rejected the request (invalid key, etc.)
-  | 'unknown';
 
 export class SubscriptionSourceError extends Error {
   code: SubscriptionErrorReason;
@@ -426,66 +426,14 @@ export function mapCustomerInfoToAiEntitlementStatus(
 /**
  * Maps a caught RevenueCat SDK error to a typed SubscriptionErrorReason.
  * RevenueCat error codes reference: https://errors.rev.cat
- * We inspect the `code` and `message` fields of the thrown error.
+ * The mapper trusts only explicit SDK codes and enumerated readable aliases;
+ * diagnostic messages never influence the result.
  */
 export function normalizeSubscriptionError(error: unknown): SubscriptionErrorReason {
-  if (typeof error !== 'object' || error === null) return 'unknown';
-
-  const e = error as { code?: unknown; message?: unknown; userCancelled?: unknown };
-
-  // User explicitly cancelled the purchase sheet
-  if (e.userCancelled === true) return 'purchase_cancelled';
-
-  const code = typeof e.code === 'string' ? e.code.toLowerCase() : '';
-  const message = typeof e.message === 'string' ? e.message.toLowerCase() : '';
-
-  if (
-    code.includes('configuration') ||
-    code === 'invalid_api_key' ||
-    message.includes('api key') ||
-    message.includes('not configured')
-  ) {
-    return 'configuration';
+  if (isSafeInstanceOf(error, SubscriptionSourceError)) {
+    return isSubscriptionErrorReason(error.code) ? error.code : 'unknown';
   }
-
-  if (
-    code.includes('network') ||
-    code === 'network_error' ||
-    message.includes('network') ||
-    message.includes('fetch') ||
-    message.includes('timeout') ||
-    message.includes('timed out')
-  ) {
-    return 'network';
-  }
-
-  if (
-    code === 'purchase_cancelled' ||
-    code === 'payment_pending' ||
-    message.includes('cancelled') ||
-    message.includes('canceled')
-  ) {
-    return 'purchase_cancelled';
-  }
-
-  if (
-    code.includes('store') ||
-    code === 'store_problem' ||
-    code === 'store_transaction_unverified' ||
-    message.includes('store')
-  ) {
-    return 'store_problem';
-  }
-
-  if (
-    code.includes('unauthorized') ||
-    message.includes('unauthorized') ||
-    message.includes('permission')
-  ) {
-    return 'unauthenticated';
-  }
-
-  return 'unknown';
+  return normalizeRevenueCatError(error);
 }
 
 // ─── Source operations ────────────────────────────────────────────────────────
@@ -547,9 +495,9 @@ export function createRevenueCatIdentityCoordinator(): RevenueCatIdentityCoordin
           try {
             await deps.logIn(normalizedAppUserId);
           } catch (err: unknown) {
-            if (err instanceof SubscriptionSourceError) throw err;
+            if (isSafeInstanceOf(err, SubscriptionSourceError)) throw err;
             const reason = normalizeSubscriptionError(err);
-            throw new SubscriptionSourceError(reason, `RevenueCat logIn failed: ${String(err)}`);
+            throw new SubscriptionSourceError(reason, 'RevenueCat login request failed.');
           }
           configuredAppUserId = normalizedAppUserId;
         }
@@ -581,9 +529,9 @@ export async function fetchEntitlementStatus(
   try {
     customerInfo = await deps.getCustomerInfo();
   } catch (err: unknown) {
-    if (err instanceof SubscriptionSourceError) throw err;
+    if (isSafeInstanceOf(err, SubscriptionSourceError)) throw err;
     const reason = normalizeSubscriptionError(err);
-    throw new SubscriptionSourceError(reason, `RevenueCat getCustomerInfo failed: ${String(err)}`);
+    throw new SubscriptionSourceError(reason, 'RevenueCat customer info request failed.');
   }
 
   return mapCustomerInfoToEntitlementStatus(customerInfo);
@@ -604,9 +552,9 @@ export async function purchasePackage(
   try {
     result = await deps.purchasePackage(pkg);
   } catch (err: unknown) {
-    if (err instanceof SubscriptionSourceError) throw err;
+    if (isSafeInstanceOf(err, SubscriptionSourceError)) throw err;
     const reason = normalizeSubscriptionError(err);
-    throw new SubscriptionSourceError(reason, `RevenueCat purchasePackage failed: ${String(err)}`);
+    throw new SubscriptionSourceError(reason, 'RevenueCat purchase request failed.');
   }
 
   if (!result.customerInfo) {
@@ -626,9 +574,9 @@ export async function restorePurchases(deps: SubscriptionSourceDeps): Promise<En
   try {
     customerInfo = await deps.restorePurchases();
   } catch (err: unknown) {
-    if (err instanceof SubscriptionSourceError) throw err;
+    if (isSafeInstanceOf(err, SubscriptionSourceError)) throw err;
     const reason = normalizeSubscriptionError(err);
-    throw new SubscriptionSourceError(reason, `RevenueCat restorePurchases failed: ${String(err)}`);
+    throw new SubscriptionSourceError(reason, 'RevenueCat restore request failed.');
   }
 
   return mapCustomerInfoToEntitlementStatus(customerInfo);
@@ -650,9 +598,9 @@ export async function presentAiPaywall(
   try {
     return await deps.presentPaywall(offeringId);
   } catch (err: unknown) {
-    if (err instanceof SubscriptionSourceError) throw err;
+    if (isSafeInstanceOf(err, SubscriptionSourceError)) throw err;
     const reason = normalizeSubscriptionError(err);
-    throw new SubscriptionSourceError(reason, `RevenueCat presentAiPaywall failed: ${String(err)}`);
+    throw new SubscriptionSourceError(reason, 'RevenueCat AI paywall request failed.');
   }
 }
 
@@ -672,11 +620,8 @@ export async function presentProPaywall(
   try {
     return await deps.presentPaywall(offeringId);
   } catch (err: unknown) {
-    if (err instanceof SubscriptionSourceError) throw err;
+    if (isSafeInstanceOf(err, SubscriptionSourceError)) throw err;
     const reason = normalizeSubscriptionError(err);
-    throw new SubscriptionSourceError(
-      reason,
-      `RevenueCat presentProPaywall failed: ${String(err)}`,
-    );
+    throw new SubscriptionSourceError(reason, 'RevenueCat professional paywall request failed.');
   }
 }

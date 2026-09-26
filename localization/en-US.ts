@@ -563,6 +563,8 @@ export const enUS = {
   'pro.subscription.cta_unavailable': 'Subscription unavailable',
   'auth.terms.invalid_link': 'This link is unavailable because its address is missing or unsafe.',
   'pro.subscription.error': 'Could not load subscription status. Try again.',
+  'subscription.error.payment_pending':
+    'Your payment is still pending. Access will update after the store confirms it. You can check again later.',
   'offline.banner': "You're offline. Showing cached data. Updates are locked until you reconnect.",
   'offline.write_lock': 'Connect to the internet to save changes.',
   'offline.stale_minutes': 'Last updated {value} min ago',
