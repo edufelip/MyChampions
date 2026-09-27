@@ -183,7 +183,11 @@ export default function TrainingPlanBuilderScreen() {
 
   const {
     state: exerciseSearchState,
+    suggestionState: exerciseSuggestionState,
+    suggestionsEnabled: exerciseSuggestionsEnabled,
     search: searchExerciseLibrary,
+    suggest: suggestExerciseLibrary,
+    invalidateQuery: invalidateExerciseSearchQuery,
     clear: clearExerciseSearch,
   } = useExerciseSearch();
   const [isExerciseSearchVisible, setIsExerciseSearchVisible] = useState(false);
@@ -1012,7 +1016,11 @@ export default function TrainingPlanBuilderScreen() {
         }}
         onConfirm={handleConfirmExercise}
         searchState={exerciseSearchState}
+        suggestionState={exerciseSuggestionState}
+        suggestionsEnabled={exerciseSuggestionsEnabled}
         onSearch={searchExerciseLibrary}
+        onSuggest={suggestExerciseLibrary}
+        onQueryChange={invalidateExerciseSearchQuery}
         onClear={clearExerciseSearch}
         scheme={scheme}
         theme={theme}

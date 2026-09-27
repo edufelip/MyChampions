@@ -1007,6 +1007,15 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.item.search.error': 'Error al buscar ejercicios.',
   'pro.plan.item.search.retry': 'Intentar de nuevo',
   'pro.plan.item.search.back': 'Volver a la búsqueda',
+  'pro.plan.item.search.semantic.cta': 'Sugerir una coincidencia',
+  'pro.plan.item.search.semantic.disclosure':
+    'Envía este texto de búsqueda a TypeSafe para sugerir un ejercicio del catálogo. Tú eliges qué añadir.',
+  'pro.plan.item.search.semantic.loading': 'Buscando una sugerencia…',
+  'pro.plan.item.search.semantic.badge': 'Coincidencia sugerida',
+  'pro.plan.item.search.semantic.none':
+    'No hay una coincidencia clara. Prueba un nombre de ejercicio más específico.',
+  'pro.plan.item.search.semantic.unavailable':
+    'Las sugerencias no están disponibles. Puedes seguir usando los resultados de búsqueda.',
   'pro.plan.item.detail.dialog_title': 'Detalles del ejercicio',
   'pro.plan.item.detail.description': 'Descripción',
   'pro.plan.item.detail.instructions': 'Instrucciones',

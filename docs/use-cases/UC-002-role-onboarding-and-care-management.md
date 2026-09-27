@@ -379,4 +379,20 @@
   - If user declines photo attachment in SC-214, meal is saved without image.
 - Expected result: Meal form or quick-log panel is pre-filled with AI-estimated macro values; user confirms and saves/logs.
 
-(End of file - total 265 lines)
+## UC-002.24 Explicit Exercise Semantic Suggestion
+
+- Primary actor: Authenticated Professional editing a training plan in SC-208.
+- Trigger: The professional types a non-empty exercise query and presses the explicit suggestion CTA.
+- Preconditions: Ordinary catalog search remains available; the app pilot flag and server capability may be enabled only under the separate ET-229 activation gates.
+- Main flow:
+  1. App debounces ordinary search while preserving the current query and ordinary result state.
+  2. App displays the localized CTA and adjacent disclosure before any provider request.
+  3. Professional presses the CTA, which sends the current query with `consent: true` to the MyChampions server.
+  4. Server retrieves deterministic catalog rows, filters hard constraints, and may select one returned ID through its bounded TypeSafe adapter.
+  5. App replaces rows only when the response query matches the current input and badges the returned catalog row.
+  6. Professional selects a row, reviews the existing detail form, and uses the existing Confirm and Save actions if they want to persist it.
+- Alternate flows:
+  - Empty, contradictory, or unsupported equipment constraints abstain without a provider call and keep lexical results available.
+  - No match, missing provider configuration, rate limit, timeout, malformed choice, old server, or provider failure keeps the ordinary search usable and shows localized guidance/retry.
+  - If the query changes, the modal closes, or the response is stale, the app discards the response and never permits stale-row selection.
+- Expected result: Semantic processing is explicit and bounded; no plan mutation occurs before the existing Confirm/Save flow, and no provider key enters the app.

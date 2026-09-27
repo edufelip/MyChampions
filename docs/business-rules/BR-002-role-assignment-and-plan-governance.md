@@ -237,3 +237,9 @@
 ## Constraints
 
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.
+
+## ET-229 Exercise Suggestion Rules
+
+- `BR-307`: Ordinary catalog retrieval is the availability baseline. Semantic suggestions are a separate explicit-consent capability and may not block, replace, or infer ordinary search.
+- `BR-308`: A suggestion must identify an exercise returned by the same server response. Unknown, malformed, low-confidence, unsupported, contradictory, or hard-constraint-violating choices are rejected or abstained from; no generated exercise may enter a plan.
+- `BR-309`: The app may show a suggested row but only the existing detail Confirm adds a local draft item, and only the existing Save operation persists the plan. Video or provider URLs never enter plan persistence.
