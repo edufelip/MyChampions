@@ -21,7 +21,10 @@ import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/desig
 import { Fonts } from '@/constants/theme';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import type { ExerciseItem } from '@/features/plans/exercise-service-source';
-import type { useExerciseSearch } from '@/features/plans/use-exercise-search';
+import type {
+  ExerciseSuggestionState,
+  useExerciseSearch,
+} from '@/features/plans/use-exercise-search';
 import type { TranslationKey, useTranslation } from '@/localization';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
@@ -51,7 +54,11 @@ export function ExerciseSearchModal({
   onClose,
   onConfirm,
   searchState,
+  suggestionState,
+  suggestionsEnabled,
   onSearch,
+  onSuggest,
+  onQueryChange,
   onClear,
   scheme,
   theme,
@@ -61,7 +68,11 @@ export function ExerciseSearchModal({
   onClose: () => void;
   onConfirm: (exercise: ExerciseItem, quantity: string, notes: string) => void;
   searchState: ReturnType<typeof useExerciseSearch>['state'];
+  suggestionState: ExerciseSuggestionState;
+  suggestionsEnabled: boolean;
   onSearch: (query: string) => void;
+  onSuggest: (query: string) => void;
+  onQueryChange: (query: string) => void;
   onClear: () => void;
   scheme: 'light' | 'dark';
   theme: DsTheme;
@@ -73,6 +84,7 @@ export function ExerciseSearchModal({
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const notesRef = useRef<TextInput>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const modalLayout = useDsModalSheetLayout();
   useWebDialogAccessibility({
     dialogTitleTestID: 'exerciseSearch.title',
@@ -95,10 +107,15 @@ export function ExerciseSearchModal({
     if (!isVisible || view === 'detail') return;
 
     const timeoutId = setTimeout(() => {
+      searchDebounceRef.current = null;
       onSearch(query);
     }, 400);
+    searchDebounceRef.current = timeoutId;
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      if (searchDebounceRef.current === timeoutId) searchDebounceRef.current = null;
+    };
   }, [query, onSearch, isVisible, view]);
 
   // Reset state when closed
@@ -112,6 +129,31 @@ export function ExerciseSearchModal({
       onClear();
     }
   }, [isVisible, onClear]);
+
+  const currentQuery = query.trim();
+  const currentSearchState =
+    searchState.kind !== 'idle' && searchState.query === currentQuery
+      ? searchState
+      : ({ kind: 'idle' } as const);
+  const currentSuggestionState =
+    suggestionState.kind !== 'idle' && suggestionState.query === currentQuery
+      ? suggestionState
+      : ({ kind: 'idle' } as const);
+  const visibleResults =
+    currentSuggestionState.kind === 'done'
+      ? currentSuggestionState.results
+      : currentSearchState.kind === 'done'
+        ? currentSearchState.results
+        : [];
+  const suggestionPending = currentSuggestionState.kind === 'loading';
+  const suggestionIsAuthoritative =
+    currentSuggestionState.kind === 'loading' || currentSuggestionState.kind === 'done';
+  const suggestionStatus =
+    currentSuggestionState.kind === 'done' ? currentSuggestionState.status : null;
+  const suggestionMessageKey =
+    suggestionStatus === 'no_match' || suggestionStatus === 'unsupported_query'
+      ? 'pro.plan.item.search.semantic.none'
+      : 'pro.plan.item.search.semantic.unavailable';
 
   const handleSelectExercise = (exercise: ExerciseItem) => {
     Keyboard.dismiss();
@@ -128,6 +170,24 @@ export function ExerciseSearchModal({
     Keyboard.dismiss();
     onConfirm(selectedExercise, quantity.trim(), notes.trim());
   };
+
+  const handleQueryChange = (value: string) => {
+    onQueryChange(value);
+    setQuery(value);
+  };
+
+  const handleSuggest = () => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+    onSuggest(query);
+  };
+
+  const showEmptyState =
+    visibleResults.length === 0 &&
+    (currentSuggestionState.kind === 'idle' || currentSuggestionState.kind === 'error') &&
+    currentSearchState.kind === 'done';
 
   const dialogTitle = t('pro.plan.item.search.dialog_title');
 
@@ -196,9 +256,13 @@ export function ExerciseSearchModal({
                   placeholder={t('pro.plan.item.search.placeholder')}
                   placeholderTextColor={theme.color.textSecondary}
                   value={query}
-                  onChangeText={setQuery}
+                  onChangeText={handleQueryChange}
                   onSubmitEditing={() => {
                     Keyboard.dismiss();
+                    if (searchDebounceRef.current) {
+                      clearTimeout(searchDebounceRef.current);
+                      searchDebounceRef.current = null;
+                    }
                     onSearch(query);
                   }}
                   returnKeyType="search"
@@ -213,12 +277,35 @@ export function ExerciseSearchModal({
                 )}
               </View>
 
+              {suggestionsEnabled && query.trim().length > 0 && (
+                <View style={styles.semanticPrompt}>
+                  <DsPillButton
+                    scheme={scheme}
+                    label={t('pro.plan.item.search.semantic.cta')}
+                    onPress={handleSuggest}
+                    variant="outline"
+                    size="sm"
+                    loading={suggestionPending}
+                    disabled={suggestionPending}
+                    fullWidth={false}
+                    testID="exerciseSearch.semantic.cta"
+                  />
+                  <Text
+                    style={[styles.semanticDisclosure, { color: theme.color.textSecondary }]}
+                    accessibilityRole="text"
+                    testID="exerciseSearch.semantic.disclosure"
+                  >
+                    {t('pro.plan.item.search.semantic.disclosure')}
+                  </Text>
+                </View>
+              )}
+
               <ScrollView
                 style={styles.searchScroll}
                 contentContainerStyle={styles.modalScroll}
                 keyboardShouldPersistTaps="handled"
               >
-                {searchState.kind === 'loading' && (
+                {currentSearchState.kind === 'loading' && !suggestionIsAuthoritative && (
                   <View
                     accessibilityRole="progressbar"
                     accessibilityLabel={t('pro.plan.item.search.loading')}
@@ -233,7 +320,69 @@ export function ExerciseSearchModal({
                   </View>
                 )}
 
-                {searchState.kind === 'idle' && (
+                {suggestionPending && (
+                  <View
+                    accessibilityRole="progressbar"
+                    accessibilityLabel={t('pro.plan.item.search.semantic.loading')}
+                    accessibilityLiveRegion="polite"
+                    style={styles.semanticStatus}
+                    testID="exerciseSearch.semantic.loading"
+                  >
+                    <ActivityIndicator color={theme.color.accentPrimary} />
+                    <Text style={[styles.emptyText, { color: theme.color.textSecondary }]}>
+                      {t('pro.plan.item.search.semantic.loading')}
+                    </Text>
+                  </View>
+                )}
+
+                {currentSuggestionState.kind === 'done' && suggestionStatus !== 'suggested' && (
+                  <View
+                    accessibilityRole="alert"
+                    accessibilityLiveRegion="polite"
+                    style={styles.semanticStatus}
+                    testID="exerciseSearch.semantic.status"
+                  >
+                    <Text style={[styles.emptyText, { color: theme.color.textSecondary }]}>
+                      {t(suggestionMessageKey)}
+                    </Text>
+                    {(suggestionStatus === 'unavailable' ||
+                      suggestionStatus === 'unsupported_query') && (
+                      <DsPillButton
+                        scheme={scheme}
+                        label={t('common.error.retry')}
+                        onPress={handleSuggest}
+                        variant="outline"
+                        size="sm"
+                        fullWidth={false}
+                        testID="exerciseSearch.semantic.retry"
+                      />
+                    )}
+                  </View>
+                )}
+
+                {currentSuggestionState.kind === 'error' && (
+                  <View
+                    accessibilityRole="alert"
+                    accessibilityLiveRegion="polite"
+                    style={styles.semanticStatus}
+                    testID="exerciseSearch.semantic.status"
+                  >
+                    <Text style={[styles.emptyText, { color: theme.color.textSecondary }]}>
+                      {t('pro.plan.item.search.semantic.unavailable')}
+                    </Text>
+                    <DsPillButton
+                      scheme={scheme}
+                      label={t('common.error.retry')}
+                      onPress={handleSuggest}
+                      variant="outline"
+                      size="sm"
+                      fullWidth={false}
+                      testID="exerciseSearch.semantic.retry"
+                    />
+                  </View>
+                )}
+
+                {currentSearchState.kind === 'idle' && !suggestionIsAuthoritative && (
                   <View style={styles.initialState} testID="exerciseSearch.initialState">
                     <MaterialIcons
                       name="fitness-center"
@@ -248,7 +397,7 @@ export function ExerciseSearchModal({
                   </View>
                 )}
 
-                {searchState.kind === 'error' && (
+                {currentSearchState.kind === 'error' && !suggestionIsAuthoritative && (
                   <View
                     accessibilityRole="alert"
                     accessibilityLiveRegion="assertive"
@@ -261,7 +410,7 @@ export function ExerciseSearchModal({
                     <DsPillButton
                       scheme={scheme}
                       label={t('pro.plan.item.search.retry')}
-                      onPress={() => onSearch(searchState.query)}
+                      onPress={() => onSearch(currentSearchState.query)}
                       variant="outline"
                       size="sm"
                       fullWidth={false}
@@ -270,7 +419,7 @@ export function ExerciseSearchModal({
                   </View>
                 )}
 
-                {searchState.kind === 'done' && searchState.results.length === 0 && (
+                {showEmptyState && (
                   <Text
                     style={[styles.emptyText, { color: theme.color.textSecondary, marginTop: 40 }]}
                     accessibilityLiveRegion="polite"
@@ -280,54 +429,67 @@ export function ExerciseSearchModal({
                   </Text>
                 )}
 
-                {searchState.kind === 'done' &&
-                  searchState.results.map((exercise) => (
-                    <Pressable
-                      key={exercise.id}
-                      style={[styles.exerciseRow, { borderColor: theme.color.border }]}
-                      onPress={() => handleSelectExercise(exercise)}
-                      accessibilityRole="button"
-                      accessibilityLabel={exercise.title}
-                      testID={`exerciseSearch.result.${exercise.id}`}
-                    >
-                      {exercise.thumbnailUrl ? (
-                        <Image
-                          source={{ uri: exercise.thumbnailUrl }}
-                          style={styles.thumbnail}
-                          contentFit="cover"
+                {visibleResults.map((exercise) => (
+                  <Pressable
+                    key={exercise.id}
+                    style={[styles.exerciseRow, { borderColor: theme.color.border }]}
+                    onPress={() => handleSelectExercise(exercise)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      currentSuggestionState.kind === 'done' &&
+                      currentSuggestionState.suggestionId === exercise.id
+                        ? `${exercise.title}, ${t('pro.plan.item.search.semantic.badge')}`
+                        : exercise.title
+                    }
+                    testID={`exerciseSearch.result.${exercise.id}`}
+                  >
+                    {exercise.thumbnailUrl ? (
+                      <Image
+                        source={{ uri: exercise.thumbnailUrl }}
+                        style={styles.thumbnail}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.thumbnailPlaceholder,
+                          { backgroundColor: theme.color.surfaceMuted },
+                        ]}
+                      >
+                        <MaterialIcons
+                          name="fitness-center"
+                          size={24}
+                          color={theme.color.textSecondary}
                         />
-                      ) : (
-                        <View
-                          style={[
-                            styles.thumbnailPlaceholder,
-                            { backgroundColor: theme.color.surfaceMuted },
-                          ]}
-                        >
-                          <MaterialIcons
-                            name="fitness-center"
-                            size={24}
-                            color={theme.color.textSecondary}
-                          />
-                        </View>
-                      )}
+                      </View>
+                    )}
 
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.exerciseName, { color: theme.color.textPrimary }]}>
-                          {exercise.title}
-                        </Text>
-                        {exercise.muscleGroup && (
-                          <Text style={{ fontSize: 12, color: theme.color.textSecondary }}>
-                            {translateMuscleGroup(exercise.muscleGroup, t)}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.exerciseName, { color: theme.color.textPrimary }]}>
+                        {exercise.title}
+                      </Text>
+                      {currentSuggestionState.kind === 'done' &&
+                        currentSuggestionState.suggestionId === exercise.id && (
+                          <Text
+                            style={[styles.semanticBadge, { color: theme.color.accentPrimary }]}
+                            testID={`exerciseSearch.semantic.badge.${exercise.id}`}
+                          >
+                            {t('pro.plan.item.search.semantic.badge')}
                           </Text>
                         )}
-                      </View>
-                      <MaterialIcons
-                        name="chevron-right"
-                        size={24}
-                        color={theme.color.textSecondary}
-                      />
-                    </Pressable>
-                  ))}
+                      {exercise.muscleGroup && (
+                        <Text style={{ fontSize: 12, color: theme.color.textSecondary }}>
+                          {translateMuscleGroup(exercise.muscleGroup, t)}
+                        </Text>
+                      )}
+                    </View>
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={24}
+                      color={theme.color.textSecondary}
+                    />
+                  </Pressable>
+                ))}
               </ScrollView>
             </>
           ) : (
@@ -598,6 +760,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: DsSpace.sm,
     paddingTop: DsSpace.xxl,
+  },
+  semanticPrompt: {
+    gap: DsSpace.xs,
+    marginBottom: DsSpace.sm,
+  },
+  semanticDisclosure: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  semanticStatus: {
+    alignItems: 'center',
+    gap: DsSpace.sm,
+    paddingTop: DsSpace.lg,
+  },
+  semanticBadge: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
   },
   // Details View Styles
   detailsContainer: {

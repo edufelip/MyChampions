@@ -149,6 +149,7 @@
         "web:training",
         "web:shell",
         "web:exercise-search",
+        "web:exercise-search-semantic",
         "web:assigned-plan-detail-heading"
       ],
       "detoxSuites": ["detox:training"],
@@ -162,6 +163,7 @@
         "web:nutrition",
         "web:training",
         "web:exercise-search",
+        "web:exercise-search-semantic",
         "web:assigned-plan-detail-heading"
       ],
       "detoxSuites": ["detox:plans"],
@@ -460,6 +462,15 @@
       "playwrightConfig": "playwright.training.config.ts",
       "projects": ["chromium"],
       "specs": ["e2e/web/exercise-search-modal.spec.ts"],
+      "grep": "@feature:training",
+      "tier": "feature",
+      "ci": true
+    },
+    "web:exercise-search-semantic": {
+      "runner": "playwright",
+      "playwrightConfig": "playwright.training.semantic.config.ts",
+      "projects": ["chromium"],
+      "specs": ["e2e/web/exercise-search-semantic.spec.ts"],
       "grep": "@feature:training",
       "tier": "feature",
       "ci": true

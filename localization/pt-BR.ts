@@ -998,6 +998,15 @@ export const ptBR: Record<TranslationKey, string> = {
   'pro.plan.item.search.error': 'Erro ao buscar exercícios.',
   'pro.plan.item.search.retry': 'Tentar novamente',
   'pro.plan.item.search.back': 'Voltar para a busca',
+  'pro.plan.item.search.semantic.cta': 'Sugerir uma correspondência',
+  'pro.plan.item.search.semantic.disclosure':
+    'Envia este texto de busca à TypeSafe para sugerir um exercício do catálogo. Você escolhe o que adicionar.',
+  'pro.plan.item.search.semantic.loading': 'Buscando uma sugestão…',
+  'pro.plan.item.search.semantic.badge': 'Correspondência sugerida',
+  'pro.plan.item.search.semantic.none':
+    'Nenhuma correspondência clara. Tente um nome de exercício mais específico.',
+  'pro.plan.item.search.semantic.unavailable':
+    'As sugestões estão indisponíveis. Você ainda pode usar os resultados da busca.',
   'pro.plan.item.detail.dialog_title': 'Detalhes do exercício',
   'pro.plan.item.detail.description': 'Descrição',
   'pro.plan.item.detail.instructions': 'Instruções',

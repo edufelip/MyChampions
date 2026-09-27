@@ -1,10 +1,10 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-
+import { describe, it } from 'node:test';
 import {
   ExerciseServiceSourceError,
   getExerciseById,
   searchExerciseLibrary,
+  suggestExerciseLibrary,
 } from './exercise-service-source';
 
 function makeDeps(overrides: Record<string, unknown> = {}) {
@@ -291,6 +291,155 @@ describe('searchExerciseLibrary', () => {
         assert.equal(err.code, 'configuration');
         return true;
       },
+    );
+  });
+});
+
+describe('suggestExerciseLibrary', () => {
+  it('uses the separate opt-in endpoint and sends explicit consent', async () => {
+    let capturedUrl = '';
+    let capturedInit: RequestInit | undefined;
+
+    const result = await suggestExerciseLibrary('supino com barra', 20, {
+      getServerBaseUrl: () => 'http://localhost:3400',
+      getCurrentAccessToken: async () => 'server-access-token',
+      getLocale: async () => 'pt-BR',
+      createRequestId: () => 'req-suggest-1',
+      fetchFn: async (url, init) => {
+        capturedUrl = String(url);
+        capturedInit = init;
+        return makeResponse(200, {
+          schemaVersion: 'exercise-suggestion.v1',
+          query: 'supino com barra',
+          lang: 'pt-BR',
+          page: 1,
+          pageSize: 20,
+          total: 1,
+          status: 'suggested',
+          suggestion: { exerciseId: 'bench-1' },
+          results: [
+            {
+              id: 'bench-1',
+              slug: 'bench-press',
+              title: 'Supino com barra',
+              muscleGroup: 'chest',
+              equipment: 'barbell',
+              hasVideo: false,
+              hasVideoWhite: false,
+              hasVideoGym: false,
+            },
+          ],
+        });
+      },
+    });
+
+    assert.equal(capturedUrl, 'http://localhost:3400/integrations/exercise/suggest');
+    assert.equal(capturedInit?.method, 'POST');
+    assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+      query: 'supino com barra',
+      page: 1,
+      pageSize: 20,
+      lang: 'pt-BR',
+      consent: true,
+    });
+    assert.equal(result.status, 'suggested');
+    assert.equal(result.suggestionId, 'bench-1');
+  });
+
+  it('rejects a suggestion id that is absent from the returned candidate list', async () => {
+    await assert.rejects(
+      () =>
+        suggestExerciseLibrary('bench', 20, {
+          getServerBaseUrl: () => 'http://localhost:3400',
+          getCurrentAccessToken: async () => 'server-access-token',
+          getLocale: async () => 'en-US',
+          createRequestId: () => 'req-suggest-unknown',
+          fetchFn: async () =>
+            makeResponse(200, {
+              schemaVersion: 'exercise-suggestion.v1',
+              query: 'bench',
+              lang: 'en-US',
+              page: 1,
+              pageSize: 20,
+              total: 1,
+              status: 'suggested',
+              suggestion: { exerciseId: 'not-returned' },
+              results: [
+                {
+                  id: 'bench-1',
+                  slug: 'bench-press',
+                  title: 'Bench Press',
+                  muscleGroup: 'chest',
+                  equipment: 'barbell',
+                },
+              ],
+            }),
+        }),
+      (err: ExerciseServiceSourceError) => {
+        assert.equal(err.code, 'invalid_response');
+        return true;
+      },
+    );
+  });
+
+  it('preserves explicit no_match without inventing a suggestion id', async () => {
+    const result = await suggestExerciseLibrary('unrecognized movement', 20, {
+      getServerBaseUrl: () => 'http://localhost:3400',
+      getCurrentAccessToken: async () => 'server-access-token',
+      getLocale: async () => 'en-US',
+      createRequestId: () => 'req-suggest-none',
+      fetchFn: async () =>
+        makeResponse(200, {
+          schemaVersion: 'exercise-suggestion.v1',
+          query: 'unrecognized movement',
+          lang: 'en-US',
+          page: 1,
+          pageSize: 20,
+          total: 0,
+          status: 'no_match',
+          suggestion: { exerciseId: null },
+          results: [],
+        }),
+    });
+
+    assert.equal(result.status, 'no_match');
+    assert.equal(result.suggestionId, null);
+  });
+
+  it('rejects a suggested response that omits its selected catalog id', async () => {
+    await assert.rejects(
+      () =>
+        suggestExerciseLibrary('bench', 20, {
+          getServerBaseUrl: () => 'http://localhost:3400',
+          getCurrentAccessToken: async () => 'server-access-token',
+          getLocale: async () => 'en-US',
+          createRequestId: () => 'req-suggest-missing',
+          fetchFn: async () =>
+            makeResponse(200, {
+              schemaVersion: 'exercise-suggestion.v1',
+              query: 'bench',
+              lang: 'en-US',
+              page: 1,
+              pageSize: 20,
+              total: 1,
+              status: 'suggested',
+              suggestion: null,
+              results: [
+                {
+                  id: 'bench-1',
+                  slug: 'bench-press',
+                  title: 'Bench Press',
+                  muscleGroup: 'chest',
+                  equipment: 'barbell',
+                  hasVideo: false,
+                  hasVideoWhite: false,
+                  hasVideoGym: false,
+                },
+              ],
+            }),
+        }),
+      (error: unknown) =>
+        error instanceof ExerciseServiceSourceError && error.code === 'invalid_response',
     );
   });
 });
