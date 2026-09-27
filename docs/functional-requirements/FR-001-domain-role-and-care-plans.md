@@ -291,6 +291,16 @@ Define the target functional scope for a subscription-based student wellness app
   synchronous duplicate sends. Temporary dialog dismissal during the cooldown
   shall preserve the draft, cooldown, and idempotency key until expiry.
 
+- `FR-275`: Meal-photo, email sign-up, and RevenueCat failure classification
+  shall use explicit structured codes and trusted transport context; diagnostic
+  message prose, localization text, and arbitrary object coercion shall never
+  determine a domain reason. Unknown or malformed values shall fail closed
+  without changing auth/session or entitlement state.
+- `FR-276`: A RevenueCat payment-pending result shall remain distinct from
+  cancellation, preserve the current auth-scoped entitlement state, clear
+  loading, and render localized neutral status in the professional subscription
+  and AI meal-photo consumers without automatic retry or polling.
+
 ## Non-Functional Direction (Draft)
 
 - Multi-platform support: Android, iOS, web.

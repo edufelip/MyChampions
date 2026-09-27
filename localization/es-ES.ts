@@ -595,6 +595,8 @@ export const esES: Record<TranslationKey, string> = {
   'auth.terms.invalid_link':
     'Este enlace no está disponible porque falta la dirección o no es segura.',
   'pro.subscription.error': 'No se pudo cargar el estado de la suscripción. Inténtalo de nuevo.',
+  'subscription.error.payment_pending':
+    'Tu pago sigue pendiente. El acceso se actualizará cuando la tienda lo confirme. Puedes volver a comprobarlo más tarde.',
   'offline.banner':
     'Estás sin conexión. Mostrando datos en caché. Las actualizaciones están bloqueadas hasta reconectar.',
   'offline.write_lock': 'Conéctate a internet para guardar cambios.',

@@ -55,6 +55,7 @@
 - Share link generation requires existing saved meal record.
 - `mealId` route parameter must resolve to a UUIDv7 record for edit mode. A missing, deleted, or unauthorized `mealId` must never render a blank editable form — it fails closed to the not-found/load-error state described above (AC-401, TC-401).
 - Recoverable image-upload failures must show reason and retry action without discarding current draft fields.
+- RevenueCat `payment_pending` from the AI paywall is a neutral subscription notice with polite live-region semantics; it preserves the current entitlement gate and meal draft, and does not retry or poll.
 
 ## Data Contract
 - Inputs:

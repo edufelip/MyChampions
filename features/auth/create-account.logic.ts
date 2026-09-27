@@ -1,3 +1,9 @@
+import {
+  isSafeInstanceOf,
+  readBoundedString,
+  readOwnField,
+} from '@/features/errors/read-error-fields';
+
 const ASCII_PUNCTUATION_REGEX = /[!-/:-@[-`{-~]/;
 const UPPERCASE_REGEX = /[A-Z]/;
 const NUMBER_REGEX = /[0-9]/;
@@ -134,52 +140,52 @@ export function resolveCreateAccountValidationAnalyticsReason(
 }
 
 export function normalizeCreateAccountReason(error: unknown): CreateAccountErrorReason {
-  if (error instanceof CreateAccountFailure) {
-    return error.reason;
+  if (isSafeInstanceOf(error, CreateAccountFailure)) {
+    return isCreateAccountErrorReason(error.reason) ? error.reason : 'unknown';
   }
 
   if (typeof error !== 'object' || error === null) {
     return 'unknown';
   }
 
-  const maybeError = error as { code?: unknown; message?: unknown };
-  const code = typeof maybeError.code === 'string' ? maybeError.code.toLowerCase() : '';
-  const message = typeof maybeError.message === 'string' ? maybeError.message.toLowerCase() : '';
+  const codeField = readOwnField(error, 'code');
+  if (!codeField.readable) return 'unknown';
+  const rawCode = readBoundedString(codeField.value);
+  if (rawCode === null) return 'unknown';
+
+  // Only the producer's short ASCII aliases are a machine contract.  This
+  // lowercases ASCII A-Z for compatibility with the existing wire adapter;
+  // diagnostic prose is deliberately ignored.
+  const code = rawCode.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
 
   // Deliberately no "duplicate email"/"already registered" detection here (ET-75):
   // the server no longer reveals whether an email was already registered, so this
   // reason is only ever produced explicitly by createAccountWithEmailPasswordFromSource
   // (as 'requires_sign_in') when it cannot establish a session after signup.
 
-  if (
-    code.includes('provider_conflict') ||
-    code.includes('provider-conflict') ||
-    message.includes('provider conflict') ||
-    message.includes('different provider')
-  ) {
+  if (code === 'provider_conflict' || code === 'provider-conflict') {
     return 'provider_conflict';
   }
 
-  if (
-    code.includes('configuration') ||
-    code.includes('missing_config') ||
-    code.includes('server_not_configured') ||
-    message.includes('not configured') ||
-    message.includes('missing config')
-  ) {
+  if (code === 'configuration' || code === 'missing_config' || code === 'server_not_configured') {
     return 'configuration';
   }
 
-  if (
-    code.includes('network') ||
-    code.includes('timeout') ||
-    message.includes('network') ||
-    message.includes('fetch')
-  ) {
+  if (code === 'network' || code === 'network_error' || code === 'timeout') {
     return 'network';
   }
 
   return 'unknown';
+}
+
+function isCreateAccountErrorReason(value: unknown): value is CreateAccountErrorReason {
+  return (
+    value === 'requires_sign_in' ||
+    value === 'network' ||
+    value === 'provider_conflict' ||
+    value === 'configuration' ||
+    value === 'unknown'
+  );
 }
 
 export function mapCreateAccountReasonToMessageKey(
