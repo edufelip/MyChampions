@@ -132,7 +132,8 @@ authorization/session/entitlement invariants.
 | `yarn test:unit` | Pass | 1,649 passed, 36 skipped, 0 failed; `supervision/typed-errors-full-unit-final.log` |
 | `yarn lint` | Pass | Full app lint gate; `supervision/typed-errors-lint.log` |
 | `yarn format:check` | Partial | Changed files pass targeted Prettier check; repository-wide check reports seven pre-existing unrelated files |
-| `git diff --check` | Pending final run | Both worktrees |
+| `git diff --check` | Pass | Both worktrees clean at final commits |
+| Hosted selective preflight | Pass | Exact-head rerun `36283301533` for `08381f4`; aggregate Selective CI gate remains pending |
 
 ## Open Questions
 
@@ -154,6 +155,7 @@ authorization/session/entitlement invariants.
 | Report/log paths | `/Users/eduwaldo/Projects/MyChampions/outputs/typesafe-delivery-2026-09-26/et-230` and `/Users/eduwaldo/Projects/MyChampions/outputs/typesafe-delivery-2026-09-26/supervision` |
 | Screenshot/golden/snapshot paths | `/Users/eduwaldo/Projects/MyChampions/outputs/typesafe-delivery-2026-09-26/supervision/subscription-pending-mobile.png`, `ai-quick-log-pending.png`, and `ai-builder-pending.png` |
 | Manual/dev smoke | Pass on owned port 8330; server target 8331 remained unstarted, so connection-refused analytics noise is recorded separately |
+| Independent mobile replay | Pass | Root replay on owned port 8339: quick-log and builder pending → Refresh → pending; grams/manual name preserved |
 | Residual risk | Live RevenueCat/store behavior not proven |
 | Merge/deploy recommendation | Review only; do not merge/deploy until exact-head CI and provider gates are independently satisfied |
 
