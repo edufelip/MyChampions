@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "c89fde1eaf81b9073fc3d1311fb7ed3f40bb97b8",
+    "commit": "49bae6944cb9978efd790dce4b860e88c560bcb5",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -1290,7 +1290,7 @@
       "paths": [
         "scripts/testing/run-android-training-attempt.ts"
       ],
-      "revision": "262bb0816102f06a0fdcc87b7637cc56d7429a8dd8bf3926980836d5fb090d81"
+      "revision": "d7ab13bc3264a4da8f8245a5f3000208096dbfab2a8239a8068d8e0a358cc8d2"
     },
     {
       "id": "SRC-training-attempt-outcome-source",
@@ -1326,7 +1326,7 @@
       "paths": [
         "scripts/testing/capture-android-testability.ts"
       ],
-      "revision": "516d404f01120ef66f8db88e1bc7796c3a383aaea13bb7fdd61b29e360ebc1b8"
+      "revision": "f641dadf5d311ca398fb3472e8f3631ef5152c9ca26eabf418f20772b56589c4"
     },
     {
       "id": "SRC-android-session-checkpoint-copy-source",

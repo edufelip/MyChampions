@@ -72,6 +72,8 @@ export type AndroidTrainingAttemptResult = {
     | 'harness-blocked'
     | null;
   captureResult: string;
+  /** The owned capture's own cleanup outcome; the public receipt binds to it. */
+  captureCleanup: 'cleaned' | 'not-acquired' | 'failed-recovery-ledger-retained' | null;
   captureTimeout: 'whole-capture' | null;
   cancellation: 'SIGINT' | 'SIGTERM' | null;
   callbackInvocations: number;
@@ -318,6 +320,12 @@ export async function runAndroidTrainingAttempt(options: {
     childClassification,
     captureResult:
       typeof capture.report.result === 'string' ? capture.report.result : 'harness-blocked',
+    captureCleanup:
+      capture.report.cleanup === 'cleaned' ||
+      capture.report.cleanup === 'not-acquired' ||
+      capture.report.cleanup === 'failed-recovery-ledger-retained'
+        ? capture.report.cleanup
+        : null,
     captureTimeout: capture.report.budgetTimeout === 'whole-capture' ? 'whole-capture' : null,
     cancellation:
       capture.report.cancellation === 'SIGINT' || capture.report.cancellation === 'SIGTERM'

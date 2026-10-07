@@ -3558,7 +3558,12 @@ async function executeOwnedAndroidSession(
         flow,
         `appId: ${verified.appId}\nname: Android inventory ${label}\n---\n${actions}\n- extendedWaitUntil:\n    visible:\n      ${selector(required[0])}\n    timeout: 90000\n${required
           .slice(1)
-          .map((value) => `- assertVisible:\n    ${selector(value)}\n`)
+          // Every required selector must become visible; an instant assert
+          // races elements that render a moment after the first one.
+          .map(
+            (value) =>
+              `- extendedWaitUntil:\n    visible:\n      ${selector(value)}\n    timeout: 30000\n`,
+          )
           .join('')}`,
         { flag: 'wx', mode: 0o600 },
       );
@@ -3693,7 +3698,12 @@ async function executeOwnedAndroidSession(
         flow,
         `appId: ${verified.appId}\nname: Android action ${label}\n---\n${actions}\n- extendedWaitUntil:\n    visible:\n      ${selector(required[0])}\n    timeout: 90000\n${required
           .slice(1)
-          .map((value) => `- assertVisible:\n    ${selector(value)}\n`)
+          // Every required selector must become visible; an instant assert
+          // races elements that render a moment after the first one.
+          .map(
+            (value) =>
+              `- extendedWaitUntil:\n    visible:\n      ${selector(value)}\n    timeout: 30000\n`,
+          )
           .join('')}`,
         { flag: 'wx', mode: 0o600 },
       );
