@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "2c99c1bc66b81ad9310bf792c0d6d66d8d6e4d5b",
+    "commit": "c89fde1eaf81b9073fc3d1311fb7ed3f40bb97b8",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -1326,7 +1326,7 @@
       "paths": [
         "scripts/testing/capture-android-testability.ts"
       ],
-      "revision": "eb8a89ffcbdf6213a12804ed3b4e3a77a6acf985527db5105973a3babd390998"
+      "revision": "516d404f01120ef66f8db88e1bc7796c3a383aaea13bb7fdd61b29e360ebc1b8"
     },
     {
       "id": "SRC-android-session-checkpoint-copy-source",
@@ -1506,7 +1506,7 @@
       "paths": [
         "scripts/testing/native-camera-android-producer.ts"
       ],
-      "revision": "b64a8fbe7d91910941b130a67a1abccd2c57247b4b0df0023301e0c5bd8422b0"
+      "revision": "1442b20554092a24931fcc87125e0508260804c20bd3781714c7b7873b41302a"
     },
     {
       "id": "SRC-android-camera-runtime-locale-source",

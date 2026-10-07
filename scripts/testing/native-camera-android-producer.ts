@@ -740,6 +740,9 @@ export async function runAndroidCameraDeniedProducer(
     expectedCodeSha256: manualCodeSha256,
     expectedActorAuthUidSha256: sha256(context.fixtures.accounts.coach.authUid),
   });
+  // The manual step types ${MAESTRO_CAMERA_INVITE_CODE}; inject it before
+  // rendering that step, or Maestro types the literal "undefined".
+  context.capture.setInviteCode(manualCode);
   const manual = await observeFrame(
     context,
     runtimeIdentity,
@@ -756,7 +759,6 @@ export async function runAndroidCameraDeniedProducer(
     connectButtonId: ANDROID_CAMERA_UI.connectButton,
     qrModalId: ANDROID_CAMERA_UI.qrModal,
   });
-  context.capture.setInviteCode(manualCode);
   const beforeRequestId = context.proxy.requestIdFence;
   const submitActions = ['- hideKeyboard', context.capture.savedFlow.renderSubmit()]
     .filter((value) => value.length > 0)

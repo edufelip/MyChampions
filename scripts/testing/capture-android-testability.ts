@@ -4897,6 +4897,12 @@ async function executeOwnedAndroidSession(
                 name: 'UnknownError',
                 message: 'Android camera callback failed',
               };
+        // Keep the failing frame locations privately; the report keeps name/message.
+        await writeFile(
+          path.join(output, 'android-camera-callback-failure-stack.private.log'),
+          `${error instanceof Error ? (error.stack ?? '').split('\n').slice(0, 12).join('\n') : String(error)}\n`,
+          { flag: 'wx', mode: 0o600 },
+        ).catch(() => undefined);
         throw error;
       }
     }
