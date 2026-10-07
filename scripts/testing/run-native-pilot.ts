@@ -1941,24 +1941,44 @@ async function main() {
                                     },
                                   });
                                 })()
-                              : await runAndroidDetoxSessionAttemptForNativePilot({
-                                  repositoryRoot: root,
-                                  serverRoot,
-                                  artifactRoot: output,
-                                  requestedRunId: runId,
-                                  requestedAttemptId: attemptId,
-                                  selection: selected,
-                                  signal: controller.signal,
-                                  deadlineMs: resolveAndroidDetoxConnectionDeadlineMs({
-                                    runStartedMs: runStarted,
-                                    nowMs: performance.now(),
-                                    wholeRunMs: deadlines.wholeRunMs,
-                                    stepMs: deadlines.stepMs,
-                                  }),
-                                  deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-                                  buildRunId: androidDetoxBuildRunId!,
-                                  parentEnv: process.env,
-                                })
+                              : await (async () => {
+                                  // The session baseline writes its own census and
+                                  // receipts, so it needs a capture root separate from
+                                  // the runner's output root (as the cold route does).
+                                  const captureInvocation = await createNativePilotOutputRoot({
+                                    invocation: {
+                                      selection: selected.arguments,
+                                      requestedRunId: null,
+                                      requestedAttemptId: null,
+                                      outputParent: null,
+                                    },
+                                    defaultOutputParent: path.join(
+                                      root,
+                                      '.qa/artifacts/native-pilot',
+                                    ),
+                                    signal: controller.signal,
+                                    deadlineAt: runStarted + deadlines.wholeRunMs,
+                                  });
+                                  return runAndroidDetoxSessionAttemptForNativePilot({
+                                    repositoryRoot: root,
+                                    serverRoot,
+                                    artifactRoot: captureInvocation.outputRoot,
+                                    captureRunId: path.basename(captureInvocation.outputRoot),
+                                    requestedRunId: runId,
+                                    requestedAttemptId: attemptId,
+                                    selection: selected,
+                                    signal: controller.signal,
+                                    deadlineMs: resolveAndroidDetoxConnectionDeadlineMs({
+                                      runStartedMs: runStarted,
+                                      nowMs: performance.now(),
+                                      wholeRunMs: deadlines.wholeRunMs,
+                                      stepMs: deadlines.stepMs,
+                                    }),
+                                    deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
+                                    buildRunId: androidDetoxBuildRunId!,
+                                    parentEnv: process.env,
+                                  });
+                                })()
                             : executionAdapter === 'ios-detox-session'
                               ? await iosDetoxSessionRoute!.runIosDetoxSessionAttemptForNativePilot(
                                   {

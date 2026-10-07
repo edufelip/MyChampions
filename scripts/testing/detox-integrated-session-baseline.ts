@@ -3142,6 +3142,8 @@ export async function runDetoxIntegratedSessionBaseline(
       session,
       appOrigin,
       requestProfile: 'native',
+      // The qualified binary embeds its API origin; bind the proxy to that port.
+      requestedPort: Number(new URL(options.build.embeddedRuntime.apiOrigin).port),
     });
     acquisitionSequence.push('proxy');
     if (proxy.origin === appOrigin) throw new Error('Detox proxy and app origins must differ');
@@ -3202,6 +3204,7 @@ export async function runDetoxIntegratedSessionBaseline(
         },
         appId: options.build.appIdentifier,
         binaryPath: options.build.binaryPath,
+        testBinaryPath: options.build.testBinaryPath ?? undefined,
         binaryHash: options.build.binaryHash,
         buildProfile: options.configuration,
         metroPort: options.build.metroPort,
@@ -3280,6 +3283,44 @@ export async function runDetoxIntegratedSessionBaseline(
         name: path.basename(reset.receiptPath),
         bytes: reset.identity.size,
         sha256: reset.receiptHash,
+      });
+    } else if (
+      options.platform === 'android' &&
+      (target as { androidSessionStorage?: unknown }).androidSessionStorage
+    ) {
+      // android.attached does not provision the app. Without the cold route,
+      // still install both qualified APKs and bind Metro/API reverses before
+      // the first storage checkpoint reads the app sandbox.
+      const androidTarget = target as DetoxOwnedTarget & {
+        platform: 'android';
+        androidTargetRunId?: string;
+        androidOsVersion?: string;
+        androidSessionStorage?: DetoxAndroidSessionStorageTarget;
+      };
+      const storage = androidTarget.androidSessionStorage;
+      if (!storage || !androidTarget.androidTargetRunId || !androidTarget.androidOsVersion)
+        throw new Error('Android session target did not expose its acquired owner identity');
+      await prepareT15AndroidSessionColdReset({
+        artifactRoot: artifact,
+        captureRunId,
+        ownerRunId: androidTarget.androidTargetRunId,
+        target: {
+          ...androidTarget,
+          androidSessionStorage: storage,
+        },
+        appId: options.build.appIdentifier,
+        binaryPath: options.build.binaryPath,
+        testBinaryPath: options.build.testBinaryPath ?? undefined,
+        binaryHash: options.build.binaryHash,
+        buildProfile: options.configuration,
+        metroPort: options.build.metroPort,
+        apiOrigin: proxy.origin,
+        binding: androidStorageBinding(await session.probeApiLifetime(runSignal)),
+        deadlineMs: Math.min(
+          600_000,
+          Math.max(100, Math.floor(deadlineAtMonotonicMs - performance.now())),
+        ),
+        signal: runSignal,
       });
     }
     const captureCheckpoint = async (
@@ -3429,7 +3470,8 @@ export async function runDetoxIntegratedSessionBaseline(
       apiOrigin: proxy.origin,
       parentEnv,
       signal: runSignal,
-      deadlineMs,
+      // Expo acquisition accepts at most 600 s; the run budget can be larger.
+      deadlineMs: Math.min(600_000, deadlineMs),
       surface: 'native',
     });
     acquisitionSequence.push('expo');
@@ -3905,6 +3947,18 @@ export async function runDetoxIntegratedSessionBaseline(
       childExecution?.execution === 'completed' ? 'verification' : 'execution',
       error,
     );
+    // The report keeps only phase/name; retain the message in a separate
+    // private diagnostic so a blocked run is debuggable.
+    await writeFile(
+      path.join(options.artifactRoot, 'detox-session-baseline-failure.private.json'),
+      `${JSON.stringify({
+        kind: 'private Detox session baseline failure diagnostic; not evidence',
+        phase: failure.phase,
+        name: failure.name,
+        message: (error instanceof Error ? error.message : String(error)).slice(0, 2048),
+      })}\n`,
+      { flag: 'wx', mode: 0o600 },
+    ).catch(() => undefined);
   } finally {
     beginTimedPhase('cleanup');
     const stop = async (name: string, action: (() => Promise<unknown>) | undefined) => {

@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "9d0c3f4862e6c8b8004fd3378f9d6897ae46493e",
+    "commit": "2b0e6ab083551487ba8a6dc357fbb0e82daee545",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -723,7 +723,7 @@
       "paths": [
         "scripts/testing/detox-android-connection-producer.ts"
       ],
-      "revision": "54b36e8e8b7b3e486a2fa8e6b1b416052d61e11b4254db927258201ee5bc1a78"
+      "revision": "a1241181640b3a5006407059c411f6fbba621fedc281956d2278c917c3b938f4"
     },
     {
       "id": "SRC-android-detox-connection-cleanup-source",
@@ -966,7 +966,7 @@
       "paths": [
         "scripts/testing/run-native-pilot.ts"
       ],
-      "revision": "5bf32aae7fdeff95ee660c571c50b2f55a54499bbcea636966d2fb512aa59f8f"
+      "revision": "4dd4dd18131cd6cc721c40530b20b8c19ff35db136b8aded41d87b0b6b92ca55"
     },
     {
       "id": "SRC-runner-wrapper-source",
@@ -1731,7 +1731,7 @@
       "paths": [
         "scripts/testing/run-native-pilot.ts"
       ],
-      "revision": "5bf32aae7fdeff95ee660c571c50b2f55a54499bbcea636966d2fb512aa59f8f"
+      "revision": "4dd4dd18131cd6cc721c40530b20b8c19ff35db136b8aded41d87b0b6b92ca55"
     },
     {
       "id": "SRC-ios-detox-camera-e2e-source",
@@ -2064,7 +2064,7 @@
       "paths": [
         "scripts/testing/detox-integrated-session-baseline.ts"
       ],
-      "revision": "37193368b3ac776f6693b17390e5771e440d4053706a15f11a319dd314cd3dcc"
+      "revision": "cef6fd891413ba7e0455eb485e3eb7a521b1e319f2be47599dd7a2e73751a6c7"
     },
     {
       "id": "SRC-detox-dispatch-android-qualified-build-source",
@@ -2073,7 +2073,7 @@
       "paths": [
         "scripts/testing/detox-android-qualified-build.ts"
       ],
-      "revision": "a246a0adddabb5a134987eb9468d7fd4a9c9285a194c02c2318b84f3e6f5ae96"
+      "revision": "b3014839180ce77a34115d5238991314bef86a16cd0e5f200e438d9b1c424017"
     },
     {
       "id": "SRC-detox-dispatch-native-hierarchy-source",
@@ -2352,7 +2352,7 @@
       "paths": [
         "scripts/testing/t15-detox-android-session-reset-preparation.ts"
       ],
-      "revision": "057df0403028c3b502796b28d299ada945c373582d14445310c89f6ce6172fd9"
+      "revision": "76aa1f033e0ea9efb5508ec2201687d823f52ab0eb9f4ab76a1ae86da5072251"
     },
     {
       "id": "SRC-detox-cold-lifecycle-source",

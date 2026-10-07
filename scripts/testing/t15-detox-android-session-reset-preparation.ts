@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { chmod, readFile } from 'node:fs/promises';
+import { chmod, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { androidMetroPreference, assertAndroidReverseMappings } from './android-build-identity';
 import type {
@@ -31,7 +31,10 @@ export type T15AndroidSessionResetPreparationInput = Readonly<{
   metroPort: number;
   apiOrigin: string;
   binding: DetoxAndroidSessionStorageBinding;
-  expectation: ColdResetPreparationExpectation;
+  /** Cold-route binding; unused by the preparation steps themselves. */
+  expectation?: ColdResetPreparationExpectation;
+  /** Detox instrumentation APK; android.attached does not install it. */
+  testBinaryPath?: string;
   deadlineMs: number;
   signal: AbortSignal;
 }>;
@@ -197,6 +200,17 @@ export async function prepareT15AndroidSessionColdReset(
   );
   if (!/Success\s*$/u.test(await stdout(install, 'android-install')))
     throw new Error('Android install did not report Success');
+  if (input.testBinaryPath !== undefined) {
+    if (!path.isAbsolute(input.testBinaryPath))
+      throw new Error('Android reset test binary path is not absolute');
+    const testInstall = await execute(
+      'android-test-install',
+      ['install', '-r', '-d', input.testBinaryPath],
+      'android-test-install.stdout',
+    );
+    if (!/Success\s*$/u.test(await stdout(testInstall, 'android-test-install')))
+      throw new Error('Android test APK install did not report Success');
+  }
 
   const packagePath = await execute(
     'android-installed-path',
@@ -214,7 +228,10 @@ export async function prepareT15AndroidSessionColdReset(
     ['pull', remoteApkPath, installedPath],
     'android-installed-build.stdout',
   );
-  if (!(await stdout(installed, 'android-installed-build')).includes('file pulled'))
+  // adb reports "1 file pulled" on stderr, not stdout; the byte hash below is
+  // the binding proof, so only require the pull to have produced the file.
+  await stdout(installed, 'android-installed-build');
+  if (!(await stat(installedPath).catch(() => null))?.isFile())
     throw new Error('Android installed APK pull did not report a completed file');
   await chmod(installedPath, 0o600);
   const installedBytes = await readFile(installedPath);

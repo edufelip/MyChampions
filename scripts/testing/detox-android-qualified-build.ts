@@ -488,6 +488,7 @@ export async function prepareAndroidDetoxQualifiedBuild(input: {
     binaryReuse: reuse,
     environmentHash: runtimeMetadata.environmentHash,
     toolVersions: runtimeMetadata.toolVersions,
+    toolVersionEvidence: runtimeMetadata.toolVersionEvidence,
   };
   requireDetoxBuildInstrumentation(build, repositoryRoot);
   await writeExclusiveJson(descriptorPath(repositoryRoot, input.buildRunId), {

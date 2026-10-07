@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { lstat, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -175,22 +176,30 @@ export function createOwnedAndroidDetoxConnectionProducer(): AndroidDetoxConnect
           label: input.label,
           env: device.env,
           cwd,
+          // Forward stdin (e.g. the Metro preference XML written via `tee`).
+          input: input.input,
           deadlineMs: input.deadlineMs,
           phase: 'step',
           signal: input.signal,
           stdoutPath: input.stdoutPath,
         });
+        const inputSha256 =
+          input.input !== undefined
+            ? createHash('sha256').update(input.input).digest('hex')
+            : undefined;
         return {
           ...execution,
           command,
           argv,
           cwd,
           deadlineMs: input.deadlineMs,
+          ...(inputSha256 ? { inputSha256 } : {}),
           commandHash: buildDetoxAndroidStorageCommandHash({
             command,
             argv,
             cwd,
             deadlineMs: input.deadlineMs,
+            ...(inputSha256 ? { inputSha256 } : {}),
             phase: 'step',
             target: input.target,
             binding: input.binding,
@@ -210,22 +219,30 @@ export function createOwnedAndroidDetoxConnectionProducer(): AndroidDetoxConnect
           label: input.label,
           env: { ...process.env },
           cwd,
+          // Forward stdin (e.g. the Metro preference XML written via `tee`).
+          input: input.input,
           deadlineMs: input.deadlineMs,
           phase: 'step',
           signal: input.signal,
           stdoutPath: input.stdoutPath,
         });
+        const inputSha256 =
+          input.input !== undefined
+            ? createHash('sha256').update(input.input).digest('hex')
+            : undefined;
         return {
           ...execution,
           command,
           argv,
           cwd,
           deadlineMs: input.deadlineMs,
+          ...(inputSha256 ? { inputSha256 } : {}),
           commandHash: buildDetoxAndroidStorageCommandHash({
             command,
             argv,
             cwd,
             deadlineMs: input.deadlineMs,
+            ...(inputSha256 ? { inputSha256 } : {}),
             phase: 'step',
             target: input.target,
             binding: input.binding,
