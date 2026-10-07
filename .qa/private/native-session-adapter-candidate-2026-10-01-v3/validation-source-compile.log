@@ -1,0 +1,7 @@
+Private v3 patched-source compile (temporary copy; no canonical edits)
+base_source_sha256=3421ffc87b3d8afb572cfd1e166169cb281504630c9f17bc633414632dac5b18
+temporary_patch_apply_status=0
+patched_source_tsx_status=0
+patched_source_tsc_status=0
+temporary_check_root=/tmp/mychampions-session-v3-esm-check-log.jTg4QI
+source_compile_status=0

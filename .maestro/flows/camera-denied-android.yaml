@@ -1,0 +1,49 @@
+appId: com.edufelip.mychampions.dev
+name: Android camera denied — SCN-camera-denied-android
+# FLW-camera-denied / SCN-camera-denied-android
+# Requirements: SC-211, UC-002.9, BL-018/P4-camera-denied
+# Preconditions are owned by the public runner: a fresh Postgres fixture, an
+# authenticated student, a live coach invite and an undecided camera permission.
+# The protected runner receipt, not this UI flow, proves API/SQL and cleanup.
+---
+- tapOn:
+    id: 'student.home.accountButton'
+- extendedWaitUntil:
+    visible:
+      id: 'student.professionals.screen'
+    timeout: 90000
+- assertVisible:
+    id: 'student.professionals.scanQrButton'
+- tapOn:
+    id: 'student.professionals.scanQrButton'
+- extendedWaitUntil:
+    visible:
+      id: "^com\\.(?:android\\.permissioncontroller|google\\.android\\.permissioncontroller):id/permission_message$"
+    timeout: 90000
+- assertVisible:
+    id: "^com\\.(?:android\\.permissioncontroller|google\\.android\\.permissioncontroller):id/permission_deny_button$"
+- tapOn:
+    id: "^com\\.(?:android\\.permissioncontroller|google\\.android\\.permissioncontroller):id/permission_deny_button$"
+- extendedWaitUntil:
+    visible:
+      id: 'student.professionals.submitError'
+    timeout: 90000
+- assertVisible:
+    id: 'student.professionals.codeInput'
+- tapOn:
+    id: 'student.professionals.codeInput'
+- inputText: ${MAESTRO_CAMERA_INVITE_CODE}
+- tapOn:
+    id: 'student.professionals.connectButton'
+- scrollUntilVisible:
+    element:
+      id: "student\\.professionals\\.connectionPending\\.[A-Za-z0-9][A-Za-z0-9._:-]{0,159}"
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- extendedWaitUntil:
+    visible:
+      id: 'student.professionals.screen'
+    timeout: 90000
+- assertVisible:
+    id: "student\\.professionals\\.connectionPending\\.[A-Za-z0-9][A-Za-z0-9._:-]{0,159}"

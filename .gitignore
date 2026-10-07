@@ -52,3 +52,9 @@ artifacts/ios.sim.debug.*/
 *.tsbuildinfo
 
 app-example
+
+# Private QA runtime evidence
+.qa/artifacts/
+
+# Owned isolated native-control dependency link; not a source input.
+/node_modules

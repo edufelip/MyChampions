@@ -854,10 +854,8 @@ test('native app builds no longer require Firebase config files', () => {
     join(root, '.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md'),
     'utf8',
   );
+  assert.match(issueTemplate, /FIREBASE_SERVICE_ACCOUNT_JSON/);
   for (const token of [
-    'Firebase',
-    'firebase',
-    'FIREBASE',
     'GOOGLE_SERVICE_INFO_PLIST',
     'GOOGLE_SERVICES_JSON',
     'GoogleService-Info',
@@ -916,14 +914,59 @@ test('generated native build output does not preserve retired Firebase config', 
   }
 });
 
-test('CI workflows no longer target Firebase release or config surfaces', () => {
-  const forbiddenWorkflowFiles = [
+test('Firebase App Distribution delivery stays isolated from retired native Firebase configuration', () => {
+  const distributionWorkflowFiles = [
     '.github/workflows/firebase-distribution-android.yml',
     '.github/workflows/firebase-distribution-ios.yml',
   ];
 
-  for (const relativePath of forbiddenWorkflowFiles) {
-    assert.equal(existsSync(join(root, relativePath)), false, `${relativePath} should be retired`);
+  for (const relativePath of distributionWorkflowFiles) {
+    assert.equal(
+      existsSync(join(root, relativePath)),
+      true,
+      `${relativePath} should be configured`,
+    );
+    const source = readFileSync(join(root, relativePath), 'utf8');
+
+    assert.match(source, /workflow_dispatch:/);
+    assert.match(source, /push:\n\s+branches: \[develop\]/);
+    assert.match(source, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+    assert.match(source, /appdistribution:distribute/);
+    assert.match(source, /EXPO_PUBLIC_ENV=dev/);
+    assert.match(source, /APP_VARIANT=dev/);
+    assert.match(source, /configured non-production MyChampions server URL/);
+    assert.doesNotMatch(source, /actions\/upload-artifact/);
+
+    if (relativePath.endsWith('android.yml')) {
+      assert.match(source, /FIREBASE_APP_ID_ANDROID_DEV/);
+      assert.match(source, /assembleDevRelease/);
+      assert.match(source, /-PdevReleaseWithDebugSigning=true/);
+    } else {
+      assert.match(source, /FIREBASE_APP_ID_IOS_DEV/);
+      assert.match(source, /PRODUCT_BUNDLE_IDENTIFIER="com\.edufelip\.mychampions\.dev"/);
+      assert.match(source, /CODE_SIGN_IDENTITY="Apple Distribution"/);
+      assert.match(source, /<key>method<\/key><string>ad-hoc<\/string>/);
+      assert.match(source, /ProvisionedDevices:0/);
+      assert.ok(
+        source.indexOf('security import "$CERTIFICATE_PATH" -P "$CERT_PASSWORD"') <
+          source.indexOf('unset CERT_P12_BASE64 CERT_PASSWORD PROFILE_BASE64'),
+        'the Ad Hoc certificate password must remain available through keychain import',
+      );
+    }
+
+    for (const token of [
+      'GoogleService-Info',
+      'google-services.json',
+      'GOOGLE_SERVICE_INFO_PLIST',
+      'GOOGLE_SERVICES_JSON',
+      'com.google.gms.google-services',
+    ]) {
+      assert.equal(
+        source.includes(token),
+        false,
+        `${relativePath} must not restore native Firebase configuration: ${token}`,
+      );
+    }
   }
 
   for (const relativePath of [
@@ -1099,7 +1142,7 @@ test('mobile tests no longer describe server-backed paths as Firestore precedenc
   }
 });
 
-test('current product requirements no longer require Firebase provider surfaces', () => {
+test('current product requirements retain Firebase delivery only, not Firebase runtime provider surfaces', () => {
   const currentDocs = [
     'docs/functional-requirements/FR-001-domain-role-and-care-plans.md',
     'docs/acceptance-criteria/AC-005-mobile-platform-and-delivery-nfr.md',
@@ -1113,7 +1156,6 @@ test('current product requirements no longer require Firebase provider surfaces'
     'docs/specs/mobile-nfr-tech-stack-spec.md',
   ];
   const staleRequirementClaims = [
-    'Firebase App Distribution',
     'Firebase Cloud Storage',
     'Firebase Crashlytics',
     'Crashlytics-only',
@@ -1143,6 +1185,18 @@ test('current product requirements no longer require Firebase provider surfaces'
     'Social auth is pending the MyChampions server/Supabase bridge',
     'local development fails closed outside explicit E2E fixtures',
   ];
+
+  for (const relativePath of [
+    'docs/functional-requirements/FR-001-domain-role-and-care-plans.md',
+    'docs/acceptance-criteria/AC-005-mobile-platform-and-delivery-nfr.md',
+    'docs/test-cases/TC-005-mobile-platform-and-delivery-nfr.md',
+  ]) {
+    assert.match(
+      readFileSync(join(root, relativePath), 'utf8'),
+      /Firebase App Distribution/,
+      `${relativePath} must retain the development delivery contract`,
+    );
+  }
 
   for (const relativePath of currentDocs) {
     const source = readFileSync(join(root, relativePath), 'utf8');

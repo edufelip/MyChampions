@@ -15,6 +15,7 @@
  *       BR-206, BR-214, BR-268, BR-283
  */
 import { MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -107,7 +108,12 @@ export default function ProfessionalStudentsScreen() {
   const [isPlanPickerVisible, setIsPlanPickerVisible] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  const fetchStartedAtRef = useRef<number | null>(null);
+  const focusGenerationRef = useRef(0);
+  const rosterRequestGenerationRef = useRef(0);
+  const isFocusedRef = useRef(false);
+  const currentUserUid = currentUser?.uid ?? null;
+  const currentUserUidRef = useRef<string | null>(currentUserUid);
+  currentUserUidRef.current = currentUserUid;
   const networkStatus = useNetworkStatus();
   const lastSyncedAtIso = resolveLatestSyncTimestamp([
     rosterSyncedAtIso,
@@ -131,7 +137,24 @@ export default function ProfessionalStudentsScreen() {
   }, [search]);
 
   const loadRoster = useCallback(async () => {
-    if (!currentUser) {
+    const focusGeneration = focusGenerationRef.current;
+    const requestUserUid = currentUserUid;
+    if (!isFocusedRef.current || currentUserUidRef.current !== requestUserUid) {
+      return;
+    }
+
+    const requestGeneration = rosterRequestGenerationRef.current + 1;
+    rosterRequestGenerationRef.current = requestGeneration;
+    const isCurrentRequest = () =>
+      isFocusedRef.current &&
+      rosterRequestGenerationRef.current === requestGeneration &&
+      focusGenerationRef.current === focusGeneration &&
+      currentUserUidRef.current === requestUserUid;
+
+    if (!isFocusedRef.current) return;
+
+    if (!requestUserUid) {
+      if (!isCurrentRequest()) return;
       setStudents([]);
       setRosterSyncedAtIso(null);
       setIsLoading(false);
@@ -141,23 +164,40 @@ export default function ProfessionalStudentsScreen() {
     }
 
     setIsLoading(true);
-    fetchStartedAtRef.current = Date.now();
     setLoadErrorKey(null);
     try {
       const rows = await getProfessionalStudentRoster();
+      if (!isCurrentRequest()) return;
       setStudents(rows);
       setRosterSyncedAtIso(new Date().toISOString());
     } catch {
+      if (!isCurrentRequest()) return;
       setLoadErrorKey('pro.students.error');
     } finally {
-      setIsLoading(false);
-      setHasLoadedOnce(true);
+      if (isCurrentRequest()) {
+        setIsLoading(false);
+        setHasLoadedOnce(true);
+      }
     }
-  }, [currentUser]);
+  }, [currentUserUid]);
 
-  useEffect(() => {
-    void loadRoster();
-  }, [loadRoster]);
+  useFocusEffect(
+    useCallback(() => {
+      const focusGeneration = focusGenerationRef.current + 1;
+      focusGenerationRef.current = focusGeneration;
+      isFocusedRef.current = true;
+      setIsAssigning(false);
+      void loadRoster();
+
+      return () => {
+        if (focusGenerationRef.current === focusGeneration) {
+          isFocusedRef.current = false;
+          focusGenerationRef.current += 1;
+          rosterRequestGenerationRef.current += 1;
+        }
+      };
+    }, [loadRoster]),
+  );
 
   const visible = useMemo(
     () => filterStudentRosterRows(students, { filter, search: debouncedSearch }),
@@ -191,9 +231,27 @@ export default function ProfessionalStudentsScreen() {
   };
 
   const handleBulkAssign = async (planId: string) => {
+    const assignmentFocusGeneration = focusGenerationRef.current;
+    const assignmentUserUid = currentUserUid;
+    if (
+      !isFocusedRef.current ||
+      !assignmentUserUid ||
+      currentUserUidRef.current !== assignmentUserUid
+    ) {
+      return;
+    }
+
     setIsPlanPickerVisible(false);
     setIsAssigning(true);
     const result = await bulkAssign(planId, selectedStudentUids);
+
+    const isCurrentAssignment = () =>
+      isFocusedRef.current &&
+      focusGenerationRef.current === assignmentFocusGeneration &&
+      currentUserUidRef.current === assignmentUserUid;
+
+    if (!isCurrentAssignment()) return;
+
     setIsAssigning(false);
 
     if ('error' in result) {
@@ -529,7 +587,9 @@ export default function ProfessionalStudentsScreen() {
       <PlanPickerModal
         isVisible={isPlanPickerVisible}
         onClose={() => setIsPlanPickerVisible(false)}
-        onSelect={handleBulkAssign}
+        onSelect={(planId) => {
+          void handleBulkAssign(planId);
+        }}
         plansState={plansState}
         planType={bulkPlanType}
         theme={theme}

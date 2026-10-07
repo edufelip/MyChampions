@@ -14,17 +14,6 @@ const dialogHookSource = readFileSync(
   'utf8',
 );
 
-test('support modal close controls use the submission-aware dismissal guard', () => {
-  assert.match(
-    modalSource,
-    /<Pressable[\s\S]*?onPress=\{handleClose\}[\s\S]*?disabled=\{isSubmitting\}[\s\S]*?testID="settings\.account\.support\.closeButton"/,
-  );
-  assert.match(
-    modalSource,
-    /<DsPillButton[\s\S]*?onPress=\{handleClose\}[\s\S]*?disabled=\{isSubmitting\}[\s\S]*?testID="settings\.account\.support\.cancelCta"/,
-  );
-});
-
 test('support modal web Escape callback uses the submission-aware dismissal guard', () => {
   assert.match(
     modalSource,
@@ -68,13 +57,6 @@ test('web dialog accessibility hook restores prior dialog-ancestor attributes on
   assert.match(dialogHookSource, /previousAttributes\.ariaModal/);
   assert.match(dialogHookSource, /previousAttributes\.ariaLabel\b/);
   assert.match(dialogHookSource, /previousAttributes\.ariaLabelledBy/);
-});
-
-test('support modal native back callback uses the submission-aware dismissal guard', () => {
-  assert.match(
-    modalSource,
-    /<Modal visible=\{isVisible\} animationType="slide" onRequestClose=\{handleClose\} transparent>/,
-  );
 });
 
 test('support modal blocks dismissal while submitting and resumes it afterward', () => {

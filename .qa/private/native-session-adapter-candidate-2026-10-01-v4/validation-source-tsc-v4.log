@@ -1,0 +1,11 @@
+Private v4 patched-source targeted tsc (temporary copy; no canonical edits)
+base_source_sha256=3421ffc87b3d8afb572cfd1e166169cb281504630c9f17bc633414632dac5b18
+temporary_patch_apply_status=0
+targeted_tsc_status=2
+temporary_check_root=/tmp/mychampions-session-v4-esm-check.Sqjiys
+--- diagnostics ---
+../../../../../../tmp/mychampions-session-v4-esm-check.Sqjiys/scripts/testing/android-native-input-reader.ts(242,20): error TS2345: Argument of type '{ path: string; sha256: string; }' is not assignable to parameter of type 'never'.
+../../../../../../tmp/mychampions-session-v4-esm-check.Sqjiys/scripts/testing/android-native-input-reader.ts(388,35): error TS2339: Property 'path' does not exist on type 'never'.
+../../../../../../tmp/mychampions-session-v4-esm-check.Sqjiys/scripts/testing/android-native-input-reader.ts(389,15): error TS2339: Property 'sha256' does not exist on type 'never'.
+../../../../../../tmp/mychampions-session-v4-esm-check.Sqjiys/scripts/testing/native-training-pilot-evidence.ts(562,26): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
+../../../../../../tmp/mychampions-session-v4-esm-check.Sqjiys/scripts/testing/native-training-pilot-evidence.ts(564,19): error TS2345: Argument of type '{ id: string; requirementRefs: string[]; evidencePaths: never[]; }' is not assignable to parameter of type 'never'.

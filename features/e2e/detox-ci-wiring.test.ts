@@ -7,7 +7,7 @@ import test from 'node:test';
 const root = join(__dirname, '..', '..');
 const requireFromTest = createRequire(import.meta.url);
 
-test('iOS PR workflow runs split-mode Detox smoke coverage for migrated auth/server flows', () => {
+void test('iOS PR workflow runs split-mode Detox smoke coverage for migrated auth/server flows', () => {
   const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
     scripts?: Record<string, string>;
   };
@@ -45,7 +45,7 @@ test('iOS PR workflow runs split-mode Detox smoke coverage for migrated auth/ser
   assert.match(authenticatedConfig, /student-professionals\.e2e\.test\.js/);
 });
 
-test('Android Detox targets the committed dev and production flavors on an available AVD', () => {
+void test('Android Detox targets the committed dev and production flavors on an available AVD', () => {
   const detoxConfig = readFileSync(join(root, '.detoxrc.js'), 'utf8');
   const detoxConfiguration = requireFromTest(join(root, '.detoxrc.js')) as {
     apps: Record<string, { reversePorts?: number[] }>;
@@ -133,11 +133,18 @@ test('Android Detox targets the committed dev and production flavors on an avail
   );
   assert.match(detoxConfig, /DETOX_ANDROID_AVD \|\| 'Pixel_10'/);
   assert.match(detoxConfig, /const rawMetroPort = process\.env\.DETOX_METRO_PORT \|\| '8081'/);
+  assert.match(detoxConfig, /DETOX_IOS_METRO_PORT/);
   assert.doesNotMatch(detoxConfig, /outputs\/apk\/debug\/app-debug\.apk/);
   assert.doesNotMatch(detoxConfig, /\bassembleDebug\b/);
   assert.doesNotMatch(detoxConfig, /Pixel_9/);
   const expectedMetroPort = Number(process.env.DETOX_METRO_PORT || '8081');
-  assert.deepEqual(detoxConfiguration.apps['android.debug']?.reversePorts, [expectedMetroPort]);
+  const executionPlatform =
+    process.env.DETOX_CONNECTION_PLATFORM ?? process.env.DETOX_BASELINE_PLATFORM;
+  const expectedAndroidMetroPort =
+    expectedMetroPort > 49151 && executionPlatform === 'ios' ? 8081 : expectedMetroPort;
+  assert.deepEqual(detoxConfiguration.apps['android.debug']?.reversePorts, [
+    expectedAndroidMetroPort,
+  ]);
   assert.match(instrumentation, /REACT_NATIVE_DEBUG_SERVER_HOST = "debug_http_host"/);
   assert.match(instrumentation, /DETOX_METRO_HOST = BuildConfig\.DETOX_METRO_HOST/);
   assert.match(instrumentation, /\.putString\(REACT_NATIVE_DEBUG_SERVER_HOST, DETOX_METRO_HOST\)/);
@@ -155,7 +162,7 @@ test('Android Detox targets the committed dev and production flavors on an avail
   assert.doesNotMatch(androidSettings, /\.\.\/node_modules\/detox/);
 });
 
-test('selective native execution fully prewarms Metro before Detox launches', () => {
+void test('selective native execution fully prewarms Metro before Detox launches', () => {
   const executor = readFileSync(join(root, 'scripts', 'ci', 'execute-selected-tests.ts'), 'utf8');
   const readinessIndex = executor.indexOf('await waitForMetro(port, metro);');
   const prewarmIndex = executor.indexOf('await prewarmMetroBundle(invocation.metro!)');
@@ -182,7 +189,7 @@ test('selective native execution fully prewarms Metro before Detox launches', ()
   assert.match(executor, /Invocation \$\{invocationId\} timed out after \$\{timeoutMs\} ms/);
 });
 
-test('protected full iOS Detox validation reserves a dedicated Metro port and routes every app launch to it', () => {
+void test('protected full iOS Detox validation reserves a dedicated Metro port and routes every app launch to it', () => {
   // Detox left the PR path (Step 7 of the CI web-primary redesign):
   // trusted-selective-tests.yml's detox-ios-selected job -- which used to
   // own this Metro-port isolation -- was deleted outright. The same
@@ -198,10 +205,7 @@ test('protected full iOS Detox validation reserves a dedicated Metro port and ro
   assert.match(workflow, /DETOX_METRO_PORT: '18081'/);
   assert.match(workflow, /lsof -nP -iTCP:"\$DETOX_METRO_PORT" -sTCP:LISTEN/);
   assert.match(detoxConfig, /RCT_jsLocation: `localhost:\$\{iosMetroPort\}`/);
-  assert.match(
-    detoxConfig,
-    /-derivedDataPath ios\/build RCT_METRO_PORT="\$\{DETOX_METRO_PORT:-8081\}"/,
-  );
+  assert.match(detoxConfig, /-derivedDataPath ios\/build RCT_METRO_PORT=.*iosMetroPort/);
 
   const trusted = readFileSync(
     join(root, '.github', 'workflows', 'trusted-selective-tests.yml'),

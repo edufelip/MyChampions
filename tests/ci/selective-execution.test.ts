@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
-import { buildChildEnvironment } from '../../scripts/ci/execute-selected-tests';
+import {
+  buildChildEnvironment,
+  executeSelectivePlan,
+} from '../../scripts/ci/execute-selected-tests';
 import {
   createSelectiveExecutionPlan,
   parseNativeMetroPort,
@@ -11,15 +16,66 @@ import {
   validateSelectiveExecutionManifest,
 } from '../../scripts/ci/selective-execution';
 import { loadManifest } from '../../scripts/ci/test-impact';
+import { resolveIntegrationServerRoot } from '../../scripts/testing/run-web-integration';
 
 const root = process.cwd();
 const manifest = loadManifest(root);
 
-test('checked-in suites have complete typed execution contracts', () => {
+void test('checked-in suites have complete typed execution contracts', () => {
   assert.deepEqual(validateSelectiveExecutionManifest(manifest), []);
 });
 
-test('web suites are grouped by runner and project with argv-safe filters', () => {
+void test('owned native session registration cannot enter selective execution or preview', () => {
+  const suiteId = 'detox:integrated-session-baseline';
+  assert.deepEqual(validateSelectiveExecutionManifest(manifest), []);
+  assert.equal(manifest.suites[suiteId].ci, false);
+  for (const platform of ['ios', 'android'] as const) {
+    for (const planOnly of [false, true]) {
+      assert.throws(
+        () => createSelectiveExecutionPlan(manifest, platform, [suiteId], { planOnly }),
+        /not eligible for selective CI/,
+      );
+    }
+  }
+  const unsafeActivation = structuredClone(manifest);
+  unsafeActivation.suites[suiteId].ci = true;
+  assert.ok(
+    validateSelectiveExecutionManifest(unsafeActivation).includes(
+      `CI Detox suite ${suiteId} uses non-selective profile owned-integrated-session`,
+    ),
+  );
+  assert.throws(
+    () => createSelectiveExecutionPlan(unsafeActivation, 'ios', [suiteId]),
+    /non-selective profile owned-integrated-session/,
+  );
+});
+
+void test('owned native connection registration cannot enter selective execution or preview', () => {
+  const suiteId = 'detox:integrated-connection-baseline';
+  assert.deepEqual(validateSelectiveExecutionManifest(manifest), []);
+  assert.equal(manifest.suites[suiteId].ci, false);
+  for (const platform of ['ios', 'android'] as const) {
+    for (const planOnly of [false, true]) {
+      assert.throws(
+        () => createSelectiveExecutionPlan(manifest, platform, [suiteId], { planOnly }),
+        /not eligible for selective CI/,
+      );
+    }
+  }
+  const unsafeActivation = structuredClone(manifest);
+  unsafeActivation.suites[suiteId].ci = true;
+  assert.ok(
+    validateSelectiveExecutionManifest(unsafeActivation).includes(
+      `CI Detox suite ${suiteId} uses non-selective profile owned-integrated-connection`,
+    ),
+  );
+  assert.throws(
+    () => createSelectiveExecutionPlan(unsafeActivation, 'ios', [suiteId]),
+    /non-selective profile owned-integrated-connection/,
+  );
+});
+
+void test('web suites are grouped by runner and project with argv-safe filters', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:shell', 'web:auth']);
 
   assert.equal(plan.nativeBuild, undefined);
@@ -39,7 +95,7 @@ test('web suites are grouped by runner and project with argv-safe filters', () =
   assert.match(invocation.args[grepIndex + 1], /@feature:shell/);
 });
 
-test('web suites can select an explicit Playwright config per project', () => {
+void test('web suites can select an explicit Playwright config per project', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:professional-home']);
 
   assert.deepEqual(
@@ -58,7 +114,7 @@ test('web suites can select an explicit Playwright config per project', () => {
   }
 });
 
-test('server Playwright suites declare their coordinated backend requirement', () => {
+void test('server Playwright suites declare their coordinated backend requirement', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:server-auth']);
 
   assert.equal(plan.invocations.length, 3);
@@ -68,7 +124,140 @@ test('server Playwright suites declare their coordinated backend requirement', (
   }
 });
 
-test('exercise-search Playwright suite uses an isolated fixture configuration', () => {
+void test('inactive integration suites are explicitly selectable through the owned runner', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:integration-training'], {
+    planOnly: true,
+  });
+
+  assert.equal(plan.execution, 'preview-only');
+  assert.equal(plan.invocations.length, 1);
+  const invocation = plan.invocations[0];
+  assert.equal(invocation.command, 'yarn');
+  assert.deepEqual(invocation.args, [
+    'test:e2e:web:integration',
+    '--scenario=training-durable',
+    '--project=chromium,firefox,mobile-en,mobile-es,mobile-pt,tablet-en,tablet-es,tablet-pt,webkit',
+  ]);
+  assert.deepEqual(invocation.requiredEnv, ['MYCHAMPIONS_SERVER_ROOT']);
+  assert.match(invocation.env.WEB_INTEGRATION_ARTIFACT_ROOT, /web\/playwright-integration-/);
+  assert.equal(manifest.suites['web:integration-training'].ci, false);
+});
+
+void test('inactive integration suites remain rejected by the executable selective path', () => {
+  assert.throws(
+    () => createSelectiveExecutionPlan(manifest, 'web', ['web:integration-training']),
+    /selected suite web:integration-training is not eligible for selective CI/,
+  );
+});
+
+void test('preview-only integration plans cannot reach the executor', async () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:integration-training'], {
+    planOnly: true,
+  });
+
+  await assert.rejects(
+    executeSelectivePlan(plan, root, undefined),
+    /preview-only selective plan cannot be executed/,
+  );
+});
+
+void test('integration scenario and project selections preserve exact pairs', () => {
+  const scopedManifest = structuredClone(manifest);
+  scopedManifest.suites['web:integration-save-retry'].projects = ['chromium'];
+  const plan = createSelectiveExecutionPlan(
+    scopedManifest,
+    'web',
+    ['web:integration-auth', 'web:integration-save-retry'],
+    { planOnly: true },
+  );
+
+  assert.equal(plan.execution, 'preview-only');
+  assert.equal(plan.invocations.length, 2);
+  assert.deepEqual(
+    plan.invocations.map((invocation) => [invocation.args[1], invocation.args[2]]),
+    [
+      [
+        '--scenario=auth-session',
+        '--project=chromium,firefox,mobile-en,mobile-es,mobile-pt,tablet-en,tablet-es,tablet-pt,webkit',
+      ],
+      ['--scenario=save-retry', '--project=chromium'],
+    ],
+  );
+  assert.deepEqual(
+    plan.invocations.flatMap((invocation) => {
+      const scenarios = invocation.args[1].slice('--scenario='.length).split(',');
+      const projects = invocation.args[2].slice('--project='.length).split(',');
+      return scenarios.flatMap((scenario) => projects.map((project) => `${scenario}:${project}`));
+    }),
+    [
+      'auth-session:chromium',
+      'auth-session:firefox',
+      'auth-session:mobile-en',
+      'auth-session:mobile-es',
+      'auth-session:mobile-pt',
+      'auth-session:tablet-en',
+      'auth-session:tablet-es',
+      'auth-session:tablet-pt',
+      'auth-session:webkit',
+      'save-retry:chromium',
+    ],
+  );
+  for (const invocation of plan.invocations)
+    assert.equal(invocation.args[0], 'test:e2e:web:integration');
+});
+
+void test('integration suites with matching scenario sets may share their project union', () => {
+  const scopedManifest = structuredClone(manifest);
+  scopedManifest.suites['web:integration-save-retry'].integrationScenarios = ['training-durable'];
+  scopedManifest.suites['web:integration-save-retry'].projects = ['chromium'];
+  const plan = createSelectiveExecutionPlan(
+    scopedManifest,
+    'web',
+    ['web:integration-training', 'web:integration-save-retry'],
+    { planOnly: true },
+  );
+
+  assert.equal(plan.invocations.length, 1);
+  assert.deepEqual(plan.invocations[0].args.slice(1), [
+    '--scenario=training-durable',
+    '--project=chromium,firefox,mobile-en,mobile-es,mobile-pt,tablet-en,tablet-es,tablet-pt,webkit',
+  ]);
+});
+
+void test('integration suite metadata requires a declared scenario', () => {
+  const invalid = structuredClone(manifest);
+  delete invalid.suites['web:integration-auth'].integrationScenarios;
+
+  assert.match(
+    validateSelectiveExecutionManifest(invalid).join('\n'),
+    /integration suite web:integration-auth has no integrationScenarios/,
+  );
+});
+
+void test('integration runner rejects missing, relative and non-server roots before acquisition', async () => {
+  await assert.rejects(
+    resolveIntegrationServerRoot(root, undefined),
+    /MYCHAMPIONS_SERVER_ROOT is required/,
+  );
+  await assert.rejects(
+    resolveIntegrationServerRoot(root, '../server'),
+    /must be an absolute owning checkout path/,
+  );
+
+  const fakeRoot = mkdtempSync(join(tmpdir(), 'mychampions-selective-server-'));
+  try {
+    mkdirSync(join(fakeRoot, 'scripts', 'testing'), { recursive: true });
+    writeFileSync(join(fakeRoot, 'package.json'), JSON.stringify({ name: 'wrong-owner' }));
+    await assert.rejects(
+      resolveIntegrationServerRoot(root, fakeRoot),
+      /not the MyChampions server checkout/,
+    );
+  } finally {
+    rmSync(fakeRoot, { recursive: true, force: true });
+  }
+});
+
+void test('exercise-search Playwright suite uses an isolated fixture configuration', () => {
   // web:exercise-search (not web:training) owns exercise-search-modal.spec.ts
   // and its own playwright.training.config.ts fixture profile. web:training
   // stays on the default config for the shared responsive-shell.spec.ts, so
@@ -84,7 +273,7 @@ test('exercise-search Playwright suite uses an isolated fixture configuration', 
   assert.ok(invocation.args.includes('e2e/web/exercise-search-modal.spec.ts'));
 });
 
-test('negative web fixture suites use isolated Playwright configurations', () => {
+void test('negative web fixture suites use isolated Playwright configurations', () => {
   const cases = [
     {
       suite: 'web:custom-meal-error',
@@ -118,7 +307,7 @@ test('negative web fixture suites use isolated Playwright configurations', () =>
   );
 });
 
-test('training Playwright suite stays on the default fixture configuration', () => {
+void test('training Playwright suite stays on the default fixture configuration', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'web', ['web:training']);
 
   assert.equal(plan.invocations.length, 1);
@@ -128,7 +317,7 @@ test('training Playwright suite stays on the default fixture configuration', () 
   assert.ok(!invocation.args.includes('e2e/web/exercise-search-modal.spec.ts'));
 });
 
-test('unknown and wrong-platform suite IDs fail before command construction', () => {
+void test('unknown and wrong-platform suite IDs fail before command construction', () => {
   assert.throws(
     () => createSelectiveExecutionPlan(manifest, 'web', ['web:auth; touch /tmp/should-not-exist']),
     /unknown selected suite/,
@@ -140,14 +329,14 @@ test('unknown and wrong-platform suite IDs fail before command construction', ()
   assert.throws(() => createSelectiveExecutionPlan(manifest, 'web', []), /no suites selected/);
 });
 
-test('provider-live suites are refused by selective CI', () => {
+void test('provider-live suites are refused by selective CI', () => {
   assert.throws(
     () => createSelectiveExecutionPlan(manifest, 'ios', ['detox:revenuecat-live']),
     /not eligible for selective CI/,
   );
 });
 
-test('Android uses one dev-debug build and never rebuilds per suite', () => {
+void test('Android uses one dev-debug build and never rebuilds per suite', () => {
   const plan = createSelectiveExecutionPlan(
     manifest,
     'android',
@@ -180,7 +369,7 @@ test('Android uses one dev-debug build and never rebuilds per suite', () => {
   }
 });
 
-test('native E2E LogBox suppression is explicit and dev-only', () => {
+void test('native E2E LogBox suppression is explicit and dev-only', () => {
   const rootLayout = readFileSync(`${root}/app/_layout.tsx`, 'utf8');
 
   assert.match(
@@ -190,7 +379,7 @@ test('native E2E LogBox suppression is explicit and dev-only', () => {
   assert.match(rootLayout, /LogBox\.ignoreAllLogs\(\)/);
 });
 
-test('DETOX_SKIP_BUILD transfers the single native build to the workflow', () => {
+void test('DETOX_SKIP_BUILD transfers the single native build to the workflow', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:support', 'detox:student'], {
     skipNativeBuild: true,
   });
@@ -212,7 +401,7 @@ test('DETOX_SKIP_BUILD transfers the single native build to the workflow', () =>
   );
 });
 
-test('iOS accepts a validated run-isolated Metro port and propagates it to every command', () => {
+void test('iOS accepts a validated run-isolated Metro port and propagates it to every command', () => {
   const metroPort = parseNativeMetroPort('ios', '27828');
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:support'], {
     metroPort,
@@ -227,7 +416,7 @@ test('iOS accepts a validated run-isolated Metro port and propagates it to every
   );
 });
 
-test('native Metro port overrides fail closed outside the supported port contract', () => {
+void test('native Metro port overrides fail closed outside the supported port contract', () => {
   assert.equal(parseNativeMetroPort('ios', undefined), 8081);
   assert.equal(parseNativeMetroPort('android', '27828'), 27828);
   assert.throws(() => parseNativeMetroPort('ios', '8081x'), /must contain only decimal digits/);
@@ -241,7 +430,7 @@ test('native Metro port overrides fail closed outside the supported port contrac
   );
 });
 
-test('Android accepts a run-isolated Metro port and propagates it to every command', () => {
+void test('Android accepts a run-isolated Metro port and propagates it to every command', () => {
   const metroPort = parseNativeMetroPort('android', '27828');
   const plan = createSelectiveExecutionPlan(manifest, 'android', ['detox:support'], {
     metroPort,
@@ -256,7 +445,7 @@ test('Android accepts a run-isolated Metro port and propagates it to every comma
   );
 });
 
-test('auth profile isolates entry, authenticated, and outdated-terms phases', () => {
+void test('auth profile isolates entry, authenticated, and outdated-terms phases', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:auth'], {
     skipNativeBuild: true,
   });
@@ -290,7 +479,7 @@ test('auth profile isolates entry, authenticated, and outdated-terms phases', ()
   assert.equal(role.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, '');
 });
 
-test('cleared fixture variables are absent from each child process', () => {
+void test('cleared fixture variables are absent from each child process', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'android', ['detox:auth'], {
     skipNativeBuild: true,
   });
@@ -311,7 +500,7 @@ test('cleared fixture variables are absent from each child process', () => {
   }
 });
 
-test('student empty-state profile actively clears incompatible assigned fixtures', () => {
+void test('student empty-state profile actively clears incompatible assigned fixtures', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:student'], {
     skipNativeBuild: true,
   });
@@ -322,7 +511,7 @@ test('student empty-state profile actively clears incompatible assigned fixtures
   assert.equal(invocation.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE, '');
 });
 
-test('self-managed plan building is isolated from assigned-plan fixtures', () => {
+void test('self-managed plan building is isolated from assigned-plan fixtures', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:plans'], {
     skipNativeBuild: true,
   });
@@ -342,7 +531,7 @@ test('self-managed plan building is isolated from assigned-plan fixtures', () =>
   assert.equal(bulkAssign.env.EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE, 'assigned');
 });
 
-test('nutrition profile isolates scenario-specific native fixtures', () => {
+void test('nutrition profile isolates scenario-specific native fixtures', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:nutrition'], {
     skipNativeBuild: true,
   });
@@ -394,7 +583,7 @@ test('nutrition profile isolates scenario-specific native fixtures', () => {
   );
 });
 
-test('subscription profile expands the existing seven deterministic scenarios', () => {
+void test('subscription profile expands the existing seven deterministic scenarios', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:subscription'], {
     skipNativeBuild: true,
   });
@@ -418,14 +607,14 @@ test('subscription profile expands the existing seven deterministic scenarios', 
   );
 });
 
-test('suite JSON parsing is strict', () => {
+void test('suite JSON parsing is strict', () => {
   assert.deepEqual(parseSelectedSuitesJson('["web:auth"]'), ['web:auth']);
   assert.throws(() => parseSelectedSuitesJson(undefined), /is required/);
   assert.throws(() => parseSelectedSuitesJson('{'), /must be valid JSON/);
   assert.throws(() => parseSelectedSuitesJson('["web:auth", 1]'), /JSON array of suite IDs/);
 });
 
-test('selective invocation timeout is optional locally and strict when configured', () => {
+void test('selective invocation timeout is optional locally and strict when configured', () => {
   assert.equal(parseSelectiveInvocationTimeoutMs(undefined), undefined);
   assert.equal(parseSelectiveInvocationTimeoutMs('600000'), 600_000);
   for (const invalid of ['', '0', '-1', '1.5', ' 600000', '2147483648']) {
@@ -436,7 +625,7 @@ test('selective invocation timeout is optional locally and strict when configure
   }
 });
 
-test('CI reporter fails an all-skipped Detox invocation', () => {
+void test('CI reporter fails an all-skipped Detox invocation', () => {
   type Reporter = {
     onRunComplete: (
       contexts: unknown,

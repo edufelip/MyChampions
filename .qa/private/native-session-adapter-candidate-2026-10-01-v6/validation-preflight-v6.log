@@ -1,0 +1,65 @@
+{
+  "kind": "private-native-session-v6-preflight-not-behavior-pass",
+  "captureId": "50ddeb1f3d43a32fd441b065",
+  "capturePath": "/Users/eduwaldo/.codex/worktrees/testing-native-regression/mychampions/.qa/artifacts/native-pilot/50ddeb1f3d43a32fd441b065",
+  "status": "incomplete",
+  "original": {
+    "charter": "auth-account",
+    "result": "observed",
+    "cleanup": "cleaned",
+    "nativePassingCases": 0
+  },
+  "selection": {
+    "arguments": {
+      "platform": "ios",
+      "engine": "maestro",
+      "scenario": "SCN-session-ios",
+      "mode": "integration"
+    },
+    "scenarioHash": "fbd0d23b8cafc30368b993d40b6890e67a4e464a9fa63787f250dfdc5468fce6",
+    "requirementHash": "2a2606e8604db3901093eaf2fa63ca24db896e22f747b240c7fb96272a27de8d"
+  },
+  "loadedFiles": {
+    "capture": {
+      "path": "capture.private.json",
+      "sha256": "d0547132c20f3d5959af2c7e574696d93a8ba84af73cd8ce1affab76c5767b4e",
+      "bytes": 83033
+    },
+    "backendManifest": {
+      "path": "manifest.json",
+      "sha256": "dc0267f74a2e8b94eb37273e48a0962f507e33fc67d3fa5a570fd904189e10bb",
+      "bytes": 1870
+    },
+    "fixtures": null,
+    "transport": null,
+    "nativeAuthIdentities": null,
+    "profiles": {
+      "beforeLogin": null,
+      "afterLogin": null,
+      "afterRestoration": null,
+      "afterSignedOutRelaunch": null
+    },
+    "domain": {
+      "beforeLogin": null,
+      "afterLogin": null,
+      "afterRestoration": null,
+      "afterSignedOutRelaunch": null
+    }
+  },
+  "missing": [
+    "owned fixtures-native-entry-ios.private.json: ENOENT: no such file or directory, lstat '/Users/eduwaldo/.codex/worktrees/testing-native-regression/server/.qa/runtime/98a1209bfde1329ae932484e/fixtures-native-entry-ios.private.json'",
+    "capture.transportEvidence receipt",
+    "capture.transportEvidence.path",
+    "capture.nativeAuthIdentityEvidence receipt",
+    "capture.nativeAuthIdentityEvidence.path",
+    "capture.sessionProfileSnapshots",
+    "capture.sessionDomainSnapshots",
+    "capture.sessionProfileLoginWindow",
+    "capture.sessionProfileRestorationWindow",
+    "capture.persistedCoachIdentity",
+    "capture.sessionProfileCheckpointVerification"
+  ],
+  "verification": null,
+  "legacyEvidencePreserved": true,
+  "note": "The v6 loader re-reads owner-checked checkpoint, transport, auth-identity and backend bytes before invoking the shared verifier; missing or tampered evidence remains incomplete."
+}

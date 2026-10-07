@@ -44,6 +44,7 @@ import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-b
 import { isReadOnlyForStudentSurface } from '@/features/plans/plan-ownership.logic';
 import { useExerciseSearch } from '@/features/plans/use-exercise-search';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
+import { usePlanExitGuard } from '@/features/plans/use-plan-exit-guard';
 import { usePlanForm } from '@/features/plans/use-plan-form';
 import { usePlans } from '@/features/plans/use-plans';
 import * as Haptics from '@/features/platform/haptics-adapter';
@@ -80,7 +81,7 @@ export default function TrainingPlanBuilderScreen() {
 
   const { t } = useTranslation();
   const router = useRouter();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const pathname = usePathname();
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const { currentUser } = useAuthSession();
@@ -144,20 +145,27 @@ export default function TrainingPlanBuilderScreen() {
     validate: validateInput,
     t,
     onSave: async (formValues) => {
-      return savePlanWithSessions(
+      const result = await savePlanWithSessions(
         planId ?? 'new',
         formValues,
         draftSessions,
         isDraftAssignment,
         creationMode,
       );
+      if ('plan' in result) {
+        // Adopt canonical session/item IDs before usePlanForm dispatches its
+        // success navigation, so the persisted plan is the clean baseline.
+        setDraftSessions(result.plan.sessions);
+        setSavedSessionsSnapshot(result.plan.sessions);
+      }
+      return result;
     },
     onSuccess: (id) => {
       // After a successful save, we want to go back to the library.
       // We must clear the local dirty state first so the 'beforeRemove'
       // listener doesn't trigger the discard dialog.
       setIsDirty(false);
-      setSavedSessionsSnapshot(draftSessions);
+      markPlanExitClean();
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Navigate to the tab route so the bottom nav bar is visible
@@ -245,30 +253,16 @@ export default function TrainingPlanBuilderScreen() {
     }
   }, [state, hasUnsavedChanges, planId]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (event: any) => {
-      if (!hasUnsavedChanges) {
-        return;
-      }
-
-      event.preventDefault();
-      Alert.alert(t('pro.plan.discard.title'), t('pro.plan.discard.body'), [
-        { text: t('pro.plan.discard.no'), style: 'cancel' },
-        {
-          text: t('pro.plan.discard.yes'),
-          style: 'destructive',
-          onPress: async () => {
-            // Reset dirty states before dispatching so the listener doesn't fire again
-            setIsDirty(false);
-            setDraftSessions(savedSessionsSnapshot);
-            navigation.dispatch(event.data.action);
-          },
-        },
-      ]);
-    });
-
-    return unsubscribe;
-  }, [hasUnsavedChanges, navigation, t, setIsDirty, savedSessionsSnapshot]);
+  const discardDraft = useCallback(() => {
+    setIsDirty(false);
+    setDraftSessions(savedSessionsSnapshot);
+  }, [setIsDirty, savedSessionsSnapshot]);
+  const markPlanExitClean = usePlanExitGuard({
+    navigation,
+    hasUnsavedChanges,
+    onDiscard: discardDraft,
+    t,
+  });
 
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleNameChange = useCallback(
@@ -291,11 +285,6 @@ export default function TrainingPlanBuilderScreen() {
     if (result && 'error' in result && result.error && result.error !== 'validation') {
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
       return;
-    }
-
-    if (result && !('error' in result) && 'plan' in result) {
-      setDraftSessions(result.plan.sessions);
-      setSavedSessionsSnapshot(result.plan.sessions);
     }
   }, [handleSave, tr]);
 

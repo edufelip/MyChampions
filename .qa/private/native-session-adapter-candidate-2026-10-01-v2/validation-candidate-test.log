@@ -1,0 +1,13 @@
+✔ candidate validates the explicit ordered session charter without acquisition (20.738875ms)
+✔ candidate rejects legacy charter, reordered UI and incomplete assertion ledger (4.674417ms)
+✔ candidate rejects missing or tampered signed-out transport and SQL evidence (1.933ms)
+✔ candidate keeps local logout scope and source patch boundaries explicit (1.065208ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 145.962875
+candidate_test_status=0

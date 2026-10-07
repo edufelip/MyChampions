@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.edufelip.mychampions.qa.inputreader">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" />
+    <application android:hasCode="true" />
+    <instrumentation android:name="com.edufelip.mychampions.qa.inputreader.InputReader"
+        android:targetPackage="com.edufelip.mychampions.qa.inputreader" />
+</manifest>

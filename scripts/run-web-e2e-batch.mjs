@@ -2,6 +2,37 @@ import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { createRequire } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// The owned integration runner has its own selection, receipt and cleanup contract.
+if (process.argv[2] === 'integration') {
+  const clientRoot = path.resolve(fileURLToPath(new URL('../', import.meta.url)));
+  const require = createRequire(path.join(clientRoot, 'package.json'));
+  const child = spawn(
+    process.execPath,
+    [
+      '--import',
+      pathToFileURL(require.resolve('tsx')).href,
+      path.join(clientRoot, 'scripts/testing/run-web-integration.ts'),
+      ...process.argv.slice(3),
+    ],
+    { cwd: clientRoot, env: process.env, stdio: 'inherit' },
+  );
+  const interrupt = () => child.kill('SIGINT');
+  const terminate = () => child.kill('SIGTERM');
+  process.once('SIGINT', interrupt);
+  process.once('SIGTERM', terminate);
+  const code = await new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', (code, signal) =>
+      resolve(code ?? (signal === 'SIGINT' ? 130 : signal === 'SIGTERM' ? 143 : 2)),
+    );
+  });
+  process.off('SIGINT', interrupt);
+  process.off('SIGTERM', terminate);
+  process.exit(code);
+}
 
 const batches = {
   smoke: ['--grep', '@smoke', '--project=chromium'],

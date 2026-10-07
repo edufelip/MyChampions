@@ -1,0 +1,37 @@
+{
+  "kind": "private-ios-session-profile-snapshot-preflight-not-behavior-pass",
+  "captureRoot": "/Users/eduwaldo/.codex/worktrees/testing-native-regression/mychampions/.qa/artifacts/native-pilot/50ddeb1f3d43a32fd441b065",
+  "captureId": "50ddeb1f3d43a32fd441b065",
+  "status": "incomplete",
+  "original": {
+    "charter": "auth-account",
+    "result": "observed",
+    "cleanup": "cleaned",
+    "nativePassingCases": 0
+  },
+  "selection": {
+    "arguments": {
+      "platform": "ios",
+      "engine": "maestro",
+      "scenario": "SCN-session-ios",
+      "mode": "integration"
+    },
+    "scenarioHash": "40307ee97b2692246eba3b7fa29811329126418ba219546d237edbd066ec9d42",
+    "requirementHash": "2a2606e8604db3901093eaf2fa63ca24db896e22f747b240c7fb96272a27de8d"
+  },
+  "loadedFiles": {
+    "capture": {
+      "path": "capture.private.json",
+      "sha256": "d0547132c20f3d5959af2c7e574696d93a8ba84af73cd8ce1affab76c5767b4e",
+      "bytes": 83033
+    }
+  },
+  "missing": [
+    "capture.sessionSqlBeforeLogin",
+    "capture.sessionSqlAfterInitialLogin",
+    "capture.sessionSqlAfterRestore",
+    "capture.sessionSqlAfterSignedoutRelaunch"
+  ],
+  "note": "This supplemental loader reads four owned profile snapshot files only; it never fills missing session fields or claims a native/public pass."
+}
+exit_code=0

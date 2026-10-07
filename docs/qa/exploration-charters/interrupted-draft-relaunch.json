@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "id": "EXP-INTERRUPTED-DRAFT-RELAUNCH",
+  "title": "Interrupted training draft and relaunch",
+  "summary": "Explore how a declared local training draft behaves when the app is interrupted and relaunched before or after an explicit save.",
+  "platforms": ["ios", "android"],
+  "connectorsByPlatform": {
+    "ios": "maestro",
+    "android": "maestro"
+  },
+  "locales": ["en-US", "pt-BR", "es-ES"],
+  "roles": ["professional"],
+  "dataMode": "integration",
+  "fixture": {
+    "id": "owned-postgres:exploration:interrupted-draft-relaunch",
+    "resetStrategy": "fresh-professional-training-draft-per-attempt"
+  },
+  "allowedActions": [
+    "Reset the declared owned fixture and verify the selected app target",
+    "Open a new training plan and make local title, session, or exercise edits",
+    "Capture the pre-interruption hierarchy and terminate or background only the owned app instance",
+    "Relaunch the owned app, reopen the declared route, and inspect draft or discard state",
+    "Record visible state and read-only API/SQL evidence without changing expected behavior"
+  ],
+  "excludedExternalEffects": [
+    "Production, customer, or shared-device access",
+    "Saving outside the declared fixture, direct database seeding as the behavior under test, or deleting unrelated plans",
+    "Purchases, account-role changes, provider mutations, automatic issue creation, or external notifications",
+    "Claiming persistence from UI state without the declared authenticated API or SQL read"
+  ],
+  "budget": {
+    "maxDurationMinutes": 30,
+    "maxUiActions": 100,
+    "stopWhen": "first-limit-reached",
+    "unchangedFailureLimit": 2
+  },
+  "artifactPolicy": {
+    "directoryMode": "0700",
+    "fileMode": "0600",
+    "rawEvidence": "private-only",
+    "publicSummary": "redacted-status-only",
+    "forbiddenFields": [
+      "password",
+      "accessToken",
+      "refreshToken",
+      "cookie",
+      "authorization",
+      "secret"
+    ]
+  },
+  "requirementRefs": ["SC-208", "TC-303", "TC-304", "TC-290", "TC-296", "BL-018/T16"],
+  "requirementPaths": [
+    "docs/screens/v2/SC-208-training-plan-builder.md",
+    "docs/test-cases/TC-002-role-and-assignment-controls.md",
+    "docs/plans/2026-09-28-testing-structure-and-maestro-plan.md"
+  ],
+  "scenario": {
+    "id": "EXP-INTERRUPTED-001",
+    "title": "An interrupted training draft follows the documented local and saved-state contract",
+    "sourceRefs": ["SC-208", "TC-303", "TC-304", "TC-290", "TC-296", "BL-018/T16"],
+    "preconditions": [
+      "A fresh professional draft and authenticated read identity are available",
+      "The target app/build/connector are identified and reset evidence is current",
+      "The attempt declares whether interruption occurs before or after the explicit Save action"
+    ],
+    "actions": [
+      "Enter a title and one canonical session/item without saving",
+      "Capture the local draft state and interrupt the owned app",
+      "Relaunch and inspect the documented draft, guard, or route state",
+      "If the charter branch includes Save, verify the durable result through API and SQL"
+    ],
+    "expectedObservations": [
+      "Unsaved edits remain local until explicit Save",
+      "A discard guard is shown when leaving a draft with unsaved changes",
+      "Saved state can be distinguished from local draft state after relaunch",
+      "A missing or contradictory expectation is a documentation gap, not an invented defect"
+    ],
+    "risk": "high"
+  }
+}

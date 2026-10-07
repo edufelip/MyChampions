@@ -45,6 +45,12 @@
 - Empty: shown only after first fetch settles with zero visible students (no loading overlap).
 - Error: a settled roster-read failure renders a dedicated error card (Retry + Back to dashboard) in place of the search/filter/bulk-assign shell. Search, filters, and Bulk assign plan are not mounted while this state is showing, so there is no dead control surface around the error copy. Retry re-invokes the roster load and shows the loading indicator before settling into error, empty, or the roster list. Preserved via `resolveStudentRosterViewState` in `features/professional/students-screen.logic.ts`, which is exclusive with the empty hero state — a stale roster is not shown read-only behind an error (open question, see below).
 - Success: roster list with actionable entries.
+- On every return to the focused roster, read the current server roster so a
+  connection confirmed in the pending queue appears under Active without an
+  app restart. Preserve the current search/filter and selection eligibility
+  rules. Only the latest request for the current focused authenticated screen
+  may publish rows, synchronization time, loading or error state; late results
+  from a blurred screen, older reload or previous identity are ignored.
 
 ## Validation Rules
 
@@ -77,6 +83,10 @@
 
 - Large client list should support paging/virtualization.
 - Concurrent unbind can remove student from active list in-session.
+- A bulk-assignment completion from a blurred screen or previous authenticated
+  identity cannot publish alerts, selection changes or reloads into the current
+  screen. A new focus clears obsolete assignment progress; this UI guard does
+  not cancel a server write that was already submitted.
 - If invite code is missing/loading/error in empty state, share CTA falls back to `/professional/home` (no modal error copy).
 - Transient auth/profile re-hydration must not remount the tab shell for the same authenticated UID.
 - Open question (not yet resolved, tracked as `Q-028` in `docs/discovery/open-questions-v1.md`): whether a roster read error should fall back to a cached read-only roster when one exists, following the same stale-data policy as the professional dashboard, instead of always showing the error card. Currently any settled error hides the roster shell regardless of prior successful data.

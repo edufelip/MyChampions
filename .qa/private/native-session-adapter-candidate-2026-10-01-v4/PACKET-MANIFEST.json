@@ -1,0 +1,219 @@
+{
+  "packetRevision": "ios-session-adapter-candidate-2026-10-01-v4-strict-cancel-abort-freeze",
+  "frozenAt": "2026-10-01",
+  "status": "private candidate only; no dispatcher adoption or runtime qualification",
+  "base": {
+    "captureSource": {
+      "path": "scripts/testing/capture-native-testability.ts",
+      "sha256": "3421ffc87b3d8afb572cfd1e166169cb281504630c9f17bc633414632dac5b18"
+    },
+    "capturePatch": {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/capture-native-testability.session-charter.v4.patch",
+      "sha256": "39e449771bed3a224c6d45391f4c477ef7df7311f6e1d04584af521c635e7294"
+    },
+    "capturePatchApplies": true
+  },
+  "candidateFiles": [
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/WORKCARD.md",
+      "sha256": "fac65bffc85cbd0842ca2b07f91984108e0af7f67da11823cd43eb7c7a316e65",
+      "bytes": 7464
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/actual-capture-preflight.candidate.ts",
+      "sha256": "19b945fae28f473f79e4533555d5a004e09938cbd3c8228cef7c640e2348eb29",
+      "bytes": 14942
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/capture-native-testability.session-charter.v4.patch",
+      "sha256": "39e449771bed3a224c6d45391f4c477ef7df7311f6e1d04584af521c635e7294",
+      "bytes": 27479
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/native-session-adapter.candidate.ts",
+      "sha256": "f65e34c0ff6850f242b6a6996e189b6e1b75db9d2737f56105080c98449322ce",
+      "bytes": 27460
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/native-session-adapter.candidate.test.ts",
+      "sha256": "620ab20c104a17553b379d44bee4088c1b6724b48bdad05e8dae80ca08204cc9",
+      "bytes": 20228
+    }
+  ],
+  "validationLogs": [
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/validation-candidate-test-v4.log",
+      "sha256": "797d8c83beb0bc723954ad40cb6902d69b2b9491894341d377d20b664437d7b7",
+      "bytes": 826
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/validation-patch-check-v4.log",
+      "sha256": "bde294368bfed77c2cddf8cec271d398aee9cdbab3b26e1059281bd33adb0120",
+      "bytes": 12
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/validation-preflight-v4.log",
+      "sha256": "1edc5554264facd36c33ebfd62299050e980ba7f8ae096adedb3aaf2d6c62008",
+      "bytes": 2374
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/validation-prettier-v4.log",
+      "sha256": "42f2c52e2aa94e666bf7ba79b26c19726abd76e18d1f90d159a256dd62e456ea",
+      "bytes": 78
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/validation-source-compile-v4.log",
+      "sha256": "6280f9025888cc539a4762e141180b886bdd1de16a369c380687cefbd659961c",
+      "bytes": 339
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v4/validation-source-tsc-v4.log",
+      "sha256": "65a121c841af6e32e7515e794b0bcb95bc81f4ad7f1454eb349865ec0210947c",
+      "bytes": 1372
+    }
+  ],
+  "validationResults": {
+    "candidateContractTests": {
+      "passed": 7,
+      "failed": 0,
+      "nativePassingCases": 0,
+      "log": "validation-candidate-test-v4.log"
+    },
+    "prettier": {
+      "status": "passed",
+      "log": "validation-prettier-v4.log"
+    },
+    "patchCheck": {
+      "status": "passed",
+      "log": "validation-patch-check-v4.log"
+    },
+    "temporaryPatchedSourceCompile": {
+      "esbuild": "passed",
+      "nodeSyntaxCheck": "passed",
+      "log": "validation-source-compile-v4.log"
+    },
+    "temporaryPatchedSourceTypecheck": {
+      "captureSourceDiagnostics": "none",
+      "status": "blocked by unrelated pre-existing transitive diagnostics",
+      "diagnostics": [
+        "scripts/testing/android-native-input-reader.ts:242,388-389",
+        "scripts/testing/native-training-pilot-evidence.ts:562,564"
+      ],
+      "log": "validation-source-tsc-v4.log"
+    },
+    "actualCapturePreflight": {
+      "status": "incomplete",
+      "captureId": "50ddeb1f3d43a32fd441b065",
+      "originalCharter": "auth-account",
+      "originalResult": "observed",
+      "originalCleanup": "cleaned",
+      "nativePassingCases": 0,
+      "log": "validation-preflight-v4.log"
+    }
+  },
+  "sourceRefs": [
+    {
+      "path": "scripts/testing/capture-native-testability.ts",
+      "sha256": "3421ffc87b3d8afb572cfd1e166169cb281504630c9f17bc633414632dac5b18",
+      "bytes": 92995
+    },
+    {
+      "path": "scripts/testing/native-pilot-contract.ts",
+      "sha256": "8f2b5e6f1775def357fb4ca850d8356d45fc16d835f7783d561edfca91998d27",
+      "bytes": 18781
+    },
+    {
+      "path": "scripts/testing/owned-session.ts",
+      "sha256": "3b3c6001b492dcf93dd5923a402135c3efdbb254b57a25ca03916c7f0eff6ec5",
+      "bytes": 26313
+    },
+    {
+      "path": "scripts/testing/schema-validation.ts",
+      "sha256": "e722ec9f38233b09832adfd93ab6e6ac3e9e898f0f1d06f09bab2bb2060edba5",
+      "bytes": 5196
+    },
+    {
+      "path": "scripts/testing/native-view-evidence.ts",
+      "sha256": "209deae4254f64bba75cf06d971ae5ae0c142abe9fef32085274d8399082b630",
+      "bytes": 82105
+    },
+    {
+      "path": "scripts/testing/owned-api-proxy.ts",
+      "sha256": "6ff440447a29893b050de528ada31816758278ed9f9a43e9bf8db6bbbff4b2a6",
+      "bytes": 28520
+    },
+    {
+      "path": "scripts/testing/native-auth-observation.ts",
+      "sha256": "af905026aaa69a7965c62395a6ff456626668e2842c5531122c248d36a286052",
+      "bytes": 2105
+    },
+    {
+      "path": "docs/qa/native-pilot/test-cases.md",
+      "sha256": "8899672d528a83ca1c247b2350ef0081efa9ba9e1170026d1c4386e5a2780030",
+      "bytes": 6703
+    },
+    {
+      "path": "docs/qa/native-pilot/inventory.json",
+      "sha256": "90030e9317ba5474cdbe2f71015ccf31167572cbae0b466c9f12baf458d26e9a",
+      "bytes": 219276
+    }
+  ],
+  "frozenPriorPackets": [
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/PACKET-MANIFEST.json",
+      "sha256": "a490dbe7e046d6ec08982e7cce2723f833b87270ef3d216dd617b0dc346093e9",
+      "status": "v1 remains immutable"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/PACKET-MANIFEST.json",
+      "sha256": "d40701bae2326b44fdf3e0274d38e0d79dbc0b581106f7b171000144c5c3bbdb",
+      "status": "v2 remains immutable"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v3/PACKET-MANIFEST.json",
+      "sha256": "de151620f6b1b9fc530ba74588fe7136efe62ada495718d17c4b8f2c67ab2589",
+      "status": "v3 remains immutable"
+    }
+  ],
+  "promotionBlockersClosedInCandidate": [
+    "Persist native-auth-identities.private.json and bind the verified coach actor to the fixture allowlist, owned API PID/origin, run, scope, and persisted file hash.",
+    "Record and validate the exact restore transport ordinal range; every row in the restore and signed-out slices must be native, forwarded, originless, fault-free, and owned.",
+    "Recompute SQL receipt hashes from files read with the bounded private evidence reader and bind receipts to the owned session manifest/run/scope/API identity.",
+    "Reject positive profile, expiry, or plaintext-token metadata in absent-session states.",
+    "Read actual owned PNG and hierarchy bytes, verify recorded hashes, and apply the existing native selector map through validateNativeRuntimeFrameFiles.",
+    "After cancel, emit Maestro assertNotVisible settings.account.signOutConfirm, read the owned cancel hierarchy, reject a retained confirmation subtree, and bind retained auth metadata to the cancel checkpoint.",
+    "Route session-only direct container/metadata/terminate/launch/snapshot/read/write/publication operations through an abort-aware boundary; clear partial ledgers and mark aborted-before-complete on cancellation races."
+  ],
+  "nextPublicAdapterContract": {
+    "selection": {
+      "platform": "ios",
+      "engine": "maestro",
+      "scenario": "SCN-session-ios",
+      "mode": "integration"
+    },
+    "assertionIdsInOrder": [
+      "NAT-session-login",
+      "NAT-session-restore",
+      "NAT-session-account",
+      "NAT-session-signout",
+      "NAT-session-signed-out-relaunch",
+      "NAT-session-unrelated-state"
+    ],
+    "stagingRequirements": [
+      "Preserve nativePassingCases: 0 until the public receipt finalizer qualifies the staged evidence.",
+      "Re-read actual evidence bytes through readNativeEvidence and validate selectors through validateNativeRuntimeFrameFiles.",
+      "Bind scenario/requirement hashes, capture run, owned manifest/run/scope, fixture allowlist and coach actor, API PID/origin, identity file hash, transport ranges, snapshot hashes, cancel checkpoint, auth metadata, SQL receipt hashes, and every frame hash.",
+      "Keep FR-270/BR-342 local-native-session-clear and serverRevocationQualified false.",
+      "Use four owned profile snapshots (before login, after verified initial coach login, after restore, and after signed-out relaunch); allow only the bound coach updatedAt transition in the documented POST /me/hydrate spans, and require all other profile actors/fields/rows unchanged."
+    ]
+  },
+  "reviewBoundaries": [
+    "This is a private source patch and contract validator; public run-native-pilot dispatch, declarations, receipts, and denominator remain unchanged.",
+    "The legacy auth-account diagnostic and sealed capture remain preserved and are never relabeled as session evidence.",
+    "No simulator, backend, proxy, Metro process, build, or runtime resource was acquired for this packet.",
+    "The candidate validates actual temporary evidence files in tests but does not claim a real iOS capture, public receipt, engine parity, or runtime qualification.",
+    "The SQL comparison remains limited to the existing owned domain snapshot in this v4 packet; profile-snapshot exception coverage is a separate post-freeze supplemental packet and is not silently claimed here.",
+    "v1, v2, and v3 packet bytes remain immutable."
+  ],
+  "manifestExcludes": "This file is metadata and is excluded from candidateFiles and validationLogs."
+}

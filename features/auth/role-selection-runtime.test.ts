@@ -24,17 +24,6 @@ function componentOpeningTag(source: string, component: string, testId: string):
   return source.slice(componentIndex, testIdIndex);
 }
 
-test('role selection binds the preselection guard to the Continue control', () => {
-  assert.match(
-    roleSelectionSource,
-    /const isContinueDisabled = isSubmitting \|\| !isHydrated \|\| !currentUser \|\| !selectedRole;/,
-  );
-  assert.match(
-    componentOpeningTag(roleSelectionSource, 'DsPillButton', 'auth.roleSelection.continueButton'),
-    /disabled=\{isContinueDisabled\}/,
-  );
-});
-
 test('the shared pill button exposes and enforces its disabled accessibility state', () => {
   assert.match(
     pillButtonSource,

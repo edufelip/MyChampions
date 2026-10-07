@@ -1,0 +1,93 @@
+{
+  "packetRevision": "ios-session-adapter-candidate-2026-10-01-v1-seam-freeze",
+  "frozenAt": "2026-10-01",
+  "status": "private candidate only; no dispatcher adoption or runtime qualification",
+  "base": {
+    "captureSource": {
+      "path": "scripts/testing/capture-native-testability.ts",
+      "sha256": "c9d6e2975e3b36bf82599d95a7153db6da7965f368eed016a5e4e6fcb86575c0"
+    },
+    "capturePatchApplies": true
+  },
+  "candidateFiles": [
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/WORKCARD.md",
+      "sha256": "5acf7bfca3c5205b570ac208c24e7a92e589ef5f656d0332035062f012bca1a1"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/actual-capture-preflight.candidate.ts",
+      "sha256": "c63b524eac903bb90e5030e4d8082182e071419592670d42d28d74883bd5a153"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/capture-native-testability.seam.patch",
+      "sha256": "827eb3496a4ef0cb9368fafb45b0590b8ebcb48cb0d7ab20092b18621a2690c6"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/native-session-adapter.candidate.test.ts",
+      "sha256": "fb05d9688caa1d402ba5ea27fd4ba00f32131a555ffa12c7ae5189327347a7b1"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/native-session-adapter.candidate.ts",
+      "sha256": "db10041a59ff82e49af38ca6ff2828c32649eae5a6afd0600187c06b5fe0e6e6"
+    }
+  ],
+  "validationLogs": [
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/validation-candidate-test.log",
+      "sha256": "5ba3441c2b1247dd5259b671c5e3ce11b0ec5951bdf5ceebd1506915c7f497b7"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/validation-patch-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/validation-preflight.log",
+      "sha256": "e4b9cf41e39b889fd938dd8a7af3dcbbf6218dd0569294feb25a8bd09ba4d809"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/validation-prettier.log",
+      "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/validation-typecheck.log",
+      "sha256": "3bf1781cd3f593e1beb499f88358ed1d9a84c5e07165c05c025e6d435dda3737"
+    }
+  ],
+  "sourceRefs": [
+    {
+      "path": "scripts/testing/capture-native-testability.ts",
+      "sha256": "c9d6e2975e3b36bf82599d95a7153db6da7965f368eed016a5e4e6fcb86575c0"
+    },
+    {
+      "path": "scripts/testing/native-pilot-contract.ts",
+      "sha256": "8f2b5e6f1775def357fb4ca850d8356d45fc16d835f7783d561edfca91998d27"
+    },
+    {
+      "path": "scripts/testing/owned-session.ts",
+      "sha256": "3b3c6001b492dcf93dd5923a402135c3efdbb254b57a25ca03916c7f0eff6ec5"
+    },
+    {
+      "path": "scripts/testing/schema-validation.ts",
+      "sha256": "e722ec9f38233b09832adfd93ab6e6ac3e9e898f0f1d06f09bab2bb2060edba5"
+    },
+    {
+      "path": "scripts/testing/native-view-evidence.ts",
+      "sha256": "209deae4254f64bba75cf06d971ae5ae0c142abe9fef32085274d8399082b630"
+    },
+    {
+      "path": "docs/qa/native-pilot/test-cases.md",
+      "sha256": "27ea072daf04ce995dbc99d23dfe004ff167da60c21cdbf638c6e54dd908d683"
+    },
+    {
+      "path": "docs/qa/native-pilot/inventory.json",
+      "sha256": "04f20fa61c242621bf090cbac957b7855cc0c70cfa7070b46e29b89ce777e23d"
+    }
+  ],
+  "reviewBoundaries": [
+    "Candidate uses assertTestingDocument for domain-snapshot-v1 but synthetic tests do not prove runtime ownership.",
+    "Current auth-account capture order remains a blocker: account/sign-out cancellation precedes restore relaunch.",
+    "UI pixel/tree/selector ownership, fixture actor binding and native auth witness linkage remain promotion work.",
+    "FR-270/BR-342 remains local-native-session-clear; server revocation is deliberately unqualified."
+  ],
+  "manifestExcludes": "This file is metadata and is excluded from candidateFiles and validationLogs."
+}

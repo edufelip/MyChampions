@@ -610,7 +610,10 @@ function ConnectionCard({
           onPress={() => onUnbind(displayState.connectionId)}
           testID={`student.professionals.unbindButton.${testIndex}`}
         >
-          <Text style={[styles.link, { color: theme.color.danger }]}>
+          <Text
+            style={[styles.link, { color: theme.color.danger }]}
+            testID={`student.professionals.activeConnection.${displayState.connectionId}`}
+          >
             {t('relationship.unbind.cta')}
           </Text>
         </Pressable>

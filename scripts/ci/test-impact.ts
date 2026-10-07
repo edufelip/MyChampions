@@ -27,6 +27,7 @@ export type SuiteConfig = {
   ci: boolean;
   platforms?: string[];
   projects?: string[];
+  integrationScenarios?: string[];
   playwrightConfig?: string;
   fixtureProfile?: string;
   grep?: string;
@@ -152,9 +153,22 @@ export function validateManifest(manifest: TestImpactManifest): string[] {
   for (const [suiteId, suite] of Object.entries(manifest.suites)) {
     if (suite.specs.length === 0) errors.push(`suite ${suiteId} has no specs`);
     if (
-      !['detox', 'playwright', 'playwright-server', 'playwright-evidence'].includes(suite.runner)
+      ![
+        'detox',
+        'playwright',
+        'playwright-server',
+        'playwright-evidence',
+        'playwright-integration',
+      ].includes(suite.runner)
     ) {
       errors.push(`suite ${suiteId} uses unsupported runner ${suite.runner}`);
+    }
+    if (suite.runner === 'playwright-integration') {
+      if (suite.ci) errors.push(`integration suite ${suiteId} must remain ci:false`);
+      if (!suite.projects?.length) errors.push(`integration suite ${suiteId} has no projects`);
+      if (!suite.integrationScenarios?.length) {
+        errors.push(`integration suite ${suiteId} has no integrationScenarios`);
+      }
     }
   }
   for (const suiteId of manifest.criticalSuites) {
@@ -233,20 +247,22 @@ export function changedFilesFromGit(root: string, base: string, head: string): C
 }
 
 function listWorkingTreeSourceFiles(root: string): string[] {
-  const ignored = new Set(['.git', '.expo', '.artifacts', 'node_modules', 'Pods', 'build', 'dist']);
-  const files: string[] = [];
-  const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory)) {
-      if (ignored.has(entry)) continue;
-      const absolute = join(directory, entry);
-      const stats = statSync(absolute);
-      if (stats.isDirectory()) walk(absolute);
-      else if (sourceExtensions.includes(extname(entry)))
-        files.push(normalizePath(relative(root, absolute)));
-    }
-  };
-  walk(root);
-  return files.sort();
+  const output = execFileSync(
+    'git',
+    ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 50 * 1024 * 1024,
+    },
+  );
+  return output
+    .split('\0')
+    .filter(
+      (path) => path && sourceExtensions.includes(extname(path)) && existsSync(join(root, path)),
+    )
+    .map(normalizePath)
+    .sort();
 }
 
 function resolveImportPaths(

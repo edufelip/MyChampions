@@ -114,6 +114,25 @@ workflows. Leave every item unchecked until its evidence is attached.
 - [ ] `ANDROID_KEY_ALIAS_PASSWORD`
 - [ ] `PLAY_SERVICE_ACCOUNT_JSON`
 
+### Development Firebase App Distribution
+- [ ] Register `com.edufelip.mychampions.dev` as Android and iOS apps in the
+      Firebase project and record `FIREBASE_APP_ID_ANDROID_DEV` and
+      `FIREBASE_APP_ID_IOS_DEV` as repository secrets.
+- [ ] Create a Firebase App Distribution Admin service account solely for this
+      upload path and store its JSON as `FIREBASE_SERVICE_ACCOUNT_JSON`.
+- [ ] Create the Firebase tester group alias `base-group`.
+- [ ] Set `ENV_FILE` to a non-production MyChampions API URL plus the matching
+      public dev Google OAuth and RevenueCat configuration. The workflows reject
+      a missing or production API URL.
+- [ ] `IOS_ADHOC_KEYCHAIN_PASSWORD`
+- [ ] `IOS_ADHOC_CERT_P12_BASE64`
+- [ ] `IOS_ADHOC_CERT_PASSWORD`
+- [ ] `IOS_ADHOC_PROFILE_BASE64`
+- [ ] `IOS_ADHOC_PROFILE_NAME` for `com.edufelip.mychampions.dev`
+- [ ] Use an Ad Hoc profile for `com.edufelip.mychampions.dev`; enroll every
+      tester device UDID, verify it belongs to `IOS_TEAM_ID`, and includes Sign
+      in with Apple.
+
 ### iOS release/TestFlight
 - [ ] `IOS_KEYCHAIN_PASSWORD`
 - [ ] `IOS_DIST_CERT_P12_BASE64`

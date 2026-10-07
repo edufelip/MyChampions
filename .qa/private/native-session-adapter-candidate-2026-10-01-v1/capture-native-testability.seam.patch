@@ -1,0 +1,98 @@
+--- a/scripts/testing/capture-native-testability.ts
++++ b/scripts/testing/capture-native-testability.ts
+@@ -1554,6 +1554,22 @@
+       };
+       const credentials =
+         fixtures.accounts[charter === 'camera-denied' ? 'unrelated-student' : 'coach'];
++      const sessionSqlBefore =
++        charter === 'auth-account' ? await session.snapshot('native-entry-ios') : undefined;
++      if (sessionSqlBefore) {
++        const sessionSqlBeforeBytes = JSON.stringify(sessionSqlBefore, null, 2);
++        await writeFile(
++          path.join(output, 'session-sql-before.private.json'),
++          sessionSqlBeforeBytes,
++          { mode: 0o600, flag: 'wx' },
++        );
++        report.sessionSqlBefore = {
++          path: 'session-sql-before.private.json',
++          runId: sessionSqlBefore.runId,
++          scope: sessionSqlBefore.scope,
++          sha256: createHash('sha256').update(sessionSqlBeforeBytes).digest('hex'),
++        };
++      }
+       if (charter === 'connection-journey') {
+         await observeConnectionPasswordOffer(
+           'coach-home',
+@@ -1999,6 +2015,7 @@
+           throw new Error('Native sign-out did not clear persisted session metadata');
+         await device.verify();
+         await execute('xcrun', ['simctl', 'terminate', device.udid, bundleId], { timeout: 30_000 });
++        const beforeSignedOutRelaunchTransportCount = proxy.observations.length;
+         await execute(
+           'xcrun',
+           [
+@@ -2012,6 +2029,27 @@
+           { timeout: 30_000 },
+         );
+         await observe('signed-out-relaunch', '', 'SCR-sign-in', 'auth.signIn.emailInput');
++        const signedOutRelaunchTransport = proxy.observations.slice(
++          beforeSignedOutRelaunchTransportCount,
++        );
++        report.signedOutRelaunchTransport = signedOutRelaunchTransport;
++        report.signedOutRelaunchTransportRange = {
++          startOrdinal: beforeSignedOutRelaunchTransportCount,
++          endOrdinalExclusive: proxy.observations.length,
++          firstRequestId: signedOutRelaunchTransport[0]?.requestId ?? null,
++          lastRequestId:
++            signedOutRelaunchTransport[signedOutRelaunchTransport.length - 1]?.requestId ?? null,
++        };
++        if (
++          signedOutRelaunchTransport.some(
++            (row) =>
++              row.pathHash === pathHash('/auth/email/sign-in') ||
++              row.pathHash === pathHash('/me/hydrate'),
++          )
++        )
++          throw new Error(
++            'Signed-out native relaunch issued an authenticated sign-in or hydrate request',
++          );
+         const metadataAfterSignedoutRelaunch = await observeIosAuthMetadata(
+           dataContainer,
+           bundleId,
+@@ -2019,7 +2057,36 @@
+         report.authMetadataAfterSignedoutRelaunch = metadataAfterSignedoutRelaunch;
+         if (metadataAfterSignedoutRelaunch.sessionPresent)
+           throw new Error('Signed-out native relaunch restored persisted session metadata');
++        if (!sessionSqlBefore)
++          throw new Error('Native auth-account SQL baseline was not captured before the journey');
++        const sessionSqlAfterSignedoutRelaunch = await session.snapshot('native-entry-ios');
++        const sessionSqlAfterSignedoutRelaunchBytes = JSON.stringify(
++          sessionSqlAfterSignedoutRelaunch,
++          null,
++          2,
++        );
+         await writeFile(
++          path.join(output, 'session-sql-after-signed-out-relaunch.private.json'),
++          sessionSqlAfterSignedoutRelaunchBytes,
++          { mode: 0o600, flag: 'wx' },
++        );
++        report.sessionSqlAfterSignedoutRelaunch = {
++          path: 'session-sql-after-signed-out-relaunch.private.json',
++          runId: sessionSqlAfterSignedoutRelaunch.runId,
++          scope: sessionSqlAfterSignedoutRelaunch.scope,
++          sha256: createHash('sha256')
++            .update(sessionSqlAfterSignedoutRelaunchBytes)
++            .digest('hex'),
++        };
++        if (
++          JSON.stringify(sessionSqlBefore.trainingPlans) !==
++            JSON.stringify(sessionSqlAfterSignedoutRelaunch.trainingPlans) ||
++          JSON.stringify(sessionSqlBefore.connections) !==
++            JSON.stringify(sessionSqlAfterSignedoutRelaunch.connections)
++        )
++          throw new Error('Native auth-account journey changed unrelated owned SQL state');
++        report.sessionSqlBeforeAfterUnchanged = true;
++        await writeFile(
+           path.join(output, 'transport-observations.private.json'),
+           JSON.stringify(proxy.observations, null, 2),
+           { mode: 0o600 },

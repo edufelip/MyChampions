@@ -799,7 +799,7 @@ function SummaryLinkCard({
   );
 }
 
-function TaskCard({
+export function TaskCard({
   body,
   compact,
   cta,

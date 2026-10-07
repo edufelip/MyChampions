@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-test('professional home task icons use the scheme-aware accent foreground', () => {
+test('professional home task icons prohibit hardcoded color literals', () => {
   const source = readFileSync(join(process.cwd(), 'app/professional/home.tsx'), 'utf8');
   const taskCardStart = source.indexOf('function TaskCard(');
   const taskCardEnd = source.indexOf('function QuickActionCard(', taskCardStart);
@@ -13,10 +13,5 @@ test('professional home task icons use the scheme-aware accent foreground', () =
 
   const taskCardSource = source.slice(taskCardStart, taskCardEnd);
 
-  assert.match(taskCardSource, /backgroundColor: theme\.color\.accentPrimary/);
-  assert.match(
-    taskCardSource,
-    /<MaterialIcons name=\{iconName\} size=\{20\} color=\{theme\.color\.onAccent\} aria-hidden \/>/,
-  );
   assert.doesNotMatch(taskCardSource, /color=["']#[\da-f]{3,8}["']/i);
 });

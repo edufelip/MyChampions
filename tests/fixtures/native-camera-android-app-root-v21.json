@@ -1,0 +1,75 @@
+{
+  "appId": "com.edufelip.mychampions.dev",
+  "denied": {
+    "attributes": {
+      "resource-id": "com.edufelip.mychampions.dev:id/action_bar_root",
+      "enabled": true,
+      "bounds": "[0,0][1080,2400]"
+    },
+    "children": [
+      {
+        "attributes": {
+          "resource-id": "student.professionals.submitError",
+          "text": "Camera access is required to scan a QR code. Grant permission in your device settings, or type the code manually.",
+          "enabled": true,
+          "bounds": "[32,1200][1048,1410]"
+        },
+        "children": []
+      }
+    ]
+  },
+  "manual": {
+    "attributes": {
+      "resource-id": "com.edufelip.mychampions.dev:id/action_bar_root",
+      "enabled": true,
+      "bounds": "[0,0][1080,2400]"
+    },
+    "children": [
+      {
+        "attributes": {
+          "resource-id": "student.professionals.codeInput",
+          "text": "QA-MANUAL-ONLY",
+          "enabled": true,
+          "bounds": "[48,900][1032,1030]"
+        },
+        "children": []
+      },
+      {
+        "attributes": {
+          "resource-id": "student.professionals.connectButton",
+          "text": "Connect",
+          "enabled": true,
+          "clickable": true,
+          "bounds": "[48,1080][1032,1200]"
+        },
+        "children": []
+      }
+    ]
+  },
+  "pending": {
+    "attributes": {
+      "resource-id": "com.edufelip.mychampions.dev:id/action_bar_root",
+      "enabled": true,
+      "bounds": "[0,0][1080,2400]"
+    },
+    "children": [
+      {
+        "attributes": {
+          "resource-id": "student.professionals.connectionPending.demo-connection",
+          "enabled": true,
+          "bounds": "[32,1200][1048,1550]"
+        },
+        "children": [
+          {
+            "attributes": {
+              "text": "Waiting for professional confirmation to activate this connection.",
+              "enabled": true,
+              "bounds": "[64,1300][1016,1400]"
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+✔ v4 validates cancel-safe owned ordered session evidence without acquisition (24.380292ms)
+✔ v4 rejects legacy charter, reordered UI and incomplete assertion ledger (5.335875ms)
+✔ v4 rejects range, owned transport, absent metadata, and SQL receipt tampering (9.726334ms)
+✔ v4 rejects cancel confirmation subtree, forged identity provenance and actual evidence bytes/selectors (7.2825ms)
+✔ v4 aborts direct I/O before and after execution and removes partial ledger publication (0.254375ms)
+✔ v4 source patch persists cancel absence, ownership and abort-safe bounded readers (0.352458ms)
+✔ v4 actual loader reads owned bytes and leaves the sealed legacy capture incomplete (37.35175ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 224.456792
+exit_code=0

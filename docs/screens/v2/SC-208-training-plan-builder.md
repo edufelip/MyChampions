@@ -1,6 +1,7 @@
 # SC-208 Training Plan Builder (V2)
 
 ## Route
+
 - `/professional/training/plans/:planId` — builder/editor for a specific plan.
 - `/professional/training` (tab) — plan library list with create and open CTAs.
 - Shared student route: `/student/training/plans/:planId` renders through the same builder engine but branches on the loaded plan's `sourceKind` (D-006, D-013, ET-107): a `self_managed` plan (including `new`) stays fully editable with student-branded titles/actions; any other `sourceKind` (`assigned`, `predefined`) renders read-only — no Save/Delete/Add-session/reorder/add-item controls, a disabled name field, a localized `student.training.assigned_plan.read_only_notice` banner (`student.training_plan.readOnlyNotice` testID), and a `PlanChangeRequestCard` (`student.training_plan.planChangeForm` testID). The gate is computed by `isReadOnlyForStudentSurface` (`features/plans/plan-ownership.logic.ts`) and fails closed for any non-self-managed source kind.
@@ -8,9 +9,11 @@
 > `planId = 'new'` signals plan creation mode. Any other UUID loads an existing plan.
 
 ## Objective
+
 Let fitness coaches create and edit fully customizable named Professional Library Plans stored in their private library. Plans consist of sessions; each session holds custom exercise items (name, quantity/sets-reps, optional notes). Professional Library Plans can be assigned to individual students or bulk-assigned.
 
 ## Design Structure (D-134)
+
 - Library route (`/professional/training`) uses `DsScreen` shell, DS card surfaces, and DS typography/spacing tokens with the SC-204 professional surface baseline (hero header + contextual helper).
 - Library header is rendered as an elevated hero card with contextual training icon and compact helper copy.
 - Library list rendering uses `FlatList`; route uses `DsScreen scrollable={false}` to avoid nested VirtualizedList containers.
@@ -29,11 +32,13 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 ## User Actions
 
 ### Plan Library (`/professional/training`)
+
 - View list of existing Professional Library Plans.
 - Create a new plan (navigates to builder with `planId = 'new'`).
 - Open an existing plan (navigates to builder with the plan's UUID).
 
 ### Plan Builder (`/professional/training/plans/:planId`)
+
 - Enter or edit the plan name (required, min 2 chars).
 - In create mode (`planId = 'new'`), plan name, sessions, and exercises remain local draft edits until the user explicitly presses `Save`.
 - In a new plan with no sessions, use Add session to create the first session before adding exercises.
@@ -44,6 +49,14 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 - Add exercise items to a session via proxy-backed exercise search (name required, quantity and notes optional) or by typing a custom name.
 - Remove exercise items from a session.
 - Save plan (create or update) as a single persistence step that writes the current local draft to the MyChampions server.
+- After a successful Save, mark the removal guard clean before dispatching
+  navigation to the training library. Reconcile the draft and saved session
+  snapshot from the successful server response before requesting navigation;
+  server-assigned IDs must not appear as new local edits. The guard remains
+  clean through intermediate commits until that clean state is committed;
+  delayed router delivery must not trigger a discard dialog for the saved draft. Failed Save keeps the
+  draft and unsaved-exit guard active. New edits re-arm the guard. Confirmed
+  discard resets local edits before resuming the original navigation action.
 - Delete plan; after a successful delete, show the blocking loading scrim and then return the user to the training library.
 - If the user attempts to leave with unsaved local changes, show a discard-confirmation dialog before navigation.
 - Assign plan to a single student by creating a draft assigned copy, routing the Professional into the builder to fine-tune that Student-specific copy, then publishing it with `Assign & Send`.
@@ -52,14 +65,16 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 ## Exercise Service Search Integration
 
 Exercise items are added via the `ExerciseSearchModal` component, which:
+
 1. Debounces user input (400 ms) and calls `searchExerciseLibrary` via the `useExerciseSearch` hook.
 2. Displays a scrollable list of search results (title + localized muscle group + thumbnail).
 3. On item selection, shows a detail/confirmation form for `quantity` and `notes`.
 4. On confirm, calls `handleConfirmExercise` which adds the item to the local draft; the MyChampions server plan update is sent only when the user presses `Save`.
 
-On web, the search sheet does not use the native slide-in animation: it is viewport-bounded as soon as it opens so the title, Back action, and focused search field are usable on compact mobile emulation. The results region owns its scroll so long result sets do not push the modal outside the viewport.
+On web, the search sheet does not use the native slide-in animation: it is viewport-bounded as soon as it opens so the title, localized Close control (`common.cta.close`), and focused search field are usable on compact mobile emulation. The results region owns its scroll so long result sets do not push the modal outside the viewport. At widths of 768px or greater it uses the shared centered-dialog layout; below that threshold it retains the compact bottom-sheet treatment. Resizing an already-open search dialog across that boundary must retain the query and results and keep the dialog within the viewport. See the [exercise-search resize test](../../test-cases/TC-332-exercise-search-resize.md).
 
 ### Catalog Service Contract
+
 - Base URL: `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL`
 - Search endpoint: `POST /integrations/exercise/search`
 - Detail endpoint: `GET /integrations/exercise/exercises/:id`
@@ -72,7 +87,9 @@ On web, the search sheet does not use the native slide-in animation: it is viewp
 - The mobile app never sends YMove API keys; the MyChampions server reads the mirrored local exercise catalog and owns any upstream/provider integration.
 
 ### Video URL Caching Policy (API Contract — Critical)
+
 Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
+
 - **Only `exerciseId` (the UUID) is persisted to the MyChampions server plan payload.**
 - Thumbnail/video URLs are **never stored** in plan persistence.
 - `SessionCard` re-fetches a fresh thumbnail via `useExerciseThumbnail(item.exerciseId)` → `getExerciseById` at display time.
@@ -80,16 +97,17 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 
 ## States
 
-| State | Trigger | UI |
-|---|---|---|
-| Idle | Initial mount | Empty form or loading gated |
-| Search opened | User taps Add exercise | One named, viewport-bounded `role="dialog"` with `aria-modal="true"`, localized initial helper state, and focused input; web opens without an off-screen transition |
-| Loading | `loadPlan` called on existing planId | `ActivityIndicator` |
-| Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
-| Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
-| Error | Initial `loadPlan` fetch failed | Replaces the form entirely with a `DsCard` error state (`role="alert"`, `accessibilityLiveRegion="polite"`): message, Retry (re-invokes `loadPlan`), and Back to library. No plan-name field, add-session, or Save controls are mounted while in this state. |
+| State         | Trigger                                                                            | UI                                                                                                                                                                                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Idle          | Initial mount                                                                      | Empty form or loading gated                                                                                                                                                                                                                                  |
+| Search opened | User taps Add exercise                                                             | One named, viewport-bounded `role="dialog"` with `aria-modal="true"`, localized initial helper state, and focused input; web opens without an off-screen transition                                                                                          |
+| Loading       | `loadPlan` called on existing planId                                               | `ActivityIndicator`                                                                                                                                                                                                                                          |
+| Saving        | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown                                                                                                                         |
+| Ready         | Plan loaded or created successfully                                                | Full form with sessions/items list, CTAs                                                                                                                                                                                                                     |
+| Error         | Initial `loadPlan` fetch failed                                                    | Replaces the form entirely with a `DsCard` error state (`role="alert"`, `accessibilityLiveRegion="polite"`): message, Retry (re-invokes `loadPlan`), and Back to library. No plan-name field, add-session, or Save controls are mounted while in this state. |
 
 ## Validation Rules
+
 - Plan name is required and must be at least 2 characters (BR-293).
 - Session name is required when adding a session; session notes are optional.
 - Exercise item name is required (BR-294); quantity and notes are optional.
@@ -106,134 +124,152 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 ## Data Contract
 
 ### Inputs
-| Field | Type | Validation |
-|---|---|---|
-| Plan `name` | string | required, min 2 chars |
-| Session `name` | string | required |
-| Session `notes` | string | optional |
-| Item `name` | string | required |
-| Item `quantity` | string | optional free-form (e.g. "3 sets × 10 reps") |
-| Item `notes` | string | optional |
+
+| Field             | Type          | Validation                                                                       |
+| ----------------- | ------------- | -------------------------------------------------------------------------------- |
+| Plan `name`       | string        | required, min 2 chars                                                            |
+| Session `name`    | string        | required                                                                         |
+| Session `notes`   | string        | optional                                                                         |
+| Item `name`       | string        | required                                                                         |
+| Item `quantity`   | string        | optional free-form (e.g. "3 sets × 10 reps")                                     |
+| Item `notes`      | string        | optional                                                                         |
 | Item `exerciseId` | string (UUID) | optional; stable upstream exercise ID — only ID field stored in plan persistence |
 
 ### Outputs
-| Type | Description |
-|---|---|
-| `TrainingPlanDetail` | Full plan with id, name, sessions list, timestamps |
-| `TrainingSession` | Session with id, name, notes, items array |
+
+| Type                  | Description                                                       |
+| --------------------- | ----------------------------------------------------------------- |
+| `TrainingPlanDetail`  | Full plan with id, name, sessions list, timestamps                |
+| `TrainingSession`     | Session with id, name, notes, items array                         |
 | `TrainingSessionItem` | Exercise item with id, name, quantity, notes, optional exerciseId |
 
 ### Exercise Service Types
-| Type | Description |
-|---|---|
-| `ExerciseItem` | Full exercise model used by SC-208 (title, muscleGroup, equipment, difficulty, exerciseType[], instructions[], videos, pre-signed URLs) |
-| `ExerciseVideo` | Single video variant (white-background or gym-shot, with tag/orientation/isPrimary) |
-| `ExerciseSearchResult` | Proxy search response (`page`, `pageSize`, `total`, `exercises[]`) plus response `x-request-id` metadata |
+
+| Type                   | Description                                                                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `ExerciseItem`         | Full exercise model used by SC-208 (title, muscleGroup, equipment, difficulty, exerciseType[], instructions[], videos, pre-signed URLs) |
+| `ExerciseVideo`        | Single video variant (white-background or gym-shot, with tag/orientation/isPrimary)                                                     |
+| `ExerciseSearchResult` | Proxy search response (`page`, `pageSize`, `total`, `exercises[]`) plus response `x-request-id` metadata                                |
 
 ### Source Operations
-| Operation | Description |
-|---|---|
-| `createTrainingPlan` | Create new plan in professional's library |
-| `updateTrainingPlan` | Update plan name |
-| `getTrainingPlanDetail` | Load plan with sessions and items |
-| `addTrainingSession` | Add session to plan |
-| `removeTrainingSession` | Remove session from plan |
-| `addTrainingSessionItem` | Add exercise item to session |
-| `removeTrainingSessionItem` | Remove exercise item from session |
+
+| Operation                   | Description                               |
+| --------------------------- | ----------------------------------------- |
+| `createTrainingPlan`        | Create new plan in professional's library |
+| `updateTrainingPlan`        | Update plan name                          |
+| `getTrainingPlanDetail`     | Load plan with sessions and items         |
+| `addTrainingSession`        | Add session to plan                       |
+| `removeTrainingSession`     | Remove session from plan                  |
+| `addTrainingSessionItem`    | Add exercise item to session              |
+| `removeTrainingSessionItem` | Remove exercise item from session         |
 
 Plan library reads, predefined assignment/draft operations, and builder mutations use the MyChampions server through `features/plans/plan-source.ts` and `features/plans/plan-builder-source.ts`; outside E2E fixtures, missing local server auth fails closed. Under the explicit provider-free E2E plan fixture, detail resolution loads a newly created assigned draft when its runtime ID is absent from the static builder catalog; an ID absent from both fixture stores still fails closed.
 
 ## Localization Keys
 
-| Key | Context |
-|---|---|
-| `pro.library.training.title` | Library screen header |
-| `pro.library.training.empty` | Library empty state |
-| `pro.library.training.cta_create` | Create plan CTA |
-| `pro.library.cta_open` | Open plan CTA |
-| `pro.library.error` | Library load error |
-| `pro.plan.training.title.create` | Builder screen title (create mode) |
-| `pro.plan.training.title.edit` | Builder screen title (edit mode) |
-| `pro.plan.field.name.label` | Plan name field label |
-| `pro.plan.field.name.placeholder` | Plan name placeholder |
-| `pro.plan.section.sessions` | Sessions section header |
-| `pro.plan.cta.add_session` | Add session CTA |
-| `pro.plan.cta.add_item` | Add session item CTA |
-| `pro.plan.cta.save` | Save plan CTA |
-| `pro.plan.cta.assign` | Assign to student CTA |
-| `pro.plan.cta.bulk_assign` | Bulk assign CTA |
-| `pro.plan.session.field.name.label` | Session name field label |
-| `pro.plan.session.field.name.placeholder` | Session name placeholder |
-| `pro.plan.session.field.notes.label` | Session notes label |
-| `pro.plan.item.field.name.label` | Item name field label |
-| `pro.plan.item.field.name.placeholder` | Item name placeholder |
-| `pro.plan.item.field.quantity.label` | Item quantity label |
-| `pro.plan.item.field.quantity.placeholder` | Item quantity placeholder |
-| `pro.plan.item.field.notes.label` | Item notes label |
-| `pro.plan.validation.name_required` | Name required error |
-| `pro.plan.validation.name_too_short` | Name too short error |
-| `pro.plan.error.save` | Save error |
-| `pro.plan.error.load` | Load error |
-| `pro.plan.error.cta_back_to_library` | Back to library CTA on the load-error state |
-| `pro.plan.error.assign` | Assign error |
-| `pro.plan.assign.title` | Assign modal title |
-| `pro.plan.assign.student_count` | Student count label |
-| `pro.plan.assign.confirm` | Confirm assign CTA |
-| `pro.plan.assign.fine_tune_notice` | Fine-tune notice |
-| `pro.plan.predefined.label` | Predefined plan badge |
-| `pro.predefined_plan.field_name` | Predefined plan name label |
-| `pro.predefined_plan.cta_create` | Save predefined plan CTA |
-| `pro.predefined_plan.bulk_assign.*` | Bulk assign flow keys |
-| `pro.plan.item.search.dialog_title` | Accessible name for the single exercise-search dialog root |
-| `pro.plan.item.search.placeholder` | Exercise search input placeholder |
-| `pro.plan.item.search.initial` | Initial helper state before a query is entered |
-| `pro.plan.item.search.loading` | Accessible loading announcement while search is pending |
-| `pro.plan.item.search.empty` | No results state |
-| `pro.plan.item.search.error` | Search error state |
-| `pro.plan.item.search.retry` | Retry search CTA in the error state |
-| `pro.plan.item.search.back` | "Back to search" link in exercise detail form |
-| `exercise.muscle_group.chest` | Muscle group label: Chest |
-| `exercise.muscle_group.back` | Muscle group label: Back |
-| `exercise.muscle_group.shoulders` | Muscle group label: Shoulders |
-| `exercise.muscle_group.biceps` | Muscle group label: Biceps |
-| `exercise.muscle_group.triceps` | Muscle group label: Triceps |
-| `exercise.muscle_group.forearms` | Muscle group label: Forearms |
-| `exercise.muscle_group.quads` | Muscle group label: Quads |
-| `exercise.muscle_group.hamstrings` | Muscle group label: Hamstrings |
-| `exercise.muscle_group.glutes` | Muscle group label: Glutes |
-| `exercise.muscle_group.calves` | Muscle group label: Calves |
-| `exercise.muscle_group.core` | Muscle group label: Core |
-| `exercise.muscle_group.full_body` | Muscle group label: Full Body |
+| Key                                        | Context                                                    |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| `pro.library.training.title`               | Library screen header                                      |
+| `pro.library.training.empty`               | Library empty state                                        |
+| `pro.library.training.cta_create`          | Create plan CTA                                            |
+| `pro.library.cta_open`                     | Open plan CTA                                              |
+| `pro.library.error`                        | Library load error                                         |
+| `pro.plan.training.title.create`           | Builder screen title (create mode)                         |
+| `pro.plan.training.title.edit`             | Builder screen title (edit mode)                           |
+| `pro.plan.field.name.label`                | Plan name field label                                      |
+| `pro.plan.field.name.placeholder`          | Plan name placeholder                                      |
+| `pro.plan.section.sessions`                | Sessions section header                                    |
+| `pro.plan.cta.add_session`                 | Add session CTA                                            |
+| `pro.plan.cta.add_item`                    | Add session item CTA                                       |
+| `pro.plan.cta.save`                        | Save plan CTA                                              |
+| `pro.plan.cta.assign`                      | Assign to student CTA                                      |
+| `pro.plan.cta.bulk_assign`                 | Bulk assign CTA                                            |
+| `pro.plan.session.field.name.label`        | Session name field label                                   |
+| `pro.plan.session.field.name.placeholder`  | Session name placeholder                                   |
+| `pro.plan.session.field.notes.label`       | Session notes label                                        |
+| `pro.plan.item.field.name.label`           | Item name field label                                      |
+| `pro.plan.item.field.name.placeholder`     | Item name placeholder                                      |
+| `pro.plan.item.field.quantity.label`       | Item quantity label                                        |
+| `pro.plan.item.field.quantity.placeholder` | Item quantity placeholder                                  |
+| `pro.plan.item.field.notes.label`          | Item notes label                                           |
+| `pro.plan.validation.name_required`        | Name required error                                        |
+| `pro.plan.validation.name_too_short`       | Name too short error                                       |
+| `pro.plan.error.save`                      | Save error                                                 |
+| `pro.plan.error.load`                      | Load error                                                 |
+| `pro.plan.error.cta_back_to_library`       | Back to library CTA on the load-error state                |
+| `pro.plan.error.assign`                    | Assign error                                               |
+| `pro.plan.assign.title`                    | Assign modal title                                         |
+| `pro.plan.assign.student_count`            | Student count label                                        |
+| `pro.plan.assign.confirm`                  | Confirm assign CTA                                         |
+| `pro.plan.assign.fine_tune_notice`         | Fine-tune notice                                           |
+| `pro.plan.predefined.label`                | Predefined plan badge                                      |
+| `pro.predefined_plan.field_name`           | Predefined plan name label                                 |
+| `pro.predefined_plan.cta_create`           | Save predefined plan CTA                                   |
+| `pro.predefined_plan.bulk_assign.*`        | Bulk assign flow keys                                      |
+| `pro.plan.item.search.dialog_title`        | Accessible name for the single exercise-search dialog root |
+| `pro.plan.item.search.placeholder`         | Exercise search input placeholder                          |
+| `pro.plan.item.search.initial`             | Initial helper state before a query is entered             |
+| `pro.plan.item.search.loading`             | Accessible loading announcement while search is pending    |
+| `pro.plan.item.search.empty`               | No results state                                           |
+| `pro.plan.item.search.error`               | Search error state                                         |
+| `pro.plan.item.search.retry`               | Retry search CTA in the error state                        |
+| `pro.plan.item.search.back`                | "Back to search" link in exercise detail form              |
+| `exercise.muscle_group.chest`              | Muscle group label: Chest                                  |
+| `exercise.muscle_group.back`               | Muscle group label: Back                                   |
+| `exercise.muscle_group.shoulders`          | Muscle group label: Shoulders                              |
+| `exercise.muscle_group.biceps`             | Muscle group label: Biceps                                 |
+| `exercise.muscle_group.triceps`            | Muscle group label: Triceps                                |
+| `exercise.muscle_group.forearms`           | Muscle group label: Forearms                               |
+| `exercise.muscle_group.quads`              | Muscle group label: Quads                                  |
+| `exercise.muscle_group.hamstrings`         | Muscle group label: Hamstrings                             |
+| `exercise.muscle_group.glutes`             | Muscle group label: Glutes                                 |
+| `exercise.muscle_group.calves`             | Muscle group label: Calves                                 |
+| `exercise.muscle_group.core`               | Muscle group label: Core                                   |
+| `exercise.muscle_group.full_body`          | Muscle group label: Full Body                              |
 
 All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Edge Cases
+
 - If assignment ends while the builder is open: block assign action; plan save remains available.
 - Editing a predefined plan after bulk-assignment does not mutate already assigned student copies (D-082, BR-283).
 - Custom field evolution across template versions must preserve old records.
 
 ## Implementation Files
-| File | Purpose |
-|---|---|
-| `features/plans/plan-builder.logic.ts` | Pure functions: `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `isStarterTemplate`, `normalizePlanBuilderError` |
-| `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
-| `features/plans/plan-builder-source.ts` | Server source ops: `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, session/item mutations, starter templates, and food search |
-| `features/plans/use-plan-builder.ts` | React hook `useTrainingPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
-| `features/plans/exercise-service-source.ts` | MyChampions server exercise catalog client: `searchExerciseLibrary`, `getExerciseById`; types: `ExerciseItem`, `ExerciseVideo`, `ExerciseSearchResult` |
-| `features/plans/use-exercise-search.ts` | Hook `useExerciseSearch` — state machine: `idle/loading/error/done` |
-| `features/plans/use-exercise-thumbnail.ts` | Hook `useExerciseThumbnail(exerciseId)` — fetches fresh thumbnail URL on demand; never caches |
-| `components/ds/patterns/ExerciseSearchModal.tsx` | Two-phase modal: search results list → exercise detail/confirm form |
-| `features/plans/components/SessionCard.tsx` | Renders session items; `SessionItemRow` sub-component calls `useExerciseThumbnail` per item |
-| `app/professional/training.tsx` | Plan library list screen |
-| `app/professional/training/plans/[planId].tsx` | Plan builder screen |
+
+| File                                             | Purpose                                                                                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `features/plans/plan-builder.logic.ts`           | Pure functions: `validateTrainingPlanInput`, `validateTrainingSessionItemInput`, `isStarterTemplate`, `normalizePlanBuilderError`                      |
+| `features/plans/plan-builder.logic.test.ts`      | Unit tests (included in 301-test suite)                                                                                                                |
+| `features/plans/plan-builder-source.ts`          | Server source ops: `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, session/item mutations, starter templates, and food search     |
+| `features/plans/use-plan-builder.ts`             | React hook `useTrainingPlanBuilder` with state machine: `idle/loading/ready/saving/error`                                                              |
+| `features/plans/exercise-service-source.ts`      | MyChampions server exercise catalog client: `searchExerciseLibrary`, `getExerciseById`; types: `ExerciseItem`, `ExerciseVideo`, `ExerciseSearchResult` |
+| `features/plans/use-exercise-search.ts`          | Hook `useExerciseSearch` — state machine: `idle/loading/error/done`                                                                                    |
+| `features/plans/use-exercise-thumbnail.ts`       | Hook `useExerciseThumbnail(exerciseId)` — fetches fresh thumbnail URL on demand; never caches                                                          |
+| `components/ds/patterns/ExerciseSearchModal.tsx` | Two-phase modal: search results list → exercise detail/confirm form                                                                                    |
+| `features/plans/components/SessionCard.tsx`      | Renders session items; `SessionItemRow` sub-component calls `useExerciseThumbnail` per item                                                            |
+| `app/professional/training.tsx`                  | Plan library list screen                                                                                                                               |
+| `app/professional/training/plans/[planId].tsx`   | Plan builder screen                                                                                                                                    |
 
 ## Links
-| Artifact | IDs |
-|---|---|
-| Functional requirements | FR-244, FR-245, FR-246, FR-247, FR-248, FR-254, FR-255, FR-256, FR-223, FR-224, FR-225, FR-226 |
-| Use case | UC-002.14, UC-002.20 |
-| Acceptance criteria | AC-256, AC-264, AC-265, AC-267 |
-| Business rules | BR-281, BR-282, BR-283, BR-293, BR-294, BR-303, BR-304, BR-305, BR-306 |
-| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-277, TC-278, TC-278A, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
-| Decisions | D-013, D-072, D-080, D-082, D-111, D-112, D-114, D-157, D-173 |
-| Backlog | BL-106 |
+
+| Artifact                | IDs                                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Functional requirements | FR-244, FR-245, FR-246, FR-247, FR-248, FR-254, FR-255, FR-256, FR-223, FR-224, FR-225, FR-226                   |
+| Use case                | UC-002.14, UC-002.20                                                                                             |
+| Acceptance criteria     | AC-256, AC-264, AC-265, AC-267                                                                                   |
+| Business rules          | BR-281, BR-282, BR-283, BR-293, BR-294, BR-303, BR-304, BR-305, BR-306                                           |
+| Test cases              | TC-268, TC-269, TC-269A, TC-270, TC-277, TC-278, TC-278A, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
+| Decisions               | D-013, D-072, D-080, D-082, D-111, D-112, D-114, D-157, D-173                                                    |
+| Backlog                 | BL-106                                                                                                           |
+
+## Scoped native observation evidence (BL-018, 2026-09-29)
+
+Fresh English iOS inventory packets `936d19c5d4fc1d6f0d18bfee` (save/error/
+retention/retry/reopen) and `ab15e97b3b5358a1e8cb44b7` (discard/keep/confirm/
+fresh builder) preserve actual frames, owned SQL and cleanup evidence. The
+former is historical after later package input changes; the latter is qualified
+against its frozen app/build inputs and reviewed frames. These support the
+scoped removal-guard investigation, with zero qualified journey or transition
+passes. Complete both-engine/platform/locale native acceptance remains pending;
+no FR/BR/UC/copy behavior changes are introduced by these evidence notes.

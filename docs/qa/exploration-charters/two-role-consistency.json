@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "EXP-TWO-ROLE-CONSISTENCY",
+  "title": "Two-role connection consistency",
+  "summary": "Explore the student/professional invitation and confirmation journey with independent role identities and durable cross-role evidence.",
+  "platforms": ["ios", "android", "web"],
+  "connectorsByPlatform": {
+    "ios": "maestro",
+    "android": "maestro",
+    "web": "playwright"
+  },
+  "locales": ["en-US", "pt-BR", "es-ES"],
+  "roles": ["professional", "student"],
+  "dataMode": "integration",
+  "fixture": {
+    "id": "owned-postgres:exploration:two-role-consistency",
+    "resetStrategy": "fresh-professional-and-student-pair-per-attempt"
+  },
+  "allowedActions": [
+    "Reset the declared owned professional/student fixture pair and verify both target identities",
+    "Sign in as the professional and expose the documented invite code through the UI",
+    "Sign in as the student, submit the code through the documented UI, and observe pending state",
+    "Return to the professional UI, confirm the request, and verify active state in both role contexts",
+    "Check the final relationship row through independent authenticated API and read-only SQL evidence"
+  ],
+  "excludedExternalEffects": [
+    "Production or shared identities, real customer contact, or external notifications",
+    "Direct database approval, privileged seed shortcuts, or changing a role outside the declared pair",
+    "Provider-console changes, purchases, issue posting, schedule creation, or destructive cleanup of unrelated data",
+    "Claiming cross-role consistency from one UI session or from generated connector output alone"
+  ],
+  "budget": {
+    "maxDurationMinutes": 30,
+    "maxUiActions": 100,
+    "stopWhen": "first-limit-reached",
+    "unchangedFailureLimit": 2
+  },
+  "artifactPolicy": {
+    "directoryMode": "0700",
+    "fileMode": "0600",
+    "rawEvidence": "private-only",
+    "publicSummary": "redacted-status-only",
+    "forbiddenFields": [
+      "password",
+      "accessToken",
+      "refreshToken",
+      "cookie",
+      "authorization",
+      "secret"
+    ]
+  },
+  "requirementRefs": ["SC-204", "SC-205", "SC-211", "TC-002", "BR-230A", "BL-018/T16"],
+  "requirementPaths": [
+    "docs/screens/v2/SC-204-professional-home-dashboard.md",
+    "docs/screens/v2/SC-205-student-roster.md",
+    "docs/screens/v2/SC-211-relationship-management.md",
+    "docs/test-cases/TC-002-role-and-assignment-controls.md",
+    "docs/plans/2026-09-28-testing-structure-and-maestro-plan.md"
+  ],
+  "scenario": {
+    "id": "EXP-TWO-ROLE-001",
+    "title": "Professional and student see the same pending-to-active relationship",
+    "sourceRefs": ["SC-204", "SC-205", "SC-211", "TC-002", "BR-230A", "BL-018/T16"],
+    "preconditions": [
+      "The professional and student accounts are independent members of the owned fixture pair",
+      "The relationship starts absent and the invite code is exposed by the professional UI",
+      "Both role sessions, API reads, and the SQL read are independently identified"
+    ],
+    "actions": [
+      "Read the invite code in the professional surface",
+      "Submit it in the student surface and capture pending state",
+      "Confirm the request in the professional surface",
+      "Read active state in both surfaces and through API/SQL"
+    ],
+    "expectedObservations": [
+      "The invite code and pending row belong to the declared independent identities",
+      "Confirmation changes one relationship to active without creating duplicates",
+      "Both role surfaces and independent API/SQL reads agree on the final row",
+      "Authorization or fixture blocks remain blocked and cannot be counted as a finding"
+    ],
+    "risk": "high"
+  }
+}

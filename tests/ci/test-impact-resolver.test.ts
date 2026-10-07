@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -13,6 +13,7 @@ import {
   parseNameStatus,
   resolveImpact,
   type ImportGraph,
+  type ImpactResult,
   type TestImpactManifest,
   validateFeatureBoundaries,
   validateManifest,
@@ -20,7 +21,7 @@ import {
 
 const root = process.cwd();
 
-test('documented critical browser paths remain selected for auth-impact changes', () => {
+void test('documented critical browser paths remain selected for auth-impact changes', () => {
   const result = resolveImpact(loadManifest(root), [
     { status: 'M', path: 'features/auth/auth-route-guard.logic.ts' },
   ]);
@@ -152,20 +153,92 @@ function syntheticManifestWithUnownedSuites(): TestImpactManifest {
   return manifest;
 }
 
-test('checked-in impact manifest is internally valid', () => {
+void test('checked-in impact manifest is internally valid', () => {
   const manifest = loadManifest(root);
   assert.deepEqual(validateManifest(manifest), []);
   assert.deepEqual(validateFeatureBoundaries(root, manifest), []);
 });
 
-test('glob matching supports root files, nested directories, and literal route punctuation', () => {
+void test('private integrated session baseline is registered without CI eligibility', () => {
+  const manifest = loadManifest(root);
+  const suite = manifest.suites['detox:integrated-session-baseline'];
+  assert.ok(suite, 'owned session baseline must be inventoried in the suite manifest');
+  assert.equal(suite.runner, 'detox');
+  assert.equal(suite.ci, false);
+  assert.deepEqual(suite.platforms, ['ios', 'android']);
+  assert.deepEqual(suite.specs, ['e2e/detox-integrated-session-baseline.e2e.test.js']);
+  assert.equal(suite.fixtureProfile, 'owned-integrated-session');
+});
+
+void test('private integrated connection baseline is registered without CI eligibility', () => {
+  const manifest = loadManifest(root);
+  const suite = manifest.suites['detox:integrated-connection-baseline'];
+  assert.ok(suite, 'owned connection baseline must be inventoried in the suite manifest');
+  assert.equal(suite.runner, 'detox');
+  assert.equal(suite.ci, false);
+  assert.deepEqual(suite.platforms, ['ios', 'android']);
+  assert.deepEqual(suite.specs, ['e2e/detox-integrated-connection-baseline.e2e.test.js']);
+  assert.equal(suite.fixtureProfile, 'owned-integrated-connection');
+});
+
+void test('inactive connection baseline edits force validation without selecting the private native suite', () => {
+  const manifest = loadManifest(root);
+  for (const status of ['M', 'D'] as const) {
+    for (const platformScope of ['all', 'web-only'] as const) {
+      const result = resolveImpact(
+        manifest,
+        [{ status, path: 'e2e/detox-integrated-connection-baseline.e2e.test.js' }],
+        [],
+        { platformScope },
+      );
+      assert.equal(result.mode, 'full-fallback');
+      assert.deepEqual(result.unmappedRuntimePaths, []);
+      assert.ok(result.webSuites.length > 0);
+      assert.ok(!result.selectedSuites.includes('detox:integrated-connection-baseline'));
+      if (platformScope === 'web-only') {
+        assert.deepEqual(result.detoxIosSuites, []);
+        assert.deepEqual(result.detoxAndroidSuites, []);
+      } else {
+        assert.ok(result.detoxIosSuites.length > 0);
+        assert.ok(result.detoxAndroidSuites.length > 0);
+      }
+    }
+  }
+});
+
+void test('inactive session baseline edits force validation without selecting the private native suite', () => {
+  const manifest = loadManifest(root);
+  for (const status of ['M', 'D'] as const) {
+    for (const platformScope of ['all', 'web-only'] as const) {
+      const result = resolveImpact(
+        manifest,
+        [{ status, path: 'e2e/detox-integrated-session-baseline.e2e.test.js' }],
+        [],
+        { platformScope },
+      );
+      assert.equal(result.mode, 'full-fallback');
+      assert.deepEqual(result.unmappedRuntimePaths, []);
+      assert.ok(result.webSuites.length > 0);
+      assert.ok(!result.selectedSuites.includes('detox:integrated-session-baseline'));
+      if (platformScope === 'web-only') {
+        assert.deepEqual(result.detoxIosSuites, []);
+        assert.deepEqual(result.detoxAndroidSuites, []);
+      } else {
+        assert.ok(result.detoxIosSuites.length > 0);
+        assert.ok(result.detoxAndroidSuites.length > 0);
+      }
+    }
+  }
+});
+
+void test('glob matching supports root files, nested directories, and literal route punctuation', () => {
   assert.equal(globToRegExp('features/a/**').test('features/a/source.ts'), true);
   assert.equal(globToRegExp('features/a/**/*.test.ts').test('features/a/source.test.ts'), true);
   assert.equal(globToRegExp('app/(tabs)/**').test('app/(tabs)/nutrition/index.tsx'), true);
   assert.equal(globToRegExp('*.md').test('README.md'), true);
 });
 
-test('a feature-only change selects A and its declared reverse dependent, not unrelated B', () => {
+void test('a feature-only change selects A and its declared reverse dependent, not unrelated B', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'M', path: 'features/a/source.ts' },
   ]);
@@ -180,7 +253,7 @@ test('a feature-only change selects A and its declared reverse dependent, not un
   assert.equal(result.selectedSuites.includes('detox:b'), false);
 });
 
-test('reverse import consumers widen a design-system change only to actual consumers', () => {
+void test('reverse import consumers widen a design-system change only to actual consumers', () => {
   const reverseGraph: ImportGraph = new Map([
     ['components/ds/Button.tsx', new Set(['features/a/screen.tsx'])],
   ]);
@@ -195,10 +268,11 @@ test('reverse import consumers widen a design-system change only to actual consu
   assert.match(result.reasons.join(' '), /reverse import consumers: a/);
 });
 
-test('reverse import graph includes platform-specific module variants', () => {
+void test('reverse import graph includes platform-specific module variants', () => {
   const repository = mkdtempSync(join(tmpdir(), 'mychampions-platform-import-'));
 
   try {
+    execFileSync('git', ['init', '-q'], { cwd: repository });
     mkdirSync(join(repository, 'components', 'ui'), { recursive: true });
     mkdirSync(join(repository, 'features', 'a'), { recursive: true });
     writeFileSync(
@@ -231,7 +305,48 @@ test('reverse import graph includes platform-specific module variants', () => {
   }
 });
 
-test('navigation changes select the complete registered CI matrix', () => {
+void test('working-tree graph uses Git ownership and ignores broken private scratch symlinks', () => {
+  const repository = mkdtempSync(join(tmpdir(), 'mychampions-working-tree-'));
+
+  try {
+    execFileSync('git', ['init', '-q'], { cwd: repository });
+    mkdirSync(join(repository, 'components', 'ui'), { recursive: true });
+    mkdirSync(join(repository, 'features', 'a'), { recursive: true });
+    mkdirSync(join(repository, '.qa', 'artifacts', 'candidate', 'scripts'), { recursive: true });
+    writeFileSync(join(repository, '.gitignore'), '.qa/\n');
+    writeFileSync(
+      join(repository, 'components', 'ui', 'tracked.ts'),
+      'export const tracked = 1;\n',
+    );
+    writeFileSync(
+      join(repository, 'components', 'ui', 'new-source.ts'),
+      'export const fresh = 2;\n',
+    );
+    writeFileSync(
+      join(repository, 'features', 'a', 'consumer.ts'),
+      "import { tracked } from '@/components/ui/tracked';\nimport { fresh } from '@/components/ui/new-source';\nexport const value = tracked + fresh;\n",
+    );
+    symlinkSync(
+      join(repository, '.qa', 'artifacts', 'candidate', 'scripts', 'missing-target'),
+      join(repository, '.qa', 'artifacts', 'candidate', 'scripts', 'fixtures'),
+    );
+    execFileSync('git', ['add', 'components/ui/tracked.ts'], { cwd: repository });
+
+    const graph = buildWorkingTreeGraph(repository);
+    assert.deepEqual(
+      [...(graph.get('components/ui/tracked.ts') ?? [])],
+      ['features/a/consumer.ts'],
+    );
+    assert.deepEqual(
+      [...(graph.get('components/ui/new-source.ts') ?? [])],
+      ['features/a/consumer.ts'],
+    );
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
+
+void test('navigation changes select the complete registered CI matrix', () => {
   const result = resolveImpact(syntheticManifest(), [{ status: 'M', path: 'app/_layout.tsx' }]);
 
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
@@ -254,7 +369,7 @@ for (const scenario of [
     expectedMode: 'selective',
   },
 ]) {
-  test(`${scenario.name} includes every registered CI suite even when no feature owns it`, () => {
+  void test(`${scenario.name} includes every registered CI suite even when no feature owns it`, () => {
     const result = resolveImpact(
       syntheticManifestWithUnownedSuites(),
       scenario.changedFiles,
@@ -310,7 +425,7 @@ for (const scenario of [
     expectedAndroidSuites: [],
   },
 ]) {
-  test(`a direct change to ${scenario.name} respects its CI eligibility`, () => {
+  void test(`a direct change to ${scenario.name} respects its CI eligibility`, () => {
     const result = resolveImpact(syntheticManifestWithUnownedSuites(), [
       { status: 'M', path: scenario.path },
     ]);
@@ -326,7 +441,7 @@ for (const scenario of [
   });
 }
 
-test('renames and copies preserve old and new paths', () => {
+void test('renames and copies preserve old and new paths', () => {
   assert.deepEqual(parseNameStatus('R100\tfeatures/a/old.ts\tfeatures/b/new.ts\n'), [
     {
       status: 'R',
@@ -343,7 +458,7 @@ test('renames and copies preserve old and new paths', () => {
   ]);
 });
 
-test('a rename from A to B affects both ownership domains', () => {
+void test('a rename from A to B affects both ownership domains', () => {
   const result = resolveImpact(syntheticManifest(), [
     {
       status: 'R',
@@ -356,7 +471,7 @@ test('a rename from A to B affects both ownership domains', () => {
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
 });
 
-test('a deleted feature file retains ownership from its previous path', () => {
+void test('a deleted feature file retains ownership from its previous path', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'D', path: 'features/a/deleted.ts' },
   ]);
@@ -365,7 +480,7 @@ test('a deleted feature file retains ownership from its previous path', () => {
   assert.deepEqual(result.affectedFeatures, ['a', 'c']);
 });
 
-test('unmapped runtime changes fail closed to the full matrix', () => {
+void test('unmapped runtime changes fail closed to the full matrix', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'A', path: 'features/unknown/new-source.ts' },
   ]);
@@ -378,7 +493,7 @@ test('unmapped runtime changes fail closed to the full matrix', () => {
   assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
 });
 
-test('source files in unknown nested directories fail closed to the full matrix', () => {
+void test('source files in unknown nested directories fail closed to the full matrix', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'A', path: 'utils/nested/new-helper.ts' },
   ]);
@@ -387,7 +502,7 @@ test('source files in unknown nested directories fail closed to the full matrix'
   assert.deepEqual(result.unmappedRuntimePaths, ['utils/nested/new-helper.ts']);
 });
 
-test('documentation-only changes skip expensive suites', () => {
+void test('documentation-only changes skip expensive suites', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'M', path: 'docs/architecture/selective-tests.md' },
   ]);
@@ -396,7 +511,7 @@ test('documentation-only changes skip expensive suites', () => {
   assert.deepEqual(result.selectedSuites, []);
 });
 
-test('documentation paths owned by a global rule still select the complete matrix', () => {
+void test('documentation paths owned by a global rule still select the complete matrix', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'M', path: 'docs/screens/v2/localized-copy-table-v2.md' },
   ]);
@@ -406,7 +521,7 @@ test('documentation paths owned by a global rule still select the complete matri
   assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
 });
 
-test('impact infrastructure changes fail closed even when they are otherwise unmapped', () => {
+void test('impact infrastructure changes fail closed even when they are otherwise unmapped', () => {
   const result = resolveImpact(syntheticManifest(), [
     { status: 'M', path: 'config/test-impact.json' },
   ]);
@@ -415,7 +530,7 @@ test('impact infrastructure changes fail closed even when they are otherwise unm
   assert.match(result.fallbackReasons.join(' '), /tooling file changed/);
 });
 
-test('platform scope web-only strips detox suites from a fullFallbackPaths full-fallback selection', () => {
+void test('platform scope web-only strips detox suites from a fullFallbackPaths full-fallback selection', () => {
   const result = resolveImpact(
     syntheticManifest(),
     [{ status: 'M', path: 'config/test-impact.json' }],
@@ -433,7 +548,7 @@ test('platform scope web-only strips detox suites from a fullFallbackPaths full-
   );
 });
 
-test('platform scope web-only strips detox suites from an unmapped-path full-fallback selection', () => {
+void test('platform scope web-only strips detox suites from an unmapped-path full-fallback selection', () => {
   const result = resolveImpact(
     syntheticManifest(),
     [{ status: 'A', path: 'features/unknown/new-source.ts' }],
@@ -448,7 +563,7 @@ test('platform scope web-only strips detox suites from an unmapped-path full-fal
   assert.deepEqual(result.detoxAndroidSuites, []);
 });
 
-test('platform scope web-only strips detox suites when a shared rule matches impact:all', () => {
+void test('platform scope web-only strips detox suites when a shared rule matches impact:all', () => {
   const result = resolveImpact(
     syntheticManifest(),
     [{ status: 'M', path: 'docs/screens/v2/localized-copy-table-v2.md' }],
@@ -463,7 +578,7 @@ test('platform scope web-only strips detox suites when a shared rule matches imp
   assert.deepEqual(result.detoxAndroidSuites, []);
 });
 
-test('platform scope defaults to "all" and leaves Detox suites in a full-fallback selection unchanged', () => {
+void test('platform scope defaults to "all" and leaves Detox suites in a full-fallback selection unchanged', () => {
   const withDefault = resolveImpact(syntheticManifest(), [
     { status: 'A', path: 'features/unknown/new-source.ts' },
   ]);
@@ -481,7 +596,7 @@ test('platform scope defaults to "all" and leaves Detox suites in a full-fallbac
   }
 });
 
-test('CLI emits compact suite arrays and web-server workflow outputs', () => {
+void test('CLI emits compact suite arrays and web-server workflow outputs', () => {
   const outputDirectory = mkdtempSync(join(tmpdir(), 'mychampions-test-impact-output-'));
   const githubOutput = join(outputDirectory, 'github-output.txt');
   const impactOutput = join(outputDirectory, 'impact.json');
@@ -518,7 +633,7 @@ test('CLI emits compact suite arrays and web-server workflow outputs', () => {
           return [line.slice(0, separator), line.slice(separator + 1)];
         }),
     );
-    const result = JSON.parse(readFileSync(impactOutput, 'utf8'));
+    const result = JSON.parse(readFileSync(impactOutput, 'utf8')) as ImpactResult;
     const manifest = loadManifest(root);
 
     assert.match(outputs.has_web_server, /^(true|false)$/);
@@ -544,7 +659,7 @@ test('CLI emits compact suite arrays and web-server workflow outputs', () => {
   }
 });
 
-test('CLI --platform-scope web-only strips Detox suites from the real manifest full-fallback selection', () => {
+void test('CLI --platform-scope web-only strips Detox suites from the real manifest full-fallback selection', () => {
   const outputDirectory = mkdtempSync(join(tmpdir(), 'mychampions-platform-scope-cli-'));
   const githubOutput = join(outputDirectory, 'github-output.txt');
   const impactOutput = join(outputDirectory, 'impact.json');
@@ -583,7 +698,7 @@ test('CLI --platform-scope web-only strips Detox suites from the real manifest f
           return [line.slice(0, separator), line.slice(separator + 1)];
         }),
     );
-    const result = JSON.parse(readFileSync(impactOutput, 'utf8'));
+    const result = JSON.parse(readFileSync(impactOutput, 'utf8')) as ImpactResult;
 
     assert.equal(outputs.has_detox_ios, 'false');
     assert.equal(outputs.has_detox_android, 'false');
@@ -595,7 +710,7 @@ test('CLI --platform-scope web-only strips Detox suites from the real manifest f
   }
 });
 
-test('CLI rejects an invalid --platform-scope value', () => {
+void test('CLI rejects an invalid --platform-scope value', () => {
   assert.throws(() => {
     execFileSync(
       join(root, 'node_modules', '.bin', 'tsx'),
@@ -605,13 +720,13 @@ test('CLI rejects an invalid --platform-scope value', () => {
   }, /must be "all" or "web-only"/);
 });
 
-test('undeclared dependency cycles fail manifest validation', () => {
+void test('undeclared dependency cycles fail manifest validation', () => {
   const manifest = syntheticManifest();
   manifest.features.a.dependsOn = ['c'];
   assert.match(validateManifest(manifest).join('\n'), /undeclared dependency cycle/);
 });
 
-test('merge-base change detection ignores base-only commits merged into a feature branch', () => {
+void test('merge-base change detection ignores base-only commits merged into a feature branch', () => {
   const repository = mkdtempSync(join(tmpdir(), 'mychampions-test-impact-'));
   const git = (...args: string[]) =>
     execFileSync('git', args, { cwd: repository, encoding: 'utf8' });
@@ -646,7 +761,7 @@ test('merge-base change detection ignores base-only commits merged into a featur
   }
 });
 
-test('Git change detection preserves the source path for copies of unchanged files', () => {
+void test('Git change detection preserves the source path for copies of unchanged files', () => {
   const repository = mkdtempSync(join(tmpdir(), 'mychampions-test-impact-copy-'));
   const git = (...args: string[]) =>
     execFileSync('git', args, { cwd: repository, encoding: 'utf8' });
@@ -679,7 +794,7 @@ test('Git change detection preserves the source path for copies of unchanged fil
   }
 });
 
-test('registered UI spec discovery recurses through nested E2E directories', () => {
+void test('registered UI spec discovery recurses through nested E2E directories', () => {
   const repository = mkdtempSync(join(tmpdir(), 'mychampions-test-impact-specs-'));
 
   try {

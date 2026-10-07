@@ -43,6 +43,39 @@ yarn test:e2e:web
 
 Web E2E commands create timestamped, gitignored evidence packages under `.artifacts/web-e2e`, including an HTML report, JSON/JUnit results, screenshots, run metadata, and a generated manual-validation checklist. Batch definitions and the manual review procedure are documented in `docs/test-cases/web-playwright-batches-and-manual-validation.md`; pending release work is tracked in `docs/discovery/web-pending-items-and-future-improvements.md`.
 
+The BL-018 integration lane owns disposable Postgres, the real sibling server and
+isolated Expo/proxy ports. Run one auth case with
+`yarn test:e2e:web:integration --scenario=auth-session --project=chromium`.
+Private artifacts and validated attempt receipts live in
+`.qa/artifacts/web-integration/<run-id>/`. Default selection requests all five
+scenarios. Both complete 45-case matrices pass locally; current proof and
+freshness are tracked in the task card. Native/hosted promotion remains pending.
+`yarn tsx scripts/testing/verify-web-integration.ts` checks input rejection,
+live-worker cancellation and deadline cleanup. Local proof, remaining journeys
+and pending selective CI/native adoption are tracked in
+`docs/qa/testing-modernization-task-card.md`.
+
+The public native pilot executes one integrated iOS/Maestro training case:
+`yarn test:e2e:native:pilot --platform=ios --engine=maestro --scenario=SCN-training-ios --mode=integration`.
+Set `MYCHAMPIONS_NATIVE_STATE_ROOT` to an existing canonical owned directory
+with mode0700 for the shared host lock. Each attempt writes an immutable receipt
+under `.qa/artifacts/native-pilot-attempts/`. It returns0 only after the complete
+UI/API/SQL ledger, current inputs and independent cleanup pass; unsupported
+selections remain blocked2. SIGINT/SIGTERM return130/143 with retained receipts.
+Optional `MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS` accepts integer1000–180000
+for this case; unset keeps180000. Bootstrap timeout returns blocked2. Optional build, command-step and whole-run
+bounds use `MYCHAMPIONS_NATIVE_BUILD_DEADLINE_MS`1000–900000,
+`MYCHAMPIONS_NATIVE_STEP_DEADLINE_MS`1000–600000 and
+`MYCHAMPIONS_NATIVE_WHOLE_DEADLINE_MS`1000–2400000. Defaults are the upper
+bounds; an override cannot widen a shorter declared command. Timeout aborts
+owned work and returns blocked2 after independently checked teardown.
+Optional `MYCHAMPIONS_NATIVE_REUSE_BUILD_RUN_ID` reuses only qualified immutable
+bytes from a private retained24-hex capture. It validates current app source,
+binary/config/bootstrap and reviewed entry before acquisition; new device,
+fixture/backend, ports and processes are still required. Invalid reuse blocks
+without a compile fallback. The task card records bounded local proof and pending lifecycle/platform/
+engine/reliability/hosted gates. Keep Detox until its replacement gates pass.
+
 For native development builds, use:
 
 ```bash
@@ -72,6 +105,12 @@ Both iOS and Android release workflows fail before building when this value is
 missing or different, preventing a production bundle from shipping with the
 local development endpoint.
 
+Development Firebase distribution workflows run after each `develop` push (so a
+merged pull request triggers them) and can also be started manually. They build
+only `MyChampions Dev` and reject a missing or production API URL; configure the
+non-production `ENV_FILE` target, Firebase App IDs/service account, `base-group`
+tester group, and iOS Ad Hoc signing assets before their first live run.
+
 ## Testing
 
 1. Unit tests
@@ -79,6 +118,13 @@ local development endpoint.
    ```bash
    yarn test:unit
    ```
+
+   Rendered component checks use `yarn test:component`; `yarn test:all` runs both
+   unit and component suites. Component checks exercise real UI state/handlers
+   with native adapters and external transport mocked. They do not replace
+   browser, native-device or database integration evidence. See
+   [testing strategy](docs/qa/testing-strategy-v1.md) for the phased rollout and
+   recorded baseline gaps.
 
 2. E2E (Detox) iOS
 

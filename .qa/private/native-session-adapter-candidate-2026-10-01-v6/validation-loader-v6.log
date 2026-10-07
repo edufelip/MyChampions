@@ -1,0 +1,12 @@
+✔ v6 loader re-reads a complete owned capture and invokes the shared verifier (453.056583ms)
+✔ v6 loader rejects a snapshot hash mutation before verification (110.381458ms)
+✔ v6 loader rejects missing checkpoint bytes and foreign receipt provenance (113.228291ms)
+✔ v6 loader rejects a foreign checkpoint receipt root (112.682792ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1295.28425

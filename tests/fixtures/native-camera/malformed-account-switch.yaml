@@ -1,0 +1,10 @@
+appId: com.edufelip.mychampions.dev
+name: Native inventory connection-switch-1-coach-account
+---
+student-professionals-back
+- tapOn:
+    id: tabs.account
+- extendedWaitUntil:
+    visible:
+      id: "settings.account.screen"
+    timeout: 90000

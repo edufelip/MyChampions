@@ -1,0 +1,437 @@
+diff --git a/scripts/testing/capture-native-testability.ts b/scripts/testing/capture-native-testability.ts
+index bbe6e02..750dcd4 100644
+--- a/scripts/testing/capture-native-testability.ts
++++ b/scripts/testing/capture-native-testability.ts
+@@ -45,6 +45,7 @@ import {
+   recordNativeQuantityFailure,
+ } from './native-maestro-assertion-failure';
+ import { nativeSessionAssertionIds } from './native-pilot-contract';
++import { verifyNativeSessionProfileCheckpoints } from './native-session-profile-checkpoints';
+ import {
+   readNativeEvidence,
+   validateNativeRuntimeFrameFiles,
+@@ -693,6 +694,7 @@ async function executeOwnedIosSession(
+         'native-save-retry-observation.ts',
+         'native-auth-observation.ts',
+         'native-pilot-contract.ts',
++        'native-session-profile-checkpoints.ts',
+         'schema-validation.ts',
+         'validate-native-inventory.mjs',
+         'android-build-identity.ts',
+@@ -1753,6 +1755,59 @@ async function executeOwnedIosSession(
+         sessionDirectIo(label, () => session!.snapshot('native-entry-ios'));
+       const sessionAuthMetadata = (label: string, dataContainer: string) =>
+         sessionDirectIo(label, () => observeIosAuthMetadata(dataContainer, bundleId));
++      type SessionCheckpointReceipt = {
++        path: string;
++        runId: string;
++        scope: string;
++        sha256: string;
++        bytes: number;
++        ownedRunId: string;
++        fixtureScope: string;
++        artifactRoot: string;
++        apiPid: number;
++        targetOrigin: string;
++        fixtureAuthUidAllowlistHash: string;
++      };
++      const persistSessionCheckpoint = async (
++        label: string,
++        relative: string,
++        value: OwnedConnectionSnapshot | OwnedDomainSnapshot,
++      ): Promise<{ value: OwnedConnectionSnapshot | OwnedDomainSnapshot; receipt: SessionCheckpointReceipt }> => {
++        const bytes = JSON.stringify(value, null, 2);
++        await sessionWriteText(label + '-write', path.join(output, relative), bytes, {
++          mode: 0o600,
++          flag: 'wx',
++        });
++        const ownedBytes = sessionReadEvidence(label + '-read', relative, true);
++        const parsed = JSON.parse(ownedBytes.toString()) as
++          | OwnedConnectionSnapshot
++          | OwnedDomainSnapshot;
++        if (JSON.stringify(parsed) !== JSON.stringify(value))
++          throw new Error(`${label} changed during owned readback`);
++        return {
++          value: parsed,
++          receipt: {
++            path: relative,
++            runId: parsed.runId,
++            scope: parsed.scope,
++            sha256: createHash('sha256').update(ownedBytes).digest('hex'),
++            bytes: ownedBytes.length,
++            ownedRunId: session!.manifest.runId,
++            fixtureScope: 'native-entry-ios',
++            artifactRoot: session!.manifest.artifactRoot,
++            apiPid: session!.apiPid,
++            targetOrigin: session!.apiOrigin,
++            fixtureAuthUidAllowlistHash,
++          },
++        };
++      };
++      const sessionPersistedCoachIdentityHash = async (label: string, dataContainer: string) => {
++        const metadata = await sessionAuthMetadata(label, dataContainer);
++        const hash = (metadata as { profileAuthUidHash?: unknown }).profileAuthUidHash;
++        if (typeof hash !== 'string' || !/^[a-f0-9]{64}$/.test(hash))
++          throw new Error(`${label} lacks the redacted persisted coach profile identity hash`);
++        return hash;
++      };
+       const sessionDeviceVerify = (label: string) => sessionDirectIo(label, () => device!.verify());
+       const publishSessionLedger = (ledger: Record<string, unknown>) => {
+         assertSessionIoActive('session-ledger-before-publish');
+@@ -1768,6 +1823,21 @@ async function executeOwnedIosSession(
+       };
+       const credentials =
+         fixtures.accounts[charter === 'camera-denied' ? 'unrelated-student' : 'coach'];
++      let sessionProfileBeforeLogin: OwnedConnectionSnapshot | undefined;
++      let sessionProfileAfterLogin: OwnedConnectionSnapshot | undefined;
++      let sessionProfileAfterRestoration: OwnedConnectionSnapshot | undefined;
++      let sessionProfileAfterSignedOutRelaunch: OwnedConnectionSnapshot | undefined;
++      let sessionDomainAfterLogin: OwnedDomainSnapshot | undefined;
++      let sessionDomainAfterRestoration: OwnedDomainSnapshot | undefined;
++      let sessionDomainAfterSignedOutRelaunch: OwnedDomainSnapshot | undefined;
++      let sessionProfileSnapshotReceipts: Record<string, SessionCheckpointReceipt> | undefined;
++      let sessionDomainSnapshotReceipts: Record<string, SessionCheckpointReceipt> | undefined;
++      let sessionDataContainer: string | undefined;
++      let sessionLoginBeforeRequestId = 0;
++      let sessionLoginWindow: { afterRequestId: number; throughRequestId: number } | undefined;
++      let sessionRestorationWindow: { afterRequestId: number; throughRequestId: number } | undefined;
++      let afterLoginAuthUidHash: string | undefined;
++      let afterRestorationAuthUidHash: string | undefined;
+       const sessionSqlBefore =
+         charter === 'session' ? await sessionSnapshot('session-sql-before-snapshot') : undefined;
+       if (sessionSqlBefore) {
+@@ -1806,6 +1876,30 @@ async function executeOwnedIosSession(
+           targetOrigin: session.apiOrigin,
+           fixtureAuthUidAllowlistHash,
+         };
++        if (charter === 'session') {
++          sessionProfileBeforeLogin = await sessionDirectIo(
++            'session-profile-before-login-snapshot',
++            () => session!.connectionSnapshot('native-entry-ios'),
++          );
++          const before = await persistSessionCheckpoint(
++            'session-profile-before-login',
++            'session-profile-before-login.private.json',
++            sessionProfileBeforeLogin,
++          );
++          sessionProfileBeforeLogin = before.value as OwnedConnectionSnapshot;
++          sessionProfileSnapshotReceipts = { beforeLogin: before.receipt };
++          const domainBefore = await persistSessionCheckpoint(
++            'session-domain-before-login',
++            'session-domain-before-login.private.json',
++            sessionSqlBefore,
++          );
++          report.sessionDomainSnapshotReceipts = { beforeLogin: domainBefore.receipt };
++          sessionDomainSnapshotReceipts = { beforeLogin: domainBefore.receipt };
++          sessionLoginBeforeRequestId = proxy.observations.reduce(
++            (maximum, row) => Math.max(maximum, row.requestId),
++            0,
++          );
++        }
+       }
+       if (charter === 'connection-journey') {
+         await observeConnectionPasswordOffer(
+@@ -1868,7 +1962,10 @@ async function executeOwnedIosSession(
+       }
+       if (charter === 'session') {
+         requireIosConnectionAuthIdentityCapture(proxy);
+-        const sessionAuthBoundary = requireIosConnectionSignInBoundary(proxy.observations, 0);
++        const sessionAuthBoundary = requireIosConnectionSignInBoundary(
++          proxy.observations,
++          sessionLoginBeforeRequestId,
++        );
+         const sessionAuthUid = requireIosConnectionActorIdentity(proxy.nativeAuthIdentities, {
+           actorAuthUid: fixtures.accounts.coach.authUid,
+           authRequestId: sessionAuthBoundary.authRequestId,
+@@ -1908,6 +2005,51 @@ async function executeOwnedIosSession(
+           targetOrigin: session.apiOrigin,
+           fixtureAuthUidAllowlistHash,
+         };
++        sessionDataContainer = (
++          await sessionExecute(
++            'session-data-container-read',
++            'xcrun',
++            ['simctl', 'get_app_container', device.udid, bundleId, 'data'],
++            { timeout: 15_000 },
++          )
++        ).stdout.trim();
++        sessionDomainAfterLogin = await sessionSnapshot('session-domain-after-login-snapshot');
++        sessionProfileAfterLogin = await sessionDirectIo(
++          'session-profile-after-login-snapshot',
++          () => session!.connectionSnapshot('native-entry-ios'),
++        );
++        const profileAfterLogin = await persistSessionCheckpoint(
++          'session-profile-after-login',
++          'session-profile-after-login.private.json',
++          sessionProfileAfterLogin,
++        );
++        sessionProfileAfterLogin = profileAfterLogin.value as OwnedConnectionSnapshot;
++        sessionProfileSnapshotReceipts = {
++          ...sessionProfileSnapshotReceipts,
++          afterLogin: profileAfterLogin.receipt,
++        };
++        const domainAfterLogin = await persistSessionCheckpoint(
++          'session-domain-after-login',
++          'session-domain-after-login.private.json',
++          sessionDomainAfterLogin,
++        );
++        sessionDomainAfterLogin = domainAfterLogin.value as OwnedDomainSnapshot;
++        sessionDomainSnapshotReceipts = {
++          ...sessionDomainSnapshotReceipts,
++          afterLogin: domainAfterLogin.receipt,
++        };
++        afterLoginAuthUidHash = await sessionPersistedCoachIdentityHash(
++          'session-profile-cache-after-login',
++          sessionDataContainer,
++        );
++        sessionLoginWindow = {
++          afterRequestId: sessionLoginBeforeRequestId,
++          throughRequestId: sessionAuthBoundary.afterRequestId,
++        };
++        report.sessionProfileLoginWindow = sessionLoginWindow;
++        report.persistedCoachIdentity = { afterLoginAuthUidHash };
++        report.sessionProfileSnapshots = sessionProfileSnapshotReceipts;
++        report.sessionDomainSnapshots = sessionDomainSnapshotReceipts;
+       }
+       if (charter === 'session') {
+         if (!sessionSqlBefore)
+@@ -1925,14 +2067,8 @@ async function executeOwnedIosSession(
+           await observe(label, actions, viewId, selector, selectorKind, notVisibleSelectors);
+         };
+         const sessionAssertionSequence: string[] = [nativeSessionAssertionIds[0]];
+-        const dataContainer = (
+-          await sessionExecute(
+-            'session-data-container-read',
+-            'xcrun',
+-            ['simctl', 'get_app_container', device.udid, bundleId, 'data'],
+-            { timeout: 15_000 },
+-          )
+-        ).stdout.trim();
++        if (!sessionDataContainer) throw new Error('Native session data container was not captured');
++        const dataContainer = sessionDataContainer;
+         const requireSignedOutMetadata = (
+           metadata: Awaited<ReturnType<typeof observeIosAuthMetadata>>,
+           label: string,
+@@ -1940,6 +2076,7 @@ async function executeOwnedIosSession(
+           const candidate = metadata as {
+             sessionPresent?: unknown;
+             profilePresent?: unknown;
++            profileAuthUidHash?: unknown;
+             expiryPresent?: unknown;
+             plaintextAccessTokenPresent?: unknown;
+             plaintextRefreshTokenPresent?: unknown;
+@@ -1947,6 +2084,7 @@ async function executeOwnedIosSession(
+           if (
+             candidate.sessionPresent === true ||
+             candidate.profilePresent === true ||
++            typeof candidate.profileAuthUidHash === 'string' ||
+             candidate.expiryPresent === true ||
+             candidate.plaintextAccessTokenPresent === true ||
+             candidate.plaintextRefreshTokenPresent === true
+@@ -1989,6 +2127,52 @@ async function executeOwnedIosSession(
+         report.authMetadataAfterRelaunch = metadataAfterRelaunch;
+         if (!metadataAfterRelaunch.sessionPresent)
+           throw new Error('Native session restoration lost persisted session metadata');
++        sessionDomainAfterRestoration = await sessionSnapshot(
++          'session-domain-after-restoration-snapshot',
++        );
++        sessionProfileAfterRestoration = await sessionDirectIo(
++          'session-profile-after-restoration-snapshot',
++          () => session!.connectionSnapshot('native-entry-ios'),
++        );
++        const profileAfterRestoration = await persistSessionCheckpoint(
++          'session-profile-after-restoration',
++          'session-profile-after-restoration.private.json',
++          sessionProfileAfterRestoration,
++        );
++        sessionProfileAfterRestoration = profileAfterRestoration.value as OwnedConnectionSnapshot;
++        sessionProfileSnapshotReceipts = {
++          ...sessionProfileSnapshotReceipts,
++          afterRestoration: profileAfterRestoration.receipt,
++        };
++        const domainAfterRestoration = await persistSessionCheckpoint(
++          'session-domain-after-restoration',
++          'session-domain-after-restoration.private.json',
++          sessionDomainAfterRestoration,
++        );
++        sessionDomainAfterRestoration = domainAfterRestoration.value as OwnedDomainSnapshot;
++        sessionDomainSnapshotReceipts = {
++          ...sessionDomainSnapshotReceipts,
++          afterRestoration: domainAfterRestoration.receipt,
++        };
++        afterRestorationAuthUidHash = await sessionPersistedCoachIdentityHash(
++          'session-profile-cache-after-restoration',
++          dataContainer,
++        );
++        sessionRestorationWindow = {
++          afterRequestId: proxy.observations
++            .slice(0, beforeRelaunchTransportCount)
++            .reduce((maximum, row) => Math.max(maximum, row.requestId), 0),
++          throughRequestId: proxy.observations
++            .slice(beforeRelaunchTransportCount)
++            .reduce((maximum, row) => Math.max(maximum, row.requestId), 0),
++        };
++        report.sessionProfileRestorationWindow = sessionRestorationWindow;
++        report.persistedCoachIdentity = {
++          afterLoginAuthUidHash: afterLoginAuthUidHash!,
++          afterRestorationAuthUidHash,
++        };
++        report.sessionProfileSnapshots = sessionProfileSnapshotReceipts;
++        report.sessionDomainSnapshots = sessionDomainSnapshotReceipts;
+         const relaunchTransport = proxy.observations.slice(beforeRelaunchTransportCount);
+         report.relaunchTransport = relaunchTransport;
+         report.relaunchTransportRange = {
+@@ -2147,9 +2331,39 @@ async function executeOwnedIosSession(
+         );
+         if (metadataAfterSignedoutRelaunch.sessionPresent)
+           throw new Error('Signed-out native relaunch restored persisted session metadata');
+-        const sessionSqlAfterSignedoutRelaunch = await sessionSnapshot(
+-          'session-sql-after-signed-out-relaunch-snapshot',
++        sessionDomainAfterSignedOutRelaunch = await sessionSnapshot(
++          'session-domain-after-signed-out-relaunch-snapshot',
++        );
++        sessionProfileAfterSignedOutRelaunch = await sessionDirectIo(
++          'session-profile-after-signed-out-relaunch-snapshot',
++          () => session!.connectionSnapshot('native-entry-ios'),
+         );
++        const profileAfterSignedOutRelaunch = await persistSessionCheckpoint(
++          'session-profile-after-signed-out-relaunch',
++          'session-profile-after-signed-out-relaunch.private.json',
++          sessionProfileAfterSignedOutRelaunch,
++        );
++        sessionProfileAfterSignedOutRelaunch =
++          profileAfterSignedOutRelaunch.value as OwnedConnectionSnapshot;
++        sessionProfileSnapshotReceipts = {
++          ...sessionProfileSnapshotReceipts,
++          afterSignedOutRelaunch: profileAfterSignedOutRelaunch.receipt,
++        };
++        const domainAfterSignedOutRelaunch = await persistSessionCheckpoint(
++          'session-domain-after-signed-out-relaunch',
++          'session-domain-after-signed-out-relaunch.private.json',
++          sessionDomainAfterSignedOutRelaunch,
++        );
++        sessionDomainAfterSignedOutRelaunch = domainAfterSignedOutRelaunch.value as OwnedDomainSnapshot;
++        sessionDomainSnapshotReceipts = {
++          ...sessionDomainSnapshotReceipts,
++          afterSignedOutRelaunch: domainAfterSignedOutRelaunch.receipt,
++        };
++        report.sessionProfileSnapshots = sessionProfileSnapshotReceipts;
++        report.sessionDomainSnapshots = sessionDomainSnapshotReceipts;
++        if (!sessionDomainAfterSignedOutRelaunch)
++          throw new Error('Native session domain checkpoint was not captured');
++        const sessionSqlAfterSignedoutRelaunch = sessionDomainAfterSignedOutRelaunch;
+         const sessionSqlAfterSignedoutRelaunchBytes = JSON.stringify(
+           sessionSqlAfterSignedoutRelaunch,
+           null,
+@@ -2188,6 +2402,75 @@ async function executeOwnedIosSession(
+             JSON.stringify(sessionSqlAfterSignedoutRelaunch.connections)
+         )
+           throw new Error('Native session journey changed unrelated owned SQL state');
++        const sessionTransportPath = 'transport-observations.private.json';
++        await sessionWriteText(
++          'session-transport-write',
++          path.join(output, sessionTransportPath),
++          JSON.stringify(proxy.observations, null, 2),
++          { mode: 0o600, flag: 'wx' },
++        );
++        const ownedSessionTransportBytes = sessionReadEvidence(
++          'session-transport-read',
++          sessionTransportPath,
++          true,
++        );
++        report.transportEvidence = {
++          path: sessionTransportPath,
++          sha256: createHash('sha256').update(ownedSessionTransportBytes).digest('hex'),
++          bytes: ownedSessionTransportBytes.length,
++          runId: session.manifest.runId,
++          scope: 'native-entry-ios',
++          ownedRunId: session.manifest.runId,
++          fixtureScope: 'native-entry-ios',
++          artifactRoot: session.manifest.artifactRoot,
++          apiPid: session.apiPid,
++          targetOrigin: session.apiOrigin,
++          fixtureAuthUidAllowlistHash,
++        };
++        if (
++          !sessionProfileBeforeLogin ||
++          !sessionProfileAfterLogin ||
++          !sessionProfileAfterRestoration ||
++          !sessionProfileAfterSignedOutRelaunch ||
++          !sessionDomainAfterLogin ||
++          !sessionDomainAfterRestoration ||
++          !sessionDomainAfterSignedOutRelaunch ||
++          !sessionLoginWindow ||
++          !sessionRestorationWindow ||
++          !afterLoginAuthUidHash ||
++          !afterRestorationAuthUidHash
++        )
++          throw new Error('Native session profile checkpoint acquisition is incomplete');
++        const sessionProfileCheckpointVerification = verifyNativeSessionProfileCheckpoints({
++          platform: 'ios',
++          backendRunId: session.manifest.runId,
++          fixtureAuthUids: Object.values(fixtures.accounts).map((account) => account.authUid),
++          coachAuthUid: fixtures.accounts.coach.authUid,
++          studentAuthUid: fixtures.accounts.student.authUid,
++          expectedApiIdentity: { apiPid: session.apiPid, targetOrigin: session.apiOrigin },
++          profiles: {
++            beforeLogin: sessionProfileBeforeLogin,
++            afterLogin: sessionProfileAfterLogin,
++            afterRestoration: sessionProfileAfterRestoration,
++            afterSignedOutRelaunch: sessionProfileAfterSignedOutRelaunch,
++          },
++          domain: {
++            beforeLogin: sessionSqlBefore,
++            afterLogin: sessionDomainAfterLogin,
++            afterRestoration: sessionDomainAfterRestoration,
++            afterSignedOutRelaunch: sessionDomainAfterSignedOutRelaunch,
++          },
++          observations: proxy.observations,
++          authIdentities: proxy.nativeAuthIdentities,
++          loginWindow: sessionLoginWindow,
++          restorationWindow: sessionRestorationWindow,
++          persistedCoachIdentity: {
++            afterLoginAuthUidHash,
++            afterRestorationAuthUidHash,
++          },
++        });
++        report.sessionProfileCheckpointVerification = sessionProfileCheckpointVerification;
++        report.sessionSqlBeforeAfterUnchanged = true;
+         sessionAssertionSequence.push(nativeSessionAssertionIds[4]);
+         sessionAssertionSequence.push(nativeSessionAssertionIds[5]);
+         if (sessionAssertionSequence.length !== nativeSessionAssertionIds.length)
+@@ -2222,15 +2505,15 @@ async function executeOwnedIosSession(
+           sessionAssertionSequence,
+           sessionUiObservationOrder,
+           sessionSqlBeforeAfterUnchanged: true,
++          sessionProfileSnapshots: sessionProfileSnapshotReceipts,
++          sessionDomainSnapshots: sessionDomainSnapshotReceipts,
++          sessionProfileLoginWindow: sessionLoginWindow,
++          sessionProfileRestorationWindow: sessionRestorationWindow,
++          persistedCoachIdentity: { afterLoginAuthUidHash, afterRestorationAuthUidHash },
++          sessionProfileCheckpointVerification,
+           observations: sessionViewEvidence,
+           sessionViewEvidence,
+         });
+-        await sessionWriteText(
+-          'session-transport-publication',
+-          path.join(output, 'transport-observations.private.json'),
+-          JSON.stringify(proxy.observations, null, 2),
+-          { mode: 0o600 },
+-        );
+       } else if (charter === 'camera-denied') {
+         const displayName = (
+           await execute(
+@@ -2920,6 +3203,13 @@ async function executeOwnedIosSession(
+         'sessionSqlBefore',
+         'sessionSqlAfterSignedoutRelaunch',
+         'sessionSqlBeforeAfterUnchanged',
++        'transportEvidence',
++        'sessionProfileSnapshots',
++        'sessionDomainSnapshots',
++        'sessionProfileLoginWindow',
++        'sessionProfileRestorationWindow',
++        'persistedCoachIdentity',
++        'sessionProfileCheckpointVerification',
+         'sessionAssertionSequence',
+         'sessionUiObservationOrder',
+         'sessionViewEvidence',

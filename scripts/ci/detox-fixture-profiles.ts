@@ -119,6 +119,23 @@ const capScenario = (
 });
 
 export const DETOX_FIXTURE_PROFILES = {
+  // Owned integration supplies its backend and credentials through the native pilot.
+  // Selective CI has no fixture phases for this profile and must reject it.
+  'owned-integrated-session': {
+    selectiveCi: false,
+    phases: [],
+  },
+  // Owned connection integration supplies its backend and credentials through the native pilot.
+  // It is intentionally distinct from the session profile and cannot enter selective CI.
+  'owned-integrated-connection': {
+    selectiveCi: false,
+    phases: [],
+  },
+  // Camera integration owns its backend and permission state through the native pilot.
+  'owned-integrated-camera': {
+    selectiveCi: false,
+    phases: [],
+  },
   'auth-entry-and-authenticated': {
     selectiveCi: true,
     phases: [

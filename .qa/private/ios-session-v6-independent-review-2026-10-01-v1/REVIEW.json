@@ -1,0 +1,175 @@
+{
+  "kind": "private-ios-session-v6-independent-review",
+  "version": 1,
+  "status": "blocked-before-canonical-integration",
+  "reviewedAt": "2026-10-01",
+  "scope": "Frozen iOS session v6 cumulative capture/auth-reader patches, candidate actual checkpoint loader, canonical shared profile/domain comparator, and declaration/closure transfer seams. Source-only review; no native, backend, emulator, simulator, ADB, hosted, or public-receipt claims.",
+  "input": {
+    "candidateRoot": "/Users/eduwaldo/.codex/worktrees/testing-native-regression/mychampions/.qa/private/native-session-adapter-candidate-2026-10-01-v6",
+    "manifest": "PACKET-MANIFEST.json",
+    "manifestSha256": "dce4d5e5acd2946502714afb29a775027b7a4314c3ea3b1a5f5c2162e408863c",
+    "capturePatchSha256": "e985225bf1103a27e9889a127c9ee809d74960aa9019f3699988b4981b704c04",
+    "captureIncrementalOnV4Sha256": "96cb95fc46c62f681cddae778a8447d4dac604bb334ef72b6c350ab8f80e99f6",
+    "authPatchSha256": "4534d9961cda49e07f44e52e6ea8c4c4bea73ab805c241e2803737167c15ccdb",
+    "candidateCaptureSha256": "6f4676e8691f43873e5a25f6371fbedffd7a1113c50850412a0e4a9ccfc5529f",
+    "candidateAuthReaderSha256": "2a1dc7b0b8481c28ff50a2e91808607d327a937dac81663f2e394aaadc54e35e",
+    "sharedComparatorSha256": "74166588e6c2aed1fc47aa350914e2fed76dffa891f64da84754cb48d572092b"
+  },
+  "findings": [
+    {
+      "id": "IOS-V6-001",
+      "severity": "P1",
+      "title": "Cancel retention checks sessionPresent but does not bind the persisted profile to the verified coach",
+      "evidence": [
+        {
+          "path": "capture-native-testability.session-charter.v6.patch",
+          "lines": "546-549",
+          "detail": "The verified after-restoration profile.authUid hash is captured as afterRestorationAuthUidHash."
+        },
+        {
+          "path": "capture-native-testability.session-charter.v6.patch",
+          "lines": "625-636",
+          "detail": "After cancel, the source only requires metadataAfterCancel.sessionPresent and records a boolean checkpoint; it never requires profileAuthUidHash to equal afterRestorationAuthUidHash or profilePresent to remain true."
+        }
+      ],
+      "impact": "A different persisted profile can satisfy the cancel retention assertion while the UI confirmation subtree is absent and sessionPresent remains true. The shared comparator has no cancel metadata input, so it cannot repair this gap.",
+      "requiredCorrection": "Require the post-cancel reader result to remain a present profile whose profileAuthUidHash equals the verified coach hash from after restoration, and retain that bound observation in the private checkpoint evidence."
+    },
+    {
+      "id": "IOS-V6-002",
+      "severity": "P1",
+      "title": "The verified transport sidecar is overwritten after sessionEvidencePublication is marked complete",
+      "evidence": [
+        {
+          "path": "capture-native-testability.session-charter.v6.patch",
+          "lines": "794-818",
+          "detail": "The session branch writes, reads, hashes, and binds transport-observations.private.json before comparator/frame verification."
+        },
+        {
+          "path": "capture-native-testability.session-charter.v6.patch",
+          "lines": "867-905",
+          "detail": "publishSessionLedger sets sessionEvidencePublication to complete only after the comparator and runtime frame checks."
+        },
+        {
+          "path": "scripts/testing/capture-native-testability.ts",
+          "lines": "3039-3048",
+          "detail": "The shared finally block unconditionally writes transport-observations.private.json again from the current proxy observations after the session ledger has been published, without re-reading/re-hashing the bytes or re-running the comparator."
+        }
+      ],
+      "impact": "Late proxy observations can change the sealed file and exact transport windows after the complete marker. The report receipt can then describe earlier bytes, or the loader can see a different set of rows than the comparator verified. Cleanup/finalization therefore has a post-verification mutation path.",
+      "requiredCorrection": "For the session charter, freeze transport after all app activity and skip the generic rewrite, or perform a final owned readback/hash and comparator pass after the rewrite before setting sessionEvidencePublication to complete."
+    },
+    {
+      "id": "IOS-V6-003",
+      "severity": "P1",
+      "title": "Signed-out relaunch transport starts after terminate and is only ordinal-sliced",
+      "evidence": [
+        {
+          "path": "capture-native-testability.session-charter.v6.patch",
+          "lines": "664-671",
+          "detail": "The source terminates the app first and only then records beforeSignedOutRelaunchTransportCount."
+        },
+        {
+          "path": "capture-native-testability.session-charter.v6.patch",
+          "lines": "685-706",
+          "detail": "The signed-out set is proxy.observations.slice(count), with only start/end ordinals and first/last request IDs; no closed request-id window is supplied to the shared verifier."
+        },
+        {
+          "path": "capture-native-testability.session-charter.v6.patch",
+          "lines": "550-557",
+          "detail": "Restoration uses request-id boundaries derived from observation slices, while signed-out relaunch has no corresponding request-id window."
+        }
+      ],
+      "impact": "Any request emitted while termination is in progress is excluded from the signed-out proof. Completion-order observation slices also do not establish a stable request-id fence for the exact relaunch window, so a late or in-flight row can be omitted or attributed to the wrong phase.",
+      "requiredCorrection": "Capture the signed-out boundary before terminate, close it only after the signed-out UI and metadata read, and persist/validate an explicit request-id window (including all rows) rather than relying on an observation-array ordinal."
+    },
+    {
+      "id": "IOS-V6-004",
+      "severity": "P1",
+      "title": "Canonical declaration generation and CI closure tests have no session capture entry point",
+      "evidence": [
+        {
+          "path": "scripts/testing/generate-native-declaration.py",
+          "lines": "271-296",
+          "detail": "NATIVE_CLOSURE_ENTRY_POINTS contains only connection and training; the session family is never traversed for imported-helper closure."
+        },
+        {
+          "path": "tests/ci/native-capture-helper-closure.test.ts",
+          "lines": "36-60,264-320",
+          "detail": "The canonical helper-closure entry points and coverage tests iterate only connection and training flows."
+        },
+        {
+          "path": "docs/qa/native-pilot/inventory.json",
+          "lines": "2041-2079",
+          "detail": "The frozen SCN-session-ios ownerPaths include capture-native-testability.ts and the comparator/auth reader but omit native-view-evidence.ts, which the capture source imports and uses for PNG/tree sealing."
+        },
+        {
+          "path": "native-session-capture-v6.candidate.test.ts",
+          "lines": "13-39",
+          "detail": "The candidate control only regexes the patch text; it does not import the canonical capture source, check the session closure/inventory, or exercise cumulative versus v4-incremental transfer."
+        }
+      ],
+      "impact": "A canonical transfer or regenerated declaration can omit a local helper or freshness input while the private patch-text controls remain green. The source and actual frame proof then have no machine-checked owner/path convention for SCN-session-ios.",
+      "requiredCorrection": "Add session iOS/Android/Detox entry points as applicable to the generator and tests/ci closure coverage, regenerate the declaration with native-view-evidence and every imported helper, and test both supported patch-transfer paths against canonical imports."
+    },
+    {
+      "id": "IOS-V6-005",
+      "severity": "P1",
+      "title": "Frozen negative controls do not cover actor mismatch or the new session lifecycle seals",
+      "evidence": [
+        {
+          "path": "native-auth-observation.v6.candidate.test.ts",
+          "lines": "9-71",
+          "detail": "The reader test covers one coach UID, redaction, missing UID, external AsyncStorage indirection, and symlink escape, but never asserts that a different actor UID is rejected by the session capture/comparator binding."
+        },
+        {
+          "path": "actual-capture-preflight.v6.candidate.test.ts",
+          "lines": "225-240,245-355",
+          "detail": "The synthetic complete fixture declares result=harness-blocked and omits cancel metadata, frame/tree evidence, session-retention hash, and final transport sealing while testing only profile/domain loader input."
+        },
+        {
+          "path": "native-session-capture-v6.candidate.test.ts",
+          "lines": "13-39",
+          "detail": "The static capture test has only positive patch-shape assertions and no negative control for cancel hash mismatch, late transport rewrite, signed-out boundary leakage, abort before/after publication, or incremental-patch equivalence."
+        }
+      ],
+      "impact": "The frozen source-only suite cannot fail closed on the identity and lifecycle defects above. Its loader result is intentionally profile/domain input validation, but the candidate packet provides no canonical transfer control that keeps that narrow status separate from a complete session evidence seal.",
+      "requiredCorrection": "Add resource-free negative controls for a different persisted actor, cancel hash mismatch, late transport mutation, signed-out-window leakage, abort/callback before and after publication, and both cumulative/incremental transfer paths. Keep profile-loader loaded status explicitly distinct from runtime/public qualification."
+    },
+    {
+      "id": "IOS-V6-006",
+      "severity": "P2",
+      "title": "The session abort seam does not reach device verification and initial frame I/O",
+      "evidence": [
+        {
+          "path": "capture-native-testability.session-charter.v6.patch",
+          "lines": "162-197,251",
+          "detail": "sessionDirectIo checks controller.signal before and after operations, but sessionDeviceVerify calls device.verify() through an operation that has no signal argument."
+        },
+        {
+          "path": "scripts/testing/owned-ios-simulator.ts",
+          "lines": "106-110,254-259",
+          "detail": "device.inspect()/verify() call the simulator inventory execFile with a timeout but no AbortSignal."
+        },
+        {
+          "path": "scripts/testing/capture-native-testability.ts",
+          "lines": "1295-1299,1344-1349",
+          "detail": "The initial launched and entry screenshots use raw execute calls without controller.signal before the session-specific I/O wrappers are used."
+        }
+      ],
+      "impact": "A cancellation or whole-run deadline can remain inside simulator verification or initial screenshot I/O until the command timeout, then produce work after the abort boundary. The final result remains blocked, but the session does not have a fully closed abort/deadline lifecycle.",
+      "requiredCorrection": "Thread the controller signal through device verification and initial session frame acquisition, or record those in-flight reads as interrupted and prevent any subsequent session evidence step."
+    }
+  ],
+  "confirmedSourceControls": [
+    "The frozen reader uses the exact auth.server.session AsyncStorage key and returns only a SHA-256 profile.authUid hash; no raw UID or token is returned.",
+    "The cumulative and v4-incremental capture patches apply cleanly in the packet's scratch validation, and the capture source declares four profile plus four domain checkpoints with owned write/readback receipts.",
+    "The shared comparator covers all four profile/domain snapshots, full declared projection equality with only bounded coach updatedAt exceptions, exact sign-in/hydrate method/status/identity checks, and auth-session exclusion through OwnedDomainSnapshot.",
+    "The source performs actual PNG/tree checks, cancel confirmation-subtree absence, session retention, signed-out metadata absence, signal checks, and late abort evidence deletion; these remain source controls and are not runtime claims."
+  ],
+  "reviewLimits": [
+    "No canonical or candidate source was edited; no native resources, backend process, emulator/simulator, ADB, hosted call, or public receipt was acquired.",
+    "The candidate loader's loaded status was reviewed as narrow profile/domain input validation per WORKCARD.md, never as a behavior, runtime, cleanup, or public qualification result.",
+    "The packet's claimed source-only validation logs were inspected as provenance; this review adds no runtime/pass claim."
+  ]
+}

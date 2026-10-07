@@ -31,11 +31,15 @@ test('production Android releases fail closed onto CI versioning and private rel
   assert.match(buildGradle, /signingConfig signingConfigs\.release/);
   assert.match(buildGradle, /debug signing is never used/);
 
-  const releaseBuildType = buildGradle.slice(buildGradle.indexOf('    buildTypes {'));
-  assert.doesNotMatch(
-    releaseBuildType,
-    /release \{[\s\S]*?signingConfig signingConfigs\.debug/,
-    'release build type must never fall back to the Android debug certificate',
+  assert.match(
+    buildGradle,
+    /devReleaseWithDebugSigning && devReleaseRequested && !productionReleaseRequested/,
+    'only an explicitly requested dev release may use the checked-in debug certificate',
+  );
+  assert.match(
+    buildGradle,
+    /Production release requires android\/keystore\.properties; debug signing is never used\./,
+    'production releases must remain fail-closed on the private signing key',
   );
 
   assert.match(workflow, /cat <<EOF > keystore\.properties/);

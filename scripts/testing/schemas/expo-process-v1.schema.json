@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mychampions.test/testing/expo-process-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "kind": { "const": "private process ownership ledger" },
+    "clientRoot": { "type": "string", "pattern": "^/" },
+    "cli": { "type": "string", "pattern": "^/" },
+    "pid": { "type": "integer", "minimum": 2 },
+    "pgid": { "type": "integer", "minimum": 2 },
+    "appOrigin": { "type": "string", "format": "http-origin" },
+    "apiOrigin": { "type": "string", "format": "http-origin" },
+    "cleanup": { "enum": ["running", "cleaned", "failed-recovery-ledger-retained"] },
+    "processes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pid": { "type": "integer", "minimum": 2 },
+          "pgid": { "type": "integer", "minimum": 2 },
+          "started": { "type": "string", "minLength": 1 },
+          "commandHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        },
+        "required": ["pid", "pgid", "started", "commandHash"]
+      }
+    }
+  },
+  "required": [
+    "kind",
+    "clientRoot",
+    "cli",
+    "pid",
+    "pgid",
+    "appOrigin",
+    "apiOrigin",
+    "cleanup",
+    "processes"
+  ]
+}

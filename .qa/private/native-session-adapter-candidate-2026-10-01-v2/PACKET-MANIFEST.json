@@ -1,0 +1,109 @@
+{
+  "packetRevision": "ios-session-adapter-candidate-2026-10-01-v2-session-charter-freeze",
+  "frozenAt": "2026-10-01",
+  "status": "private candidate only; no dispatcher adoption or runtime qualification",
+  "base": {
+    "captureSource": {
+      "path": "scripts/testing/capture-native-testability.ts",
+      "sha256": "3421ffc87b3d8afb572cfd1e166169cb281504630c9f17bc633414632dac5b18"
+    },
+    "capturePatch": {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/capture-native-testability.session-charter.patch",
+      "sha256": "6655640260ad842c472a03860d970c479306b34fc37dedfd3e54627a26d61f3a"
+    },
+    "capturePatchApplies": true
+  },
+  "candidateFiles": [
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/WORKCARD.md",
+      "sha256": "9f5e128f61542bb073a4b2f3b804b4a4f6d1a6a5374a5f1546970da14886248d"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/actual-capture-preflight.candidate.ts",
+      "sha256": "7f7633da51e34088d3eef7731d44abf60828750d0b1d16b56b4ddabe3114927a"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/capture-native-testability.session-charter.patch",
+      "sha256": "6655640260ad842c472a03860d970c479306b34fc37dedfd3e54627a26d61f3a"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/native-session-adapter.candidate.test.ts",
+      "sha256": "1fa92c6a97e0e6e30fbe24283afe1dea2515537410dfeac1d8c9fef6161b0267"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/native-session-adapter.candidate.ts",
+      "sha256": "f0c9c32affdce8bbb1b6821a40bd2a6c276e3ae947db2ac93cdbaa3dd8f50782"
+    }
+  ],
+  "validationLogs": [
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/validation-candidate-test.log",
+      "sha256": "550bf88e24d7a8eaf1f0d6c0e996149c59d718b6f56e659aca38d06ce7d22cc5"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/validation-patch-check.log",
+      "sha256": "1348aa6279f8274b3275a324eab01639db3c6150c622282bf705595c2b773748"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/validation-preflight.log",
+      "sha256": "d93562d4bf3f248d69238c7ebfc94537efa8ce7300f5a76ac2b0fd6bec8ea121"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/validation-prettier.log",
+      "sha256": "52e4b411f487b479c7427bf8cdff4c25ea77bc9c95502fa7ea215014b5a36a6d"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/validation-source-compile.log",
+      "sha256": "5d9cfb828f7ed46936b7ed9d200a14b5e3ec6586a7714ae436a73f3c21e2f142"
+    },
+    {
+      "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v2/validation-typecheck.log",
+      "sha256": "db25d4357e676af324af216baf08c10af8122b1d917a1ca0ffa16a251eec4de0"
+    }
+  ],
+  "sourceRefs": [
+    {
+      "path": "scripts/testing/capture-native-testability.ts",
+      "sha256": "3421ffc87b3d8afb572cfd1e166169cb281504630c9f17bc633414632dac5b18"
+    },
+    {
+      "path": "scripts/testing/native-pilot-contract.ts",
+      "sha256": "8f2b5e6f1775def357fb4ca850d8356d45fc16d835f7783d561edfca91998d27"
+    },
+    {
+      "path": "scripts/testing/owned-session.ts",
+      "sha256": "3b3c6001b492dcf93dd5923a402135c3efdbb254b57a25ca03916c7f0eff6ec5"
+    },
+    {
+      "path": "scripts/testing/schema-validation.ts",
+      "sha256": "e722ec9f38233b09832adfd93ab6e6ac3e9e898f0f1d06f09bab2bb2060edba5"
+    },
+    {
+      "path": "scripts/testing/native-view-evidence.ts",
+      "sha256": "209deae4254f64bba75cf06d971ae5ae0c142abe9fef32085274d8399082b630"
+    },
+    {
+      "path": "docs/qa/native-pilot/test-cases.md",
+      "sha256": "27ea072daf04ce995dbc99d23dfe004ff167da60c21cdbf638c6e54dd908d683"
+    },
+    {
+      "path": "docs/qa/native-pilot/inventory.json",
+      "sha256": "966d36547b1edf97ce05ff453eacd4bb5ddf958c2f64d924407881446d265b1c"
+    }
+  ],
+  "frozenPriorPacket": {
+    "path": ".qa/private/native-session-adapter-candidate-2026-10-01-v1/PACKET-MANIFEST.json",
+    "sha256": "a490dbe7e046d6ec08982e7cce2723f833b87270ef3d216dd617b0dc346093e9",
+    "status": "v1 remains immutable"
+  },
+  "reviewBoundaries": [
+    "The session charter is a private source patch; public run-native-pilot dispatch and receipts remain unchanged.",
+    "The legacy auth-account diagnostic branch is preserved and its sealed capture is not relabeled.",
+    "The candidate validator and tests are resource-free synthetic contract controls; they do not prove runtime artifact ownership.",
+    "Promotion still requires actual native-view-evidence bytes/tree/selector checks, fixture actor witness linkage, and review of the public adapter boundary.",
+    "SQL snapshots use the existing owned session.snapshot protocol and domain-snapshot-v1 validator; no ad hoc SQL is added.",
+    "FR-270/BR-342 remains local-native-session-clear with serverRevocationQualified false; no auth policy or product copy changes are included.",
+    "No simulator, backend, proxy, Metro process, build, or other runtime resource was acquired for this packet."
+  ],
+  "manifestExcludes": "This file is metadata and is excluded from candidateFiles and validationLogs."
+}

@@ -2,7 +2,8 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { createConnection } from 'node:net';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { loadManifest } from './test-impact';
+import { prewarmMetroBundle } from './metro-bundle-prewarm';
+import { stopMetroProcessGroup, stopRunnerOwnedProcessGroup } from './metro-process-group';
 import {
   createSelectiveExecutionPlan,
   parseNativeMetroPort,
@@ -11,8 +12,7 @@ import {
   type CommandInvocation,
   type SelectivePlatform,
 } from './selective-execution';
-import { prewarmMetroBundle } from './metro-bundle-prewarm';
-import { stopMetroProcessGroup, stopRunnerOwnedProcessGroup } from './metro-process-group';
+import { loadManifest } from './test-impact';
 
 type TrackedProcessKind = 'invocation' | 'metro';
 
@@ -189,7 +189,10 @@ async function waitForMetro(port: number, metro: ChildProcess): Promise<void> {
 
   try {
     for (let attempt = 0; attempt < 120; attempt += 1) {
-      if (spawnError) throw spawnError;
+      if (spawnError)
+        throw new Error('Metro process emitted an error before becoming ready', {
+          cause: spawnError,
+        });
       if (metro.exitCode !== null || metro.signalCode !== null) {
         throw new Error(
           `Metro exited with ${
@@ -347,12 +350,32 @@ export async function runInvocations(
   }
 }
 
+export async function executeSelectivePlan(
+  plan: ReturnType<typeof createSelectiveExecutionPlan>,
+  cwd: string,
+  timeoutMs: number | undefined,
+): Promise<void> {
+  if (plan.execution !== 'execute') {
+    throw new Error('preview-only selective plan cannot be executed');
+  }
+  if (plan.nativeBuild?.owner === 'executor') {
+    await runInvocation(plan.nativeBuild.command, cwd, timeoutMs);
+  } else if (plan.nativeBuild) {
+    console.log(
+      `Using workflow-owned ${plan.nativeBuild.configuration} build; executor will not rebuild per suite.`,
+    );
+  }
+  await runInvocations(plan.invocations, cwd, timeoutMs);
+  throwIfCancellationRequested();
+}
+
 async function main(): Promise<void> {
   throwIfCancellationRequested();
   const root = resolve(process.cwd());
   const platform = parsePlatform(valueAfter('--platform'));
   const suitesJson = valueAfter('--suites-json') ?? process.env.SELECTED_SUITES_JSON;
   const selectedSuites = parseSelectedSuitesJson(suitesJson);
+  const planOnly = process.argv.includes('--plan') || process.argv.includes('--dry-run');
   const invocationTimeoutMs = parseSelectiveInvocationTimeoutMs(
     process.env.SELECTIVE_INVOCATION_TIMEOUT_MS,
   );
@@ -364,23 +387,14 @@ async function main(): Promise<void> {
     skipNativeBuild: isTrue(process.env.DETOX_SKIP_BUILD),
     diagnosticsRoot: process.env.SELECTIVE_TEST_DIAGNOSTICS_ROOT ?? '.artifacts/ci-diagnostics',
     metroPort,
+    planOnly,
   });
 
-  if (process.argv.includes('--plan') || process.argv.includes('--dry-run')) {
+  if (planOnly) {
     console.log(JSON.stringify(plan, null, 2));
     return;
   }
-
-  if (plan.nativeBuild?.owner === 'executor') {
-    await runInvocation(plan.nativeBuild.command, root, invocationTimeoutMs);
-  } else if (plan.nativeBuild) {
-    console.log(
-      `Using workflow-owned ${plan.nativeBuild.configuration} build; executor will not rebuild per suite.`,
-    );
-  }
-
-  await runInvocations(plan.invocations, root, invocationTimeoutMs);
-  throwIfCancellationRequested();
+  await executeSelectivePlan(plan, root, invocationTimeoutMs);
 }
 
 async function reportFailure(error: unknown): Promise<void> {

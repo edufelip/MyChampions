@@ -31,6 +31,10 @@
 - The screen renders an in-content back button (icon-only) at the top, while keeping the rest of the SC-211 flow unchanged.
 - Top safe-area spacing is applied in-screen to keep the back control and content clear of device notches/status bars.
 
+## Native Testability
+
+- Active relationship cards preserve the indexed `student.professionals.connectionCard.<index>` and `student.professionals.unbindButton.<index>` selectors. The localized End action also carries the private hierarchy marker `student.professionals.activeConnection.<connectionId>` so a native test can bind the exact active connection to its card and End control. This marker adds no user-facing copy or action.
+
 ## Design Structure (D-134)
 - Screen shell uses design-system primitives (`DsScreen`) with shared playful background structure.
 - Form actions and cards use shared DS primitives (`DsPillButton`, `DsCard`).

@@ -33,6 +33,7 @@ Define non-functional architecture constraints and technology options for the mo
 - CI signing strategy uses platform-native secret management in pipelines.
 - Core MVP screens must meet accessibility baseline (contrast, dynamic text scaling, focus order, screen-reader labels).
 - QA distribution policy:
+  - A push to `develop` (including a merged pull request) or manual dispatch of the platform-specific Firebase workflow builds and distributes the `dev` Android APK or iOS IPA through Firebase App Distribution. Firebase is delivery-only: the app does not restore Firebase runtime configuration, and the workflow rejects a production or missing server target.
   - Release branch iOS builds are distributed through TestFlight.
   - Pull requests targeting `main` run feature-aware native toolchain jobs on the
     exact head. Successful binaries remain ephemeral; only bounded one-day
@@ -144,10 +145,11 @@ Feature-aware test selection uses `config/test-impact.json` plus
 declared reverse feature dependencies, and TypeScript reverse import consumers.
 It fails closed to the full registered UI matrix for shared-global, tooling,
 native, invalid, unknown, or unresolved changes. D-193 defines the candidate
-exact-head gate: universal fast checks always run, affected Playwright and
-both-platform Detox suites execute on dedicated self-hosted lanes, and
-workflow/tooling, scheduled, merge-queue, release/hotfix, or explicit-full
-inputs select the complete registered matrix. D-195 makes persistent-runner
+exact-head gate: universal fast checks always run; current trusted execution uses web-only
+selection for affected Playwright. Both-platform Detox runs separately through
+protected manual, published-release and release/hotfix-push validation. No
+schedule is configured. Full/fail-closed resolver selection remains broader
+than the surfaces actually executed by the trusted workflow. D-195 makes persistent-runner
 promotion conditional on a GitHub-hosted-only PR preflight, a
 `workflow_run`-triggered trusted workflow sourced from protected default branch
 `main`, a GitHub-hosted triggering-run/live-PR authorization job before
@@ -217,3 +219,6 @@ Current local server contract: root-level `server/` plus this migration task car
 - Fastlane docs: https://docs.fastlane.tools/
 - GitHub Actions docs: https://docs.github.com/actions
 - Detox docs: https://wix.github.io/Detox/docs/introduction/project-setup/
+
+
+Testing modernization is tracked under BL-018/D-218 and `docs/qa/testing-strategy-v1.md`. The separate Jest/Expo/RNTL component suite and integrated Postgres browser journeys have recorded local evidence; freshness and scopes are tracked in the task card. The component command is wired into trusted fast-quality before unit checks, with local CI-command and failure-propagation proof. Full quality is still blocked by the recorded password-reset confirmation contract gap; protected hosted component acceptance and Maestro comparison remain pending. Component tests do not establish native/hosted replacement coverage. Retain Detox until each migration cell satisfies the plan evidence gates.

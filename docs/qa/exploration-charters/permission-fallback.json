@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "EXP-PERMISSION-FALLBACK",
+  "title": "Camera permission denial and manual connection fallback",
+  "summary": "Explore camera permission denial on the relationship surface and confirm that documented manual invite-code entry remains usable.",
+  "platforms": ["ios", "android", "web"],
+  "connectorsByPlatform": {
+    "ios": "maestro",
+    "android": "maestro",
+    "web": "playwright"
+  },
+  "locales": ["en-US", "pt-BR", "es-ES"],
+  "roles": ["student"],
+  "dataMode": "integration",
+  "fixture": {
+    "id": "owned-postgres:exploration:permission-fallback",
+    "resetStrategy": "fresh-student-unlinked-connection-and-permission-reset"
+  },
+  "allowedActions": [
+    "Reset the declared owned fixture and the target camera permission state",
+    "Open the relationship connection surface and request the documented camera permission",
+    "Deny camera access using the platform permission control and capture the resulting visible state",
+    "Enter the declared invite code manually and observe validation or pending status",
+    "Verify only the declared pending connection through the authenticated API and read-only SQL evidence"
+  ],
+  "excludedExternalEffects": [
+    "Real camera capture, production invite codes, customer or shared accounts",
+    "Approving or activating a connection outside the declared fixture",
+    "Device permission changes outside the owned target, provider mutations, purchases, or issue posting",
+    "Treating an unavailable permission bridge as a product failure or silently skipping the manual fallback"
+  ],
+  "budget": {
+    "maxDurationMinutes": 30,
+    "maxUiActions": 100,
+    "stopWhen": "first-limit-reached",
+    "unchangedFailureLimit": 2
+  },
+  "artifactPolicy": {
+    "directoryMode": "0700",
+    "fileMode": "0600",
+    "rawEvidence": "private-only",
+    "publicSummary": "redacted-status-only",
+    "forbiddenFields": [
+      "password",
+      "accessToken",
+      "refreshToken",
+      "cookie",
+      "authorization",
+      "secret"
+    ]
+  },
+  "requirementRefs": ["SC-211", "TC-002", "BR-230A", "BL-018/T16"],
+  "requirementPaths": [
+    "docs/screens/v2/SC-211-relationship-management.md",
+    "docs/test-cases/TC-002-role-and-assignment-controls.md",
+    "docs/plans/2026-09-28-testing-structure-and-maestro-plan.md"
+  ],
+  "scenario": {
+    "id": "EXP-PERMISSION-001",
+    "title": "Camera denial leaves manual relationship entry available",
+    "sourceRefs": ["SC-211", "TC-002", "BR-230A", "BL-018/T16"],
+    "preconditions": [
+      "A fresh unlinked student fixture and a declared invite code are available",
+      "The target permission state can be reset and verified without changing a foreign device",
+      "The API/SQL identity is read-only except for the declared pending connection action"
+    ],
+    "actions": [
+      "Open the QR or camera entry surface",
+      "Deny the camera permission through the platform control",
+      "Inspect inline camera-unavailable guidance and the manual entry control",
+      "Submit the declared code and verify pending state through UI/API/SQL"
+    ],
+    "expectedObservations": [
+      "Permission denial produces recoverable guidance rather than an unrecoverable scanner",
+      "Manual invite-code entry remains enabled and localized",
+      "Pending state is consistent across the two authenticated reads and the UI",
+      "Permission transport or target blocks are retained as harness blockers"
+    ],
+    "risk": "high"
+  }
+}

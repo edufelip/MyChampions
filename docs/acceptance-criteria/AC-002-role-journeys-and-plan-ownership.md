@@ -11,7 +11,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-203`: Students cannot have more than one active nutritionist at any time.
 - `AC-204`: Students cannot have more than one active fitness coach at any time.
 - `AC-205`: A professional with both specialties can be assigned to a student in both roles.
-- `AC-206`: Professionals can view and manage multiple student profiles.
+- `AC-206`: Professionals can view and manage multiple student profiles; when returning to or focusing an already-mounted SC-205 roster, a newly confirmed student appears after a fresh authenticated server read, with the latest current-focus request authoritative.
 - `AC-207`: Nutritionists can create templates and customized plans with calorie and macro targets.
 - `AC-208`: Fitness coaches can create templates and customized training plans.
 - `AC-209`: Students can track daily calories and macronutrients.
@@ -19,7 +19,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-211`: Role cannot be changed after account creation; role switch requires a new account.
 - `AC-212`: Professional onboarding allows optional credential submission and does not require verification workflow in MVP.
 - `AC-213`: Assignment initiation must happen through professional invite code.
-- `AC-214`: Assignment only becomes active after professional confirmation.
+- `AC-214`: Assignment only becomes active after professional confirmation; returning to or focusing an already-mounted SC-205 roster performs a fresh authenticated read, and a late response from an earlier focus/read cannot overwrite the current roster.
 - `AC-215`: Ended assignments and linked plans remain in history.
 - `AC-216`: Students can only read professionally assigned plans; editing is blocked.
 - `AC-217`: Student self-managed plans are archived when professional assignment activates for the same specialty.
@@ -90,7 +90,7 @@ Role-based onboarding and dual journey model for Students and Professionals.
 - `AC-536`: TrackingLogs stay Student-owned and expose only plan/connection provenance needed for review.
 - `AC-537`: Assigned NutritionPlans use stable meal snapshots; Professionals cannot insert Student-owned CustomMeals unless the meal has been shared/imported first.
 - `AC-538`: Students with an active assigned NutritionPlan see calorie/macro targets, assigned meal cards, hydration tracking using the effective assigned goal, meal log completion state, and a plan-change request form tied to the assigned plan context.
-- `AC-539`: In a browser, confirming sign-out clears the local identity and exposes unauthenticated entry immediately, but a subsequent email/password or social login cannot send its session-establishing request until the credentialed sign-out barrier is released, including when sign-out fails; native bearer-session clearing remains immediate.
+- `AC-539`: In a browser, confirming sign-out clears the local identity and exposes unauthenticated entry immediately, but a subsequent email/password or social login cannot send its session-establishing request until the credentialed sign-out barrier is released, including when sign-out fails; native bearer-session clearing remains immediate. Native sign-out immediately clears the device-local persisted credential/session and authenticated identity. Relaunch must remain signed out and protected UI must remain inaccessible until a new sign-in. Native sign-out does not revoke the server bearer token; a still-valid server token is not a failed native logout.
 - `AC-266`: After successful sign-in or create-account—including a session-less create-account acknowledgement followed by the client email/password sign-in—users are routed to a terms-acceptance gate and cannot proceed to role-selection or role-home until the required terms version is accepted. While pending, only the exact configured terms URL reached with the `terms` legal intent may bypass the gate; malformed, repeated, unsafe, or arbitrary approved-origin WebView parameters are rejected and recover to the gate. Exact configured legal URLs may use a trusted HTTPS host outside the default origin without widening arbitrary route access.
 - `AC-267`: A fresh professional SC-207 nutrition or SC-208 training builder reaches Ready after its route-scope reset and exposes the first child action (Add meal or Add session) after valid metadata entry at 390x844 and 320x720 compact web viewports.
 - `AC-268`: On the browser pending-request queue, bulk deny opens an accessible confirmation dialog; cancel preserves the current selection, confirm shows a loading state, successful denial refreshes the pending count and shows localized success feedback, and failures remain actionable with localized error feedback.

@@ -6,6 +6,7 @@ import {
   validateDetoxFixtureProfile,
   type Environment,
 } from './detox-fixture-profiles';
+import { INTEGRATION_PROJECTS, INTEGRATION_SCENARIOS } from '../testing/integration-registry';
 import type { NativeMetroPlatform } from './metro-bundle-prewarm';
 import type { SuiteConfig, TestImpactManifest } from './test-impact';
 
@@ -32,6 +33,7 @@ export type NativeBuildDescriptor = {
 
 export type SelectiveExecutionPlan = {
   schemaVersion: 1;
+  execution: 'execute' | 'preview-only';
   platform: SelectivePlatform;
   selectedSuites: string[];
   nativeBuild?: NativeBuildDescriptor;
@@ -42,9 +44,15 @@ export type SelectiveExecutionOptions = {
   skipNativeBuild?: boolean;
   diagnosticsRoot?: string;
   metroPort?: number;
+  planOnly?: boolean;
 };
 
-const supportedWebRunners = new Set(['playwright', 'playwright-server', 'playwright-evidence']);
+const supportedWebRunners = new Set([
+  'playwright',
+  'playwright-server',
+  'playwright-evidence',
+  'playwright-integration',
+]);
 const defaultNativeMetroPort = 8081;
 const minimumUnprivilegedPort = 1024;
 const maximumNonEphemeralPort = 49151;
@@ -112,25 +120,53 @@ function baseExecutionEnvironment(): Record<string, string> {
 }
 
 function mergeEnvironment(...values: (Environment | undefined)[]): Record<string, string> {
-  return Object.assign({}, ...values.filter(Boolean));
+  const merged: Record<string, string> = {};
+  for (const value of values) {
+    if (value) Object.assign(merged, value);
+  }
+  return merged;
 }
 
 function validateSelectedSuite(
   manifest: TestImpactManifest,
   suiteId: string,
   platform: SelectivePlatform,
+  planOnly: boolean,
 ): string[] {
   const suite = manifest.suites[suiteId];
   if (!suite) return [`unknown selected suite ${suiteId}`];
 
   const errors: string[] = [];
-  if (!suite.ci) errors.push(`selected suite ${suiteId} is not eligible for selective CI`);
+  const isIntegration = suite.runner === 'playwright-integration';
+  if (!suite.ci && !(planOnly && isIntegration)) {
+    errors.push(`selected suite ${suiteId} is not eligible for selective CI`);
+  }
 
   if (platform === 'web') {
     if (!supportedWebRunners.has(suite.runner)) {
       errors.push(`selected suite ${suiteId} cannot run on web runner ${suite.runner}`);
     }
-    if (!suite.grep) errors.push(`selected web suite ${suiteId} has no grep`);
+    if (isIntegration) {
+      const scenarios = suite.integrationScenarios ?? [];
+      if (scenarios.length === 0) {
+        errors.push(`selected integration suite ${suiteId} has no integrationScenarios`);
+      }
+      for (const scenarioId of scenarios) {
+        const scenario = INTEGRATION_SCENARIOS.find((candidate) => candidate.id === scenarioId);
+        if (!scenario)
+          errors.push(`selected integration suite ${suiteId} has unknown scenario ${scenarioId}`);
+        else if (!scenario.implemented) {
+          errors.push(`selected integration scenario ${scenarioId} is not implemented`);
+        }
+      }
+      for (const project of suite.projects ?? []) {
+        if (!Object.hasOwn(INTEGRATION_PROJECTS, project)) {
+          errors.push(`selected integration suite ${suiteId} has unknown project ${project}`);
+        }
+      }
+    } else if (!suite.grep) {
+      errors.push(`selected web suite ${suiteId} has no grep`);
+    }
     if (!suite.projects?.length) errors.push(`selected web suite ${suiteId} has no projects`);
     return errors;
   }
@@ -160,7 +196,26 @@ export function validateSelectiveExecutionManifest(manifest: TestImpactManifest)
       continue;
     }
 
-    if (suite.ci && supportedWebRunners.has(suite.runner)) {
+    if (suite.runner === 'playwright-integration') {
+      if (suite.ci) errors.push(`integration suite ${suiteId} must remain ci:false`);
+      if (!suite.projects?.length) errors.push(`integration suite ${suiteId} has no projects`);
+      if (!suite.integrationScenarios?.length) {
+        errors.push(`integration suite ${suiteId} has no integrationScenarios`);
+      }
+      for (const scenarioId of suite.integrationScenarios ?? []) {
+        const scenario = INTEGRATION_SCENARIOS.find((candidate) => candidate.id === scenarioId);
+        if (!scenario)
+          errors.push(`integration suite ${suiteId} has unknown scenario ${scenarioId}`);
+        else if (!scenario.implemented) {
+          errors.push(`integration scenario ${scenarioId} is not implemented`);
+        }
+      }
+      for (const project of suite.projects ?? []) {
+        if (!Object.hasOwn(INTEGRATION_PROJECTS, project)) {
+          errors.push(`integration suite ${suiteId} has unknown project ${project}`);
+        }
+      }
+    } else if (suite.ci && supportedWebRunners.has(suite.runner)) {
       if (!suite.grep) errors.push(`CI web suite ${suiteId} has no grep`);
       if (!suite.projects?.length) errors.push(`CI web suite ${suiteId} has no projects`);
     }
@@ -178,6 +233,7 @@ function validateSelection(
   manifest: TestImpactManifest,
   platform: SelectivePlatform,
   selectedSuites: string[],
+  planOnly: boolean,
 ): void {
   const errors = validateSelectiveExecutionManifest(manifest);
   if (selectedSuites.length === 0) errors.push(`no suites selected for ${platform}`);
@@ -185,7 +241,7 @@ function validateSelection(
     errors.push(`selected suite ${duplicate} appears more than once`);
   }
   for (const suiteId of selectedSuites) {
-    errors.push(...validateSelectedSuite(manifest, suiteId, platform));
+    errors.push(...validateSelectedSuite(manifest, suiteId, platform, planOnly));
   }
   if (errors.length > 0) {
     throw new Error(`selective execution validation failed:\n${uniqueSorted(errors).join('\n')}`);
@@ -201,15 +257,33 @@ type WebGroup = {
   suites: Set<string>;
 };
 
+type IntegrationGroup = {
+  scenarios: Set<string>;
+  projects: Set<string>;
+};
+
 function createWebPlan(
   manifest: TestImpactManifest,
   selectedSuites: string[],
   diagnosticsRoot: string,
+  planOnly: boolean,
 ): SelectiveExecutionPlan {
   const groups = new Map<string, WebGroup>();
+  const integrations = new Map<string, IntegrationGroup>();
 
   for (const suiteId of selectedSuites) {
     const suite = manifest.suites[suiteId];
+    if (suite.runner === 'playwright-integration') {
+      const scenarios = uniqueSorted(suite.integrationScenarios ?? []);
+      const scenarioKey = scenarios.join(',');
+      const integration = integrations.get(scenarioKey) ?? {
+        scenarios: new Set<string>(scenarios),
+        projects: new Set<string>(),
+      };
+      for (const project of suite.projects ?? []) integration.projects.add(project);
+      integrations.set(scenarioKey, integration);
+      continue;
+    }
     const runner = suite.runner as WebGroup['runner'];
     const playwrightConfig =
       suite.playwrightConfig ??
@@ -263,8 +337,31 @@ function createWebPlan(
       };
     });
 
+  for (const integration of [...integrations.values()].sort((left, right) =>
+    uniqueSorted(left.scenarios).join(',').localeCompare(uniqueSorted(right.scenarios).join(',')),
+  )) {
+    const scenarios = uniqueSorted(integration.scenarios);
+    const projects = uniqueSorted(integration.projects);
+    const id = `playwright-integration-${safeSegment(scenarios.join('-'))}-${safeSegment(projects.join('-'))}`;
+    invocations.push({
+      id,
+      command: 'yarn',
+      args: [
+        'test:e2e:web:integration',
+        `--scenario=${scenarios.join(',')}`,
+        `--project=${projects.join(',')}`,
+      ],
+      env: {
+        ...baseExecutionEnvironment(),
+        WEB_INTEGRATION_ARTIFACT_ROOT: join(diagnosticsRoot, 'web', safeSegment(id)),
+      },
+      requiredEnv: ['MYCHAMPIONS_SERVER_ROOT'],
+    });
+  }
+
   return {
     schemaVersion: 1,
+    execution: planOnly ? 'preview-only' : 'execute',
     platform: 'web',
     selectedSuites: [...selectedSuites].sort(),
     invocations,
@@ -356,6 +453,7 @@ function createNativePlan(
 
   return {
     schemaVersion: 1,
+    execution: 'execute',
     platform,
     selectedSuites: [...selectedSuites].sort(),
     nativeBuild: {
@@ -373,11 +471,12 @@ export function createSelectiveExecutionPlan(
   selectedSuites: string[],
   options: SelectiveExecutionOptions = {},
 ): SelectiveExecutionPlan {
-  validateSelection(manifest, platform, selectedSuites);
+  const planOnly = options.planOnly ?? false;
+  validateSelection(manifest, platform, selectedSuites, planOnly);
   const diagnosticsRoot = options.diagnosticsRoot ?? '.artifacts/ci-diagnostics';
 
   if (platform === 'web') {
-    return createWebPlan(manifest, selectedSuites, diagnosticsRoot);
+    return createWebPlan(manifest, selectedSuites, diagnosticsRoot, planOnly);
   }
   return createNativePlan(manifest, platform, selectedSuites, options, diagnosticsRoot);
 }

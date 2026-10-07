@@ -60,7 +60,8 @@
   2. Professional selects one student.
   3. Professional assigns or customizes nutrition/training plan based on specialty.
   4. Student receives updated plan.
-- Expected result: Student-specific plan is created or updated.
+  5. If the professional returns to or focuses the already-mounted SC-205 roster after pending-request confirmation, the app performs a fresh authenticated roster read before displaying the linked-student list.
+- Expected result: Student-specific plan is created or updated, and a confirmed student appears in the roster only after the fresh state is read; a late response from an earlier focus/read cannot replace it.
 
 ## UC-002.3 Student Connects To Professionals
 
@@ -75,7 +76,8 @@
   5. System transitions assignment from `invited` to `pending_confirmation`.
   6. Professional confirms assignment.
   7. System transitions assignment from `pending_confirmation` to `active` when valid.
-- Expected result: Student is linked to one active professional per specialty.
+  8. When the professional returns to or focuses the already-mounted SC-205 roster after successful confirmation, the app performs a fresh authenticated roster read; the latest current-focus request is authoritative.
+- Expected result: Student is linked to one active professional per specialty, and the SC-205 roster reflects the active state; a late response from an earlier focus/read cannot overwrite it.
 - Alternate flow:
   - Professional can revoke/regenerate an invite code when leakage is suspected.
   - When a Specialty code is regenerated, pending requests created from that superseded Specialty code are auto-canceled; other Specialty requests remain unchanged.

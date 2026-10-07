@@ -1,0 +1,896 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mychampions.test/testing/public-receipt-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+    },
+    "attemptId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+    },
+    "scenarioId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+    },
+    "phase": {
+      "enum": ["P0", "P1", "P2", "P3", "P4", "P5", "P6"]
+    },
+    "layer": {
+      "enum": [
+        "logic",
+        "component",
+        "fixture-ui",
+        "memory-http",
+        "postgres-api",
+        "postgres-ui",
+        "native",
+        "provider"
+      ]
+    },
+    "engine": {
+      "enum": ["node", "bun", "jest", "playwright", "maestro", "detox", "agent"]
+    },
+    "dataMode": {
+      "enum": ["none", "fixture", "memory", "postgres", "provider"]
+    },
+    "platform": {
+      "enum": ["web", "ios", "android", "server", "none"]
+    },
+    "locale": {
+      "enum": ["en-US", "pt-BR", "es-ES", null]
+    },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "dirty": {
+            "type": "boolean"
+          },
+          "workingTreeHash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["name", "sha", "dirty", "workingTreeHash"],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "dirty": {
+                  "const": true
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "workingTreeHash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "minItems": 0
+    },
+    "repositoryEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": ["observed", "partial", "unknown"]
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "reason": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["status", "missing", "reason"]
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deviceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "osVersion": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "appId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "buildProfile": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "binaryHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "apiOrigin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "http-origin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["deviceId", "osVersion", "appId", "buildProfile", "binaryHash", "apiOrigin"]
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scenarioHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requirementHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fixtureHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "flagsHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "toolVersions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["scenarioHash", "requirementHash", "fixtureHash", "flagsHash", "toolVersions"]
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "executable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["executable", "argv"]
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "utc-timestamp"
+    },
+    "finishedAt": {
+      "type": "string",
+      "format": "utc-timestamp"
+    },
+    "result": {
+      "enum": ["passed", "application-failed", "harness-blocked", "cancelled"]
+    },
+    "exitCode": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "childExitCode": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$"
+          },
+          "requirementRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "outcome": {
+            "enum": ["passed", "failed", "not-executed"]
+          },
+          "evidencePaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": ["id", "requirementRefs", "outcome", "evidencePaths"]
+      }
+    },
+    "timingsMs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "build": {
+          "type": "number",
+          "minimum": 0
+        },
+        "install": {
+          "type": "number",
+          "minimum": 0
+        },
+        "reset": {
+          "type": "number",
+          "minimum": 0
+        },
+        "scenario": {
+          "type": "number",
+          "minimum": 0
+        },
+        "verify": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cleanup": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": ["build", "install", "reset", "scenario", "verify", "cleanup"]
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": ["cleaned", "not-acquired", "failed-recovery-ledger-retained"]
+        },
+        "ownedResourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "recoveryRecordPath": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["status", "ownedResourceIds", "recoveryRecordPath"]
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+      },
+      "uniqueItems": true
+    },
+    "blocker": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 1
+            },
+            "detail": {
+              "type": "string",
+              "minLength": 1
+            },
+            "owner": {
+              "type": "string",
+              "minLength": 1
+            },
+            "nextAction": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["code", "detail", "owner", "nextAction"]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "attemptId",
+    "scenarioId",
+    "phase",
+    "layer",
+    "engine",
+    "dataMode",
+    "platform",
+    "locale",
+    "repositories",
+    "target",
+    "inputs",
+    "command",
+    "startedAt",
+    "finishedAt",
+    "result",
+    "exitCode",
+    "childExitCode",
+    "assertions",
+    "timingsMs",
+    "cleanup",
+    "artifacts",
+    "blocker"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "required": ["repositoryEvidence"],
+        "properties": {
+          "repositoryEvidence": {
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "enum": ["harness-blocked", "cancelled"]
+          },
+          "repositories": {
+            "maxItems": 0
+          },
+          "repositoryEvidence": {
+            "properties": {
+              "missing": {
+                "minItems": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "repositories": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["repositoryEvidence"],
+        "properties": {
+          "repositoryEvidence": {
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "const": "partial"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "enum": ["harness-blocked", "cancelled"]
+          },
+          "repositories": {
+            "minItems": 1
+          },
+          "repositoryEvidence": {
+            "properties": {
+              "missing": {
+                "minItems": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["repositoryEvidence"],
+        "properties": {
+          "repositoryEvidence": {
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "repositories": {
+            "minItems": 1
+          },
+          "repositoryEvidence": {
+            "properties": {
+              "missing": {
+                "maxItems": 0
+              },
+              "reason": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "passed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exitCode": {
+            "const": 0
+          },
+          "blocker": {
+            "type": "null"
+          },
+          "assertions": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "outcome": {
+                  "const": "passed"
+                },
+                "requirementRefs": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          "cleanup": {
+            "properties": {
+              "status": {
+                "enum": ["cleaned", "not-acquired"]
+              }
+            }
+          },
+          "inputs": {
+            "properties": {
+              "scenarioHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "requirementHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "flagsHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "toolVersions": {
+                "minProperties": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "harness-blocked"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exitCode": {
+            "const": 2
+          },
+          "blocker": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "application-failed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exitCode": {
+            "const": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "cancelled"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exitCode": {
+            "enum": [130, 143]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "passed"
+          },
+          "dataMode": {
+            "enum": ["fixture", "memory", "postgres", "provider"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "inputs": {
+            "properties": {
+              "fixtureHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "passed"
+          },
+          "layer": {
+            "const": "native"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "target": {
+            "properties": {
+              "deviceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "osVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "appId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "buildProfile": {
+                "type": "string",
+                "minLength": 1
+              },
+              "binaryHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "cleanup": {
+            "properties": {
+              "status": {
+                "const": "failed-recovery-ledger-retained"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "enum": ["harness-blocked", "cancelled"]
+          },
+          "cleanup": {
+            "properties": {
+              "recoveryRecordPath": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dataMode": {
+            "const": "postgres"
+          },
+          "result": {
+            "const": "passed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "cleanup": {
+            "properties": {
+              "status": {
+                "const": "cleaned"
+              },
+              "ownedResourceIds": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "application-failed"
+          },
+          "layer": {
+            "const": "native"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exitCode": {
+            "const": 1
+          },
+          "childExitCode": {
+            "const": 1
+          },
+          "engine": {
+            "enum": ["maestro", "detox"]
+          },
+          "assertions": {
+            "minItems": 1,
+            "contains": {
+              "properties": {
+                "outcome": {
+                  "const": "failed"
+                }
+              },
+              "required": ["outcome"]
+            }
+          },
+          "cleanup": {
+            "properties": {
+              "status": {
+                "const": "cleaned"
+              },
+              "ownedResourceIds": {
+                "minItems": 1
+              },
+              "recoveryRecordPath": {
+                "type": "null"
+              }
+            }
+          },
+          "inputs": {
+            "properties": {
+              "scenarioHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "requirementHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "fixtureHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "flagsHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "deviceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "osVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "appId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "buildProfile": {
+                "type": "string",
+                "minLength": 1
+              },
+              "apiOrigin": {
+                "type": "string",
+                "minLength": 1
+              },
+              "binaryHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

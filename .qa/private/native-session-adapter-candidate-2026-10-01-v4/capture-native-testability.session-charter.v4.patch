@@ -1,0 +1,651 @@
+--- a/scripts/testing/capture-native-testability.ts
++++ b/scripts/testing/capture-native-testability.ts
+@@ -44,6 +44,12 @@
+   findMaestroQuantityFailureCommands,
+   recordNativeQuantityFailure,
+ } from './native-maestro-assertion-failure';
++import { nativeSessionAssertionIds } from './native-pilot-contract';
++import {
++  readNativeEvidence,
++  validateNativeRuntimeFrameFiles,
++  type ViewEvidence,
++} from './native-view-evidence';
+ import {
+   assertIosNativeModuleRegistration,
+   assertNativeBootstrapHealthy,
+@@ -179,6 +185,7 @@
+ export const iosNativeCharters = [
+   'entry',
+   'auth-account',
++  'session',
+   'training-draft',
+   'training-discard',
+   'training-load',
+@@ -1092,6 +1099,15 @@
+       requestedPort: reusable?.apiPort,
+     });
+     const fixtures = await session.fixtures('native-entry-ios');
++    const fixtureAuthUidAllowlistHash = createHash('sha256')
++      .update(
++        JSON.stringify(
++          Object.values(fixtures.accounts)
++            .map((account) => account.authUid)
++            .sort(),
++        ),
++      )
++      .digest('hex');
+     const connectionIsolationScope = 'native-connection-isolation-ios' as const;
+     const connectionApiIdentity: IosConnectionApiIdentity | undefined =
+       charter === 'connection-journey'
+@@ -1107,6 +1123,12 @@
+         Object.values(fixtures.accounts).map((account) => account.authUid),
+       );
+       report.connectionIsolationScope = connectionIsolationScope;
++    }
++    if (charter === 'session') {
++      requireIosConnectionAuthIdentityCapture(proxy);
++      proxy.enableNativeAuthIdentityCapture(
++        Object.values(fixtures.accounts).map((account) => account.authUid),
++      );
+     }
+     report.fixtureHash = createHash('sha256').update(JSON.stringify(fixtures)).digest('hex');
+     await declareAcquisition('expo');
+@@ -1342,6 +1364,7 @@
+         'connection-states',
+         'connection-journey',
+         'camera-denied',
++        'session',
+       ].includes(charter)
+     ) {
+       const frames = [
+@@ -1358,6 +1381,7 @@
+         viewId: string,
+         selector: string | string[],
+         selectorKind: 'id' | 'text' = 'id',
++        notVisibleSelectors: readonly string[] = [],
+       ) => {
+         await requireBooted(`${label}-before-actions`);
+         const selectors = typeof selector === 'string' ? [selector] : selector;
+@@ -1369,6 +1393,9 @@
+             selectors
+               .slice(1)
+               .map((id) => `- assertVisible:\n    id: ${JSON.stringify(id)}\n`)
++              .join('') +
++            notVisibleSelectors
++              .map((id) => `- assertNotVisible:\n    id: ${JSON.stringify(id)}\n`)
+               .join(''),
+           { mode: 0o600 },
+         );
+@@ -1399,10 +1426,23 @@
+         );
+         await requireBooted(`${label}-before-screenshot`);
+         const screenshotPath = path.join(output, `${label}.png`);
+-        await execute('xcrun', ['simctl', 'io', device!.udid, 'screenshot', screenshotPath], {
+-          timeout: 30_000,
+-        });
+-        const actualTree = parseNativeHierarchy(await readFile(frameTree, 'utf8'));
++        const screenshot =
++          charter === 'session'
++            ? await sessionExecute(
++                `${label}-screenshot`,
++                'xcrun',
++                ['simctl', 'io', device!.udid, 'screenshot', screenshotPath],
++                { timeout: 30_000 },
++              )
++            : await execute('xcrun', ['simctl', 'io', device!.udid, 'screenshot', screenshotPath], {
++                timeout: 30_000,
++              });
++        void screenshot;
++        const actualTree = parseNativeHierarchy(
++          charter === 'session'
++            ? await sessionReadText(`${label}-hierarchy-read`, frameTree)
++            : await readFile(frameTree, 'utf8'),
++        );
+         if (
+           !selectors.every((id) =>
+             nativeHierarchyHasAttribute(
+@@ -1413,15 +1453,32 @@
+           )
+         )
+           throw new Error(`Native ${label} selector absent from actual tree`);
++        if (
++          notVisibleSelectors.some((id) =>
++            nativeHierarchyHasAttribute(actualTree, 'resource-id', id),
++          )
++        )
++          throw new Error(`Native ${label} retained a prohibited selector after the action`);
+         const canonicalTree = `${label}-hierarchy.json`;
+-        await writeFile(path.join(output, canonicalTree), JSON.stringify(actualTree), {
+-          mode: 0o600,
+-        });
++        if (charter === 'session')
++          await sessionWriteText(
++            `${label}-hierarchy-write`,
++            path.join(output, canonicalTree),
++            JSON.stringify(actualTree),
++            { mode: 0o600 },
++          );
++        else
++          await writeFile(path.join(output, canonicalTree), JSON.stringify(actualTree), {
++            mode: 0o600,
++          });
+         assertNativeBootstrapHealthy(app!.diagnostics);
+         frames.push({
+           viewId,
+           hierarchyPath: canonicalTree,
+           screenshotPath: path.relative(output, screenshotPath),
++          ...(notVisibleSelectors.length > 0
++            ? { notVisibleSelectors: [...notVisibleSelectors] }
++            : {}),
+         });
+         report.viewIds = [...new Set(['SCR-sign-in', ...frames.map((frame) => frame.viewId)])];
+       };
+@@ -1656,8 +1713,100 @@
+           : [];
+         report.connectionPasswordOfferWitnesses = [...previousWitnesses, witness];
+       };
++      const assertSessionIoActive = (label: string) => {
++        if (charter === 'session') controller.signal.throwIfAborted();
++        void label;
++      };
++      const sessionDirectIo = async <T>(
++        label: string,
++        operation: () => T | PromiseLike<T>,
++      ): Promise<T> => {
++        assertSessionIoActive(`${label}-before`);
++        const value = await operation();
++        assertSessionIoActive(`${label}-after`);
++        return value;
++      };
++      const sessionExecute = (
++        label: string,
++        command: string,
++        argv: string[],
++        options: { timeout?: number; maxBuffer?: number } = {},
++      ) =>
++        sessionDirectIo(label, () =>
++          execute(command, argv, { ...options, signal: controller.signal }),
++        );
++      const sessionReadText = (label: string, file: string) =>
++        sessionDirectIo(label, () => readFile(file, 'utf8'));
++      const sessionWriteText = (
++        label: string,
++        file: string,
++        data: string | Uint8Array,
++        options: { mode?: number; flag?: string } = {},
++      ) => sessionDirectIo(label, () => writeFile(file, data, options));
++      const sessionReadEvidence = (label: string, relative: string, privateRecord = false) => {
++        assertSessionIoActive(`${label}-before`);
++        const bytes = readNativeEvidence(output, relative, privateRecord);
++        assertSessionIoActive(`${label}-after`);
++        return bytes;
++      };
++      const sessionSnapshot = (label: string) =>
++        sessionDirectIo(label, () => session!.snapshot('native-entry-ios'));
++      const sessionAuthMetadata = (label: string, dataContainer: string) =>
++        sessionDirectIo(label, () => observeIosAuthMetadata(dataContainer, bundleId));
++      const sessionDeviceVerify = (label: string) => sessionDirectIo(label, () => device!.verify());
++      const publishSessionLedger = (ledger: Record<string, unknown>) => {
++        assertSessionIoActive('session-ledger-before-publish');
++        try {
++          Object.assign(report, ledger);
++          assertSessionIoActive('session-ledger-after-publish');
++          report.sessionEvidencePublication = 'complete';
++        } catch (error) {
++          for (const key of Object.keys(ledger)) delete report[key];
++          report.sessionEvidencePublication = 'aborted-before-complete';
++          throw error;
++        }
++      };
+       const credentials =
+         fixtures.accounts[charter === 'camera-denied' ? 'unrelated-student' : 'coach'];
++      const sessionSqlBefore =
++        charter === 'session' ? await sessionSnapshot('session-sql-before-snapshot') : undefined;
++      if (sessionSqlBefore) {
++        const sessionSqlBeforeBytes = JSON.stringify(sessionSqlBefore, null, 2);
++        if (charter === 'session')
++          await sessionWriteText(
++            'session-sql-before-write',
++            path.join(output, 'session-sql-before.private.json'),
++            sessionSqlBeforeBytes,
++            { mode: 0o600, flag: 'wx' },
++          );
++        else
++          await writeFile(
++            path.join(output, 'session-sql-before.private.json'),
++            sessionSqlBeforeBytes,
++            { mode: 0o600, flag: 'wx' },
++          );
++        const ownedSessionSqlBeforeBytes =
++          charter === 'session'
++            ? sessionReadEvidence(
++                'session-sql-before-read',
++                'session-sql-before.private.json',
++                true,
++              )
++            : readNativeEvidence(output, 'session-sql-before.private.json', true);
++        report.sessionSqlBefore = {
++          path: 'session-sql-before.private.json',
++          runId: sessionSqlBefore.runId,
++          scope: sessionSqlBefore.scope,
++          sha256: createHash('sha256').update(ownedSessionSqlBeforeBytes).digest('hex'),
++          bytes: ownedSessionSqlBeforeBytes.length,
++          ownedRunId: session.manifest.runId,
++          fixtureScope: 'native-entry-ios',
++          artifactRoot: session.manifest.artifactRoot,
++          apiPid: session.apiPid,
++          targetOrigin: session.apiOrigin,
++          fixtureAuthUidAllowlistHash,
++        };
++      }
+       if (charter === 'connection-journey') {
+         await observeConnectionPasswordOffer(
+           'coach-home',
+@@ -1717,7 +1866,372 @@
+           ...coachBoundary,
+         };
+       }
+-      if (charter === 'camera-denied') {
++      if (charter === 'session') {
++        requireIosConnectionAuthIdentityCapture(proxy);
++        const sessionAuthBoundary = requireIosConnectionSignInBoundary(proxy.observations, 0);
++        const sessionAuthUid = requireIosConnectionActorIdentity(proxy.nativeAuthIdentities, {
++          actorAuthUid: fixtures.accounts.coach.authUid,
++          authRequestId: sessionAuthBoundary.authRequestId,
++          apiIdentity: { apiPid: session.apiPid, targetOrigin: session.apiOrigin },
++          fixtureAuthUids: Object.values(fixtures.accounts).map((account) => account.authUid),
++        });
++        report.sessionInitialAuth = {
++          actor: 'coach',
++          actorAuthUid: sessionAuthUid,
++          apiPid: session.apiPid,
++          targetOrigin: session.apiOrigin,
++          ...sessionAuthBoundary,
++        };
++        const nativeAuthIdentityPath = 'native-auth-identities.private.json';
++        const nativeAuthIdentityBytes = JSON.stringify(proxy.nativeAuthIdentities, null, 2);
++        await sessionWriteText(
++          'native-auth-identities-write',
++          path.join(output, nativeAuthIdentityPath),
++          nativeAuthIdentityBytes,
++          { mode: 0o600, flag: 'wx' },
++        );
++        const ownedNativeAuthIdentityBytes = sessionReadEvidence(
++          'native-auth-identities-read',
++          nativeAuthIdentityPath,
++          true,
++        );
++        report.nativeAuthIdentityEvidence = {
++          path: nativeAuthIdentityPath,
++          sha256: createHash('sha256').update(ownedNativeAuthIdentityBytes).digest('hex'),
++          bytes: ownedNativeAuthIdentityBytes.length,
++          runId: session.manifest.runId,
++          scope: 'native-entry-ios',
++          ownedRunId: session.manifest.runId,
++          fixtureScope: 'native-entry-ios',
++          artifactRoot: session.manifest.artifactRoot,
++          apiPid: session.apiPid,
++          targetOrigin: session.apiOrigin,
++          fixtureAuthUidAllowlistHash,
++        };
++      }
++      if (charter === 'session') {
++        if (!sessionSqlBefore)
++          throw new Error('Native session SQL baseline was not captured before the journey');
++        const sessionUiObservationOrder = ['entry', 'password-save-prompt', 'coach-home'];
++        const observeSession = async (
++          label: string,
++          actions: string,
++          viewId: string,
++          selector: string | string[],
++          selectorKind: 'id' | 'text' = 'id',
++          notVisibleSelectors: readonly string[] = [],
++        ) => {
++          sessionUiObservationOrder.push(label);
++          await observe(label, actions, viewId, selector, selectorKind, notVisibleSelectors);
++        };
++        const sessionAssertionSequence: string[] = [nativeSessionAssertionIds[0]];
++        const dataContainer = (
++          await sessionExecute(
++            'session-data-container-read',
++            'xcrun',
++            ['simctl', 'get_app_container', device.udid, bundleId, 'data'],
++            { timeout: 15_000 },
++          )
++        ).stdout.trim();
++        const requireSignedOutMetadata = (
++          metadata: Awaited<ReturnType<typeof observeIosAuthMetadata>>,
++          label: string,
++        ) => {
++          const candidate = metadata as {
++            sessionPresent?: unknown;
++            profilePresent?: unknown;
++            expiryPresent?: unknown;
++            plaintextAccessTokenPresent?: unknown;
++            plaintextRefreshTokenPresent?: unknown;
++          };
++          if (
++            candidate.sessionPresent === true ||
++            candidate.profilePresent === true ||
++            candidate.expiryPresent === true ||
++            candidate.plaintextAccessTokenPresent === true ||
++            candidate.plaintextRefreshTokenPresent === true
++          )
++            throw new Error(`${label} contains positive persisted-session metadata`);
++        };
++        const metadataBeforeRelaunch = await sessionAuthMetadata(
++          'session-metadata-before-relaunch',
++          dataContainer,
++        );
++        report.authMetadataBeforeRelaunch = metadataBeforeRelaunch;
++        if (!metadataBeforeRelaunch.sessionPresent)
++          throw new Error('Native session baseline has no persisted session metadata');
++        const beforeRelaunchTransportCount = proxy.observations.length;
++        await sessionExecute(
++          'session-restore-terminate',
++          'xcrun',
++          ['simctl', 'terminate', device.udid, bundleId],
++          { timeout: 30_000 },
++        );
++        await sessionExecute(
++          'session-restore-launch',
++          'xcrun',
++          [
++            'simctl',
++            'launch',
++            device.udid,
++            bundleId,
++            '-RCT_jsLocation',
++            `localhost:${reservation.port}`,
++          ],
++          { timeout: 30_000 },
++        );
++        await observeSession('restored-home', '', 'SCR-pro-home', 'pro.home.screen');
++        await sessionDeviceVerify('session-restore-device-verify');
++        const metadataAfterRelaunch = await sessionAuthMetadata(
++          'session-metadata-after-relaunch',
++          dataContainer,
++        );
++        report.authMetadataAfterRelaunch = metadataAfterRelaunch;
++        if (!metadataAfterRelaunch.sessionPresent)
++          throw new Error('Native session restoration lost persisted session metadata');
++        const relaunchTransport = proxy.observations.slice(beforeRelaunchTransportCount);
++        report.relaunchTransport = relaunchTransport;
++        report.relaunchTransportRange = {
++          startOrdinal: beforeRelaunchTransportCount,
++          endOrdinalExclusive: proxy.observations.length,
++          firstRequestId: relaunchTransport[0]?.requestId ?? null,
++          lastRequestId: relaunchTransport[relaunchTransport.length - 1]?.requestId ?? null,
++        };
++        if (
++          relaunchTransport.some(
++            (row) =>
++              row.requestProfile !== 'native' ||
++              row.requestOrigin !== null ||
++              row.outcome !== 'forwarded' ||
++              row.faultAttemptId !== null ||
++              row.targetOrigin !== session!.apiOrigin,
++          )
++        )
++          throw new Error('Restoration transport contains a non-owned native row');
++        if (
++          !relaunchTransport.some(
++            (row) =>
++              row.pathHash === pathHash('/me/hydrate') &&
++              row.status === 200 &&
++              row.outcome === 'forwarded' &&
++              row.requestProfile === 'native',
++          )
++        )
++          throw new Error('Restored native identity did not hydrate through the owned server');
++        if (relaunchTransport.some((row) => row.pathHash === pathHash('/auth/email/sign-in')))
++          throw new Error('Restored native identity signed in a second time');
++        sessionAssertionSequence.push(nativeSessionAssertionIds[1]);
++        await observeSession(
++          'account',
++          '- tapOn:\n    id: tabs.account',
++          'SCR-account',
++          'settings.account.screen',
++        );
++        const emailPattern =
++          '^' + fixtures.accounts.coach.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$';
++        await observeSession(
++          'restored-identity',
++          `- assertVisible: ${JSON.stringify(emailPattern)}`,
++          'SCR-account',
++          'settings.account.screen',
++        );
++        await observeSession(
++          'signout-confirm',
++          '- scrollUntilVisible:\n    element:\n      id: settings.account.signOutCta\n    direction: DOWN\n    timeout: 30000\n- tapOn:\n    id: settings.account.signOutCta',
++          'STATE-signout-confirm',
++          'settings.account.signOutConfirm',
++        );
++        await observeSession(
++          'cancel-signout',
++          '- tapOn:\n    id: settings.account.signOutCancelCta',
++          'SCR-account',
++          'settings.account.screen',
++          'id',
++          ['settings.account.signOutConfirm'],
++        );
++        const metadataAfterCancel = await sessionAuthMetadata(
++          'session-metadata-after-cancel',
++          dataContainer,
++        );
++        if (!metadataAfterCancel.sessionPresent)
++          throw new Error('Native sign-out cancel did not retain persisted session metadata');
++        report.authMetadataAfterCancel = metadataAfterCancel;
++        report.cancelSignoutCheckpoint = {
++          observationLabel: 'cancel-signout',
++          hierarchyPath: 'cancel-signout-hierarchy.json',
++          sessionPresent: true,
++        };
++        sessionAssertionSequence.push(nativeSessionAssertionIds[2]);
++        await observeSession(
++          'signout-reopen',
++          '- scrollUntilVisible:\n    element:\n      id: settings.account.signOutCta\n    direction: DOWN\n    timeout: 30000\n- tapOn:\n    id: settings.account.signOutCta',
++          'STATE-signout-confirm',
++          'settings.account.signOutConfirm',
++        );
++        await observeSession(
++          'signout-confirmed',
++          '- tapOn:\n    id: settings.account.signOutConfirmCta',
++          'SCR-sign-in',
++          'auth.signIn.emailInput',
++        );
++        report.nativeLogoutContract = {
++          requirementRefs: ['FR-270', 'BR-342'],
++          scope: 'local-native-session-clear',
++          serverRevocationQualified: false,
++        };
++        const metadataAfterSignout = await sessionAuthMetadata(
++          'session-metadata-after-signout',
++          dataContainer,
++        );
++        report.authMetadataAfterSignout = metadataAfterSignout;
++        requireSignedOutMetadata(metadataAfterSignout, 'Native sign-out metadata');
++        if (metadataAfterSignout.sessionPresent)
++          throw new Error('Native sign-out did not clear persisted session metadata');
++        sessionAssertionSequence.push(nativeSessionAssertionIds[3]);
++        await sessionDeviceVerify('session-before-signed-out-relaunch');
++        await sessionExecute(
++          'session-signed-out-terminate',
++          'xcrun',
++          ['simctl', 'terminate', device.udid, bundleId],
++          { timeout: 30_000 },
++        );
++        const beforeSignedOutRelaunchTransportCount = proxy.observations.length;
++        await sessionExecute(
++          'session-signed-out-launch',
++          'xcrun',
++          [
++            'simctl',
++            'launch',
++            device.udid,
++            bundleId,
++            '-RCT_jsLocation',
++            `localhost:${reservation.port}`,
++          ],
++          { timeout: 30_000 },
++        );
++        await observeSession('signed-out-relaunch', '', 'SCR-sign-in', 'auth.signIn.emailInput');
++        const signedOutRelaunchTransport = proxy.observations.slice(
++          beforeSignedOutRelaunchTransportCount,
++        );
++        report.signedOutRelaunchTransport = signedOutRelaunchTransport;
++        report.signedOutRelaunchTransportRange = {
++          startOrdinal: beforeSignedOutRelaunchTransportCount,
++          endOrdinalExclusive: proxy.observations.length,
++          firstRequestId: signedOutRelaunchTransport[0]?.requestId ?? null,
++          lastRequestId:
++            signedOutRelaunchTransport[signedOutRelaunchTransport.length - 1]?.requestId ?? null,
++        };
++        if (
++          signedOutRelaunchTransport.some(
++            (row) =>
++              row.requestProfile !== 'native' ||
++              row.requestOrigin !== null ||
++              row.outcome !== 'forwarded' ||
++              row.faultAttemptId !== null ||
++              row.targetOrigin !== session!.apiOrigin ||
++              row.pathHash === pathHash('/auth/email/sign-in') ||
++              row.pathHash === pathHash('/me/hydrate'),
++          )
++        )
++          throw new Error(
++            'Signed-out native relaunch transport is not an uncredentialed forwarded native slice',
++          );
++        const metadataAfterSignedoutRelaunch = await sessionAuthMetadata(
++          'session-metadata-after-signed-out-relaunch',
++          dataContainer,
++        );
++        report.authMetadataAfterSignedoutRelaunch = metadataAfterSignedoutRelaunch;
++        requireSignedOutMetadata(
++          metadataAfterSignedoutRelaunch,
++          'Signed-out native relaunch metadata',
++        );
++        if (metadataAfterSignedoutRelaunch.sessionPresent)
++          throw new Error('Signed-out native relaunch restored persisted session metadata');
++        const sessionSqlAfterSignedoutRelaunch = await sessionSnapshot(
++          'session-sql-after-signed-out-relaunch-snapshot',
++        );
++        const sessionSqlAfterSignedoutRelaunchBytes = JSON.stringify(
++          sessionSqlAfterSignedoutRelaunch,
++          null,
++          2,
++        );
++        await sessionWriteText(
++          'session-sql-after-signed-out-relaunch-write',
++          path.join(output, 'session-sql-after-signed-out-relaunch.private.json'),
++          sessionSqlAfterSignedoutRelaunchBytes,
++          { mode: 0o600, flag: 'wx' },
++        );
++        const ownedSessionSqlAfterSignedoutRelaunchBytes = sessionReadEvidence(
++          'session-sql-after-signed-out-relaunch-read',
++          'session-sql-after-signed-out-relaunch.private.json',
++          true,
++        );
++        report.sessionSqlAfterSignedoutRelaunch = {
++          path: 'session-sql-after-signed-out-relaunch.private.json',
++          runId: sessionSqlAfterSignedoutRelaunch.runId,
++          scope: sessionSqlAfterSignedoutRelaunch.scope,
++          sha256: createHash('sha256')
++            .update(ownedSessionSqlAfterSignedoutRelaunchBytes)
++            .digest('hex'),
++          bytes: ownedSessionSqlAfterSignedoutRelaunchBytes.length,
++          ownedRunId: session.manifest.runId,
++          fixtureScope: 'native-entry-ios',
++          artifactRoot: session.manifest.artifactRoot,
++          apiPid: session.apiPid,
++          targetOrigin: session.apiOrigin,
++          fixtureAuthUidAllowlistHash,
++        };
++        if (
++          JSON.stringify(sessionSqlBefore.trainingPlans) !==
++            JSON.stringify(sessionSqlAfterSignedoutRelaunch.trainingPlans) ||
++          JSON.stringify(sessionSqlBefore.connections) !==
++            JSON.stringify(sessionSqlAfterSignedoutRelaunch.connections)
++        )
++          throw new Error('Native session journey changed unrelated owned SQL state');
++        sessionAssertionSequence.push(nativeSessionAssertionIds[4]);
++        sessionAssertionSequence.push(nativeSessionAssertionIds[5]);
++        if (sessionAssertionSequence.length !== nativeSessionAssertionIds.length)
++          throw new Error('Native session assertion sequence is incomplete');
++        const sessionViewEvidence = await sessionDirectIo(
++          'session-view-evidence-publication',
++          async () => {
++            const sealed: ViewEvidence[] = [];
++            for (const frame of frames) {
++              const screenshotBytes = sessionReadEvidence(
++                'session-screenshot-read',
++                frame.screenshotPath,
++              );
++              const hierarchyBytes = sessionReadEvidence(
++                'session-hierarchy-read',
++                frame.hierarchyPath,
++                true,
++              );
++              const sealedFrame = {
++                ...frame,
++                screenshotHash: createHash('sha256').update(screenshotBytes).digest('hex'),
++                hierarchyHash: createHash('sha256').update(hierarchyBytes).digest('hex'),
++                reviewed: false,
++              } as const;
++              validateNativeRuntimeFrameFiles(output, [sealedFrame], [sealedFrame.viewId]);
++              sealed.push(sealedFrame);
++            }
++            return sealed;
++          },
++        );
++        publishSessionLedger({
++          sessionAssertionSequence,
++          sessionUiObservationOrder,
++          sessionSqlBeforeAfterUnchanged: true,
++          observations: sessionViewEvidence,
++          sessionViewEvidence,
++        });
++        await sessionWriteText(
++          'session-transport-publication',
++          path.join(output, 'transport-observations.private.json'),
++          JSON.stringify(proxy.observations, null, 2),
++          { mode: 0o600 },
++        );
++      } else if (charter === 'camera-denied') {
+         const displayName = (
+           await execute(
+             'plutil',
+@@ -2387,6 +2901,33 @@
+     if (report.budgetTimeout) failed = true;
+     report.cleanup = projectIosCaptureCleanup(errors, acquisitionFailureCleanup);
+     if (report.cleanup !== 'cleaned') failed = true;
++    if (charter === 'session' && controller.signal.aborted) {
++      for (const key of [
++        'observations',
++        'sessionInitialAuth',
++        'nativeAuthIdentityEvidence',
++        'authMetadataBeforeRelaunch',
++        'authMetadataAfterRelaunch',
++        'authMetadataAfterCancel',
++        'cancelSignoutCheckpoint',
++        'relaunchTransport',
++        'relaunchTransportRange',
++        'authMetadataAfterSignout',
++        'nativeLogoutContract',
++        'signedOutRelaunchTransport',
++        'signedOutRelaunchTransportRange',
++        'authMetadataAfterSignedoutRelaunch',
++        'sessionSqlBefore',
++        'sessionSqlAfterSignedoutRelaunch',
++        'sessionSqlBeforeAfterUnchanged',
++        'sessionAssertionSequence',
++        'sessionUiObservationOrder',
++        'sessionViewEvidence',
++      ])
++        delete report[key];
++      report.sessionEvidencePublication = 'aborted-before-complete';
++      failed = true;
++    }
+     if (failed) report.result = cancellation() ? 'cancelled' : 'harness-blocked';
+     beginPhase();
+     report.finishedAt = new Date().toISOString();

@@ -37,7 +37,41 @@
     "tsconfig.json",
     "eslint.config.js",
     ".detoxrc.js",
-    "playwright*.config.ts"
+    "playwright*.config.ts",
+    "e2e/web/support/test-profiles.ts",
+    "e2e/web/support/create-web-test-config.ts",
+    "scripts/testing/integration-preflight.ts",
+    "scripts/testing/owned-session.ts",
+    "scripts/testing/verify-session-acquisition.ts",
+    "scripts/testing/owned-api-proxy.ts",
+    "scripts/testing/verify-owned-api-proxy.ts",
+    "scripts/testing/owned-expo.ts",
+    "scripts/testing/owned-ios-simulator.ts",
+    "scripts/testing/capture-native-testability.ts",
+    "scripts/testing/native-runtime-preflight.ts",
+    "scripts/testing/native-build-identity.ts",
+    "scripts/testing/native-build-reuse.ts",
+    "scripts/testing/generate-native-declaration.py",
+    "scripts/testing/validate-native-inventory.mjs",
+    "scripts/testing/vendor/**",
+    "docs/qa/native-pilot/**",
+    ".maestro/**",
+    "e2e/detox-integrated-session-baseline.e2e.test.js",
+    "e2e/detox-integrated-connection-baseline.e2e.test.js",
+    "scripts/testing/owned-process-group.ts",
+    "scripts/testing/verify-owned-expo.ts",
+    "scripts/testing/integration-registry.ts",
+    "scripts/testing/integration-context.ts",
+    "scripts/testing/integration-results.ts",
+    "scripts/testing/run-web-integration.ts",
+    "scripts/testing/verify-web-integration.ts",
+    "scripts/run-web-e2e-batch.mjs",
+    "scripts/testing/schema-validation.ts",
+    "scripts/testing/schemas/**",
+    "scripts/testing/verify-domain-snapshot.ts",
+    "scripts/testing/worker-control.ts",
+    "scripts/testing/verify-worker-control.ts",
+    "scripts/testing/verify-worker-control-receipt.ts"
   ],
   "sharedRules": [
     {
@@ -97,9 +131,11 @@
       "webSuites": [
         "web:auth",
         "web:server-auth",
+        "web:integration-auth",
         "web:shell",
         "web:critical-paths",
-        "web:manual-webview-recovery"
+        "web:manual-webview-recovery",
+        "web:integration-denial"
       ],
       "detoxSuites": ["detox:auth"],
       "owners": ["@edufelip"]
@@ -112,7 +148,12 @@
       ],
       "dependsOn": ["auth", "platform"],
       "unitTests": ["features/connections/**/*.test.ts"],
-      "webSuites": ["web:connections", "web:shell", "web:critical-paths"],
+      "webSuites": [
+        "web:connections",
+        "web:shell",
+        "web:critical-paths",
+        "web:integration-connections"
+      ],
       "detoxSuites": ["detox:connections"],
       "owners": ["@edufelip"]
     },
@@ -149,7 +190,10 @@
         "web:training",
         "web:shell",
         "web:exercise-search",
-        "web:assigned-plan-detail-heading"
+        "web:assigned-plan-detail-heading",
+        "web:integration-training",
+        "web:integration-save-retry",
+        "web:integration-denial"
       ],
       "detoxSuites": ["detox:training"],
       "owners": ["@edufelip"]
@@ -162,7 +206,10 @@
         "web:nutrition",
         "web:training",
         "web:exercise-search",
-        "web:assigned-plan-detail-heading"
+        "web:assigned-plan-detail-heading",
+        "web:integration-training",
+        "web:integration-save-retry",
+        "web:integration-denial"
       ],
       "detoxSuites": ["detox:plans"],
       "owners": ["@edufelip"]
@@ -249,6 +296,42 @@
     ["professional", "subscription"]
   ],
   "suites": {
+    "web:integration-auth": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/auth-session.spec.ts"],
+      "integrationScenarios": ["auth-session"],
+      "grep": "@integration:auth-session",
+      "tier": "integration",
+      "ci": false
+    },
+    "detox:integrated-session-baseline": {
+      "runner": "detox",
+      "platforms": ["ios", "android"],
+      "specs": ["e2e/detox-integrated-session-baseline.e2e.test.js"],
+      "fixtureProfile": "owned-integrated-session",
+      "tier": "integration",
+      "ci": false
+    },
+    "detox:integrated-connection-baseline": {
+      "runner": "detox",
+      "platforms": ["ios", "android"],
+      "specs": ["e2e/detox-integrated-connection-baseline.e2e.test.js"],
+      "fixtureProfile": "owned-integrated-connection",
+      "tier": "integration",
+      "ci": false
+    },
     "detox:auth": {
       "runner": "detox",
       "platforms": ["ios", "android"],
@@ -585,7 +668,7 @@
     "web:flow-atlas-auth": {
       "runner": "playwright-evidence",
       "playwrightConfig": "playwright.flows-auth.config.ts",
-      "projects": ["mobile-auth", "mobile-auth-pt", "mobile-auth-es"],
+      "projects": ["mobile", "tablet", "web"],
       "specs": ["e2e/web-flows-auth/authentication-flow-atlas.spec.ts"],
       "grep": "@feature:auth",
       "tier": "evidence",
@@ -623,6 +706,102 @@
       "specs": ["e2e/web/invite-code-rotation.spec.ts"],
       "grep": "@feature:professional",
       "tier": "evidence",
+      "ci": false
+    },
+    "web:integration-training": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/training-durable.spec.ts"],
+      "integrationScenarios": ["training-durable"],
+      "grep": "@integration:training-durable",
+      "tier": "integration",
+      "ci": false
+    },
+    "web:integration-connections": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/connection-approval.spec.ts"],
+      "integrationScenarios": ["connection-approval"],
+      "grep": "@integration:connection-approval",
+      "tier": "integration",
+      "ci": false
+    },
+    "web:integration-save-retry": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/save-retry.spec.ts"],
+      "integrationScenarios": ["save-retry"],
+      "grep": "@integration:save-retry",
+      "tier": "integration",
+      "ci": false
+    },
+    "web:integration-denial": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/unrelated-denial.spec.ts"],
+      "integrationScenarios": ["unrelated-denial"],
+      "grep": "@integration:unrelated-denial",
+      "tier": "integration",
+      "ci": false
+    },
+    "detox:integrated-camera-ios": {
+      "runner": "detox",
+      "platforms": ["ios"],
+      "specs": ["e2e/detox-ios-camera-route.e2e.test.js"],
+      "fixtureProfile": "owned-integrated-camera",
+      "tier": "integration",
+      "ci": false
+    },
+    "detox:integrated-camera-android": {
+      "runner": "detox",
+      "platforms": ["android"],
+      "specs": ["e2e/detox-android-camera-denied.e2e.test.js"],
+      "fixtureProfile": "owned-integrated-camera",
+      "tier": "integration",
       "ci": false
     }
   }

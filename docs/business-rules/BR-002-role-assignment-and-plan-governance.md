@@ -1,6 +1,7 @@
 # BR-002 Role Assignment And Plan Governance (Proposed)
 
 ## Rules
+
 - `BR-201`: Every account must have a primary journey context: Student or Professional.
 - `BR-202`: Professional specialty can include nutritionist, fitness coach, or both.
 - `BR-203`: A Student can have only one active nutritionist relationship at a time.
@@ -65,6 +66,7 @@
 - `BR-254`: Build and release automation must remain operational without EAS service dependency.
 - `BR-255`: MVP utility-class styling standard in mobile UI is NativeWind.
 - `BR-256`: QA distribution policy is branch-driven:
+  - Every push to `develop` (including a merged pull request) and manual dispatch of either Firebase distribution workflow publishes the matching `MyChampions Dev` binary to the Firebase App Distribution `base-group` tester group. The workflow must reject a production or missing API URL and must not restore Firebase runtime configuration.
   - Release branches publish to TestFlight.
   - After BR-344 promotion gates are verified, pull requests into `main` prove
     selected native builds/tests on self-hosted runners without publishing
@@ -136,7 +138,7 @@
 - `BR-300`: Provider detection for the password reset flow is performed at runtime from the current authenticated session metadata; the "Change password" row is always visible regardless of provider, and the runtime branch determines the action.
 - `BR-301`: A user confirmation alert must precede any password-reset request from the account settings screen; silent auto-dispatch without user acknowledgment is not permitted.
 - `BR-302`: The OAuth provider label shown in the informational alert must be resolved from runtime provider metadata: `google.com` maps to "Google", `apple.com` maps to "Apple", and any other unrecognized provider maps to "your sign-in provider".
-- `BR-303`: SC-208 exercise search/detail calls must use the exercise catalog service (`POST /catalog/search`, `GET /catalog/exercises/:id`); direct mobile calls to upstream YMove endpoints are not allowed.
+- `BR-303`: SC-208 mobile exercise search/detail calls must use the MyChampions server (`POST /integrations/exercise/search`, `GET /integrations/exercise/exercises/:id`) with the server bearer session, as specified by D-157. The server owns mirrored catalog access and upstream integration; direct mobile calls to a separate public catalog service or upstream YMove endpoints are not allowed. Earlier `/catalog/search` and `/catalog/exercises/:id` wording describes the superseded client integration, not the current mobile contract.
 - `BR-304`: Catalog requests must include the effective app/device locale in `lang` and client-generated `x-request-id` for correlation.
 - `BR-305`: Upstream YMove API keys are server-side only; no client build/runtime variable may expose that key.
 - `BR-306`: Training session items persist only stable exercise identifiers (`exerciseId`); pre-signed media URLs are never persisted.
@@ -154,7 +156,7 @@
 - `BR-339`: Production subscription authorization is derived from a server-side canonical RevenueCat customer reconciliation. A single webhook event must not directly overwrite an unrelated entitlement, and transfer events must reconcile every affected App User ID before acknowledgement.
 - `BR-340`: Professional pre-lapse warning is driven only by authoritative active-entitlement expiry plus explicit renewal, unsubscribe, or billing-issue risk. Student capacity is never treated as a billing-expiry signal.
 - `BR-341`: New `student_pro` purchases may be initiated only by locked student accounts. A professional who enters an AI gate is routed to `default_professional`, because `professional_pro` already grants AI access. Existing valid `student_pro` entitlements continue to unlock AI regardless of current role, but missing or malformed role state presents no paywall.
-- `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native bearer-session persistence keeps its existing immediate-clear behavior.
+- `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native sign-out immediately clears the device-local persisted credential/session and authenticated identity. Relaunch must remain signed out and protected UI must remain inaccessible until a new sign-in. Native sign-out does not revoke the server bearer token; a still-valid server token is not a failed native logout.
 - `BR-343`: The SC-207 add-food editor participates in the meal screen's measured layout. It may not be positioned outside the scroll extent, and native automation must use stable fields/actions and semantic confirmation copy rather than hidden coordinates.
 - `BR-344`: The supported PR path for target bases `main`, `release/**`, and
   `hotfix/**` begins with protected-`main`, GitHub-hosted-only
@@ -233,4 +235,5 @@
   operational boundary.
 
 ## Constraints
+
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

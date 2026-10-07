@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openai.com/codex/app-flow-maestro/inventory.schema.json",
+  "title": "App Flow Maestro inventory",
+  "type": "object",
+  "required": ["schemaVersion", "run", "boundary", "sources", "views", "transitions", "flows", "scenarios", "receipts"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "run": {
+      "type": "object",
+      "required": ["id", "createdAt", "updatedAt", "commit", "target"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "commit": { "type": "string" },
+        "build": { "type": "string" },
+        "target": { "type": "string" },
+        "device": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "boundary": {
+      "type": "object",
+      "required": ["surfaces", "platforms", "roles", "flags", "locales"],
+      "properties": {
+        "surfaces": { "$ref": "#/$defs/stringArray" },
+        "platforms": { "$ref": "#/$defs/stringArray" },
+        "roles": { "$ref": "#/$defs/stringArray" },
+        "flags": { "$ref": "#/$defs/stringArray" },
+        "locales": { "$ref": "#/$defs/stringArray" },
+        "exclusions": { "$ref": "#/$defs/stringArray" }
+      },
+      "additionalProperties": true
+    },
+    "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+    "views": { "type": "array", "items": { "$ref": "#/$defs/view" } },
+    "transitions": { "type": "array", "items": { "$ref": "#/$defs/transition" } },
+    "flows": { "type": "array", "items": { "$ref": "#/$defs/flow" } },
+    "scenarios": { "type": "array", "items": { "$ref": "#/$defs/scenario" } },
+    "receipts": { "type": "array", "items": { "$ref": "#/$defs/receipt" } },
+    "blockers": { "$ref": "#/$defs/stringArray" }
+  },
+  "$defs": {
+    "stringArray": { "type": "array", "items": { "type": "string" } },
+    "source": {
+      "type": "object",
+      "required": ["id", "kind", "ref"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "enum": ["requirement", "use-case", "rule", "test-case", "source", "runtime"] },
+        "ref": { "type": "string" },
+        "revision": { "type": "string" },
+        "paths": { "$ref": "#/$defs/stringArray" }
+      },
+      "additionalProperties": true
+    },
+    "view": {
+      "type": "object",
+      "required": ["id", "name", "kind", "captureStatus", "sourceRefs"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^(SCR|STATE)-[A-Za-z0-9._-]+$" },
+        "name": { "type": "string" },
+        "kind": { "enum": ["screen", "modal", "sheet", "popover", "state", "system-prompt"] },
+        "captureStatus": { "enum": ["source-discovered", "runtime-captured", "unverified", "unreachable", "out-of-scope"] },
+        "conditions": { "type": "object", "additionalProperties": true },
+        "sourceRefs": { "$ref": "#/$defs/stringArray" },
+        "ownerPaths": { "$ref": "#/$defs/stringArray" },
+        "receiptIds": { "$ref": "#/$defs/stringArray" }
+      },
+      "additionalProperties": true
+    },
+    "transition": {
+      "type": "object",
+      "required": ["id", "fromViewId", "action", "kind", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^TRN-[A-Za-z0-9._-]+$" },
+        "fromViewId": { "type": "string" },
+        "toViewId": { "type": ["string", "null"] },
+        "action": { "type": "string" },
+        "kind": { "enum": ["normal", "guarded", "error", "external", "blocked"] },
+        "status": { "enum": ["discovered", "captured", "blocked", "unverified", "out-of-scope"] },
+        "conditions": { "type": "object", "additionalProperties": true },
+        "sourceRefs": { "$ref": "#/$defs/stringArray" },
+        "receiptIds": { "$ref": "#/$defs/stringArray" }
+      },
+      "additionalProperties": true
+    },
+    "flow": {
+      "type": "object",
+      "required": ["id", "name", "entryViewId", "transitionIds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^FLW-[A-Za-z0-9._-]+$" },
+        "name": { "type": "string" },
+        "entryViewId": { "type": "string" },
+        "transitionIds": { "$ref": "#/$defs/stringArray" },
+        "sourceRefs": { "$ref": "#/$defs/stringArray" }
+      },
+      "additionalProperties": true
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["id", "flowId", "behaviorStatus", "freshness"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^SCN-[A-Za-z0-9._-]+$" },
+        "flowId": { "type": "string" },
+        "transitionIds": { "$ref": "#/$defs/stringArray" },
+        "behaviorStatus": { "enum": ["not-applicable", "untested", "tested", "failed", "blocked", "not-testable", "decision-needed"] },
+        "freshness": { "enum": ["current", "stale", "unknown"] },
+        "maestroFlow": { "type": "string" },
+        "fixtureRef": { "type": "string" },
+        "platform": { "type": "string" },
+        "roles": { "$ref": "#/$defs/stringArray" },
+        "tags": { "$ref": "#/$defs/stringArray" },
+        "ownerPaths": { "$ref": "#/$defs/stringArray" },
+        "receiptIds": { "$ref": "#/$defs/stringArray" },
+        "freshnessInputs": { "$ref": "#/$defs/freshnessInputs" }
+      },
+      "additionalProperties": true
+    },
+    "receipt": {
+      "type": "object",
+      "required": ["id", "timestamp", "commit", "target", "result", "scenarioIds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^REC-[A-Za-z0-9._-]+$" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "commit": { "type": "string" },
+        "build": { "type": "string" },
+        "target": { "type": "string" },
+        "platform": { "type": "string" },
+        "device": { "type": "string" },
+        "fixtureRef": { "type": "string" },
+        "command": { "type": "string" },
+        "result": { "enum": ["passed", "failed", "blocked", "harness-failed", "observed"] },
+        "scenarioIds": { "$ref": "#/$defs/stringArray" },
+        "evidencePaths": { "$ref": "#/$defs/stringArray" },
+        "inputFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": true
+    },
+    "freshnessInputs": {
+      "type": "object",
+      "properties": {
+        "sourceIds": { "$ref": "#/$defs/stringArray" },
+        "requirementPaths": { "$ref": "#/$defs/stringArray" },
+        "ownerPaths": { "$ref": "#/$defs/stringArray" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

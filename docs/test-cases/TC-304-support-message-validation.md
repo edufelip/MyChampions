@@ -1,9 +1,26 @@
 # TC-304 Support Message Validation
 
 ## Feature
+
 In-App Support Dialog.
 
+## Automated evidence scope
+
+`tests/component/support-modal.test.tsx` exercises rendered field validation,
+pending close/Cancel/native request-close wiring, rejected-request retry,
+success/reopen reset and offline-to-online draft retention in all three locales.
+Transport is mocked; these results do not prove a server `support_messages` row,
+browser focus/ARIA behavior or execution of an OS back gesture. The component
+replacement ledger links controlled-regression evidence.
+
+Known unresolved contradiction: TC-304.1 specifies both errors on one empty
+submission, but `validateSupportInput` returns the first error only. Component
+cases validate each field sequentially and do not mark TC-304.1 covered. Keep
+this case pending until its intended product contract is resolved; do not
+change its expectation merely to make automation pass.
+
 ## Test Cases
+
 - `TC-304.1`: **Empty Submission**
   - Given: Support modal is open.
   - When: User taps "Send message" with subject and body empty.

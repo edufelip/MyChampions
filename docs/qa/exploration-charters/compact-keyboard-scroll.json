@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "id": "EXP-COMPACT-KEYBOARD-SCROLL",
+  "title": "Compact training builder keyboard and scroll",
+  "summary": "Explore the training builder on a compact viewport while keyboard focus, measured scrolling, search, and save controls change visibility.",
+  "platforms": ["ios", "android", "web"],
+  "connectorsByPlatform": {
+    "ios": "maestro",
+    "android": "maestro",
+    "web": "playwright"
+  },
+  "locales": ["en-US", "pt-BR", "es-ES"],
+  "roles": ["professional"],
+  "dataMode": "integration",
+  "fixture": {
+    "id": "owned-postgres:exploration:compact-keyboard-scroll",
+    "resetStrategy": "fresh-professional-training-draft-per-attempt"
+  },
+  "allowedActions": [
+    "Reset the declared owned fixture and confirm the target identity",
+    "Open the professional training builder and observe the initial hierarchy or accessibility tree",
+    "Focus documented inputs, open the keyboard, and use selector or role based scrolling",
+    "Open exercise search, enter the declared query, inspect results, and close the search surface",
+    "Record visible state, request outcomes, screenshots, and hierarchy evidence after each action"
+  ],
+  "excludedExternalEffects": [
+    "Production or shared-account access",
+    "Purchases, subscriptions, provider-console changes, issue posting, or scheduling",
+    "Unscoped database writes, direct seed actions for behavior under test, or destructive deletion",
+    "Coordinate taps, arbitrary sleeps, selector healing, or AI visual assertions as a required verdict"
+  ],
+  "budget": {
+    "maxDurationMinutes": 30,
+    "maxUiActions": 100,
+    "stopWhen": "first-limit-reached",
+    "unchangedFailureLimit": 2
+  },
+  "artifactPolicy": {
+    "directoryMode": "0700",
+    "fileMode": "0600",
+    "rawEvidence": "private-only",
+    "publicSummary": "redacted-status-only",
+    "forbiddenFields": [
+      "password",
+      "accessToken",
+      "refreshToken",
+      "cookie",
+      "authorization",
+      "secret"
+    ]
+  },
+  "requirementRefs": ["SC-208", "TC-261", "TC-332", "BL-018/T16"],
+  "requirementPaths": [
+    "docs/screens/v2/SC-208-training-plan-builder.md",
+    "docs/test-cases/TC-002-role-and-assignment-controls.md",
+    "docs/test-cases/TC-332-exercise-search-resize.md",
+    "docs/plans/2026-09-28-testing-structure-and-maestro-plan.md"
+  ],
+  "scenario": {
+    "id": "EXP-COMPACT-001",
+    "title": "Compact training builder remains usable while the keyboard and scroll state changes",
+    "sourceRefs": ["SC-208", "TC-261", "TC-332", "BL-018/T16"],
+    "preconditions": [
+      "A fresh professional training draft is reset for the selected locale",
+      "The target build and connector are independently identified before actions",
+      "The exercise catalog and owned API origin are healthy for this attempt"
+    ],
+    "actions": [
+      "Open the builder on the compact target",
+      "Focus the plan name or exercise search field and observe keyboard-visible bounds",
+      "Scroll to the next documented action using a semantic selector",
+      "Search for the canonical exercise and close the search surface"
+    ],
+    "expectedObservations": [
+      "The focused control remains reachable and its label or accessibility identity is stable",
+      "The active action is visible without coordinate fallback or arbitrary waiting",
+      "Search results and close controls remain within the compact viewport",
+      "No observation is classified as a defect until it is compared with the cited requirements"
+    ],
+    "risk": "high"
+  }
+}

@@ -1,0 +1,5 @@
+private scratch validation: applied frozen v4 capture patch, then applied and checked v6-on-v4 incremental patch
+v4 apply: pass
+v6-on-v4 check: pass
+v6-on-v4 apply: pass
+final scratch capture source sha256: 6f4676e8691f43873e5a25f6371fbedffd7a1113c50850412a0e4a9ccfc5529f
