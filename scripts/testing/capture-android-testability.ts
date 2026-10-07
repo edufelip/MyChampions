@@ -2419,7 +2419,8 @@ async function executeOwnedAndroidSession(
           ? databasePath
           : path.join(output, `${databasePath}${fileName.slice('RKStorage'.length)}`);
       await adb(
-        `${label}-${fileName.replace(/[^a-z0-9-]/gi, '-')}-capture`,
+        // Owned command labels must be lowercase ([a-z0-9-]).
+        `${label}-${fileName.replace(/[^a-z0-9-]/gi, '-').toLowerCase()}-capture`,
         sessionStoragePlan.databaseCaptureArgv(relativePath),
         undefined,
         artifactPath,

@@ -149,7 +149,7 @@ function targetFactory(): DetoxAndroidSessionStorageTarget {
             ? 'SecureStore.xml\n'
             : input.label.endsWith('-secure-capture')
               ? presentXml
-              : input.label.includes('-RKStorage-capture')
+              : input.label.includes('-rkstorage-capture')
                 ? 'database-bytes'
                 : '';
       await writeFile(input.stdoutPath, output, { flag: 'wx', mode: 0o600 });
@@ -196,15 +196,15 @@ async function produce() {
 void test('DXR-003 actual producer output satisfies cache and sibling storage consumers', async () => {
   const { artifactRoot, result } = await produce();
   try {
-    assert.equal(result.privateArtifacts.querySource.kind, 'query');
+    assert.equal(result.privateArtifacts.querySource!.kind, 'query');
     const projected = projectAndroidSessionCacheCheckpoint(result, 'afterLogin', 'coach-1');
     assert.equal(projected.status, 'session-present');
     const sibling = requireAndroidStorageReceiptSet(
       result.privateArtifacts,
       'DXR-003 actual producer receipt set',
     );
-    assert.equal(sibling.querySource.kind, 'query');
-    assert.equal(sibling.querySource.sha256, result.privateArtifacts.querySource.sha256);
+    assert.equal(sibling.querySource!.kind, 'query');
+    assert.equal(sibling.querySource!.sha256, result.privateArtifacts.querySource!.sha256);
   } finally {
     await rm(artifactRoot, { recursive: true, force: true });
   }

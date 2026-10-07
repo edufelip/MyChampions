@@ -23,6 +23,7 @@ import {
   requireAndroidSessionCheckpointSet,
   requireAndroidSessionTransportSlice,
   requireAndroidSessionDomainBinding,
+  requireAndroidStorageReceiptSet,
   requireAndroidCancelledConfirmationAbsent,
   requireAndroidRetainedNativeSessionIdentity,
   requireCoherentAndroidDatabaseListing,
@@ -996,7 +997,7 @@ void test('Android session domain binding preserves unrelated rows and owned SQL
   });
   assert.equal(result.status, 'verified');
   assert.match(result.trainingPlans.sha256, /^[a-f0-9]{64}$/);
-  assert.match(result.sql.before.database.sha256, /^[a-f0-9]{64}$/);
+  assert.match(result.sql.before.database!.sha256, /^[a-f0-9]{64}$/);
   const sidecarResult = requireAndroidSessionDomainBinding({
     before,
     after,
@@ -1258,5 +1259,77 @@ void test('capture exit blocks unknown session evidence while preserving other c
       sessionQualification: undefined,
     }),
     143,
+  );
+});
+
+void test('before-login storage accepts an absent database only with no database artifacts', () => {
+  const receipt = (name: string, kind: string) => ({
+    path: name,
+    kind,
+    sizeBytes: 12,
+    sha256: createHash('sha256').update(name).digest('hex'),
+    ownerUid: 501,
+    mode: 0o600,
+    verification: 'owned-stable-reader-v6',
+  });
+  const absent = {
+    database: null,
+    databaseSidecars: [],
+    query: null,
+    querySource: null,
+    secureStore: null,
+    databaseListing: receipt('auth-before-login-app-directory.stdout', 'listing'),
+    secureStoreListing: receipt('auth-before-login-secure-presence.stdout', 'listing'),
+  };
+  const accepted = requireAndroidStorageReceiptSet(absent, 'Before');
+  assert.equal(accepted.database, null);
+  assert.equal(accepted.query, null);
+  assert.equal(accepted.databaseListing.path, 'auth-before-login-app-directory.stdout');
+  for (const invalid of [
+    { ...absent, query: receipt('auth-before-login-async-storage-query.json', 'query') },
+    { ...absent, databaseSidecars: [receipt('auth-before-login-async-storage.db-wal', 'sidecar')] },
+    { ...absent, querySource: {} },
+    { ...absent, databaseListing: receipt('auth-before-login-other.stdout', 'listing') },
+  ])
+    assert.throws(() => requireAndroidStorageReceiptSet(invalid, 'Before'), /absent|bound|missing/);
+});
+
+void test('database coherence accepts a TRUNCATE journal only when measured empty', () => {
+  const names = ['RKStorage', 'RKStorage-journal', 'exoplayer_internal.db'];
+  assert.throws(() => requireCoherentAndroidDatabaseListing(names), /rollback journal/);
+  assert.deepEqual(
+    requireCoherentAndroidDatabaseListing(names, { rollbackJournalVerifiedEmpty: true })
+      .rollbackJournals,
+    [],
+  );
+  assert.throws(
+    () =>
+      requireCoherentAndroidDatabaseListing(['RKStorage', 'RKStorage-mj01'], {
+        rollbackJournalVerifiedEmpty: true,
+      }),
+    /rollback journal/,
+  );
+});
+
+void test('SecureStore parser treats an emptied self-closing map as no session entry', () => {
+  const observation = parseAndroidSessionStorageObservation({
+    database: 'present',
+    sqliteJson: '[]',
+    securePreferences: 'present',
+    secureStoreXml: "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map />\n",
+    sessionKeyHash: 'a'.repeat(64),
+  });
+  assert.equal(observation.status, 'session-absent');
+  assert.equal(observation.secureStore.sessionEntryPresent, false);
+  assert.throws(
+    () =>
+      parseAndroidSessionStorageObservation({
+        database: 'present',
+        sqliteJson: '[]',
+        securePreferences: 'present',
+        secureStoreXml: '<map',
+        sessionKeyHash: 'a'.repeat(64),
+      }),
+    /malformed/,
   );
 });

@@ -2963,9 +2963,13 @@ export async function runDetoxIntegratedSessionBaseline(
       '-C',
       options.build.detoxConfigPath,
       '-c',
-      options.configuration,
+      // An android.emulator profile discovers an AVD by name and can select an
+      // unrelated host emulator. Run Android through the attached profile bound
+      // to this run's owned serial (DETOX_ANDROID_DEVICE), with the APKs already
+      // installed by the owner, as the camera owner does.
+      options.platform === 'android' ? 'android.att.debug' : options.configuration,
       '--headless',
-      '--no-start',
+      ...(options.platform === 'android' ? ['--reuse'] : ['--no-start']),
       '--artifacts-location',
       path.join(artifact, 'detox-artifacts'),
       '--record-logs',
@@ -3477,11 +3481,51 @@ export async function runDetoxIntegratedSessionBaseline(
     acquisitionSequence.push('expo');
     reservationTransferred = true;
     runSignal?.throwIfAborted();
+    if (
+      options.platform === 'android' &&
+      (target as { androidSessionStorage?: unknown }).androidSessionStorage
+    ) {
+      // Each run starts Metro with an empty cache; build the Android bundle
+      // before Detox launches the app so the first launch cannot time out on
+      // compilation (same warm-up as the Android camera owner).
+      const warmUrl = new URL('/.expo/.virtual-metro-entry.bundle', expo.origin);
+      for (const [key, value] of Object.entries({
+        platform: 'android',
+        dev: 'true',
+        minify: 'false',
+        hot: 'false',
+        lazy: 'true',
+        'transform.engine': 'hermes',
+        'transform.routerRoot': 'app',
+      }))
+        warmUrl.searchParams.set(key, value);
+      const warmResponse = await fetch(warmUrl, {
+        signal: AbortSignal.any([
+          runSignal,
+          AbortSignal.timeout(
+            Math.max(
+              1_000,
+              Math.min(180_000, Math.floor(deadlineAtMonotonicMs - performance.now())),
+            ),
+          ),
+        ]),
+      });
+      if (!warmResponse.ok) throw new Error('Android Metro bundle warmup failed');
+      const warmBytes = Buffer.from(await warmResponse.arrayBuffer());
+      if (warmBytes.length === 0) throw new Error('Android Metro bundle warmup was empty');
+    }
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       ...parentEnv,
       DETOX_IOS_SIMULATOR_UDID: options.platform === 'ios' ? target.deviceId : undefined,
       DETOX_ANDROID_DEVICE: options.platform === 'android' ? target.deviceId : undefined,
+      ANDROID_ADB_SERVER_PORT:
+        options.platform === 'android'
+          ? String(
+              (target as { androidSessionStorage?: DetoxAndroidSessionStorageTarget })
+                .androidSessionStorage?.adbServerPort ?? '',
+            ) || undefined
+          : undefined,
       DETOX_METRO_PORT: String(options.build.metroPort),
       DETOX_BASELINE_ENTRY_PATH: runnerPaths.entryPath,
       DETOX_JEST_CONFIG: runnerPaths.jestConfigPath,
@@ -3619,6 +3663,12 @@ export async function runDetoxIntegratedSessionBaseline(
         });
         if (requestIdFence !== proxy!.requestIdFence)
           throw new Error('Cancel cache proof crossed a started-request fence');
+        // The child must not confirm sign-out until this cache proof is read.
+        await writeFile(
+          path.join(artifact, 'detox-session-step-cancel-checkpoint.ack.private.json'),
+          `${JSON.stringify({ stepId: 'cancel-checkpoint' })}\n`,
+          { flag: 'wx', mode: 0o600 },
+        );
       },
       onEvent: async (event) => {
         await target!.verify();
@@ -3641,6 +3691,14 @@ export async function runDetoxIntegratedSessionBaseline(
         if (event.stepId === 'NAT-session-restore') await captureCheckpoint('afterRestoration');
         if (event.stepId === 'NAT-session-signed-out-relaunch')
           await captureCheckpoint('afterSignedOutRelaunch');
+        // Android checkpoints force-stop the app to read stable storage. The
+        // child waits for this acknowledgement before its next app action.
+        if (/^NAT-session-[a-z-]+$/u.test(event.stepId))
+          await writeFile(
+            path.join(artifact, `detox-session-step-${event.stepId}.ack.private.json`),
+            `${JSON.stringify({ stepId: event.stepId, ordinal: event.ordinal })}\n`,
+            { flag: 'wx', mode: 0o600 },
+          );
       },
     });
     progressMonitor.start();
@@ -3653,7 +3711,11 @@ export async function runDetoxIntegratedSessionBaseline(
       label: 'detox-integrated-session',
       cwd: root,
       env,
-      deadlineMs,
+      // Step commands accept at most 600 s; never exceed the remaining run budget.
+      deadlineMs: Math.max(
+        100,
+        Math.min(600_000, deadlineMs, Math.floor(deadlineAtMonotonicMs - performance.now())),
+      ),
       phase: 'step',
       signal: runSignal,
     });

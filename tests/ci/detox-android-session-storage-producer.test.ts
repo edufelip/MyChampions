@@ -140,6 +140,7 @@ async function privateRoot() {
 
 function targetFactory(options?: {
   absent?: boolean;
+  noDatabases?: boolean;
   changedAfterListing?: boolean;
   failedCleanup?: boolean;
   missingOwnership?: boolean;
@@ -185,6 +186,10 @@ function targetFactory(options?: {
       let bytes = Buffer.from('');
       if (input.label.endsWith('-quiesce')) {
         bytes = Buffer.from('');
+      } else if (input.label.endsWith('-app-directory')) {
+        bytes = Buffer.from(
+          options?.noDatabases ? 'cache\nshared_prefs\n' : 'cache\ndatabases\nshared_prefs\n',
+        );
       } else if (input.label.endsWith('-async-directory')) {
         databaseListingReads += 1;
         bytes = Buffer.from(
@@ -197,7 +202,7 @@ function targetFactory(options?: {
         bytes = Buffer.from(
           options?.changedAfterListing ? 'RKStorage\nRKStorage-wal\n' : 'RKStorage\n',
         );
-      } else if (input.label.endsWith('-RKStorage-capture')) {
+      } else if (input.label.endsWith('-rkstorage-capture')) {
         bytes = Buffer.from('sqlite database bytes');
       } else if (input.label.endsWith('-secure-presence')) {
         bytes = Buffer.from(options?.absent ? 'unrelated.xml\n' : 'SecureStore.xml\n');
@@ -376,6 +381,27 @@ void test('records the explicit before-login adapter phase separately from the c
   try {
     assert.equal(calls[0]?.label, 'auth-before-login-quiesce');
     assert(calls.some((call) => call.label === 'auth-before-login-async-query'));
+  } finally {
+    await rm(artifactRoot, { recursive: true, force: true });
+  }
+});
+
+void test('records a fresh-install before-login checkpoint as an absent database', async () => {
+  const { calls, artifactRoot, result } = await run(
+    { absent: true, noDatabases: true },
+    'afterSignout',
+    undefined,
+    'before-login',
+  );
+  try {
+    assert(calls.some((call) => call.label === 'auth-before-login-app-directory'));
+    assert(!calls.some((call) => call.label === 'auth-before-login-async-directory'));
+    assert(!calls.some((call) => call.label === 'auth-before-login-async-query'));
+    assert.equal(result.status, 'session-absent');
+    assert.equal(result.asyncStorage.database, 'absent');
+    assert.equal(result.privateArtifacts.database, null);
+    assert.equal(result.privateArtifacts.query, null);
+    assert.match(result.privateArtifacts.databaseListing.path, /app-directory\.stdout$/);
   } finally {
     await rm(artifactRoot, { recursive: true, force: true });
   }

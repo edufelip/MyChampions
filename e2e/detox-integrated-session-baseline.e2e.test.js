@@ -30,6 +30,18 @@ async function openAccount() {
   await waitForId('settings.account.screen');
 }
 
+// On Android the first tap on a still-coasting ScrollView only stops the fling.
+// Tap, check the expected outcome, and tap once more if it did not happen.
+async function tapAfterScroll(id, outcome) {
+  await element(by.id(id)).tap();
+  try {
+    await outcome(2000);
+  } catch {
+    await element(by.id(id)).tap();
+    await outcome(10000);
+  }
+}
+
 async function scrollToSignOutConfirm() {
   await waitFor(element(by.id('settings.account.signOutConfirmCta')))
     .toBeVisible()
@@ -97,7 +109,14 @@ async function captureCancelEvidence() {
   };
 }
 
-async function writeProgress(completedSteps, events, launchCount, cancelCheckpoint = undefined) {
+// Once published, the cancel checkpoint is immutable and must stay in every
+// later progress write.
+async function writeProgress(
+  completedSteps,
+  events,
+  launchCount,
+  cancelCheckpoint = retainedCancelCheckpoint,
+) {
   await writePrivate('detox-session-progress.private.json', {
     schemaVersion: 2,
     kind: 'private-detox-session-progress',
@@ -121,6 +140,25 @@ async function recordStep(completedSteps, events, stepId, launchCount, details =
   completedSteps[stepId] = true;
   events.push(event);
   await writeProgress(Object.keys(completedSteps), events, launchCount);
+  await waitForStepAck(stepId);
+}
+
+// The parent may force-stop the app to read a storage checkpoint for this
+// step; do not touch the app again until it acknowledges the step.
+async function waitForStepAck(stepId) {
+  const file = path.join(artifactRoot, `detox-session-step-${stepId}.ack.private.json`);
+  const deadline = Date.now() + 180_000;
+  while (Date.now() < deadline) {
+    try {
+      const value = JSON.parse(await readFile(file, 'utf8'));
+      if (value?.stepId === stepId) return;
+      throw new Error(`Detox session step ${stepId} acknowledgement is invalid`);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+  throw new Error(`Detox session step ${stepId} acknowledgement timed out`);
 }
 
 async function writeSteps(steps, events, launchCount) {
@@ -163,12 +201,19 @@ describe('owned integrated session baseline', () => {
       .whileElement(by.id('settings.account.screen'))
       .scroll(260, 'down', 0.5, 0.5);
     await recordStep(steps, events, 'NAT-session-account', launchCount);
-    await element(by.id('settings.account.signOutCta')).tap();
+    await tapAfterScroll('settings.account.signOutCta', (timeout) =>
+      waitFor(element(by.id('settings.account.signOutConfirm')))
+        .toExist()
+        .withTimeout(timeout),
+    );
     await scrollToSignOutConfirm();
     await waitForId('settings.account.signOutConfirm');
-    await element(by.id('settings.account.signOutCancelCta')).tap();
+    await tapAfterScroll('settings.account.signOutCancelCta', (timeout) =>
+      waitFor(element(by.id('settings.account.signOutConfirm')))
+        .not.toBeVisible()
+        .withTimeout(timeout),
+    );
     await waitForId('settings.account.screen');
-    await expect(element(by.id('settings.account.signOutConfirm'))).not.toBeVisible();
     const cancelEvidence = await captureCancelEvidence();
     // Publish the cancellation boundary before confirmation. The parent reads the
     // actual native cache at this boundary and binds its UID hash to the restore.
@@ -177,11 +222,17 @@ describe('owned integrated session baseline', () => {
       cancelEvidence,
     };
     await writeProgress(Object.keys(steps), events, launchCount, retainedCancelCheckpoint);
+    await waitForStepAck('cancel-checkpoint');
 
-    await element(by.id('settings.account.signOutCta')).tap();
+    await tapAfterScroll('settings.account.signOutCta', (timeout) =>
+      waitFor(element(by.id('settings.account.signOutConfirm')))
+        .toExist()
+        .withTimeout(timeout),
+    );
     await scrollToSignOutConfirm();
-    await element(by.id('settings.account.signOutConfirmCta')).tap();
-    await waitForId('auth.signIn.title');
+    await tapAfterScroll('settings.account.signOutConfirmCta', (timeout) =>
+      waitForId('auth.signIn.title', timeout),
+    );
     await recordStep(steps, events, 'NAT-session-signout', launchCount, {
       confirmationAfterCancel: 'not-visible',
       cancelEvidence,

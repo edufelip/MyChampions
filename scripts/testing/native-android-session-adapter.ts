@@ -163,10 +163,11 @@ export type AndroidSessionStorageObservation = {
 export type AndroidSessionStorageCheckpoint = AndroidSessionStorageObservation & {
   coherence: AndroidDatabaseCoherence;
   privateArtifacts: {
-    database: AndroidStorageFileReceipt;
+    /** Null only when the before-login sandbox has no AsyncStorage database yet. */
+    database: AndroidStorageFileReceipt | null;
     databaseSidecars: AndroidStorageFileReceipt[];
-    query: AndroidStorageFileReceipt;
-    querySource: AndroidQuerySourceReceipt;
+    query: AndroidStorageFileReceipt | null;
+    querySource: AndroidQuerySourceReceipt | null;
     secureStore: AndroidStorageFileReceipt | null;
     databaseListing: AndroidStorageFileReceipt;
     secureStoreListing: AndroidStorageFileReceipt;
@@ -342,7 +343,11 @@ function parseSecureStoreXml(raw: string | null, preferences: 'present' | 'absen
     if (raw !== null) throw new Error('Android SecureStore XML exists without its file');
     return { sessionEntryPresent: false, keyFormat: 'none' as const };
   }
-  if (raw === null || !/^\s*(?:<\?xml[^>]*>\s*)?<map(?:\s[^>]*)?>[\s\S]*<\/map>\s*$/.test(raw))
+  // Android writes an emptied SharedPreferences file as a self-closing <map />.
+  if (
+    raw === null ||
+    !/^\s*(?:<\?xml[^>]*>\s*)?(?:<map(?:\s[^>]*)?>[\s\S]*<\/map>|<map\s*\/>)\s*$/.test(raw)
+  )
     throw new Error('Android SecureStore preferences XML is malformed');
   const openStrings = [...raw.matchAll(/<string\s+name="([^"]+)"[^>]*>/g)].map((match) => match[1]);
   const closeCount = (raw.match(/<\/string>/g) ?? []).length;
@@ -431,6 +436,14 @@ function rollbackJournal(name: string) {
 /** Require a coherent target database set; unrelated databases remain observable. */
 export function requireCoherentAndroidDatabaseListing(
   names: readonly string[],
+  options: {
+    /**
+     * Android SQLite's TRUNCATE/PERSIST journal modes keep RKStorage-journal
+     * after a commit (empty, or with a zeroed header). Only a caller that read
+     * it and found no hot-journal header may pass this.
+     */
+    rollbackJournalVerifiedEmpty?: boolean;
+  } = {},
 ): AndroidDatabaseCoherence {
   const set = new Set(names);
   const basePresent = set.has(DATABASE_BASE);
@@ -438,11 +451,20 @@ export function requireCoherentAndroidDatabaseListing(
     'RKStorage-wal' | 'RKStorage-shm'
   )[];
   const orphanSidecars = sidecars.length > 0 && !basePresent ? [...sidecars] : [];
-  const rollbackJournals = names.filter(rollbackJournal);
+  const rollbackJournals = names.filter(
+    (name) =>
+      rollbackJournal(name) &&
+      !(options.rollbackJournalVerifiedEmpty && name === 'RKStorage-journal'),
+  );
   if (orphanSidecars.length) throw new Error('Android AsyncStorage has orphan WAL/SHM sidecars');
   if (rollbackJournals.length) throw new Error('Android AsyncStorage has a rollback journal');
   if (!basePresent) throw new Error('Android AsyncStorage database is missing');
   return { basePresent, sidecars, orphanSidecars, rollbackJournals };
+}
+
+/** Coherence for a fresh install whose app sandbox has no databases/ yet. */
+export function requireAbsentAndroidDatabaseCoherence(): AndroidDatabaseCoherence {
+  return { basePresent: false, sidecars: [], orphanSidecars: [], rollbackJournals: [] };
 }
 
 export function requireSameAndroidDatabaseListing(
@@ -1268,10 +1290,10 @@ export type AndroidSessionDomainBinding = {
 };
 
 export type AndroidSessionStorageReceiptSet = {
-  database: AndroidStorageFileReceipt;
+  database: AndroidStorageFileReceipt | null;
   databaseSidecars: AndroidStorageFileReceipt[];
-  query: AndroidStorageFileReceipt;
-  querySource: AndroidQuerySourceReceipt;
+  query: AndroidStorageFileReceipt | null;
+  querySource: AndroidQuerySourceReceipt | null;
   secureStore: AndroidStorageFileReceipt | null;
   databaseListing: AndroidStorageFileReceipt;
   secureStoreListing: AndroidStorageFileReceipt;
@@ -1316,7 +1338,7 @@ export function requireAndroidStorageReceipt(
     (kindValue === 'query' && !/async-storage-query\.json$/.test(pathValue)) ||
     (kindValue === 'xml' && !/secure-store\.xml$/.test(pathValue)) ||
     (kindValue === 'listing' &&
-      !/(?:async-directory(?:-after)?|secure-presence)\.stdout$/.test(pathValue))
+      !/(?:async-directory(?:-after)?|app-directory|secure-presence)\.stdout$/.test(pathValue))
   )
     throw new Error(`${label} SQL file receipt is not bound to its checkpoint artifact`);
   return {
@@ -1337,6 +1359,37 @@ export function requireAndroidStorageReceiptSet(
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error(`${label} storage receipt set is missing`);
   const artifacts = value as Partial<AndroidSessionStorageReceiptSet>;
+  if (artifacts.database === null) {
+    // Fresh-install before-login state: no database, sidecars or query, but
+    // the owned app-directory listing that proved the absence is required.
+    if (
+      artifacts.query !== null ||
+      artifacts.querySource !== null ||
+      !Array.isArray(artifacts.databaseSidecars) ||
+      artifacts.databaseSidecars.length !== 0
+    )
+      throw new Error(`${label} absent database receipts are inconsistent`);
+    return {
+      database: null,
+      databaseSidecars: [],
+      query: null,
+      querySource: null,
+      secureStore:
+        artifacts.secureStore === null || artifacts.secureStore === undefined
+          ? null
+          : requireAndroidStorageReceipt(artifacts.secureStore, `${label} SecureStore`, ['xml']),
+      databaseListing: requireAndroidStorageReceipt(
+        artifacts.databaseListing,
+        `${label} app directory listing`,
+        ['listing'],
+      ),
+      secureStoreListing: requireAndroidStorageReceipt(
+        artifacts.secureStoreListing,
+        `${label} SecureStore listing`,
+        ['listing'],
+      ),
+    };
+  }
   const database = requireAndroidStorageReceipt(artifacts.database, `${label} database`, [
     'database',
   ]);

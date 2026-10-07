@@ -664,10 +664,14 @@ export function projectAndroidSessionCacheCheckpoint(
   if (observation.status === 'storage-inconsistent')
     throw new Error('Android session cache storage is inconsistent');
   const query = validated.privateArtifacts.query;
+  const database = validated.privateArtifacts.database;
+  // Session-cache checkpoints run after the app has launched; only the
+  // before-login storage checkpoint may observe an absent database.
+  if (!query || !database) throw new Error('Android session cache database is absent');
   const receipts = [
-    validated.privateArtifacts.database,
+    database,
     ...validated.privateArtifacts.databaseSidecars,
-    validated.privateArtifacts.query,
+    query,
     validated.privateArtifacts.databaseListing,
     validated.privateArtifacts.secureStoreListing,
     ...(validated.privateArtifacts.secureStore ? [validated.privateArtifacts.secureStore] : []),

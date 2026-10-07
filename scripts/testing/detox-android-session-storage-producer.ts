@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { lstat, readFile, realpath, rm } from 'node:fs/promises';
+import { lstat, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   androidSessionStorageLimits,
@@ -9,6 +9,7 @@ import {
   redactAndroidSqliteQuery,
   readOwnedAndroidStableFile,
   requireAndroidPersistedProfileIdentityHash,
+  requireAbsentAndroidDatabaseCoherence,
   requireCoherentAndroidDatabaseListing,
   requireSameAndroidDatabaseListing,
   writeOwnedAndroidPrivateFile,
@@ -131,10 +132,12 @@ export class AndroidSessionStorageQueryError extends Error {
   readonly queryCleanupFailure: unknown;
 
   constructor(queryFailure: unknown, queryCleanupFailure: unknown) {
+    const causeText = (value: unknown) =>
+      (value instanceof Error ? value.message : String(value)).slice(0, 300);
     super(
       queryFailure
-        ? 'Android session storage query failed; cleanup status retained'
-        : 'Android session storage query cleanup failed',
+        ? `Android session storage query failed; cleanup status retained (cause: ${causeText(queryFailure)})`
+        : `Android session storage query cleanup failed (cause: ${causeText(queryCleanupFailure)})`,
     );
     this.name = 'AndroidSessionStorageQueryError';
     this.queryFailure = queryFailure;
@@ -272,7 +275,15 @@ async function requireCommandReceipt(
             ...command,
           ])))
   )
-    throw new Error(`Android Detox storage command ${label} did not complete cleanly`);
+    throw new Error(
+      `Android Detox storage command ${label} did not complete cleanly (execution=${String(
+        execution.execution,
+      )}, cleanup=${String(execution.cleanup)}, exit=${String(execution.childExitCode)}, signal=${String(
+        execution.childSignal,
+      )}, census=${execution.censusFailure ? 'failed' : 'ok'}, output=${
+        execution.outputFailure ? JSON.stringify(execution.outputFailure).slice(0, 200) : 'ok'
+      })`,
+    );
   const expectedCommandHash = buildDetoxAndroidStorageCommandHash({
     command: execution.command,
     argv: execution.argv,
@@ -329,13 +340,27 @@ async function requireCommandReceipt(
     !Array.isArray(ownership.processes)
   )
     throw new Error(`Android Detox storage command ${label} ownership ledger is incomplete`);
-  const processRecord = ownership.processes.find(
-    (row) =>
-      row &&
-      typeof row === 'object' &&
-      (row as Record<string, unknown>).pid === execution.pid &&
-      (row as Record<string, unknown>).pgid === execution.pgid,
-  ) as Record<string, unknown> | undefined;
+  const matchesExecution = (row: unknown) =>
+    Boolean(row) &&
+    typeof row === 'object' &&
+    (row as Record<string, unknown>).pid === execution.pid &&
+    (row as Record<string, unknown>).pgid === execution.pgid;
+  // A short command can exit before the periodic census lists it; the
+  // ownership requery still records its start identity as "unavailable".
+  const requeried = Array.isArray(
+    (ownership as { commandCensusRequeries?: unknown }).commandCensusRequeries,
+  )
+    ? ((ownership as { commandCensusRequeries: unknown[] }).commandCensusRequeries.flatMap(
+        (entry) =>
+          entry &&
+          typeof entry === 'object' &&
+          Array.isArray((entry as { unavailable?: unknown }).unavailable)
+            ? (entry as { unavailable: unknown[] }).unavailable
+            : [],
+      ) as unknown[])
+    : [];
+  const processRecord = (ownership.processes.find(matchesExecution) ??
+    requeried.find(matchesExecution)) as Record<string, unknown> | undefined;
   if (
     !processRecord ||
     typeof processRecord.started !== 'string' ||
@@ -503,9 +528,17 @@ export async function readDetoxAndroidSessionStorageCheckpoint(
     return execution;
   };
 
-  // The proxy fence runs before every owned command. Force-stop then makes
-  // RKStorage and its WAL/SHM files stable; the Detox UI flow owns relaunches.
-  await runAdb({ label: `${label}-quiesce`, argv: ['shell', 'am', 'force-stop', plan.appId] });
+  // The proxy fence runs before every owned command. Mid-flow checkpoints must
+  // not kill the app the Detox flow is still driving: consistency comes from
+  // the rollback-journal check before and after the copy plus the unchanged
+  // directory listing. Only the before-login read (app not yet driven) stops it.
+  await runAdb({
+    label: `${label}-quiesce`,
+    argv:
+      input.phase === 'before-login'
+        ? ['shell', 'am', 'force-stop', plan.appId]
+        : ['shell', 'true'],
+  });
 
   const databasePath = path.join(artifactRoot, `${label}-async-storage.db`);
   const queryPath = path.join(artifactRoot, `${label}-async-storage-query.json`);
@@ -514,138 +547,244 @@ export async function readDetoxAndroidSessionStorageCheckpoint(
   const databaseListingPath = path.join(artifactRoot, `${label}-async-directory.stdout`);
   const databaseAfterListingPath = path.join(artifactRoot, `${label}-async-directory-after.stdout`);
   const secureStoreListingPath = path.join(artifactRoot, `${label}-secure-presence.stdout`);
-  const databaseDirectory = await runAdb({
-    label: `${label}-async-directory`,
-    argv: plan.databaseDirectoryArgv,
-    stdoutPath: databaseListingPath,
-  });
-  if (!databaseDirectory.stdoutPath) throw new Error('Android database listing stdout is missing');
-  const databaseListing = await readOwnedAndroidStableFile({
-    artifactRoot,
-    filePath: databaseDirectory.stdoutPath,
-    kind: 'listing',
-    maxBytes: androidSessionStorageLimits.listingBytes,
-    signal: input.signal,
-  });
-  const databaseNames = parseAndroidStorageListing(
-    databaseListing.bytes.toString('utf8'),
-    'Android AsyncStorage database',
-  );
-  const coherence = requireCoherentAndroidDatabaseListing(databaseNames);
-  const databaseSidecars: AndroidStorageFileReceipt[] = [];
-  let database: AndroidStorageFileReceipt | undefined;
-  for (const relativePath of plan.databaseRelativePaths) {
-    input.signal.throwIfAborted();
-    const fileName = path.basename(relativePath);
-    if (!databaseNames.includes(fileName)) continue;
-    const artifactPath =
-      fileName === 'RKStorage'
-        ? databasePath
-        : path.join(
-            artifactRoot,
-            `${path.basename(databasePath)}${fileName.slice('RKStorage'.length)}`,
-          );
-    const capture = await runAdb({
-      label: `${label}-${fileName.replace(/[^a-z0-9-]/gi, '-')}-capture`,
-      argv: plan.databaseCaptureArgv(relativePath),
-      stdoutPath: artifactPath,
+  // A fresh install has never run the app, so before login its sandbox may
+  // have no databases/ directory. That is a valid signed-out state; record it
+  // as database 'absent' from an owned app-directory listing instead of a capture.
+  const readPresentDatabase = async () => {
+    const databaseDirectory = await runAdb({
+      label: `${label}-async-directory`,
+      argv: plan.databaseDirectoryArgv,
+      stdoutPath: databaseListingPath,
     });
-    if (!capture.stdoutPath) throw new Error(`Android ${fileName} capture stdout is missing`);
-    const receipt = await readOwnedAndroidStableFile({
+    if (!databaseDirectory.stdoutPath)
+      throw new Error('Android database listing stdout is missing');
+    const databaseListing = await readOwnedAndroidStableFile({
       artifactRoot,
-      filePath: capture.stdoutPath,
-      kind: fileName === 'RKStorage' ? 'database' : 'sidecar',
-      maxBytes:
-        fileName === 'RKStorage'
-          ? androidSessionStorageLimits.databaseBytes
-          : androidSessionStorageLimits.sidecarBytes,
+      filePath: databaseDirectory.stdoutPath,
+      kind: 'listing',
+      maxBytes: androidSessionStorageLimits.listingBytes,
       signal: input.signal,
     });
-    if (fileName === 'RKStorage') database = receipt.receipt;
-    else databaseSidecars.push(receipt.receipt);
-  }
-  if (!database) throw new Error('Android AsyncStorage database capture is missing');
-  const databaseAfterDirectory = await runAdb({
-    label: `${label}-async-directory-after`,
-    argv: plan.databaseDirectoryArgv,
-    stdoutPath: databaseAfterListingPath,
-  });
-  if (!databaseAfterDirectory.stdoutPath)
-    throw new Error('Android post-capture database listing stdout is missing');
-  const databaseAfterListing = await readOwnedAndroidStableFile({
-    artifactRoot,
-    filePath: databaseAfterDirectory.stdoutPath,
-    kind: 'listing',
-    maxBytes: androidSessionStorageLimits.listingBytes,
-    signal: input.signal,
-  });
-  const databaseNamesAfter = parseAndroidStorageListing(
-    databaseAfterListing.bytes.toString('utf8'),
-    'Android AsyncStorage database after capture',
-  );
-  requireCoherentAndroidDatabaseListing(databaseNamesAfter);
-  requireSameAndroidDatabaseListing(databaseNames, databaseNamesAfter);
-
-  let queryCapture: AndroidStorageFileReceipt | undefined;
-  let querySourceReceipt:
-    AndroidSessionStorageCheckpoint['privateArtifacts']['querySource'] | undefined;
-  let rawQueryJson = '';
-  let queryProfileAuthUidHash: string | null = null;
-  let queryFailure: unknown = null;
-  let queryCleanupFailure: unknown = null;
-  try {
-    const queryExecution = await runHostSqlite({
-      label: `${label}-async-query`,
-      argv: ['-readonly', '-json', databasePath, plan.sqliteQuery],
-      stdoutPath: rawQueryPath,
-    });
-    if (!queryExecution.stdoutPath) throw new Error('Android sqlite query stdout is missing');
-    const rawQueryCapture = await readOwnedAndroidStableFile({
-      artifactRoot,
-      filePath: queryExecution.stdoutPath,
-      kind: 'frame',
-      maxBytes: androidSessionStorageLimits.queryBytes,
-      signal: input.signal,
-    });
-    rawQueryJson = rawQueryCapture.bytes.toString('utf8');
-    const redactedQuery = redactAndroidSqliteQuery(rawQueryJson);
-    queryProfileAuthUidHash = redactedQuery.profileAuthUidHash;
-    querySourceReceipt = {
-      path: rawQueryCapture.receipt.path,
-      kind: 'query',
-      sizeBytes: rawQueryCapture.receipt.sizeBytes,
-      sha256: rawQueryCapture.receipt.sha256,
-      ownerUid: rawQueryCapture.receipt.ownerUid,
-      mode: rawQueryCapture.receipt.mode,
-      retained: false,
-      databaseSha256: database.sha256,
-      databaseSidecarSha256: databaseSidecars.map((receipt) => receipt.sha256),
-      verification: 'owned-query-source-v6',
-    };
-    queryCapture = await writeOwnedAndroidPrivateFile({
-      artifactRoot,
-      relativePath: path.basename(queryPath),
-      bytes: redactedQuery.redactedJson,
-      kind: 'query',
-      signal: input.signal,
-    });
-  } catch (error) {
-    queryFailure = error;
-  } finally {
-    try {
-      await (input.removeRawQuery ?? (async (filePath: string) => rm(filePath, { force: true })))(
-        rawQueryPath,
-      );
-    } catch (error) {
-      queryCleanupFailure = error;
+    const databaseNames = parseAndroidStorageListing(
+      databaseListing.bytes.toString('utf8'),
+      'Android AsyncStorage database',
+    );
+    // A rollback journal is only an uncommitted ("hot") write when its header
+    // carries SQLite's journal magic. TRUNCATE leaves it empty and PERSIST
+    // zeroes the header on commit, so read the bytes before accepting it.
+    let rollbackJournalVerifiedEmpty = false;
+    if (databaseNames.includes('RKStorage-journal')) {
+      const journalCapture = await runAdb({
+        label: `${label}-journal-capture`,
+        argv: ['exec-out', 'run-as', plan.appId, 'cat', 'databases/RKStorage-journal'],
+      });
+      const journalBytes = journalCapture.stdoutPath
+        ? await readFile(journalCapture.stdoutPath)
+        : null;
+      rollbackJournalVerifiedEmpty =
+        journalBytes !== null &&
+        (journalBytes.length === 0 ||
+          (journalBytes.length >= 8 && journalBytes.subarray(0, 8).every((byte) => byte === 0)));
     }
+    const coherence = requireCoherentAndroidDatabaseListing(databaseNames, {
+      rollbackJournalVerifiedEmpty,
+    });
+    const databaseSidecars: AndroidStorageFileReceipt[] = [];
+    let database: AndroidStorageFileReceipt | undefined;
+    for (const relativePath of plan.databaseRelativePaths) {
+      input.signal.throwIfAborted();
+      const fileName = path.basename(relativePath);
+      if (!databaseNames.includes(fileName)) continue;
+      const artifactPath =
+        fileName === 'RKStorage'
+          ? databasePath
+          : path.join(
+              artifactRoot,
+              `${path.basename(databasePath)}${fileName.slice('RKStorage'.length)}`,
+            );
+      const capture = await runAdb({
+        // Owned command labels must be lowercase ([a-z0-9-]).
+        label: `${label}-${fileName.replace(/[^a-z0-9-]/gi, '-').toLowerCase()}-capture`,
+        argv: plan.databaseCaptureArgv(relativePath),
+        stdoutPath: artifactPath,
+      });
+      if (!capture.stdoutPath) throw new Error(`Android ${fileName} capture stdout is missing`);
+      const receipt = await readOwnedAndroidStableFile({
+        artifactRoot,
+        filePath: capture.stdoutPath,
+        kind: fileName === 'RKStorage' ? 'database' : 'sidecar',
+        maxBytes:
+          fileName === 'RKStorage'
+            ? androidSessionStorageLimits.databaseBytes
+            : androidSessionStorageLimits.sidecarBytes,
+        signal: input.signal,
+      });
+      if (fileName === 'RKStorage') database = receipt.receipt;
+      else databaseSidecars.push(receipt.receipt);
+    }
+    if (!database) throw new Error('Android AsyncStorage database capture is missing');
+    if (databaseNames.includes('RKStorage-journal')) {
+      // Re-read the journal after copying: a write that began mid-copy would
+      // leave a hot (magic-header) journal and makes this copy untrustworthy.
+      const recheck = await runAdb({
+        label: `${label}-journal-recheck`,
+        argv: ['exec-out', 'run-as', plan.appId, 'cat', 'databases/RKStorage-journal'],
+      });
+      const recheckBytes = recheck.stdoutPath ? await readFile(recheck.stdoutPath) : null;
+      if (
+        recheckBytes === null ||
+        !(
+          recheckBytes.length === 0 ||
+          (recheckBytes.length >= 8 && recheckBytes.subarray(0, 8).every((byte) => byte === 0))
+        )
+      )
+        throw new Error('Android AsyncStorage database changed during capture');
+    }
+    const databaseAfterDirectory = await runAdb({
+      label: `${label}-async-directory-after`,
+      argv: plan.databaseDirectoryArgv,
+      stdoutPath: databaseAfterListingPath,
+    });
+    if (!databaseAfterDirectory.stdoutPath)
+      throw new Error('Android post-capture database listing stdout is missing');
+    const databaseAfterListing = await readOwnedAndroidStableFile({
+      artifactRoot,
+      filePath: databaseAfterDirectory.stdoutPath,
+      kind: 'listing',
+      maxBytes: androidSessionStorageLimits.listingBytes,
+      signal: input.signal,
+    });
+    const databaseNamesAfter = parseAndroidStorageListing(
+      databaseAfterListing.bytes.toString('utf8'),
+      'Android AsyncStorage database after capture',
+    );
+    requireCoherentAndroidDatabaseListing(databaseNamesAfter, { rollbackJournalVerifiedEmpty });
+    requireSameAndroidDatabaseListing(databaseNames, databaseNamesAfter);
+
+    let queryCapture: AndroidStorageFileReceipt | undefined;
+    let querySourceReceipt:
+      AndroidSessionStorageCheckpoint['privateArtifacts']['querySource'] | undefined;
+    let rawQueryJson = '';
+    let queryProfileAuthUidHash: string | null = null;
+    let queryFailure: unknown = null;
+    let queryCleanupFailure: unknown = null;
+    try {
+      const queryExecution = await runHostSqlite({
+        label: `${label}-async-query`,
+        argv: ['-readonly', '-json', databasePath, plan.sqliteQuery],
+        stdoutPath: rawQueryPath,
+      });
+      if (!queryExecution.stdoutPath) throw new Error('Android sqlite query stdout is missing');
+      // sqlite3 -json prints nothing for zero rows (the signed-out state); the
+      // projection parser's canonical empty result is "[]".
+      if ((await stat(queryExecution.stdoutPath)).size === 0)
+        await writeFile(queryExecution.stdoutPath, '[]\n', { flag: 'w' });
+      const rawQueryCapture = await readOwnedAndroidStableFile({
+        artifactRoot,
+        filePath: queryExecution.stdoutPath,
+        kind: 'frame',
+        maxBytes: androidSessionStorageLimits.queryBytes,
+        signal: input.signal,
+      });
+      rawQueryJson = rawQueryCapture.bytes.toString('utf8');
+      const redactedQuery = redactAndroidSqliteQuery(rawQueryJson);
+      queryProfileAuthUidHash = redactedQuery.profileAuthUidHash;
+      querySourceReceipt = {
+        path: rawQueryCapture.receipt.path,
+        kind: 'query',
+        sizeBytes: rawQueryCapture.receipt.sizeBytes,
+        sha256: rawQueryCapture.receipt.sha256,
+        ownerUid: rawQueryCapture.receipt.ownerUid,
+        mode: rawQueryCapture.receipt.mode,
+        retained: false,
+        databaseSha256: database.sha256,
+        databaseSidecarSha256: databaseSidecars.map((receipt) => receipt.sha256),
+        verification: 'owned-query-source-v6',
+      };
+      queryCapture = await writeOwnedAndroidPrivateFile({
+        artifactRoot,
+        relativePath: path.basename(queryPath),
+        bytes: redactedQuery.redactedJson,
+        kind: 'query',
+        signal: input.signal,
+      });
+    } catch (error) {
+      queryFailure = error;
+    } finally {
+      try {
+        await (input.removeRawQuery ?? (async (filePath: string) => rm(filePath, { force: true })))(
+          rawQueryPath,
+        );
+      } catch (error) {
+        queryCleanupFailure = error;
+      }
+    }
+    if (queryFailure || queryCleanupFailure)
+      throw new AndroidSessionStorageQueryError(queryFailure, queryCleanupFailure);
+    if (!queryCapture || !querySourceReceipt)
+      throw new Error('Android query redaction receipts are incomplete');
+    const verifiedQueryCapture = queryCapture;
+    const verifiedQuerySourceReceipt = querySourceReceipt;
+    return {
+      database: database as AndroidStorageFileReceipt,
+      databaseSidecars,
+      coherence,
+      databaseListingReceipt: databaseListing.receipt,
+      databaseAfterListingReceipt: databaseAfterListing.receipt as AndroidStorageFileReceipt | null,
+      rawQueryJson: rawQueryJson as string | null,
+      queryProfileAuthUidHash,
+      verifiedQueryCapture: verifiedQueryCapture as AndroidStorageFileReceipt | null,
+      verifiedQuerySourceReceipt: verifiedQuerySourceReceipt as
+        AndroidSessionStorageCheckpoint['privateArtifacts']['querySource'] | null,
+    };
+  };
+  // Only the before-login checkpoint can precede the app's first launch.
+  let appListingReceipt: AndroidStorageFileReceipt | null = null;
+  let databasesPresent = true;
+  if (input.phase === 'before-login') {
+    const appDirectory = await runAdb({
+      label: `${label}-app-directory`,
+      argv: ['shell', 'run-as', plan.appId, 'ls', '-1'],
+      stdoutPath: path.join(artifactRoot, `${label}-app-directory.stdout`),
+    });
+    if (!appDirectory.stdoutPath)
+      throw new Error('Android app directory listing stdout is missing');
+    const appListing = await readOwnedAndroidStableFile({
+      artifactRoot,
+      filePath: appDirectory.stdoutPath,
+      kind: 'listing',
+      maxBytes: androidSessionStorageLimits.listingBytes,
+      signal: input.signal,
+    });
+    appListingReceipt = appListing.receipt;
+    databasesPresent = parseAndroidStorageListing(
+      appListing.bytes.toString('utf8'),
+      'Android app data directory',
+    ).includes('databases');
   }
-  if (queryFailure || queryCleanupFailure)
-    throw new AndroidSessionStorageQueryError(queryFailure, queryCleanupFailure);
-  if (!queryCapture || !querySourceReceipt)
-    throw new Error('Android query redaction receipts are incomplete');
-  const verifiedQueryCapture = queryCapture;
-  const verifiedQuerySourceReceipt = querySourceReceipt;
+  const {
+    database,
+    databaseSidecars,
+    coherence,
+    databaseListingReceipt,
+    databaseAfterListingReceipt,
+    rawQueryJson,
+    queryProfileAuthUidHash,
+    verifiedQueryCapture,
+    verifiedQuerySourceReceipt,
+  } = databasesPresent
+    ? await readPresentDatabase()
+    : {
+        database: null,
+        databaseSidecars: [] as AndroidStorageFileReceipt[],
+        coherence: requireAbsentAndroidDatabaseCoherence(),
+        databaseListingReceipt: appListingReceipt as AndroidStorageFileReceipt,
+        databaseAfterListingReceipt: null,
+        rawQueryJson: null,
+        queryProfileAuthUidHash: null,
+        verifiedQueryCapture: null,
+        verifiedQuerySourceReceipt: null,
+      };
   const secureStoreDirectory = await runAdb({
     label: `${label}-secure-presence`,
     argv: plan.secureStorePresenceArgv,
@@ -683,7 +822,7 @@ export async function readDetoxAndroidSessionStorageCheckpoint(
   }
   input.signal.throwIfAborted();
   const observation = parseAndroidSessionStorageObservation({
-    database: 'present',
+    database: database ? 'present' : 'absent',
     sqliteJson: rawQueryJson,
     securePreferences,
     secureStoreXml: secureStore?.bytes.toString('utf8') ?? null,
@@ -715,7 +854,7 @@ export async function readDetoxAndroidSessionStorageCheckpoint(
       query: verifiedQueryCapture,
       querySource: verifiedQuerySourceReceipt,
       secureStore: secureStore?.receipt ?? null,
-      databaseListing: databaseListing.receipt,
+      databaseListing: databaseListingReceipt,
       secureStoreListing: secureStoreListing.receipt,
     },
   };
@@ -748,11 +887,11 @@ export async function readDetoxAndroidSessionStorageCheckpoint(
         target: { serial: input.target.serial, adbServerPort: input.target.adbServerPort },
         commands: commandReceipts,
         sourceReceipts: [
-          receiptSummary(databaseListing.receipt),
-          receiptSummary(database),
+          receiptSummary(databaseListingReceipt),
+          ...(database ? [receiptSummary(database)] : []),
           ...databaseSidecars.map(receiptSummary),
-          receiptSummary(databaseAfterListing.receipt),
-          receiptSummary(verifiedQueryCapture),
+          ...(databaseAfterListingReceipt ? [receiptSummary(databaseAfterListingReceipt)] : []),
+          ...(verifiedQueryCapture ? [receiptSummary(verifiedQueryCapture)] : []),
           ...(secureStore ? [receiptSummary(secureStore.receipt)] : []),
           receiptSummary(secureStoreListing.receipt),
         ],

@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "2b0e6ab083551487ba8a6dc357fbb0e82daee545",
+    "commit": "2c99c1bc66b81ad9310bf792c0d6d66d8d6e4d5b",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -1326,7 +1326,7 @@
       "paths": [
         "scripts/testing/capture-android-testability.ts"
       ],
-      "revision": "7f44395c259cd286895052d4b325a43e0f1e671a6106960128ce92ab786fe6c2"
+      "revision": "eb8a89ffcbdf6213a12804ed3b4e3a77a6acf985527db5105973a3babd390998"
     },
     {
       "id": "SRC-android-session-checkpoint-copy-source",
@@ -2001,7 +2001,7 @@
       "paths": [
         "scripts/testing/detox-android-session-storage-producer.ts"
       ],
-      "revision": "c26b11c370b1897bbe8966ec969e489e60671d8d4d674a5c669c227853345c90"
+      "revision": "3b68e104206893b72a284615eed5c768a10412cf84b5b0ce6243a1585d4a86bf"
     },
     {
       "id": "SRC-detox-dispatch-connection-actionability-source",
@@ -2064,7 +2064,7 @@
       "paths": [
         "scripts/testing/detox-integrated-session-baseline.ts"
       ],
-      "revision": "cef6fd891413ba7e0455eb485e3eb7a521b1e319f2be47599dd7a2e73751a6c7"
+      "revision": "4f0adb34f40af46c3b12649ae2252a72d582ee18d3b200de7eb280842040b93c"
     },
     {
       "id": "SRC-detox-dispatch-android-qualified-build-source",
@@ -2091,7 +2091,7 @@
       "paths": [
         "scripts/testing/detox-session-cache-observation.ts"
       ],
-      "revision": "476f994359939ccb7aca9827586b68526f7c1e78b3d73237320c0540093ab6be"
+      "revision": "0bd2592f64e69054400442641370481995b3443c2d9d5b9beb858be33b8b80ea"
     },
     {
       "id": "SRC-detox-dispatch-session-cancel-evidence-source",
@@ -2154,7 +2154,7 @@
       "paths": [
         "scripts/testing/native-android-session-adapter.ts"
       ],
-      "revision": "abf11500917bb30ea8dd5a32b6a3075b897a6d51e53bc74feddf7d45e93bd4e5"
+      "revision": "6f8663f8b070b154178dc910d74acc79ba6230699b49341b737f44fb2c9277e1"
     },
     {
       "id": "SRC-detox-dispatch-android-session-producer-source",
