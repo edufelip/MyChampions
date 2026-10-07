@@ -62,7 +62,8 @@ function successfulCommand() {
 function successfulCleanup() {
   return {
     result: 'passed',
-    runId: id('b'),
+    // Independent cleanup is keyed by the capture run (artifact root id('a')).
+    runId: id('a'),
     censusStatus: 'available',
     captureResult: 'observed',
     captureCleanupClean: true,

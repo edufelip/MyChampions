@@ -1562,7 +1562,19 @@ async function executeOwnedAndroidSession(
   await inspectPrivateAndroidDirectory(hostRoot);
   const sdkRoot = '/Users/eduwaldo/Library/Android/sdk';
   const maestro = '/Users/eduwaldo/.maestro/bin/maestro';
-  if ((await execute(maestro, ['--version'], { timeout: 30000 })).stdout.trim() !== '2.6.1')
+  if (
+    (
+      await execute(maestro, ['--version'], {
+        timeout: 30000,
+        // Without the analytics opt-out the CLI can block ~55 s on a network call.
+        env: {
+          ...process.env,
+          MAESTRO_CLI_NO_ANALYTICS: 'true',
+          MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true',
+        },
+      })
+    ).stdout.trim() !== '2.6.1'
+  )
     throw new Error('Android pilot requires Maestro 2.6.1');
   const output = path.join(root, '.qa/artifacts/native-pilot', randomBytes(12).toString('hex'));
   await mkdir(output, { recursive: true, mode: 0o700 });
@@ -2407,7 +2419,26 @@ async function executeOwnedAndroidSession(
       databaseListing.bytes.toString('utf8'),
       'Android AsyncStorage database',
     );
-    const coherence = requireCoherentAndroidDatabaseListing(databaseNames);
+    // TRUNCATE/PERSIST journal modes keep RKStorage-journal after commit; it
+    // is only an uncommitted write when its header carries the journal magic.
+    const journalCommitted = async (suffix: string) => {
+      const journalPath = await adb(
+        `${label}-journal-${suffix}`,
+        ['exec-out', 'run-as', verified.appId, 'cat', 'databases/RKStorage-journal'],
+        undefined,
+        path.join(output, `${label}-journal-${suffix}.stdout`),
+      );
+      const bytes = await readFile(journalPath);
+      return (
+        bytes.length === 0 || (bytes.length >= 8 && bytes.subarray(0, 8).every((b) => b === 0))
+      );
+    };
+    const rollbackJournalVerifiedEmpty = databaseNames.includes('RKStorage-journal')
+      ? await journalCommitted('capture')
+      : false;
+    const coherence = requireCoherentAndroidDatabaseListing(databaseNames, {
+      rollbackJournalVerifiedEmpty,
+    });
     const databaseSidecars: AndroidStorageFileReceipt[] = [];
     let databaseReceipt: AndroidStorageFileReceipt | undefined;
     for (const relativePath of sessionStoragePlan.databaseRelativePaths) {
@@ -2439,6 +2470,8 @@ async function executeOwnedAndroidSession(
       else databaseSidecars.push(captured.receipt);
     }
     if (!databaseReceipt) throw new Error('Android AsyncStorage database capture is missing');
+    if (rollbackJournalVerifiedEmpty && !(await journalCommitted('recheck')))
+      throw new Error('Android AsyncStorage database changed during capture');
     const databaseAfterDirectoryLog = await adb(
       `${label}-async-directory-after`,
       sessionStoragePlan.databaseDirectoryArgv,
@@ -2456,7 +2489,7 @@ async function executeOwnedAndroidSession(
       databaseAfterListing.bytes.toString('utf8'),
       'Android AsyncStorage database after capture',
     );
-    requireCoherentAndroidDatabaseListing(databaseNamesAfter);
+    requireCoherentAndroidDatabaseListing(databaseNamesAfter, { rollbackJournalVerifiedEmpty });
     requireSameAndroidDatabaseListing(databaseNames, databaseNamesAfter);
     let queryCapture: AndroidStorageFileReceipt | undefined;
     let querySourceReceipt:
@@ -2487,6 +2520,10 @@ async function executeOwnedAndroidSession(
         undefined,
         rawQueryPath,
       );
+      // sqlite3 -json prints nothing for zero rows (the signed-out state); the
+      // projection parser's canonical empty result is "[]".
+      if ((await lstat(queryExecution)).size === 0)
+        await writeFile(queryExecution, '[]\n', { flag: 'w' });
       const rawQueryCapture = await readOwnedAndroidStableFile({
         artifactRoot: output,
         filePath: queryExecution,
@@ -3910,6 +3947,9 @@ async function executeOwnedAndroidSession(
         afterRestorationAuthUidHash: afterRestorationProfileAuthUidHash,
       };
       const sessionActions = buildAndroidSessionActionPlans();
+      // The after-restore storage snapshot force-stopped the app; relaunch it
+      // (state preserved) before the next UI action, per the snapshot contract.
+      await relaunchAndroidApp('auth-account-relaunch');
       await observe('auth-account', sessionActions.account, 'SCR-account', [
         'settings.account.screen',
       ]);
@@ -3976,9 +4016,15 @@ async function executeOwnedAndroidSession(
       });
       report.androidSessionCancelStorage = afterCancel;
       report.androidSessionCancelIdentity = androidSessionAfterCancel;
-      await observe('auth-signout-reopen', sessionActions.reopenConfirm, 'STATE-signout-confirm', [
-        'settings.account.signOutConfirm',
-      ]);
+      // The after-cancel snapshot force-stopped the app: relaunch and return to
+      // Account before reopening the sign-out confirmation.
+      await relaunchAndroidApp('auth-signout-reopen-relaunch');
+      await observe(
+        'auth-signout-reopen',
+        `${sessionActions.account}${sessionActions.reopenConfirm}`,
+        'STATE-signout-confirm',
+        ['settings.account.signOutConfirm'],
+      );
       await observe('auth-signed-out', sessionActions.confirm, 'SCR-sign-in', [
         'auth.signIn.emailInput',
         'auth.signIn.passwordInput',

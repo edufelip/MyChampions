@@ -421,8 +421,13 @@ export async function runAndroidSessionAttempt(
           typeof cleanup.censusStatus === 'string' ? cleanup.censusStatus : undefined,
       };
     } else {
-      const cleanupBackend = isRecord(report.backend) ? report.backend : {};
-      assert.equal(cleanup.runId, cleanupBackend.runId, 'Android cleanup run is not capture-bound');
+      // Independent cleanup is keyed by the capture run (its artifact root),
+      // not by the owned backend session run.
+      assert.equal(
+        cleanup.runId,
+        path.basename(capture.artifactRoot),
+        'Android cleanup run is not capture-bound',
+      );
       assert.equal(cleanup.censusStatus, 'available', 'Android cleanup census is unavailable');
       assert.equal(cleanup.captureResult, 'observed', 'Android cleanup capture is not observed');
       assert.equal(cleanup.captureCleanupClean, true, 'Android cleanup capture is not clean');

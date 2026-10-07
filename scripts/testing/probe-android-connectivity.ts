@@ -29,7 +29,17 @@ async function main() {
   await inspectPrivateAndroidDirectory(hostRoot);
   const sdkRoot = process.env.ANDROID_SDK_ROOT ?? '/Users/eduwaldo/Library/Android/sdk';
   const maestro = '/Users/eduwaldo/.maestro/bin/maestro';
-  const version = (await execute(maestro, ['--version'], { timeout: 30_000 })).stdout.trim();
+  const version = (
+    await execute(maestro, ['--version'], {
+      timeout: 30_000,
+      // Without the analytics opt-out the CLI can block ~55 s on a network call.
+      env: {
+        ...process.env,
+        MAESTRO_CLI_NO_ANALYTICS: 'true',
+        MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true',
+      },
+    })
+  ).stdout.trim();
   if (version !== '2.6.1') throw new Error('Android pilot requires pinned Maestro 2.6.1');
   const runId = randomBytes(12).toString('hex');
   const output = path.join(clientRoot, '.qa/artifacts/native-pilot', runId);
