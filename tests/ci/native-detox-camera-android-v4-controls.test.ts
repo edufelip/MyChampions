@@ -45,7 +45,7 @@ void test('Android camera capture and protected writer inputs are current-Q guar
   assert.equal(captureStat.mode & 0o777, 0o600);
   assert.equal(
     await sha256(capture),
-    '0d4a57cee23341693fc13e99dccdfc24fd99c97958de228a86593a2d0c11b844',
+    '9738f6c4af72fe2aa128dcc1d440ff0ef221b17e9103d6a9721e8ceb925c9b53',
   );
   assert.equal(writerStat.isFile(), true);
   assert.equal(writerStat.mode & 0o777, 0o644);

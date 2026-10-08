@@ -311,7 +311,42 @@ const cases: [string, (value: NativeSessionProfileCheckpointInput) => void][] = 
       v.observations = [...v.observations, { ...v.observations[1], requestId: 3 }];
     },
   ],
+  [
+    'declared relaunch without its hydrate',
+    (v) => {
+      v.observations = [
+        ...v.observations,
+        { ...v.observations[0], requestId: 3, pathHash: hash('/me') },
+      ];
+      v.relaunchWindows = [{ afterRequestId: 2, throughRequestId: 3 }];
+    },
+  ],
+  [
+    'declared relaunch overlapping restoration',
+    (v) => {
+      v.observations = [...v.observations, { ...v.observations[1], requestId: 3 }];
+      v.relaunchWindows = [{ afterRequestId: 1, throughRequestId: 3 }];
+    },
+  ],
+  [
+    'declared relaunch with two hydrates',
+    (v) => {
+      v.observations = [
+        ...v.observations,
+        { ...v.observations[1], requestId: 3 },
+        { ...v.observations[1], requestId: 4 },
+      ];
+      v.relaunchWindows = [{ afterRequestId: 2, throughRequestId: 4 }];
+    },
+  ],
 ];
+
+void test('a hydrate inside a declared signed-in relaunch window is permitted', () => {
+  const value = input('android');
+  value.observations = [...value.observations, { ...value.observations[1], requestId: 3 }];
+  value.relaunchWindows = [{ afterRequestId: 2, throughRequestId: 3 }];
+  assert.equal(verifyNativeSessionProfileCheckpoints(value).status, 'verified');
+});
 for (const [name, mutate] of cases) {
   void test(`session rejects ${name}`, () => {
     const value = input();

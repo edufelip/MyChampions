@@ -3949,12 +3949,20 @@ async function executeOwnedAndroidSession(
         afterRestorationAuthUidHash: afterRestorationProfileAuthUidHash,
       };
       const sessionActions = buildAndroidSessionActionPlans();
+      const sessionRelaunchWindows: { afterRequestId: number; throughRequestId: number }[] = [];
       // The after-restore storage snapshot force-stopped the app; relaunch it
       // (state preserved) before the next UI action, per the snapshot contract.
+      // A signed-in relaunch hydrates once, so its request span is declared.
+      const beforeAccountRelaunchRequestId = authenticatedProxy.requestIdFence;
       await relaunchAndroidApp('auth-account-relaunch');
       await observe('auth-account', sessionActions.account, 'SCR-account', [
         'settings.account.screen',
       ]);
+      await authenticatedProxy.waitForQuiescence();
+      sessionRelaunchWindows.push({
+        afterRequestId: beforeAccountRelaunchRequestId,
+        throughRequestId: authenticatedProxy.requestIdFence,
+      });
       await observe(
         'auth-account-identity',
         '',
@@ -4020,6 +4028,7 @@ async function executeOwnedAndroidSession(
       report.androidSessionCancelIdentity = androidSessionAfterCancel;
       // The after-cancel snapshot force-stopped the app: relaunch and return to
       // Account before reopening the sign-out confirmation.
+      const beforeReopenRelaunchRequestId = authenticatedProxy.requestIdFence;
       await relaunchAndroidApp('auth-signout-reopen-relaunch');
       await observe(
         'auth-signout-reopen',
@@ -4027,6 +4036,11 @@ async function executeOwnedAndroidSession(
         'STATE-signout-confirm',
         ['settings.account.signOutConfirm'],
       );
+      await authenticatedProxy.waitForQuiescence();
+      sessionRelaunchWindows.push({
+        afterRequestId: beforeReopenRelaunchRequestId,
+        throughRequestId: authenticatedProxy.requestIdFence,
+      });
       await observe('auth-signed-out', sessionActions.confirm, 'SCR-sign-in', [
         'auth.signIn.emailInput',
         'auth.signIn.passwordInput',
@@ -4342,6 +4356,7 @@ async function executeOwnedAndroidSession(
             afterRequestId: beforeRestoreRequestId,
             throughRequestId: afterRestoreRequestId,
           },
+          relaunchWindows: sessionRelaunchWindows,
           persistedCoachIdentity: {
             afterLoginAuthUidHash: afterLoginProfileAuthUidHash,
             afterRestorationAuthUidHash: afterRestorationProfileAuthUidHash,

@@ -29,6 +29,11 @@ export type NativeSessionProfileCheckpointInput = {
   authIdentities: readonly NativeAuthIdentityObservation[];
   loginWindow: Window;
   restorationWindow: Window;
+  /**
+   * Signed-in relaunches after restoration (Android storage snapshots
+   * force-stop the app). Each must hydrate exactly once.
+   */
+  relaunchWindows?: readonly Window[];
   /** Hashes read from the actual persisted native session profile, never SQL-derived. */
   persistedCoachIdentity: { afterLoginAuthUidHash: string; afterRestorationAuthUidHash: string };
 };
@@ -166,9 +171,26 @@ export function verifyNativeSessionProfileCheckpoints(input: NativeSessionProfil
   assert.equal(hydrates.length, 1, 'Session restoration requires exactly one hydrate');
   assert.equal(hydrates[0].method, 'POST');
   assert.equal(hydrates[0].status, 200);
+  let previousThrough = input.restorationWindow.throughRequestId;
+  const relaunchRows = (input.relaunchWindows ?? []).map((window) => {
+    assert.ok(
+      window.afterRequestId >= previousThrough,
+      'Session relaunch windows overlap or are reversed',
+    );
+    previousThrough = window.throughRequestId;
+    const rows = windowRows(input.observations, window);
+    assert.equal(
+      rows.filter((row) => row.pathHash === hydratePath).length,
+      1,
+      'Session relaunch requires exactly one hydrate',
+    );
+    return rows;
+  });
   for (const row of input.observations.filter((row) => row.pathHash === hydratePath)) {
     assert.ok(
-      loginRows.includes(row) || restoreRows.includes(row),
+      loginRows.includes(row) ||
+        restoreRows.includes(row) ||
+        relaunchRows.some((rows) => rows.includes(row)),
       'Hydrate is outside declared auth spans',
     );
     assert.equal(row.method, 'POST');
