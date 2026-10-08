@@ -118,6 +118,7 @@ import {
 } from './run-android-camera-public-attempt';
 import { runAndroidConnectionAttempt } from './run-android-connection-attempt';
 import { runAndroidSaveRetryAttempt } from './run-android-save-retry-attempt';
+import { androidSessionPublicAssertions } from './native-android-session-public-receipt';
 import { runAndroidSessionAttempt } from './run-android-session-attempt';
 import { runAndroidTrainingAttempt } from './run-android-training-attempt';
 import { requireIosCameraAttemptLifecycle, runIosCameraAttempt } from './run-ios-camera-attempt';
@@ -2250,9 +2251,14 @@ async function main() {
                                 executionAdapter === 'android-detox-session' ||
                                 executionAdapter === 'camera') &&
                               runtime.verificationResult === 'source-only'
-                            ? executionAdapter === 'ios-session' &&
-                              'publicFinalization' in runtime &&
-                              runtime.publicFinalization !== null
+                            ? (executionAdapter === 'ios-session' &&
+                                'publicFinalization' in runtime &&
+                                runtime.publicFinalization !== null) ||
+                              // The Android Maestro session adapter staged and
+                              // verified its evidence copy; finalize from it.
+                              (executionAdapter === 'android-session' &&
+                                'staged' in runtime &&
+                                runtime.staged !== null)
                               ? 'runtime-finalization-pending'
                               : 'runtime-source-only'
                             : 'runtime-verification-failed'
@@ -2965,6 +2971,16 @@ async function main() {
         stagedAssertions = [...stagedSession.assertions];
         stagedArtifacts = [...stagedSession.artifacts];
         stagedCopyManifest = stagedSession.copyManifest;
+      } else if (executionAdapter === 'android-session') {
+        assert('staged' in runtime && runtime.staged, 'Android session staged copy is unavailable');
+        stagedAssertions = await androidSessionPublicAssertions({
+          outputRoot: output,
+          captureRunId: finalizationCaptureRunId,
+          selection: selected,
+        });
+        // Staged artifacts were already attached when the receipt was built.
+        stagedArtifacts = [];
+        stagedCopyManifest = runtime.staged.copyManifest;
       } else if (executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH) {
         const cameraRuntime = runtime as Awaited<
           ReturnType<typeof IosDetoxCameraPublicDispatch.runIosDetoxCameraAttemptForPublicDispatch>
@@ -3267,7 +3283,9 @@ async function main() {
         );
       } else if (
         executionAdapter !== 'camera' &&
-        executionAdapter !== IOS_DETOX_CAMERA_PUBLIC_DISPATCH
+        executionAdapter !== IOS_DETOX_CAMERA_PUBLIC_DISPATCH &&
+        // The adapter verified its staged copy before returning (verifyStage).
+        executionAdapter !== 'android-session'
       ) {
         assert(assertionBindings, 'Native runtime assertion bindings are unavailable');
         const verifyOptions = {

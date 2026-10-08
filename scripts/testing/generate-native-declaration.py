@@ -228,6 +228,7 @@ SOURCE_PATHS = {
     "android-save-retry-public-evidence-source": "scripts/testing/native-android-save-retry-public-evidence.ts",
     "android-session-public-contract-source": "scripts/testing/native-android-session-public-contract.ts",
     "android-session-public-dependency-source": "scripts/testing/native-android-session-public-dependency.ts",
+    "android-session-public-receipt-source": "scripts/testing/native-android-session-public-receipt.ts",
     "android-session-public-dispatch-source": "scripts/testing/native-android-session-public-dispatch.ts",
     "android-session-public-staging-source": "scripts/testing/native-android-session-public-staging.ts",
     "android-session-public-adapter-source": "scripts/testing/run-android-session-attempt.ts",

@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "78e35793249341b216a3dd6417a7d696c3023f8c",
+    "commit": "3c0e608a71e1c46f695f74920e61e4036e0d800a",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -966,7 +966,7 @@
       "paths": [
         "scripts/testing/run-native-pilot.ts"
       ],
-      "revision": "822e6c43c4fb5f4bc7b5c3c0c2ec536994767a146439634a2d3c01e6ccfac86a"
+      "revision": "7c41b57cd59265d7e5b4934b383f56c0542bab3e888e0334145cbaf273b5e7bb"
     },
     {
       "id": "SRC-runner-wrapper-source",
@@ -1173,7 +1173,7 @@
       "paths": [
         "scripts/testing/generate-native-declaration.py"
       ],
-      "revision": "bfe981acd0c4829448a14395f58076525166cdd935827ef76b088a442a63517d"
+      "revision": "a6ef71b9d5efb47c5b8195170ee8e0e2e556275be824fd6523904c42b404f7d7"
     },
     {
       "id": "SRC-maestro-training-driver",
@@ -1731,7 +1731,7 @@
       "paths": [
         "scripts/testing/run-native-pilot.ts"
       ],
-      "revision": "822e6c43c4fb5f4bc7b5c3c0c2ec536994767a146439634a2d3c01e6ccfac86a"
+      "revision": "7c41b57cd59265d7e5b4934b383f56c0542bab3e888e0334145cbaf273b5e7bb"
     },
     {
       "id": "SRC-ios-detox-camera-e2e-source",
@@ -1867,6 +1867,15 @@
         "scripts/testing/native-android-session-public-dependency.ts"
       ],
       "revision": "5e20ec25b42c90f7a973f14e4e2c0da16699bf17d55c8f205e9652e54c9f0a29"
+    },
+    {
+      "id": "SRC-android-session-public-receipt-source",
+      "kind": "source",
+      "ref": "scripts/testing/native-android-session-public-receipt.ts",
+      "paths": [
+        "scripts/testing/native-android-session-public-receipt.ts"
+      ],
+      "revision": "1b728df4cc04d72af8e41872809248176363f8b92863fd8a08060d6d26066cab"
     },
     {
       "id": "SRC-android-session-public-dispatch-source",
@@ -8349,6 +8358,7 @@
         "scripts/testing/native-android-save-retry-public-evidence.ts",
         "scripts/testing/native-android-session-public-contract.ts",
         "scripts/testing/native-android-session-public-dependency.ts",
+        "scripts/testing/native-android-session-public-receipt.ts",
         "scripts/testing/native-android-session-public-staging.ts",
         "scripts/testing/run-android-session-attempt.ts",
         "scripts/testing/run-ios-session-attempt.ts",
@@ -8588,6 +8598,7 @@
           "SRC-android-save-retry-public-evidence-source",
           "SRC-android-session-public-contract-source",
           "SRC-android-session-public-dependency-source",
+          "SRC-android-session-public-receipt-source",
           "SRC-android-session-public-staging-source",
           "SRC-android-session-public-adapter-source",
           "SRC-ios-session-adapter-source",
@@ -8825,6 +8836,7 @@
           "scripts/testing/native-android-save-retry-public-evidence.ts",
           "scripts/testing/native-android-session-public-contract.ts",
           "scripts/testing/native-android-session-public-dependency.ts",
+          "scripts/testing/native-android-session-public-receipt.ts",
           "scripts/testing/native-android-session-public-staging.ts",
           "scripts/testing/run-android-session-attempt.ts",
           "scripts/testing/run-ios-session-attempt.ts",
