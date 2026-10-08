@@ -346,6 +346,16 @@ void test('a hydrate inside a declared signed-in relaunch window is permitted', 
   value.observations = [...value.observations, { ...value.observations[1], requestId: 3 }];
   value.relaunchWindows = [{ afterRequestId: 2, throughRequestId: 3 }];
   assert.equal(verifyNativeSessionProfileCheckpoints(value).status, 'verified');
+
+  // The relaunch hydrate may advance only the coach's updatedAt.
+  const later = structuredClone(value);
+  const coachRow = later.profiles.afterSignedOutRelaunch.rows.userProfiles.find(
+    (row) => row.authUid === coach,
+  )!;
+  coachRow.updatedAt = '2999-01-01T00:00:00.000Z';
+  assert.equal(verifyNativeSessionProfileCheckpoints(later).status, 'verified');
+  coachRow.lockedRole = 'student';
+  assert.throws(() => verifyNativeSessionProfileCheckpoints(later));
 });
 for (const [name, mutate] of cases) {
   void test(`session rejects ${name}`, () => {

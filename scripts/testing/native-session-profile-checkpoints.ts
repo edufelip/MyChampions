@@ -214,11 +214,20 @@ export function verifyNativeSessionProfileCheckpoints(input: NativeSessionProfil
 
   profileDelta(input.profiles.beforeLogin, input.profiles.afterLogin, input.coachAuthUid);
   profileDelta(input.profiles.afterLogin, input.profiles.afterRestoration, input.coachAuthUid);
-  assert.deepEqual(
-    input.profiles.afterSignedOutRelaunch,
-    input.profiles.afterRestoration,
-    'Session changed profile/domain rows after restoration',
-  );
+  // Each declared signed-in relaunch hydrates, which may advance only the
+  // coach's updatedAt; without relaunches the rows must be identical.
+  if ((input.relaunchWindows ?? []).length > 0)
+    profileDelta(
+      input.profiles.afterRestoration,
+      input.profiles.afterSignedOutRelaunch,
+      input.coachAuthUid,
+    );
+  else
+    assert.deepEqual(
+      input.profiles.afterSignedOutRelaunch,
+      input.profiles.afterRestoration,
+      'Session changed profile/domain rows after restoration',
+    );
   return {
     kind: 'native-session-profile-checkpoint-verification' as const,
     status: 'verified' as const,

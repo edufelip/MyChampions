@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "cfbe95b9003735e7667027ac194e7fb59458cb5f",
+    "commit": "64fdd7496191eb0441d94bfbac2eafaf3db9812b",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -255,7 +255,7 @@
       "paths": [
         "scripts/testing/native-session-profile-checkpoints.ts"
       ],
-      "revision": "683516cf4bc2b4e5a391a0c3fc39cb43081aff923a479c9394efdb7aef8ff88f"
+      "revision": "5d79a17f8ee4b1185f6206e1c07f03850cee69d2d7b0b503f9dbbc47d56e853b"
     },
     {
       "id": "SRC-connection-hierarchy-source",
