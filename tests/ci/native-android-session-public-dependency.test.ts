@@ -803,6 +803,20 @@ void test('Android source-only loader rejects ledger identity, owner/mode, and u
       () => requireAndroidMaestroEvidence(census.root, census.capture),
       /census was unavailable/,
     );
+    const gap = (pgid: unknown) => ({
+      result: 'unavailable',
+      unavailable: [{ pid: 999_999, pgid, started: 'now', commandHash: 'a'.repeat(64) }],
+      current: [],
+    });
+    ledger.commandCensusRequeries = [gap(ledger.pgid)];
+    await writeFile(ownershipPath, JSON.stringify(ledger), { mode: 0o600 });
+    requireAndroidMaestroEvidence(census.root, census.capture);
+    ledger.commandCensusRequeries = [gap(Number(ledger.pgid) + 1)];
+    await writeFile(ownershipPath, JSON.stringify(ledger), { mode: 0o600 });
+    assert.throws(
+      () => requireAndroidMaestroEvidence(census.root, census.capture),
+      /census was unavailable/,
+    );
   } finally {
     await rm(census.root, { recursive: true, force: true });
   }

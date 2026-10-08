@@ -526,8 +526,18 @@ function requireOwnedCommandLedger(
   assert(Array.isArray(requery), `${expectedLabel} census requery ledger is missing`);
   for (const raw of requery) {
     const event = record(raw, `${expectedLabel} census requery`);
-    assert.equal(event.result, 'available', `${expectedLabel} census was unavailable`);
     assert(Array.isArray(event.unavailable) && Array.isArray(event.current));
+    // macOS can list a just-forked child before its argv is readable. Such a
+    // gap is acceptable only inside this step's own process group, whose
+    // members must all be gone by the latest census (checked below).
+    if (event.result !== 'available')
+      assert(
+        event.unavailable.length > 0 &&
+          event.unavailable.every(
+            (unavailable) => record(unavailable, `${expectedLabel} census gap`).pgid === row.pgid,
+          ),
+        `${expectedLabel} census was unavailable`,
+      );
   }
   assert(Array.isArray(ledger.escapedProcesses) && ledger.escapedProcesses.length === 0);
   assert(Array.isArray(ledger.escapedSignals) && ledger.escapedSignals.length === 0);
