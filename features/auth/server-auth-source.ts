@@ -9,6 +9,7 @@
 
 import type { AuthProviderId } from './auth-user';
 import { authSessionRuntime, type AuthSessionRuntime } from './auth-session-runtime';
+import { clearNativeCookies } from './native-cookie-store';
 import { serverAuthStorage } from './server-auth-storage';
 
 type ServerAuthProfile = {
@@ -55,6 +56,7 @@ export type ServerAuthDeps = {
   getServerBaseUrl: () => string | undefined;
   runtime?: AuthSessionRuntime;
   storage?: ServerAuthStorage;
+  clearCookies?: () => Promise<void>;
 };
 
 const SERVER_AUTH_SESSION_STORAGE_KEY = 'auth.server.session';
@@ -449,6 +451,11 @@ export async function clearPersistedServerAuthSession(
     await resolveStorage(deps).removeItem(SERVER_AUTH_SESSION_STORAGE_KEY);
   } catch {
     // Memory is already cleared; storage may be unavailable in non-app runtimes.
+  }
+  try {
+    await (deps.clearCookies ?? clearNativeCookies)();
+  } catch {
+    // The native cookie store may be unavailable in non-app runtimes.
   }
 }
 

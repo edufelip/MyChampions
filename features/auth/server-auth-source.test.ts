@@ -261,6 +261,41 @@ describe('server-auth-source', () => {
     assert.equal(await restoreServerAuthSession({ storage }), null);
   });
 
+  it('clears the native cookie store on native sign-out', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+    const calls: string[] = [];
+
+    await clearPersistedServerAuthSession({
+      storage: {
+        ...storage,
+        removeItem: async (key) => {
+          calls.push('storage');
+          await storage.removeItem(key);
+        },
+      },
+      clearCookies: async () => {
+        calls.push('cookies');
+      },
+    });
+
+    assert.deepEqual(calls, ['storage', 'cookies']);
+  });
+
+  it('finishes native sign-out when the cookie store cannot be cleared', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+
+    await clearPersistedServerAuthSession({
+      storage,
+      clearCookies: async () => {
+        throw new Error('cookie store unavailable');
+      },
+    });
+
+    assert.equal(getCurrentServerAccessToken(), null);
+  });
+
   it('does not restore an expired persisted local server session', async () => {
     clearServerAuthSession();
     const storage = createMemoryStorage();
