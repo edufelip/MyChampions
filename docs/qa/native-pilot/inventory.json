@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "31ee1148e4ba7844e5a88471add26260e3f02935",
+    "commit": "37d8860af77b2a37194c03f4ee5fc6db4c2d6bf0",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -291,7 +291,7 @@
       "paths": [
         "scripts/testing/native-connection-journey-core.ts"
       ],
-      "revision": "3092741eed7c6d589f66fdd678669a3fe05f83b683f902602c42bb4b42dbe245"
+      "revision": "f58546960d0650eac907ac9183ca0a7dc5214ea71913f26c327e673ceaf80fcf"
     },
     {
       "id": "SRC-connection-platform-contract-source",
@@ -318,7 +318,7 @@
       "paths": [
         "scripts/testing/native-connection-public-evidence-core.ts"
       ],
-      "revision": "5790154cf12608cf1bdaa87f442acb8c4e794ae7687047caefd66fa999cb6b1b"
+      "revision": "465c3f2f6dd142aff1a17a24cbec7eb94200ca744aa4789eb5ef3b4d8c83030d"
     },
     {
       "id": "SRC-ios-connection-adapter-source",
@@ -444,7 +444,7 @@
       "paths": [
         "scripts/testing/native-connection-hierarchy-android.ts"
       ],
-      "revision": "46373f53d4dc69d757bd30927f3d563d2bd5076b311d4d3a67c8019d7b6cd717"
+      "revision": "b6cad3eb3b861b81e0b297bca7d54b57f870f8b747cf3fdb06e29c24e12f9c0b"
     },
     {
       "id": "SRC-android-connection-public-evidence-source",
@@ -1326,7 +1326,7 @@
       "paths": [
         "scripts/testing/capture-android-testability.ts"
       ],
-      "revision": "e3061bd674998492db56eff8648c180c3b200922e80d8cf9b975af0abe8c9346"
+      "revision": "0d4a57cee23341693fc13e99dccdfc24fd99c97958de228a86593a2d0c11b844"
     },
     {
       "id": "SRC-android-session-checkpoint-copy-source",

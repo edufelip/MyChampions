@@ -533,6 +533,13 @@ export function nativeConnectionFrameLabelFromReference(relative: string): strin
   return relative.replace(/(?:\.png|-hierarchy\.json)$/, '');
 }
 
+const redactedFramePaths: ReadonlySet<string> = new Set(
+  redactedNativeConnectionFrameLabels.flatMap((label) => [
+    framePath(label, 'png'),
+    framePath(label, 'hierarchy.json'),
+  ]),
+);
+
 function isRedactedFrameLabel(label: string): boolean {
   return (redactedNativeConnectionFrameLabels as readonly string[]).includes(label);
 }
@@ -834,7 +841,9 @@ function commandArtifactPaths(
         relative && !relative.startsWith('..') && !path.isAbsolute(relative),
         'Command stdout path escaped its private artifact root',
       );
-      register(relative, 'stdout', commandIndex);
+      // A screenshot/hierarchy command's stdout can be a redacted invite frame;
+      // those stay private and are never copied or required in a staged copy.
+      if (!redactedFramePaths.has(relative)) register(relative, 'stdout', commandIndex);
     }
   }
   assert(paths.length > 0, 'Native connection command artifacts are missing');
@@ -1919,8 +1928,11 @@ async function writeProofs(loaded: LoadedEvidence): Promise<void> {
           sha256: sha256(bytes),
         });
       }
+      const proofFile = assertArtifactPath(loaded.captureRoot, evidencePath);
+      // The per-attempt assertions directory is created here, privately.
+      await mkdir(path.dirname(proofFile), { recursive: true, mode: 0o700 });
       await writeFile(
-        assertArtifactPath(loaded.captureRoot, evidencePath),
+        proofFile,
         JSON.stringify(
           {
             schemaVersion: 1,

@@ -1,3 +1,21 @@
+## Direction change: migrate to Maestro, drop Detox comparison — 2026-10-07
+
+Owner decision (2026-10-07): the goal is to move native E2E from Detox to Maestro; the plan's Detox-vs-Maestro comparison (T15 cold matrix, Detox cells) is dropped. Detox work stops; the Maestro quality bar for each journey is a real passing run on each platform plus a deliberately introduced bug the flow detects, after which that journey's Detox test can be retired.
+
+Android Maestro status on current code (local, Metro-attached devDebug, owned emulator, owned Postgres):
+
+| Journey | Result | Attempt |
+| --- | --- | --- |
+| Camera denied | **Passed** 4/4 | `9832d7ce3a2d0b7828279e19` |
+| Training | **Passed** 7/7 | `20566dce77ca6a3aa8aca5ca` |
+| Connection | **Passed** 7/7 | `f8d08823cee5f613ac7ed4a4` |
+| Session | Every UI step runs; **blocked by real product finding** (native sign-out keeps the server access cookie; same as Detox) | `9ea04465964705e39589101f` |
+| Save-retry | No Maestro route yet | — |
+
+Fixes made to get here (each from a real failing run): camera invite code injected after the step that types it (Maestro typed "undefined"); readiness flows asserted later selectors instantly (now wait for each); training result dropped `captureCleanup` (schema-invalid receipt); Maestro CLI blocked ~55 s on analytics during `--version` (now opted out); Maestro storage reader rejected committed SQLite journals, never relaunched after force-stopping for a snapshot (now relaunches, as its contract says), and choked on empty `sqlite3 -json` output; session cleanup compared the capture run id with the backend run id; Android roster rows sit beside (not under) the screen node in Maestro's tree; pending request is below the fold (scroll to it); Android capture build lacked `node`; connection proofs wrote into a missing `assertions/` folder; redacted invite-code frames were registered as copyable command artifacts. Host was cleared first (user's Pixel_10 emulator and seven leftover adb servers were holding the shared adb port).
+
+Also observed (not changed, needs owner review): the coach pending-requests screen renders badly squeezed on the Pixel emulator (title breaks mid-word, request card text one letter per line).
+
 ## Android Detox session (T14-A): UI journey passes; real native-logout cookie finding — 2026-10-07
 
 Status: **Product finding, Pending owner decision** (Android × Detox × postgres session). Attempt `0dcb99919616cf8e0c04612a` (build `c0ffee000000000000000093`, capture `native-pilot/c37d3aed0ab1d4065926d136`): the Detox child passes every UI step on the owned emulator (sign-in, relaunch restore, cancel sign-out, sign-out, signed-out relaunch) and every storage checkpoint is acknowledged. Harness verification then correctly rejects the run: **after sign-out and relaunch, the app still sends the server access cookie** (`knownAccessCookie: nonempty`, no Authorization header) on four `POST /analytics/events` requests (IDs 38–41). React Native's Android cookie store persists across relaunch and native sign-out does not clear it, which contradicts the 2026-10-03 owner decision that native logout clears device-local credentials/session. Not weakened in the test. Fixing it changes auth behavior and needs owner approval (options: clear the native cookie store on sign-out, send native requests without cookies, or stop issuing cookies to the native request profile).

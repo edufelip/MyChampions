@@ -75,6 +75,12 @@ function hasRosterScreenAncestor(ref: AndroidNodeRef): boolean {
   return false;
 }
 
+function hasRosterListCardAncestor(ref: AndroidNodeRef): boolean {
+  for (let current: AndroidNodeRef | null = ref; current; current = current.parent)
+    if (current.node.attributes?.['resource-id'] === 'pro.students.listCard') return true;
+  return false;
+}
+
 function requireAccessibilityTextAssignment(
   ref: AndroidNodeRef,
   assignmentState: 'pending' | 'active',
@@ -120,8 +126,15 @@ export function resolveAndroidProfessionalRosterTarget(options: {
     (ref) => ref.node.attributes?.['resource-id'] === studentSelector,
   );
   assert.equal(nodes.length, 1, 'Android professional roster target row is absent or duplicated');
+  // Android's hierarchy can place the roster list card beside (not under) the
+  // screen container. Accept a row in the roster list card when the roster
+  // screen itself is present in the same tree.
+  const rosterScreenPresent = inspectAndroidHierarchy(options.tree).some(
+    (ref) => ref.node.attributes?.['resource-id'] === 'pro.students.screen',
+  );
   assert(
-    hasRosterScreenAncestor(nodes[0]),
+    hasRosterScreenAncestor(nodes[0]) ||
+      (rosterScreenPresent && hasRosterListCardAncestor(nodes[0])),
     'Android roster target row is outside the roster screen',
   );
   return {

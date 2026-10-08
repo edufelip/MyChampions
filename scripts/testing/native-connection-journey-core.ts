@@ -612,7 +612,9 @@ export async function observeConnectionJourney(
     'connection-coach-pending',
     scroll(profile.selectors.coachPendingConnections, 'UP') +
       tap(profile.selectors.coachPendingConnections) +
-      `- extendedWaitUntil:\n    visible:\n      text: ${textExact(connectionId)}\n    timeout: 90000\n`,
+      // The pending rows can sit below the hero/search cards; scroll to the
+      // exact connection instead of waiting for it to appear in place.
+      `- scrollUntilVisible:\n    element:\n      text: ${textExact(connectionId)}\n    direction: DOWN\n    timeout: 90000\n`,
     'SCR-pro-pending',
     profile.selectors.coachPendingScreen,
   );

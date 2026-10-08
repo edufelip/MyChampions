@@ -3240,6 +3240,8 @@ async function executeOwnedAndroidSession(
     };
     report.build = {
       ...verified,
+      // Same runtime identity the iOS capture records; public evidence requires it.
+      node: process.version,
       sourceTreeHash: beforeSource.sourceTreeHash,
       helperInputsHash: options.qualifiedBuild?.helperFingerprint ?? helperInputsHash,
       flagsFingerprint: options.qualifiedBuild?.flagsFingerprint ?? verified.environmentHash,
