@@ -281,11 +281,6 @@ function scroll(id: string, direction = 'DOWN', timeout = 30000): string {
   return `- scrollUntilVisible:\n    element:\n      id: ${JSON.stringify(id)}\n    direction: ${direction}\n    timeout: ${timeout}\n    centerElement: true\n`;
 }
 
-function textExact(value: string): string {
-  const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return JSON.stringify(`^${escaped}$`);
-}
-
 function readPrivateHierarchy(output: string, label: string): unknown {
   assert.match(label, /^[a-z0-9-]+$/);
   return JSON.parse(readNativeEvidence(output, `${label}-hierarchy.json`, true).toString());
@@ -614,7 +609,7 @@ export async function observeConnectionJourney(
       tap(profile.selectors.coachPendingConnections) +
       // The pending rows can sit below the hero/search cards; scroll to the
       // exact connection instead of waiting for it to appear in place.
-      `- scrollUntilVisible:\n    element:\n      text: ${textExact(connectionId)}\n    direction: DOWN\n    timeout: 90000\n`,
+      `- scrollUntilVisible:\n    element:\n      id: ${JSON.stringify(`pro.pending.connection.${connectionId}`)}\n    direction: DOWN\n    timeout: 90000\n`,
     'SCR-pro-pending',
     profile.selectors.coachPendingScreen,
   );
@@ -633,7 +628,7 @@ export async function observeConnectionJourney(
   await context.observe(
     'connection-confirm',
     tap(pendingMatch.acceptSelector) +
-      `- extendedWaitUntil:\n    notVisible:\n      text: ${textExact(connectionId)}\n    timeout: 90000\n`,
+      `- extendedWaitUntil:\n    notVisible:\n      id: ${JSON.stringify(`pro.pending.connection.${connectionId}`)}\n    timeout: 90000\n`,
     'SCR-pro-pending',
     profile.selectors.coachPendingScreen,
     'id',

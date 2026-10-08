@@ -103,7 +103,9 @@ export default function ProfessionalPendingScreen() {
   const filteredPending = useMemo<ConnectionRecord[]>(() => {
     if (!searchQuery.trim()) return pendingConnections;
     const q = searchQuery.trim().toLowerCase();
-    return pendingConnections.filter((c) => c.id.toLowerCase().includes(q));
+    return pendingConnections.filter(
+      (c) => c.id.toLowerCase().includes(q) || !!c.studentDisplayName?.toLowerCase().includes(q),
+    );
   }, [pendingConnections, searchQuery]);
 
   const toggleSelect = (id: string) => {
@@ -425,7 +427,7 @@ export default function ProfessionalPendingScreen() {
               {t('pro.pending.bulk_deny.confirm_body')}
             </Text>
             <Text style={[styles.bulkDenyModalCount, { color: theme.color.textPrimary }]}>
-              {(t('a11y.selected_count')).replace('{count}', String(selectedIds.size))}
+              {t('a11y.selected_count').replace('{count}', String(selectedIds.size))}
             </Text>
             {bulkDenyFeedback === 'error' ? (
               <Text
@@ -552,11 +554,23 @@ function PendingRow({
       </KeyboardPressable>
 
       <View style={styles.rowInfo}>
-        <Text style={[styles.rowSpecialty, { color: theme.color.textPrimary }]}>
+        {connection.studentDisplayName ? (
+          <Text style={[styles.rowName, { color: theme.color.textPrimary }]} numberOfLines={2}>
+            {connection.studentDisplayName}
+          </Text>
+        ) : null}
+        <Text
+          style={[
+            connection.studentDisplayName ? styles.rowSpecialtySecondary : styles.rowName,
+            {
+              color: connection.studentDisplayName
+                ? theme.color.textSecondary
+                : theme.color.textPrimary,
+            },
+          ]}
+          testID={`pro.pending.connection.${connection.id}`}
+        >
           {specialtyLabel}
-        </Text>
-        <Text style={[styles.rowId, { color: theme.color.textSecondary }]} numberOfLines={1}>
-          {connection.id}
         </Text>
       </View>
 
@@ -610,6 +624,7 @@ const styles = StyleSheet.create({
   heroCard: {
     alignItems: 'flex-start',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: DsSpace.sm,
   },
   heroIcon: {
@@ -619,8 +634,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 44,
   },
+  // flexBasis (not flex: 1) lets the count pill wrap below on narrow screens
+  // instead of squeezing the copy into a one-word column.
   heroCopy: {
-    flex: 1,
+    flexBasis: 160,
+    flexGrow: 1,
     gap: DsSpace.xxs,
   },
   pageTitle: {
@@ -721,6 +739,7 @@ const styles = StyleSheet.create({
     borderRadius: DsRadius.md,
     borderWidth: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: DsSpace.sm,
     padding: DsSpace.sm,
   },
@@ -743,22 +762,26 @@ const styles = StyleSheet.create({
     height: 12,
     width: 12,
   },
+  // flexBasis (not flex: 1) lets Accept/Deny wrap below the details on narrow
+  // screens instead of squeezing the details into a one-letter column.
   rowInfo: {
-    flex: 1,
+    flexBasis: 140,
+    flexGrow: 1,
     gap: 2,
   },
-  rowSpecialty: {
+  rowName: {
     ...DsTypography.body,
     fontFamily: Fonts?.rounded ?? 'normal',
     fontWeight: '700',
   },
-  rowId: {
+  rowSpecialtySecondary: {
     ...DsTypography.caption,
   },
   rowActions: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: DsSpace.xs,
+    marginLeft: 'auto',
   },
   actionButton: {
     minHeight: 36,

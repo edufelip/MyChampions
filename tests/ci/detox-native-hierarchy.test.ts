@@ -177,8 +177,8 @@ function activeSnapshot(): OwnedConnectionSnapshot {
 
 function pendingXml(platform: 'android' | 'ios', duplicateTarget = false): string {
   const targetViews = duplicateTarget
-    ? '<Label class="Label" width="180" height="20" visibility="visible" alpha="1" focused="false" x="10" y="10" text="connection-target" /><Label class="Label" width="180" height="20" visibility="visible" alpha="1" focused="false" x="10" y="40" text="connection-target" />'
-    : '<Label class="Label" width="180" height="20" visibility="visible" alpha="1" focused="false" x="10" y="10" text="connection-target" />';
+    ? '<Label class="Label" width="180" height="20" visibility="visible" alpha="1" focused="false" x="10" y="10" text="Fitness Coach" id="pro.pending.connection.connection-target" /><Label class="Label" width="180" height="20" visibility="visible" alpha="1" focused="false" x="10" y="40" text="Fitness Coach" id="pro.pending.connection.connection-target" />'
+    : '<Label class="Label" width="180" height="20" visibility="visible" alpha="1" focused="false" x="10" y="10" text="Fitness Coach" id="pro.pending.connection.connection-target" />';
   const accept =
     '<Button class="Button" width="100" height="40" visibility="visible" alpha="1" focused="false" x="250" y="10" id="pro.pending.acceptButton.0" />';
   const row = `<Row class="Row" width="400" height="100" visibility="visible" alpha="1" focused="false" x="0" y="0" id="pro.pending.row.0">${targetViews}${accept}</Row>`;
@@ -251,10 +251,10 @@ void test('parses installed Android XML and preserves IDs, text, labels, bounds 
   const row = screen.children[0].children[0];
   const targetNode = row.children[0];
   assert.equal(screen.attributes['resource-id'], 'pro.pending.screen');
-  assert.equal(targetNode.attributes.text, connectionId);
+  assert.equal(targetNode.attributes.text, 'Fitness Coach');
   assert.equal(targetNode.attributes.bounds, '[10,10][190,30]');
   assert.equal(row.attributes.bounds, '[0,0][400,100]');
-  assert.equal(targetNode.attributes['resource-id'], undefined);
+  assert.equal(targetNode.attributes['resource-id'], `pro.pending.connection.${connectionId}`);
   assert.equal(tree.attributes.density, '3');
 });
 

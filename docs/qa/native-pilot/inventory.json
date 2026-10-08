@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "0681367ff56420b8c8f1536bb06ba3a1f3d6b0e8",
+    "commit": "567fd6acf0c227b5ddf78ca0d5ce4bf8687dd4ff",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -93,7 +93,7 @@
       "paths": [
         "docs/screens/v2/SC-205-student-roster.md"
       ],
-      "revision": "5ba8d6c19c34d1363bbaacec71b25be2eb823c1845657e275095bf5b6e4bd746"
+      "revision": "c6b975928334c32bd822a9a10065b3d39de971941e9e9519927b1b10a655f3af"
     },
     {
       "id": "SRC-use-cases",
@@ -111,7 +111,7 @@
       "paths": [
         "docs/acceptance-criteria/AC-002-role-journeys-and-plan-ownership.md"
       ],
-      "revision": "a5745ab778f03283426359f6603e774427aed8409c7ca334952b0411c9f07ee8"
+      "revision": "8e50ed49fa440a78f3c64b8b3b99b3f247a3e9c08b377984d224188db99a4ad8"
     },
     {
       "id": "SRC-rules",
@@ -120,7 +120,7 @@
       "paths": [
         "docs/business-rules/BR-002-role-assignment-and-plan-governance.md"
       ],
-      "revision": "3a9afd1fd36a03765e4e2bbb008d56f966955dc96358626b054e44ce922d801b"
+      "revision": "a8563c3f42d96f6fcdb794e435ca04915d33ea70c0f810bdc5767f19a09bd3b9"
     },
     {
       "id": "SRC-test-cases",
@@ -129,7 +129,7 @@
       "paths": [
         "docs/test-cases/TC-002-role-and-assignment-controls.md"
       ],
-      "revision": "49dc85fb4e56d1725452ce0a0cc7a7471c0d42e4b1e07b26e2f861bca1a6f9a7"
+      "revision": "0cf3956d431379e0518e415f3d88225d65e78c5b0ad587800f776ec555d70cdf"
     },
     {
       "id": "SRC-plan",
@@ -165,7 +165,7 @@
       "paths": [
         "features/auth/server-auth-source.ts"
       ],
-      "revision": "c9f4206d490995f7fc6a41ad3a5a6d7755b5a414fe0079bf4a721968cb43a456"
+      "revision": "c05ae4001084b94e4ec37751e2b3437c748b9ad30f0bae07fc7a12ae995a7542"
     },
     {
       "id": "SRC-account-source",
@@ -264,7 +264,7 @@
       "paths": [
         "scripts/testing/native-connection-hierarchy.ts"
       ],
-      "revision": "fdd58ed972c0de739a6a76f7b2199c3964f92c2fcd45d6f07f008cc874191d04"
+      "revision": "9de719b5fc3bddbdc9dd583f171231789528ff29ffdedd341ec1f50a3ebcf1e5"
     },
     {
       "id": "SRC-connection-attempt-binding-source",
@@ -291,7 +291,7 @@
       "paths": [
         "scripts/testing/native-connection-journey-core.ts"
       ],
-      "revision": "f58546960d0650eac907ac9183ca0a7dc5214ea71913f26c327e673ceaf80fcf"
+      "revision": "d47aed2a27e3a70da728935c2a7d58fc66e2d0fae9b2f5dd6cc955d102ebe8ff"
     },
     {
       "id": "SRC-connection-platform-contract-source",
@@ -876,7 +876,7 @@
       "paths": [
         "app/professional/pending.tsx"
       ],
-      "revision": "c1ab49a4f81e9c6253a146405ecf0b702e2e18b3e360c8633ec3b6f64fee23e6"
+      "revision": "c7c3fb1cd2b4a87872d38533fae1b114343a684b0bad6adc78c0fd205458ebf8"
     },
     {
       "id": "SRC-roster-source",

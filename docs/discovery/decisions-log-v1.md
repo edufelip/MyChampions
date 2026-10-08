@@ -3758,3 +3758,12 @@ Rationale: the prior fresh entry build timed out before an entry frame and was c
 ### 2026-10-06 iOS Maestro camera-run result
 
 The first fresh rerun after the cache-handoff preparation completed before the 900000 ms build deadline; no cache handoff was consumed or emitted. Owned run `e750a3812f73b0e3d0e1cf50` / capture `8abc43acdc6efc702cc13f87` passed the complete iOS Maestro camera scenario, with all four declared UI/API/SQL assertion bindings and cleaned capture/public cleanup. Treat this as qualification for that exact iOS Maestro scenario and source snapshot only. It does not establish Android parity, cold-run coverage, hosted execution, or release readiness.
+
+### 2026-10-08 Native sign-out clears the native cookie store
+
+Owner decision: native sign-out now also clears React Native's native HTTP cookie store (iOS `NSHTTPCookieStorage`, Android OkHttp cookie jar) through the built-in `RCTNetworking.clearCookies`. Native auth stays bearer-only; the server may still set cookies on responses, and the native networking layer kept sending the access-token cookie after sign-out and relaunch (found by both the Detox and Maestro session journeys). Chosen over sending native requests without cookies or changing the server's cookie issuance, because it is client-only and needs no new dependency. A cookie-store failure does not block sign-out. Server bearer revocation stays out of scope. Updates FR-270, BR-342, AC-539 and TC-333.
+
+### 2026-10-08 Pending requests show the student's name
+
+Owner decision: the coach's pending connection requests show the student's display name instead of the raw connection ID. `GET /connections` adds `studentDisplayName` only on connections where the caller is the professional (the same name the coach roster already shows); students receive no new field. The request card also stops squeezing on narrow phones: the Accept/Deny buttons wrap below the details when space is tight.
+

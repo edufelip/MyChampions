@@ -10,6 +10,8 @@ export type ConnectionRecord = {
   canceledReason: CanceledReason;
   specialty: ConnectionSpecialty;
   professionalAuthUid: string;
+  /** Present only on the professional's own active/pending connections. */
+  studentDisplayName?: string;
 };
 
 export type ConnectionDisplayState =

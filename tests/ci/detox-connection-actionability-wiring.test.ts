@@ -178,7 +178,7 @@ function activeSnapshot(): OwnedConnectionSnapshot {
 function pendingXml(): string {
   const row =
     '<Row class="Row" width="400" height="100" visibility="visible" alpha="1" focused="false" x="0" y="0" id="pro.pending.row.0">' +
-    '<Label class="Label" width="180" height="20" visibility="visible" alpha="1" focused="false" x="10" y="10" text="connection-target" />' +
+    '<Label class="Label" width="180" height="20" visibility="visible" alpha="1" focused="false" x="10" y="10" text="Fitness Coach" id="pro.pending.connection.connection-target" />' +
     '<Button class="Button" width="100" height="40" visibility="visible" alpha="1" focused="false" enabled="true" x="250" y="10" id="pro.pending.acceptButton.0" />' +
     '</Row>';
   return `<ViewHierarchy><UIWindow class="UIWindow" width="400" height="800" visibility="visible" alpha="1" focused="false" x="0" y="0"><UIView class="UIView" width="400" height="800" visibility="visible" alpha="1" focused="false" x="5" y="7" id="pro.pending.screen"><UIView class="UIView" width="400" height="400" visibility="visible" alpha="1" focused="false" x="10" y="11">${row}</UIView></UIView></UIWindow></ViewHierarchy>`;

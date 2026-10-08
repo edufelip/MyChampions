@@ -138,10 +138,6 @@ function resourceId(ref: NodeRef): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-function exactText(ref: NodeRef, value: string): boolean {
-  return ref.node.attributes?.text === value || ref.node.attributes?.accessibilityText === value;
-}
-
 type NativeBounds = {
   left: number;
   top: number;
@@ -189,19 +185,6 @@ function hasSameBounds(first: NodeRef, second: NodeRef): boolean {
     firstBounds.top === secondBounds.top &&
     firstBounds.right === secondBounds.right &&
     firstBounds.bottom === secondBounds.bottom
-  );
-}
-
-function collapseExactTextAliases(refs: readonly NodeRef[], value: string): NodeRef[] {
-  return refs.filter(
-    (ref) =>
-      !refs.some(
-        (other) =>
-          other !== ref &&
-          exactText(other, value) &&
-          hasSameBounds(ref, other) &&
-          isWithin(ref, other),
-      ),
   );
 }
 
@@ -411,12 +394,11 @@ export function resolvePendingConnectionTarget({
   const provenance = trustedProvenance(snapshot, 'pending', target);
   const connectionId = targetConnectionId(snapshot, target);
   const nodes = inspectHierarchy(tree);
-  const targetRefs = collapseExactTextAliases(
-    nodes.filter((ref) => exactText(ref, connectionId)),
-    connectionId,
+  const targetRefs = nodes.filter((ref) =>
+    hasResourceId(ref, `pro.pending.connection.${connectionId}`),
   );
   if (targetRefs.length !== 1)
-    throw new Error('Pending connection target ID is absent or duplicated');
+    throw new Error('Pending connection target marker is absent or duplicated');
   const groups = pendingGroups(nodes, targetRefs[0]);
   if (groups.length !== 1) throw new Error('Pending connection target row ancestry is ambiguous');
   const match = groups[0];

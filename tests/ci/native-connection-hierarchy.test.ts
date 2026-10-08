@@ -223,6 +223,10 @@ const target: NativeConnectionTargetScope = {
   studentAuthUid: student,
 };
 
+function pendingMarker(id: string): string {
+  return `pro.pending.connection.${id}`;
+}
+
 function pendingRow(
   index: number,
   id: string,
@@ -233,11 +237,12 @@ function pendingRow(
   const rowBounds = `[0,${top}][100,${top + 100}]`;
   const targetBounds = `[10,${top + 10}][90,${top + 30}]`;
   const acceptBounds = `[50,${top + 10}][90,${top + 50}]`;
+  const marker = node({ 'resource-id': pendingMarker(id), bounds: targetBounds });
+  // The visible ID is gone from the card; an ID-like text alias must not be
+  // mistaken for the marker.
   const target = includeTextAlias
-    ? node({ accessibilityText: id, bounds: targetBounds }, [
-        node({ text: id, bounds: targetBounds }),
-      ])
-    : node({ text: id, bounds: targetBounds });
+    ? node({ accessibilityText: id, bounds: targetBounds }, [marker])
+    : marker;
   return [
     node({ 'resource-id': `pro.pending.row.${index}`, bounds: rowBounds }, [], true),
     node({ 'resource-id': `pro.pending.checkbox.${index}` }, [], true),
@@ -349,7 +354,7 @@ void test('pending mapping rejects duplicate, detached, and disabled target cont
 
   const detached = node({ 'resource-id': 'pro.pending.screen' }, [
     node({}, pendingRow(0, 'other-connection')),
-    node({ text: connectionId }),
+    node({ 'resource-id': pendingMarker(connectionId) }),
   ]);
   assert.throws(
     () => resolvePendingConnectionTarget({ tree: detached, snapshot: pendingSnapshot(), target }),
@@ -364,7 +369,7 @@ void test('pending mapping rejects duplicate, detached, and disabled target cont
 
   const detachedAfterLastRow = pendingTree([
     ...pendingRow(0, 'other-connection'),
-    node({ text: connectionId, bounds: '[10,300][90,330]' }),
+    node({ 'resource-id': pendingMarker(connectionId), bounds: '[10,300][90,330]' }),
   ]);
   assert.throws(
     () =>
@@ -378,8 +383,8 @@ void test('pending mapping rejects duplicate, detached, and disabled target cont
 
   const sameBoundsSibling = pendingTree([
     ...pendingRow(0, 'other-connection'),
-    node({ text: connectionId, bounds: '[10,100][90,120]' }),
-    node({ accessibilityText: connectionId, bounds: '[10,100][90,120]' }),
+    node({ 'resource-id': pendingMarker(connectionId), bounds: '[10,100][90,120]' }),
+    node({ 'resource-id': pendingMarker(connectionId), bounds: '[10,100][90,120]' }),
   ]);
   assert.throws(
     () =>
