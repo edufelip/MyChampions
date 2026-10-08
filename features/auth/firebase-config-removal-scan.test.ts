@@ -930,6 +930,7 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
         'app/build/outputs/apk/dev/release/app-dev-release.apk',
         'EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID',
         'EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV',
+        'EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=https://dev.mychampions.eduwaldo.com',
       ],
     },
     {
@@ -944,6 +945,7 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
         'IOS_PROFILE_PATH=$RUNNER_TEMP/mychampions-dev.mobileprovision',
         'EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID',
         'EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV',
+        'EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=https://dev.mychampions.eduwaldo.com',
       ],
     },
   ];

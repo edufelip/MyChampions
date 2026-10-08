@@ -43,6 +43,8 @@ jobs:
         run: |
           echo "EXPO_PUBLIC_ENV=dev" >> "$GITHUB_ENV"
           echo "APP_VARIANT=dev" >> "$GITHUB_ENV"
+          # DEV API on Railway (ET-250); overrides any server URL in the ENV_FILE secret.
+          echo "EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=https://dev.mychampions.eduwaldo.com" >> "$GITHUB_ENV"
         working-directory: .
 
       - name: Validate development configuration
