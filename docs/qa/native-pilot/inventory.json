@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "61c2670f4fb7a7f920b97c852809da9f5a6cac18",
+    "commit": "cfbe95b9003735e7667027ac194e7fb59458cb5f",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -993,7 +993,7 @@
       "paths": [
         "scripts/testing/owned-process-group.ts"
       ],
-      "revision": "173269924a62df715ffbd9c15fc72479ac8da17df41436ad5ac3c739582b25fd"
+      "revision": "fd38cb00c1c4bb871f8e9f88955100a79964300940330b4f47a1d25dca11b58b"
     },
     {
       "id": "SRC-owned-native-command-source",

@@ -146,21 +146,32 @@ async function inspectProcesses(
     if (Math.floor(settle.untilMonotonicMs - settleNow()) <= 0)
       throw new Error('Owned worker census deadline');
   };
-  const read = async () => {
+  const query = async () => {
     assertSettleActive();
     const remainingMs = settle
       ? Math.floor(settle.untilMonotonicMs - settleNow())
       : censusTimeoutMs;
-    const result = await execute('ps', ['-axo', 'pid=,pgid=,ruid=,stat=,lstart=,command='], {
+    return execute('ps', ['-axo', 'pid=,pgid=,ruid=,stat=,lstart=,command='], {
       encoding: 'buffer',
       timeout: settle ? Math.min(censusTimeoutMs, remainingMs) : censusTimeoutMs,
       maxBuffer: censusMaxBufferBytes,
       signal: settle?.signal,
       env: { ...process.env, LC_ALL: 'C' },
-    }).catch((error: unknown) => {
-      settle?.signal?.throwIfAborted();
-      throw new OwnedProcessCensusQueryError(error);
     });
+  };
+  const read = async () => {
+    // A loaded host can stall `ps` past its timeout. A timed-out query observed
+    // nothing, so a fresh query (at most two more) is equally authoritative.
+    let result: Awaited<ReturnType<typeof query>> | undefined;
+    for (let attempt = 1; !result; attempt += 1) {
+      result = await query().catch((error: unknown) => {
+        settle?.signal?.throwIfAborted();
+        const timedOut =
+          typeof error === 'object' && error !== null && (error as { killed?: unknown }).killed;
+        if (!timedOut || attempt >= 3) throw new OwnedProcessCensusQueryError(error);
+        return undefined;
+      });
+    }
     return result.stdout
       .toString('utf8')
       .split('\n')

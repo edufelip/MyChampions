@@ -8,6 +8,7 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   OwnedProcessCensusQueryError,
+  inspectProcessIdentity,
   OwnedCommandCensusUnavailableError,
   groupProcesses,
   requireOwnedProcessIdentity,
@@ -912,4 +913,24 @@ void test('process-query diagnostics preserve known status and hash output witho
     bytes: 0,
     sha256: createHash('sha256').update('').digest('hex'),
   });
+});
+
+void test('a ps census that times out under load is retried with a fresh query', async () => {
+  const shimRoot = await mkdtemp(path.join(os.tmpdir(), 'ps-shim-'));
+  const counter = path.join(shimRoot, 'calls');
+  // First call stalls past the 5 s census timeout; later calls use the real ps.
+  await writeFile(
+    path.join(shimRoot, 'ps'),
+    `#!/bin/sh\nif [ ! -f "${counter}" ]; then : > "${counter}"; exec sleep 7; fi\nexec /bin/ps "$@"\n`,
+    { mode: 0o755 },
+  );
+  const originalPath = process.env.PATH;
+  process.env.PATH = `${shimRoot}:${originalPath ?? ''}`;
+  try {
+    const row = await inspectProcessIdentity(process.pid);
+    assert.equal(row?.pid, process.pid);
+  } finally {
+    process.env.PATH = originalPath;
+    await rm(shimRoot, { recursive: true, force: true });
+  }
 });
