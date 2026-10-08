@@ -171,14 +171,18 @@ function requireAndroidRuntimeIdentity(report: Record<string, unknown>): void {
   assert.match(backendRunId, runId);
   const backendAttemptId = nonempty(backend.backendAttemptId, 'Android backend attempt');
   assert.equal(backendAttemptId, `${backendRunId}:first`);
-  assert.equal(backend.apiOrigin, build.apiOrigin);
+  // The app is built against the owned proxy, which forwards to the owned API.
+  const proxyOrigin = nonempty(report.proxyOrigin, 'Android proxy origin');
+  assert.equal(build.apiOrigin, proxyOrigin, 'Android app is not bound to the owned proxy');
+  assert.match(String(backend.apiOrigin), /^https?:\/\/(?:127\.0\.0\.1|localhost):\d+$/);
+  assert.notEqual(backend.apiOrigin, proxyOrigin);
   const apiProcess = record(backend.apiProcess, 'Android API process identity');
   assert(Number.isSafeInteger(apiProcess.pid) && Number(apiProcess.pid) > 1);
   nonempty(apiProcess.started, 'Android API process start');
   nonempty(apiProcess.script, 'Android API process script');
 
   const auth = record(report.androidSessionAuthIdentity, 'Android auth identity');
-  assert.equal(auth.targetOrigin, build.apiOrigin);
+  assert.equal(auth.targetOrigin, backend.apiOrigin);
   assert.equal(auth.apiPid, apiProcess.pid);
   assert.equal(auth.backendAttemptId, backendAttemptId);
   assert.match(String(report.fixtureHash), /^[a-f0-9]{64}$/);

@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "64fdd7496191eb0441d94bfbac2eafaf3db9812b",
+    "commit": "dea0ecdab9586af8476c7940f904358d4a79a879",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -1893,7 +1893,7 @@
       "paths": [
         "scripts/testing/run-android-session-attempt.ts"
       ],
-      "revision": "7cf2bb037851906fcb0e156024f85718a12d785e42387d25bb1aa9513e0b7d60"
+      "revision": "cbed7e122e6c29a6876d1fea328bacc71960e200b97eaad73b6aa9030d2a5dc8"
     },
     {
       "id": "SRC-ios-session-adapter-source",

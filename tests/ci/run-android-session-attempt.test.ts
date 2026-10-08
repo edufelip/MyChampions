@@ -121,6 +121,7 @@ function completeSessionFileSet() {
 function successfulReport(captureRunId: string): Record<string, unknown> {
   const backendRunId = id('b');
   const apiOrigin = 'http://127.0.0.1:41001';
+  const proxyOrigin = 'http://127.0.0.1:41003';
   return {
     kind: 'private-owned-native-session-execution-not-public-receipt',
     mode: 'integration',
@@ -142,9 +143,10 @@ function successfulReport(captureRunId: string): Record<string, unknown> {
       appId: 'com.edufelip.mychampions.dev',
       binaryHash: 'd'.repeat(64),
       environmentHash: 'e'.repeat(64),
-      apiOrigin,
+      apiOrigin: proxyOrigin,
       profile: 'dev-debug',
     },
+    proxyOrigin,
     device: { serial: 'emulator-5554', osVersion: '37', runId: captureRunId },
     backend: {
       runId: backendRunId,
