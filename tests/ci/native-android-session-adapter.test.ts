@@ -886,7 +886,7 @@ void test('Android API lifetime binding uses one owned process identity across t
   );
 });
 
-void test('Android session checkpoints require four distinct profile and domain source receipts', () => {
+void test('Android session checkpoints require four distinct profile and domain source files', () => {
   const phases = [
     'before-login',
     'after-login',
@@ -922,6 +922,24 @@ void test('Android session checkpoints require four distinct profile and domain 
   assert.equal(
     requireAndroidSessionCheckpointSet({
       checkpoints,
+      expectedRunId: apiLifetime.runId,
+      expectedScope: 'native-entry-android',
+      expectedApiOrigin: apiLifetime.apiOrigin,
+      expectedApiPid: apiLifetime.apiPid,
+      expectedBackendAttemptId: apiLifetime.backendAttemptId,
+      expectedManifestSha256: apiLifetime.manifestSha256,
+      expectedFixtureAuthUidAllowlistHash: identity.fixtureAuthUidAllowlistHash,
+    }).length,
+    4,
+  );
+  // Unchanged domain rows produce byte-identical snapshots in separate files.
+  const unchangedDomain = checkpoints.map((checkpoint) => ({
+    ...checkpoint,
+    domain: { ...checkpoint.domain, sizeBytes: 200, sha256: checkpoints[0].domain.sha256 },
+  }));
+  assert.equal(
+    requireAndroidSessionCheckpointSet({
+      checkpoints: unchangedDomain,
       expectedRunId: apiLifetime.runId,
       expectedScope: 'native-entry-android',
       expectedApiOrigin: apiLifetime.apiOrigin,

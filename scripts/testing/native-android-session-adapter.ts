@@ -1086,8 +1086,9 @@ export function requireAndroidSessionCheckpointSet(input: {
   ];
   if (input.checkpoints.length !== phases.length)
     throw new Error('Android session checkpoint set must contain four phases');
+  // Each phase must read its own file. Equal bytes across phases are expected:
+  // the session journey leaves domain rows unchanged (domainRowsUnchanged).
   const paths = new Set<string>();
-  const hashes = new Set<string>();
   return phases.map((phase, index) => {
     const receipt = input.checkpoints[index];
     if (
@@ -1112,14 +1113,12 @@ export function requireAndroidSessionCheckpointSet(input: {
         source.ownerUid <= 0 ||
         source.mode !== 0o600 ||
         source.verification !== 'owned-runtime-document-v6' ||
-        paths.has(source.path) ||
-        hashes.has(source.sha256)
+        paths.has(source.path)
       )
         throw new Error(
           'Android session checkpoint source receipt is missing, duplicated or forged',
         );
       paths.add(source.path);
-      hashes.add(source.sha256);
     }
     return structuredClone(receipt);
   });

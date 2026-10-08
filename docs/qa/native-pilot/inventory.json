@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "567fd6acf0c227b5ddf78ca0d5ce4bf8687dd4ff",
+    "commit": "27e1e36de56e202cc96d2b4acf62341b88dd7a0a",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -2154,7 +2154,7 @@
       "paths": [
         "scripts/testing/native-android-session-adapter.ts"
       ],
-      "revision": "6f8663f8b070b154178dc910d74acc79ba6230699b49341b737f44fb2c9277e1"
+      "revision": "7dd0fcc3600d1973a9bf4421a10ec16d0383e36959948851485794748663726d"
     },
     {
       "id": "SRC-detox-dispatch-android-session-producer-source",
