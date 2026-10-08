@@ -370,9 +370,15 @@ async function requireSourceAndHelpers(
   );
   for (const raw of capture.helperInputsBefore) {
     const helper = record(raw, 'helper input');
+    // Same boundary as the shared native helper ledger and session finalizer.
     assert(
       typeof helper.path === 'string' &&
-        /^scripts\/testing\/[A-Za-z0-9._/-]+\.ts$/.test(helper.path),
+        (helper.path === 'package.json' ||
+          /^scripts\/(?:testing|ci)\/[A-Za-z0-9._/-]+\.(?:ts|mjs|json|java|xml|py)$/.test(
+            helper.path,
+          ) ||
+          /^\.maestro\/flows\/[a-z0-9-]+\.yaml$/.test(helper.path)),
+      'Native helper path is outside the source boundary',
     );
     assert(typeof helper.sha256 === 'string' && /^[a-f0-9]{64}$/.test(helper.sha256));
     const target = assertArtifactPath(repositoryRoot, helper.path);

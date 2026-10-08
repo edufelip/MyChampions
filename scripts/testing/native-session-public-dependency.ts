@@ -588,7 +588,8 @@ function requireUiEvidence(root: string, capture: SessionCaptureCandidate): stri
       assert.equal(hierarchyHasResourceId(hierarchy, 'settings.account.signOutConfirm'), false);
     } else assert.deepEqual(row.notVisibleSelectors ?? [], []);
   }
-  const launched = readNativeEvidence(root, 'launched.png', true);
+  // A screenshot, like the other session frames, is not a private record.
+  const launched = readNativeEvidence(root, 'launched.png', false);
   assert.ok(
     launched.length > 8 &&
       launched.subarray(0, 8).equals(Buffer.from('\x89PNG\r\n\x1a\n', 'binary')),

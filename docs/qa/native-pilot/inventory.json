@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "3c0e608a71e1c46f695f74920e61e4036e0d800a",
+    "commit": "14116d120b5884d29b46508392407cd5a96b1320",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -1830,7 +1830,7 @@
       "paths": [
         "scripts/testing/native-save-retry-public-evidence.ts"
       ],
-      "revision": "1da1e2f66ec3e5f0b4535e2bbcde6d6b7f538c1a043738fa004b8255acf7d8e4"
+      "revision": "36d5d57b8dae8862eba72791c1b31123a705c9e8bcee1a4bcb9821c72f416f5d"
     },
     {
       "id": "SRC-android-save-retry-adapter-source",
@@ -1947,7 +1947,7 @@
       "paths": [
         "scripts/testing/native-session-public-dependency.ts"
       ],
-      "revision": "1440827815d1c49984bb46ed805e0a6784a7a7b0318ecb70c397ef229b1f04de"
+      "revision": "983de6da6bf65d62f92c7b1f35c9e49dc665bfbfa6c1a409e745aa33a2d38cd4"
     },
     {
       "id": "SRC-session-public-staging-source",
