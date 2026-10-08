@@ -761,7 +761,10 @@ export async function verifyStagedNativeAndroidSaveRetryEvidence(options: {
         typeof row.mode === 'number' &&
         Number.isSafeInteger(row.mode) &&
         (row.mode === 0o600 || row.mode === 0o644) &&
-        (row.mode === expectedMode(row.path) || row.path.startsWith('source/')),
+        (row.mode === expectedMode(row.path) ||
+          // Owned Android screenshots are written private (0600); stricter is fine.
+          (row.path.endsWith('.png') && row.mode === 0o600) ||
+          row.path.startsWith('source/')),
     );
     const originalIdentity = parseOriginalIdentity(
       row.originalIdentity,

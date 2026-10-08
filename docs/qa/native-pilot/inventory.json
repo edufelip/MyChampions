@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "37d8860af77b2a37194c03f4ee5fc6db4c2d6bf0",
+    "commit": "b00ab373beb7e0e0fd45f7360732dcf4667d052f",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -849,7 +849,7 @@
       "paths": [
         "scripts/testing/native-view-evidence.ts"
       ],
-      "revision": "39d8b3b7288cd8668be6e8f679ec2d04bc91c3b5ad3dd84183532e7cadc1f433"
+      "revision": "5c31e8b673b90a1b705999b14c3424d9ffed91bba7f9441b812e4dda3d858387"
     },
     {
       "id": "SRC-testing-start-here-source",
@@ -966,7 +966,7 @@
       "paths": [
         "scripts/testing/run-native-pilot.ts"
       ],
-      "revision": "4dd4dd18131cd6cc721c40530b20b8c19ff35db136b8aded41d87b0b6b92ca55"
+      "revision": "822e6c43c4fb5f4bc7b5c3c0c2ec536994767a146439634a2d3c01e6ccfac86a"
     },
     {
       "id": "SRC-runner-wrapper-source",
@@ -1227,7 +1227,7 @@
       "paths": [
         "scripts/testing/native-view-evidence.ts"
       ],
-      "revision": "39d8b3b7288cd8668be6e8f679ec2d04bc91c3b5ad3dd84183532e7cadc1f433"
+      "revision": "5c31e8b673b90a1b705999b14c3424d9ffed91bba7f9441b812e4dda3d858387"
     },
     {
       "id": "SRC-training-attempt-source",
@@ -1731,7 +1731,7 @@
       "paths": [
         "scripts/testing/run-native-pilot.ts"
       ],
-      "revision": "4dd4dd18131cd6cc721c40530b20b8c19ff35db136b8aded41d87b0b6b92ca55"
+      "revision": "822e6c43c4fb5f4bc7b5c3c0c2ec536994767a146439634a2d3c01e6ccfac86a"
     },
     {
       "id": "SRC-ios-detox-camera-e2e-source",
@@ -1794,7 +1794,7 @@
       "paths": [
         "scripts/testing/native-save-retry-observation.ts"
       ],
-      "revision": "d58f8947a648efa3a6ac7d5ed6afa174055e1f1fba1abf64471a8283b7ba7dc2"
+      "revision": "8891de602a236be4d1dd5684580adf1f549adb0c033e643bfdb70264ed1dc148"
     },
     {
       "id": "SRC-save-retry-attempt-source",
@@ -1848,7 +1848,7 @@
       "paths": [
         "scripts/testing/native-android-save-retry-public-evidence.ts"
       ],
-      "revision": "c6b19053c4185639e6ce4ec6ce15ff2929e202a3d179e643609dcaaf8d695876"
+      "revision": "10badca05b7682932b6c91bd9d9eeb6fd24c6c758b53789c80e2a42fb2dc4e7b"
     },
     {
       "id": "SRC-android-session-public-contract-source",

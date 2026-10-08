@@ -10,9 +10,11 @@ Android Maestro status on current code (local, Metro-attached devDebug, owned em
 | Training | **Passed** 7/7 | `20566dce77ca6a3aa8aca5ca` |
 | Connection | **Passed** 7/7 | `f8d08823cee5f613ac7ed4a4` |
 | Session | Every UI step runs; **blocked by real product finding** (native sign-out keeps the server access cookie; same as Detox) | `9ea04465964705e39589101f` |
-| Save-retry | No Maestro route yet | — |
+| Save-retry | **Passed** 5/5 | `3203d5cc395f3f3b4b872e0b` |
 
 Fixes made to get here (each from a real failing run): camera invite code injected after the step that types it (Maestro typed "undefined"); readiness flows asserted later selectors instantly (now wait for each); training result dropped `captureCleanup` (schema-invalid receipt); Maestro CLI blocked ~55 s on analytics during `--version` (now opted out); Maestro storage reader rejected committed SQLite journals, never relaunched after force-stopping for a snapshot (now relaunches, as its contract says), and choked on empty `sqlite3 -json` output; session cleanup compared the capture run id with the backend run id; Android roster rows sit beside (not under) the screen node in Maestro's tree; pending request is below the fold (scroll to it); Android capture build lacked `node`; connection proofs wrote into a missing `assertions/` folder; redacted invite-code frames were registered as copyable command artifacts. Host was cleared first (user's Pixel_10 emulator and seven leftover adb servers were holding the shared adb port).
+
+Save-retry fixes: the unchanged reopened plan must expose no enabled Save (its disabled footer can be off-screen); Android's native alert carries the error as the title view's text with OK as `android:id/button1`; owned Android screenshots are private (0600). The runner's terminal diagnostic now includes a stack.
 
 Also observed (not changed, needs owner review): the coach pending-requests screen renders badly squeezed on the Pixel emulator (title breaks mid-word, request card text one letter per line).
 

@@ -715,7 +715,22 @@ export function validateNativeSaveRetryPreparation(
       Boolean(node.children?.some(boundError))
     );
   };
-  if (!boundError(load('save-error')))
+  // Android's native AlertDialog renders the title and OK as sibling views:
+  // require the OS dialog's own title/message view and its positive button.
+  const androidBoundError = (value: unknown): boolean =>
+    treeHasAttributes(
+      value,
+      (a) =>
+        typeof a['resource-id'] === 'string' &&
+        /:id\/(?:alert_title|message)$/u.test(a['resource-id']) &&
+        a.text === errorTitle,
+    ) &&
+    treeHasAttributes(
+      value,
+      (a) => a['resource-id'] === 'android:id/button1' && a.text === 'OK' && a.enabled === 'true',
+    );
+  const saveErrorTree = load('save-error');
+  if (!(boundError(saveErrorTree) || (platform === 'android' && androidBoundError(saveErrorTree))))
     throw new Error('Native save error lacks its bound visible title and enabled OS dismissal');
   for (const [label, enabled] of [
     ['save-retained', true],
@@ -1659,6 +1674,11 @@ function validateCapturedFrameBytes(
     const androidTrainingSelectors: Record<string, { attribute: string; value: string }> = {
       'STATE-native-text-edit-menu': { attribute: 'text', value: 'Select all' },
       'STATE-item-removal-confirm': { attribute: 'text', value: enUS['pro.plan.delete.body'] },
+      // Android's native alert exposes the message as the title view's text.
+      'STATE-training-save-error': {
+        attribute: 'text',
+        value: nativeObservedSelectors['STATE-training-save-error'].value,
+      },
     };
     const selector =
       platform === 'android'
@@ -1673,7 +1693,18 @@ function validateCapturedFrameBytes(
       throw new Error('Native observation evidence bytes changed');
     if (
       screenshot.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a' ||
-      !treeHasPlatformSelector(JSON.parse(hierarchy.toString()) as unknown, selector, platform)
+      !(
+        treeHasPlatformSelector(JSON.parse(hierarchy.toString()) as unknown, selector, platform) ||
+        // An Android override may differ only by attribute; the shared exact
+        // selector remains acceptable evidence for the same view.
+        (platform === 'android' &&
+          nativeObservedSelectors[row.viewId] !== undefined &&
+          treeHasPlatformSelector(
+            JSON.parse(hierarchy.toString()) as unknown,
+            nativeObservedSelectors[row.viewId],
+            platform,
+          ))
+      )
     )
       throw new Error('Native observation lacks PNG or exact actual-tree selector');
   }

@@ -78,15 +78,14 @@ export function requireNativeRetryDraft(
     ),
     'Retry draft name is absent or not editable',
   );
-  assert(
-    find(
-      tree,
-      (a) =>
-        nativeResourceIdMatches(platform, a, 'pro.training_plan.saveButton') &&
-        a.enabled === String(saveEnabled),
-    ),
-    'Retry draft Save state is wrong',
+  // A retained unsaved draft must offer an enabled Save. An unchanged reopened
+  // plan must offer no enabled Save; its disabled footer may be off-screen.
+  const enabledSave = find(
+    tree,
+    (a) =>
+      nativeResourceIdMatches(platform, a, 'pro.training_plan.saveButton') && a.enabled === 'true',
   );
+  assert(enabledSave === saveEnabled, 'Retry draft Save state is wrong');
   const sessionHasQuantity = (node: unknown): boolean => {
     if (!node || typeof node !== 'object' || Array.isArray(node)) return false;
     const row = node as { attributes?: Record<string, unknown>; children?: unknown[] };

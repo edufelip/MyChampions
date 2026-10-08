@@ -3463,6 +3463,8 @@ async function main() {
           kind: 'private terminal verification failure; not public evidence',
           name: error instanceof Error ? error.name.slice(0, 128) : 'UnknownError',
           message: (error instanceof Error ? error.message : String(error)).slice(0, 2048),
+          stack:
+            error instanceof Error ? (error.stack ?? '').split('\n').slice(0, 10).join('\n') : null,
         })}\n`,
         { flag: 'wx', mode: 0o600 },
       ).catch(() => undefined);
