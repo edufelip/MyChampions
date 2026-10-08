@@ -18,6 +18,18 @@ Save-retry fixes: the unchanged reopened plan must expose no enabled Save (its d
 
 Also observed (not changed, needs owner review): the coach pending-requests screen renders badly squeezed on the Pixel emulator (title breaks mid-word, request card text one letter per line).
 
+iOS Maestro status on current code (local, Metro-attached Debug, owned simulator, owned Postgres):
+
+| Journey | Result | Attempt |
+| --- | --- | --- |
+| Camera denied | **Passed** | `5edacb62aa32552be3165f70` |
+| Training | **Passed** | `449722648650c0acc45993d2` |
+| Connection | **Passed** | `42457ec92e645c72e29bf6b2` |
+| Session | Pending | — |
+| Save-retry | Pending | — |
+
+iOS connection fix: the iOS capture recorded the coach sign-in boundary with an extra `beforeRequestId`, which the controller's exact comparison rejected; the capture now records the same fields as Android. One earlier attempt (`0ba210ec8469dd90e1e210d1`) was correctly blocked when an unrelated CI runner on the same Mac started an `xcodebuild` archive mid-run; its leftover adb server was removed by hand.
+
 ## Android Detox session (T14-A): UI journey passes; real native-logout cookie finding — 2026-10-07
 
 Status: **Product finding, Pending owner decision** (Android × Detox × postgres session). Attempt `0dcb99919616cf8e0c04612a` (build `c0ffee000000000000000093`, capture `native-pilot/c37d3aed0ab1d4065926d136`): the Detox child passes every UI step on the owned emulator (sign-in, relaunch restore, cancel sign-out, sign-out, signed-out relaunch) and every storage checkpoint is acknowledged. Harness verification then correctly rejects the run: **after sign-out and relaunch, the app still sends the server access cookie** (`knownAccessCookie: nonempty`, no Authorization header) on four `POST /analytics/events` requests (IDs 38–41). React Native's Android cookie store persists across relaunch and native sign-out does not clear it, which contradicts the 2026-10-03 owner decision that native logout clears device-local credentials/session. Not weakened in the test. Fixing it changes auth behavior and needs owner approval (options: clear the native cookie store on sign-out, send native requests without cookies, or stop issuing cookies to the native request profile).

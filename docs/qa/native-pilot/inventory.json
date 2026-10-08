@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "b00ab373beb7e0e0fd45f7360732dcf4667d052f",
+    "commit": "0681367ff56420b8c8f1536bb06ba3a1f3d6b0e8",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -1317,7 +1317,7 @@
       "paths": [
         "scripts/testing/capture-native-testability.ts"
       ],
-      "revision": "dcfacdeabad565cf1f1d6d052677b5b3f7f1e40480dea4b2240b1f0d69347588"
+      "revision": "0da11c20a5d8117fdc6c7e31b1a3750caa3f288d5c9407bdc4811f7f8631506e"
     },
     {
       "id": "SRC-android-capture-source",

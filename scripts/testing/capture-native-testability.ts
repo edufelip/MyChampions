@@ -3537,7 +3537,8 @@ async function executeOwnedIosSession(
         report.connectionInitialAuth = {
           actor: 'coach',
           actorAuthUid: coachAuthUid,
-          ...coachBoundary,
+          authRequestId: coachBoundary.authRequestId,
+          afterRequestId: coachBoundary.afterRequestId,
         };
       }
       if (cameraIntegration) {
