@@ -640,11 +640,19 @@ export function requireAndroidMaestroCommandHashes(
     androidSessionPublicUiObservationContract.length,
     'Android command phase mapping is incomplete',
   );
-  assert.equal(
-    byLabel.size,
-    androidSessionPublicUiObservationContract.length * 3,
-    'Android command execution set contains an unbound command',
+  // Build, launch and storage-read commands also run as steps. Only Maestro UI
+  // commands (always a readiness/hierarchy/observation triple) must be bound.
+  const boundLabels = new Set(
+    [...observedLabels].flatMap((label) => [`${label}-readiness`, `${label}-hierarchy`, label]),
   );
+  for (const label of byLabel.keys()) {
+    const uiBase = label.replace(/-(readiness|hierarchy)$/, '');
+    const isUiCommand = uiBase !== label || byLabel.has(`${label}-readiness`);
+    assert(
+      !isUiCommand || boundLabels.has(label),
+      'Android command execution set contains an unbound command',
+    );
+  }
   return commandHashes;
 }
 

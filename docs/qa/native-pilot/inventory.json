@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "e8f07e39ccc3a97f5eda6862f9f159f3123be9e9",
+    "commit": "8897d913e31578a66d8ef1912f75c9042327c7c6",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -1866,7 +1866,7 @@
       "paths": [
         "scripts/testing/native-android-session-public-dependency.ts"
       ],
-      "revision": "4ecb8cf15ae8d2e541822317f1976751a06096e6179d322513715747cbfa6a01"
+      "revision": "fdcdd79852fd90af1ff2d7b9cb099545f0730999330a0dfb8a2bd39a873fbd62"
     },
     {
       "id": "SRC-android-session-public-dispatch-source",

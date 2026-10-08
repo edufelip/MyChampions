@@ -821,6 +821,24 @@ void test('Android source-only loader rejects ledger identity, owner/mode, and u
     await rm(census.root, { recursive: true, force: true });
   }
 
+  const extra = await maestroFixture();
+  try {
+    // Setup and storage commands are steps too; only UI commands must be bound.
+    extra.commandExecutions.push(
+      await writeOwnedCommand(extra.root, 'android-launch', extra.commandExecutions.length, null),
+    );
+    requireAndroidMaestroEvidence(extra.root, extra.capture);
+    extra.commandExecutions.push(
+      await writeOwnedCommand(extra.root, 'rogue-readiness', extra.commandExecutions.length, null),
+    );
+    assert.throws(
+      () => requireAndroidMaestroEvidence(extra.root, extra.capture),
+      /unbound command/,
+    );
+  } finally {
+    await rm(extra.root, { recursive: true, force: true });
+  }
+
   assert.throws(
     () =>
       requireAndroidCleanupEvidence(
