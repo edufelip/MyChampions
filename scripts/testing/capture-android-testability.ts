@@ -3884,6 +3884,7 @@ async function executeOwnedAndroidSession(
         afterRequestId: coachBoundary.afterRequestId,
         apiPid: afterLoginCheckpoint.apiLifetime.apiPid,
         targetOrigin: afterLoginCheckpoint.apiLifetime.apiOrigin,
+        backendAttemptId: afterLoginCheckpoint.apiLifetime.backendAttemptId,
         fixtureAuthUidAllowlistHash: coachIdentity.fixtureAuthUidAllowlistHash,
       };
       await authenticatedProxy.waitForQuiescence();

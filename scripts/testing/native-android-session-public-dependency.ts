@@ -1031,7 +1031,12 @@ async function requireCheckpointIdentity(
     capture.androidSessionSignedOutTransport,
     'Android signed-out transport',
   );
-  const restoreLifetime = record(restoreTransport.apiLifetime, 'Android restore API lifetime');
+  // Restore transport is the exact adapter slice without an apiLifetime
+  // wrapper; the producer publishes the lifetime on the signed-out record.
+  const restoreLifetime = record(
+    restoreTransport.apiLifetime ?? signedOutTransport.apiLifetime,
+    'Android restore API lifetime',
+  );
   const signedOutLifetime = record(
     signedOutTransport.apiLifetime,
     'Android signed-out API lifetime',
