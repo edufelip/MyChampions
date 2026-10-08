@@ -377,10 +377,24 @@ function requireSourceFreshness(
   assert.deepEqual(capture.helperInputsBefore, current.helpers, 'Android helper identity is stale');
 }
 
-export function requireAndroidCleanupEvidence(value: unknown, backendRunId: string): void {
+/** Signed-in relaunch spans the capture declared; the profile verifier checks each. */
+function requireRelaunchWindows(value: unknown) {
+  if (value === undefined) return [];
+  assert(Array.isArray(value), 'Android relaunch windows are malformed');
+  return value.map((raw) => {
+    const window = record(raw, 'Android relaunch window');
+    return {
+      afterRequestId: integer(window.afterRequestId, 'Android relaunch window start', 0),
+      throughRequestId: integer(window.throughRequestId, 'Android relaunch window end', 1),
+    };
+  });
+}
+
+/** The independent cleanup proof is keyed by the capture run, not the backend run. */
+export function requireAndroidCleanupEvidence(value: unknown, captureRunId: string): void {
   const cleanup = record(value, 'Android external cleanup');
   assert.equal(cleanup.result, 'passed');
-  assert.equal(cleanup.runId, backendRunId);
+  assert.equal(cleanup.runId, captureRunId, 'Android cleanup proof is not bound to the capture');
   assert.equal(cleanup.censusStatus, 'available', 'Android cleanup census is unavailable');
   assert.equal(cleanup.captureResult, 'observed');
   assert.equal(cleanup.captureCleanupClean, true);
@@ -390,6 +404,18 @@ export function requireAndroidCleanupEvidence(value: unknown, backendRunId: stri
   assert.equal(cleanup.ownedDeviceAbsent, true);
   assert.equal(cleanup.cacheAbsent, true, 'Android acquired-session cache absence is unknown');
   assert.equal(cleanup.nativePassingCases, 0);
+}
+
+/**
+ * The raw sqlite output holds unredacted token bytes, so the capture deletes it
+ * after hashing (retained: false). Its hash stays bound in the receipt; the
+ * redacted query file is what the loader re-reads.
+ */
+function isDeletedQuerySource(receipt: unknown): boolean {
+  const row = record(receipt, 'Android query source receipt');
+  if (row.retained !== false) return false;
+  assert.match(String(row.sha256), /^[a-f0-9]{64}$/, 'Android query source hash is invalid');
+  return true;
 }
 
 function requireReceiptSet(
@@ -413,7 +439,9 @@ function requireReceiptSet(
   };
   read('database', set.database);
   read('query', set.query);
-  read('querySource', set.querySource, androidSessionStorageLimits.queryBytes);
+  if (isDeletedQuerySource(set.querySource))
+    hashes.push(String(record(set.querySource, `${label}.querySource`).sha256));
+  else read('querySource', set.querySource, androidSessionStorageLimits.queryBytes);
   for (const [index, sidecar] of set.databaseSidecars.entries())
     read(`databaseSidecars[${index}]`, sidecar);
   if (set.secureStore !== null) read('secureStore', set.secureStore);
@@ -430,15 +458,17 @@ function requireStorageReceiptHashes(
 ): string[] {
   const privateArtifacts = record(storage.privateArtifacts, `${label}.privateArtifacts`);
   return ['database', 'query', 'querySource'].map((key) =>
-    String(
-      readReceipt(
-        root,
-        privateArtifacts[key],
-        `${label}.${key}`,
-        guard,
-        key === 'querySource' ? androidSessionStorageLimits.queryBytes : undefined,
-      ).receipt.sha256,
-    ),
+    key === 'querySource' && isDeletedQuerySource(privateArtifacts[key])
+      ? String(record(privateArtifacts[key], `${label}.${key}`).sha256)
+      : String(
+          readReceipt(
+            root,
+            privateArtifacts[key],
+            `${label}.${key}`,
+            guard,
+            key === 'querySource' ? androidSessionStorageLimits.queryBytes : undefined,
+          ).receipt.sha256,
+        ),
   );
 }
 
@@ -922,7 +952,12 @@ function requireSignedOutStorage(value: AndroidSessionStorageObservation, label:
   );
   assert.equal(value.asyncStorage.recordBytes, null, `${label} session record bytes remain`);
   assert.equal(value.asyncStorage.profileAuthUidHash, null, `${label} profile identity remains`);
-  assert.equal(value.secureStore.preferences, 'absent', `${label} SecureStore remains present`);
+  // Deleting the last entry leaves an empty SecureStore preferences file; the
+  // entry and key checks below are what prove the credential is gone.
+  assert(
+    value.secureStore.preferences === 'absent' || value.secureStore.preferences === 'present',
+    `${label} SecureStore preferences state is invalid`,
+  );
   assert.equal(
     value.secureStore.sessionEntryPresent,
     false,
@@ -1149,7 +1184,7 @@ export function validateAndroidSessionPublicDependencyInput(input: {
     nativeSessionAssertionIds,
   );
   requireAndroidSessionCaptureShape(input.capture);
-  requireAndroidCleanupEvidence(input.cleanup, input.backend.runId);
+  requireAndroidCleanupEvidence(input.cleanup, String(input.capture.captureRunId));
   requireFinalSessionTransport(
     input.transportBytes,
     { bytes: input.transportBytes.length, sha256: hash(input.transportBytes) },
@@ -1186,11 +1221,16 @@ export function validateAndroidSessionPublicDependencyInput(input: {
       afterRequestId: identity.restoreBefore,
       throughRequestId: identity.restoreAfter,
     },
+    relaunchWindows: requireRelaunchWindows(input.capture.androidSessionRelaunchWindows),
     persistedCoachIdentity,
   });
   const restoreLifetime = identity.restoreLifetime;
   const restoreSlice = requireAndroidSessionTransportSlice({
-    observations: input.transportObservations,
+    // The capture sliced the stream as it stood when restoration ended; replay
+    // that prefix, since later session requests extend the final stream.
+    observations: input.transportObservations.filter(
+      (row) => row.requestId <= identity.restoreAfter,
+    ),
     beforeRequestId: identity.restoreBefore,
     afterRequestId: identity.restoreAfter,
     phase: 'restore',

@@ -4327,6 +4327,7 @@ async function executeOwnedAndroidSession(
           sessionCheckpointReceipts: sessionCheckpointSet,
         };
       }
+      report.androidSessionRelaunchWindows = sessionRelaunchWindows;
       try {
         report.androidSessionProfileCheckpoint = verifyNativeSessionProfileCheckpoints({
           platform: 'android',

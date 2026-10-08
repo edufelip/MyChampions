@@ -1437,7 +1437,9 @@ void test('Android receipt reader rejects actual oversized bytes before trusting
   try {
     const storage = value.capture.androidSessionStorage as Record<string, Record<string, unknown>>;
     const before = storage['auth-before-relaunch'].privateArtifacts as Record<string, unknown>;
-    const receipt = before.querySource as Record<string, unknown>;
+    // The raw query source is deleted by the capture; the redacted query is
+    // the storage file the reader always opens.
+    const receipt = before.query as Record<string, unknown>;
     const file = path.join(value.maestro.root, String(receipt.path));
     await writeFile(file, Buffer.alloc(androidSessionStorageLimits.queryBytes + 1, 0x61), {
       mode: 0o600,
@@ -1458,9 +1460,9 @@ void test('Android receipt reader rejects a hardlink alias and storage role/path
   try {
     const storage = value.capture.androidSessionStorage as Record<string, Record<string, unknown>>;
     const before = storage['auth-before-relaunch'].privateArtifacts as Record<string, unknown>;
-    const sourceReceipt = before.querySource as Record<string, unknown>;
+    const sourceReceipt = before.query as Record<string, unknown>;
     const source = path.join(value.maestro.root, String(sourceReceipt.path));
-    const alias = path.join(value.maestro.root, 'foreign-async-storage-query.raw.private');
+    const alias = path.join(value.maestro.root, 'foreign-async-storage-query.json');
     await link(source, alias);
     sourceReceipt.path = path.basename(alias);
     assert.throws(
@@ -2204,4 +2206,22 @@ void test('Android child abort terminates and reaps a hung owned child with diag
   assert.match(result.stderr, /hung-child-stderr:.*hung-fixture-/);
   assert.ok(result.childTempRoot);
   await assert.rejects(stat(result.childTempRoot), /ENOENT/);
+});
+
+void test('Android loader binds a deleted raw query source by its receipt hash', async () => {
+  const value = await fullSessionFixture();
+  try {
+    const storage = value.capture.androidSessionStorage as Record<string, Record<string, unknown>>;
+    for (const phase of Object.values(storage)) {
+      const receipt = (phase.privateArtifacts as Record<string, unknown>).querySource as Record<
+        string,
+        unknown
+      >;
+      await rm(path.join(value.maestro.root, String(receipt.path)), { force: true });
+    }
+    validateAndroidSessionPublicDependencyInput(value as never);
+  } finally {
+    await rm(value.maestro.root, { recursive: true, force: true });
+    await rm(value.checkpointSource.root, { recursive: true, force: true });
+  }
 });

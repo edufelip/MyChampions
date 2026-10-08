@@ -266,11 +266,15 @@ async function readCurrentHelpers(
       assert(
         helperPath === 'package.json' ||
           helperPath.startsWith('scripts/testing/') ||
-          helperPath.startsWith('scripts/ci/'),
+          helperPath.startsWith('scripts/ci/') ||
+          // The session helper ledger binds the Maestro flows it executes.
+          /^\.maestro\/flows\/[a-z0-9-]+\.yaml$/.test(helperPath),
         label + '[' + index + '] is outside the source boundary',
       );
       assert(
-        sessionPythonHelperPath === helperPath || /\.(?:ts|mjs|json|java|xml)$/.test(helperPath),
+        sessionPythonHelperPath === helperPath ||
+          /\.(?:ts|mjs|json|java|xml)$/.test(helperPath) ||
+          helperPath.startsWith('.maestro/flows/'),
         label + '[' + index + '] has an unsupported extension',
       );
       return {
