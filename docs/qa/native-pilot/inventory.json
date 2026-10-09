@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "bafa0f1914006d73e7e28dbe68ff56ee0fe90158",
+    "commit": "e46441334c53318c60f92dad0aabe2662f155def",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -399,7 +399,7 @@
       "paths": [
         "package.json"
       ],
-      "revision": "0c42a87c6d91ff3216917ca12c6ba303cde8602c923123c1d700898f75d15e8b"
+      "revision": "81cf8733d27c51003c340062de7c7037cbf2bd6fd5213902781d59ff23dce7f0"
     },
     {
       "id": "SRC-exploration-preparation-source",
