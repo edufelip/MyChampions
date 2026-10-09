@@ -6,3 +6,8 @@ appId: com.edufelip.mychampions.dev
     clearState: true
     permissions:
       camera: ${CAMERA_PERMISSION || 'unset'}
+# A system password sheet from a previous flow can outlive the app process.
+- runFlow:
+    file: dismiss-password-sheet.yaml
+    env:
+      PASSWORD_SHEET_WAIT_MS: 1

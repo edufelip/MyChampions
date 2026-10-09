@@ -30,6 +30,7 @@ appId: com.edufelip.mychampions.dev
     direction: DOWN
 - tapOn:
     id: auth.createAccount.submitButton
+- runFlow: ../../common/dismiss-password-sheet.yaml
 - extendedWaitUntil:
     visible:
       id: auth.roleSelection.title

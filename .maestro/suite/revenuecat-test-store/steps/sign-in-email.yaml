@@ -10,6 +10,7 @@ appId: com.edufelip.mychampions.dev
 - hideKeyboard
 - tapOn:
     id: auth.signIn.submitButton
+- runFlow: ../../common/dismiss-password-sheet.yaml
 - extendedWaitUntil:
     visible:
       id: auth.roleSelection.title

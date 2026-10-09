@@ -71,7 +71,7 @@ jobs:
       group: mychampions-protected-ios-native
       cancel-in-progress: false
     env:
-      MAESTRO_IOS_SIMULATOR: iPhone 17
+      MAESTRO_IOS_DEVICE_TYPE: iPhone 17
       NATIVE_METRO_PORT: '18081'
       XCODE_REQUIRED_MAJOR: '26'
     steps:

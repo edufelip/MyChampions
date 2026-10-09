@@ -6,9 +6,11 @@
 #   scripts/testing/maestro-device.sh --platform ios|android --resolve-only
 #
 # --resolve-only prints the device id the suite must target and changes
-# nothing. iOS uses MAESTRO_IOS_SIMULATOR (default "iPhone 17"), reusing a
-# booted simulator with that name. Android uses ANDROID_SERIAL when set,
-# otherwise the single attached device.
+# nothing. iOS uses the simulator named MAESTRO_IOS_SIMULATOR (default
+# "MyChampions Maestro"), creating it from MAESTRO_IOS_DEVICE_TYPE (default
+# "iPhone 17") when missing and pinning it to English (en_US) so the suite's
+# text assertions do not depend on a shared simulator's language. Android uses
+# ANDROID_SERIAL when set, otherwise the single attached device.
 set -euo pipefail
 
 platform=""
@@ -25,8 +27,10 @@ done
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
+ios_name="${MAESTRO_IOS_SIMULATOR:-MyChampions Maestro}"
+
 ios_udid() {
-  local name="${MAESTRO_IOS_SIMULATOR:-iPhone 17}"
+  local name="$ios_name"
   xcrun simctl list devices available -j | /usr/bin/python3 -c '
 import json, sys
 name = sys.argv[1]
@@ -54,18 +58,27 @@ android_serial() {
 
 if [[ "$platform" == "ios" ]]; then
   udid="$(ios_udid)"
-  [[ -n "$udid" ]] || {
-    echo "No available simulator named \"${MAESTRO_IOS_SIMULATOR:-iPhone 17}\"." >&2
-    exit 1
-  }
   if [[ "$resolve_only" == true ]]; then
+    [[ -n "$udid" ]] || { echo "No simulator named \"$ios_name\"; prepare the device first." >&2; exit 1; }
     printf '%s\n' "$udid"
     exit 0
   fi
   app="${app:-$project_root/ios/build/Build/Products/Debug-iphonesimulator/mychampions.app}"
   [[ -d "$app" ]] || { echo "iOS app not found: $app" >&2; exit 1; }
+  if [[ -z "$udid" ]]; then
+    udid="$(xcrun simctl create "$ios_name" "${MAESTRO_IOS_DEVICE_TYPE:-iPhone 17}")"
+    echo "Created simulator $ios_name ($udid)."
+  fi
   xcrun simctl boot "$udid" 2>/dev/null || true
   xcrun simctl bootstatus "$udid" -b >/dev/null
+  # Pin the language/region; a change only applies after a reboot.
+  if [[ "$(xcrun simctl spawn "$udid" defaults read -g AppleLocale 2>/dev/null)" != "en_US" ]]; then
+    xcrun simctl spawn "$udid" defaults write -g AppleLanguages -array en
+    xcrun simctl spawn "$udid" defaults write -g AppleLocale -string en_US
+    xcrun simctl shutdown "$udid"
+    xcrun simctl boot "$udid"
+    xcrun simctl bootstatus "$udid" -b >/dev/null
+  fi
   xcrun simctl install "$udid" "$app"
   echo "Installed $(basename "$app") on simulator $udid."
 elif [[ "$platform" == "android" ]]; then

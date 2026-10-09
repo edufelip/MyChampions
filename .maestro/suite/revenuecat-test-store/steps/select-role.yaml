@@ -5,7 +5,7 @@ appId: com.edufelip.mychampions.dev
     visible:
       id: auth.roleSelection.title
     timeout: 15000
-- runFlow: dismiss-password-sheet.yaml
+- runFlow: ../../common/dismiss-password-sheet.yaml
 - tapOn:
     id: "auth.roleSelection.${ROLE == 'student' ? 'studentCard' : 'professionalCard'}"
 - tapOn:
