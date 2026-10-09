@@ -124,6 +124,12 @@
       "paths": [".maestro/suite/common/**"],
       "impact": "all",
       "platforms": ["ios", "android"]
+    },
+    {
+      "id": "maestro-ios-device-setup",
+      "paths": [".maestro/setup/**"],
+      "impact": "all",
+      "platforms": ["ios"]
     }
   ],
   "features": {

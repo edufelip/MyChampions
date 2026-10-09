@@ -4,7 +4,10 @@ tags: [platform]
 ---
 - runFlow: ../common/launch-fresh.yaml
 - runFlow: ../common/select-student-role.yaml
-- openLink: "mychampions://shared/webview?intent=account&url=https%3A%2F%2Feduwaldo.com%2Fterms&url=javascript%3Aalert(1)"
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://shared/webview?intent=account&url=https%3A%2F%2Feduwaldo.com%2Fterms&url=javascript%3Aalert(1)"
 - extendedWaitUntil:
     visible:
       id: shared.webview.screen

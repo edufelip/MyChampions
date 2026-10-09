@@ -25,7 +25,10 @@ tags: [authenticated]
     visible:
       id: shared.webview.webview
     timeout: 10000
-- openLink: mychampions://settings/account
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://settings/account"
 - extendedWaitUntil:
     visible:
       id: settings.account.screen
@@ -40,7 +43,10 @@ tags: [authenticated]
     visible:
       id: shared.webview.webview
     timeout: 10000
-- openLink: mychampions://settings/account
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://settings/account"
 - extendedWaitUntil:
     visible:
       id: settings.account.screen
@@ -84,7 +90,4 @@ tags: [authenticated]
 - assertVisible: "Sign out?"
 - tapOn:
     id: settings.account.signOutConfirmCta
-- extendedWaitUntil:
-    visible:
-      id: auth.signIn.title
-    timeout: 10000
+- runFlow: ../common/wait-sign-in.yaml

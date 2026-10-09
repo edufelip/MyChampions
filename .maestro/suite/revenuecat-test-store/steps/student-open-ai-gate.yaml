@@ -1,6 +1,9 @@
 appId: com.edufelip.mychampions.dev
 ---
-- openLink: mychampions://nutrition/custom-meals/new
+- runFlow:
+    file: ../../common/open-link.yaml
+    env:
+      LINK: "mychampions://nutrition/custom-meals/new"
 - extendedWaitUntil:
     visible:
       id: meal.builder.screen

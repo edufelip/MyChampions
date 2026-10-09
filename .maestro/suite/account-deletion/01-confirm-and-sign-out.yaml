@@ -31,7 +31,4 @@ tags: [authenticated]
     timeout: 5000
 - tapOn:
     id: settings.account.deleteConfirmCta
-- extendedWaitUntil:
-    visible:
-      id: auth.signIn.title
-    timeout: 10000
+- runFlow: ../common/wait-sign-in.yaml

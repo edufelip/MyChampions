@@ -1,6 +1,9 @@
 appId: com.edufelip.mychampions.dev
 ---
-- openLink: mychampions://settings/account
+- runFlow:
+    file: ../../common/open-link.yaml
+    env:
+      LINK: "mychampions://settings/account"
 - extendedWaitUntil:
     visible:
       id: settings.account.screen
@@ -21,7 +24,4 @@ appId: com.edufelip.mychampions.dev
     direction: DOWN
 - tapOn:
     id: settings.account.signOutConfirmCta
-- extendedWaitUntil:
-    visible:
-      id: auth.signIn.title
-    timeout: 10000
+- runFlow: ../../common/wait-sign-in.yaml

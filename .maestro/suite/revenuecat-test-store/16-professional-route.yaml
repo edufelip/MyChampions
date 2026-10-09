@@ -19,7 +19,10 @@ tags: [professional-route]
       INTERVAL: monthly
 - tapOn: Test valid purchase
 - runFlow: steps/student-ai-active.yaml
-- openLink: mychampions://professional/subscription
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://professional/subscription"
 - extendedWaitUntil:
     visible:
       id: pro.subscription.screen

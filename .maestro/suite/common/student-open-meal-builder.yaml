@@ -2,7 +2,10 @@ appId: com.edufelip.mychampions.dev
 ---
 - runFlow: launch-fresh.yaml
 - runFlow: select-student-role.yaml
-- openLink: mychampions://nutrition/custom-meals/new
+- runFlow:
+    file: open-link.yaml
+    env:
+      LINK: "mychampions://nutrition/custom-meals/new"
 - extendedWaitUntil:
     visible:
       id: meal.builder.screen

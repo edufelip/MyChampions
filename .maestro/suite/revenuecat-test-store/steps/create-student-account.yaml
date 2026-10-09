@@ -12,6 +12,10 @@ appId: com.edufelip.mychampions.dev
     element:
       id: auth.createAccount.passwordInput
     direction: DOWN
+# Show the password first: iOS strong-password autofill (autoComplete
+# "password-new") clears text typed into a hidden password field.
+- tapOn:
+    id: auth.createAccount.passwordToggle
 - tapOn:
     id: auth.createAccount.passwordInput
 - inputText: E2E-create-123!
@@ -20,6 +24,8 @@ appId: com.edufelip.mychampions.dev
     element:
       id: auth.createAccount.passwordConfirmationInput
     direction: DOWN
+- tapOn:
+    id: auth.createAccount.passwordConfirmationToggle
 - tapOn:
     id: auth.createAccount.passwordConfirmationInput
 - inputText: E2E-create-123!

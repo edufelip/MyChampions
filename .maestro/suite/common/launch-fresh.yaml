@@ -2,12 +2,14 @@
 # Pass CAMERA_PERMISSION=allow|deny to pre-set the camera permission.
 appId: com.edufelip.mychampions.dev
 ---
+# A system prompt from a previous flow can outlive the app process. Clear it
+# before launching: querying the screen while the app starts can fail on iOS.
+- runFlow: dismiss-stale-system-prompts.yaml
 - launchApp:
     clearState: true
     permissions:
       camera: ${CAMERA_PERMISSION || 'unset'}
-# A system password sheet from a previous flow can outlive the app process.
-- runFlow:
-    file: dismiss-password-sheet.yaml
-    env:
-      PASSWORD_SHEET_WAIT_MS: 1
+# Let the first render settle before any step reads the screen: an iOS
+# hierarchy read during app start can fail once and abort a wait.
+- waitForAnimationToEnd:
+    timeout: 5000

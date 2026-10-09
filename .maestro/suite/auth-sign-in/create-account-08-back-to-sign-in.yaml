@@ -11,7 +11,4 @@ tags: [auth-entry]
     direction: DOWN
 - tapOn:
     id: auth.createAccount.backToSignInButton
-- extendedWaitUntil:
-    visible:
-      id: auth.signIn.title
-    timeout: 5000
+- runFlow: ../common/wait-sign-in.yaml

@@ -4,7 +4,10 @@ tags: [nutrition]
 ---
 - runFlow: ../common/launch-fresh.yaml
 - runFlow: ../common/select-student-role.yaml
-- openLink: mychampions://shared/recipes/e2e-shared-recipe
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://shared/recipes/e2e-shared-recipe"
 - extendedWaitUntil:
     visible:
       id: shared_recipe.preview

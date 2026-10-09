@@ -3,7 +3,10 @@ appId: com.edufelip.mychampions.dev
 ---
 - runFlow: launch-fresh.yaml
 - runFlow: select-student-role.yaml
-- openLink: ${ROUTE}
+- runFlow:
+    file: open-link.yaml
+    env:
+      LINK: "${ROUTE}"
 - extendedWaitUntil:
     visible:
       id: ${SCREEN_ID}

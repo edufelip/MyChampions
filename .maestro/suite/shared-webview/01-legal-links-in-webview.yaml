@@ -17,7 +17,10 @@ tags: [platform]
     visible:
       id: shared.webview.webview
     timeout: 10000
-- openLink: mychampions://settings/account
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://settings/account"
 - extendedWaitUntil:
     visible:
       id: settings.account.screen

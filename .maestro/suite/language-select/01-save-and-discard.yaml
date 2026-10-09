@@ -23,8 +23,9 @@ tags: [authenticated]
     visible:
       id: settings.account.screen
     timeout: 5000
-- assertVisible: "Idioma"
-- assertVisible: "Português"
+# iOS merges a row's texts into one label ("Idioma, Português"); match a part.
+- assertVisible: ".*Idioma.*"
+- assertVisible: ".*Português.*"
 - runFlow: ../common/open-language-select.yaml
 - assertVisible:
     id: settings.languageSelect.option.pt-BR.checkmark

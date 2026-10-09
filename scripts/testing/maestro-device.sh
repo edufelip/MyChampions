@@ -79,6 +79,10 @@ if [[ "$platform" == "ios" ]]; then
     xcrun simctl boot "$udid"
     xcrun simctl bootstatus "$udid" -b >/dev/null
   fi
+  # Password AutoFill clears typed create-account passwords and breaks
+  # hierarchy reads on password screens; switch it off (idempotent).
+  maestro --device "$udid" test "$project_root/.maestro/setup/ios-disable-password-autofill.yaml" >/dev/null
+  echo "Password AutoFill is off on simulator $udid."
   xcrun simctl install "$udid" "$app"
   echo "Installed $(basename "$app") on simulator $udid."
 elif [[ "$platform" == "android" ]]; then

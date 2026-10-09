@@ -4,7 +4,10 @@ tags: [authenticated]
 ---
 - runFlow: ../common/launch-fresh.yaml
 - runFlow: ../common/select-student-role.yaml
-- openLink: mychampions://professional/students
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://professional/students"
 - extendedWaitUntil:
     visible:
       id: student.home.screen
