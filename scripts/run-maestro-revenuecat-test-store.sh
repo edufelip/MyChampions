@@ -88,13 +88,13 @@ else
   tag_args=(--include-tags "$live_scenario")
 fi
 
-bash scripts/testing/install-maestro.sh
+maestro_bin="$(bash scripts/testing/install-maestro.sh)"
 bash scripts/testing/maestro-device.sh --platform ios
 device="$(bash scripts/testing/maestro-device.sh --platform ios --resolve-only)"
 output_dir="${project_root}/.artifacts/ci-diagnostics/revenuecat/${live_scenario}-${run_uid}"
 mkdir -p "$output_dir"
 MAESTRO_CLI_NO_ANALYTICS=1 node --import tsx scripts/testing/run-with-fresh-metro.ts --platform ios -- \
-  maestro --device "$device" test "${tag_args[@]}" \
+  "$maestro_bin" --device "$device" test "${tag_args[@]}" \
   --format junit --output "$output_dir/report.xml" --test-output-dir "$output_dir" \
   .maestro/suite/revenuecat-test-store
 

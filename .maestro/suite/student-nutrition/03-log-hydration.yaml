@@ -22,7 +22,7 @@ tags: [nutrition]
 - tapOn:
     id: student.nutrition.waterWidget.intakeInput
 - inputText: "250"
-- hideKeyboard
+- runFlow: ../common/hide-keyboard.yaml
 - scrollUntilVisible:
     element:
       id: student.nutrition.waterWidget.logButton

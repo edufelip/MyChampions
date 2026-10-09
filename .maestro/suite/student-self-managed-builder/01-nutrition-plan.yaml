@@ -19,7 +19,7 @@ tags: [student-self-managed-builder]
 - assertVisible:
     id: pro.plan.metadata.hydrationGoalMl
     text: "2100"
-- hideKeyboard
+- runFlow: ../common/hide-keyboard.yaml
 - tapOn:
     id: pro.nutrition_plan.saveButton
 - extendedWaitUntil:

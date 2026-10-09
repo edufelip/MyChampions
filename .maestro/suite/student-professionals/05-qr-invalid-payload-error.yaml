@@ -5,6 +5,10 @@ tags: [qr-invalid-payload]
 - runFlow: ../common/student-professionals.yaml
 - tapOn:
     id: student.professionals.scanQrButton
+- runFlow:
+    file: ../common/answer-camera-prompt.yaml
+    env:
+      CAMERA_ANSWER: allow
 - extendedWaitUntil:
     visible:
       id: student.professionals.qrScanError

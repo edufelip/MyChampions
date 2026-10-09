@@ -18,6 +18,10 @@ tags: [image-upload-permission-denied]
           timeout: 5000
       - tapOn:
           text: Take photo
+      - runFlow:
+          file: ../common/answer-camera-prompt.yaml
+          env:
+            CAMERA_ANSWER: deny
 - extendedWaitUntil:
     visible:
       id: meal.builder.imageUpload.error

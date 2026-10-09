@@ -22,7 +22,7 @@ tags: [nutrition]
 - tapOn:
     id: student.nutrition.planChangeForm.input
 - inputText: Please add more breakfast variety this week.
-- hideKeyboard
+- runFlow: ../common/hide-keyboard.yaml
 - scrollUntilVisible:
     element:
       id: student.nutrition.planChangeForm.submitButton

@@ -1,5 +1,6 @@
 # Dismiss a system prompt left on screen by an earlier flow: the save-password
-# sheet ("Not Now") or an iOS "Open in …?" deep-link prompt (the link is stale).
+# sheet ("Not Now"), an iOS "Open in …?" deep-link prompt (the link is stale)
+# or an unanswered camera permission prompt.
 appId: com.edufelip.mychampions.dev
 ---
 - retry:
@@ -15,3 +16,8 @@ appId: com.edufelip.mychampions.dev
             visible: "Open in .*MyChampions.*"
           commands:
             - tapOn: "^Cancel$"
+      - runFlow:
+          when:
+            visible: ".*would like to access the Camera.*"
+          commands:
+            - tapOn: "^Don.t Allow$"

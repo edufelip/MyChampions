@@ -31,7 +31,10 @@ tags: [support]
 - tapOn:
     id: settings.account.support.bodyInput
 - inputText: The support request flow should submit safely.
-- hideKeyboard
+- runFlow:
+    file: ../common/hide-keyboard.yaml
+    env:
+      IOS_KEYBOARD: none
 - tapOn:
     id: settings.account.support.submitCta
 - extendedWaitUntil:

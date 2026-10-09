@@ -45,7 +45,7 @@ tags: [training]
 - tapOn:
     id: pro.training_plan.name
 - inputText: E2E Builder Training Plan
-- hideKeyboard
+- runFlow: ../common/hide-keyboard.yaml
 - scrollUntilVisible:
     element:
       id: pro.training_plan.saveButton
@@ -78,7 +78,10 @@ tags: [training]
 - tapOn:
     id: pro.training_plan.addSession.notes
 - inputText: Upper body focus
-- hideKeyboard
+- runFlow:
+    file: ../common/hide-keyboard.yaml
+    env:
+      IOS_KEYBOARD: none
 - tapOn:
     id: pro.training_plan.addSession.confirm
 - extendedWaitUntil:
@@ -98,7 +101,10 @@ tags: [training]
     visible:
       id: exerciseSearch.result.e2e-exercise-push-up
     timeout: 10000
-- hideKeyboard
+- runFlow:
+    file: ../common/hide-keyboard.yaml
+    env:
+      IOS_KEYBOARD: none
 - tapOn:
     id: exerciseSearch.result.e2e-exercise-push-up
 - extendedWaitUntil:
@@ -112,7 +118,10 @@ tags: [training]
 - tapOn:
     id: exerciseSearch.quantity
 - inputText: 3 x 10
-- hideKeyboard
+- runFlow:
+    file: ../common/hide-keyboard.yaml
+    env:
+      IOS_KEYBOARD: none
 - scrollUntilVisible:
     element:
       id: exerciseSearch.confirm

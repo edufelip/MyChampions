@@ -22,7 +22,7 @@ tags: [training]
 - tapOn:
     id: student.training.planChangeForm.input
 - inputText: Please adjust leg day volume this week.
-- hideKeyboard
+- runFlow: ../common/hide-keyboard.yaml
 - scrollUntilVisible:
     element:
       id: student.training.planChangeForm.submitButton

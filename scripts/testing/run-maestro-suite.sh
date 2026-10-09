@@ -38,5 +38,5 @@ else
   selected="$(node -e 'process.stdout.write(JSON.stringify(process.argv.slice(1)))' "${suites[@]}")"
 fi
 
-bash scripts/testing/install-maestro.sh
+bash scripts/testing/install-maestro.sh >/dev/null
 SELECTED_SUITES_JSON="$selected" yarn test:impact:execute --platform "$platform"

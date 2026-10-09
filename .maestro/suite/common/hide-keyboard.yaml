@@ -1,0 +1,32 @@
+# Close the keyboard.
+# Android: Maestro's hideKeyboard. iOS: Maestro's hideKeyboard only swipes the
+# screen, which works only where a scroll view dismisses on drag, so instead:
+#   IOS_KEYBOARD=margin (default) tap the empty page margin (left edge, upper
+#                     half); React Native treats it as a tap outside the input.
+#   IOS_KEYBOARD=enter press Enter (single-line inputs that only blur on submit).
+#   IOS_KEYBOARD=none  leave it open (inside modal sheets, where a margin tap
+#                     would land on the backdrop).
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          when:
+            true: ${(IOS_KEYBOARD || 'margin') == 'margin'}
+          commands:
+            - tapOn:
+                point: "2%,30%"
+      - runFlow:
+          when:
+            true: ${IOS_KEYBOARD == 'enter'}
+          commands:
+            - pressKey: Enter
+      - waitForAnimationToEnd:
+          timeout: 2000

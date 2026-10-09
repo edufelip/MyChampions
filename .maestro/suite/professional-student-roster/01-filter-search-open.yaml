@@ -35,7 +35,7 @@ tags: [professional]
 - tapOn:
     id: pro.students.search
 - eraseText: 20
-- hideKeyboard
+- runFlow: ../common/hide-keyboard.yaml
 - tapOn:
     id: pro.students.filter.pending
 - extendedWaitUntil:

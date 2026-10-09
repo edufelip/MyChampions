@@ -39,7 +39,7 @@ tags: [nutrition]
 - assertVisible:
     id: pro.plan.metadata.hydrationGoalMl
     text: "2200"
-- hideKeyboard
+- runFlow: ../common/hide-keyboard.yaml
 - tapOn:
     id: pro.nutrition_plan.saveButton
 - extendedWaitUntil:
@@ -64,7 +64,10 @@ tags: [nutrition]
 - assertVisible:
     id: pro.nutrition_plan.addMeal.input
     text: Breakfast
-- hideKeyboard
+- runFlow:
+    file: ../common/hide-keyboard.yaml
+    env:
+      IOS_KEYBOARD: none
 - scrollUntilVisible:
     element:
       id: pro.nutrition_plan.addMeal.confirm

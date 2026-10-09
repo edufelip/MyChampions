@@ -7,7 +7,7 @@ appId: com.edufelip.mychampions.dev
 - tapOn:
     id: auth.createAccount.emailInput
 - inputText: e2e-created-account@example.test
-- hideKeyboard
+- runFlow: ../../common/hide-keyboard.yaml
 - scrollUntilVisible:
     element:
       id: auth.createAccount.passwordInput
@@ -19,7 +19,7 @@ appId: com.edufelip.mychampions.dev
 - tapOn:
     id: auth.createAccount.passwordInput
 - inputText: E2E-create-123!
-- hideKeyboard
+- runFlow: ../../common/hide-keyboard.yaml
 - scrollUntilVisible:
     element:
       id: auth.createAccount.passwordConfirmationInput
@@ -29,7 +29,7 @@ appId: com.edufelip.mychampions.dev
 - tapOn:
     id: auth.createAccount.passwordConfirmationInput
 - inputText: E2E-create-123!
-- hideKeyboard
+- runFlow: ../../common/hide-keyboard.yaml
 - scrollUntilVisible:
     element:
       id: auth.createAccount.submitButton

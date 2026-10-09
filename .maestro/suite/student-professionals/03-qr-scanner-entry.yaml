@@ -5,6 +5,10 @@ tags: [qr-valid]
 - runFlow: ../common/student-professionals.yaml
 - tapOn:
     id: student.professionals.scanQrButton
+- runFlow:
+    file: ../common/answer-camera-prompt.yaml
+    env:
+      CAMERA_ANSWER: allow
 - waitForAnimationToEnd:
     timeout: 5000
 # The scanner either stays open (close it) or the fixture payload submits at once.

@@ -10,7 +10,7 @@ tags: [student-self-managed-builder]
 - tapOn:
     id: pro.training_plan.name
 - inputText: E2E Student Training Plan
-- hideKeyboard
+- runFlow: ../common/hide-keyboard.yaml
 - scrollUntilVisible:
     element:
       id: pro.training_plan.saveButton

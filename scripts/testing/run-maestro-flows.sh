@@ -42,6 +42,7 @@ if [[ "$tagged" -eq 0 ]]; then
 fi
 
 device="$(bash "$project_root/scripts/testing/maestro-device.sh" --platform "$platform" --resolve-only)"
+maestro_bin="$(bash "$project_root/scripts/testing/install-maestro.sh")"
 output="${output:-$project_root/.artifacts/maestro/$platform/$(basename "$flow_dir")-$tag}"
 mkdir -p "$output"
 
@@ -54,7 +55,7 @@ while true; do
   attempt_dir="$output/attempt-$attempt"
   mkdir -p "$attempt_dir"
   echo "Maestro $platform $(basename "$flow_dir") [$tag]: $tagged flow(s), attempt $attempt."
-  if maestro --device "$device" test \
+  if "$maestro_bin" --device "$device" test \
     --include-tags "$tag" \
     --format junit \
     --output "$attempt_dir/report.xml" \
