@@ -29,10 +29,14 @@ iOS Maestro status on current code (local, Metro-attached Debug, owned simulator
 | Camera denied | **Passed** | `5edacb62aa32552be3165f70` |
 | Training | **Passed** | `449722648650c0acc45993d2` |
 | Connection | **Passed** | `42457ec92e645c72e29bf6b2` |
-| Session | Pending | — |
-| Save-retry | Pending | — |
+| Session | **Passed** | `a196269e9a42e3e2171493c5` |
+| Save-retry | **Passed** | `10fb2ae42aaa0b38d8da4a26` |
 
 iOS connection fix: the iOS capture recorded the coach sign-in boundary with an extra `beforeRequestId`, which the controller's exact comparison rejected; the capture now records the same fields as Android. One earlier attempt (`0ba210ec8469dd90e1e210d1`) was correctly blocked when an unrelated CI runner on the same Mac started an `xcodebuild` archive mid-run; its leftover adb server was removed by hand.
+
+iOS session and save-retry fixes (2026-10-09, `529175c`): session finalization looked frames up by a `label` field the real capture never writes (only the test fixtures had it), so it now derives the label from the frame's file names; the iOS sign-in prelude now clears and retries the email entry until the exact email is visible, after a run typed the email into the password field even though the tap hit the email input. Environment: one rerun filled the host disk (each iOS run kept a 4.3 GB `ios-build` copy; 11 old copies removed, the local run script now keeps only the newest two) and left Docker Desktop unresponsive (restarted with owner approval).
+
+All five journeys now pass on both platforms. Remaining per journey: a deliberately introduced bug the flow must detect, then retire that journey's Detox test.
 
 ## Android Detox session (T14-A): UI journey passes; real native-logout cookie finding — 2026-10-07
 
