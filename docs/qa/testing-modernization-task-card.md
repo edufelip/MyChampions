@@ -1,3 +1,21 @@
+## Maestro migration: journeys proven, Detox retired — 2026-10-09
+
+Status: **Implemented locally** on `test/testing-modernization` (not pushed; no hosted run yet).
+
+Deliberate-bug checks (Android Maestro, one planted bug per journey on a throwaway branch, never merged):
+
+| Journey | Planted bug | Caught by | Attempt |
+| --- | --- | --- | --- |
+| Session | sign-out keeps the stored session | signed-out relaunch landed on the coach dashboard | `a34a69fc7506b70bce19945c` |
+| Save-retry | a failed save drops the draft sessions | retained-draft check found no `3x8` session row | `08d520d3557a9ed633b71d02` |
+| Training | an edited plan saves its old name | SQL check found no plan with the edited name | `5b4c2ba36b67962b9e4206ee` |
+| Connection | coach Accept never confirms | the pending request stayed after Accept | `072ea0d6dc5681e6e24eaf03` |
+| Camera denied | manual invite entry drops the last character | SQL check found no pending connection for the coach's code | `a4218277eec80b1afb4336ba` |
+
+Detox retirement (`1d398e1`): the 67 legacy Detox fixture cases now run as tagged Maestro flows in `.maestro/suite` (`11c8245`); selective CI, the protected full validation (`native-protected-full.yml`), the iOS PR smoke and the RevenueCat provider lane run Maestro; Detox is gone from the Android build, the app (`MainActivity` camera bridge), the native pilot (every Detox adapter and route) and the T15 cold-matrix machinery (dropped with the comparison). Shared helpers that the Maestro journeys use keep their `detox-*` file names; T15's cold-reset modules and `compare-native-pilot.ts` remain because the runner's cold mode still imports them.
+
+Product follow-up (owner-approved via "fill all of those gaps"): native sign-out now clears cookies before ending the session, so sign-out analytics no longer carry the old access cookie (`bafa0f1`).
+
 ## Direction change: migrate to Maestro, drop Detox comparison — 2026-10-07
 
 Owner decision (2026-10-07): the goal is to move native E2E from Detox to Maestro; the plan's Detox-vs-Maestro comparison (T15 cold matrix, Detox cells) is dropped. Detox work stops; the Maestro quality bar for each journey is a real passing run on each platform plus a deliberately introduced bug the flow detects, after which that journey's Detox test can be retired.

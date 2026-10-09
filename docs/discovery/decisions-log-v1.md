@@ -3770,3 +3770,8 @@ Owner decision: the coach's pending connection requests show the student's displ
 ### 2026-10-09 Native sign-out clears cookies before the session ends
 
 Owner decision (2026-10-09, "fill all of those gaps"): native sign-out now clears the native cookie store before it drops the in-memory bearer, instead of after removing the persisted session. The 2026-10-08 order left a short window where the 2–3 analytics posts sent during sign-out carried the old access cookie (seen in the Maestro session capture). Requests sent before the clear are still legitimately signed in; requests sent after carry neither bearer nor cookie. Updates FR-270, BR-342 and AC-539; covered by `server-auth-source.test.ts`.
+
+### 2026-10-09 Detox retired; native E2E runs on Maestro
+
+Owner decision (2026-10-09, "fill all of those gaps"), applying the 2026-10-07 bar: every integrated journey (session, training, connection, camera denial, save/retry) passed a real Maestro run on iOS and Android and caught a deliberately planted bug, so Detox is retired. The 67 legacy Detox fixture cases were ported one-for-one to tagged Maestro flows in `.maestro/suite`; selective CI keeps its fixture profiles (phase id = Maestro tag) and fresh Metro per phase. Protected full validation, the iOS PR smoke and the RevenueCat provider lane run Maestro. Detox, its configs, specs, Android instrumentation and the Detox-vs-Maestro T15 matrix are removed. Updates D-218/BL-018, TC-005, AC-005, FR-228 and the selective-execution docs.
+
