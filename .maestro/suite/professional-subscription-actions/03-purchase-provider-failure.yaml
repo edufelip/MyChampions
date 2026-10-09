@@ -1,0 +1,17 @@
+appId: com.edufelip.mychampions.dev
+name: Professional subscription actions - surfaces provider failures without granting access
+tags: [actions-network, actions-store_problem]
+---
+- runFlow: ../common/pro-subscription-inactive-controls.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.statusValue
+      text: "Subscription: Status unavailable"
+    timeout: 5000
+- tapOn:
+    id: pro.subscription.refreshCta
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.statusValue
+      text: "Subscription: Inactive"
+    timeout: 5000

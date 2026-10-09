@@ -1,0 +1,36 @@
+# ROLE=student|professional. Asserts the published paywall copy (en/pt/es).
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    when:
+      true: ${ROLE == 'student'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: "^(Unlock AI meal analysis|Desbloqueie a análise de refeições com IA|Desbloquea el análisis de comidas con IA)$"
+          timeout: 15000
+      - assertVisible: "^(Analyze meal photos with AI\\. Student tracking remains available without a subscription\\.|Analise fotos de refeições com IA\\. O acompanhamento do aluno continua disponível sem assinatura\\.|Analiza fotos de comidas con IA\\. El seguimiento del alumno sigue disponible sin suscripción\\.)$"
+      - assertVisible: "^(Estimate calories and macros from a meal photo|Estime calorias e macronutrientes a partir de uma foto da refeição|Estima calorías y macronutrientes a partir de una foto de la comida)$"
+      - assertVisible: "^(Review and edit every estimate before saving|Revise e edite cada estimativa antes de salvar|Revisa y edita cada estimación antes de guardar)$"
+      - assertVisible: "^(Keep standard meal tracking available for free|Continue usando o acompanhamento padrão de refeições gratuitamente|Sigue usando gratis el seguimiento estándar de comidas)$"
+      - assertVisible: "^(Subscription auto-renews\\. Cancel anytime\\.|A assinatura é renovada automaticamente\\. Cancele quando quiser\\.|La suscripción se renueva automáticamente\\. Cancela cuando quieras\\.)$"
+      - assertVisible: "^(Close|Fechar|Cerrar)$"
+      - assertVisible: "^(Terms of Service|Termos de Uso|Términos de servicio)$"
+      - assertVisible: "^(Privacy Policy|Política de Privacidade|Política de Privacidad)$"
+- runFlow:
+    when:
+      true: ${ROLE == 'professional'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: "^(Grow your professional practice|Expanda sua atuação profissional|Haz crecer tu práctica profesional)$"
+          timeout: 15000
+      - assertVisible: "^(Manage more than 10 active students and unlock AI meal-photo analysis\\.|Gerencie mais de 10 alunos ativos e desbloqueie a análise de refeições por foto com IA\\.|Gestiona más de 10 alumnos activos y desbloquea el análisis de comidas por foto con IA\\.)$"
+      - assertVisible: "^(Subscription auto-renews until cancelled\\.|A assinatura é renovada automaticamente até ser cancelada\\.|La suscripción se renueva automáticamente hasta que se cancele\\.)$"
+      - assertVisible: "^(Terms of Use|Termos de Uso|Términos de uso)$"
+      - assertVisible: "^(Privacy Policy|Política de Privacidade|Política de privacidad)$"
+- assertVisible: "(?i)^(Monthly|Mensal|Mensual),.*(month|mês|mes)$"
+- assertVisible: "(?i)^(Annual|Anual),.*(year|ano|año)$"
+- assertVisible: "^(Continue with selected plan|Continuar com o plano selecionado|Continuar con el plan seleccionado)$"
+- assertVisible: "^(Subscription is managed through your device app store\\.|A assinatura é gerenciada pela loja de aplicativos do seu dispositivo\\.|La suscripción se gestiona mediante la tienda de aplicaciones de tu dispositivo\\.)$"
+- assertVisible: "^(Restore purchases|Restaurar compra)$"

@@ -1,0 +1,6 @@
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: auth.signIn.title
+    timeout: 15000

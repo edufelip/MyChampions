@@ -136,7 +136,7 @@ const cases = [
   { name: 'server', suites: ['web:server-auth'], before: true, after: true },
   { name: 'integration', suites: ['web:integration-auth'], before: false, after: true },
   { name: 'browser-only', suites: ['web:auth'], before: false, after: false },
-  { name: 'native-only', suites: ['detox:auth'], before: false, after: false },
+  { name: 'native-only', suites: ['maestro:auth'], before: false, after: false },
   {
     name: 'browser-and-integration',
     suites: ['web:auth', 'web:integration-auth'],

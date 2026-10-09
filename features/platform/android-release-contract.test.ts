@@ -56,21 +56,15 @@ test('production Android releases fail closed onto CI versioning and private rel
       `${scriptName} must forward an explicit positive version code to the Gradle guard`,
     );
   }
-  assert.equal(
-    packageJson.scripts['test:e2e:build:android'],
-    'detox build -c android.emu.prodDebug',
-    'the default local Detox build must not require private release signing inputs',
-  );
-  assert.equal(
-    packageJson.scripts['test:e2e:build:android:release'],
-    'detox build -c android.emu.release',
-    'signed release Detox evidence must remain available only through an explicit command',
-  );
-  const detoxConfig = readFileSync(join(root, '.detoxrc.js'), 'utf8');
   assert.match(
-    detoxConfig,
-    /-PCI_VERSION_CODE="\\?\$\{CI_VERSION_CODE:\?CI_VERSION_CODE_required\}"/,
-    'the explicit signed Detox build must forward an explicit version code to Gradle',
+    packageJson.scripts['test:e2e:build:android:debug'],
+    /\.\/gradlew app:assembleDevDebug /,
+    'the local native E2E build must stay on the debug variant, which needs no release signing inputs',
+  );
+  assert.doesNotMatch(
+    packageJson.scripts['test:e2e:build:android:debug'],
+    /Release|CI_VERSION_CODE/,
+    'the local native E2E build must not require private release signing inputs',
   );
   assert.match(gitignore, /^android\/keystore\.properties$/m);
   assert.match(gitignore, /^\*\.jks$/m);

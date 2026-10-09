@@ -1,0 +1,17 @@
+appId: com.edufelip.mychampions.dev
+name: Student nutrition - shows assigned macro targets and meal cards for the current student
+tags: [nutrition]
+---
+- runFlow:
+    file: ../common/student-open-route.yaml
+    env:
+      ROUTE: mychampions://student/nutrition
+      SCREEN_ID: student.nutrition.screen
+- extendedWaitUntil:
+    visible:
+      id: student.nutrition.macroCard
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: student.nutrition.mealCard.e2e-assigned-meal
+    direction: DOWN

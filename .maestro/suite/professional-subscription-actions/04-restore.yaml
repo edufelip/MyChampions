@@ -1,0 +1,15 @@
+appId: com.edufelip.mychampions.dev
+name: Professional subscription actions - restores the professional entitlement fixture safely
+tags: [actions-success]
+---
+- runFlow: ../common/pro-open-subscription.yaml
+- assertVisible:
+    id: pro.subscription.statusValue
+    text: "Subscription: Inactive"
+- tapOn:
+    id: pro.subscription.restoreCta
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.statusValue
+      text: "Subscription: Active"
+    timeout: 5000

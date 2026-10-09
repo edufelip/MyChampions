@@ -1,0 +1,13 @@
+appId: com.edufelip.mychampions.dev
+name: Auth role selection - retains the selected role after a fresh app process launch
+tags: [role-persistence]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-student-role.yaml
+- runFlow: ../common/relaunch.yaml
+- extendedWaitUntil:
+    visible:
+      id: student.home.screen
+    timeout: 15000
+- assertNotVisible:
+    id: auth.roleSelection.screen

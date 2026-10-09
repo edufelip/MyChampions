@@ -1,0 +1,7 @@
+appId: com.edufelip.mychampions.dev
+---
+- openLink: mychampions://nutrition/custom-meals/new
+- extendedWaitUntil:
+    visible:
+      id: meal.builder.screen
+    timeout: 10000

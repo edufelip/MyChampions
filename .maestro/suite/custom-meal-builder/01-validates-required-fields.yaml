@@ -1,0 +1,23 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal builder - validates required custom meal fields before saving
+tags: [nutrition]
+---
+- runFlow: ../common/student-open-meal-builder.yaml
+- scrollUntilVisible:
+    element:
+      id: meal.builder.cta.save
+    direction: DOWN
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: meal.builder.cta.save
+- scrollUntilVisible:
+    element:
+      id: meal.builder.field.name.error
+    direction: UP
+- assertVisible:
+    id: meal.builder.field.grams.error
+- scrollUntilVisible:
+    element:
+      id: meal.builder.field.calories.error
+    direction: DOWN

@@ -1,0 +1,39 @@
+appId: com.edufelip.mychampions.dev
+name: Student professionals - confirms and ends an active professional connection
+tags: [qr-valid]
+---
+- runFlow: ../common/student-professionals.yaml
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.connectionCard.0
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.unbindButton.0
+    timeout: 5000
+- tapOn:
+    id: student.professionals.unbindButton.0
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.unbindConfirm
+    timeout: 5000
+- tapOn:
+    id: student.professionals.unbindConfirm.cancel
+- extendedWaitUntil:
+    notVisible:
+      id: student.professionals.unbindConfirm
+    timeout: 5000
+- tapOn:
+    id: student.professionals.unbindButton.0
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.unbindConfirm.confirm
+    timeout: 5000
+- tapOn:
+    id: student.professionals.unbindConfirm.confirm
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.connectionEnded.0
+    timeout: 10000
+- assertNotVisible:
+    id: student.professionals.unbindButton.0

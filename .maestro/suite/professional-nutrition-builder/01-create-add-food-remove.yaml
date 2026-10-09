@@ -1,0 +1,151 @@
+appId: com.edufelip.mychampions.dev
+name: Professional nutrition builder - creates a plan, adds a searched food, recalculates totals, and removes it
+tags: [nutrition]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-professional-role.yaml
+- runFlow: ../common/pro-add-nutritionist-skip-credential.yaml
+- tapOn:
+    id: pro.specialty.cta_continue
+- extendedWaitUntil:
+    visible:
+      id: pro.home.screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: tabs.nutrition
+    timeout: 10000
+- tapOn:
+    id: tabs.nutrition
+- extendedWaitUntil:
+    visible:
+      id: pro.library.nutrition.create
+    timeout: 10000
+- tapOn:
+    id: pro.library.nutrition.create
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_plan.screen
+    timeout: 10000
+- tapOn:
+    id: pro.plan.metadata.name
+- inputText: E2E Builder Nutrition Plan
+- assertVisible:
+    id: pro.plan.metadata.name
+    text: E2E Builder Nutrition Plan
+- tapOn:
+    id: pro.plan.metadata.hydrationGoalMl
+- inputText: "2200"
+- assertVisible:
+    id: pro.plan.metadata.hydrationGoalMl
+    text: "2200"
+- hideKeyboard
+- tapOn:
+    id: pro.nutrition_plan.saveButton
+- extendedWaitUntil:
+    visible:
+      id: pro.library.nutrition.row.e2e-nutrition-builder-plan-1
+    timeout: 10000
+- tapOn:
+    id: pro.library.nutrition.row.e2e-nutrition-builder-plan-1
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_plan.addMeal
+    timeout: 10000
+- tapOn:
+    id: pro.nutrition_plan.addMeal
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_plan.addMeal.input
+    timeout: 5000
+- tapOn:
+    id: pro.nutrition_plan.addMeal.input
+- inputText: Breakfast
+- assertVisible:
+    id: pro.nutrition_plan.addMeal.input
+    text: Breakfast
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: pro.nutrition_plan.addMeal.confirm
+    direction: DOWN
+- tapOn:
+    id: pro.nutrition_plan.addMeal.confirm
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_plan.mealRow.Breakfast
+    timeout: 10000
+- tapOn:
+    id: pro.nutrition_plan.mealRow.Breakfast
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_meal.screen
+    timeout: 10000
+- assertVisible:
+    id: pro.nutrition_meal.total.calories
+    text: 0 kcal
+- tapOn:
+    id: pro.nutrition_meal.addFood
+- scrollUntilVisible:
+    element:
+      id: pro.nutrition_item.searchInput
+    direction: DOWN
+- tapOn:
+    id: pro.nutrition_item.searchInput
+- inputText: rice
+- assertVisible:
+    id: pro.nutrition_item.searchInput
+    text: rice
+- pressKey: Enter
+- scrollUntilVisible:
+    element:
+      id: pro.nutrition_item.searchResult.e2e-food-rice
+    direction: DOWN
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: pro.nutrition_item.searchResult.e2e-food-rice
+- scrollUntilVisible:
+    element:
+      id: pro.nutrition_item.selectedFood
+    direction: DOWN
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: pro.nutrition_item.quantity
+    direction: DOWN
+- assertVisible:
+    id: pro.nutrition_item.quantity
+    text: "100"
+- scrollUntilVisible:
+    element:
+      id: pro.nutrition_item.add
+    direction: DOWN
+- tapOn:
+    id: pro.nutrition_item.add
+- extendedWaitUntil:
+    notVisible:
+      id: pro.nutrition_item.form
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: pro.nutrition_meal.foodRow.E2E_Brown_Rice
+    direction: UP
+- assertVisible:
+    id: pro.nutrition_meal.total.calories
+    text: 111 kcal
+- tapOn:
+    id: pro.nutrition_meal.foodRow.E2E_Brown_Rice.remove
+- runFlow:
+    file: ../common/confirm-alert.yaml
+    env:
+      BUTTON: Delete
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_meal.total.calories
+      text: 0 kcal
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: pro.nutrition_meal.foodRow.E2E_Brown_Rice
+    timeout: 10000

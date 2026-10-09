@@ -1,0 +1,90 @@
+appId: com.edufelip.mychampions.dev
+name: Account settings - shows profile/legal/support controls and signs out after confirmation
+tags: [authenticated]
+---
+- runFlow: ../common/student-account.yaml
+- assertVisible:
+    id: settings.account.profileCard
+- assertVisible:
+    id: settings.account.supportQuickCta
+- assertVisible:
+    id: settings.account.emailRow
+- assertVisible:
+    id: settings.account.languageRow
+- assertVisible:
+    id: settings.account.signOutCta
+- scrollUntilVisible:
+    element:
+      id: settings.account.termsRow
+    direction: DOWN
+- assertVisible:
+    id: settings.account.privacyPolicyRow
+- tapOn:
+    id: settings.account.privacyPolicyRow
+- extendedWaitUntil:
+    visible:
+      id: shared.webview.webview
+    timeout: 10000
+- openLink: mychampions://settings/account
+- extendedWaitUntil:
+    visible:
+      id: settings.account.screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: settings.account.termsRow
+    direction: DOWN
+- tapOn:
+    id: settings.account.termsRow
+- extendedWaitUntil:
+    visible:
+      id: shared.webview.webview
+    timeout: 10000
+- openLink: mychampions://settings/account
+- extendedWaitUntil:
+    visible:
+      id: settings.account.screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: settings.account.supportQuickCta
+    direction: UP
+- tapOn:
+    id: settings.account.supportQuickCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.subjectInput
+    timeout: 5000
+- assertVisible:
+    id: settings.account.support.bodyInput
+- assertVisible:
+    id: settings.account.support.submitCta
+- assertVisible:
+    id: settings.account.support.cancelCta
+- runFlow: ../common/student-account.yaml
+- scrollUntilVisible:
+    element:
+      id: settings.account.version
+    direction: DOWN
+- assertVisible:
+    id: settings.account.deleteCta
+- assertVisible:
+    id: settings.account.version
+- runFlow: ../common/student-account.yaml
+- extendedWaitUntil:
+    visible:
+      id: settings.account.signOutCta
+    timeout: 5000
+- tapOn:
+    id: settings.account.signOutCta
+- scrollUntilVisible:
+    element:
+      id: settings.account.signOutConfirmCta
+    direction: DOWN
+- assertVisible: "Sign out?"
+- tapOn:
+    id: settings.account.signOutConfirmCta
+- extendedWaitUntil:
+    visible:
+      id: auth.signIn.title
+    timeout: 10000

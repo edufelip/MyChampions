@@ -1,7 +1,7 @@
 # Protected native release validation
 
-`detox-protected-full.yml` is the explicit full iOS/Android native validation
-lane. It runs only from `main` on manual dispatch or from a published GitHub
+`native-protected-full.yml` is the explicit full iOS/Android native validation
+lane (Maestro). It runs only from `main` on manual dispatch or from a published GitHub
 release; it does not run on pull requests and it has no nightly schedule.
 
 Configure `MYCHAMPIONS_ENABLE_IOS_TESTS` under **Settings → Secrets and
@@ -22,7 +22,9 @@ uses the same ledger.
 
 Each platform builds its Debug app once, then executes the deterministic suite
 set supplied through `SELECTED_SUITES_JSON` with
-`DETOX_SKIP_BUILD=true`. The provider-live RevenueCat suite is intentionally
+`NATIVE_SKIP_BUILD=true`. Both lanes install the pinned Maestro CLI first
+(`scripts/testing/install-maestro.sh`); the Android lane targets the runner's
+kept-alive `emulator-5554` through `ANDROID_SERIAL`. The provider-live RevenueCat suite is intentionally
 excluded; it has its own credential-gated lane.
 
 Failure diagnostics are uploaded only on failure and retained for one day.

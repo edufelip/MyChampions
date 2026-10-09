@@ -41,10 +41,11 @@ updates or why none are needed.
   `critical-paths`, `evidence`, and `flow-atlas` are the configured entrypoints.
   Confirm the app identity and use an isolated port; never stop another
   worktree's server to free the default port.
-- Native scopes use the checked-in Detox configurations and are explicit-only.
-  Protected iOS/Android validation handles manual, published-release and
-  release/hotfix push triggers; it is not ordinary PR or browser proof. Maestro
-  remains a BL-018 pilot until integrated per-platform receipts satisfy D-218.
+- Native scopes use the checked-in Maestro suite (`.maestro/suite`, run with
+  `scripts/testing/run-maestro-suite.sh`) and are explicit-only. Protected
+  iOS/Android validation (`native-protected-full.yml`) handles manual,
+  published-release and release/hotfix push triggers; it is not ordinary PR or
+  browser proof. The integrated journeys run through the native pilot.
 
 ## Evidence and environment rules
 

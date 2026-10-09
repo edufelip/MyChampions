@@ -1,0 +1,14 @@
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 15000
+- tapOn:
+    id: auth.roleSelection.professionalCard
+- tapOn:
+    id: auth.roleSelection.continueButton
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.screen
+    timeout: 10000

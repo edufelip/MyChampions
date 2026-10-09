@@ -1,0 +1,20 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - keeps student AI locked after Test Store failure
+tags: [student-fail]
+---
+- runFlow: steps/launch-student-ai-gate.yaml
+- runFlow: steps/student-ai-locked.yaml
+- runFlow:
+    file: steps/open-test-store-purchase.yaml
+    env:
+      SOURCE_CTA: meal.photoAnalysis.paywall.cta
+      ROLE: student
+      INTERVAL: monthly
+- runFlow: steps/acknowledge-failed-purchase.yaml
+- runFlow:
+    file: steps/dismiss-paywall.yaml
+    env:
+      ROLE: student
+      RETURN_ID: meal.builder.screen
+- runFlow: steps/student-ai-locked.yaml
+- takeScreenshot: revenuecat-student-v1-failed-locked

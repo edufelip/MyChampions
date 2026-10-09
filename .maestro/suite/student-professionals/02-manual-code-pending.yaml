@@ -1,0 +1,19 @@
+appId: com.edufelip.mychampions.dev
+name: Student professionals - creates a pending connection after manual invite-code submission
+tags: [qr-valid]
+---
+- runFlow: ../common/student-professionals.yaml
+- tapOn:
+    id: student.professionals.codeInput
+- inputText: NUT123
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.connectButton
+    timeout: 5000
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.connectionPending.e2e-pending-nutritionist-connection
+    timeout: 10000
+- assertNotVisible:
+    id: student.professionals.submitError

@@ -1,0 +1,38 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - restores student AI after reinstall without granting professional access
+tags: [student-restore]
+---
+- runFlow: steps/launch-student-ai-gate.yaml
+- runFlow: steps/student-ai-locked.yaml
+- runFlow:
+    file: steps/open-test-store-purchase.yaml
+    env:
+      SOURCE_CTA: meal.photoAnalysis.paywall.cta
+      ROLE: student
+      INTERVAL: monthly
+- tapOn: Test valid purchase
+- runFlow: steps/student-ai-active.yaml
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: steps/pro-open-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 20000
+- tapOn:
+    id: pro.subscription.restoreCta
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 20000
+- takeScreenshot: revenuecat-student-v1-restore-professional-inactive
+- runFlow: steps/sign-out.yaml
+- runFlow: steps/sign-in-primary.yaml
+- runFlow:
+    file: steps/select-role.yaml
+    env:
+      ROLE: student
+- runFlow: steps/student-open-ai-gate.yaml
+- runFlow: steps/student-ai-active.yaml
+- takeScreenshot: revenuecat-student-v1-restored-active

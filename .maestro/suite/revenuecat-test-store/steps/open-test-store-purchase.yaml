@@ -1,0 +1,11 @@
+# SOURCE_CTA, ROLE, INTERVAL.
+appId: com.edufelip.mychampions.dev
+---
+- tapOn:
+    id: ${SOURCE_CTA}
+- runFlow:
+    file: paywall-contract.yaml
+- runFlow:
+    file: enter-test-store-purchase.yaml
+    env:
+      INTERVAL: ${INTERVAL || 'monthly'}

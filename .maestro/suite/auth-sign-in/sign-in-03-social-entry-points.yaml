@@ -1,0 +1,14 @@
+appId: com.edufelip.mychampions.dev
+name: Auth sign-in - shows social sign-in entry points
+tags: [auth-entry]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/wait-sign-in.yaml
+- scrollUntilVisible:
+    element:
+      id: auth.signIn.appleButton
+    direction: DOWN
+- assertVisible:
+    id: auth.signIn.googleButton
+- assertVisible:
+    id: auth.signIn.appleButton

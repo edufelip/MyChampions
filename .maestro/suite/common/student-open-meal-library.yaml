@@ -1,0 +1,9 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: launch-fresh.yaml
+- runFlow: select-student-role.yaml
+- openLink: mychampions://nutrition/custom-meals
+- extendedWaitUntil:
+    visible:
+      id: meal.library.screen
+    timeout: 10000

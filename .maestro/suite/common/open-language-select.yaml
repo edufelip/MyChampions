@@ -1,0 +1,8 @@
+appId: com.edufelip.mychampions.dev
+---
+- tapOn:
+    id: settings.account.languageRow
+- extendedWaitUntil:
+    visible:
+      id: settings.languageSelect.screen
+    timeout: 5000

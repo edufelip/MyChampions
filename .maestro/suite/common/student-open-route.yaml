@@ -1,0 +1,10 @@
+# Fresh launch, student role, then open ROUTE and wait for SCREEN_ID.
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: launch-fresh.yaml
+- runFlow: select-student-role.yaml
+- openLink: ${ROUTE}
+- extendedWaitUntil:
+    visible:
+      id: ${SCREEN_ID}
+    timeout: 10000

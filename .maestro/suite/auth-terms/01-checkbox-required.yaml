@@ -1,0 +1,13 @@
+appId: com.edufelip.mychampions.dev
+name: Auth terms - requires the checkbox before accepting terms
+tags: [terms-outdated]
+---
+- runFlow: ../common/launch-fresh.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth.terms.title
+    timeout: 15000
+- assertVisible:
+    id: auth.terms.acceptButton.disabled
+- assertVisible:
+    id: auth.terms.checkbox

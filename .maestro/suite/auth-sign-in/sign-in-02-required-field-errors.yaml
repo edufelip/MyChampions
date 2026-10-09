@@ -1,0 +1,16 @@
+appId: com.edufelip.mychampions.dev
+name: Auth sign-in - shows required-field errors when submitting empty form
+tags: [auth-entry]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/wait-sign-in.yaml
+- tapOn:
+    id: auth.signIn.submitButton
+- extendedWaitUntil:
+    visible:
+      id: auth.signIn.error.emailRequired
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: auth.signIn.error.passwordRequired
+    timeout: 5000

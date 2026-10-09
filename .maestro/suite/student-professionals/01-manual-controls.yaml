@@ -1,0 +1,11 @@
+appId: com.edufelip.mychampions.dev
+name: Student professionals - shows manual invite-code controls and blocks empty submission
+tags: [qr-valid]
+---
+- runFlow: ../common/student-professionals.yaml
+- assertVisible:
+    id: student.professionals.codeInput
+- assertVisible:
+    id: student.professionals.connectButton.disabled
+- assertVisible:
+    id: student.professionals.scanQrButton

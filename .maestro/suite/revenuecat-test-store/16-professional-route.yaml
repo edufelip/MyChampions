@@ -1,0 +1,32 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - routes a professional AI gate to professional_pro
+tags: [professional-route]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: steps/pro-onboarding.yaml
+- runFlow: steps/student-open-ai-gate.yaml
+- runFlow: steps/student-ai-locked.yaml
+- tapOn:
+    id: meal.photoAnalysis.paywall.cta
+- runFlow:
+    file: steps/paywall-contract.yaml
+    env:
+      ROLE: professional
+- takeScreenshot: revenuecat-professional-route-paywall-v1
+- runFlow:
+    file: steps/enter-test-store-purchase.yaml
+    env:
+      INTERVAL: monthly
+- tapOn: Test valid purchase
+- runFlow: steps/student-ai-active.yaml
+- openLink: mychampions://professional/subscription
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.screen
+    timeout: 10000
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Active
+      TIMEOUT: 20000
+- takeScreenshot: revenuecat-professional-route-active

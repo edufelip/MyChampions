@@ -1,11 +1,11 @@
 import { basename, join } from 'node:path';
 import {
-  DETOX_FIXTURE_PROFILES,
+  NATIVE_FIXTURE_PROFILES,
   clearedSelectiveFixtureEnvironment,
-  isDetoxFixtureProfileId,
-  validateDetoxFixtureProfile,
+  isNativeFixtureProfileId,
+  validateNativeFixtureProfile,
   type Environment,
-} from './detox-fixture-profiles';
+} from './native-fixture-profiles';
 import { INTEGRATION_PROJECTS, INTEGRATION_SCENARIOS } from '../testing/integration-registry';
 import type { NativeMetroPlatform } from './metro-bundle-prewarm';
 import type { SuiteConfig, TestImpactManifest } from './test-impact';
@@ -26,7 +26,7 @@ export type CommandInvocation = {
 };
 
 export type NativeBuildDescriptor = {
-  configuration: 'ios.sim.debug' | 'android.emu.debug';
+  configuration: 'ios-debug' | 'android-dev-debug';
   owner: 'executor' | 'workflow';
   command: CommandInvocation;
 };
@@ -87,7 +87,7 @@ export function parseNativeMetroPort(
     return defaultNativeMetroPort;
   }
   if (!/^[0-9]+$/.test(value)) {
-    throw new Error('DETOX_METRO_PORT must contain only decimal digits');
+    throw new Error('NATIVE_METRO_PORT must contain only decimal digits');
   }
   return validateNativeMetroPort(platform, Number(value));
 }
@@ -171,14 +171,14 @@ function validateSelectedSuite(
     return errors;
   }
 
-  if (suite.runner !== 'detox') {
+  if (suite.runner !== 'maestro') {
     errors.push(`selected suite ${suiteId} cannot run on ${platform} runner ${suite.runner}`);
     return errors;
   }
   if (!suite.platforms?.includes(platform)) {
     errors.push(`selected suite ${suiteId} does not support ${platform}`);
   }
-  errors.push(...validateDetoxFixtureProfile(suiteId, suite));
+  errors.push(...validateNativeFixtureProfile(suiteId, suite));
   return errors;
 }
 
@@ -187,11 +187,11 @@ export function validateSelectiveExecutionManifest(manifest: TestImpactManifest)
   const referencedProfiles = new Set<string>();
 
   for (const [suiteId, suite] of Object.entries(manifest.suites)) {
-    if (suite.runner === 'detox') {
+    if (suite.runner === 'maestro') {
       if (suite.fixtureProfile) referencedProfiles.add(suite.fixtureProfile);
-      errors.push(...validateDetoxFixtureProfile(suiteId, suite));
+      errors.push(...validateNativeFixtureProfile(suiteId, suite));
       if (suite.ci && !suite.platforms?.length) {
-        errors.push(`CI Detox suite ${suiteId} has no platforms`);
+        errors.push(`CI native suite ${suiteId} has no platforms`);
       }
       continue;
     }
@@ -221,9 +221,9 @@ export function validateSelectiveExecutionManifest(manifest: TestImpactManifest)
     }
   }
 
-  for (const profileId of Object.keys(DETOX_FIXTURE_PROFILES)) {
+  for (const profileId of Object.keys(NATIVE_FIXTURE_PROFILES)) {
     if (!referencedProfiles.has(profileId)) {
-      errors.push(`Detox fixture profile ${profileId} is not referenced by a suite`);
+      errors.push(`Native fixture profile ${profileId} is not referenced by a suite`);
     }
   }
   return uniqueSorted(errors);
@@ -372,6 +372,42 @@ function expandPhaseSpecs(suite: SuiteConfig, specs: '*' | readonly string[]): s
   return specs === '*' ? [...suite.specs] : [...specs];
 }
 
+/** Debug app the Maestro flows drive; Metro serves its bundle on `metroPort`. */
+export function nativeBuildCommand(
+  platform: 'ios' | 'android',
+  metroPort: number,
+): CommandInvocation {
+  if (platform === 'ios') {
+    return {
+      id: 'build-ios-debug',
+      command: 'xcodebuild',
+      args: [
+        '-workspace',
+        'ios/mychampions.xcworkspace',
+        '-scheme',
+        'mychampions',
+        '-configuration',
+        'Debug',
+        '-sdk',
+        'iphonesimulator',
+        '-derivedDataPath',
+        'ios/build',
+        `RCT_METRO_PORT=${metroPort}`,
+      ],
+      env: baseExecutionEnvironment(),
+    };
+  }
+  return {
+    id: 'build-android-debug',
+    command: 'bash',
+    args: [
+      '-c',
+      `cd android && ./gradlew app:assembleDevDebug -PreactNativeDevServerPort=${metroPort}`,
+    ],
+    env: baseExecutionEnvironment(),
+  };
+}
+
 function createNativePlan(
   manifest: TestImpactManifest,
   platform: 'ios' | 'android',
@@ -379,66 +415,54 @@ function createNativePlan(
   options: SelectiveExecutionOptions,
   diagnosticsRoot: string,
 ): SelectiveExecutionPlan {
-  const configuration = platform === 'ios' ? 'ios.sim.debug' : 'android.emu.debug';
+  const configuration = platform === 'ios' ? 'ios-debug' : 'android-dev-debug';
   const metroPort = validateNativeMetroPort(platform, options.metroPort ?? defaultNativeMetroPort);
-  const buildCommand: CommandInvocation = {
-    id: `build-${platform}-debug`,
-    command: 'yarn',
-    args: ['detox', 'build', '-c', configuration],
-    env: {
-      ...baseExecutionEnvironment(),
-      DETOX_METRO_PORT: String(metroPort),
+  // Maestro neither boots devices nor installs apps: prepare the device once,
+  // after the build and before the first fixture phase.
+  const invocations: CommandInvocation[] = [
+    {
+      id: `prepare-${platform}-device`,
+      command: 'bash',
+      args: ['scripts/testing/maestro-device.sh', '--platform', platform],
+      env: baseExecutionEnvironment(),
     },
-  };
-  const invocations: CommandInvocation[] = [];
+  ];
 
   for (const suiteId of [...selectedSuites].sort()) {
     const suite = manifest.suites[suiteId];
     const profileId = suite.fixtureProfile!;
-    if (!isDetoxFixtureProfileId(profileId)) {
+    if (!isNativeFixtureProfileId(profileId)) {
       throw new Error(`unknown fixture profile ${profileId}`);
     }
-    const profile = DETOX_FIXTURE_PROFILES[profileId];
+    const profile = NATIVE_FIXTURE_PROFILES[profileId];
     if (!profile.selectiveCi) {
       throw new Error(`fixture profile ${profileId} is not eligible for selective CI`);
     }
 
     for (const phase of profile.phases) {
       for (const spec of expandPhaseSpecs(suite, phase.specs)) {
-        const specId = basename(spec).replace(/\.e2e\.test\.js$/, '');
+        const specId = basename(spec);
         const id = `${safeSegment(suiteId)}-${safeSegment(phase.id)}-${safeSegment(specId)}`;
         invocations.push({
           id,
-          command: 'yarn',
+          command: 'bash',
+          // The phase id is the Maestro tag of the flows written for this
+          // bundle configuration. The wrapper retries a failing run once and
+          // reports the retry, so a flaky pass stays visible in the lane log.
           args: [
-            'detox',
-            'test',
-            '-c',
-            configuration,
-            '--headless',
-            // One bounded retry per failing spec file. Native suites run ~74
-            // hardware invocations per gate; without a retry the gate needs
-            // every one to pass first try, which the flake record shows is a
-            // coin flip. Detox logs retried files, so a flaky pass stays
-            // visible in the lane output rather than hidden.
-            '--retries',
-            '1',
-            '--artifacts-location',
+            'scripts/testing/run-maestro-flows.sh',
+            '--platform',
+            platform,
+            '--tag',
+            phase.id,
+            '--output',
             join(diagnosticsRoot, platform, id),
-            '--record-logs',
-            'failing',
-            '--take-screenshots',
-            'failing',
             spec,
           ],
           env: {
             ...baseExecutionEnvironment(),
-            ...mergeEnvironment(phase.appEnv, phase.runnerEnv),
+            ...mergeEnvironment(phase.appEnv),
             CI_REQUIRE_E2E_EXECUTION: 'true',
-            DETOX_JEST_CONFIG: 'e2e/jest.config.js',
-            DETOX_METRO_CLEAR_CACHE: 'true',
-            DETOX_METRO_PORT: String(metroPort),
-            DETOX_REQUIRE_FRESH_METRO: 'true',
             EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX: 'true',
           },
           metro: {
@@ -459,7 +483,7 @@ function createNativePlan(
     nativeBuild: {
       configuration,
       owner: options.skipNativeBuild ? 'workflow' : 'executor',
-      command: buildCommand,
+      command: nativeBuildCommand(platform, metroPort),
     },
     invocations,
   };

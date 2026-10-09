@@ -1,0 +1,23 @@
+appId: com.edufelip.mychampions.dev
+name: Professional home - shows an active invite code and regenerates it after confirmation
+tags: [connections]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-professional-role.yaml
+- runFlow: ../common/pro-add-nutritionist-skip-credential.yaml
+- tapOn:
+    id: pro.specialty.cta_continue
+- extendedWaitUntil:
+    visible:
+      id: pro.home.screen
+    timeout: 10000
+- runFlow: ../common/pro-home-invite-controls.yaml
+- tapOn:
+    id: pro.home.rotateCodeCta
+- extendedWaitUntil:
+    visible:
+      text: Regenerate
+    timeout: 5000
+- tapOn:
+    text: Regenerate
+- runFlow: ../common/pro-home-invite-controls.yaml

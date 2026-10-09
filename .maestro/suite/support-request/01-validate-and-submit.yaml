@@ -1,0 +1,40 @@
+appId: com.edufelip.mychampions.dev
+name: Support request - validates and submits an in-app support request
+tags: [support]
+---
+- runFlow: ../common/student-account.yaml
+- tapOn:
+    id: settings.account.supportQuickCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.modal
+    timeout: 5000
+- assertVisible:
+    id: settings.account.support.subjectInput
+- assertVisible:
+    id: settings.account.support.bodyInput
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.submitCta
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: settings.account.support.submitCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.subjectError
+    timeout: 5000
+- tapOn:
+    id: settings.account.support.subjectInput
+- inputText: E2E support issue
+- tapOn:
+    id: settings.account.support.bodyInput
+- inputText: The support request flow should submit safely.
+- hideKeyboard
+- tapOn:
+    id: settings.account.support.submitCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.success
+    timeout: 10000

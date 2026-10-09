@@ -1,0 +1,13 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: launch-fresh.yaml
+- runFlow: select-student-role.yaml
+- openLink: mychampions://nutrition/custom-meals/new
+- extendedWaitUntil:
+    visible:
+      id: meal.builder.screen
+    timeout: 10000
+- runFlow:
+    file: dismiss-keyboard.yaml
+    env:
+      KEYBOARD_DONE_ID: meal.builder.keyboard.done

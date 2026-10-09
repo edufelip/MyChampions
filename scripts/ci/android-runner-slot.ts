@@ -174,9 +174,6 @@ export function androidRunnerSlotEnvironment(
     ANDROID_SERIAL: slot.emulatorSerial,
     ANDROID_TMPDIR: slot.tempRoot,
     TMPDIR: slot.tempRoot,
-    DETOX_ANDROID_AVD: slot.avd,
-    DETOX_ANDROID_DEVICE: slot.emulatorSerial,
-    DETOX_METRO_PORT: String(slot.metroPort),
     MYCHAMPIONS_ANDROID_AVD_HOME: slot.avdHome,
     MYCHAMPIONS_ANDROID_AVD: slot.avd,
     MYCHAMPIONS_ANDROID_ADB_SERVER_PORT: String(slot.adbServerPort),
@@ -188,6 +185,7 @@ export function androidRunnerSlotEnvironment(
     MYCHAMPIONS_ANDROID_RECOVERY_ROOT: slot.recoveryRoot,
     MYCHAMPIONS_ANDROID_SLOT_ID: slot.slotId,
     MYCHAMPIONS_ANDROID_TEMP_ROOT: slot.tempRoot,
+    NATIVE_METRO_PORT: String(slot.metroPort),
     MYCHAMPIONS_ANDROID_USER_HOME: slot.userHome,
     MYCHAMPIONS_NATIVE_STATE_ROOT: slot.recoveryRoot,
   };

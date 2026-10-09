@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mychampions-protected-ios-detox
+  group: mychampions-protected-ios-native
   cancel-in-progress: false
 
 jobs:
@@ -89,13 +89,16 @@ jobs:
           corepack enable
           yarn install --frozen-lockfile --no-progress
 
+      - name: Install Maestro
+        shell: bash
+        run: bash scripts/testing/install-maestro.sh
       - name: Run provider-backed Test Store matrix
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
           EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE: ${{ secrets.REVENUECAT_TEST_STORE_SDK_KEY }}
           REVENUECAT_LIVE_E2E: 'true'
           REVENUECAT_MATRIX: ${{ inputs.matrix }}
-          DETOX_METRO_PORT: '18081'
+          NATIVE_METRO_PORT: '18081'
         shell: bash
         run: |
           bash scripts/ci/run-with-native-host-lock.sh bash -s <<'RUN_PROVIDER'
@@ -125,14 +128,14 @@ jobs:
           unset ENV_FILE_CONTENT
           case "$REVENUECAT_MATRIX" in
             student)
-              bash scripts/run-detox-revenuecat-student-matrix.sh
+              bash scripts/run-maestro-revenuecat-student-matrix.sh
               ;;
             professional)
-              bash scripts/run-detox-revenuecat-test-store.sh
+              bash scripts/run-maestro-revenuecat-test-store.sh
               ;;
             all)
-              bash scripts/run-detox-revenuecat-test-store.sh
-              bash scripts/run-detox-revenuecat-student-matrix.sh
+              bash scripts/run-maestro-revenuecat-test-store.sh
+              bash scripts/run-maestro-revenuecat-student-matrix.sh
               ;;
             *)
               echo "Unsupported provider matrix: $REVENUECAT_MATRIX" >&2

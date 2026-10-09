@@ -1,0 +1,36 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - coalesces duplicate student purchase taps without granting access
+tags: [student-duplicate]
+---
+- runFlow: steps/launch-student-ai-gate.yaml
+- runFlow: steps/student-ai-locked.yaml
+- tapOn:
+    id: meal.photoAnalysis.paywall.cta
+- runFlow:
+    file: steps/paywall-contract.yaml
+    env:
+      ROLE: student
+# Two rapid taps on the purchase control must open a single purchase.
+- tapOn:
+    text: "^(Continue with selected plan|Continuar com o plano selecionado|Continuar con el plan seleccionado)$"
+    waitToSettleTimeoutMs: 0
+- tapOn:
+    text: "^(Continue with selected plan|Continuar com o plano selecionado|Continuar con el plan seleccionado)$"
+    optional: true
+- runFlow:
+    when:
+      visible: "^(Purchase|Comprar)$"
+    commands:
+      - tapOn: "^(Purchase|Comprar)$"
+- extendedWaitUntil:
+    visible: Test Store Purchase
+    timeout: 15000
+- takeScreenshot: revenuecat-student-v1-duplicate-purchase-sheet
+- tapOn: Cancel
+- runFlow:
+    file: steps/dismiss-paywall.yaml
+    env:
+      ROLE: student
+      RETURN_ID: meal.builder.screen
+- runFlow: steps/student-ai-locked.yaml
+- takeScreenshot: revenuecat-student-v1-duplicate-tap-locked

@@ -1,0 +1,57 @@
+appId: com.edufelip.mychampions.dev
+name: Professional bulk assign - selects eligible roster rows, chooses a predefined plan, and resets after assignment
+tags: [professional-bulk-assign]
+---
+- runFlow: ../common/pro-students-tab.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.students.row.e2e-active-student
+    timeout: 10000
+- assertVisible:
+    id: pro.students.row.e2e-dual-student
+- assertVisible:
+    id: pro.students.row.e2e-pending-student
+- tapOn:
+    id: pro.students.bulkAssignToggle
+- extendedWaitUntil:
+    visible:
+      id: pro.students.bulk.planType.nutrition
+    timeout: 5000
+- assertNotVisible:
+    id: pro.students.row.e2e-pending-student
+- tapOn:
+    id: pro.students.row.e2e-active-student
+- tapOn:
+    id: pro.students.row.e2e-dual-student
+- extendedWaitUntil:
+    visible:
+      id: pro.students.bulk.assignSelected
+    timeout: 5000
+- tapOn:
+    id: pro.students.bulk.assignSelected
+- extendedWaitUntil:
+    visible:
+      id: planPicker.modal
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: planPicker.ready
+    timeout: 5000
+- assertVisible:
+    id: planPicker.row.e2e-nutrition-predefined-plan
+- assertNotVisible:
+    id: planPicker.row.e2e-training-predefined-plan
+- tapOn:
+    id: planPicker.assign.e2e-nutrition-predefined-plan
+- extendedWaitUntil:
+    visible:
+      text: Plan assigned successfully.
+    timeout: 5000
+- tapOn:
+    text: OK
+- extendedWaitUntil:
+    visible:
+      id: pro.students.bulkAssignToggle
+    timeout: 5000
+- assertVisible:
+    id: pro.students.search

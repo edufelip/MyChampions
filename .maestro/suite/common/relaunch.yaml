@@ -1,0 +1,5 @@
+# Restart the app process, keeping its stored state (Detox `launchApp({ newInstance: true })`).
+appId: com.edufelip.mychampions.dev
+---
+- launchApp:
+    stopApp: true

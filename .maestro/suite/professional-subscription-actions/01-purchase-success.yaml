@@ -1,0 +1,12 @@
+appId: com.edufelip.mychampions.dev
+name: Professional subscription actions - a successful purchase grants access
+tags: [actions-success]
+---
+- runFlow: ../common/pro-subscription-inactive-controls.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.statusValue
+      text: "Subscription: Active"
+    timeout: 5000
+- assertNotVisible:
+    id: pro.subscription.warning

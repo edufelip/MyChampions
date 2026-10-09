@@ -1,0 +1,17 @@
+# Fresh launch as a professional, skip specialty setup, open the Students tab.
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: launch-fresh.yaml
+- runFlow: select-professional-role.yaml
+- tapOn:
+    id: pro.specialty.cta_skip
+- extendedWaitUntil:
+    visible:
+      id: pro.home.screen
+    timeout: 10000
+- tapOn:
+    id: tabs.students
+- extendedWaitUntil:
+    visible:
+      id: pro.students.search
+    timeout: 10000

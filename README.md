@@ -74,7 +74,7 @@ bytes from a private retained24-hex capture. It validates current app source,
 binary/config/bootstrap and reviewed entry before acquisition; new device,
 fixture/backend, ports and processes are still required. Invalid reuse blocks
 without a compile fallback. The task card records bounded local proof and pending lifecycle/platform/
-engine/reliability/hosted gates. Keep Detox until its replacement gates pass.
+engine/reliability/hosted gates.
 
 For native development builds, use:
 
@@ -126,35 +126,36 @@ tester group, and iOS Ad Hoc signing assets before their first live run.
    [testing strategy](docs/qa/testing-strategy-v1.md) for the phased rollout and
    recorded baseline gaps.
 
-2. E2E (Detox) iOS
+2. Native E2E (Maestro)
+
+   The native suite lives in `.maestro/suite/<spec>/`; each flow is tagged with
+   the fixture phase it runs under (`scripts/ci/native-fixture-profiles.ts`).
+   The runner builds the Debug app once (the Metro port is compiled in),
+   installs it, then starts a fresh Metro per fixture phase and runs the flows
+   tagged for it. It needs the [Maestro CLI](https://maestro.dev)
+   (`bash scripts/testing/install-maestro.sh`), one booted iOS simulator named
+   `MAESTRO_IOS_SIMULATOR` (default `iPhone 17`) or one Android device
+   (`ANDROID_SERIAL` when several are attached).
 
    ```bash
-   yarn test:e2e:build:ios
-   yarn test:e2e:ios
+   yarn test:e2e:ios                 # every CI Maestro suite on iOS
+   yarn test:e2e:android             # every CI Maestro suite on Android
+   yarn test:e2e:ios:smoke           # auth + connection suites (the iOS PR smoke)
+   bash scripts/testing/run-maestro-suite.sh --platform ios maestro:nutrition
    ```
 
-3. E2E (Detox) Android
+   `NATIVE_SKIP_BUILD=true` reuses an existing build; `NATIVE_METRO_PORT` picks
+   the Metro port for both the build and the run. A failing phase is retried
+   once and the retry is reported. Diagnostics land under
+   `.artifacts/ci-diagnostics/<platform>/`.
 
-   ```bash
-   yarn test:e2e:build:android
-   yarn test:e2e:android
-   ```
+   The five integrated journeys (session, training, connection, camera denial,
+   save/retry against the real server) run through the native pilot:
+   `yarn test:e2e:native:pilot --platform=<ios|android> --engine=maestro --scenario=SCN-<journey>-<platform> --mode=integration`.
 
-4. E2E debug variants (optional)
+3. RevenueCat Test Store lifecycle (explicit live-provider run only)
 
-   The iOS Debug test commands start Metro on port `8081` when it is not already running, and leave a pre-existing Metro process alone.
-   The `test:e2e:ios:debug:smoke` command builds the Debug app once, then runs unauthenticated auth-entry and authenticated role/connection checks in separate fresh Metro phases so their fixture states cannot conflict. CI passes `DETOX_SKIP_BUILD=true` after its single workflow-owned build. The authenticated connection mode uses deterministic invite, QR, and active-nutrition fixtures without backend mutation.
-
-   ```bash
-   yarn test:e2e:build:ios:debug
-   yarn test:e2e:ios:debug
-   yarn test:e2e:build:android:debug
-   yarn test:e2e:android:debug
-   ```
-
-5. RevenueCat Test Store lifecycle (explicit live-provider run only)
-
-   This command is intentionally separate from fixture Detox. It accepts only a
+   This command is intentionally separate from the fixture suite. It accepts only a
    RevenueCat `test_*` public SDK key, forces the dev app variant, clears every
    deterministic entitlement override, and generates an isolated App User ID.
    Never use a Test Store key in a release build. Provider/catalog changes and
@@ -163,7 +164,7 @@ tester group, and iOS Ad Hoc signing assets before their first live run.
    ```bash
    REVENUECAT_LIVE_E2E=true \
    EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE=... \
-   yarn test:e2e:ios:debug:revenuecat-live
+   yarn test:e2e:ios:revenuecat-live
    ```
 
    Set `REVENUECAT_TEST_APP_USER_ID` to a safe explicit ID when the run must be

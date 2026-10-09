@@ -59,7 +59,7 @@ function requestCancellation(signal: NodeJS.Signals): void {
   }
 }
 
-function installCancellationHandlers(): void {
+export function installCancellationHandlers(): void {
   process.on('SIGINT', () => requestCancellation('SIGINT'));
   process.on('SIGTERM', () => requestCancellation('SIGTERM'));
 }
@@ -381,10 +381,10 @@ async function main(): Promise<void> {
   );
   const metroPort =
     platform === 'ios' || platform === 'android'
-      ? parseNativeMetroPort(platform, process.env.DETOX_METRO_PORT)
+      ? parseNativeMetroPort(platform, process.env.NATIVE_METRO_PORT)
       : undefined;
   const plan = createSelectiveExecutionPlan(loadManifest(root), platform, selectedSuites, {
-    skipNativeBuild: isTrue(process.env.DETOX_SKIP_BUILD),
+    skipNativeBuild: isTrue(process.env.NATIVE_SKIP_BUILD),
     diagnosticsRoot: process.env.SELECTIVE_TEST_DIAGNOSTICS_ROOT ?? '.artifacts/ci-diagnostics',
     metroPort,
     planOnly,

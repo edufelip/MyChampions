@@ -33,7 +33,7 @@ function syntheticManifest(): TestImpactManifest {
   return {
     schemaVersion: 1,
     maxChangedFiles: 500,
-    criticalSuites: ['detox:a'],
+    criticalSuites: ['maestro:a'],
     documentationPaths: ['docs/**', '*.md'],
     runtimePaths: ['features/**', 'components/**', 'app/**', '**/*.ts'],
     fullFallbackPaths: ['config/test-impact.json', 'scripts/ci/**'],
@@ -56,7 +56,7 @@ function syntheticManifest(): TestImpactManifest {
         dependsOn: [],
         unitTests: ['features/a/**/*.test.ts'],
         webSuites: ['web:a'],
-        detoxSuites: ['detox:a'],
+        nativeSuites: ['maestro:a'],
         owners: ['@owner'],
       },
       b: {
@@ -64,7 +64,7 @@ function syntheticManifest(): TestImpactManifest {
         dependsOn: [],
         unitTests: ['features/b/**/*.test.ts'],
         webSuites: ['web:b'],
-        detoxSuites: ['detox:b'],
+        nativeSuites: ['maestro:b'],
         owners: ['@owner'],
       },
       c: {
@@ -72,7 +72,7 @@ function syntheticManifest(): TestImpactManifest {
         dependsOn: ['a'],
         unitTests: ['features/c/**/*.test.ts'],
         webSuites: ['web:c'],
-        detoxSuites: ['detox:c'],
+        nativeSuites: ['maestro:c'],
         owners: ['@owner'],
       },
     },
@@ -96,24 +96,24 @@ function syntheticManifest(): TestImpactManifest {
         tier: 'feature',
         ci: true,
       },
-      'detox:a': {
-        runner: 'detox',
+      'maestro:a': {
+        runner: 'maestro',
         platforms: ['ios', 'android'],
-        specs: ['e2e/a.e2e.test.js'],
+        specs: ['.maestro/suite/a'],
         tier: 'feature',
         ci: true,
       },
-      'detox:b': {
-        runner: 'detox',
+      'maestro:b': {
+        runner: 'maestro',
         platforms: ['ios', 'android'],
-        specs: ['e2e/b.e2e.test.js'],
+        specs: ['.maestro/suite/b'],
         tier: 'feature',
         ci: true,
       },
-      'detox:c': {
-        runner: 'detox',
+      'maestro:c': {
+        runner: 'maestro',
         platforms: ['ios', 'android'],
-        specs: ['e2e/c.e2e.test.js'],
+        specs: ['.maestro/suite/c'],
         tier: 'feature',
         ci: true,
       },
@@ -129,17 +129,17 @@ function syntheticManifestWithUnownedSuites(): TestImpactManifest {
     tier: 'feature',
     ci: true,
   };
-  manifest.suites['detox:unowned-ios-ci'] = {
-    runner: 'detox',
+  manifest.suites['maestro:unowned-ios-ci'] = {
+    runner: 'maestro',
     platforms: ['ios'],
-    specs: ['e2e/unowned-ios-ci.e2e.test.js'],
+    specs: ['.maestro/suite/unowned-ios-ci'],
     tier: 'feature',
     ci: true,
   };
-  manifest.suites['detox:provider-live'] = {
-    runner: 'detox',
+  manifest.suites['maestro:provider-live'] = {
+    runner: 'maestro',
     platforms: ['ios', 'android'],
-    specs: ['e2e/provider-live.e2e.test.js'],
+    specs: ['.maestro/suite/provider-live'],
     fixtureProfile: 'provider-live',
     tier: 'release',
     ci: false,
@@ -159,76 +159,33 @@ void test('checked-in impact manifest is internally valid', () => {
   assert.deepEqual(validateFeatureBoundaries(root, manifest), []);
 });
 
-void test('private integrated session baseline is registered without CI eligibility', () => {
+void test('a Maestro flow inside a suite folder selects that suite', () => {
   const manifest = loadManifest(root);
-  const suite = manifest.suites['detox:integrated-session-baseline'];
-  assert.ok(suite, 'owned session baseline must be inventoried in the suite manifest');
-  assert.equal(suite.runner, 'detox');
-  assert.equal(suite.ci, false);
-  assert.deepEqual(suite.platforms, ['ios', 'android']);
-  assert.deepEqual(suite.specs, ['e2e/detox-integrated-session-baseline.e2e.test.js']);
-  assert.equal(suite.fixtureProfile, 'owned-integrated-session');
+  const result = resolveImpact(
+    manifest,
+    [{ status: 'M', path: '.maestro/suite/support-request/01-validate-and-submit.yaml' }],
+    [],
+  );
+  assert.equal(result.mode, 'selective');
+  assert.ok(result.selectedSuites.includes('maestro:support'));
+  assert.ok(result.nativeIosSuites.includes('maestro:support'));
+  assert.ok(result.nativeAndroidSuites.includes('maestro:support'));
 });
 
-void test('private integrated connection baseline is registered without CI eligibility', () => {
+void test('a shared Maestro subflow selects every native suite', () => {
   const manifest = loadManifest(root);
-  const suite = manifest.suites['detox:integrated-connection-baseline'];
-  assert.ok(suite, 'owned connection baseline must be inventoried in the suite manifest');
-  assert.equal(suite.runner, 'detox');
-  assert.equal(suite.ci, false);
-  assert.deepEqual(suite.platforms, ['ios', 'android']);
-  assert.deepEqual(suite.specs, ['e2e/detox-integrated-connection-baseline.e2e.test.js']);
-  assert.equal(suite.fixtureProfile, 'owned-integrated-connection');
-});
-
-void test('inactive connection baseline edits force validation without selecting the private native suite', () => {
-  const manifest = loadManifest(root);
-  for (const status of ['M', 'D'] as const) {
-    for (const platformScope of ['all', 'web-only'] as const) {
-      const result = resolveImpact(
-        manifest,
-        [{ status, path: 'e2e/detox-integrated-connection-baseline.e2e.test.js' }],
-        [],
-        { platformScope },
-      );
-      assert.equal(result.mode, 'full-fallback');
-      assert.deepEqual(result.unmappedRuntimePaths, []);
-      assert.ok(result.webSuites.length > 0);
-      assert.ok(!result.selectedSuites.includes('detox:integrated-connection-baseline'));
-      if (platformScope === 'web-only') {
-        assert.deepEqual(result.detoxIosSuites, []);
-        assert.deepEqual(result.detoxAndroidSuites, []);
-      } else {
-        assert.ok(result.detoxIosSuites.length > 0);
-        assert.ok(result.detoxAndroidSuites.length > 0);
-      }
-    }
-  }
-});
-
-void test('inactive session baseline edits force validation without selecting the private native suite', () => {
-  const manifest = loadManifest(root);
-  for (const status of ['M', 'D'] as const) {
-    for (const platformScope of ['all', 'web-only'] as const) {
-      const result = resolveImpact(
-        manifest,
-        [{ status, path: 'e2e/detox-integrated-session-baseline.e2e.test.js' }],
-        [],
-        { platformScope },
-      );
-      assert.equal(result.mode, 'full-fallback');
-      assert.deepEqual(result.unmappedRuntimePaths, []);
-      assert.ok(result.webSuites.length > 0);
-      assert.ok(!result.selectedSuites.includes('detox:integrated-session-baseline'));
-      if (platformScope === 'web-only') {
-        assert.deepEqual(result.detoxIosSuites, []);
-        assert.deepEqual(result.detoxAndroidSuites, []);
-      } else {
-        assert.ok(result.detoxIosSuites.length > 0);
-        assert.ok(result.detoxAndroidSuites.length > 0);
-      }
-    }
-  }
+  const result = resolveImpact(
+    manifest,
+    [{ status: 'M', path: '.maestro/suite/common/select-student-role.yaml' }],
+    [],
+  );
+  const ciNativeSuites = Object.entries(manifest.suites)
+    .filter(([, suite]) => suite.runner === 'maestro' && suite.ci)
+    .map(([suiteId]) => suiteId)
+    .sort();
+  assert.deepEqual(result.sharedRules, ['maestro-shared-subflows']);
+  assert.deepEqual(result.nativeIosSuites, ciNativeSuites);
+  assert.deepEqual(result.nativeAndroidSuites, ciNativeSuites);
 });
 
 void test('glob matching supports root files, nested directories, and literal route punctuation', () => {
@@ -247,10 +204,10 @@ void test('a feature-only change selects A and its declared reverse dependent, n
   assert.deepEqual(result.directFeatures, ['a']);
   assert.deepEqual(result.affectedFeatures, ['a', 'c']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:c']);
-  assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:c']);
-  assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:c']);
+  assert.deepEqual(result.nativeIosSuites, ['maestro:a', 'maestro:c']);
+  assert.deepEqual(result.nativeAndroidSuites, ['maestro:a', 'maestro:c']);
   assert.equal(result.selectedSuites.includes('web:b'), false);
-  assert.equal(result.selectedSuites.includes('detox:b'), false);
+  assert.equal(result.selectedSuites.includes('maestro:b'), false);
 });
 
 void test('reverse import consumers widen a design-system change only to actual consumers', () => {
@@ -351,8 +308,8 @@ void test('navigation changes select the complete registered CI matrix', () => {
 
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
-  assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:b', 'detox:c']);
-  assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
+  assert.deepEqual(result.nativeIosSuites, ['maestro:a', 'maestro:b', 'maestro:c']);
+  assert.deepEqual(result.nativeAndroidSuites, ['maestro:a', 'maestro:b', 'maestro:c']);
 });
 
 for (const scenario of [
@@ -379,14 +336,14 @@ for (const scenario of [
 
     assert.equal(result.mode, scenario.expectedMode);
     assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c', 'web:unowned-ci']);
-    assert.deepEqual(result.detoxIosSuites, [
-      'detox:a',
-      'detox:b',
-      'detox:c',
-      'detox:unowned-ios-ci',
+    assert.deepEqual(result.nativeIosSuites, [
+      'maestro:a',
+      'maestro:b',
+      'maestro:c',
+      'maestro:unowned-ios-ci',
     ]);
-    assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
-    assert.equal(result.selectedSuites.includes('detox:provider-live'), false);
+    assert.deepEqual(result.nativeAndroidSuites, ['maestro:a', 'maestro:b', 'maestro:c']);
+    assert.equal(result.selectedSuites.includes('maestro:provider-live'), false);
     assert.equal(result.selectedSuites.includes('web:evidence'), false);
   });
 }
@@ -402,15 +359,15 @@ for (const scenario of [
   },
   {
     name: 'an unowned iOS-only CI Detox spec',
-    path: 'e2e/unowned-ios-ci.e2e.test.js',
-    expectedSelectedSuites: ['detox:a', 'detox:unowned-ios-ci'],
+    path: '.maestro/suite/unowned-ios-ci',
+    expectedSelectedSuites: ['maestro:a', 'maestro:unowned-ios-ci'],
     expectedWebSuites: [],
-    expectedIosSuites: ['detox:a', 'detox:unowned-ios-ci'],
-    expectedAndroidSuites: ['detox:a'],
+    expectedIosSuites: ['maestro:a', 'maestro:unowned-ios-ci'],
+    expectedAndroidSuites: ['maestro:a'],
   },
   {
     name: 'a non-CI provider-live spec',
-    path: 'e2e/provider-live.e2e.test.js',
+    path: '.maestro/suite/provider-live',
     expectedSelectedSuites: [],
     expectedWebSuites: [],
     expectedIosSuites: [],
@@ -435,8 +392,8 @@ for (const scenario of [
     assert.deepEqual(result.affectedFeatures, []);
     assert.deepEqual(result.selectedSuites, scenario.expectedSelectedSuites);
     assert.deepEqual(result.webSuites, scenario.expectedWebSuites);
-    assert.deepEqual(result.detoxIosSuites, scenario.expectedIosSuites);
-    assert.deepEqual(result.detoxAndroidSuites, scenario.expectedAndroidSuites);
+    assert.deepEqual(result.nativeIosSuites, scenario.expectedIosSuites);
+    assert.deepEqual(result.nativeAndroidSuites, scenario.expectedAndroidSuites);
     assert.deepEqual(result.unmappedRuntimePaths, []);
   });
 }
@@ -489,8 +446,8 @@ void test('unmapped runtime changes fail closed to the full matrix', () => {
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
   assert.deepEqual(result.unmappedRuntimePaths, ['features/unknown/new-source.ts']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
-  assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:b', 'detox:c']);
-  assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
+  assert.deepEqual(result.nativeIosSuites, ['maestro:a', 'maestro:b', 'maestro:c']);
+  assert.deepEqual(result.nativeAndroidSuites, ['maestro:a', 'maestro:b', 'maestro:c']);
 });
 
 void test('source files in unknown nested directories fail closed to the full matrix', () => {
@@ -518,7 +475,7 @@ void test('documentation paths owned by a global rule still select the complete 
 
   assert.equal(result.mode, 'selective');
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
-  assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
+  assert.deepEqual(result.nativeAndroidSuites, ['maestro:a', 'maestro:b', 'maestro:c']);
 });
 
 void test('impact infrastructure changes fail closed even when they are otherwise unmapped', () => {
@@ -530,7 +487,7 @@ void test('impact infrastructure changes fail closed even when they are otherwis
   assert.match(result.fallbackReasons.join(' '), /tooling file changed/);
 });
 
-void test('platform scope web-only strips detox suites from a fullFallbackPaths full-fallback selection', () => {
+void test('platform scope web-only strips native suites from a fullFallbackPaths full-fallback selection', () => {
   const result = resolveImpact(
     syntheticManifest(),
     [{ status: 'M', path: 'config/test-impact.json' }],
@@ -540,15 +497,15 @@ void test('platform scope web-only strips detox suites from a fullFallbackPaths 
 
   assert.equal(result.mode, 'full-fallback');
   assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
-  assert.deepEqual(result.detoxIosSuites, []);
-  assert.deepEqual(result.detoxAndroidSuites, []);
+  assert.deepEqual(result.nativeIosSuites, []);
+  assert.deepEqual(result.nativeAndroidSuites, []);
   assert.equal(
-    result.selectedSuites.some((suiteId) => suiteId.startsWith('detox:')),
+    result.selectedSuites.some((suiteId) => suiteId.startsWith('maestro:')),
     false,
   );
 });
 
-void test('platform scope web-only strips detox suites from an unmapped-path full-fallback selection', () => {
+void test('platform scope web-only strips native suites from an unmapped-path full-fallback selection', () => {
   const result = resolveImpact(
     syntheticManifest(),
     [{ status: 'A', path: 'features/unknown/new-source.ts' }],
@@ -559,11 +516,11 @@ void test('platform scope web-only strips detox suites from an unmapped-path ful
   assert.equal(result.mode, 'full-fallback');
   assert.deepEqual(result.unmappedRuntimePaths, ['features/unknown/new-source.ts']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
-  assert.deepEqual(result.detoxIosSuites, []);
-  assert.deepEqual(result.detoxAndroidSuites, []);
+  assert.deepEqual(result.nativeIosSuites, []);
+  assert.deepEqual(result.nativeAndroidSuites, []);
 });
 
-void test('platform scope web-only strips detox suites when a shared rule matches impact:all', () => {
+void test('platform scope web-only strips native suites when a shared rule matches impact:all', () => {
   const result = resolveImpact(
     syntheticManifest(),
     [{ status: 'M', path: 'docs/screens/v2/localized-copy-table-v2.md' }],
@@ -574,11 +531,11 @@ void test('platform scope web-only strips detox suites when a shared rule matche
   assert.equal(result.mode, 'selective');
   assert.deepEqual(result.affectedFeatures, ['a', 'b', 'c']);
   assert.deepEqual(result.webSuites, ['web:a', 'web:b', 'web:c']);
-  assert.deepEqual(result.detoxIosSuites, []);
-  assert.deepEqual(result.detoxAndroidSuites, []);
+  assert.deepEqual(result.nativeIosSuites, []);
+  assert.deepEqual(result.nativeAndroidSuites, []);
 });
 
-void test('platform scope defaults to "all" and leaves Detox suites in a full-fallback selection unchanged', () => {
+void test('platform scope defaults to "all" and leaves Native suites in a full-fallback selection unchanged', () => {
   const withDefault = resolveImpact(syntheticManifest(), [
     { status: 'A', path: 'features/unknown/new-source.ts' },
   ]);
@@ -591,8 +548,8 @@ void test('platform scope defaults to "all" and leaves Detox suites in a full-fa
 
   for (const result of [withDefault, withExplicitAll]) {
     assert.equal(result.mode, 'full-fallback');
-    assert.deepEqual(result.detoxIosSuites, ['detox:a', 'detox:b', 'detox:c']);
-    assert.deepEqual(result.detoxAndroidSuites, ['detox:a', 'detox:b', 'detox:c']);
+    assert.deepEqual(result.nativeIosSuites, ['maestro:a', 'maestro:b', 'maestro:c']);
+    assert.deepEqual(result.nativeAndroidSuites, ['maestro:a', 'maestro:b', 'maestro:c']);
   }
 });
 
@@ -648,8 +605,8 @@ void test('CLI emits compact suite arrays and web-server workflow outputs', () =
 
     for (const [outputName, resultKey] of [
       ['web_suites', 'webSuites'],
-      ['detox_ios_suites', 'detoxIosSuites'],
-      ['detox_android_suites', 'detoxAndroidSuites'],
+      ['native_ios_suites', 'nativeIosSuites'],
+      ['native_android_suites', 'nativeAndroidSuites'],
     ] as const) {
       assert.deepEqual(JSON.parse(outputs[outputName]), result[resultKey]);
       assert.equal(outputs[outputName], JSON.stringify(result[resultKey]));
@@ -659,7 +616,7 @@ void test('CLI emits compact suite arrays and web-server workflow outputs', () =
   }
 });
 
-void test('CLI --platform-scope web-only strips Detox suites from the real manifest full-fallback selection', () => {
+void test('CLI --platform-scope web-only strips Native suites from the real manifest full-fallback selection', () => {
   const outputDirectory = mkdtempSync(join(tmpdir(), 'mychampions-platform-scope-cli-'));
   const githubOutput = join(outputDirectory, 'github-output.txt');
   const impactOutput = join(outputDirectory, 'impact.json');
@@ -700,10 +657,10 @@ void test('CLI --platform-scope web-only strips Detox suites from the real manif
     );
     const result = JSON.parse(readFileSync(impactOutput, 'utf8')) as ImpactResult;
 
-    assert.equal(outputs.has_detox_ios, 'false');
-    assert.equal(outputs.has_detox_android, 'false');
-    assert.deepEqual(result.detoxIosSuites, []);
-    assert.deepEqual(result.detoxAndroidSuites, []);
+    assert.equal(outputs.has_native_ios, 'false');
+    assert.equal(outputs.has_native_android, 'false');
+    assert.deepEqual(result.nativeIosSuites, []);
+    assert.deepEqual(result.nativeAndroidSuites, []);
     assert.ok(result.webSuites.length > 0);
   } finally {
     rmSync(outputDirectory, { recursive: true, force: true });

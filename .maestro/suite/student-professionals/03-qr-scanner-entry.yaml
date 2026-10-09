@@ -1,0 +1,21 @@
+appId: com.edufelip.mychampions.dev
+name: Student professionals - handles QR scanner entry after camera permission is granted
+tags: [qr-valid]
+---
+- runFlow: ../common/student-professionals.yaml
+- tapOn:
+    id: student.professionals.scanQrButton
+- waitForAnimationToEnd:
+    timeout: 5000
+# The scanner either stays open (close it) or the fixture payload submits at once.
+- runFlow:
+    when:
+      visible:
+        id: student.professionals.qrCloseButton
+    commands:
+      - tapOn:
+          id: student.professionals.qrCloseButton
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.screen
+    timeout: 5000

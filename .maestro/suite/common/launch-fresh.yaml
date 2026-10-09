@@ -1,0 +1,8 @@
+# Start the app from a clean install state (Detox `launchApp({ delete: true })`).
+# Pass CAMERA_PERMISSION=allow|deny to pre-set the camera permission.
+appId: com.edufelip.mychampions.dev
+---
+- launchApp:
+    clearState: true
+    permissions:
+      camera: ${CAMERA_PERMISSION || 'unset'}

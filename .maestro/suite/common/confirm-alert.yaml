@@ -1,0 +1,21 @@
+# Tap the BUTTON action of a native alert whose title has the same text.
+# iOS exposes the title first, so the button is the second match there.
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      text: ${BUTTON}
+    timeout: 5000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: ${BUTTON}
+          index: 1
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: android:id/button1

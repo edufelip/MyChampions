@@ -1,0 +1,27 @@
+appId: com.edufelip.mychampions.dev
+name: Student self-managed builder - creates a self-managed training plan and returns to the student training context
+tags: [student-self-managed-builder]
+---
+- runFlow:
+    file: ../common/student-open-route.yaml
+    env:
+      ROUTE: mychampions://student/training/plans/new
+      SCREEN_ID: pro.training_plan.screen
+- tapOn:
+    id: pro.training_plan.name
+- inputText: E2E Student Training Plan
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: pro.training_plan.saveButton
+    direction: DOWN
+- tapOn:
+    id: pro.training_plan.saveButton
+- extendedWaitUntil:
+    visible:
+      id: student.training.screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: student.training.selfManagedPlanCard
+    timeout: 10000

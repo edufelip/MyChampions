@@ -9,8 +9,8 @@ const createAccountSource = readFileSync(
   'utf8',
 );
 const signInSource = readFileSync(join(process.cwd(), 'app/auth/sign-in.tsx'), 'utf8');
-const authSignInE2ESource = readFileSync(
-  join(process.cwd(), 'e2e/auth-sign-in.e2e.test.js'),
+const createAccountFlowSource = readFileSync(
+  join(process.cwd(), '.maestro/suite/auth-sign-in/create-account-09-email-password-success.yaml'),
   'utf8',
 );
 
@@ -90,20 +90,12 @@ test('create-account Return submission uses the native confirmation snapshot', (
   );
 });
 
-test('create-account E2E dispatches a platform-safe confirmation editor action', () => {
+test('create-account E2E submits from the focused confirmation editor', () => {
+  // The flow must focus the confirmation editor itself and submit with the
+  // editor's Return action, so the native confirmation snapshot is exercised.
   assert.match(
-    authSignInE2ESource,
-    /device\.getPlatform\(\) === 'android'[\s\S]+device\.getUiDevice\(\)\.pressEnter\(\)[\s\S]+tapReturnKey\(\)/,
+    createAccountFlowSource,
+    /- tapOn:\n    id: auth\.createAccount\.passwordConfirmationInput\n- inputText: E2E-create-123!\n- pressKey: Enter\n/,
   );
-});
-
-test('create-account E2E taps the confirmation editor only where focus requires it', () => {
-  // iOS dtx_replaceText() already leaves the field first responder, and tap()
-  // asserts hittability, which the software keyboard defeats. Pin the tap inside
-  // the Android guard so the iOS-fatal unconditional tap cannot come back.
-  assert.equal(authSignInE2ESource.match(/passwordConfirmationInput'\)\)\.tap\(\);/g)?.length, 1);
-  assert.match(
-    authSignInE2ESource,
-    /if \(device\.getPlatform\(\) === 'android'\) \{[\s\S]*?element\(by\.id\('auth\.createAccount\.passwordConfirmationInput'\)\)\.tap\(\);\s*\}\s*await waitFor\(element\(by\.id\('auth\.createAccount\.passwordConfirmationInput'\)\)\)\s*\.toBeFocused\(\)/,
-  );
+  assert.doesNotMatch(createAccountFlowSource, /id: auth\.createAccount\.submitButton/);
 });

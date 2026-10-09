@@ -53,9 +53,6 @@ export EXPO_PUBLIC_E2E_SOCIAL_AUTH=true
 export EXPO_PUBLIC_E2E_AUTH_UID="$run_uid"
 export EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID="$alternate_uid"
 export EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE=basic
-export DETOX_METRO_CLEAR_CACHE=true
-export DETOX_REQUIRE_FRESH_METRO=true
-export DETOX_METRO_PROCESS_GROUP=true
 
 REVENUECAT_TEST_APP_USER_ID="$run_uid" \
   REVENUECAT_TEST_ALT_APP_USER_ID="$alternate_uid" \
@@ -74,16 +71,32 @@ echo "RevenueCat Test Store alternate App User ID: ${alternate_uid}"
 echo "RevenueCat live scenario: ${live_scenario}"
 echo "This run uses the dev-only Test Store configuration; the SDK key is not printed."
 
-if [[ "${DETOX_SKIP_BUILD:-false}" != "true" ]]; then
+if [[ "${NATIVE_SKIP_BUILD:-false}" != "true" ]]; then
   yarn test:e2e:build:ios:debug
 fi
 
-E2E_AUTH_SESSION=true \
-  REVENUECAT_LIVE_E2E=true \
-  REVENUECAT_LIVE_SCENARIO="$live_scenario" \
-  REVENUECAT_LIVE_MONITOR_EXPIRATION="${REVENUECAT_LIVE_MONITOR_EXPIRATION:-false}" \
-  DETOX_JEST_CONFIG=e2e/jest.revenuecat-live.config.js \
-  bash scripts/run-detox-ios-debug.sh --headless e2e/revenuecat-test-store.e2e.test.js
+# The live scenarios share Test Store customer state; the suite's config.yaml
+# runs them in order. The expiration monitor waits out real renewal time, so
+# it runs only when explicitly requested.
+monitor="${REVENUECAT_LIVE_MONITOR_EXPIRATION:-false}"
+tag_args=()
+if [[ "$live_scenario" == "all" ]]; then
+  [[ "$monitor" == "true" ]] || tag_args=(--exclude-tags expiration-monitor)
+elif [[ "$live_scenario" == "professional-regression" && "$monitor" == "true" ]]; then
+  tag_args=(--include-tags "professional-regression,expiration-monitor")
+else
+  tag_args=(--include-tags "$live_scenario")
+fi
+
+bash scripts/testing/install-maestro.sh
+bash scripts/testing/maestro-device.sh --platform ios
+device="$(bash scripts/testing/maestro-device.sh --platform ios --resolve-only)"
+output_dir="${project_root}/.artifacts/ci-diagnostics/revenuecat/${live_scenario}-${run_uid}"
+mkdir -p "$output_dir"
+MAESTRO_CLI_NO_ANALYTICS=1 node --import tsx scripts/testing/run-with-fresh-metro.ts --platform ios -- \
+  maestro --device "$device" test "${tag_args[@]}" \
+  --format junit --output "$output_dir/report.xml" --test-output-dir "$output_dir" \
+  .maestro/suite/revenuecat-test-store
 
 if [[ "${REVENUECAT_VERIFY_SERVER_EVIDENCE:-false}" == "true" ]]; then
   if [[ ! -f "$server_evidence_runner" ]]; then

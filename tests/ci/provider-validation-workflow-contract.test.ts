@@ -6,11 +6,12 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 const workflow = readFileSync('.github/workflows/provider-validation.yml', 'utf8');
-const metroRunner = readFileSync('scripts/run-detox-ios-debug.sh', 'utf8');
+const providerRunner = readFileSync('scripts/run-maestro-revenuecat-test-store.sh', 'utf8');
+const metroOwner = readFileSync('scripts/testing/run-with-fresh-metro.ts', 'utf8');
 const lockRunnerPath = 'scripts/ci/run-with-native-host-lock.sh';
 const lockRunner = readFileSync(lockRunnerPath, 'utf8');
 
-test('provider validation is protected, exact-head, and isolated from native Detox', () => {
+test('provider validation is protected, exact-head, and isolated from the native suites', () => {
   assert.match(workflow, /resolve-ios-tests:/);
   assert.match(workflow, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
   assert.match(workflow, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
@@ -21,16 +22,23 @@ test('provider validation is protected, exact-head, and isolated from native Det
   assert.match(workflow, /ref: \$\{\{ github\.sha \}\}/);
   assert.match(workflow, /EXPECTED_SHA: \$\{\{ github\.sha \}\}/);
   assert.match(workflow, /actual_sha=.*git rev-parse HEAD/);
-  assert.match(workflow, /group: mychampions-protected-ios-detox/);
+  assert.match(workflow, /group: mychampions-protected-ios-native/);
   assert.match(workflow, /run-with-native-host-lock\.sh/);
-  assert.match(workflow, /DETOX_METRO_PORT: '18081'/);
+  assert.match(workflow, /NATIVE_METRO_PORT: '18081'/);
+  assert.match(workflow, /scripts\/testing\/install-maestro\.sh/);
+  assert.match(workflow, /scripts\/run-maestro-revenuecat-student-matrix\.sh/);
 });
 
-test('provider Metro cleanup uses a process group or recursive process-tree fallback', () => {
-  assert.match(metroRunner, /DETOX_METRO_PROCESS_GROUP/);
-  assert.match(metroRunner, /kill -TERM "-\$metro_pid"/);
-  assert.match(metroRunner, /terminate_process_tree/);
-  assert.match(metroRunner, /Metro port \$\{metro_port\} remained occupied after cleanup/);
+test('provider Metro is owned and stopped by the selective executor', () => {
+  // The provider run starts Metro through the same executor as selective CI,
+  // which refuses an occupied port and stops Metro by process group.
+  assert.match(
+    providerRunner,
+    /node --import tsx scripts\/testing\/run-with-fresh-metro\.ts --platform ios --/,
+  );
+  assert.match(metroOwner, /runInvocations\(/);
+  assert.match(metroOwner, /metro: \{ port, platform, appId: 'com\.edufelip\.mychampions\.dev' \}/);
+  assert.match(metroOwner, /installCancellationHandlers\(\);/);
 });
 
 test('native host lock releases after successful and failed commands', () => {

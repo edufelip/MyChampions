@@ -16,7 +16,7 @@ export type FeatureConfig = {
   dependsOn: string[];
   unitTests: string[];
   webSuites: string[];
-  detoxSuites: string[];
+  nativeSuites: string[];
   owners: string[];
 };
 
@@ -64,8 +64,8 @@ export type ImpactResult = {
   affectedFeatures: string[];
   selectedSuites: string[];
   webSuites: string[];
-  detoxIosSuites: string[];
-  detoxAndroidSuites: string[];
+  nativeIosSuites: string[];
+  nativeAndroidSuites: string[];
   unitTestPatterns: string[];
   sharedRules: string[];
   platforms: string[];
@@ -144,7 +144,7 @@ export function validateManifest(manifest: TestImpactManifest): string[] {
       if (!featureIds.has(dependency))
         errors.push(`feature ${featureId} depends on unknown feature ${dependency}`);
     }
-    for (const suiteId of [...feature.webSuites, ...feature.detoxSuites]) {
+    for (const suiteId of [...feature.webSuites, ...feature.nativeSuites]) {
       if (!suiteIds.has(suiteId))
         errors.push(`feature ${featureId} references unknown suite ${suiteId}`);
     }
@@ -154,7 +154,7 @@ export function validateManifest(manifest: TestImpactManifest): string[] {
     if (suite.specs.length === 0) errors.push(`suite ${suiteId} has no specs`);
     if (
       ![
-        'detox',
+        'maestro',
         'playwright',
         'playwright-server',
         'playwright-evidence',
@@ -482,10 +482,10 @@ export function resolveImpact(
       affectedFeatures.add(featureId);
     }
     for (const [suiteId, suite] of Object.entries(manifest.suites)) {
-      if (!suite.specs.includes(path)) continue;
+      if (!suiteCoversPath(suite, path)) continue;
       if (suite.ci) directlyMatchedSuites.add(suiteId);
       for (const [featureId, feature] of Object.entries(manifest.features)) {
-        if ([...feature.webSuites, ...feature.detoxSuites].includes(suiteId)) {
+        if ([...feature.webSuites, ...feature.nativeSuites].includes(suiteId)) {
           directFeatures.add(featureId);
           affectedFeatures.add(featureId);
         }
@@ -517,7 +517,7 @@ export function resolveImpact(
       featureOwnersForPath(manifest, path).length === 0 &&
       !manifest.sharedRules.some((rule) => matchesAny(path, rule.paths)) &&
       !matchesAny(path, manifest.fullFallbackPaths) &&
-      !Object.values(manifest.suites).some((suite) => suite.specs.includes(path)),
+      !Object.values(manifest.suites).some((suite) => suiteCoversPath(suite, path)),
   );
   if (unmappedRuntimePaths.length > 0) {
     fallbackReasons.push(`unmapped runtime paths: ${unmappedRuntimePaths.join(', ')}`);
@@ -539,8 +539,8 @@ export function resolveImpact(
       affectedFeatures: [],
       selectedSuites: [],
       webSuites: [],
-      detoxIosSuites: [],
-      detoxAndroidSuites: [],
+      nativeIosSuites: [],
+      nativeAndroidSuites: [],
       unitTestPatterns: [],
       sharedRules: [...sharedRuleIds].sort(),
       platforms: [...platforms].sort(),
@@ -567,7 +567,7 @@ export function resolveImpact(
     const feature = manifest.features[featureId];
     if (!feature) continue;
     for (const pattern of feature.unitTests) unitTestPatterns.add(pattern);
-    for (const suiteId of [...feature.webSuites, ...feature.detoxSuites]) {
+    for (const suiteId of [...feature.webSuites, ...feature.nativeSuites]) {
       if (manifest.suites[suiteId]?.ci) selectedSuites.add(suiteId);
     }
   }
@@ -575,33 +575,33 @@ export function resolveImpact(
   const hasSelectedWeb = [...selectedSuites].some((suiteId) =>
     manifest.suites[suiteId]?.runner.startsWith('playwright'),
   );
-  const hasSelectedDetox = [...selectedSuites].some(
-    (suiteId) => manifest.suites[suiteId]?.runner === 'detox',
+  const hasSelectedNative = [...selectedSuites].some(
+    (suiteId) => manifest.suites[suiteId]?.runner === 'maestro',
   );
   for (const suiteId of manifest.criticalSuites) {
     const suite = manifest.suites[suiteId];
     if (!suite?.ci) continue;
-    if (suite.runner === 'detox' && hasSelectedDetox) selectedSuites.add(suiteId);
+    if (suite.runner === 'maestro' && hasSelectedNative) selectedSuites.add(suiteId);
     if (suite.runner.startsWith('playwright') && hasSelectedWeb) selectedSuites.add(suiteId);
   }
 
   if (options.platformScope === 'web-only') {
     for (const suiteId of [...selectedSuites]) {
-      if (manifest.suites[suiteId]?.runner === 'detox') selectedSuites.delete(suiteId);
+      if (manifest.suites[suiteId]?.runner === 'maestro') selectedSuites.delete(suiteId);
     }
   }
 
   const webSuites = [...selectedSuites].filter((suiteId) =>
     manifest.suites[suiteId]?.runner.startsWith('playwright'),
   );
-  const detoxIosSuites = [...selectedSuites].filter(
+  const nativeIosSuites = [...selectedSuites].filter(
     (suiteId) =>
-      manifest.suites[suiteId]?.runner === 'detox' &&
+      manifest.suites[suiteId]?.runner === 'maestro' &&
       manifest.suites[suiteId]?.platforms?.includes('ios'),
   );
-  const detoxAndroidSuites = [...selectedSuites].filter(
+  const nativeAndroidSuites = [...selectedSuites].filter(
     (suiteId) =>
-      manifest.suites[suiteId]?.runner === 'detox' &&
+      manifest.suites[suiteId]?.runner === 'maestro' &&
       manifest.suites[suiteId]?.platforms?.includes('android'),
   );
 
@@ -614,8 +614,8 @@ export function resolveImpact(
     affectedFeatures: [...affectedFeatures].sort(),
     selectedSuites: [...selectedSuites].sort(),
     webSuites: webSuites.sort(),
-    detoxIosSuites: detoxIosSuites.sort(),
-    detoxAndroidSuites: detoxAndroidSuites.sort(),
+    nativeIosSuites: nativeIosSuites.sort(),
+    nativeAndroidSuites: nativeAndroidSuites.sort(),
     unitTestPatterns: [...unitTestPatterns].sort(),
     sharedRules: [...sharedRuleIds].sort(),
     platforms: [...platforms].sort(),
@@ -625,11 +625,18 @@ export function resolveImpact(
   };
 }
 
+/**
+ * A spec is a test file, or (for Maestro) a flow folder that covers every
+ * file below it.
+ */
+export function suiteCoversPath(suite: SuiteConfig, path: string): boolean {
+  return suite.specs.some((spec) => path === spec || path.startsWith(`${spec}/`));
+}
+
 export function discoverRegisteredTestFiles(root: string): string[] {
   const directory = 'e2e';
   const files = new Set<string>();
   const absolute = resolve(root, directory);
-  if (!existsSync(absolute)) return [];
 
   const walk = (current: string): void => {
     for (const entry of readdirSync(current)) {
@@ -644,7 +651,17 @@ export function discoverRegisteredTestFiles(root: string): string[] {
       }
     }
   };
-  walk(absolute);
+  if (existsSync(absolute)) walk(absolute);
+  // Each Maestro suite folder is one registered spec; `common` holds shared
+  // subflows and is covered by a shared rule instead.
+  const maestroSuites = resolve(root, '.maestro/suite');
+  if (existsSync(maestroSuites)) {
+    for (const entry of readdirSync(maestroSuites)) {
+      if (entry !== 'common' && statSync(join(maestroSuites, entry)).isDirectory()) {
+        files.add(`.maestro/suite/${entry}`);
+      }
+    }
+  }
   return [...files].sort();
 }
 
@@ -659,8 +676,8 @@ export function formatImpactMarkdown(result: ImpactResult): string {
     `- Direct features: ${list(result.directFeatures)}`,
     `- Affected features: ${list(result.affectedFeatures)}`,
     `- Web suites: ${list(result.webSuites)}`,
-    `- Detox iOS suites: ${list(result.detoxIosSuites)}`,
-    `- Detox Android suites: ${list(result.detoxAndroidSuites)}`,
+    `- Native iOS suites: ${list(result.nativeIosSuites)}`,
+    `- Native Android suites: ${list(result.nativeAndroidSuites)}`,
     `- Shared rules: ${list(result.sharedRules)}`,
     `- Fallback reasons: ${result.fallbackReasons.length ? result.fallbackReasons.join('; ') : 'None'}`,
     `- Unmapped runtime paths: ${list(result.unmappedRuntimePaths)}`,

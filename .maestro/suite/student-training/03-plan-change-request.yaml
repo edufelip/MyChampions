@@ -1,0 +1,35 @@
+appId: com.edufelip.mychampions.dev
+name: Student training - validates and submits an assigned training plan change request
+tags: [training]
+---
+- runFlow:
+    file: ../common/student-open-route.yaml
+    env:
+      ROUTE: mychampions://student/training
+      SCREEN_ID: student.training.screen
+- scrollUntilVisible:
+    element:
+      id: student.training.planChangeForm.submitButton
+    direction: DOWN
+- assertVisible:
+    id: student.training.planChangeForm.input
+- tapOn:
+    id: student.training.planChangeForm.submitButton
+- extendedWaitUntil:
+    visible:
+      id: student.training.planChangeForm.error
+    timeout: 5000
+- tapOn:
+    id: student.training.planChangeForm.input
+- inputText: Please adjust leg day volume this week.
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: student.training.planChangeForm.submitButton
+    direction: DOWN
+- tapOn:
+    id: student.training.planChangeForm.submitButton
+- extendedWaitUntil:
+    visible:
+      id: student.training.planChangeForm.success
+    timeout: 10000

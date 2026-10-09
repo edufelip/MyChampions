@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -11,10 +11,13 @@ const pillButtonSource = readFileSync(
   join(process.cwd(), 'components/ds/primitives/DsPillButton.tsx'),
   'utf8',
 );
-const roleSelectionE2ESource = readFileSync(
-  join(process.cwd(), 'e2e/auth-role-selection.e2e.test.js'),
-  'utf8',
-);
+const roleSelectionFlowDirectory = join(process.cwd(), '.maestro/suite/auth-role-selection');
+const roleSelectionFlows = readdirSync(roleSelectionFlowDirectory)
+  .filter((name) => name.endsWith('.yaml'))
+  .map((name) => ({
+    name,
+    source: readFileSync(join(roleSelectionFlowDirectory, name), 'utf8'),
+  }));
 
 function componentOpeningTag(source: string, component: string, testId: string): string {
   const testIdIndex = source.indexOf(`testID="${testId}"`);
@@ -32,14 +35,17 @@ test('the shared pill button exposes and enforces its disabled accessibility sta
   assert.match(pillButtonSource, /disabled=\{disabled \|\| loading\}/);
 });
 
-test('role-selection E2E disables synchronization before app startup work', () => {
-  assert.match(
-    roleSelectionE2ESource,
-    /beforeEach\(async \(\) => \{[\s\S]*?await device\.launchApp\(\{[\s\S]*?newInstance: true,[\s\S]*?launchArgs: \{ detoxEnableSynchronization: 0 \},[\s\S]*?\}\);[\s\S]*?\}\);/,
+test('role-selection E2E starts each case fresh and only the persistence case relaunches', () => {
+  assert.ok(roleSelectionFlows.length > 0);
+  for (const { name, source } of roleSelectionFlows) {
+    assert.match(source, /^- runFlow: \.\.\/common\/launch-fresh\.yaml$/m, name);
+    const persistence = /^tags: \[role-persistence\]$/m.test(source);
+    assert.equal(/relaunch\.yaml/.test(source), persistence, name);
+  }
+  assert.equal(
+    roleSelectionFlows.filter(({ source }) => /^tags: \[role-persistence\]$/m.test(source)).length,
+    1,
   );
-  assert.doesNotMatch(roleSelectionE2ESource, /disableSynchronization/);
-  assert.match(roleSelectionE2ESource, /itWithRolePersistenceScenario/);
-  assert.equal(roleSelectionE2ESource.match(/device\.launchApp/g)?.length, 2);
 });
 
 test('role-selection preserves its explicit destination while the role guard updates', () => {

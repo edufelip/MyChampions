@@ -1,0 +1,23 @@
+appId: com.edufelip.mychampions.dev
+name: Student nutrition - logs an assigned meal for today and shows it as logged
+tags: [nutrition]
+---
+- runFlow:
+    file: ../common/student-open-route.yaml
+    env:
+      ROUTE: mychampions://student/nutrition
+      SCREEN_ID: student.nutrition.screen
+- extendedWaitUntil:
+    visible:
+      id: student.nutrition.macroCard
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: student.nutrition.logMealButton.e2e-assigned-meal
+    direction: DOWN
+- tapOn:
+    id: student.nutrition.logMealButton.e2e-assigned-meal
+- extendedWaitUntil:
+    visible:
+      id: student.nutrition.loggedMealBadge.e2e-assigned-meal
+    timeout: 10000

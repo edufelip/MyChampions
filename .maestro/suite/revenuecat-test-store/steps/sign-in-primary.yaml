@@ -1,0 +1,7 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    file: sign-in-email.yaml
+    env:
+      EMAIL: e2e-auth-session@example.test
+      PASSWORD: E2E-password-123!

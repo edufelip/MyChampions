@@ -1,0 +1,6 @@
+appId: com.edufelip.mychampions.dev
+name: Auth sign-in - redirects unauthenticated app launch to sign-in
+tags: [auth-entry]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/wait-sign-in.yaml

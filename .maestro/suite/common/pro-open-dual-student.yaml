@@ -1,0 +1,12 @@
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: pro.students.row.e2e-dual-student
+    timeout: 10000
+- tapOn:
+    id: pro.students.row.e2e-dual-student
+- extendedWaitUntil:
+    visible:
+      id: pro.student_profile.screen
+    timeout: 10000

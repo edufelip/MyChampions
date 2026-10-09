@@ -1,0 +1,22 @@
+# Dismiss the keyboard. iOS number pads have no return key, so the app docks a
+# Done accessory (KEYBOARD_DONE_ID) above them; tap it when present.
+appId: com.edufelip.mychampions.dev
+---
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible:
+        id: ${KEYBOARD_DONE_ID}
+    commands:
+      - tapOn:
+          id: ${KEYBOARD_DONE_ID}
+      - extendedWaitUntil:
+          notVisible:
+            id: ${KEYBOARD_DONE_ID}
+          timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard

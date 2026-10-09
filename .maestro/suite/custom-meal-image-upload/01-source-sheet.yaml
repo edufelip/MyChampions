@@ -1,0 +1,22 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal image upload - opens the upload source sheet from the custom meal builder
+tags: [image-upload-sheet]
+---
+- runFlow: ../common/student-meal-builder-camera.yaml
+- assertVisible:
+    id: meal.builder.imageUpload.section
+- assertVisible:
+    id: meal.builder.imageUpload
+- tapOn:
+    id: meal.builder.imageUpload
+- extendedWaitUntil:
+    visible:
+      text: Upload image
+    timeout: 5000
+- assertVisible: Choose a photo source
+- tapOn:
+    text: Cancel
+- extendedWaitUntil:
+    visible:
+      id: meal.builder.imageUpload
+    timeout: 5000

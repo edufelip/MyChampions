@@ -1,0 +1,8 @@
+appId: com.edufelip.mychampions.dev
+name: Professional subscription actions - a cancelled purchase stays non-fatal and inactive
+tags: [actions-cancelled]
+---
+- runFlow: ../common/pro-subscription-inactive-controls.yaml
+- assertVisible:
+    id: pro.subscription.statusValue
+    text: "Subscription: Inactive"

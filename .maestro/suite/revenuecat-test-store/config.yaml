@@ -1,0 +1,21 @@
+# Live RevenueCat scenarios share Test Store customer state, so they run in order.
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - "RevenueCat live - propagates Professional Paywall v1 and keeps a dismissed purchase inactive"
+    - "RevenueCat live - keeps a cancelled professional purchase inactive"
+    - "RevenueCat live - keeps a failed professional purchase inactive without granting access"
+    - "RevenueCat live - grants only the professional privilege after a valid professional purchase"
+    - "RevenueCat live - keeps Test Store customer state across reinstall and a non-destructive restore call"
+    - "RevenueCat live - does not leak professional privileges across account switches"
+    - "RevenueCat live - does not let the student privilege unlock professional capabilities"
+    - "RevenueCat live - shows Student Paywall v1 and dismissal grants no entitlement"
+    - "RevenueCat live - keeps student AI locked after Test Store cancellation"
+    - "RevenueCat live - keeps student AI locked after Test Store failure"
+    - "RevenueCat live - coalesces duplicate student purchase taps without granting access"
+    - "RevenueCat live - activates only student_pro after a monthly student purchase"
+    - "RevenueCat live - activates only student_pro after an annual student purchase"
+    - "RevenueCat live - restores student AI after reinstall without granting professional access"
+    - "RevenueCat live - does not leak student AI access across account switches"
+    - "RevenueCat live - routes a professional AI gate to professional_pro"
+    - "RevenueCat live - observes Test Store renewal and expiration instead of trusting a cached privilege"

@@ -1,0 +1,20 @@
+# INTERVAL=monthly|annual. Starts a purchase on the visible paywall and waits for
+# RevenueCat's Test Store outcome sheet.
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    when:
+      true: ${INTERVAL == 'annual'}
+    commands:
+      - tapOn: "(?i)^(Annual|Anual),.*(year|ano|año)$"
+- tapOn: "^(Continue with selected plan|Continuar com o plano selecionado|Continuar con el plan seleccionado)$"
+# Some StoreKit/Test Store combinations show the native confirmation first.
+- runFlow:
+    when:
+      visible: "^(Purchase|Comprar)$"
+    commands:
+      - tapOn: "^(Purchase|Comprar)$"
+- extendedWaitUntil:
+    visible: Test Store Purchase
+    timeout: 15000
+- takeScreenshot: revenuecat-purchase-sheet

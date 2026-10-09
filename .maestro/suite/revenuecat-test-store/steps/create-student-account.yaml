@@ -1,0 +1,36 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: ../../common/open-create-account.yaml
+- tapOn:
+    id: auth.createAccount.nameInput
+- inputText: RevenueCat Student
+- tapOn:
+    id: auth.createAccount.emailInput
+- inputText: e2e-created-account@example.test
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.passwordInput
+    direction: DOWN
+- tapOn:
+    id: auth.createAccount.passwordInput
+- inputText: E2E-create-123!
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.passwordConfirmationInput
+    direction: DOWN
+- tapOn:
+    id: auth.createAccount.passwordConfirmationInput
+- inputText: E2E-create-123!
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.submitButton
+    direction: DOWN
+- tapOn:
+    id: auth.createAccount.submitButton
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 10000

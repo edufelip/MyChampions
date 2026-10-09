@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -25,8 +25,8 @@ void test('checked-in suites have complete typed execution contracts', () => {
   assert.deepEqual(validateSelectiveExecutionManifest(manifest), []);
 });
 
-void test('owned native session registration cannot enter selective execution or preview', () => {
-  const suiteId = 'detox:integrated-session-baseline';
+void test('live provider registration cannot enter selective execution or preview', () => {
+  const suiteId = 'maestro:revenuecat-live';
   assert.deepEqual(validateSelectiveExecutionManifest(manifest), []);
   assert.equal(manifest.suites[suiteId].ci, false);
   for (const platform of ['ios', 'android'] as const) {
@@ -41,37 +41,12 @@ void test('owned native session registration cannot enter selective execution or
   unsafeActivation.suites[suiteId].ci = true;
   assert.ok(
     validateSelectiveExecutionManifest(unsafeActivation).includes(
-      `CI Detox suite ${suiteId} uses non-selective profile owned-integrated-session`,
+      `CI native suite ${suiteId} uses non-selective profile provider-live`,
     ),
   );
   assert.throws(
     () => createSelectiveExecutionPlan(unsafeActivation, 'ios', [suiteId]),
-    /non-selective profile owned-integrated-session/,
-  );
-});
-
-void test('owned native connection registration cannot enter selective execution or preview', () => {
-  const suiteId = 'detox:integrated-connection-baseline';
-  assert.deepEqual(validateSelectiveExecutionManifest(manifest), []);
-  assert.equal(manifest.suites[suiteId].ci, false);
-  for (const platform of ['ios', 'android'] as const) {
-    for (const planOnly of [false, true]) {
-      assert.throws(
-        () => createSelectiveExecutionPlan(manifest, platform, [suiteId], { planOnly }),
-        /not eligible for selective CI/,
-      );
-    }
-  }
-  const unsafeActivation = structuredClone(manifest);
-  unsafeActivation.suites[suiteId].ci = true;
-  assert.ok(
-    validateSelectiveExecutionManifest(unsafeActivation).includes(
-      `CI Detox suite ${suiteId} uses non-selective profile owned-integrated-connection`,
-    ),
-  );
-  assert.throws(
-    () => createSelectiveExecutionPlan(unsafeActivation, 'ios', [suiteId]),
-    /non-selective profile owned-integrated-connection/,
+    /non-selective profile provider-live/,
   );
 });
 
@@ -331,32 +306,66 @@ void test('unknown and wrong-platform suite IDs fail before command construction
 
 void test('provider-live suites are refused by selective CI', () => {
   assert.throws(
-    () => createSelectiveExecutionPlan(manifest, 'ios', ['detox:revenuecat-live']),
+    () => createSelectiveExecutionPlan(manifest, 'ios', ['maestro:revenuecat-live']),
     /not eligible for selective CI/,
   );
 });
+
+type NativePlan = ReturnType<typeof createSelectiveExecutionPlan>;
+type NativeInvocation = NativePlan['invocations'][number];
+
+/** Fixture-phase invocations (each runs against its own fresh Metro). */
+function flowRuns(plan: NativePlan): NativeInvocation[] {
+  return plan.invocations.filter((invocation) => invocation.metro);
+}
+
+function tagOf(invocation: NativeInvocation): string {
+  return invocation.args[invocation.args.indexOf('--tag') + 1];
+}
+
+function runsFor(plan: NativePlan, flowDir: string): NativeInvocation[] {
+  return flowRuns(plan).filter((invocation) => invocation.args.at(-1) === flowDir);
+}
 
 void test('Android uses one dev-debug build and never rebuilds per suite', () => {
   const plan = createSelectiveExecutionPlan(
     manifest,
     'android',
-    ['detox:support', 'detox:student'],
+    ['maestro:support', 'maestro:student'],
     { diagnosticsRoot: '.artifacts/test-contract' },
   );
 
-  assert.equal(plan.nativeBuild?.configuration, 'android.emu.debug');
+  assert.equal(plan.nativeBuild?.configuration, 'android-dev-debug');
   assert.equal(plan.nativeBuild?.owner, 'executor');
-  assert.deepEqual(plan.nativeBuild?.command.args, ['detox', 'build', '-c', 'android.emu.debug']);
+  assert.deepEqual(plan.nativeBuild?.command.args, [
+    '-c',
+    'cd android && ./gradlew app:assembleDevDebug -PreactNativeDevServerPort=8081',
+  ]);
   assert.equal(plan.nativeBuild?.command.env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX, '');
-  assert.equal(plan.invocations.length, 2);
-  for (const invocation of plan.invocations) {
-    assert.deepEqual(invocation.args.slice(0, 4), ['detox', 'test', '-c', 'android.emu.debug']);
-    assert.equal(invocation.args.includes('build'), false);
-    // Bounded retry: native hardware invocations get exactly one Detox retry,
-    // and Detox logs retried files so a flaky pass stays visible.
-    const retriesIndex = invocation.args.indexOf('--retries');
-    assert.notEqual(retriesIndex, -1);
-    assert.equal(invocation.args[retriesIndex + 1], '1');
+  // The device is prepared once, before the first fixture phase.
+  assert.deepEqual(plan.invocations[0].args, [
+    'scripts/testing/maestro-device.sh',
+    '--platform',
+    'android',
+  ]);
+  assert.equal(plan.invocations[0].metro, undefined);
+  assert.equal(flowRuns(plan).length, 2);
+  for (const invocation of flowRuns(plan)) {
+    assert.deepEqual(invocation.args.slice(0, 3), [
+      'scripts/testing/run-maestro-flows.sh',
+      '--platform',
+      'android',
+    ]);
+    assert.equal(
+      invocation.args.some((arg) => arg.includes('gradlew')),
+      false,
+    );
+    assert.equal(
+      invocation.args[invocation.args.indexOf('--output') + 1].startsWith(
+        '.artifacts/test-contract/android/',
+      ),
+      true,
+    );
     assert.equal(invocation.env.APP_VARIANT, 'dev');
     assert.equal(invocation.env.EXPO_PUBLIC_ENV, 'dev');
     assert.equal(invocation.env.CI_REQUIRE_E2E_EXECUTION, 'true');
@@ -367,6 +376,7 @@ void test('Android uses one dev-debug build and never rebuilds per suite', () =>
       appId: 'com.edufelip.mychampions.dev',
     });
   }
+  assert.deepEqual(flowRuns(plan).map(tagOf), ['student-empty-state', 'support']);
 });
 
 void test('native E2E LogBox suppression is explicit and dev-only', () => {
@@ -379,20 +389,28 @@ void test('native E2E LogBox suppression is explicit and dev-only', () => {
   assert.match(rootLayout, /LogBox\.ignoreAllLogs\(\)/);
 });
 
-void test('DETOX_SKIP_BUILD transfers the single native build to the workflow', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:support', 'detox:student'], {
-    skipNativeBuild: true,
-  });
+void test('NATIVE_SKIP_BUILD transfers the single native build to the workflow', () => {
+  const plan = createSelectiveExecutionPlan(
+    manifest,
+    'ios',
+    ['maestro:support', 'maestro:student'],
+    {
+      skipNativeBuild: true,
+    },
+  );
 
-  assert.equal(plan.nativeBuild?.configuration, 'ios.sim.debug');
+  assert.equal(plan.nativeBuild?.configuration, 'ios-debug');
   assert.equal(plan.nativeBuild?.owner, 'workflow');
-  assert.deepEqual(plan.nativeBuild?.command.args, ['detox', 'build', '-c', 'ios.sim.debug']);
+  assert.equal(plan.nativeBuild?.command.command, 'xcodebuild');
+  assert.ok(plan.nativeBuild?.command.args.includes('RCT_METRO_PORT=8081'));
   assert.equal(
-    plan.invocations.some((invocation) => invocation.args.includes('build')),
+    plan.invocations.some((invocation) => invocation.command === 'xcodebuild'),
     false,
   );
+  // The workflow owns the build, but the device is still prepared by the plan.
+  assert.equal(plan.invocations[0].id, 'prepare-ios-device');
   assert.ok(
-    plan.invocations.every(
+    flowRuns(plan).every(
       (invocation) =>
         invocation.metro?.port === 8081 &&
         invocation.metro.platform === 'ios' &&
@@ -401,19 +419,14 @@ void test('DETOX_SKIP_BUILD transfers the single native build to the workflow', 
   );
 });
 
-void test('iOS accepts a validated run-isolated Metro port and propagates it to every command', () => {
+void test('iOS accepts a validated run-isolated Metro port and builds it into the app', () => {
   const metroPort = parseNativeMetroPort('ios', '27828');
-  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:support'], {
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['maestro:support'], {
     metroPort,
   });
 
-  assert.equal(plan.nativeBuild?.command.env.DETOX_METRO_PORT, '27828');
-  assert.ok(
-    plan.invocations.every(
-      (invocation) =>
-        invocation.metro?.port === 27828 && invocation.env.DETOX_METRO_PORT === '27828',
-    ),
-  );
+  assert.ok(plan.nativeBuild?.command.args.includes('RCT_METRO_PORT=27828'));
+  assert.ok(flowRuns(plan).every((invocation) => invocation.metro?.port === 27828));
 });
 
 void test('native Metro port overrides fail closed outside the supported port contract', () => {
@@ -430,43 +443,34 @@ void test('native Metro port overrides fail closed outside the supported port co
   );
 });
 
-void test('Android accepts a run-isolated Metro port and propagates it to every command', () => {
+void test('Android accepts a run-isolated Metro port and builds it into the app', () => {
   const metroPort = parseNativeMetroPort('android', '27828');
-  const plan = createSelectiveExecutionPlan(manifest, 'android', ['detox:support'], {
+  const plan = createSelectiveExecutionPlan(manifest, 'android', ['maestro:support'], {
     metroPort,
   });
 
-  assert.equal(plan.nativeBuild?.command.env.DETOX_METRO_PORT, '27828');
-  assert.ok(
-    plan.invocations.every(
-      (invocation) =>
-        invocation.metro?.port === 27828 && invocation.env.DETOX_METRO_PORT === '27828',
-    ),
-  );
+  assert.match(plan.nativeBuild?.command.args[1] ?? '', /-PreactNativeDevServerPort=27828$/);
+  assert.ok(flowRuns(plan).every((invocation) => invocation.metro?.port === 27828));
 });
 
 void test('auth profile isolates entry, authenticated, and outdated-terms phases', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:auth'], {
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['maestro:auth'], {
     skipNativeBuild: true,
   });
 
-  assert.equal(plan.invocations.length, 7);
-  const signIn = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/auth-sign-in.e2e.test.js'),
-  )!;
-  const terms = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/auth-terms.e2e.test.js'),
-  )!;
-  const role = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/auth-role-selection.e2e.test.js'),
-  )!;
+  assert.equal(flowRuns(plan).length, 7);
+  const [signIn] = runsFor(plan, '.maestro/suite/auth-sign-in');
+  const [terms] = runsFor(plan, '.maestro/suite/auth-terms');
+  const [role] = runsFor(plan, '.maestro/suite/auth-role-selection');
 
+  assert.equal(tagOf(signIn), 'auth-entry');
+  assert.equal(tagOf(terms), 'terms-outdated');
+  assert.equal(tagOf(role), 'authenticated');
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_AUTH_SESSION, '');
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION, '');
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT, 'true');
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN, 'true');
   assert.equal(signIn.env.EXPO_PUBLIC_E2E_SOCIAL_AUTH, 'true');
-  assert.equal(signIn.env.E2E_AUTH_SIGN_IN, 'true');
   assert.equal(terms.env.EXPO_PUBLIC_E2E_AUTH_SESSION, 'true');
   assert.equal(terms.env.EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION, 'outdated-e2e-version');
   assert.equal(terms.env.EXPO_PUBLIC_E2E_CREATE_ACCOUNT, '');
@@ -480,31 +484,38 @@ void test('auth profile isolates entry, authenticated, and outdated-terms phases
 });
 
 void test('cleared fixture variables are absent from each child process', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'android', ['detox:auth'], {
+  const plan = createSelectiveExecutionPlan(manifest, 'android', ['maestro:auth'], {
     skipNativeBuild: true,
   });
-  const authenticatedRole = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/auth-role-selection.e2e.test.js'),
-  )!;
-  const previous = process.env.E2E_ROLE_PERSISTENCE_SCENARIO;
+  const [authenticatedRole] = runsFor(plan, '.maestro/suite/auth-role-selection');
+  const previous = process.env.EXPO_PUBLIC_E2E_ROLE_PERSISTENCE;
 
   try {
-    process.env.E2E_ROLE_PERSISTENCE_SCENARIO = 'relaunch';
+    process.env.EXPO_PUBLIC_E2E_ROLE_PERSISTENCE = 'true';
     const environment = buildChildEnvironment(authenticatedRole);
 
-    assert.equal(environment.E2E_ROLE_PERSISTENCE_SCENARIO, undefined);
-    assert.equal(environment.E2E_AUTH_SESSION, 'true');
+    assert.equal(environment.EXPO_PUBLIC_E2E_ROLE_PERSISTENCE, undefined);
+    assert.equal(environment.EXPO_PUBLIC_E2E_AUTH_SESSION, 'true');
   } finally {
-    if (previous === undefined) delete process.env.E2E_ROLE_PERSISTENCE_SCENARIO;
-    else process.env.E2E_ROLE_PERSISTENCE_SCENARIO = previous;
+    if (previous === undefined) delete process.env.EXPO_PUBLIC_E2E_ROLE_PERSISTENCE;
+    else process.env.EXPO_PUBLIC_E2E_ROLE_PERSISTENCE = previous;
   }
 });
 
-void test('student empty-state profile actively clears incompatible assigned fixtures', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:student'], {
+void test('role persistence runs only its relaunch flow against a persisting bundle', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['maestro:auth-role-persistence'], {
     skipNativeBuild: true,
   });
-  const invocation = plan.invocations[0];
+
+  assert.deepEqual(flowRuns(plan).map(tagOf), ['role-persistence']);
+  assert.equal(flowRuns(plan)[0].env.EXPO_PUBLIC_E2E_ROLE_PERSISTENCE, 'true');
+});
+
+void test('student empty-state profile actively clears incompatible assigned fixtures', () => {
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['maestro:student'], {
+    skipNativeBuild: true,
+  });
+  const [invocation] = flowRuns(plan);
 
   assert.equal(invocation.env.EXPO_PUBLIC_E2E_AUTH_SESSION, 'true');
   assert.equal(invocation.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE, '');
@@ -512,17 +523,13 @@ void test('student empty-state profile actively clears incompatible assigned fix
 });
 
 void test('self-managed plan building is isolated from assigned-plan fixtures', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:plans'], {
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['maestro:plans'], {
     skipNativeBuild: true,
   });
-  const selfManaged = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/student-self-managed-builder.e2e.test.js'),
-  )!;
-  const bulkAssign = plan.invocations.find((invocation) =>
-    invocation.args.includes('e2e/professional-bulk-assign.e2e.test.js'),
-  )!;
+  const [selfManaged] = runsFor(plan, '.maestro/suite/student-self-managed-builder');
+  const [bulkAssign] = runsFor(plan, '.maestro/suite/professional-bulk-assign');
 
-  assert.equal(plan.invocations.length, 2);
+  assert.equal(flowRuns(plan).length, 2);
   assert.equal(selfManaged.env.EXPO_PUBLIC_E2E_AUTH_SESSION, 'true');
   assert.equal(selfManaged.env.EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE, 'basic');
   assert.equal(selfManaged.env.EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE, '');
@@ -532,79 +539,77 @@ void test('self-managed plan building is isolated from assigned-plan fixtures', 
 });
 
 void test('nutrition profile isolates scenario-specific native fixtures', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:nutrition'], {
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['maestro:nutrition'], {
     skipNativeBuild: true,
   });
-  const aiAnalysisInvocations = plan.invocations.filter((invocation) =>
-    invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js'),
-  );
-  const imageUploadInvocations = plan.invocations.filter((invocation) =>
-    invocation.args.includes('e2e/custom-meal-image-upload.e2e.test.js'),
-  );
-  const unrelatedNutritionInvocations = plan.invocations.filter(
-    (invocation) =>
-      !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js') &&
-      !invocation.args.includes('e2e/custom-meal-image-upload.e2e.test.js'),
-  );
-  const regularNutritionInvocations = plan.invocations.filter(
-    (invocation) => !invocation.args.includes('e2e/custom-meal-ai-analysis.e2e.test.js'),
+  const aiAnalysis = runsFor(plan, '.maestro/suite/custom-meal-ai-analysis');
+  const imageUpload = runsFor(plan, '.maestro/suite/custom-meal-image-upload');
+  const regular = flowRuns(plan).filter(
+    (invocation) => !aiAnalysis.includes(invocation) && !imageUpload.includes(invocation),
   );
 
-  assert.equal(plan.invocations.length, 10);
-  assert.equal(aiAnalysisInvocations.length, 2);
-  assert.equal(imageUploadInvocations.length, 3);
-  assert.deepEqual(
-    imageUploadInvocations.map((invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO),
-    ['sheet', 'success', 'permission-denied'],
-  );
-  assert.equal(imageUploadInvocations[0].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
-  assert.equal(imageUploadInvocations[1].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, 'success');
-  assert.equal(
-    imageUploadInvocations[2].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE,
-    'permission-denied',
-  );
+  assert.equal(flowRuns(plan).length, 10);
+  assert.deepEqual(imageUpload.map(tagOf), [
+    'image-upload-sheet',
+    'image-upload-success',
+    'image-upload-permission-denied',
+  ]);
+  assert.equal(imageUpload[0].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, '');
+  assert.equal(imageUpload[1].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, 'success');
+  assert.equal(imageUpload[2].env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE, 'permission-denied');
+  assert.deepEqual(aiAnalysis.map(tagOf), ['meal-analysis-paywall', 'meal-analysis-success']);
+  assert.equal(aiAnalysis[0].env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'lapsed');
+  assert.equal(aiAnalysis[0].env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'lapsed');
+  assert.equal(aiAnalysis[1].env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'active');
+  assert.equal(aiAnalysis[1].env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'active');
+  assert.ok(regular.every((invocation) => tagOf(invocation) === 'nutrition'));
   assert.ok(
-    unrelatedNutritionInvocations.every(
-      (invocation) => invocation.env.E2E_IMAGE_UPLOAD_SCENARIO === '',
-    ),
-  );
-  assert.deepEqual(
-    aiAnalysisInvocations.map((invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO),
-    ['paywall', 'success'],
-  );
-  assert.equal(aiAnalysisInvocations[0].env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'lapsed');
-  assert.equal(aiAnalysisInvocations[0].env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'lapsed');
-  assert.equal(aiAnalysisInvocations[1].env.EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS, 'active');
-  assert.equal(aiAnalysisInvocations[1].env.EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS, 'active');
-  assert.ok(
-    regularNutritionInvocations.every(
-      (invocation) => invocation.env.E2E_MEAL_ANALYSIS_SCENARIO === '',
-    ),
+    regular.every((invocation) => invocation.env.EXPO_PUBLIC_E2E_IMAGE_UPLOAD_FIXTURE === ''),
   );
 });
 
 void test('subscription profile expands the existing seven deterministic scenarios', () => {
-  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:subscription'], {
+  const plan = createSelectiveExecutionPlan(manifest, 'ios', ['maestro:subscription'], {
     skipNativeBuild: true,
   });
 
-  assert.equal(plan.invocations.length, 7);
-  assert.deepEqual(
-    plan.invocations.map((invocation) => invocation.env.E2E_SUBSCRIPTION_SCENARIO),
-    ['actions', 'actions', 'actions', 'actions', 'warning', 'locked', 'unknown'],
-  );
-  assert.equal(
-    plan.invocations.filter((invocation) =>
-      invocation.args.includes('e2e/professional-subscription-actions.e2e.test.js'),
-    ).length,
-    4,
-  );
-  assert.equal(
-    plan.invocations.filter((invocation) =>
-      invocation.args.includes('e2e/professional-subscription-cap.e2e.test.js'),
-    ).length,
-    3,
-  );
+  assert.deepEqual(flowRuns(plan).map(tagOf), [
+    'actions-success',
+    'actions-cancelled',
+    'actions-network',
+    'actions-store_problem',
+    'cap-warning',
+    'cap-locked',
+    'cap-unknown',
+  ]);
+  assert.equal(runsFor(plan, '.maestro/suite/professional-subscription-actions').length, 4);
+  assert.equal(runsFor(plan, '.maestro/suite/professional-subscription-cap').length, 3);
+});
+
+void test('every CI fixture phase has at least one tagged flow in each suite folder it runs', () => {
+  const tagged = (flowDir: string, tag: string) =>
+    readdirSync(join(root, flowDir))
+      .filter((name) => name.endsWith('.yaml') && name !== 'config.yaml')
+      .some((name) =>
+        new RegExp(`^tags: \\[(.*, )?${tag}(, .*)?\\]$`, 'm').test(
+          readFileSync(join(root, flowDir, name), 'utf8'),
+        ),
+      );
+  const ciSuites = Object.entries(manifest.suites)
+    .filter(([, suite]) => suite.runner === 'maestro' && suite.ci)
+    .map(([suiteId]) => suiteId);
+  for (const platform of ['ios', 'android'] as const) {
+    const plan = createSelectiveExecutionPlan(manifest, platform, ciSuites, {
+      skipNativeBuild: true,
+    });
+    for (const invocation of flowRuns(plan)) {
+      const flowDir = invocation.args.at(-1)!;
+      assert.ok(
+        tagged(flowDir, tagOf(invocation)),
+        `${flowDir} has no flow tagged ${tagOf(invocation)}`,
+      );
+    }
+  }
 });
 
 void test('suite JSON parsing is strict', () => {
@@ -625,29 +630,34 @@ void test('selective invocation timeout is optional locally and strict when conf
   }
 });
 
-void test('CI reporter fails an all-skipped Detox invocation', () => {
-  type Reporter = {
-    onRunComplete: (
-      contexts: unknown,
-      results: { numPassedTests: number; numFailedTests: number },
-    ) => void;
-    getLastError: () => Error | null;
-  };
-  const require = createRequire(import.meta.url);
-  const ReporterConstructor = require('../../e2e/ci-execution-reporter.js') as new () => Reporter;
-  const previous = process.env.CI_REQUIRE_E2E_EXECUTION;
-
+void test('Maestro runner refuses an empty CI run for a tag with no flows', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'maestro-empty-'));
   try {
-    process.env.CI_REQUIRE_E2E_EXECUTION = 'true';
-    const skipped = new ReporterConstructor();
-    skipped.onRunComplete(new Set(), { numPassedTests: 0, numFailedTests: 0 });
-    assert.match(skipped.getLastError()?.message ?? '', /executed no tests/);
-
-    const executed = new ReporterConstructor();
-    executed.onRunComplete(new Set(), { numPassedTests: 1, numFailedTests: 0 });
-    assert.equal(executed.getLastError(), null);
+    mkdirSync(join(directory, 'suite'));
+    writeFileSync(
+      join(directory, 'suite', 'flow.yaml'),
+      'appId: com.edufelip.mychampions.dev\ntags: [present]\n---\n- launchApp\n',
+    );
+    const run = (env: Record<string, string>) =>
+      spawnSync(
+        'bash',
+        [
+          'scripts/testing/run-maestro-flows.sh',
+          '--platform',
+          'ios',
+          '--tag',
+          'absent',
+          join(directory, 'suite'),
+        ],
+        { cwd: root, env: { ...process.env, ...env }, encoding: 'utf8' },
+      );
+    const required = run({ CI_REQUIRE_E2E_EXECUTION: 'true' });
+    assert.equal(required.status, 1);
+    assert.match(required.stderr, /refusing an empty native run/);
+    const optional = run({ CI_REQUIRE_E2E_EXECUTION: '' });
+    assert.equal(optional.status, 0);
+    assert.match(optional.stdout, /nothing to run/);
   } finally {
-    if (previous === undefined) delete process.env.CI_REQUIRE_E2E_EXECUTION;
-    else process.env.CI_REQUIRE_E2E_EXECUTION = previous;
+    rmSync(directory, { recursive: true, force: true });
   }
 });

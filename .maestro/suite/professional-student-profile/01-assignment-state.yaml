@@ -1,0 +1,28 @@
+appId: com.edufelip.mychampions.dev
+name: Professional student profile - shows per-student nutrition and training assignment state
+tags: [professional]
+---
+- runFlow: ../common/pro-students-tab.yaml
+- runFlow: ../common/pro-open-dual-student.yaml
+- assertVisible:
+    id: pro.student_profile.nutrition.assignmentCard
+- assertVisible:
+    id: pro.student_profile.nutrition.title
+- assertVisible:
+    id: pro.student_profile.nutrition.status
+    text: Active, awaiting plan
+- scrollUntilVisible:
+    element:
+      id: pro.student_profile.training.assignmentCard
+    direction: DOWN
+- assertVisible:
+    id: pro.student_profile.training.title
+- assertVisible:
+    id: pro.student_profile.training.status
+    text: Active, awaiting plan
+- scrollUntilVisible:
+    element:
+      id: pro.student_profile.unbindCta
+    direction: DOWN
+- assertNotVisible:
+    id: pro.student_profile.error

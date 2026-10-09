@@ -1,0 +1,57 @@
+appId: com.edufelip.mychampions.dev
+name: Language select - saves language changes immediately and discards unsaved selections on back
+tags: [authenticated]
+---
+- runFlow: ../common/student-account.yaml
+- runFlow:
+    file: ../common/open-language-select.yaml
+- assertVisible:
+    id: settings.languageSelect.option.en-US
+- assertVisible:
+    id: settings.languageSelect.option.pt-BR
+- assertVisible:
+    id: settings.languageSelect.option.es-ES
+- tapOn:
+    id: settings.languageSelect.option.pt-BR
+- extendedWaitUntil:
+    visible:
+      id: settings.languageSelect.option.pt-BR.checkmark
+    timeout: 5000
+- tapOn:
+    id: settings.languageSelect.saveButton
+- extendedWaitUntil:
+    visible:
+      id: settings.account.screen
+    timeout: 5000
+- assertVisible: "Idioma"
+- assertVisible: "Português"
+- runFlow: ../common/open-language-select.yaml
+- assertVisible:
+    id: settings.languageSelect.option.pt-BR.checkmark
+- tapOn:
+    id: settings.languageSelect.option.es-ES
+- extendedWaitUntil:
+    visible:
+      id: settings.languageSelect.option.es-ES.checkmark
+    timeout: 5000
+- tapOn:
+    id: settings.languageSelect.backButton
+- extendedWaitUntil:
+    visible:
+      id: settings.account.screen
+    timeout: 5000
+- runFlow: ../common/open-language-select.yaml
+- assertVisible:
+    id: settings.languageSelect.option.pt-BR.checkmark
+- tapOn:
+    id: settings.languageSelect.option.en-US
+- extendedWaitUntil:
+    visible:
+      id: settings.languageSelect.option.en-US.checkmark
+    timeout: 5000
+- tapOn:
+    id: settings.languageSelect.saveButton
+- extendedWaitUntil:
+    visible:
+      id: settings.account.screen
+    timeout: 5000

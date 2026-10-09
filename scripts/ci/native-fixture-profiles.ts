@@ -2,25 +2,24 @@ import type { SuiteConfig } from './test-impact';
 
 export type Environment = Readonly<Record<string, string>>;
 
-export type DetoxFixturePhase = {
+/**
+ * One Metro bundle configuration. `appEnv` is baked into the bundle when Metro
+ * starts; `id` is also the Maestro tag that selects the flows run against it.
+ */
+export type NativeFixturePhase = {
   id: string;
   specs: '*' | readonly string[];
   appEnv?: Environment;
-  runnerEnv?: Environment;
 };
 
-export type DetoxFixtureProfile = {
+export type NativeFixtureProfile = {
   selectiveCi: boolean;
   allowRepeatedSpecs?: boolean;
-  phases: readonly DetoxFixturePhase[];
+  phases: readonly NativeFixturePhase[];
 };
 
 const authenticatedAppEnv = {
   EXPO_PUBLIC_E2E_AUTH_SESSION: 'true',
-} as const;
-
-const authenticatedRunnerEnv = {
-  E2E_AUTH_SESSION: 'true',
 } as const;
 
 const activeProfessionalAppEnv = {
@@ -36,16 +35,6 @@ const activeProfessionalAppEnv = {
  * so a persistent self-hosted runner cannot leak fixture state between suites.
  */
 export const SELECTIVE_FIXTURE_ENV_KEYS = [
-  'E2E_AUTH_CREATE_ACCOUNT',
-  'E2E_AUTH_SESSION',
-  'E2E_AUTH_SIGN_IN',
-  'E2E_AUTH_SOCIAL',
-  'E2E_IMAGE_UPLOAD_SCENARIO',
-  'E2E_MEAL_ANALYSIS_SCENARIO',
-  'E2E_QR_INVITE_SCENARIO',
-  'E2E_SUBSCRIPTION_ACTION_OUTCOME',
-  'E2E_SUBSCRIPTION_SCENARIO',
-  'E2E_ROLE_PERSISTENCE_SCENARIO',
   'EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION',
   'EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS',
   'EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID',
@@ -77,9 +66,9 @@ export const SELECTIVE_FIXTURE_ENV_KEYS = [
 
 const actionScenario = (
   id: 'success' | 'cancelled' | 'network' | 'store_problem',
-): DetoxFixturePhase => ({
+): NativeFixturePhase => ({
   id: `actions-${id}`,
-  specs: ['e2e/professional-subscription-actions.e2e.test.js'],
+  specs: ['.maestro/suite/professional-subscription-actions'],
   appEnv: {
     ...authenticatedAppEnv,
     EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS: 'unknown',
@@ -88,11 +77,6 @@ const actionScenario = (
     EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK: 'false',
     EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS: 'lapsed',
   },
-  runnerEnv: {
-    ...authenticatedRunnerEnv,
-    E2E_SUBSCRIPTION_ACTION_OUTCOME: id,
-    E2E_SUBSCRIPTION_SCENARIO: 'actions',
-  },
 });
 
 const capScenario = (
@@ -100,9 +84,9 @@ const capScenario = (
   entitlementStatus: 'active' | 'lapsed' | 'unknown',
   activeStudentCount: string,
   renewalRisk: 'true' | 'false',
-): DetoxFixturePhase => ({
+): NativeFixturePhase => ({
   id: `cap-${id}`,
-  specs: ['e2e/professional-subscription-cap.e2e.test.js'],
+  specs: ['.maestro/suite/professional-subscription-cap'],
   appEnv: {
     ...authenticatedAppEnv,
     EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS: 'unknown',
@@ -111,68 +95,39 @@ const capScenario = (
     EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK: renewalRisk,
     EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS: entitlementStatus,
   },
-  runnerEnv: {
-    ...authenticatedRunnerEnv,
-    E2E_SUBSCRIPTION_ACTION_OUTCOME: 'success',
-    E2E_SUBSCRIPTION_SCENARIO: id,
-  },
 });
 
-export const DETOX_FIXTURE_PROFILES = {
-  // Owned integration supplies its backend and credentials through the native pilot.
-  // Selective CI has no fixture phases for this profile and must reject it.
-  'owned-integrated-session': {
-    selectiveCi: false,
-    phases: [],
-  },
-  // Owned connection integration supplies its backend and credentials through the native pilot.
-  // It is intentionally distinct from the session profile and cannot enter selective CI.
-  'owned-integrated-connection': {
-    selectiveCi: false,
-    phases: [],
-  },
-  // Camera integration owns its backend and permission state through the native pilot.
-  'owned-integrated-camera': {
-    selectiveCi: false,
-    phases: [],
-  },
+export const NATIVE_FIXTURE_PROFILES = {
   'auth-entry-and-authenticated': {
     selectiveCi: true,
     phases: [
       {
         id: 'auth-entry',
-        specs: ['e2e/auth-sign-in.e2e.test.js'],
+        specs: ['.maestro/suite/auth-sign-in'],
         appEnv: {
           EXPO_PUBLIC_E2E_CREATE_ACCOUNT: 'true',
           EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN: 'true',
           EXPO_PUBLIC_E2E_SOCIAL_AUTH: 'true',
         },
-        runnerEnv: {
-          E2E_AUTH_CREATE_ACCOUNT: 'true',
-          E2E_AUTH_SIGN_IN: 'true',
-          E2E_AUTH_SOCIAL: 'true',
-        },
       },
       {
         id: 'terms-outdated',
-        specs: ['e2e/auth-terms.e2e.test.js'],
+        specs: ['.maestro/suite/auth-terms'],
         appEnv: {
           ...authenticatedAppEnv,
           EXPO_PUBLIC_E2E_ACCEPTED_TERMS_VERSION: 'outdated-e2e-version',
         },
-        runnerEnv: authenticatedRunnerEnv,
       },
       {
         id: 'authenticated',
         specs: [
-          'e2e/auth-role-selection.e2e.test.js',
-          'e2e/account-password-reset.e2e.test.js',
-          'e2e/account-deletion.e2e.test.js',
-          'e2e/account-settings.e2e.test.js',
-          'e2e/language-select.e2e.test.js',
+          '.maestro/suite/auth-role-selection',
+          '.maestro/suite/account-password-reset',
+          '.maestro/suite/account-deletion',
+          '.maestro/suite/account-settings',
+          '.maestro/suite/language-select',
         ],
         appEnv: authenticatedAppEnv,
-        runnerEnv: authenticatedRunnerEnv,
       },
     ],
   },
@@ -181,14 +136,10 @@ export const DETOX_FIXTURE_PROFILES = {
     phases: [
       {
         id: 'role-persistence',
-        specs: ['e2e/auth-role-selection.e2e.test.js'],
+        specs: ['.maestro/suite/auth-role-selection'],
         appEnv: {
           ...authenticatedAppEnv,
           EXPO_PUBLIC_E2E_ROLE_PERSISTENCE: 'true',
-        },
-        runnerEnv: {
-          ...authenticatedRunnerEnv,
-          E2E_ROLE_PERSISTENCE_SCENARIO: 'relaunch',
         },
       },
     ],
@@ -199,40 +150,31 @@ export const DETOX_FIXTURE_PROFILES = {
     phases: [
       {
         id: 'connections',
-        specs: ['e2e/professional-home-invite-code.e2e.test.js'],
+        specs: ['.maestro/suite/professional-home-invite-code'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE: 'success',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
-        runnerEnv: authenticatedRunnerEnv,
       },
       {
         id: 'qr-valid',
-        specs: ['e2e/student-professionals.e2e.test.js'],
+        specs: ['.maestro/suite/student-professionals'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE: 'success',
           EXPO_PUBLIC_E2E_QR_INVITE_PAYLOAD: 'NUT123',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
-        runnerEnv: {
-          ...authenticatedRunnerEnv,
-          E2E_QR_INVITE_SCENARIO: 'valid_payload',
-        },
       },
       {
         id: 'qr-invalid-payload',
-        specs: ['e2e/student-professionals.e2e.test.js'],
+        specs: ['.maestro/suite/student-professionals'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_INVITE_SUBMIT_FIXTURE: 'success',
           EXPO_PUBLIC_E2E_QR_INVITE_PAYLOAD: 'not-a-valid-invite-payload',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
-        },
-        runnerEnv: {
-          ...authenticatedRunnerEnv,
-          E2E_QR_INVITE_SCENARIO: 'invalid_payload',
         },
       },
     ],
@@ -244,11 +186,11 @@ export const DETOX_FIXTURE_PROFILES = {
       {
         id: 'nutrition',
         specs: [
-          'e2e/student-nutrition.e2e.test.js',
-          'e2e/custom-meal-builder.e2e.test.js',
-          'e2e/custom-meal-library.e2e.test.js',
-          'e2e/professional-nutrition-builder.e2e.test.js',
-          'e2e/shared-recipe.e2e.test.js',
+          '.maestro/suite/student-nutrition',
+          '.maestro/suite/custom-meal-builder',
+          '.maestro/suite/custom-meal-library',
+          '.maestro/suite/professional-nutrition-builder',
+          '.maestro/suite/shared-recipe',
         ],
         appEnv: {
           ...activeProfessionalAppEnv,
@@ -259,11 +201,10 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
-        runnerEnv: authenticatedRunnerEnv,
       },
       {
         id: 'image-upload-sheet',
-        specs: ['e2e/custom-meal-image-upload.e2e.test.js'],
+        specs: ['.maestro/suite/custom-meal-image-upload'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
@@ -273,14 +214,10 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
-        runnerEnv: {
-          ...authenticatedRunnerEnv,
-          E2E_IMAGE_UPLOAD_SCENARIO: 'sheet',
-        },
       },
       {
         id: 'image-upload-success',
-        specs: ['e2e/custom-meal-image-upload.e2e.test.js'],
+        specs: ['.maestro/suite/custom-meal-image-upload'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
@@ -291,14 +228,10 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
-        runnerEnv: {
-          ...authenticatedRunnerEnv,
-          E2E_IMAGE_UPLOAD_SCENARIO: 'success',
-        },
       },
       {
         id: 'image-upload-permission-denied',
-        specs: ['e2e/custom-meal-image-upload.e2e.test.js'],
+        specs: ['.maestro/suite/custom-meal-image-upload'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
@@ -309,14 +242,10 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
-        runnerEnv: {
-          ...authenticatedRunnerEnv,
-          E2E_IMAGE_UPLOAD_SCENARIO: 'permission-denied',
-        },
       },
       {
         id: 'meal-analysis-paywall',
-        specs: ['e2e/custom-meal-ai-analysis.e2e.test.js'],
+        specs: ['.maestro/suite/custom-meal-ai-analysis'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS: 'lapsed',
@@ -326,24 +255,16 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS: 'lapsed',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
         },
-        runnerEnv: {
-          ...authenticatedRunnerEnv,
-          E2E_MEAL_ANALYSIS_SCENARIO: 'paywall',
-        },
       },
       {
         id: 'meal-analysis-success',
-        specs: ['e2e/custom-meal-ai-analysis.e2e.test.js'],
+        specs: ['.maestro/suite/custom-meal-ai-analysis'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_MEAL_ANALYSIS_FIXTURE: 'success',
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
-        },
-        runnerEnv: {
-          ...authenticatedRunnerEnv,
-          E2E_MEAL_ANALYSIS_SCENARIO: 'success',
         },
       },
     ],
@@ -361,7 +282,6 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE: 'basic',
           EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE: 'assigned',
         },
-        runnerEnv: authenticatedRunnerEnv,
       },
     ],
   },
@@ -370,7 +290,7 @@ export const DETOX_FIXTURE_PROFILES = {
     phases: [
       {
         id: 'professional-bulk-assign',
-        specs: ['e2e/professional-bulk-assign.e2e.test.js'],
+        specs: ['.maestro/suite/professional-bulk-assign'],
         appEnv: {
           ...activeProfessionalAppEnv,
           EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE: 'basic',
@@ -380,16 +300,14 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
           EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE: 'assigned',
         },
-        runnerEnv: authenticatedRunnerEnv,
       },
       {
         id: 'student-self-managed-builder',
-        specs: ['e2e/student-self-managed-builder.e2e.test.js'],
+        specs: ['.maestro/suite/student-self-managed-builder'],
         appEnv: {
           ...authenticatedAppEnv,
           EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE: 'basic',
         },
-        runnerEnv: authenticatedRunnerEnv,
       },
     ],
   },
@@ -407,7 +325,6 @@ export const DETOX_FIXTURE_PROFILES = {
           EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE: 'assigned',
           EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE: 'assigned',
         },
-        runnerEnv: authenticatedRunnerEnv,
       },
     ],
   },
@@ -435,7 +352,6 @@ export const DETOX_FIXTURE_PROFILES = {
         id: 'support',
         specs: '*',
         appEnv: authenticatedAppEnv,
-        runnerEnv: authenticatedRunnerEnv,
       },
     ],
   },
@@ -446,7 +362,6 @@ export const DETOX_FIXTURE_PROFILES = {
         id: 'student-empty-state',
         specs: '*',
         appEnv: authenticatedAppEnv,
-        runnerEnv: authenticatedRunnerEnv,
       },
     ],
   },
@@ -460,7 +375,6 @@ export const DETOX_FIXTURE_PROFILES = {
           ...authenticatedAppEnv,
           EXPO_PUBLIC_E2E_NETWORK_STATUS: 'offline',
         },
-        runnerEnv: authenticatedRunnerEnv,
       },
     ],
   },
@@ -471,33 +385,32 @@ export const DETOX_FIXTURE_PROFILES = {
         id: 'platform',
         specs: '*',
         appEnv: authenticatedAppEnv,
-        runnerEnv: authenticatedRunnerEnv,
       },
     ],
   },
-} as const satisfies Record<string, DetoxFixtureProfile>;
+} as const satisfies Record<string, NativeFixtureProfile>;
 
-export type DetoxFixtureProfileId = keyof typeof DETOX_FIXTURE_PROFILES;
+export type NativeFixtureProfileId = keyof typeof NATIVE_FIXTURE_PROFILES;
 
-export function isDetoxFixtureProfileId(value: string): value is DetoxFixtureProfileId {
-  return Object.hasOwn(DETOX_FIXTURE_PROFILES, value);
+export function isNativeFixtureProfileId(value: string): value is NativeFixtureProfileId {
+  return Object.hasOwn(NATIVE_FIXTURE_PROFILES, value);
 }
 
 export function clearedSelectiveFixtureEnvironment(): Record<string, string> {
   return Object.fromEntries(SELECTIVE_FIXTURE_ENV_KEYS.map((key) => [key, '']));
 }
 
-export function validateDetoxFixtureProfile(suiteId: string, suite: SuiteConfig): string[] {
+export function validateNativeFixtureProfile(suiteId: string, suite: SuiteConfig): string[] {
   const errors: string[] = [];
   const profileId = suite.fixtureProfile;
-  if (!profileId) return [`Detox suite ${suiteId} has no fixtureProfile`];
-  if (!isDetoxFixtureProfileId(profileId)) {
-    return [`Detox suite ${suiteId} references unknown fixtureProfile ${profileId}`];
+  if (!profileId) return [`Native suite ${suiteId} has no fixtureProfile`];
+  if (!isNativeFixtureProfileId(profileId)) {
+    return [`Native suite ${suiteId} references unknown fixtureProfile ${profileId}`];
   }
 
-  const profile: DetoxFixtureProfile = DETOX_FIXTURE_PROFILES[profileId];
+  const profile: NativeFixtureProfile = NATIVE_FIXTURE_PROFILES[profileId];
   if (suite.ci && !profile.selectiveCi) {
-    errors.push(`CI Detox suite ${suiteId} uses non-selective profile ${profileId}`);
+    errors.push(`CI native suite ${suiteId} uses non-selective profile ${profileId}`);
   }
   if (!suite.ci) return errors;
 

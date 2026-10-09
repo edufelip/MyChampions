@@ -1,0 +1,13 @@
+appId: com.edufelip.mychampions.dev
+name: Student professionals - creates a pending connection from a scanned QR invite payload
+tags: [qr-valid]
+---
+- runFlow: ../common/student-professionals.yaml
+- tapOn:
+    id: student.professionals.scanQrButton
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.connectionPending.e2e-pending-nutritionist-connection
+    timeout: 10000
+- assertNotVisible:
+    id: student.professionals.submitError

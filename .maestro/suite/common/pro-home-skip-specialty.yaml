@@ -1,0 +1,14 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: launch-fresh.yaml
+- runFlow: select-professional-role.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.cta_skip
+    timeout: 5000
+- tapOn:
+    id: pro.specialty.cta_skip
+- extendedWaitUntil:
+    visible:
+      id: pro.home.screen
+    timeout: 10000

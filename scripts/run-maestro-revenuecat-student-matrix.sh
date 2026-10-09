@@ -75,7 +75,7 @@ for index in "${!scenarios[@]}"; do
   scenario="${scenarios[$index]}"
   customer="${customers[$index]}"
   skip_build=true
-  if [[ "$index" -eq 0 && "${DETOX_SKIP_BUILD:-false}" != "true" ]]; then
+  if [[ "$index" -eq 0 && "${NATIVE_SKIP_BUILD:-false}" != "true" ]]; then
     skip_build=false
   fi
 
@@ -96,6 +96,6 @@ for index in "${!scenarios[@]}"; do
   REVENUECAT_LIVE_SCENARIO="$scenario" \
     REVENUECAT_TEST_APP_USER_ID="$customer" \
     REVENUECAT_TEST_ALT_APP_USER_ID="$alternate_customer" \
-    DETOX_SKIP_BUILD="$skip_build" \
-    bash scripts/run-detox-revenuecat-test-store.sh
+    NATIVE_SKIP_BUILD="$skip_build" \
+    bash scripts/run-maestro-revenuecat-test-store.sh
 done

@@ -1,0 +1,6 @@
+# Fresh launch, choose the student role, open the Account tab.
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: launch-fresh.yaml
+- runFlow: select-student-role.yaml
+- runFlow: open-account-tab.yaml

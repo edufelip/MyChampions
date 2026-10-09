@@ -1,0 +1,15 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal AI analysis - shows the premium AI analysis gate before capture is available
+tags: [meal-analysis-paywall]
+---
+- runFlow: ../common/student-meal-builder-camera.yaml
+- assertVisible:
+    id: meal.photoAnalysis.section
+- extendedWaitUntil:
+    visible:
+      id: meal.photoAnalysis.paywall
+    timeout: 15000
+- assertVisible:
+    id: meal.photoAnalysis.paywall.cta
+- assertNotVisible:
+    id: meal.photoAnalysis.cta

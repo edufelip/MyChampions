@@ -1,0 +1,23 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal builder - creates a custom meal and returns to the library
+tags: [nutrition]
+---
+- runFlow: ../common/student-open-meal-builder.yaml
+- runFlow: { file: ../common/meal-builder-field.yaml, env: { FIELD: name, VALUE: "E2E Recovery Bowl" } }
+- runFlow: { file: ../common/meal-builder-field.yaml, env: { FIELD: grams, VALUE: "300" } }
+- runFlow: { file: ../common/meal-builder-field.yaml, env: { FIELD: calories, VALUE: "480" } }
+- runFlow: { file: ../common/meal-builder-field.yaml, env: { FIELD: carbs, VALUE: "55" } }
+- runFlow: { file: ../common/meal-builder-field.yaml, env: { FIELD: proteins, VALUE: "35" } }
+- runFlow: { file: ../common/meal-builder-field.yaml, env: { FIELD: fats, VALUE: "14" } }
+- scrollUntilVisible:
+    element:
+      id: meal.builder.cta.save
+    direction: DOWN
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: meal.builder.cta.save
+- extendedWaitUntil:
+    visible:
+      id: meal.library.screen
+    timeout: 10000

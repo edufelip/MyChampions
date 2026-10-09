@@ -1,0 +1,16 @@
+appId: com.edufelip.mychampions.dev
+name: Auth sign-in - navigates to role-selection after successful Google sign-in
+tags: [auth-entry]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/wait-sign-in.yaml
+- scrollUntilVisible:
+    element:
+      id: auth.signIn.googleButton
+    direction: DOWN
+- tapOn:
+    id: auth.signIn.googleButton
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 10000

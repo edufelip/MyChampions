@@ -15,7 +15,6 @@ const workflows = new Map(
 const packageManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
   packageManager?: unknown;
 };
-const iosSmokeScript = readFileSync(join(root, 'scripts', 'run-detox-ios-debug-smoke.sh'), 'utf8');
 
 function workflow(name: string): string {
   const source = workflows.get(name);
@@ -398,7 +397,7 @@ void test('trusted workflow is default-branch sourced and authorizes exact candi
   // longer auto-forces the complete matrix by virtue of its base branch —
   // only an explicit ci:full label or an already-forced upstream signal
   // does. Full Detox validation for those branches now comes exclusively
-  // from detox-protected-full.yml's push trigger.
+  // from native-protected-full.yml's push trigger.
   assert.match(authorization, /^\s+force_full = force_full or label_force_full$/m);
   assert.doesNotMatch(authorization, /force_full or label_force_full or base_ref/);
 
@@ -823,15 +822,15 @@ void test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', (
   // trusted-selective-tests.yml: Detox left the PR path entirely (Step 7 of
   // the CI web-primary redesign), so authorize-candidate/publish-selective-
   // status no longer read, thread, or gate on it. The toggle itself is
-  // unchanged and still governs ios-pr.yml, detox-protected-full.yml, and
+  // unchanged and still governs ios-pr.yml, native-protected-full.yml, and
   // provider-validation.yml, which this test still covers below.
   const legacyIos = workflow('ios-pr.yml');
   const legacyToggle = jobBlock(legacyIos, 'resolve-ios-tests');
   const legacyBuild = jobBlock(legacyIos, 'build');
   const release = workflow('ios-release.yml');
-  const protectedFull = workflow('detox-protected-full.yml');
+  const protectedFull = workflow('native-protected-full.yml');
   const protectedResolver = jobBlock(protectedFull, 'resolve-ios-tests');
-  const protectedIosLane = jobBlock(protectedFull, 'detox-ios-full');
+  const protectedIosLane = jobBlock(protectedFull, 'native-ios-full');
   const provider = workflow('provider-validation.yml');
   const providerResolver = jobBlock(provider, 'resolve-ios-tests');
   const providerIosLane = jobBlock(provider, 'ios-test-store');
@@ -872,19 +871,21 @@ void test('iOS test toggle is default-on, exact-false opt-out, and gate-safe', (
   assert.doesNotMatch(trusted, /detox-ios-selected/);
 });
 
-void test('legacy iOS smoke reuses one build across its two Detox phases', () => {
+void test('iOS PR smoke builds once and runs its Maestro phases on that build', () => {
   const legacyIos = workflow('ios-pr.yml');
+  const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+    scripts: Record<string, string>;
+  };
 
-  assert.equal((iosSmokeScript.match(/yarn test:e2e:build:ios:debug/g) ?? []).length, 1);
-  assert.match(iosSmokeScript, /DETOX_SKIP_BUILD/);
-  assert.match(legacyIos, /run: yarn test:e2e:build:ios:debug/);
-  assert.match(legacyIos, /run: DETOX_SKIP_BUILD=true yarn test:e2e:ios:debug:smoke/);
-  assert.match(legacyIos, /brew trust --formula wix-incubator\/brew\/applesimutils/);
-  assert.match(legacyIos, /brew install wix-incubator\/brew\/applesimutils/);
-  assert.doesNotMatch(legacyIos, /brew trust --tap/);
-  assert.doesNotMatch(legacyIos, /xcodebuild/);
+  assert.equal((legacyIos.match(/run: yarn test:e2e:build:ios:debug/g) ?? []).length, 1);
+  assert.match(legacyIos, /run: bash scripts\/testing\/install-maestro\.sh/);
+  assert.match(legacyIos, /NATIVE_SKIP_BUILD: 'true'[\s\S]*?run: yarn test:e2e:ios:smoke/);
+  assert.match(
+    packageJson.scripts['test:e2e:ios:smoke'],
+    /run-maestro-suite\.sh --platform ios maestro:auth maestro:connections$/,
+  );
+  assert.doesNotMatch(legacyIos, /applesimutils|detox/i);
 });
-
 void test('web-selected lane is authorized, self-hosted, and per-PR-scoped', () => {
   // Detox left the PR path (Step 7 of the CI web-primary redesign):
   // detox-ios-selected/detox-android-selected (and their host-capacity
@@ -892,7 +893,7 @@ void test('web-selected lane is authorized, self-hosted, and per-PR-scoped', () 
   // per-lane secrets handling) were deleted outright, not relocated — that
   // machinery existed specifically to let concurrent PRs share a limited
   // pool of emulator slots safely, which release/hotfix pushes to
-  // detox-protected-full.yml don't need (infrequent, not concurrent PR
+  // native-protected-full.yml don't need (infrequent, not concurrent PR
   // volume). web-selected is the only self-hosted selected lane left here.
   const source = workflow('trusted-selective-tests.yml');
   const webLane = jobBlock(source, 'web-selected');
@@ -1110,7 +1111,7 @@ void test('selective artifacts are failure-only, bounded, and retained for one d
 
   // Detox left the PR path (Step 7): only the web lane's diagnostics upload
   // remains here now; iOS/Android diagnostics uploads live in
-  // detox-protected-full.yml instead.
+  // native-protected-full.yml instead.
   assert.equal(uploads.length, 1);
   const expectedPaths = new Set(['.artifacts/ci-diagnostics/web']);
 
@@ -1128,7 +1129,7 @@ void test('selective artifacts are failure-only, bounded, and retained for one d
 void test('every other artifact is either bounded failure evidence or a one-day release binary', () => {
   const expectedFailurePaths = new Map([
     ['android-pr.yml', new Set(['android/app/build/reports'])],
-    ['ios-pr.yml', new Set<string>()],
+    ['ios-pr.yml', new Set(['.artifacts/ci-diagnostics/ios'])],
     ['web-pr.yml', new Set<string>()],
   ]);
 
@@ -1153,7 +1154,7 @@ void test('every other artifact is either bounded failure evidence or a one-day 
 
 void test('protected native full validation is manual/release/protected-branch-push-only and builds once per platform', () => {
   const workflow = readFileSync(
-    join(root, '.github', 'workflows', 'detox-protected-full.yml'),
+    join(root, '.github', 'workflows', 'native-protected-full.yml'),
     'utf8',
   );
 
@@ -1164,15 +1165,20 @@ void test('protected native full validation is manual/release/protected-branch-p
   assert.match(workflow, /mychampions-ios/);
   assert.match(workflow, /mychampions-android/);
   assert.match(workflow, /yarn test:e2e:build:ios:debug/);
-  assert.match(workflow, /app:assembleDevDebugAndroidTest/);
-  assert.equal((workflow.match(/DETOX_SKIP_BUILD=true yarn test:impact:execute/g) ?? []).length, 2);
+  assert.match(workflow, /app:assembleDevDebug -PreactNativeDevServerPort="\$NATIVE_METRO_PORT"/);
+  assert.equal(
+    (workflow.match(/NATIVE_SKIP_BUILD=true yarn test:impact:execute/g) ?? []).length,
+    2,
+  );
+  assert.equal((workflow.match(/bash scripts\/testing\/install-maestro\.sh/g) ?? []).length, 2);
+  assert.doesNotMatch(workflow, /detox/i);
   assert.equal((workflow.match(/MYCHAMPIONS_NATIVE_STATE_ROOT/g) ?? []).length >= 4, true);
   assert.equal((workflow.match(/mychampions-native-host\.lock/g) ?? []).length >= 4, true);
   assert.equal((workflow.match(/fcntl\.flock/g) ?? []).length, 2);
   assert.match(workflow, /SELECTED_SUITES_JSON:/);
   assert.match(workflow, /if: failure\(\)/);
   assert.match(workflow, /retention-days: 1/);
-  assert.doesNotMatch(workflow, /detox:revenuecat-live/);
+  assert.doesNotMatch(workflow, /maestro:revenuecat-live/);
 
   // No new authorization job is introduced for push — push events to
   // release/**|hotfix/** can't be spoofed/forked (same trust basis already
@@ -1180,13 +1186,13 @@ void test('protected native full validation is manual/release/protected-branch-p
   // stay reachable on a push event and must not depend on the manual
   // workflow_dispatch `inputs.platform` choice (undefined on push).
   const iosCondition = workflow.match(
-    /detox-ios-full:[\s\S]*?if: >-\n([\s\S]*?)\n\s+runs-on:/,
+    /native-ios-full:[\s\S]*?if: >-\n([\s\S]*?)\n\s+runs-on:/,
   )?.[1];
   const androidCondition = workflow.match(
-    /detox-android-full:[\s\S]*?if: >-\n([\s\S]*?)\n\s+runs-on:/,
+    /native-android-full:[\s\S]*?if: >-\n([\s\S]*?)\n\s+runs-on:/,
   )?.[1];
-  assert.ok(iosCondition, 'detox-ios-full if: condition not found');
-  assert.ok(androidCondition, 'detox-android-full if: condition not found');
+  assert.ok(iosCondition, 'native-ios-full if: condition not found');
+  assert.ok(androidCondition, 'native-android-full if: condition not found');
   for (const condition of [iosCondition, androidCondition]) {
     assert.match(condition, /github\.event_name == 'push'/);
     // The ref-guard clause must accept push without requiring main.

@@ -1,0 +1,158 @@
+appId: com.edufelip.mychampions.dev
+name: Professional training builder - creates a plan, adds a searched exercise, saves it, and removes it
+tags: [training]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-professional-role.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.add.fitness_coach
+    timeout: 5000
+- tapOn:
+    id: pro.specialty.add.fitness_coach
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.credentialForm
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: pro.specialty.credential.skip
+    direction: DOWN
+- tapOn:
+    id: pro.specialty.credential.skip
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.row.fitness_coach
+    timeout: 5000
+- tapOn:
+    id: pro.specialty.cta_continue
+- extendedWaitUntil:
+    visible:
+      id: pro.home.screen
+    timeout: 10000
+- tapOn:
+    id: tabs.training
+- extendedWaitUntil:
+    visible:
+      id: pro.library.training.create
+    timeout: 10000
+- tapOn:
+    id: pro.library.training.create
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.screen
+    timeout: 10000
+- tapOn:
+    id: pro.training_plan.name
+- inputText: E2E Builder Training Plan
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: pro.training_plan.saveButton
+    direction: DOWN
+- tapOn:
+    id: pro.training_plan.saveButton
+- extendedWaitUntil:
+    visible:
+      id: pro.library.training.row.e2e-training-builder-plan-1
+    timeout: 10000
+- tapOn:
+    id: pro.library.training.row.e2e-training-builder-plan-1
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: pro.training_plan.addSession
+    direction: DOWN
+- tapOn:
+    id: pro.training_plan.addSession
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.addSession.name
+    timeout: 5000
+- tapOn:
+    id: pro.training_plan.addSession.name
+- inputText: Push Day
+- tapOn:
+    id: pro.training_plan.addSession.notes
+- inputText: Upper body focus
+- hideKeyboard
+- tapOn:
+    id: pro.training_plan.addSession.confirm
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.sessionRow.Push_Day
+    timeout: 10000
+- tapOn:
+    id: pro.training_plan.sessionRow.Push_Day.addItem
+- extendedWaitUntil:
+    visible:
+      id: exerciseSearch.modal
+    timeout: 5000
+- tapOn:
+    id: exerciseSearch.input
+- inputText: push
+- extendedWaitUntil:
+    visible:
+      id: exerciseSearch.result.e2e-exercise-push-up
+    timeout: 10000
+- hideKeyboard
+- tapOn:
+    id: exerciseSearch.result.e2e-exercise-push-up
+- extendedWaitUntil:
+    visible:
+      id: exerciseSearch.detail
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: exerciseSearch.quantity
+    direction: DOWN
+- tapOn:
+    id: exerciseSearch.quantity
+- inputText: 3 x 10
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: exerciseSearch.confirm
+    direction: DOWN
+- tapOn:
+    id: exerciseSearch.confirm
+- extendedWaitUntil:
+    notVisible:
+      id: exerciseSearch.modal
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.itemRow.E2E_Push-Up
+    timeout: 10000
+- assertVisible:
+    id: pro.training_plan.itemRow.E2E_Push-Up.quantity
+    text: 3 x 10
+- scrollUntilVisible:
+    element:
+      id: pro.training_plan.saveButton
+    direction: DOWN
+- tapOn:
+    id: pro.training_plan.saveButton
+- extendedWaitUntil:
+    visible:
+      id: pro.library.training.row.e2e-training-builder-plan-1
+    timeout: 10000
+- tapOn:
+    id: pro.library.training.row.e2e-training-builder-plan-1
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.itemRow.E2E_Push-Up
+    timeout: 10000
+- tapOn:
+    id: pro.training_plan.itemRow.E2E_Push-Up.remove
+- runFlow:
+    file: ../common/confirm-alert.yaml
+    env:
+      BUTTON: Delete
+- extendedWaitUntil:
+    notVisible:
+      id: pro.training_plan.itemRow.E2E_Push-Up
+    timeout: 10000

@@ -1,0 +1,4 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: ../../common/launch-fresh.yaml
+- runFlow: pro-open-subscription.yaml

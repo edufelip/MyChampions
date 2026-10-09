@@ -1,0 +1,17 @@
+appId: com.edufelip.mychampions.dev
+name: Auth create account - returns from create account to sign-in
+tags: [auth-entry]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/wait-sign-in.yaml
+- runFlow: ../common/open-create-account.yaml
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.backToSignInButton
+    direction: DOWN
+- tapOn:
+    id: auth.createAccount.backToSignInButton
+- extendedWaitUntil:
+    visible:
+      id: auth.signIn.title
+    timeout: 5000
