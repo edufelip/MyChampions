@@ -584,11 +584,23 @@ function framePathsByLabel(capture: JsonRecord): Map<string, string[]> {
     : [];
   const result = new Map<string, string[]>();
   for (const frame of rows) {
-    const label = stringValue(frame.label, 'session frame label');
-    result.set(label, [
-      relative(frame.screenshotPath, 'session screenshot path'),
-      relative(frame.hierarchyPath, 'session hierarchy path'),
-    ]);
+    // The capture ledger names each frame by its files (`<label>.png` and
+    // `<label>-hierarchy.json`) and carries no separate label field.
+    const screenshotPath = relative(frame.screenshotPath, 'session screenshot path');
+    const hierarchyPath = relative(frame.hierarchyPath, 'session hierarchy path');
+    const label = stringValue(
+      /^([a-z0-9-]+)\.png$/u.exec(screenshotPath)?.[1],
+      'session frame label',
+    );
+    assert.equal(
+      hierarchyPath,
+      label + '-hierarchy.json',
+      'session frame hierarchy path is invalid',
+    );
+    if (frame.label !== undefined)
+      assert.equal(frame.label, label, 'session frame label is invalid');
+    assert(!result.has(label), 'session frame label is duplicated: ' + label);
+    result.set(label, [screenshotPath, hierarchyPath]);
   }
   return result;
 }

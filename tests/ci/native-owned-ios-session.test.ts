@@ -269,11 +269,25 @@ void test('iOS credential actions gate exact email value before password and sub
   const email = 'qa+ios[regex].test@example.com';
   const password = 'private-test-password';
   const lines = build(email, password).split('\n');
-  const firstTap = lines.indexOf('- tapOn:');
-  const emailInput = lines.indexOf(`- inputText: ${JSON.stringify(email)}`);
-  const firstEmailValue = lines.findIndex(
-    (line, index) => index > emailInput && line.startsWith('    text: '),
-  );
+  // The email entry is one bounded retry block that clears before typing and
+  // ends on the exact email assertion.
+  const emailPattern = JSON.stringify('^qa\\+ios\\[regex\\]\\.test@example\\.com$');
+  assert.deepEqual(lines.slice(0, 13), [
+    '- retry:',
+    '    maxRetries: 2',
+    '    commands:',
+    '      - tapOn:',
+    '          id: auth.signIn.emailInput',
+    '          retryTapIfNoChange: true',
+    '      - waitForAnimationToEnd:',
+    '          timeout: 3000',
+    '      - eraseText: 200',
+    `      - inputText: ${JSON.stringify(email)}`,
+    '      - assertVisible:',
+    '          id: auth.signIn.emailInput',
+    `          text: ${emailPattern}`,
+  ]);
+  const firstEmailValue = 12;
   const passwordTap = lines.findIndex(
     (line, index) => line === '- tapOn:' && index > firstEmailValue,
   );
@@ -284,14 +298,10 @@ void test('iOS credential actions gate exact email value before password and sub
   const hideKeyboard = lines.indexOf('- hideKeyboard');
   const submitVisible = lines.indexOf('- assertVisible:', hideKeyboard);
   const submitTap = lines.lastIndexOf('- tapOn:');
-  assert.equal(lines[firstTap + 1], '    id: auth.signIn.emailInput');
-  assert.equal(lines[firstTap + 2], '    retryTapIfNoChange: true');
-  assert.ok(firstTap < emailInput && emailInput < firstEmailValue);
-  assert.equal(lines[firstEmailValue - 2], '- assertVisible:');
-  assert.equal(lines[firstEmailValue - 1], '    id: auth.signIn.emailInput');
   assert.equal(lines[passwordTap + 1], '    id: auth.signIn.passwordInput');
   assert.equal(lines[passwordTap + 2], '    retryTapIfNoChange: true');
-  assert.ok(passwordTap < passwordInput);
+  assert.equal(lines[passwordTap + 3], '- eraseText: 200');
+  assert.equal(passwordInput, passwordTap + 4);
   assert.equal(secondEmailValue, passwordInput + 3);
   assert.equal(lines[secondEmailValue - 2], '- assertVisible:');
   assert.equal(lines[secondEmailValue - 1], '    id: auth.signIn.emailInput');
@@ -299,13 +309,9 @@ void test('iOS credential actions gate exact email value before password and sub
   assert.equal(lines.includes('    isRegex: true'), false);
   const emailValueIndexes = [firstEmailValue, secondEmailValue];
   const generatedEmailPatterns = emailValueIndexes.map(
-    (index) => JSON.parse(lines[index].slice('    text: '.length)) as string,
+    (index) => JSON.parse(lines[index].trimStart().slice('text: '.length)) as string,
   );
-  assert.equal(
-    lines[firstEmailValue],
-    `    text: ${JSON.stringify('^qa\\+ios\\[regex\\]\\.test@example\\.com$')}`,
-  );
-  assert.equal(lines[secondEmailValue], lines[firstEmailValue]);
+  assert.equal(lines[secondEmailValue], `    text: ${emailPattern}`);
   for (const generatedEmailPattern of generatedEmailPatterns) {
     const exactEmailPattern = new RegExp(generatedEmailPattern);
     assert.equal(exactEmailPattern.test(email), true);
@@ -315,7 +321,7 @@ void test('iOS credential actions gate exact email value before password and sub
   assert.ok(
     secondEmailValue < hideKeyboard && hideKeyboard < submitVisible && submitVisible < submitTap,
   );
-  assert.equal(lines.filter((line) => line === '- tapOn:').length, 3);
+  assert.equal(lines.filter((line) => line === '- tapOn:').length, 2);
   assert.equal(lines[submitTap + 1], '    id: auth.signIn.submitButton');
   assert.equal(lines[submitTap + 2], undefined);
   assert.equal(
@@ -323,7 +329,12 @@ void test('iOS credential actions gate exact email value before password and sub
     false,
   );
   assert.equal(lines.includes('    retryTapIfNoChange: true', submitTap), false);
-  assert.equal(build(email, password).includes('eraseText'), false);
+  // Clearing is allowed only immediately before each credential input.
+  const erases = lines.flatMap((line, index) =>
+    line.trim() === '- eraseText: 200' ? [index] : [],
+  );
+  assert.deepEqual(erases, [8, passwordInput - 1]);
+  assert.equal(lines.filter((line) => line.includes('eraseText')).length, 2);
 });
 
 void test('iOS connection account navigation keeps the switch on normal UI boundaries', async () => {

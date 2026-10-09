@@ -589,22 +589,34 @@ export function buildIosPasswordOfferDismissalActions(): string {
  * Builds the private Maestro sign-in prelude used by the iOS inventory capture.
  * This is a generated-flow contract only; native focus and text fidelity remain
  * runtime evidence captured by the surrounding observation.
+ *
+ * The simulator occasionally routes the email keystrokes to the password field
+ * even though the tap hit the email input, so the email entry clears and
+ * retries until the exact email is visible, and the password field is cleared
+ * before its own input. The email assertion after the password still runs once.
  */
 export function buildIosCredentialEntryActions(email: unknown, password: unknown): string {
   const safeEmail = requireCredentialActionInput(email);
   const safePassword = requireCredentialActionInput(password);
   const emailPattern = `^${escapeCredentialSelectorText(safeEmail)}$`;
   return [
-    '- tapOn:',
-    '    id: auth.signIn.emailInput',
-    '    retryTapIfNoChange: true',
-    `- inputText: ${JSON.stringify(safeEmail)}`,
-    '- assertVisible:',
-    '    id: auth.signIn.emailInput',
-    `    text: ${JSON.stringify(emailPattern)}`,
+    '- retry:',
+    '    maxRetries: 2',
+    '    commands:',
+    '      - tapOn:',
+    '          id: auth.signIn.emailInput',
+    '          retryTapIfNoChange: true',
+    '      - waitForAnimationToEnd:',
+    '          timeout: 3000',
+    '      - eraseText: 200',
+    `      - inputText: ${JSON.stringify(safeEmail)}`,
+    '      - assertVisible:',
+    '          id: auth.signIn.emailInput',
+    `          text: ${JSON.stringify(emailPattern)}`,
     '- tapOn:',
     '    id: auth.signIn.passwordInput',
     '    retryTapIfNoChange: true',
+    '- eraseText: 200',
     `- inputText: ${JSON.stringify(safePassword)}`,
     '- assertVisible:',
     '    id: auth.signIn.emailInput',
