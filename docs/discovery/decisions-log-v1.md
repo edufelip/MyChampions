@@ -3767,3 +3767,6 @@ Owner decision: native sign-out now also clears React Native's native HTTP cooki
 
 Owner decision: the coach's pending connection requests show the student's display name instead of the raw connection ID. `GET /connections` adds `studentDisplayName` only on connections where the caller is the professional (the same name the coach roster already shows); students receive no new field. The request card also stops squeezing on narrow phones: the Accept/Deny buttons wrap below the details when space is tight.
 
+### 2026-10-09 Native sign-out clears cookies before the session ends
+
+Owner decision (2026-10-09, "fill all of those gaps"): native sign-out now clears the native cookie store before it drops the in-memory bearer, instead of after removing the persisted session. The 2026-10-08 order left a short window where the 2–3 analytics posts sent during sign-out carried the old access cookie (seen in the Maestro session capture). Requests sent before the clear are still legitimately signed in; requests sent after carry neither bearer nor cookie. Updates FR-270, BR-342 and AC-539; covered by `server-auth-source.test.ts`.

@@ -446,16 +446,18 @@ export async function clearPersistedServerAuthSession(
   }
 
   refreshInFlight = null;
+  // Clear the cookie store before dropping the bearer: a request sent once the
+  // local session has ended (such as sign-out analytics) must carry neither.
+  try {
+    await (deps.clearCookies ?? clearNativeCookies)();
+  } catch {
+    // The native cookie store may be unavailable in non-app runtimes.
+  }
   setCurrentSession(null);
   try {
     await resolveStorage(deps).removeItem(SERVER_AUTH_SESSION_STORAGE_KEY);
   } catch {
     // Memory is already cleared; storage may be unavailable in non-app runtimes.
-  }
-  try {
-    await (deps.clearCookies ?? clearNativeCookies)();
-  } catch {
-    // The native cookie store may be unavailable in non-app runtimes.
   }
 }
 

@@ -261,25 +261,49 @@ describe('server-auth-source', () => {
     assert.equal(await restoreServerAuthSession({ storage }), null);
   });
 
-  it('clears the native cookie store on native sign-out', async () => {
+  it('clears the native cookie store before the session ends on native sign-out', async () => {
     clearServerAuthSession();
     const storage = createMemoryStorage();
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'server-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: null,
+              acceptedTermsVersion: null,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            },
+            expiresAt: '2999-01-01T00:00:00.000Z',
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      },
+    );
     const calls: string[] = [];
 
     await clearPersistedServerAuthSession({
       storage: {
         ...storage,
         removeItem: async (key) => {
-          calls.push('storage');
+          calls.push(`storage:${getCurrentServerAccessToken() ?? 'none'}`);
           await storage.removeItem(key);
         },
       },
       clearCookies: async () => {
-        calls.push('cookies');
+        calls.push(`cookies:${getCurrentServerAccessToken() ?? 'none'}`);
       },
     });
 
-    assert.deepEqual(calls, ['storage', 'cookies']);
+    // Cookies go while the session is still current, so no request sent after
+    // the bearer is dropped can carry the old access cookie.
+    assert.deepEqual(calls, ['cookies:server-token-1', 'storage:none']);
   });
 
   it('finishes native sign-out when the cookie store cannot be cleared', async () => {
